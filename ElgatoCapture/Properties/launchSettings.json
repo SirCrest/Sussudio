@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ElgatoCapture (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "ElgatoCapture (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

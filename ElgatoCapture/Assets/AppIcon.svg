@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background rounded square -->
+  <rect x="16" y="16" width="480" height="480" rx="80" ry="80" fill="#1a1a2e"/>
+
+  <!-- Monitor/display frame -->
+  <rect x="64" y="96" width="384" height="256" rx="16" ry="16" fill="#16213e" stroke="#4a5568" stroke-width="8"/>
+
+  <!-- Screen inner area with gradient -->
+  <defs>
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f3460"/>
+      <stop offset="100%" style="stop-color:#1a1a2e"/>
+    </linearGradient>
+  </defs>
+  <rect x="88" y="120" width="336" height="208" rx="8" ry="8" fill="url(#screenGrad)"/>
+
+  <!-- Video waveform/signal lines -->
+  <path d="M120 224 L160 184 L200 244 L240 194 L280 234 L320 174 L360 224 L392 204"
+        stroke="#4fd1c5" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.7"/>
+
+  <!-- Record button (red dot) -->
+  <circle cx="400" cy="144" r="24" fill="#e53e3e"/>
+  <circle cx="400" cy="144" r="16" fill="#fc8181"/>
+
+  <!-- Monitor stand -->
+  <rect x="216" y="360" width="80" height="24" rx="4" ry="4" fill="#4a5568"/>
+  <rect x="176" y="384" width="160" height="16" rx="8" ry="8" fill="#4a5568"/>
+
+  <!-- Capture card connector hint (USB-C style) -->
+  <rect x="232" y="432" width="48" height="20" rx="4" ry="4" fill="#4a5568"/>
+  <rect x="244" y="438" width="24" height="8" rx="2" ry="2" fill="#1a1a2e"/>
+</svg>
