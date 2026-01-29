@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using Windows.Media;
@@ -15,15 +16,30 @@ using Windows.Graphics.Imaging;
 
 namespace ElgatoCapture.Services;
 
+// COM interface for accessing raw audio buffer bytes
+[ComImport]
+[Guid("5B0D3235-4DBA-4D44-865E-8F1D0E4FD04D")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+unsafe interface IMemoryBufferByteAccess
+{
+    void GetBuffer(out byte* buffer, out uint capacity);
+}
+
 public class CaptureService : IDisposable
 {
     private MediaCapture? _mediaCapture;
     private MediaFrameReader? _frameReader;
+    private MediaFrameReader? _recordingFrameReader; // Separate reader for recording
     private StorageFile? _recordingFile;
     private AviWriter? _aviWriter;
     private bool _isRecording;
     private bool _isInitialized;
     private readonly object _lockObject = new();
+
+    // FFmpeg encoder for CFR output
+    private FFmpegEncoderService? _ffmpegEncoder;
+    private AudioGraph? _recordingAudioGraph; // Separate graph for recording audio capture
+    private AudioFrameOutputNode? _audioFrameOutputNode;
 
     // Audio preview
     private AudioGraph? _audioGraph;
@@ -194,67 +210,251 @@ public class CaptureService : IDisposable
     {
         if (_mediaCapture == null || _recordingFile == null) return;
 
-        MediaEncodingProfile profile;
+        Logger.Log("=== Starting FFmpeg-based recording for CFR output ===");
 
-        if (settings.Format == RecordingFormat.HevcMp4)
+        // Initialize FFmpeg encoder
+        _ffmpegEncoder = new FFmpegEncoderService();
+        _ffmpegEncoder.StatusChanged += (s, msg) => Logger.Log($"[FFmpegEncoder] {msg}");
+        _ffmpegEncoder.ErrorOccurred += (s, err) => Logger.Log($"[FFmpegEncoder] ERROR: {err}");
+        _ffmpegEncoder.FrameEncoded += (s, count) => FrameCaptured?.Invoke(this, count);
+
+        // Start FFmpeg encoder with output path
+        await _ffmpegEncoder.StartEncodingAsync(settings, _recordingFile.Path);
+
+        // Set up frame reader for recording (uses existing MediaCapture)
+        await SetupRecordingFrameReaderAsync(settings);
+
+        // Set up audio capture for recording
+        if (settings.AudioEnabled && !string.IsNullOrEmpty(_audioDeviceId))
         {
-            profile = MediaEncodingProfile.CreateHevc(
-                settings.Height >= 2160 ? VideoEncodingQuality.Uhd2160p :
-                settings.Height >= 1080 ? VideoEncodingQuality.HD1080p :
-                VideoEncodingQuality.HD720p);
+            await SetupRecordingAudioCaptureAsync();
         }
-        else
-        {
-            profile = MediaEncodingProfile.CreateMp4(
-                settings.Height >= 2160 ? VideoEncodingQuality.Uhd2160p :
-                settings.Height >= 1080 ? VideoEncodingQuality.HD1080p :
-                VideoEncodingQuality.HD720p);
-        }
 
-        // Set explicit resolution and frame rate
-        if (profile.Video != null)
-        {
-            profile.Video.Width = settings.Width;
-            profile.Video.Height = settings.Height;
-            profile.Video.FrameRate.Numerator = (uint)settings.FrameRate;
-            profile.Video.FrameRate.Denominator = 1;
+        Logger.Log("FFmpeg recording started - frames will be piped to encoder");
+    }
 
-            // Apply quality-based bitrate (unless Auto, which uses encoder defaults)
-            if (settings.Quality != VideoQuality.Auto)
+    private async Task SetupRecordingFrameReaderAsync(CaptureSettings settings)
+    {
+        if (_mediaCapture == null) return;
+
+        // Find video frame source
+        var frameSourceGroups = await MediaFrameSourceGroup.FindAllAsync();
+        MediaFrameSourceGroup? matchingGroup = null;
+        MediaFrameSourceInfo? videoSourceInfo = null;
+
+        foreach (var group in frameSourceGroups)
+        {
+            var videoSource = group.SourceInfos.FirstOrDefault(si =>
+                si.MediaStreamType == MediaStreamType.VideoRecord &&
+                si.SourceKind == MediaFrameSourceKind.Color);
+
+            if (videoSource != null)
             {
-                var targetBitrate = settings.GetTargetBitrate();
-                profile.Video.Bitrate = targetBitrate;
-                Logger.Log($"Video bitrate set to {targetBitrate / 1_000_000.0:F1} Mbps (Quality: {settings.Quality})");
+                matchingGroup = group;
+                videoSourceInfo = videoSource;
+                break;
+            }
+        }
+
+        if (matchingGroup == null || videoSourceInfo == null)
+        {
+            Logger.Log("WARNING: Could not find frame source for FFmpeg recording");
+            // Try to use VideoPreview stream instead
+            var previewSources = _mediaCapture.FrameSources.Values
+                .Where(fs => fs.Info.MediaStreamType == MediaStreamType.VideoPreview ||
+                             fs.Info.MediaStreamType == MediaStreamType.VideoRecord)
+                .ToList();
+
+            if (previewSources.Count > 0)
+            {
+                Logger.Log($"Using alternative frame source: {previewSources[0].Info.MediaStreamType}");
+                _recordingFrameReader = await _mediaCapture.CreateFrameReaderAsync(previewSources[0]);
             }
             else
             {
-                Logger.Log($"Using encoder default bitrate (Quality: Auto)");
+                throw new InvalidOperationException("No suitable frame source available for FFmpeg recording");
+            }
+        }
+        else
+        {
+            // Use the identified frame source
+            if (_mediaCapture.FrameSources.TryGetValue(videoSourceInfo.Id, out var frameSource))
+            {
+                _recordingFrameReader = await _mediaCapture.CreateFrameReaderAsync(frameSource);
+            }
+            else
+            {
+                // Fallback: try any available frame source
+                var anySource = _mediaCapture.FrameSources.Values.FirstOrDefault();
+                if (anySource != null)
+                {
+                    _recordingFrameReader = await _mediaCapture.CreateFrameReaderAsync(anySource);
+                }
+                else
+                {
+                    throw new InvalidOperationException("No frame sources available");
+                }
             }
         }
 
-        // Configure audio if enabled
-        if (!settings.AudioEnabled)
+        if (_recordingFrameReader != null)
         {
-            profile.Audio = null;
+            _recordingFrameReader.FrameArrived += RecordingFrameReader_FrameArrived;
+            var result = await _recordingFrameReader.StartAsync();
+            Logger.Log($"Recording frame reader started: {result}");
         }
-        else if (profile.Audio != null)
-        {
-            profile.Audio.Bitrate = 192000;
-            profile.Audio.SampleRate = 48000;
-            profile.Audio.ChannelCount = 2;
-        }
+    }
 
-        // Configure HDR if enabled and using HEVC
-        if (settings.HdrEnabled && settings.Format == RecordingFormat.HevcMp4 && profile.Video != null)
-        {
-            profile.Video.Subtype = "HEVC";
-            // HDR10 uses BT.2020 color space
-        }
+    private async void RecordingFrameReader_FrameArrived(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
+    {
+        if (_ffmpegEncoder == null || !_ffmpegEncoder.IsEncoding) return;
 
-        // Use standard recording API (not low-lag) for better CFR (constant frame rate) output
-        // Low-lag API prioritizes latency over frame timing consistency, resulting in VFR
-        await _mediaCapture.StartRecordToStorageFileAsync(profile, _recordingFile);
-        Logger.Log("Started recording with standard API (CFR mode)");
+        using var frame = sender.TryAcquireLatestFrame();
+        if (frame?.VideoMediaFrame == null) return;
+
+        try
+        {
+            SoftwareBitmap? softwareBitmap = null;
+
+            // Try to get SoftwareBitmap from frame
+            if (frame.VideoMediaFrame.SoftwareBitmap != null)
+            {
+                softwareBitmap = frame.VideoMediaFrame.SoftwareBitmap;
+            }
+            else if (frame.VideoMediaFrame.Direct3DSurface != null)
+            {
+                // Convert from GPU memory (hardware formats like NV12/YUY2)
+                softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(
+                    frame.VideoMediaFrame.Direct3DSurface,
+                    BitmapAlphaMode.Premultiplied);
+            }
+
+            if (softwareBitmap == null) return;
+
+            // Convert to BGRA8 if needed (FFmpeg expects BGRA)
+            if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8)
+            {
+                var converted = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+                if (softwareBitmap != frame.VideoMediaFrame.SoftwareBitmap)
+                {
+                    softwareBitmap.Dispose();
+                }
+                softwareBitmap = converted;
+            }
+
+            // Send to FFmpeg encoder
+            _ffmpegEncoder.EnqueueVideoFrame(softwareBitmap);
+
+            // Dispose converted bitmap (FFmpeg has copied the data)
+            if (softwareBitmap != frame.VideoMediaFrame.SoftwareBitmap)
+            {
+                softwareBitmap.Dispose();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex);
+        }
+    }
+
+    private async Task SetupRecordingAudioCaptureAsync()
+    {
+        if (string.IsNullOrEmpty(_audioDeviceId)) return;
+
+        try
+        {
+            Logger.Log("=== Setting up audio capture for FFmpeg recording ===");
+
+            // Create a separate AudioGraph for recording (the preview graph outputs to speakers)
+            var graphSettings = new AudioGraphSettings(AudioRenderCategory.Media)
+            {
+                QuantumSizeSelectionMode = QuantumSizeSelectionMode.SystemDefault,
+                EncodingProperties = AudioEncodingProperties.CreatePcm(48000, 2, 16) // s16le format
+            };
+
+            var graphResult = await AudioGraph.CreateAsync(graphSettings);
+            if (graphResult.Status != AudioGraphCreationStatus.Success)
+            {
+                Logger.Log($"Failed to create recording AudioGraph: {graphResult.Status}");
+                return;
+            }
+
+            _recordingAudioGraph = graphResult.Graph;
+
+            // Create frame output node (captures audio samples)
+            _audioFrameOutputNode = _recordingAudioGraph.CreateFrameOutputNode();
+            _recordingAudioGraph.QuantumStarted += RecordingAudioGraph_QuantumStarted;
+
+            // Find and connect the audio input device
+            var audioDevices = await Windows.Devices.Enumeration.DeviceInformation.FindAllAsync(
+                Windows.Devices.Enumeration.DeviceClass.AudioCapture);
+            var captureDevice = audioDevices.FirstOrDefault(d => d.Id == _audioDeviceId);
+
+            if (captureDevice == null)
+            {
+                Logger.Log($"Audio capture device not found: {_audioDeviceId}");
+                return;
+            }
+
+            var inputResult = await _recordingAudioGraph.CreateDeviceInputNodeAsync(
+                Windows.Media.Capture.MediaCategory.Media,
+                _recordingAudioGraph.EncodingProperties,
+                captureDevice);
+
+            if (inputResult.Status != AudioDeviceNodeCreationStatus.Success)
+            {
+                Logger.Log($"Failed to create audio input node: {inputResult.Status}");
+                return;
+            }
+
+            // Connect input to frame output
+            inputResult.DeviceInputNode.AddOutgoingConnection(_audioFrameOutputNode);
+
+            // Start the graph
+            _recordingAudioGraph.Start();
+            Logger.Log("Recording audio graph started");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex);
+        }
+    }
+
+    private void RecordingAudioGraph_QuantumStarted(AudioGraph sender, object args)
+    {
+        if (_ffmpegEncoder == null || !_ffmpegEncoder.IsEncoding || _audioFrameOutputNode == null) return;
+
+        try
+        {
+            var frame = _audioFrameOutputNode.GetFrame();
+            if (frame == null) return;
+
+            using (var buffer = frame.LockBuffer(AudioBufferAccessMode.Read))
+            using (var reference = buffer.CreateReference())
+            {
+                // Get the raw audio bytes
+                unsafe
+                {
+                    byte* dataInBytes;
+                    uint capacityInBytes;
+                    ((IMemoryBufferByteAccess)reference).GetBuffer(out dataInBytes, out capacityInBytes);
+
+                    if (capacityInBytes > 0)
+                    {
+                        var audioData = new byte[capacityInBytes];
+                        System.Runtime.InteropServices.Marshal.Copy((IntPtr)dataInBytes, audioData, 0, (int)capacityInBytes);
+                        _ffmpegEncoder.EnqueueAudioSamples(audioData);
+                    }
+                }
+            }
+
+            frame.Dispose();
+        }
+        catch (Exception ex)
+        {
+            // Don't log every frame error to avoid spam
+            System.Diagnostics.Debug.WriteLine($"Audio frame error: {ex.Message}");
+        }
     }
 
     private async Task StartUncompressedRecordingAsync(CaptureSettings settings)
@@ -363,8 +563,40 @@ public class CaptureService : IDisposable
 
         try
         {
-            Logger.Log("=== Stopping recording (seamless - no reinitialization needed) ===");
+            Logger.Log("=== Stopping recording ===");
 
+            // Stop recording frame reader (FFmpeg recording)
+            if (_recordingFrameReader != null)
+            {
+                _recordingFrameReader.FrameArrived -= RecordingFrameReader_FrameArrived;
+                await _recordingFrameReader.StopAsync();
+                _recordingFrameReader.Dispose();
+                _recordingFrameReader = null;
+                Logger.Log("Recording frame reader stopped");
+            }
+
+            // Stop recording audio graph
+            if (_recordingAudioGraph != null)
+            {
+                _recordingAudioGraph.QuantumStarted -= RecordingAudioGraph_QuantumStarted;
+                _recordingAudioGraph.Stop();
+                _audioFrameOutputNode?.Dispose();
+                _audioFrameOutputNode = null;
+                _recordingAudioGraph.Dispose();
+                _recordingAudioGraph = null;
+                Logger.Log("Recording audio graph stopped");
+            }
+
+            // Stop FFmpeg encoder
+            if (_ffmpegEncoder != null)
+            {
+                await _ffmpegEncoder.StopEncodingAsync();
+                _ffmpegEncoder.Dispose();
+                _ffmpegEncoder = null;
+                Logger.Log("FFmpeg encoder stopped");
+            }
+
+            // Legacy: Stop AVI frame reader
             if (_frameReader != null)
             {
                 _frameReader.FrameArrived -= FrameReader_FrameArrived;
@@ -373,17 +605,12 @@ public class CaptureService : IDisposable
                 _frameReader = null;
             }
 
+            // Legacy: Finalize AVI writer
             if (_aviWriter != null)
             {
                 await _aviWriter.FinalizeAsync();
                 _aviWriter.Dispose();
                 _aviWriter = null;
-            }
-            else if (_mediaCapture != null)
-            {
-                // Stop standard recording (not low-lag)
-                await _mediaCapture.StopRecordAsync();
-                Logger.Log("Stopped recording with standard API");
             }
 
             _isRecording = false;
