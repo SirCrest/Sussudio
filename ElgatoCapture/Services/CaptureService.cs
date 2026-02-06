@@ -84,8 +84,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private long _lastAudioClipLogTick;
     private string? _detectedAudioSubtype; // Track format for consistency detection
     private FileStream? _audioFileStream;
-    private readonly object _audioFileLock = new();
+    private BlockingCollection<byte[]>? _audioFileWriteQueue;
+    private CancellationTokenSource? _audioFileWriteCancellation;
+    private Task? _audioFileWriteTask;
     private long _audioBytesWritten;
+    private long _audioFileWriteDropped;
     private string? _audioTempPath;
     private string? _finalOutputPath;
     private bool _postMuxAudioEnabled;
@@ -93,6 +96,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private const int RecordingAudioSampleRate = 48000;
     private const short RecordingAudioChannels = 2;
     private const short RecordingAudioBitsPerSample = 32;
+    private const int AudioWriteQueueCapacity = 512;
     private long _lastAudioLevelUpdateTick;
 
     // Audio preview
@@ -402,14 +406,19 @@ public class CaptureService : IDisposable, IAsyncDisposable
             Logger.Log("=== Starting recording (seamless - no reinitialization needed) ===");
             Logger.Log($"Audio preview active: {_isAudioPreviewActive}");
             var canCaptureAudio = settings.AudioEnabled && !string.IsNullOrEmpty(_audioDeviceId);
+            var isCompressedFormat = settings.Format != RecordingFormat.UncompressedAvi;
+            var useNamedPipeAudio = isCompressedFormat &&
+                                    canCaptureAudio &&
+                                    settings.AudioPathMode == AudioPathMode.NamedPipeExperimental;
             Logger.Log($"Audio in recording: {(canCaptureAudio ? "Yes" : "No")}");
+            Logger.Log($"Audio path mode requested: {settings.AudioPathMode}");
 
             var folder = await StorageFolder.GetFolderFromPathAsync(settings.OutputPath);
             var outputFile = await folder.CreateFileAsync(
                 settings.GetOutputFileName(),
                 CreationCollisionOption.GenerateUniqueName);
 
-            _postMuxAudioEnabled = settings.Format != RecordingFormat.UncompressedAvi && canCaptureAudio;
+            _postMuxAudioEnabled = isCompressedFormat && canCaptureAudio && !useNamedPipeAudio;
             _finalOutputPath = null;
             _audioTempPath = null;
 
@@ -433,6 +442,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 Logger.Log($"Video temp file: {_recordingFile.Path}");
                 Logger.Log($"Audio temp file: {_audioTempPath}");
                 Logger.Log($"Final output file: {_finalOutputPath}");
+            }
+            else if (useNamedPipeAudio)
+            {
+                Logger.Log("Named-pipe audio path enabled (experimental mode)");
+                _recordingFile = outputFile;
             }
             else
             {
@@ -538,7 +552,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     CustomBitrateMbps = settings.CustomBitrateMbps,
                     HdrEnabled = settings.HdrEnabled,
                     OutputPath = settings.OutputPath,
-                    AudioEnabled = false
+                    AudioEnabled = false,
+                    AudioPathMode = settings.AudioPathMode,
+                    PipelineOptions = settings.PipelineOptions
                 };
             }
 
@@ -1074,13 +1090,24 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         try
         {
-            lock (_audioFileLock)
-            {
-                _audioFileStream?.Dispose();
-                _audioFileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
-                _audioBytesWritten = 0;
-                WriteWavHeader(_audioFileStream, 0);
-            }
+            _audioFileStream?.Dispose();
+            _audioFileStream = new FileStream(
+                path,
+                FileMode.Create,
+                FileAccess.ReadWrite,
+                FileShare.Read,
+                bufferSize: 128 * 1024,
+                options: FileOptions.Asynchronous | FileOptions.SequentialScan);
+
+            Interlocked.Exchange(ref _audioBytesWritten, 0);
+            Interlocked.Exchange(ref _audioFileWriteDropped, 0);
+            WriteWavHeader(_audioFileStream, 0);
+
+            _audioFileWriteQueue?.Dispose();
+            _audioFileWriteQueue = new BlockingCollection<byte[]>(AudioWriteQueueCapacity);
+            _audioFileWriteCancellation?.Dispose();
+            _audioFileWriteCancellation = new CancellationTokenSource();
+            _audioFileWriteTask = Task.Run(() => RunAudioFileWriterAsync(_audioFileWriteCancellation.Token));
             Logger.Log($"Audio capture file created: {path}");
         }
         catch (Exception ex)
@@ -1089,81 +1116,165 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    private void FinalizeAudioCaptureFile()
+    private async Task StopAudioCaptureFileWriterAsync(bool finalizeHeader, bool cancelPendingWrites)
     {
-        lock (_audioFileLock)
+        var queue = _audioFileWriteQueue;
+        if (queue != null)
         {
-            if (_audioFileStream == null)
-            {
-                return;
-            }
+            try { queue.CompleteAdding(); }
+            catch (Exception ex) { Logger.Log($"Audio queue completion failed: {ex.Message}"); }
+        }
 
+        if (cancelPendingWrites)
+        {
+            try { _audioFileWriteCancellation?.Cancel(); }
+            catch (Exception ex) { Logger.Log($"Audio writer cancellation failed: {ex.Message}"); }
+        }
+
+        if (_audioFileWriteTask != null)
+        {
             try
             {
-                WriteWavHeader(_audioFileStream, _audioBytesWritten);
-                _audioFileStream.Flush();
+                await _audioFileWriteTask;
+            }
+            catch (OperationCanceledException)
+            {
+                // Expected when cancellation is requested.
             }
             catch (Exception ex)
             {
-                Logger.Log($"Failed to finalize audio file: {ex.Message}");
+                Logger.Log($"Audio writer task failed: {ex.Message}");
             }
-            finally
+            _audioFileWriteTask = null;
+        }
+
+        queue?.Dispose();
+        _audioFileWriteQueue = null;
+
+        _audioFileWriteCancellation?.Dispose();
+        _audioFileWriteCancellation = null;
+
+        if (_audioFileStream == null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (finalizeHeader)
             {
-                _audioFileStream.Dispose();
-                _audioFileStream = null;
+                var bytesWritten = Interlocked.Read(ref _audioBytesWritten);
+                WriteWavHeader(_audioFileStream, bytesWritten);
             }
+
+            await _audioFileStream.FlushAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Failed to finalize audio file: {ex.Message}");
+        }
+        finally
+        {
+            _audioFileStream.Dispose();
+            _audioFileStream = null;
         }
     }
 
-    private unsafe void WriteAudioBytesToFile(byte* data, int byteCount)
+    private async Task RunAudioFileWriterAsync(CancellationToken cancellationToken)
+    {
+        var queue = _audioFileWriteQueue;
+        var stream = _audioFileStream;
+        if (queue == null || stream == null)
+        {
+            return;
+        }
+
+        try
+        {
+            while (true)
+            {
+                byte[]? payload = null;
+
+                try
+                {
+                    if (!queue.TryTake(out payload, 100, cancellationToken))
+                    {
+                        if (queue.IsCompleted)
+                        {
+                            break;
+                        }
+                        continue;
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+
+                if (payload == null || payload.Length == 0)
+                {
+                    continue;
+                }
+
+                await stream.WriteAsync(payload, 0, payload.Length, cancellationToken);
+                Interlocked.Add(ref _audioBytesWritten, payload.Length);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when recording stops quickly during shutdown.
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Audio file writer failed: {ex.Message}");
+        }
+    }
+
+    private unsafe void QueueAudioBytesForFile(byte* data, int byteCount)
     {
         if (byteCount <= 0)
         {
             return;
         }
 
-        lock (_audioFileLock)
+        var copy = new byte[byteCount];
+        fixed (byte* outputBytes = copy)
         {
-            if (_audioFileStream == null)
-            {
-                return;
-            }
-
-            try
-            {
-                var span = new ReadOnlySpan<byte>(data, byteCount);
-                _audioFileStream.Write(span);
-                _audioBytesWritten += byteCount;
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Audio file write failed: {ex.Message}");
-            }
+            System.Buffer.MemoryCopy(data, outputBytes, byteCount, byteCount);
         }
+        QueueAudioBytesForFile(copy);
     }
 
-    private void WriteAudioBytesToFile(byte[] data)
+    private void QueueAudioBytesForFile(byte[] data)
     {
         if (data.Length == 0)
         {
             return;
         }
 
-        lock (_audioFileLock)
+        var queue = _audioFileWriteQueue;
+        if (queue == null || queue.IsAddingCompleted)
         {
-            if (_audioFileStream == null)
+            return;
+        }
+
+        var copy = new byte[data.Length];
+        System.Buffer.BlockCopy(data, 0, copy, 0, data.Length);
+
+        if (!queue.TryAdd(copy, 0))
+        {
+            if (queue.TryTake(out _))
             {
-                return;
+                Interlocked.Increment(ref _audioFileWriteDropped);
             }
 
-            try
+            if (!queue.TryAdd(copy, 0))
             {
-                _audioFileStream.Write(data, 0, data.Length);
-                _audioBytesWritten += data.Length;
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Audio file write failed: {ex.Message}");
+                var dropped = Interlocked.Increment(ref _audioFileWriteDropped);
+                if (dropped == 1 || dropped % 120 == 0)
+                {
+                    Logger.Log($"Audio write backlog saturated, dropped chunks: {dropped}");
+                }
             }
         }
     }
@@ -1202,9 +1313,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
         writer.Flush();
     }
 
-    private void CleanupPostMuxFiles()
+    private async Task CleanupPostMuxFilesAsync()
     {
-        FinalizeAudioCaptureFile();
+        await StopAudioCaptureFileWriterAsync(finalizeHeader: false, cancelPendingWrites: true);
 
         TryDeleteFile(_audioTempPath);
         _audioTempPath = null;
@@ -1344,7 +1455,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         if (_postMuxAudioEnabled)
         {
-            CleanupPostMuxFiles();
+            await CleanupPostMuxFilesAsync();
         }
     }
 
@@ -1496,7 +1607,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
                             if (usePostMux)
                             {
-                                WriteAudioBytesToFile(dataInBytes, byteCount);
+                                QueueAudioBytesForFile(dataInBytes, byteCount);
                             }
                             else
                             {
@@ -1544,7 +1655,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                             }
                             if (usePostMux)
                             {
-                                WriteAudioBytesToFile(audioData);
+                                QueueAudioBytesForFile(audioData);
                             }
                             else
                             {
@@ -1587,7 +1698,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                             }
                             if (usePostMux)
                             {
-                                WriteAudioBytesToFile(audioData);
+                                QueueAudioBytesForFile(audioData);
                             }
                             else
                             {
@@ -1908,6 +2019,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             var shouldPostMux = _postMuxAudioEnabled &&
                                 !string.IsNullOrEmpty(_finalOutputPath) &&
                                 !string.IsNullOrEmpty(_audioTempPath);
+            var stopStatus = "Stopped";
             var tempVideoPath = _recordingFile?.Path;
             var audioTempPath = _audioTempPath;
             var finalOutputPath = _finalOutputPath;
@@ -2007,7 +2119,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
             if (_postMuxAudioEnabled)
             {
-                FinalizeAudioCaptureFile();
+                await StopAudioCaptureFileWriterAsync(finalizeHeader: true, cancelPendingWrites: false);
+                var droppedAudioChunks = Interlocked.Read(ref _audioFileWriteDropped);
+                if (droppedAudioChunks > 0)
+                {
+                    Logger.Log($"Audio writer dropped {droppedAudioChunks} queued chunk(s) under storage pressure");
+                }
 
                 if (shouldPostMux && !string.IsNullOrWhiteSpace(tempVideoPath) &&
                     !string.IsNullOrWhiteSpace(audioTempPath) && !string.IsNullOrWhiteSpace(finalOutputPath))
@@ -2017,6 +2134,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     {
                         TryDeleteFile(tempVideoPath);
                         TryDeleteFile(audioTempPath);
+                    }
+                    else
+                    {
+                        stopStatus = "Stopped (mux failed)";
+                        ErrorOccurred?.Invoke(this, new Exception("Mux failed - temporary audio/video files were preserved."));
+                        Logger.Log("Audio mux failed; temporary files preserved for recovery");
                     }
                 }
 
@@ -2032,8 +2155,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _sessionState = CaptureSessionState.Ready;
             }
 
-            Logger.Log($"✓ Recording stopped. Audio preview status: {(_isAudioPreviewActive ? "still active" : "inactive")}");
-            StatusChanged?.Invoke(this, "Stopped");
+            Logger.Log($"Recording stopped. Audio preview status: {(_isAudioPreviewActive ? "still active" : "inactive")}");
+            StatusChanged?.Invoke(this, stopStatus);
         }
         catch (Exception ex)
         {
@@ -2509,3 +2632,4 @@ internal class AviWriter : IDisposable
         _stream.Dispose();
     }
 }
+

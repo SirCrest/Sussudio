@@ -36,6 +36,7 @@ public class CaptureSettings
     public bool UseCustomAudioInput { get; set; }
     public string? AudioDeviceId { get; set; }
     public string? AudioDeviceName { get; set; }
+    public AudioPathMode AudioPathMode { get; set; } = AudioPathMode.PostMuxDefault;
     public RecordingPipelineOptions PipelineOptions { get; set; } = new();
 
     /// <summary>
