@@ -53,7 +53,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private BlockingCollection<SoftwareBitmap>? _conversionQueue;
     private Task? _conversionWorkerTask;
     private CancellationTokenSource? _conversionCancellation;
-    private const int ConversionQueueSize = 360; // ~6 seconds at 60fps (feeds NVENC)
+    private RecordingPipelineOptions _activePipelineOptions = new();
+    private int _conversionQueueCapacity = 8;
     private const string VideoInputPixelFormat = "nv12";
     private readonly Stopwatch _recordingStopwatch = new();
     private long _videoFramesArrived;
@@ -71,6 +72,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private int _loggedFirstFrameQueued;
     private int _loggedFirstFrameConverted;
     private int _loggedFirstFrameEnqueued;
+    private long _videoFramesDroppedFromBacklog;
 
     private AudioGraph? _recordingAudioGraph; // Separate graph for recording audio capture
     private AudioFrameOutputNode? _audioFrameOutputNode;
@@ -497,10 +499,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
         try
         {
             // Initialize conversion pipeline
-            _conversionQueue = new BlockingCollection<SoftwareBitmap>(ConversionQueueSize);
+            _conversionQueueCapacity = ResolveConversionQueueCapacity(settings);
+            _conversionQueue = new BlockingCollection<SoftwareBitmap>(_conversionQueueCapacity);
             _conversionCancellation = new CancellationTokenSource();
             _conversionWorkerTask = Task.Run(() => RunConversionWorkerAsync(_conversionCancellation.Token));
-            Logger.Log($"Frame conversion pipeline initialized (queue size: {ConversionQueueSize})");
+            Logger.Log(
+                $"Frame conversion pipeline initialized (queue size: {_conversionQueueCapacity}, " +
+                $"targetLatencyMs={_activePipelineOptions.TargetVideoLatencyMs}, dropPolicy={_activePipelineOptions.VideoDropPolicy})");
 
             // Set up audio capture FIRST - start buffering before FFmpeg starts
             // This ensures audio samples are queued during FFmpeg's ~4 second probe phase
@@ -545,7 +550,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 frameRateArg,
                 effectiveWidth,
                 effectiveHeight,
-                VideoInputPixelFormat);
+                VideoInputPixelFormat,
+                _activePipelineOptions);
             Logger.LogVerbose($"FFmpeg StartEncodingAsync returned at {startupStopwatch.ElapsedMilliseconds} ms");
 
             // Set up frame reader for recording (uses existing MediaCapture)
@@ -694,13 +700,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 Logger.LogVerbose($"First frame details: {softwareBitmap.PixelWidth}x{softwareBitmap.PixelHeight}, fmt={softwareBitmap.BitmapPixelFormat}, relTimeMs={relTimeText}");
             }
 
-            // Queue the unconverted frame (YUY2/NV12) - worker thread will convert to BGRA8
-            // This is fast - just queuing a reference, not copying pixels
-            if (!conversionQueue.TryAdd(softwareBitmap, 10))
+            // Queue the unconverted frame (YUY2/NV12) for the conversion worker.
+            // Keep this queue latency-bounded and prefer fresh frames under load.
+            if (!TryEnqueueConversionFrame(conversionQueue, softwareBitmap))
             {
-                // Conversion queue full - worker thread is lagging
                 Interlocked.Increment(ref _videoFramesDropped);
-                Logger.Log($"Warning: Conversion queue full, dropping frame");
+                Logger.Log("Warning: Conversion queue saturated, dropping newest frame");
                 softwareBitmap.Dispose();
             }
             else
@@ -762,7 +767,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     var encoder = _ffmpegEncoder;
                     if (encoder == null || !encoder.IsEncoding)
                     {
-                        // Encoder not ready yet - requeue frame and wait
+                        // Encoder unavailable: drop frame to keep latency bounded.
+                        Interlocked.Increment(ref _videoFramesDropped);
+                        sourceBitmap.Dispose();
+                        sourceBitmap = null;
+
                         if (Logger.VerboseEnabled)
                         {
                             var nowMs = _recordingStopwatch.ElapsedMilliseconds;
@@ -770,15 +779,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
                             if (nowMs - lastNotReady >= 1000 &&
                                 Interlocked.CompareExchange(ref _lastEncoderNotReadyLogMs, nowMs, lastNotReady) == lastNotReady)
                             {
-                                Logger.LogVerbose("Conversion worker: encoder not ready, requeueing frame");
+                                Logger.LogVerbose("Conversion worker: encoder unavailable, dropping frame");
                             }
                         }
-                        if (!queue.TryAdd(sourceBitmap, 10, cancellationToken))
-                        {
-                            Interlocked.Increment(ref _videoFramesDropped);
-                            sourceBitmap.Dispose();
-                        }
-                        await Task.Delay(10, cancellationToken);
                         continue;
                     }
 
@@ -860,6 +863,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         Interlocked.Exchange(ref _videoFramesArrived, 0);
         Interlocked.Exchange(ref _videoFramesQueued, 0);
         Interlocked.Exchange(ref _videoFramesDropped, 0);
+        Interlocked.Exchange(ref _videoFramesDroppedFromBacklog, 0);
         Interlocked.Exchange(ref _videoFramesConverted, 0);
         Interlocked.Exchange(ref _videoFramesEnqueued, 0);
         Interlocked.Exchange(ref _videoFramesDirectNv12, 0);
@@ -900,6 +904,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var arrived = Interlocked.Read(ref _videoFramesArrived);
         var queued = Interlocked.Read(ref _videoFramesQueued);
         var dropped = Interlocked.Read(ref _videoFramesDropped);
+        var droppedBacklog = Interlocked.Read(ref _videoFramesDroppedFromBacklog);
         var converted = Interlocked.Read(ref _videoFramesConverted);
         var enqueued = Interlocked.Read(ref _videoFramesEnqueued);
         var directNv12 = Interlocked.Read(ref _videoFramesDirectNv12);
@@ -907,8 +912,47 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         Logger.LogVerbose(
             $"Pipeline: t={nowMs}ms arrived={arrived} queued={queued} dropped={dropped} converted={converted} " +
-            $"enqueued={enqueued} nv12Direct={directNv12} nv12Converted={convertedNv12} " +
+            $"enqueued={enqueued} nv12Direct={directNv12} nv12Converted={convertedNv12} droppedBacklog={droppedBacklog} " +
             $"convQ={conversionQueueCount} ffmpegVQ={videoQueueCount} ffmpegAQ={audioQueueCount}");
+    }
+
+    private int ResolveConversionQueueCapacity(CaptureSettings settings)
+    {
+        _activePipelineOptions = settings.PipelineOptions ?? new RecordingPipelineOptions();
+        var frameRate = _actualFrameRate ?? settings.FrameRate;
+        return _activePipelineOptions.ResolveVideoQueueCapacity(frameRate);
+    }
+
+    private bool TryEnqueueConversionFrame(BlockingCollection<SoftwareBitmap> queue, SoftwareBitmap frame)
+    {
+        if (queue.IsAddingCompleted)
+        {
+            return false;
+        }
+
+        var capacity = Math.Max(1, _conversionQueueCapacity);
+        if (_activePipelineOptions.VideoDropPolicy == VideoFrameDropPolicy.DropNewest && queue.Count >= capacity)
+        {
+            return false;
+        }
+
+        while (queue.Count >= capacity)
+        {
+            if (!queue.TryTake(out var droppedFrame, 0))
+            {
+                break;
+            }
+
+            droppedFrame.Dispose();
+            Interlocked.Increment(ref _videoFramesDropped);
+            var backlogDrops = Interlocked.Increment(ref _videoFramesDroppedFromBacklog);
+            if (backlogDrops == 1 || backlogDrops % 60 == 0)
+            {
+                Logger.Log($"Video backlog drop: {backlogDrops} frame(s) evicted from conversion queue");
+            }
+        }
+
+        return queue.TryAdd(frame, 0);
     }
 
     private async Task SetupRecordingAudioCaptureAsync()
@@ -1953,6 +1997,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     Logger.LogVerbose(
                         $"Pipeline summary: durationMs={durationMs} arrived={Interlocked.Read(ref _videoFramesArrived)} " +
                         $"queued={Interlocked.Read(ref _videoFramesQueued)} dropped={Interlocked.Read(ref _videoFramesDropped)} " +
+                        $"droppedBacklog={Interlocked.Read(ref _videoFramesDroppedFromBacklog)} " +
                         $"converted={Interlocked.Read(ref _videoFramesConverted)} enqueued={Interlocked.Read(ref _videoFramesEnqueued)} " +
                         $"nv12Direct={Interlocked.Read(ref _videoFramesDirectNv12)} nv12Converted={Interlocked.Read(ref _videoFramesConvertedNv12)} " +
                         $"ffmpegDropped={encoderDropped}");

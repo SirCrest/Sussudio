@@ -36,6 +36,7 @@ public class CaptureSettings
     public bool UseCustomAudioInput { get; set; }
     public string? AudioDeviceId { get; set; }
     public string? AudioDeviceName { get; set; }
+    public RecordingPipelineOptions PipelineOptions { get; set; } = new();
 
     /// <summary>
     /// Calculates the target video bitrate based on quality setting, resolution, and frame rate.

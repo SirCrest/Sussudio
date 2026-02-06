@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,7 +25,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private Process? _ffmpegProcess;
     private Stream? _videoStream;  // stdin stream for video
     private NamedPipeServerStream? _audioPipe;
-    private BlockingCollection<byte[]>? _videoFrameQueue;
+    private BlockingCollection<VideoFramePacket>? _videoFrameQueue;
     private BlockingCollection<byte[]>? _audioSampleQueue;
     private CancellationTokenSource? _cts;
     private Task? _videoWriterTask;
@@ -52,13 +53,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private long _lastAudioWriteTick;
     private long _lastVideoIdleLogTick;
     private long _lastAudioIdleLogTick;
+    private VideoFrameDropPolicy _videoDropPolicy = VideoFrameDropPolicy.DropOldest;
 
     // Frame buffer pool to reduce GC pressure
-    private readonly ConcurrentBag<byte[]> _frameBufferPool = new();
-    private const int MaxQueueSize = 360; // ~6 seconds at 60fps (absorbs FFmpeg stalls)
-    private const int MaxPoolSize = 10;
+    private const int MaxQueueSize = 360;
     private const string AudioPipeName = "ElgatoCaptureAudio";
-    private const int VideoQueueWaitMs = 50; // Allow more time for queue to drain during stalls
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<string>? ErrorOccurred;
@@ -71,6 +70,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     public int VideoQueueCount => _videoFrameQueue?.Count ?? 0;
     public int AudioQueueCount => _audioSampleQueue?.Count ?? 0;
     public long DroppedVideoFrames => Interlocked.Read(ref _droppedVideoFrames);
+
+    private readonly record struct VideoFramePacket(byte[] Buffer, int Length);
 
     public FFmpegEncoderService()
     {
@@ -210,7 +211,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
     }
 
-    public async Task StartEncodingAsync(CaptureSettings settings, string outputPath, string? audioDeviceName = null, double? actualFrameRate = null, string? actualFrameRateArg = null, uint? actualWidth = null, uint? actualHeight = null, string inputPixelFormat = "bgra")
+    public async Task StartEncodingAsync(CaptureSettings settings, string outputPath, string? audioDeviceName = null, double? actualFrameRate = null, string? actualFrameRateArg = null, uint? actualWidth = null, uint? actualHeight = null, string inputPixelFormat = "bgra", RecordingPipelineOptions? pipelineOptions = null)
     {
         if (_isEncoding)
         {
@@ -226,7 +227,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             : FormatFrameRateArg(effectiveFrameRate);
         var effectiveWidth = actualWidth ?? settings.Width;
         var effectiveHeight = actualHeight ?? settings.Height;
+        var options = pipelineOptions ?? new RecordingPipelineOptions();
+        var videoQueueSize = Math.Clamp(options.ResolveVideoQueueCapacity(effectiveFrameRate), 1, MaxQueueSize);
+        _videoDropPolicy = options.VideoDropPolicy;
         Logger.Log($"Settings: {settings.Width}x{settings.Height}@{effectiveFrameRate:0.###}fps, Format={settings.Format}, Quality={settings.Quality}");
+        Logger.Log($"Video queue: size={videoQueueSize}, dropPolicy={_videoDropPolicy}, targetLatencyMs={options.TargetVideoLatencyMs}");
         if (effectiveWidth != settings.Width || effectiveHeight != settings.Height)
         {
             Logger.Log($"FFmpeg using actual device size: {effectiveWidth}x{effectiveHeight}");
@@ -259,7 +264,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _lastVideoIdleLogTick = 0;
         _lastAudioIdleLogTick = 0;
         _stderrClosed = false; // Reset crash detection flag for new recording
-        _videoFrameQueue = new BlockingCollection<byte[]>(MaxQueueSize);
+        _videoFrameQueue = new BlockingCollection<VideoFramePacket>(videoQueueSize);
         _audioQueueReady = false;
         Interlocked.Exchange(ref _encodedFrameCount, 0);
 
@@ -578,7 +583,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     /// </summary>
     public void EnqueueVideoFrame(SoftwareBitmap frame)
     {
-        if (!_isEncoding || _videoFrameQueue == null || _cts?.IsCancellationRequested == true)
+        var queue = _videoFrameQueue;
+        if (!_isEncoding || queue == null || _cts?.IsCancellationRequested == true)
         {
             return;
         }
@@ -586,7 +592,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _lastVideoEnqueueTick = Environment.TickCount64;
         if (Logger.VerboseEnabled && Interlocked.Exchange(ref _loggedFirstVideoEnqueue, 1) == 0)
         {
-            Logger.LogVerbose($"First video frame enqueued after {_startupStopwatch.ElapsedMilliseconds} ms (queueCount={_videoFrameQueue.Count})");
+            Logger.LogVerbose($"First video frame enqueued after {_startupStopwatch.ElapsedMilliseconds} ms (queueCount={queue.Count})");
         }
 
         try
@@ -611,14 +617,13 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                 frame.CopyToBuffer(buffer.AsBuffer());
             }
 
-            // Try to add to queue with a short wait to reduce drops
-            if (!_videoFrameQueue.TryAdd(buffer, VideoQueueWaitMs))
+            var packet = new VideoFramePacket(buffer, bufferSize);
+            if (!TryEnqueueVideoPacket(queue, packet))
             {
-                ReturnFrameBuffer(buffer);
                 var dropped = Interlocked.Increment(ref _droppedVideoFrames);
                 if (dropped == 1 || dropped % 30 == 0)
                 {
-                    Logger.Log($"Warning: Dropped video frame (queue full). Total dropped: {dropped}");
+                    Logger.Log($"Warning: Dropped video frame (queue saturated). Total dropped: {dropped}");
                 }
             }
         }
@@ -626,6 +631,32 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         {
             Logger.LogException(ex);
         }
+    }
+
+    private bool TryEnqueueVideoPacket(BlockingCollection<VideoFramePacket> queue, VideoFramePacket packet)
+    {
+        if (queue.IsAddingCompleted)
+        {
+            ReturnFrameBuffer(packet.Buffer);
+            return false;
+        }
+
+        if (queue.TryAdd(packet, 0))
+        {
+            return true;
+        }
+
+        if (_videoDropPolicy == VideoFrameDropPolicy.DropOldest && queue.TryTake(out var evictedPacket, 0))
+        {
+            ReturnFrameBuffer(evictedPacket.Buffer);
+            if (queue.TryAdd(packet, 0))
+            {
+                return true;
+            }
+        }
+
+        ReturnFrameBuffer(packet.Buffer);
+        return false;
     }
 
     /// <summary>
@@ -708,19 +739,23 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                 try
                 {
                     // Block until frame available or cancellation
-                    if (videoQueue.TryTake(out var frameData, 100, ct))
+                    if (videoQueue.TryTake(out var framePacket, 100, ct))
                     {
-                        await videoStream.WriteAsync(frameData, 0, frameData.Length, ct);
-                        var count = Interlocked.Increment(ref _encodedFrameCount);
-                        FrameEncoded?.Invoke(this, count);
-                        _lastVideoWriteTick = Environment.TickCount64;
-                        if (Interlocked.Exchange(ref _loggedFirstVideoWrite, 1) == 0)
+                        try
                         {
-                            Logger.LogVerbose($"First video frame written after {_startupStopwatch.ElapsedMilliseconds} ms");
+                            await videoStream.WriteAsync(framePacket.Buffer, 0, framePacket.Length, ct);
+                            var count = Interlocked.Increment(ref _encodedFrameCount);
+                            FrameEncoded?.Invoke(this, count);
+                            _lastVideoWriteTick = Environment.TickCount64;
+                            if (Interlocked.Exchange(ref _loggedFirstVideoWrite, 1) == 0)
+                            {
+                                Logger.LogVerbose($"First video frame written after {_startupStopwatch.ElapsedMilliseconds} ms");
+                            }
                         }
-
-                        // Return buffer to pool
-                        ReturnFrameBuffer(frameData);
+                        finally
+                        {
+                            ReturnFrameBuffer(framePacket.Buffer);
+                        }
                     }
                     else if (Logger.VerboseEnabled)
                     {
@@ -1117,6 +1152,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _audioPipe?.Dispose();
         _audioPipe = null;
 
+        DrainVideoQueueBuffers();
         _videoFrameQueue?.Dispose();
         _videoFrameQueue = null;
 
@@ -1130,21 +1166,28 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _cts = null;
     }
 
+    private void DrainVideoQueueBuffers()
+    {
+        var videoQueue = _videoFrameQueue;
+        if (videoQueue == null)
+        {
+            return;
+        }
+
+        while (videoQueue.TryTake(out var frame, 0))
+        {
+            ReturnFrameBuffer(frame.Buffer);
+        }
+    }
+
     private byte[] GetFrameBuffer(int size)
     {
-        if (_frameBufferPool.TryTake(out var buffer) && buffer.Length >= size)
-        {
-            return buffer;
-        }
-        return new byte[size];
+        return ArrayPool<byte>.Shared.Rent(size);
     }
 
     private void ReturnFrameBuffer(byte[] buffer)
     {
-        if (_frameBufferPool.Count < MaxPoolSize)
-        {
-            _frameBufferPool.Add(buffer);
-        }
+        ArrayPool<byte>.Shared.Return(buffer);
     }
 
     /// <summary>
@@ -1162,7 +1205,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         {
             while (videoQueue.TryTake(out var frame, 0))
             {
-                ReturnFrameBuffer(frame);
+                ReturnFrameBuffer(frame.Buffer);
                 videoDrained++;
             }
         }
@@ -1234,6 +1277,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             }
 
             // Dispose resources
+            DrainVideoQueueBuffers();
             _audioPipe?.Dispose();
             _videoFrameQueue?.Dispose();
             _audioSampleQueue?.Dispose();
