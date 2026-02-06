@@ -54,10 +54,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private long _lastVideoIdleLogTick;
     private long _lastAudioIdleLogTick;
     private VideoFrameDropPolicy _videoDropPolicy = VideoFrameDropPolicy.DropOldest;
+    private string _audioPipeName = string.Empty;
 
     // Frame buffer pool to reduce GC pressure
     private const int MaxQueueSize = 360;
-    private const string AudioPipeName = "ElgatoCaptureAudio";
+    private const string AudioPipePrefix = "ElgatoCaptureAudio";
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<string>? ErrorOccurred;
@@ -282,19 +283,21 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                 _audioSampleQueue = new BlockingCollection<byte[]>(MaxQueueSize * 10);
             }
             _audioQueueReady = true;
+            _audioPipeName = CreateSessionAudioPipeName();
         }
         else if (_audioSampleQueue != null)
         {
             _audioSampleQueue.Dispose();
             _audioSampleQueue = null;
+            _audioPipeName = string.Empty;
         }
 
         // Create named pipe for audio BEFORE starting FFmpeg
         if (_useAudioPipe)
         {
-            Logger.Log($"Creating audio named pipe: {AudioPipeName}");
+            Logger.Log($"Creating audio named pipe: {_audioPipeName}");
             _audioPipe = new NamedPipeServerStream(
-                AudioPipeName,
+                _audioPipeName,
                 PipeDirection.Out,
                 1, // maxNumberOfServerInstances
                 PipeTransmissionMode.Byte,
@@ -303,7 +306,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
 
         // Build FFmpeg command (uses stdin for video, named pipe for audio)
-        var ffmpegArgs = BuildFFmpegArguments(settings, outputPath, _useAudioPipe, frameRateArg, effectiveWidth, effectiveHeight, inputPixelFormat);
+        var ffmpegArgs = BuildFFmpegArguments(settings, outputPath, _useAudioPipe, frameRateArg, effectiveWidth, effectiveHeight, inputPixelFormat, _audioPipeName);
         Logger.Log($"FFmpeg arguments: {ffmpegArgs}");
 
         // Start FFmpeg process
@@ -366,7 +369,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
     }
 
-    private string BuildFFmpegArguments(CaptureSettings settings, string outputPath, bool useAudioPipe, string frameRateArg, uint effectiveWidth, uint effectiveHeight, string inputPixelFormat)
+    private string BuildFFmpegArguments(CaptureSettings settings, string outputPath, bool useAudioPipe, string frameRateArg, uint effectiveWidth, uint effectiveHeight, string inputPixelFormat, string? audioPipeName)
     {
         // Get encoder and quality settings
         var (videoCodec, qualityArgs) = GetEncoderSettings(settings);
@@ -379,15 +382,20 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         {
             if (useAudioPipe)
             {
-            // Read raw float audio from named pipe
-            // Format: f32le (32-bit float little-endian), 48kHz, stereo
-            // This matches what AudioGraph actually outputs
-            audioInput = $"-f f32le " +
-                        $"-ar 48000 " +
-                        $"-ac 2 " +
-                        $"-thread_queue_size 1024 " +
-                            $"-i \\\\.\\pipe\\{AudioPipeName} ";
-                Logger.Log("Using named pipe for audio input");
+                if (string.IsNullOrWhiteSpace(audioPipeName))
+                {
+                    throw new InvalidOperationException("Audio pipe mode requested without an initialized pipe name");
+                }
+
+                // Read raw float audio from named pipe
+                // Format: f32le (32-bit float little-endian), 48kHz, stereo
+                // This matches what AudioGraph actually outputs
+                audioInput = $"-f f32le " +
+                            $"-ar 48000 " +
+                            $"-ac 2 " +
+                            $"-thread_queue_size 1024 " +
+                            $"-i \\\\.\\pipe\\{audioPipeName} ";
+                Logger.Log($"Using named pipe for audio input: {audioPipeName}");
             }
             else
             {
@@ -441,6 +449,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             return "30";
         }
         return frameRate.ToString("0.###", CultureInfo.InvariantCulture);
+    }
+
+    private static string CreateSessionAudioPipeName()
+    {
+        return $"{AudioPipePrefix}_{Environment.ProcessId}_{Guid.NewGuid():N}";
     }
 
     private (string codec, string qualityArgs) GetEncoderSettings(CaptureSettings settings)
@@ -1151,6 +1164,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
         _audioPipe?.Dispose();
         _audioPipe = null;
+        _audioPipeName = string.Empty;
 
         DrainVideoQueueBuffers();
         _videoFrameQueue?.Dispose();

@@ -300,6 +300,8 @@ public partial class MainViewModel : ObservableObject, IDisposable
             {
                 Devices.Add(device);
             }
+            var discoverySummary = _deviceService.LastDiscoverySummary;
+            Logger.Log($"Device discovery summary (ViewModel): {discoverySummary}");
 
             if (Devices.Count > 0)
             {
@@ -313,7 +315,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             }
             else
             {
-                StatusText = "No video capture devices found";
+                StatusText = "No compatible video capture devices found (see log for discovery summary)";
             }
         }
         catch (Exception ex)
