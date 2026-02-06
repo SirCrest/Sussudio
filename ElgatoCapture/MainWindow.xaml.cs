@@ -208,9 +208,9 @@ public sealed partial class MainWindow : Window
         await ViewModel.RefreshDevicesAsync();
     }
 
-    private void MainWindow_Closed(object sender, WindowEventArgs args)
+    private async void MainWindow_Closed(object sender, WindowEventArgs args)
     {
-        StopPreviewInternal();
+        await StopPreviewInternalAsync();
         ViewModel.Dispose();
     }
 
@@ -227,7 +227,7 @@ public sealed partial class MainWindow : Window
                 }
                 else
                 {
-                    StopPreviewInternal();
+                    await StopPreviewInternalAsync();
                     NoDevicePlaceholder.Visibility = Visibility.Visible;
                     PreviewButton.Content = "Start Preview";
                 }
@@ -507,21 +507,21 @@ public sealed partial class MainWindow : Window
         Logger.Log("=== START PREVIEW END ===");
     }
 
-    private void StopPreviewInternal()
+    private async Task StopPreviewInternalAsync()
     {
         try
         {
             if (_previewFrameReader != null)
             {
                 _previewFrameReader.FrameArrived -= PreviewFrameReader_FrameArrived;
-                _ = _previewFrameReader.StopAsync();
+                await _previewFrameReader.StopAsync();
                 _previewFrameReader.Dispose();
                 _previewFrameReader = null;
             }
 
             if (ViewModel.MediaCapture != null)
             {
-                _ = ViewModel.MediaCapture.StopPreviewAsync();
+                await ViewModel.MediaCapture.StopPreviewAsync();
             }
 
             PreviewImage.Source = null;

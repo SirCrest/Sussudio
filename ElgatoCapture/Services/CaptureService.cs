@@ -43,6 +43,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private bool _isInitialized;
     private readonly object _lockObject = new();
     private bool _isDisposed;
+    private readonly SemaphoreSlim _sessionTransitionLock = new(1, 1);
+    private volatile CaptureSessionState _sessionState = CaptureSessionState.Uninitialized;
 
     // FFmpeg encoder for CFR output
     private FFmpegEncoderService? _ffmpegEncoder;
@@ -118,6 +120,67 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public bool IsInitialized => _isInitialized;
     public bool IsAudioPreviewActive => _isAudioPreviewActive;
     public MediaCapture? MediaCapture => _mediaCapture;
+    public CaptureSessionState SessionState => _sessionState;
+
+    private CaptureSessionState ResolveSteadyState()
+    {
+        if (_isDisposed)
+        {
+            return CaptureSessionState.Disposed;
+        }
+
+        if (_isRecording)
+        {
+            return CaptureSessionState.Recording;
+        }
+
+        if (_isInitialized)
+        {
+            return _isAudioPreviewActive
+                ? CaptureSessionState.Previewing
+                : CaptureSessionState.Ready;
+        }
+
+        return CaptureSessionState.Uninitialized;
+    }
+
+    private async Task RunSessionTransitionAsync(
+        string operationName,
+        CaptureSessionState transitionState,
+        Func<Task> action,
+        bool allowWhenDisposed = false)
+    {
+        await _sessionTransitionLock.WaitAsync();
+        var previousState = _sessionState;
+        try
+        {
+            if (_isDisposed && !allowWhenDisposed)
+            {
+                throw new ObjectDisposedException(nameof(CaptureService));
+            }
+
+            _sessionState = transitionState;
+            Logger.Log($"Session transition start: {operationName} ({previousState} -> {transitionState})");
+            await action();
+            if (_sessionState == transitionState)
+            {
+                _sessionState = ResolveSteadyState();
+            }
+            Logger.Log($"Session transition complete: {operationName} => {_sessionState}");
+        }
+        catch
+        {
+            if (_sessionState != CaptureSessionState.Disposed)
+            {
+                _sessionState = CaptureSessionState.Faulted;
+            }
+            throw;
+        }
+        finally
+        {
+            _sessionTransitionLock.Release();
+        }
+    }
 
     public RecordingStats GetRecordingStats()
     {
@@ -168,9 +231,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    public async Task InitializeAsync(CaptureDevice device, CaptureSettings settings)
+    public Task InitializeAsync(CaptureDevice device, CaptureSettings settings)
+        => RunSessionTransitionAsync(
+            nameof(InitializeAsync),
+            CaptureSessionState.Initializing,
+            () => InitializeCoreAsync(device, settings));
+
+    private async Task InitializeCoreAsync(CaptureDevice device, CaptureSettings settings)
     {
-        await CleanupAsync();
+        await CleanupCoreAsync();
 
         // Store device and settings for potential reinitialization during recording
         _currentDevice = device;
@@ -293,6 +362,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             _isInitialized = true;
+            _sessionState = CaptureSessionState.Ready;
             StatusChanged?.Invoke(this, "Initialized");
         }
         catch (Exception ex)
@@ -307,7 +377,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
         ErrorOccurred?.Invoke(this, new Exception($"MediaCapture failed: {errorEventArgs.Message}"));
     }
 
-    public async Task StartRecordingAsync(CaptureSettings settings)
+    public Task StartRecordingAsync(CaptureSettings settings)
+        => RunSessionTransitionAsync(
+            nameof(StartRecordingAsync),
+            CaptureSessionState.Recording,
+            () => StartRecordingCoreAsync(settings));
+
+    private async Task StartRecordingCoreAsync(CaptureSettings settings)
     {
         if (!_isInitialized || _mediaCapture == null || _currentDevice == null)
         {
@@ -371,6 +447,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             _isRecording = true;
+            _sessionState = CaptureSessionState.Recording;
             StatusChanged?.Invoke(this, "Recording");
             Logger.Log("✓ Recording started successfully");
         }
@@ -1771,7 +1848,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    public async Task StopRecordingAsync()
+    public Task StopRecordingAsync()
+        => RunSessionTransitionAsync(
+            nameof(StopRecordingAsync),
+            CaptureSessionState.Ready,
+            StopRecordingCoreAsync);
+
+    private async Task StopRecordingCoreAsync()
     {
         if (!_isRecording) return;
 
@@ -1899,6 +1982,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
             _isRecording = false;
             _frameCount = 0;
+            if (_isInitialized)
+            {
+                _sessionState = CaptureSessionState.Ready;
+            }
 
             Logger.Log($"✓ Recording stopped. Audio preview status: {(_isAudioPreviewActive ? "still active" : "inactive")}");
             StatusChanged?.Invoke(this, "Stopped");
@@ -1910,7 +1997,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    public async Task StartAudioPreviewAsync()
+    public Task StartAudioPreviewAsync()
+        => RunSessionTransitionAsync(
+            nameof(StartAudioPreviewAsync),
+            CaptureSessionState.Previewing,
+            StartAudioPreviewCoreAsync);
+
+    private async Task StartAudioPreviewCoreAsync()
     {
         if (string.IsNullOrEmpty(_audioDeviceId))
         {
@@ -1969,7 +2062,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             {
                 Logger.Log($"Audio capture device not found: {_audioDeviceId}");
                 ErrorOccurred?.Invoke(this, new Exception("Audio capture device not found"));
-                await StopAudioPreviewAsync();
+                await StopAudioPreviewCoreAsync();
                 return;
             }
 
@@ -1986,7 +2079,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             {
                 Logger.Log($"Failed to create input node: {inputResult.Status}, ExtendedError: {inputResult.ExtendedError?.Message}");
                 ErrorOccurred?.Invoke(this, new Exception($"Failed to create audio input node: {inputResult.Status}"));
-                await StopAudioPreviewAsync();
+                await StopAudioPreviewCoreAsync();
                 return;
             }
 
@@ -2009,18 +2102,28 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _audioGraph.Start();
 
             _isAudioPreviewActive = true;
-            Logger.Log("✓ Audio preview started successfully");
+            if (_isInitialized && !_isRecording)
+            {
+                _sessionState = CaptureSessionState.Previewing;
+            }
+            Logger.Log("Audio preview started successfully");
             StatusChanged?.Invoke(this, "Audio preview active");
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
             ErrorOccurred?.Invoke(this, ex);
-            await StopAudioPreviewAsync();
+            await StopAudioPreviewCoreAsync();
         }
     }
 
-    public async Task StopAudioPreviewAsync()
+    public Task StopAudioPreviewAsync()
+        => RunSessionTransitionAsync(
+            nameof(StopAudioPreviewAsync),
+            CaptureSessionState.Ready,
+            StopAudioPreviewCoreAsync);
+
+    private async Task StopAudioPreviewCoreAsync()
     {
         if (!_isAudioPreviewActive)
         {
@@ -2059,6 +2162,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             _isAudioPreviewActive = false;
+            if (_isInitialized && !_isRecording)
+            {
+                _sessionState = CaptureSessionState.Ready;
+            }
             Logger.Log("Audio preview stopped");
             StatusChanged?.Invoke(this, "Audio preview stopped");
         }
@@ -2069,16 +2176,23 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    public async Task CleanupAsync()
+    public Task CleanupAsync()
+        => RunSessionTransitionAsync(
+            nameof(CleanupAsync),
+            CaptureSessionState.CleaningUp,
+            CleanupCoreAsync,
+            allowWhenDisposed: true);
+
+    private async Task CleanupCoreAsync()
     {
         if (_isRecording)
         {
-            await StopRecordingAsync();
+            await StopRecordingCoreAsync();
         }
 
         if (_isAudioPreviewActive)
         {
-            await StopAudioPreviewAsync();
+            await StopAudioPreviewCoreAsync();
         }
 
         if (_mediaCapture != null)
@@ -2089,12 +2203,17 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         _isInitialized = false;
+        if (!_isDisposed)
+        {
+            _sessionState = CaptureSessionState.Uninitialized;
+        }
     }
 
     public void Dispose()
     {
         if (_isDisposed) return;
         _isDisposed = true;
+        _sessionState = CaptureSessionState.Disposed;
 
         // Don't block with GetAwaiter().GetResult() - it can deadlock on UI thread
         // Instead, do synchronous cleanup for critical resources
@@ -2163,6 +2282,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             Logger.Log($"Error during CaptureService disposal: {ex.Message}");
         }
+        finally
+        {
+            _sessionTransitionLock.Dispose();
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -2171,6 +2294,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
         _isDisposed = true;
 
         await CleanupAsync();
+        _sessionState = CaptureSessionState.Disposed;
+        _sessionTransitionLock.Dispose();
         Logger.Log("CaptureService disposed (async)");
     }
 }

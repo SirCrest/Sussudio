@@ -305,9 +305,6 @@ public partial class MainViewModel : ObservableObject, IDisposable
             {
                 StatusText = $"Found {Devices.Count} device(s)";
 
-                // Allow UI to process the devices collection update before selecting
-                await Task.Delay(50);
-
                 SelectedDevice = Devices[0];
                 Logger.Log($"Auto-selected device: {SelectedDevice?.Name}");
 
@@ -456,11 +453,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
             StatusText = "Applying new settings...";
             Logger.Log($"=== Reinitializing device ({reason}) ===");
 
-            // Stop preview (this will stop the frame reader in MainWindow)
-            IsPreviewing = false;
-
-            // Small delay to let UI update
-            await Task.Delay(100);
+            if (IsPreviewing)
+            {
+                await StopPreviewAsync();
+            }
 
             // Reinitialize the device with new settings
             IsInitialized = false;
@@ -469,14 +465,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             // Restart preview
             if (IsInitialized)
             {
-                IsPreviewing = true;
-                OnPropertyChanged(nameof(MediaCapture));
-
-                // Restart audio preview if it was enabled
-                if (IsAudioPreviewEnabled && IsAudioEnabled)
-                {
-                    await _captureService.StartAudioPreviewAsync();
-                }
+                await StartPreviewAsync();
 
                 StatusText = $"Preview: {SelectedFormat.Width}x{SelectedFormat.Height}@{SelectedFormat.FrameRate}fps";
             }
