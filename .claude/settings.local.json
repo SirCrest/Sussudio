@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build:*)",
+      "Bash(\"C:\\\\Users\\\\crest\\\\.nuget\\\\packages\\\\microsoft.windowsappsdk.winui\\\\1.8.251222000\\\\tools\\\\net472\\\\XamlCompiler.exe\" \"C:\\\\Users\\\\crest\\\\source\\\\repos\\\\ElgatoCapture\\\\ElgatoCapture\\\\obj\\\\Debug\\\\net8.0-windows10.0.19041.0\\\\input.json\" \"C:\\\\Users\\\\crest\\\\source\\\\repos\\\\ElgatoCapture\\\\ElgatoCapture\\\\obj\\\\Debug\\\\net8.0-windows10.0.19041.0\\\\output.json\")",
+      "Bash(dir:*)",
+      "Bash(dotnet run:*)",
+      "Bash(start \"\" \"c:\\\\Users\\\\crest\\\\source\\\\repos\\\\ElgatoCapture\\\\ElgatoCapture\\\\bin\\\\Debug\\\\net8.0-windows10.0.19041.0\\\\win-x64\\\\ElgatoCapture.exe\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File:*)",
+      "Bash(Get-Content \"$env:USERPROFILE\\\\Documents\\\\ElgatoCapture_Debug.log\" -Tail 100)",
+      "Bash(Select-String -Pattern \"Audio|audio|format|Format|PCM|Float|Override|first frame\" -Context 0,0)",
+      "Bash(ls:*)",
+      "Bash(npm run build:*)"
+    ]
+  }
+}

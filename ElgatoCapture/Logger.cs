@@ -1,6 +1,9 @@
 using System;
 using System.IO;
+using System.Management;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace ElgatoCapture;
 
@@ -11,9 +14,16 @@ public static class Logger
         "ElgatoCapture_Debug.log");
 
     private static readonly object _lockObject = new();
+    public static bool VerboseEnabled { get; set; }
+    private static int _systemInfoLogged;
 
     static Logger()
     {
+#if DEBUG
+        VerboseEnabled = true;
+#else
+        VerboseEnabled = false;
+#endif
         // Clear log on startup
         try
         {
@@ -40,6 +50,91 @@ public static class Logger
             }
         }
         catch { }
+    }
+
+    public static void LogVerbose(string message, [CallerMemberName] string caller = "")
+    {
+        if (!VerboseEnabled)
+        {
+            return;
+        }
+
+        Log(message, caller);
+    }
+
+    public static void LogSystemInfo()
+    {
+        if (!VerboseEnabled || Interlocked.Exchange(ref _systemInfoLogged, 1) == 1)
+        {
+            return;
+        }
+
+        Log("=== System Info ===");
+        Log($"OS: {RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture})");
+        Log($"Process: {(Environment.Is64BitProcess ? "64-bit" : "32-bit")}");
+        Log($".NET: {RuntimeInformation.FrameworkDescription}");
+        Log($"Machine: {Environment.MachineName}");
+        Log($"Logical processors: {Environment.ProcessorCount}");
+
+        try
+        {
+            using var cpuSearcher = new ManagementObjectSearcher("SELECT Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed FROM Win32_Processor");
+            foreach (var obj in cpuSearcher.Get())
+            {
+                Log($"CPU: {obj["Name"]} | Cores={obj["NumberOfCores"]} | Logical={obj["NumberOfLogicalProcessors"]} | MaxMHz={obj["MaxClockSpeed"]}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"CPU info unavailable: {ex.Message}");
+        }
+
+        try
+        {
+            using var memSearcher = new ManagementObjectSearcher("SELECT TotalPhysicalMemory FROM Win32_ComputerSystem");
+            foreach (var obj in memSearcher.Get())
+            {
+                if (obj["TotalPhysicalMemory"] is ulong bytes)
+                {
+                    Log($"RAM: {FormatBytes(bytes)}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"RAM info unavailable: {ex.Message}");
+        }
+
+        try
+        {
+            using var gpuSearcher = new ManagementObjectSearcher("SELECT Name, DriverVersion, DriverDate, AdapterRAM FROM Win32_VideoController");
+            foreach (var obj in gpuSearcher.Get())
+            {
+                var name = obj["Name"];
+                var driverVersion = obj["DriverVersion"];
+                var driverDate = obj["DriverDate"];
+                var ram = obj["AdapterRAM"] is uint adapterRam ? FormatBytes(adapterRam) : "unknown";
+                Log($"GPU: {name} | Driver={driverVersion} | DriverDate={driverDate} | VRAM={ram}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"GPU info unavailable: {ex.Message}");
+        }
+    }
+
+    private static string FormatBytes(ulong bytes)
+    {
+        const double scale = 1024;
+        double value = bytes;
+        string[] units = { "B", "KB", "MB", "GB", "TB" };
+        var unit = 0;
+        while (value >= scale && unit < units.Length - 1)
+        {
+            value /= scale;
+            unit++;
+        }
+        return $"{value:0.##} {units[unit]}";
     }
 
     public static void LogException(Exception ex, [CallerMemberName] string caller = "")

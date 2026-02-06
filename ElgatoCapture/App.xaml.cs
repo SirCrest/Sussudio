@@ -39,6 +39,8 @@ namespace ElgatoCapture
             // Add global exception handlers
             UnhandledException += App_UnhandledException;
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+
+            Logger.LogSystemInfo();
         }
 
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)

@@ -1,7 +1,13 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using Windows.Media;
@@ -13,6 +19,7 @@ using Windows.Media.Render;
 using Windows.Storage;
 using Windows.Storage.Streams;
 using Windows.Graphics.Imaging;
+using WinRT;
 
 namespace ElgatoCapture.Services;
 
@@ -25,7 +32,7 @@ unsafe interface IMemoryBufferByteAccess
     void GetBuffer(out byte* buffer, out uint capacity);
 }
 
-public class CaptureService : IDisposable
+public class CaptureService : IDisposable, IAsyncDisposable
 {
     private MediaCapture? _mediaCapture;
     private MediaFrameReader? _frameReader;
@@ -35,34 +42,131 @@ public class CaptureService : IDisposable
     private bool _isRecording;
     private bool _isInitialized;
     private readonly object _lockObject = new();
+    private bool _isDisposed;
 
     // FFmpeg encoder for CFR output
     private FFmpegEncoderService? _ffmpegEncoder;
+
+    // Frame conversion pipeline - decouples GPU copy from format conversion
+    private BlockingCollection<SoftwareBitmap>? _conversionQueue;
+    private Task? _conversionWorkerTask;
+    private CancellationTokenSource? _conversionCancellation;
+    private const int ConversionQueueSize = 360; // ~6 seconds at 60fps (feeds NVENC)
+    private const string VideoInputPixelFormat = "nv12";
+    private readonly Stopwatch _recordingStopwatch = new();
+    private long _videoFramesArrived;
+    private long _videoFramesQueued;
+    private long _videoFramesDropped;
+    private long _videoFramesConverted;
+    private long _videoFramesEnqueued;
+    private long _videoFramesDirectNv12;
+    private long _videoFramesConvertedNv12;
+    private long _lastPipelineLogMs;
+    private long _lastFrameArrivalMs;
+    private long _lastConversionIdleLogMs;
+    private long _lastEncoderNotReadyLogMs;
+    private int _loggedFirstFrameArrival;
+    private int _loggedFirstFrameQueued;
+    private int _loggedFirstFrameConverted;
+    private int _loggedFirstFrameEnqueued;
+
     private AudioGraph? _recordingAudioGraph; // Separate graph for recording audio capture
     private AudioFrameOutputNode? _audioFrameOutputNode;
+    private AudioDeviceInputNode? _recordingAudioInputNode; // Store for proper disposal
+    private AudioEncodingProperties? _recordingAudioFormat;
+    private long _audioFrameIndex;
+    private long _audioClipFrameCount;
+    private long _lastAudioLogTick;
+    private long _lastAudioClipLogTick;
+    private string? _detectedAudioSubtype; // Track format for consistency detection
+    private FileStream? _audioFileStream;
+    private readonly object _audioFileLock = new();
+    private long _audioBytesWritten;
+    private string? _audioTempPath;
+    private string? _finalOutputPath;
+    private bool _postMuxAudioEnabled;
+    private string? _ffmpegPathForMux;
+    private const int RecordingAudioSampleRate = 48000;
+    private const short RecordingAudioChannels = 2;
+    private const short RecordingAudioBitsPerSample = 32;
+    private long _lastAudioLevelUpdateTick;
 
     // Audio preview
     private AudioGraph? _audioGraph;
     private AudioDeviceInputNode? _audioInputNode;
     private AudioDeviceOutputNode? _audioOutputNode;
+    private AudioFrameOutputNode? _previewAudioFrameOutputNode;
+    private AudioEncodingProperties? _previewAudioFormat;
     private bool _isAudioPreviewActive;
     private string? _audioDeviceId;
+    private string? _audioDeviceName;
 
     // Stored device info for reinitialization
     private CaptureDevice? _currentDevice;
     private CaptureSettings? _currentSettings;
-    private bool _wasAudioPreviewActive;
+    private double? _actualFrameRate;
+    private string? _actualFrameRateArg;
+    private uint? _actualWidth;
+    private uint? _actualHeight;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<Exception>? ErrorOccurred;
     public event EventHandler<ulong>? FrameCaptured;
-    public event EventHandler? RequestPreviewStop;
-    public event EventHandler? PreviewNeedsRestart;
+    public event EventHandler<AudioLevelEventArgs>? AudioLevelUpdated;
 
     public bool IsRecording => _isRecording;
     public bool IsInitialized => _isInitialized;
     public bool IsAudioPreviewActive => _isAudioPreviewActive;
     public MediaCapture? MediaCapture => _mediaCapture;
+
+    public RecordingStats GetRecordingStats()
+    {
+        long videoBytes = 0;
+        long audioBytes = 0;
+
+        try
+        {
+            var videoPath = _recordingFile?.Path;
+            if (!string.IsNullOrEmpty(videoPath) && File.Exists(videoPath))
+            {
+                videoBytes = new FileInfo(videoPath).Length;
+            }
+        }
+        catch
+        {
+            videoBytes = 0;
+        }
+
+        try
+        {
+            if (_postMuxAudioEnabled && !string.IsNullOrEmpty(_audioTempPath) && File.Exists(_audioTempPath))
+            {
+                audioBytes = new FileInfo(_audioTempPath).Length;
+            }
+        }
+        catch
+        {
+            audioBytes = 0;
+        }
+
+        return new RecordingStats(videoBytes, audioBytes);
+    }
+
+    public async Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName)
+    {
+        _audioDeviceId = audioDeviceId;
+        _audioDeviceName = audioDeviceName;
+        Logger.Log($"Audio input updated: {audioDeviceName ?? "(none)"}");
+
+        if (_isAudioPreviewActive)
+        {
+            await StopAudioPreviewAsync();
+            if (!string.IsNullOrEmpty(_audioDeviceId))
+            {
+                await StartAudioPreviewAsync();
+            }
+        }
+    }
 
     public async Task InitializeAsync(CaptureDevice device, CaptureSettings settings)
     {
@@ -71,12 +175,19 @@ public class CaptureService : IDisposable
         // Store device and settings for potential reinitialization during recording
         _currentDevice = device;
         _currentSettings = settings;
+        _actualFrameRate = null;
+        _actualFrameRateArg = null;
+        _actualWidth = null;
+        _actualHeight = null;
 
         _mediaCapture = new MediaCapture();
 
+        var selectedAudioId = settings.UseCustomAudioInput ? settings.AudioDeviceId : device.AudioDeviceId;
+        var selectedAudioName = settings.UseCustomAudioInput ? settings.AudioDeviceName : device.AudioDeviceName;
         Logger.Log($"Audio enabled: {settings.AudioEnabled}");
-        Logger.Log($"Audio device ID: {device.AudioDeviceId ?? "(none)"}");
-        Logger.Log($"Audio device name: {device.AudioDeviceName ?? "(none)"}");
+        Logger.Log($"Audio input source: {(settings.UseCustomAudioInput ? "Custom" : "Device")}");
+        Logger.Log($"Audio device ID: {selectedAudioId ?? "(none)"}");
+        Logger.Log($"Audio device name: {selectedAudioName ?? "(none)"}");
 
         // Initialize MediaCapture with AudioAndVideo mode from the start if audio is available
         // This avoids needing to reinitialize when recording starts, making it seamless
@@ -86,9 +197,18 @@ public class CaptureService : IDisposable
             VideoDeviceId = device.Id
         };
 
-        if (settings.AudioEnabled && !string.IsNullOrEmpty(device.AudioDeviceId))
+        if (settings.AudioEnabled && settings.UseCustomAudioInput)
+        {
+            _audioDeviceId = settings.AudioDeviceId;
+            _audioDeviceName = settings.AudioDeviceName;
+            initSettings.StreamingCaptureMode = StreamingCaptureMode.Video;
+            Logger.Log("✓ Using custom audio input (AudioGraph only)");
+            Logger.Log($"  Audio device: {settings.AudioDeviceName ?? "(none)"}");
+        }
+        else if (settings.AudioEnabled && !string.IsNullOrEmpty(device.AudioDeviceId))
         {
             _audioDeviceId = device.AudioDeviceId;
+            _audioDeviceName = device.AudioDeviceName;
             initSettings.AudioDeviceId = device.AudioDeviceId;
             initSettings.StreamingCaptureMode = StreamingCaptureMode.AudioAndVideo;
             Logger.Log($"✓ Initializing with AudioAndVideo mode for seamless recording");
@@ -98,12 +218,14 @@ public class CaptureService : IDisposable
         else if (settings.AudioEnabled)
         {
             _audioDeviceId = null;
+            _audioDeviceName = null;
             initSettings.StreamingCaptureMode = StreamingCaptureMode.Video;
             Logger.Log($"✗ Audio enabled but no audio device available - using Video mode");
         }
         else
         {
             _audioDeviceId = null;
+            _audioDeviceName = null;
             initSettings.StreamingCaptureMode = StreamingCaptureMode.Video;
             Logger.Log("Audio disabled by user - using Video mode");
         }
@@ -133,7 +255,15 @@ public class CaptureService : IDisposable
             if (matchingFormat != null)
             {
                 var fps = (double)matchingFormat.FrameRate.Numerator / matchingFormat.FrameRate.Denominator;
+                _actualFrameRate = fps;
+                _actualFrameRateArg = $"{matchingFormat.FrameRate.Numerator}/{matchingFormat.FrameRate.Denominator}";
+                _actualWidth = matchingFormat.Width;
+                _actualHeight = matchingFormat.Height;
                 Logger.Log($"✓ Found matching format: {matchingFormat.Width}x{matchingFormat.Height}@{fps:F1}fps ({matchingFormat.Subtype})");
+                if (Math.Abs(fps - settings.FrameRate) > 0.01)
+                {
+                    Logger.Log($"Requested FPS {settings.FrameRate:F3} differs from device FPS {fps:F3}. Using device FPS for FFmpeg.");
+                }
                 await videoController.SetMediaStreamPropertiesAsync(MediaStreamType.VideoRecord, matchingFormat);
                 Logger.Log($"✓ Device format set successfully");
             }
@@ -145,6 +275,20 @@ public class CaptureService : IDisposable
                 {
                     var fps = (double)prop.FrameRate.Numerator / prop.FrameRate.Denominator;
                     Logger.Log($"  - {prop.Width}x{prop.Height}@{fps:F1}fps ({prop.Subtype})");
+                }
+
+                if (videoController.GetMediaStreamProperties(MediaStreamType.VideoRecord) is VideoEncodingProperties currentProps)
+                {
+                    var fps = currentProps.FrameRate.Denominator > 0
+                        ? (double)currentProps.FrameRate.Numerator / currentProps.FrameRate.Denominator
+                        : settings.FrameRate;
+                    _actualFrameRate = fps;
+                    _actualFrameRateArg = currentProps.FrameRate.Denominator > 0
+                        ? $"{currentProps.FrameRate.Numerator}/{currentProps.FrameRate.Denominator}"
+                        : null;
+                    _actualWidth = currentProps.Width;
+                    _actualHeight = currentProps.Height;
+                    Logger.Log($"Using current device format for FFmpeg: {currentProps.Width}x{currentProps.Height}@{fps:F1}fps ({currentProps.Subtype})");
                 }
             }
 
@@ -179,12 +323,43 @@ public class CaptureService : IDisposable
         {
             Logger.Log("=== Starting recording (seamless - no reinitialization needed) ===");
             Logger.Log($"Audio preview active: {_isAudioPreviewActive}");
-            Logger.Log($"Audio in recording: {(settings.AudioEnabled && !string.IsNullOrEmpty(_audioDeviceId) ? "Yes" : "No")}");
+            var canCaptureAudio = settings.AudioEnabled && !string.IsNullOrEmpty(_audioDeviceId);
+            Logger.Log($"Audio in recording: {(canCaptureAudio ? "Yes" : "No")}");
 
             var folder = await StorageFolder.GetFolderFromPathAsync(settings.OutputPath);
-            _recordingFile = await folder.CreateFileAsync(
+            var outputFile = await folder.CreateFileAsync(
                 settings.GetOutputFileName(),
                 CreationCollisionOption.GenerateUniqueName);
+
+            _postMuxAudioEnabled = settings.Format != RecordingFormat.UncompressedAvi && canCaptureAudio;
+            _finalOutputPath = null;
+            _audioTempPath = null;
+
+            if (_postMuxAudioEnabled)
+            {
+                _finalOutputPath = outputFile.Path;
+                var baseName = Path.GetFileNameWithoutExtension(outputFile.Path);
+                var extension = Path.GetExtension(outputFile.Path);
+                var tempVideoFile = await folder.CreateFileAsync(
+                    $"{baseName}_video{extension}",
+                    CreationCollisionOption.GenerateUniqueName);
+                var tempAudioFile = await folder.CreateFileAsync(
+                    $"{baseName}_audio.wav",
+                    CreationCollisionOption.GenerateUniqueName);
+
+                _recordingFile = tempVideoFile;
+                _audioTempPath = tempAudioFile.Path;
+                StartAudioCaptureFile(_audioTempPath);
+
+                Logger.Log("Post-mux audio enabled");
+                Logger.Log($"Video temp file: {_recordingFile.Path}");
+                Logger.Log($"Audio temp file: {_audioTempPath}");
+                Logger.Log($"Final output file: {_finalOutputPath}");
+            }
+            else
+            {
+                _recordingFile = outputFile;
+            }
 
             if (settings.Format == RecordingFormat.UncompressedAvi)
             {
@@ -210,27 +385,103 @@ public class CaptureService : IDisposable
     {
         if (_mediaCapture == null || _recordingFile == null) return;
 
+        var startupStopwatch = System.Diagnostics.Stopwatch.StartNew();
         Logger.Log("=== Starting FFmpeg-based recording for CFR output ===");
+        ResetPipelineStats();
+        _recordingStopwatch.Restart();
+        Logger.LogVerbose("Recording pipeline stopwatch started");
 
         // Initialize FFmpeg encoder
         _ffmpegEncoder = new FFmpegEncoderService();
         _ffmpegEncoder.StatusChanged += (s, msg) => Logger.Log($"[FFmpegEncoder] {msg}");
         _ffmpegEncoder.ErrorOccurred += (s, err) => Logger.Log($"[FFmpegEncoder] ERROR: {err}");
         _ffmpegEncoder.FrameEncoded += (s, count) => FrameCaptured?.Invoke(this, count);
+        _ffmpegPathForMux = _ffmpegEncoder.FfmpegPath;
 
-        // Start FFmpeg encoder with output path
-        await _ffmpegEncoder.StartEncodingAsync(settings, _recordingFile.Path);
-
-        // Set up frame reader for recording (uses existing MediaCapture)
-        await SetupRecordingFrameReaderAsync(settings);
-
-        // Set up audio capture for recording
-        if (settings.AudioEnabled && !string.IsNullOrEmpty(_audioDeviceId))
+        // Determine if we're using audio
+        // Audio is captured via AudioGraph and piped to FFmpeg via named pipe
+        // This gives us full timestamp control (both streams start at 0)
+        string? audioDevice = null;
+        var captureAudio = settings.AudioEnabled && !string.IsNullOrEmpty(_audioDeviceName);
+        if (_postMuxAudioEnabled && captureAudio)
         {
-            await SetupRecordingAudioCaptureAsync();
+            Logger.Log("Audio will be captured to WAV and muxed after recording");
+        }
+        else if (captureAudio)
+        {
+            audioDevice = _audioDeviceName;
+            Logger.Log("Audio will be captured via AudioGraph and piped to FFmpeg");
+
+            // Prepare audio queue BEFORE starting encoder
+            // This allows audio samples to buffer while FFmpeg is starting up
+            _ffmpegEncoder.PrepareAudioQueue();
         }
 
-        Logger.Log("FFmpeg recording started - frames will be piped to encoder");
+        try
+        {
+            // Initialize conversion pipeline
+            _conversionQueue = new BlockingCollection<SoftwareBitmap>(ConversionQueueSize);
+            _conversionCancellation = new CancellationTokenSource();
+            _conversionWorkerTask = Task.Run(() => RunConversionWorkerAsync(_conversionCancellation.Token));
+            Logger.Log($"Frame conversion pipeline initialized (queue size: {ConversionQueueSize})");
+
+            // Set up audio capture FIRST - start buffering before FFmpeg starts
+            // This ensures audio samples are queued during FFmpeg's ~4 second probe phase
+            if (captureAudio)
+            {
+                Logger.LogVerbose($"Audio capture setup starting at {startupStopwatch.ElapsedMilliseconds} ms");
+                await SetupRecordingAudioCaptureAsync();
+                Logger.LogVerbose($"Audio capture setup complete at {startupStopwatch.ElapsedMilliseconds} ms");
+                Logger.Log("Audio capture started - buffering while FFmpeg initializes");
+            }
+
+            // Start FFmpeg encoder with output path and audio device name
+            // (FFmpeg will create named pipe for audio if audioDevice is specified)
+            var effectiveFrameRate = _actualFrameRate ?? settings.FrameRate;
+            var frameRateArg = !string.IsNullOrWhiteSpace(_actualFrameRateArg)
+                ? _actualFrameRateArg
+                : effectiveFrameRate.ToString("0.###", CultureInfo.InvariantCulture);
+            var effectiveWidth = _actualWidth ?? settings.Width;
+            var effectiveHeight = _actualHeight ?? settings.Height;
+            var ffmpegSettings = settings;
+            if (_postMuxAudioEnabled && captureAudio)
+            {
+                ffmpegSettings = new CaptureSettings
+                {
+                    Width = settings.Width,
+                    Height = settings.Height,
+                    FrameRate = settings.FrameRate,
+                    Format = settings.Format,
+                    Quality = settings.Quality,
+                    CustomBitrateMbps = settings.CustomBitrateMbps,
+                    HdrEnabled = settings.HdrEnabled,
+                    OutputPath = settings.OutputPath,
+                    AudioEnabled = false
+                };
+            }
+
+            await _ffmpegEncoder.StartEncodingAsync(
+                ffmpegSettings,
+                _recordingFile.Path,
+                audioDevice,
+                effectiveFrameRate,
+                frameRateArg,
+                effectiveWidth,
+                effectiveHeight,
+                VideoInputPixelFormat);
+            Logger.LogVerbose($"FFmpeg StartEncodingAsync returned at {startupStopwatch.ElapsedMilliseconds} ms");
+
+            // Set up frame reader for recording (uses existing MediaCapture)
+            await SetupRecordingFrameReaderAsync(settings);
+            Logger.LogVerbose($"Recording frame reader started at {startupStopwatch.ElapsedMilliseconds} ms");
+
+            Logger.Log("FFmpeg recording started - frames will be piped to encoder");
+        }
+        catch
+        {
+            await CleanupRecordingResourcesOnErrorAsync();
+            throw;
+        }
     }
 
     private async Task SetupRecordingFrameReaderAsync(CaptureSettings settings)
@@ -307,7 +558,9 @@ public class CaptureService : IDisposable
 
     private async void RecordingFrameReader_FrameArrived(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
     {
-        if (_ffmpegEncoder == null || !_ffmpegEncoder.IsEncoding) return;
+        // Capture local reference to avoid race condition
+        var conversionQueue = _conversionQueue;
+        if (conversionQueue == null || conversionQueue.IsAddingCompleted) return;
 
         using var frame = sender.TryAcquireLatestFrame();
         if (frame?.VideoMediaFrame == null) return;
@@ -315,46 +568,270 @@ public class CaptureService : IDisposable
         try
         {
             SoftwareBitmap? softwareBitmap = null;
+            var frameIndex = Interlocked.Increment(ref _videoFramesArrived);
+            var nowMs = _recordingStopwatch.ElapsedMilliseconds;
+            var lastArrivalMs = Interlocked.Exchange(ref _lastFrameArrivalMs, nowMs);
+            if (Logger.VerboseEnabled && frameIndex == 1)
+            {
+                Logger.LogVerbose($"First recording frame arrived at {nowMs} ms");
+            }
 
             // Try to get SoftwareBitmap from frame
             if (frame.VideoMediaFrame.SoftwareBitmap != null)
             {
-                softwareBitmap = frame.VideoMediaFrame.SoftwareBitmap;
+                // Already in CPU memory - create copy to extend lifetime beyond frame disposal
+                var copyStartTicks = Logger.VerboseEnabled ? Stopwatch.GetTimestamp() : 0;
+                softwareBitmap = SoftwareBitmap.Copy(frame.VideoMediaFrame.SoftwareBitmap);
+                if (Logger.VerboseEnabled && copyStartTicks != 0)
+                {
+                    var copyMs = (Stopwatch.GetTimestamp() - copyStartTicks) * 1000.0 / Stopwatch.Frequency;
+                    if (frameIndex == 1 || copyMs >= 5)
+                    {
+                        Logger.LogVerbose($"SoftwareBitmap copy took {copyMs:0.00} ms");
+                    }
+                }
             }
             else if (frame.VideoMediaFrame.Direct3DSurface != null)
             {
-                // Convert from GPU memory (hardware formats like NV12/YUY2)
+                // GPU copy MUST happen here (Direct3DSurface lifetime tied to frame)
+                // Use BitmapAlphaMode.Ignore because YUY2/NV12 formats don't have alpha
+                var copyStartTicks = Logger.VerboseEnabled ? Stopwatch.GetTimestamp() : 0;
                 softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(
                     frame.VideoMediaFrame.Direct3DSurface,
-                    BitmapAlphaMode.Premultiplied);
+                    BitmapAlphaMode.Ignore);
+                if (Logger.VerboseEnabled && copyStartTicks != 0)
+                {
+                    var copyMs = (Stopwatch.GetTimestamp() - copyStartTicks) * 1000.0 / Stopwatch.Frequency;
+                    if (frameIndex == 1 || copyMs >= 5)
+                    {
+                        Logger.LogVerbose($"Direct3DSurface copy took {copyMs:0.00} ms");
+                    }
+                }
             }
 
             if (softwareBitmap == null) return;
-
-            // Convert to BGRA8 if needed (FFmpeg expects BGRA)
-            if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8)
+            if (Logger.VerboseEnabled && frameIndex == 1)
             {
-                var converted = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
-                if (softwareBitmap != frame.VideoMediaFrame.SoftwareBitmap)
-                {
-                    softwareBitmap.Dispose();
-                }
-                softwareBitmap = converted;
+                var relTime = frame.SystemRelativeTime?.TotalMilliseconds;
+                var relTimeText = relTime.HasValue ? relTime.Value.ToString("0.###", CultureInfo.InvariantCulture) : "n/a";
+                Logger.LogVerbose($"First frame details: {softwareBitmap.PixelWidth}x{softwareBitmap.PixelHeight}, fmt={softwareBitmap.BitmapPixelFormat}, relTimeMs={relTimeText}");
             }
 
-            // Send to FFmpeg encoder
-            _ffmpegEncoder.EnqueueVideoFrame(softwareBitmap);
-
-            // Dispose converted bitmap (FFmpeg has copied the data)
-            if (softwareBitmap != frame.VideoMediaFrame.SoftwareBitmap)
+            // Queue the unconverted frame (YUY2/NV12) - worker thread will convert to BGRA8
+            // This is fast - just queuing a reference, not copying pixels
+            if (!conversionQueue.TryAdd(softwareBitmap, 10))
             {
+                // Conversion queue full - worker thread is lagging
+                Interlocked.Increment(ref _videoFramesDropped);
+                Logger.Log($"Warning: Conversion queue full, dropping frame");
                 softwareBitmap.Dispose();
             }
+            else
+            {
+                var queuedCount = Interlocked.Increment(ref _videoFramesQueued);
+                if (Logger.VerboseEnabled && Interlocked.Exchange(ref _loggedFirstFrameQueued, 1) == 0)
+                {
+                    Logger.LogVerbose($"First frame queued at {_recordingStopwatch.ElapsedMilliseconds} ms (queueCount={conversionQueue.Count})");
+                }
+
+                if (Logger.VerboseEnabled && lastArrivalMs > 0 && queuedCount % 120 == 0)
+                {
+                    var delta = nowMs - lastArrivalMs;
+                    Logger.LogVerbose($"Frame arrival cadence: frame={queuedCount}, delta={delta} ms");
+                }
+            }
+
+            LogPipelineStatsIfNeeded();
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
         }
+    }
+
+    private async Task RunConversionWorkerAsync(CancellationToken cancellationToken)
+    {
+        Logger.Log("Frame conversion worker started");
+
+        try
+        {
+            // Get queue reference once (doesn't change)
+            var queue = _conversionQueue;
+            if (queue == null) return;
+
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                SoftwareBitmap? sourceBitmap = null;
+
+                try
+                {
+                    // Wait for unconverted frame (blocks if queue empty)
+                    if (!queue.TryTake(out sourceBitmap, 100, cancellationToken))
+                    {
+                        if (Logger.VerboseEnabled)
+                        {
+                            var nowMs = _recordingStopwatch.ElapsedMilliseconds;
+                            var lastIdle = Interlocked.Read(ref _lastConversionIdleLogMs);
+                            if (nowMs - lastIdle >= 1000 &&
+                                Interlocked.CompareExchange(ref _lastConversionIdleLogMs, nowMs, lastIdle) == lastIdle)
+                            {
+                                Logger.LogVerbose($"Conversion worker idle: no frames (queueCount={queue.Count})");
+                            }
+                        }
+                        continue;
+                    }
+
+                    // Get encoder reference each iteration (might change during startup)
+                    var encoder = _ffmpegEncoder;
+                    if (encoder == null || !encoder.IsEncoding)
+                    {
+                        // Encoder not ready yet - requeue frame and wait
+                        if (Logger.VerboseEnabled)
+                        {
+                            var nowMs = _recordingStopwatch.ElapsedMilliseconds;
+                            var lastNotReady = Interlocked.Read(ref _lastEncoderNotReadyLogMs);
+                            if (nowMs - lastNotReady >= 1000 &&
+                                Interlocked.CompareExchange(ref _lastEncoderNotReadyLogMs, nowMs, lastNotReady) == lastNotReady)
+                            {
+                                Logger.LogVerbose("Conversion worker: encoder not ready, requeueing frame");
+                            }
+                        }
+                        if (!queue.TryAdd(sourceBitmap, 10, cancellationToken))
+                        {
+                            Interlocked.Increment(ref _videoFramesDropped);
+                            sourceBitmap.Dispose();
+                        }
+                        await Task.Delay(10, cancellationToken);
+                        continue;
+                    }
+
+                    // Convert to NV12 for NVENC-friendly input (reduces conversion overhead vs BGRA)
+                    SoftwareBitmap nv12Frame;
+                    if (sourceBitmap.BitmapPixelFormat == BitmapPixelFormat.Nv12)
+                    {
+                        Interlocked.Increment(ref _videoFramesDirectNv12);
+                        nv12Frame = sourceBitmap;
+                    }
+                    else
+                    {
+                        var convertStartTicks = Logger.VerboseEnabled ? Stopwatch.GetTimestamp() : 0;
+                        nv12Frame = SoftwareBitmap.Convert(sourceBitmap, BitmapPixelFormat.Nv12, BitmapAlphaMode.Ignore);
+                        if (Logger.VerboseEnabled && convertStartTicks != 0)
+                        {
+                            var convertMs = (Stopwatch.GetTimestamp() - convertStartTicks) * 1000.0 / Stopwatch.Frequency;
+                            if (convertMs >= 5)
+                            {
+                                Logger.LogVerbose($"SoftwareBitmap.Convert to NV12 took {convertMs:0.00} ms");
+                            }
+                        }
+                        Interlocked.Increment(ref _videoFramesConvertedNv12);
+                        sourceBitmap.Dispose(); // Dispose unconverted frame
+                    }
+
+                    // Send converted frame to FFmpeg encoder
+                    var enqueueStartTicks = Logger.VerboseEnabled ? Stopwatch.GetTimestamp() : 0;
+                    encoder.EnqueueVideoFrame(nv12Frame);
+                    if (Logger.VerboseEnabled && enqueueStartTicks != 0)
+                    {
+                        var enqueueMs = (Stopwatch.GetTimestamp() - enqueueStartTicks) * 1000.0 / Stopwatch.Frequency;
+                        if (enqueueMs >= 5)
+                        {
+                            Logger.LogVerbose($"EnqueueVideoFrame took {enqueueMs:0.00} ms");
+                        }
+                    }
+
+                    // Dispose converted frame (FFmpeg has copied the data)
+                    nv12Frame.Dispose();
+
+                    var convertedCount = Interlocked.Increment(ref _videoFramesConverted);
+                    var enqueuedCount = Interlocked.Increment(ref _videoFramesEnqueued);
+                    if (Logger.VerboseEnabled && Interlocked.Exchange(ref _loggedFirstFrameConverted, 1) == 0)
+                    {
+                        Logger.LogVerbose($"First frame converted at {_recordingStopwatch.ElapsedMilliseconds} ms");
+                    }
+                    if (Logger.VerboseEnabled && Interlocked.Exchange(ref _loggedFirstFrameEnqueued, 1) == 0)
+                    {
+                        Logger.LogVerbose($"First frame enqueued to FFmpeg at {_recordingStopwatch.ElapsedMilliseconds} ms");
+                    }
+                    if (Logger.VerboseEnabled && convertedCount % 120 == 0)
+                    {
+                        Logger.LogVerbose($"Conversion progress: converted={convertedCount}, enqueued={enqueuedCount}");
+                    }
+
+                    LogPipelineStatsIfNeeded();
+                }
+                catch (OperationCanceledException)
+                {
+                    sourceBitmap?.Dispose();
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    sourceBitmap?.Dispose();
+                    Logger.LogException(ex);
+                }
+            }
+        }
+        finally
+        {
+            Logger.Log("Frame conversion worker stopped");
+        }
+    }
+
+    private void ResetPipelineStats()
+    {
+        Interlocked.Exchange(ref _videoFramesArrived, 0);
+        Interlocked.Exchange(ref _videoFramesQueued, 0);
+        Interlocked.Exchange(ref _videoFramesDropped, 0);
+        Interlocked.Exchange(ref _videoFramesConverted, 0);
+        Interlocked.Exchange(ref _videoFramesEnqueued, 0);
+        Interlocked.Exchange(ref _videoFramesDirectNv12, 0);
+        Interlocked.Exchange(ref _videoFramesConvertedNv12, 0);
+        Interlocked.Exchange(ref _lastPipelineLogMs, 0);
+        Interlocked.Exchange(ref _lastFrameArrivalMs, 0);
+        Interlocked.Exchange(ref _lastConversionIdleLogMs, 0);
+        Interlocked.Exchange(ref _lastEncoderNotReadyLogMs, 0);
+        Interlocked.Exchange(ref _loggedFirstFrameArrival, 0);
+        Interlocked.Exchange(ref _loggedFirstFrameQueued, 0);
+        Interlocked.Exchange(ref _loggedFirstFrameConverted, 0);
+        Interlocked.Exchange(ref _loggedFirstFrameEnqueued, 0);
+    }
+
+    private void LogPipelineStatsIfNeeded()
+    {
+        if (!Logger.VerboseEnabled || !_recordingStopwatch.IsRunning)
+        {
+            return;
+        }
+
+        var nowMs = _recordingStopwatch.ElapsedMilliseconds;
+        var last = Interlocked.Read(ref _lastPipelineLogMs);
+        if (nowMs - last < 1000)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref _lastPipelineLogMs, nowMs, last) != last)
+        {
+            return;
+        }
+
+        var encoder = _ffmpegEncoder;
+        var conversionQueueCount = _conversionQueue?.Count ?? 0;
+        var videoQueueCount = encoder?.VideoQueueCount ?? 0;
+        var audioQueueCount = encoder?.AudioQueueCount ?? 0;
+        var arrived = Interlocked.Read(ref _videoFramesArrived);
+        var queued = Interlocked.Read(ref _videoFramesQueued);
+        var dropped = Interlocked.Read(ref _videoFramesDropped);
+        var converted = Interlocked.Read(ref _videoFramesConverted);
+        var enqueued = Interlocked.Read(ref _videoFramesEnqueued);
+        var directNv12 = Interlocked.Read(ref _videoFramesDirectNv12);
+        var convertedNv12 = Interlocked.Read(ref _videoFramesConvertedNv12);
+
+        Logger.LogVerbose(
+            $"Pipeline: t={nowMs}ms arrived={arrived} queued={queued} dropped={dropped} converted={converted} " +
+            $"enqueued={enqueued} nv12Direct={directNv12} nv12Converted={convertedNv12} " +
+            $"convQ={conversionQueueCount} ffmpegVQ={videoQueueCount} ffmpegAQ={audioQueueCount}");
     }
 
     private async Task SetupRecordingAudioCaptureAsync()
@@ -369,20 +846,34 @@ public class CaptureService : IDisposable
             var graphSettings = new AudioGraphSettings(AudioRenderCategory.Media)
             {
                 QuantumSizeSelectionMode = QuantumSizeSelectionMode.SystemDefault,
-                EncodingProperties = AudioEncodingProperties.CreatePcm(48000, 2, 16) // s16le format
+                // Request PCM16; AudioGraph may still deliver Float32 frames
+                EncodingProperties = AudioEncodingProperties.CreatePcm(48000, 2, 16)
             };
 
             var graphResult = await AudioGraph.CreateAsync(graphSettings);
             if (graphResult.Status != AudioGraphCreationStatus.Success)
             {
                 Logger.Log($"Failed to create recording AudioGraph: {graphResult.Status}");
+                ErrorOccurred?.Invoke(this, new Exception($"Failed to create recording AudioGraph: {graphResult.Status}"));
+                CleanupRecordingAudioGraph();
                 return;
             }
 
             _recordingAudioGraph = graphResult.Graph;
+            var graphFormat = _recordingAudioGraph.EncodingProperties;
+            Logger.Log($"Recording audio graph format: {graphFormat.Subtype}, {graphFormat.BitsPerSample} bits, {graphFormat.SampleRate} Hz, {graphFormat.ChannelCount} ch");
+            _audioFrameIndex = 0;
+            _audioClipFrameCount = 0;
+            _lastAudioLogTick = 0;
+            _lastAudioClipLogTick = 0;
+            _detectedAudioSubtype = null; // Reset for format change detection
 
             // Create frame output node (captures audio samples)
-            _audioFrameOutputNode = _recordingAudioGraph.CreateFrameOutputNode();
+            // Request PCM16 output; actual frame bytes are detected at runtime
+            var outputFormat = AudioEncodingProperties.CreatePcm(48000, 2, 16);
+            _audioFrameOutputNode = _recordingAudioGraph.CreateFrameOutputNode(outputFormat);
+            _recordingAudioFormat = _audioFrameOutputNode.EncodingProperties;
+            Logger.Log($"Recording audio output format: {_recordingAudioFormat.Subtype}, {_recordingAudioFormat.BitsPerSample} bits, {_recordingAudioFormat.SampleRate} Hz, {_recordingAudioFormat.ChannelCount} ch");
             _recordingAudioGraph.QuantumStarted += RecordingAudioGraph_QuantumStarted;
 
             // Find and connect the audio input device
@@ -393,6 +884,8 @@ public class CaptureService : IDisposable
             if (captureDevice == null)
             {
                 Logger.Log($"Audio capture device not found: {_audioDeviceId}");
+                ErrorOccurred?.Invoke(this, new Exception($"Audio capture device not found for recording"));
+                CleanupRecordingAudioGraph();
                 return;
             }
 
@@ -400,15 +893,21 @@ public class CaptureService : IDisposable
                 Windows.Media.Capture.MediaCategory.Media,
                 _recordingAudioGraph.EncodingProperties,
                 captureDevice);
+            Logger.Log("Recording audio input node created (default audio processing)");
 
             if (inputResult.Status != AudioDeviceNodeCreationStatus.Success)
             {
                 Logger.Log($"Failed to create audio input node: {inputResult.Status}");
+                ErrorOccurred?.Invoke(this, new Exception($"Failed to create audio input node: {inputResult.Status}"));
+                CleanupRecordingAudioGraph();
                 return;
             }
 
-            // Connect input to frame output
-            inputResult.DeviceInputNode.AddOutgoingConnection(_audioFrameOutputNode);
+            // Store and connect input to frame output
+            _recordingAudioInputNode = inputResult.DeviceInputNode;
+            var inputFormat = _recordingAudioInputNode.EncodingProperties;
+            Logger.Log($"Recording audio input format: {inputFormat.Subtype}, {inputFormat.BitsPerSample} bits, {inputFormat.SampleRate} Hz, {inputFormat.ChannelCount} ch");
+            _recordingAudioInputNode.AddOutgoingConnection(_audioFrameOutputNode);
 
             // Start the graph
             _recordingAudioGraph.Start();
@@ -417,16 +916,333 @@ public class CaptureService : IDisposable
         catch (Exception ex)
         {
             Logger.LogException(ex);
+            CleanupRecordingAudioGraph();
+        }
+    }
+
+    private void CleanupRecordingAudioGraph()
+    {
+        try
+        {
+            if (_recordingAudioGraph != null)
+            {
+                _recordingAudioGraph.QuantumStarted -= RecordingAudioGraph_QuantumStarted;
+                _recordingAudioGraph.Stop();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Error stopping recording audio graph: {ex.Message}");
+        }
+
+        try { _recordingAudioInputNode?.Dispose(); }
+        catch (Exception ex) { Logger.Log($"Error disposing recording audio input node: {ex.Message}"); }
+        _recordingAudioInputNode = null;
+
+        try { _audioFrameOutputNode?.Dispose(); }
+        catch (Exception ex) { Logger.Log($"Error disposing recording audio output node: {ex.Message}"); }
+        _audioFrameOutputNode = null;
+
+        try { _recordingAudioGraph?.Dispose(); }
+        catch (Exception ex) { Logger.Log($"Error disposing recording audio graph: {ex.Message}"); }
+        _recordingAudioGraph = null;
+        _recordingAudioFormat = null;
+    }
+
+    private void StartAudioCaptureFile(string path)
+    {
+        try
+        {
+            lock (_audioFileLock)
+            {
+                _audioFileStream?.Dispose();
+                _audioFileStream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
+                _audioBytesWritten = 0;
+                WriteWavHeader(_audioFileStream, 0);
+            }
+            Logger.Log($"Audio capture file created: {path}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Failed to create audio capture file: {ex.Message}");
+        }
+    }
+
+    private void FinalizeAudioCaptureFile()
+    {
+        lock (_audioFileLock)
+        {
+            if (_audioFileStream == null)
+            {
+                return;
+            }
+
+            try
+            {
+                WriteWavHeader(_audioFileStream, _audioBytesWritten);
+                _audioFileStream.Flush();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Failed to finalize audio file: {ex.Message}");
+            }
+            finally
+            {
+                _audioFileStream.Dispose();
+                _audioFileStream = null;
+            }
+        }
+    }
+
+    private unsafe void WriteAudioBytesToFile(byte* data, int byteCount)
+    {
+        if (byteCount <= 0)
+        {
+            return;
+        }
+
+        lock (_audioFileLock)
+        {
+            if (_audioFileStream == null)
+            {
+                return;
+            }
+
+            try
+            {
+                var span = new ReadOnlySpan<byte>(data, byteCount);
+                _audioFileStream.Write(span);
+                _audioBytesWritten += byteCount;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Audio file write failed: {ex.Message}");
+            }
+        }
+    }
+
+    private void WriteAudioBytesToFile(byte[] data)
+    {
+        if (data.Length == 0)
+        {
+            return;
+        }
+
+        lock (_audioFileLock)
+        {
+            if (_audioFileStream == null)
+            {
+                return;
+            }
+
+            try
+            {
+                _audioFileStream.Write(data, 0, data.Length);
+                _audioBytesWritten += data.Length;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Audio file write failed: {ex.Message}");
+            }
+        }
+    }
+
+    private void WriteWavHeader(FileStream stream, long dataBytes)
+    {
+        if (dataBytes < 0)
+        {
+            dataBytes = 0;
+        }
+
+        if (dataBytes > uint.MaxValue)
+        {
+            Logger.Log($"WARNING: Audio data exceeds WAV 4GB limit ({dataBytes} bytes). File may be invalid.");
+        }
+
+        var blockAlign = (short)(RecordingAudioChannels * (RecordingAudioBitsPerSample / 8));
+        var byteRate = RecordingAudioSampleRate * blockAlign;
+        var riffSize = 4 + (8 + 16) + (8 + dataBytes);
+
+        stream.Seek(0, SeekOrigin.Begin);
+        using var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: true);
+        writer.Write(Encoding.ASCII.GetBytes("RIFF"));
+        writer.Write((uint)riffSize);
+        writer.Write(Encoding.ASCII.GetBytes("WAVE"));
+        writer.Write(Encoding.ASCII.GetBytes("fmt "));
+        writer.Write((uint)16);
+        writer.Write((ushort)3); // IEEE float
+        writer.Write((ushort)RecordingAudioChannels);
+        writer.Write((uint)RecordingAudioSampleRate);
+        writer.Write((uint)byteRate);
+        writer.Write((ushort)blockAlign);
+        writer.Write((ushort)RecordingAudioBitsPerSample);
+        writer.Write(Encoding.ASCII.GetBytes("data"));
+        writer.Write((uint)dataBytes);
+        writer.Flush();
+    }
+
+    private void CleanupPostMuxFiles()
+    {
+        FinalizeAudioCaptureFile();
+
+        TryDeleteFile(_audioTempPath);
+        _audioTempPath = null;
+
+        if (_postMuxAudioEnabled && _recordingFile != null)
+        {
+            TryDeleteFile(_recordingFile.Path);
+        }
+    }
+
+    private async Task<bool> MuxAudioIntoVideoAsync(string videoPath, string audioPath, string outputPath)
+    {
+        try
+        {
+            if (!File.Exists(videoPath))
+            {
+                Logger.Log($"Mux failed: video file not found: {videoPath}");
+                return false;
+            }
+
+            if (!File.Exists(audioPath))
+            {
+                Logger.Log($"Mux failed: audio file not found: {audioPath}");
+                return false;
+            }
+
+            var ffmpegPath = string.IsNullOrWhiteSpace(_ffmpegPathForMux) ? "ffmpeg.exe" : _ffmpegPathForMux;
+            var args = $"-y -i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a aac -b:a 320k -shortest -movflags +faststart \"{outputPath}\"";
+
+            Logger.Log($"Muxing audio into video: {outputPath}");
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = ffmpegPath,
+                Arguments = args,
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(startInfo);
+            if (process == null)
+            {
+                Logger.Log("Mux failed: could not start ffmpeg process");
+                return false;
+            }
+
+            var stderr = await process.StandardError.ReadToEndAsync();
+            await process.WaitForExitAsync();
+
+            if (!string.IsNullOrWhiteSpace(stderr))
+            {
+                foreach (var line in stderr.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    Logger.Log($"[FFmpeg Mux] {line}");
+                }
+            }
+
+            if (process.ExitCode != 0)
+            {
+                Logger.Log($"Mux failed: ffmpeg exited with code {process.ExitCode}");
+                return false;
+            }
+
+            Logger.Log("Mux completed successfully");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Mux failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    private static void TryDeleteFile(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Failed to delete temp file '{path}': {ex.Message}");
+        }
+    }
+
+    private async Task CleanupRecordingResourcesOnErrorAsync()
+    {
+        if (_conversionQueue != null)
+        {
+            _conversionQueue.CompleteAdding();
+        }
+
+        if (_conversionCancellation != null)
+        {
+            _conversionCancellation.Cancel();
+        }
+
+        if (_conversionWorkerTask != null)
+        {
+            try { await _conversionWorkerTask; }
+            catch (Exception ex) { Logger.Log($"Conversion worker error during cleanup: {ex.Message}"); }
+            _conversionWorkerTask = null;
+        }
+
+        if (_conversionQueue != null)
+        {
+            foreach (var frame in _conversionQueue)
+            {
+                frame?.Dispose();
+            }
+            _conversionQueue.Dispose();
+            _conversionQueue = null;
+        }
+
+        _conversionCancellation?.Dispose();
+        _conversionCancellation = null;
+
+        CleanupRecordingAudioGraph();
+
+        if (_ffmpegEncoder != null)
+        {
+            try { await _ffmpegEncoder.StopEncodingAsync(); }
+            catch (Exception ex) { Logger.Log($"Error stopping FFmpeg after failure: {ex.Message}"); }
+            try { _ffmpegEncoder.Dispose(); }
+            catch (Exception ex) { Logger.Log($"Error disposing FFmpeg after failure: {ex.Message}"); }
+            _ffmpegEncoder = null;
+        }
+
+        if (_postMuxAudioEnabled)
+        {
+            CleanupPostMuxFiles();
         }
     }
 
     private void RecordingAudioGraph_QuantumStarted(AudioGraph sender, object args)
     {
-        if (_ffmpegEncoder == null || !_ffmpegEncoder.IsEncoding || _audioFrameOutputNode == null) return;
+        // Capture local references to avoid race conditions with StopRecordingAsync
+        var encoder = _ffmpegEncoder;
+        var outputNode = _audioFrameOutputNode;
+        var usePostMux = _postMuxAudioEnabled;
+
+        // Don't check IsEncoding here - we want to buffer audio samples while FFmpeg is starting up
+        // The EnqueueAudioSamples method will handle rejecting samples if queue isn't ready
+        if (outputNode == null) return;
+        if (!usePostMux && encoder == null) return;
+        var encoderInstance = encoder!;
 
         try
         {
-            var frame = _audioFrameOutputNode.GetFrame();
+            using var frame = outputNode.GetFrame();
             if (frame == null) return;
 
             using (var buffer = frame.LockBuffer(AudioBufferAccessMode.Read))
@@ -437,23 +1253,439 @@ public class CaptureService : IDisposable
                 {
                     byte* dataInBytes;
                     uint capacityInBytes;
-                    ((IMemoryBufferByteAccess)reference).GetBuffer(out dataInBytes, out capacityInBytes);
+                    var byteAccess = reference.As<IMemoryBufferByteAccess>();
+                    byteAccess.GetBuffer(out dataInBytes, out capacityInBytes);
 
-                    if (capacityInBytes > 0)
+                    var byteCount = (int)Math.Min(buffer.Length, capacityInBytes);
+                    if (byteCount > 0)
                     {
-                        var audioData = new byte[capacityInBytes];
-                        System.Runtime.InteropServices.Marshal.Copy((IntPtr)dataInBytes, audioData, 0, (int)capacityInBytes);
-                        _ffmpegEncoder.EnqueueAudioSamples(audioData);
+                        var audioFormat = _recordingAudioFormat;
+                        var declaredSubtype = audioFormat?.Subtype;
+                        var declaredBits = audioFormat?.BitsPerSample ?? 16;
+                        var channelCount = audioFormat?.ChannelCount ?? 0u;
+                        var sampleRate = audioFormat?.SampleRate ?? 0u;
+                        var samplesPerQuantum = sender.SamplesPerQuantum;
+                        var effectiveSubtype = declaredSubtype;
+                        var bitsPerSample = declaredBits;
+                        string? formatOverride = null;
+
+                        // Pre-calculate expected byte counts (used for format detection and logging)
+                        var expectedBytesPcm16 = channelCount > 0 && samplesPerQuantum > 0
+                            ? (long)samplesPerQuantum * channelCount * 2 : 0;
+                        var expectedBytes32 = channelCount > 0 && samplesPerQuantum > 0
+                            ? (long)samplesPerQuantum * channelCount * 4 : 0;
+
+                        // Trust the BYTE COUNT over the declared format - Windows audio APIs often lie about format
+                        // If we get 32-bit sized data, treat it as Float32 regardless of what format claims
+                        if (expectedBytes32 > 0 && byteCount == expectedBytes32 && bitsPerSample != 32)
+                        {
+                            // Data is 32-bit sized - treat as Float32 (most common case for AudioGraph)
+                            effectiveSubtype = MediaEncodingSubtypes.Float;
+                            bitsPerSample = 32;
+                            formatOverride = $"Override to Float32 based on byte count (declared={declaredSubtype}/{declaredBits}, byteCount={byteCount}, expected16={expectedBytesPcm16}, expected32={expectedBytes32})";
+                        }
+                        else if (expectedBytesPcm16 > 0 && byteCount == expectedBytesPcm16 && bitsPerSample != 16)
+                        {
+                            // Data is 16-bit sized - treat as PCM16
+                            effectiveSubtype = MediaEncodingSubtypes.Pcm;
+                            bitsPerSample = 16;
+                            formatOverride = $"Override to PCM16 based on byte count (declared={declaredSubtype}/{declaredBits}, byteCount={byteCount}, expected16={expectedBytesPcm16}, expected32={expectedBytes32})";
+                        }
+                        var declaredMatches = !string.IsNullOrEmpty(declaredSubtype) &&
+                                              string.Equals(declaredSubtype, effectiveSubtype, StringComparison.OrdinalIgnoreCase);
+                        var bitsMatch = declaredBits == bitsPerSample;
+                        var formatMatches = declaredMatches && bitsMatch && string.IsNullOrWhiteSpace(formatOverride);
+                        var frameIndex = Interlocked.Increment(ref _audioFrameIndex);
+                        var isFirstFrame = frameIndex == 1;
+                        var nowTick = Environment.TickCount64;
+                        var shouldLog = nowTick - Interlocked.Read(ref _lastAudioLogTick) >= 1000;
+
+                        // First-frame comprehensive logging for debugging audio issues
+                        if (isFirstFrame)
+                        {
+                            Logger.Log($"=== Audio Format Detection (first frame) ===");
+                            Logger.Log($"Declared format: subtype={declaredSubtype}, bits={declaredBits}, Hz={sampleRate}, ch={channelCount}");
+                            Logger.Log($"Buffer: byteCount={byteCount}, samplesPerQuantum={samplesPerQuantum}");
+                            if (expectedBytesPcm16 > 0)
+                            {
+                                Logger.Log($"Expected PCM16 bytes: {expectedBytesPcm16}, Expected 32-bit bytes: {expectedBytes32}");
+                            }
+                            if (!string.IsNullOrWhiteSpace(formatOverride))
+                            {
+                                Logger.Log($"AUDIO FORMAT OVERRIDE: {formatOverride}");
+                            }
+                            Logger.Log($"Effective format: subtype={effectiveSubtype}, bits={bitsPerSample}");
+
+                            // Warn about unexpected byte counts
+                            if (expectedBytesPcm16 > 0 && byteCount != expectedBytesPcm16 && byteCount != expectedBytes32)
+                            {
+                                Logger.Log($"WARNING: Audio byte count {byteCount} doesn't match expected PCM16 ({expectedBytesPcm16}) or 32-bit ({expectedBytes32})");
+                                Logger.Log($"This may indicate audio format detection issues - check audio output for corruption");
+                            }
+
+                            _detectedAudioSubtype = effectiveSubtype;
+                        }
+                        else if (_detectedAudioSubtype != effectiveSubtype)
+                        {
+                            // Format changed mid-recording - this is unusual and worth logging
+                            Logger.Log($"WARNING: Audio format changed from {_detectedAudioSubtype} to {effectiveSubtype} at frame {frameIndex}");
+                            _detectedAudioSubtype = effectiveSubtype;
+                        }
+
+                        double rms = 0;
+                        double peak = 0;
+                        double minSample = 0;
+                        double maxSample = 0;
+                        double meanSample = 0;
+                        bool clipped = false;
+                        var bytesPerFrame = 0;
+                        if (channelCount > 0 && bitsPerSample > 0 && bitsPerSample % 8 == 0)
+                        {
+                            bytesPerFrame = (int)(bitsPerSample / 8) * (int)channelCount;
+                        }
+
+                        if (effectiveSubtype == MediaEncodingSubtypes.Float)
+                        {
+                            // Pass through Float32 samples (f32le)
+                            var sampleCount = byteCount / sizeof(float);
+                            if (sampleCount <= 0) return;
+
+                            var inputSamples = (float*)dataInBytes;
+                            double sumSquares = 0;
+                            double sum = 0;
+                            float peakAbs = 0;
+                            float minVal = float.MaxValue;
+                            float maxVal = float.MinValue;
+                            for (var i = 0; i < sampleCount; i++)
+                            {
+                                var rawSample = inputSamples[i];
+                                if (rawSample < minVal) minVal = rawSample;
+                                if (rawSample > maxVal) maxVal = rawSample;
+                                var abs = Math.Abs(rawSample);
+                                if (abs > peakAbs) peakAbs = abs;
+                                if (abs > 1.0f) clipped = true;
+                                sumSquares += rawSample * rawSample;
+                                sum += rawSample;
+                            }
+                            peak = peakAbs;
+                            rms = Math.Sqrt(sumSquares / sampleCount);
+                            minSample = minVal;
+                            maxSample = maxVal;
+                            meanSample = sum / sampleCount;
+
+                            if (usePostMux)
+                            {
+                                WriteAudioBytesToFile(dataInBytes, byteCount);
+                            }
+                            else
+                            {
+                                var audioData = new byte[byteCount];
+                                fixed (byte* outputBytes = audioData)
+                                {
+                                    System.Buffer.MemoryCopy(dataInBytes, outputBytes, byteCount, byteCount);
+                                }
+                                encoderInstance.EnqueueAudioSamples(audioData);
+                            }
+                        }
+                        else if (effectiveSubtype == MediaEncodingSubtypes.Pcm && bitsPerSample == 32)
+                        {
+                            // Convert 32-bit PCM to Float32 (f32le)
+                            var sampleCount = byteCount / sizeof(int);
+                            if (sampleCount <= 0) return;
+                            var audioData = new byte[sampleCount * sizeof(float)];
+                            fixed (byte* outputBytes = audioData)
+                            {
+                                var inputSamples = (int*)dataInBytes;
+                                var outputSamples = (float*)outputBytes;
+                                double sumSquares = 0;
+                                double sum = 0;
+                                float peakAbs = 0;
+                                float minVal = float.MaxValue;
+                                float maxVal = float.MinValue;
+                                const float divisor = 2147483648f;
+                                for (var i = 0; i < sampleCount; i++)
+                                {
+                                    var rawSample = inputSamples[i] / divisor;
+                                    outputSamples[i] = rawSample;
+                                    if (rawSample < minVal) minVal = rawSample;
+                                    if (rawSample > maxVal) maxVal = rawSample;
+                                    var abs = Math.Abs(rawSample);
+                                    if (abs > peakAbs) peakAbs = abs;
+                                    if (abs > 1.0f) clipped = true;
+                                    sumSquares += rawSample * rawSample;
+                                    sum += rawSample;
+                                }
+                                peak = peakAbs;
+                                rms = Math.Sqrt(sumSquares / sampleCount);
+                                minSample = minVal;
+                                maxSample = maxVal;
+                                meanSample = sum / sampleCount;
+                            }
+                            if (usePostMux)
+                            {
+                                WriteAudioBytesToFile(audioData);
+                            }
+                            else
+                            {
+                                encoderInstance.EnqueueAudioSamples(audioData);
+                            }
+                        }
+                        else
+                        {
+                            // Convert PCM16 (or other) to Float32 (f32le)
+                            var sampleCount = byteCount / sizeof(short);
+                            if (sampleCount <= 0) return;
+                            var audioData = new byte[sampleCount * sizeof(float)];
+                            fixed (byte* outputBytes = audioData)
+                            {
+                                var inputSamples = (short*)dataInBytes;
+                                var outputSamples = (float*)outputBytes;
+                                double sumSquares = 0;
+                                double sum = 0;
+                                float peakAbs = 0;
+                                float minVal = float.MaxValue;
+                                float maxVal = float.MinValue;
+                                const float divisor = 32768f;
+                                for (var i = 0; i < sampleCount; i++)
+                                {
+                                    var rawSample = inputSamples[i] / divisor;
+                                    outputSamples[i] = rawSample;
+                                    if (rawSample < minVal) minVal = rawSample;
+                                    if (rawSample > maxVal) maxVal = rawSample;
+                                    var abs = Math.Abs(rawSample);
+                                    if (abs > peakAbs) peakAbs = abs;
+                                    if (abs > 1.0f) clipped = true;
+                                    sumSquares += rawSample * rawSample;
+                                    sum += rawSample;
+                                }
+                                peak = peakAbs;
+                                rms = Math.Sqrt(sumSquares / sampleCount);
+                                minSample = minVal;
+                                maxSample = maxVal;
+                                meanSample = sum / sampleCount;
+                            }
+                            if (usePostMux)
+                            {
+                                WriteAudioBytesToFile(audioData);
+                            }
+                            else
+                            {
+                                encoderInstance.EnqueueAudioSamples(audioData);
+                            }
+                        }
+
+                        if (clipped && formatMatches)
+                        {
+                            var clipCount = Interlocked.Increment(ref _audioClipFrameCount);
+                            if (clipCount == 1 || nowTick - Interlocked.Read(ref _lastAudioClipLogTick) >= 1000)
+                            {
+                                Interlocked.Exchange(ref _lastAudioClipLogTick, nowTick);
+                                Logger.Log($"Audio clipping detected (frame {frameIndex}). Peak={peak:0.000} RMS={rms:0.000} bytes={byteCount} subtype={effectiveSubtype} bits={bitsPerSample}");
+                            }
+                        }
+                        else if (clipped && !formatMatches)
+                        {
+                            var clipCount = Interlocked.Read(ref _audioClipFrameCount);
+                            if (clipCount == 0 || nowTick - Interlocked.Read(ref _lastAudioClipLogTick) >= 1000)
+                            {
+                                Interlocked.Exchange(ref _lastAudioClipLogTick, nowTick);
+                                Logger.Log($"Audio over 0 dBFS detected but format mismatch (frame {frameIndex}). Peak={peak:0.000} RMS={rms:0.000} declared={declaredSubtype}/{declaredBits} effective={effectiveSubtype}/{bitsPerSample}");
+                            }
+                        }
+
+                        if (shouldLog)
+                        {
+                            Interlocked.Exchange(ref _lastAudioLogTick, nowTick);
+                            var sampleCount = bytesPerFrame > 0 ? byteCount / bytesPerFrame : 0;
+                            var formatSummary = $"subtype={effectiveSubtype} bits={bitsPerSample} Hz={sampleRate} ch={channelCount} bytes={byteCount}";
+                            var sampleSummary = bytesPerFrame > 0
+                                ? $" frames={sampleCount} bytesPerFrame={bytesPerFrame} samplesPerQuantum={sender.SamplesPerQuantum}"
+                                : " frames=? bytesPerFrame=0";
+                            Logger.Log($"Audio stats (frame {frameIndex}): Peak={peak:0.000} RMS={rms:0.000} mean={meanSample:0.000} min={minSample:0.000} max={maxSample:0.000} {formatSummary}{sampleSummary} clipFrames={Interlocked.Read(ref _audioClipFrameCount)}");
+                            if (!string.IsNullOrWhiteSpace(formatOverride))
+                            {
+                                Logger.Log($"Audio format override: declared={declaredSubtype}/{declaredBits} effective={effectiveSubtype}/{bitsPerSample} {formatOverride}");
+                            }
+                            if (bytesPerFrame > 0 && byteCount % bytesPerFrame != 0)
+                            {
+                                Logger.Log($"Audio format mismatch: byteCount={byteCount} is not aligned to bytesPerFrame={bytesPerFrame} (subtype={effectiveSubtype} bits={bitsPerSample} ch={channelCount})");
+                            }
+                        }
+
+                        if (AudioLevelUpdated != null)
+                        {
+                            var lastTick = Interlocked.Read(ref _lastAudioLevelUpdateTick);
+                            if (nowTick - lastTick >= 50 &&
+                                Interlocked.CompareExchange(ref _lastAudioLevelUpdateTick, nowTick, lastTick) == lastTick)
+                            {
+                                var peakLevel = Math.Clamp(peak, 0.0, 1.0);
+                                var rmsLevel = Math.Clamp(rms, 0.0, 1.0);
+                                var clipForUi = formatMatches && clipped;
+                                AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(peakLevel, rmsLevel, clipForUi));
+                            }
+                        }
                     }
                 }
             }
-
-            frame.Dispose();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Output node was disposed during cleanup - this is expected
         }
         catch (Exception ex)
         {
-            // Don't log every frame error to avoid spam
-            System.Diagnostics.Debug.WriteLine($"Audio frame error: {ex.Message}");
+            // Log to file instead of just Debug for visibility
+            Logger.Log($"Audio frame error: {ex.Message}");
+        }
+    }
+
+    private void PreviewAudioGraph_QuantumStarted(AudioGraph sender, object args)
+    {
+        if (_isRecording)
+        {
+            return;
+        }
+
+        var outputNode = _previewAudioFrameOutputNode;
+        if (outputNode == null) return;
+
+        try
+        {
+            using var frame = outputNode.GetFrame();
+            if (frame == null) return;
+
+            using (var buffer = frame.LockBuffer(AudioBufferAccessMode.Read))
+            using (var reference = buffer.CreateReference())
+            {
+                unsafe
+                {
+                    byte* dataInBytes;
+                    uint capacityInBytes;
+                    var byteAccess = reference.As<IMemoryBufferByteAccess>();
+                    byteAccess.GetBuffer(out dataInBytes, out capacityInBytes);
+
+                    var byteCount = (int)Math.Min(buffer.Length, capacityInBytes);
+                    if (byteCount <= 0)
+                    {
+                        return;
+                    }
+
+                    var audioFormat = _previewAudioFormat;
+                    var declaredSubtype = audioFormat?.Subtype;
+                    var declaredBits = audioFormat?.BitsPerSample ?? 16;
+                    var channelCount = audioFormat?.ChannelCount ?? 0u;
+                    var samplesPerQuantum = sender.SamplesPerQuantum;
+                    var effectiveSubtype = declaredSubtype;
+                    var bitsPerSample = declaredBits;
+
+                    var expectedBytesPcm16 = channelCount > 0 && samplesPerQuantum > 0
+                        ? (long)samplesPerQuantum * channelCount * 2 : 0;
+                    var expectedBytes32 = channelCount > 0 && samplesPerQuantum > 0
+                        ? (long)samplesPerQuantum * channelCount * 4 : 0;
+
+                    if (expectedBytes32 > 0 && byteCount == expectedBytes32 && bitsPerSample != 32)
+                    {
+                        effectiveSubtype = MediaEncodingSubtypes.Float;
+                        bitsPerSample = 32;
+                    }
+                    else if (expectedBytesPcm16 > 0 && byteCount == expectedBytesPcm16 && bitsPerSample != 16)
+                    {
+                        effectiveSubtype = MediaEncodingSubtypes.Pcm;
+                        bitsPerSample = 16;
+                    }
+
+                    var declaredMatches = !string.IsNullOrEmpty(declaredSubtype) &&
+                                          string.Equals(declaredSubtype, effectiveSubtype, StringComparison.OrdinalIgnoreCase);
+                    var bitsMatch = declaredBits == bitsPerSample;
+                    var formatMatches = declaredMatches && bitsMatch;
+
+                    double rms = 0;
+                    double peak = 0;
+                    bool clipped = false;
+
+                    if (effectiveSubtype == MediaEncodingSubtypes.Float)
+                    {
+                        var sampleCount = byteCount / sizeof(float);
+                        if (sampleCount <= 0) return;
+
+                        var inputSamples = (float*)dataInBytes;
+                        double sumSquares = 0;
+                        float peakAbs = 0;
+                        for (var i = 0; i < sampleCount; i++)
+                        {
+                            var rawSample = inputSamples[i];
+                            var abs = Math.Abs(rawSample);
+                            if (abs > peakAbs) peakAbs = abs;
+                            if (abs > 1.0f) clipped = true;
+                            sumSquares += rawSample * rawSample;
+                        }
+                        peak = peakAbs;
+                        rms = Math.Sqrt(sumSquares / sampleCount);
+                    }
+                    else if (effectiveSubtype == MediaEncodingSubtypes.Pcm && bitsPerSample == 32)
+                    {
+                        var sampleCount = byteCount / sizeof(int);
+                        if (sampleCount <= 0) return;
+
+                        var inputSamples = (int*)dataInBytes;
+                        const float divisor = 2147483648f;
+                        double sumSquares = 0;
+                        float peakAbs = 0;
+                        for (var i = 0; i < sampleCount; i++)
+                        {
+                            var rawSample = inputSamples[i] / divisor;
+                            var abs = Math.Abs(rawSample);
+                            if (abs > peakAbs) peakAbs = abs;
+                            if (abs > 1.0f) clipped = true;
+                            sumSquares += rawSample * rawSample;
+                        }
+                        peak = peakAbs;
+                        rms = Math.Sqrt(sumSquares / sampleCount);
+                    }
+                    else
+                    {
+                        var sampleCount = byteCount / sizeof(short);
+                        if (sampleCount <= 0) return;
+
+                        var inputSamples = (short*)dataInBytes;
+                        const float divisor = 32768f;
+                        double sumSquares = 0;
+                        float peakAbs = 0;
+                        for (var i = 0; i < sampleCount; i++)
+                        {
+                            var rawSample = inputSamples[i] / divisor;
+                            var abs = Math.Abs(rawSample);
+                            if (abs > peakAbs) peakAbs = abs;
+                            if (abs > 1.0f) clipped = true;
+                            sumSquares += rawSample * rawSample;
+                        }
+                        peak = peakAbs;
+                        rms = Math.Sqrt(sumSquares / sampleCount);
+                    }
+
+                    if (AudioLevelUpdated != null)
+                    {
+                        var nowTick = Environment.TickCount64;
+                        var lastTick = Interlocked.Read(ref _lastAudioLevelUpdateTick);
+                        if (nowTick - lastTick >= 50 &&
+                            Interlocked.CompareExchange(ref _lastAudioLevelUpdateTick, nowTick, lastTick) == lastTick)
+                        {
+                            var peakLevel = Math.Clamp(peak, 0.0, 1.0);
+                            var rmsLevel = Math.Clamp(rms, 0.0, 1.0);
+                            var clipForUi = formatMatches && clipped;
+                            AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(peakLevel, rmsLevel, clipForUi));
+                        }
+                    }
+                }
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+            // Output node was disposed during cleanup - this is expected
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Audio preview frame error: {ex.Message}");
         }
     }
 
@@ -461,26 +1693,14 @@ public class CaptureService : IDisposable
     {
         if (_mediaCapture == null || _recordingFile == null) return;
 
-        // Find a frame source for raw frames
-        var frameSourceGroups = await MediaFrameSourceGroup.FindAllAsync();
-        MediaFrameSourceGroup? matchingGroup = null;
-        MediaFrameSourceInfo? videoSourceInfo = null;
+        // Find a frame source from the already-initialized MediaCapture
+        var videoSourceInfo = _mediaCapture.FrameSources.Values
+            .Select(fs => fs.Info)
+            .FirstOrDefault(info =>
+                info.MediaStreamType == MediaStreamType.VideoRecord &&
+                info.SourceKind == MediaFrameSourceKind.Color);
 
-        foreach (var group in frameSourceGroups)
-        {
-            var videoSource = group.SourceInfos.FirstOrDefault(si =>
-                si.MediaStreamType == MediaStreamType.VideoRecord &&
-                si.SourceKind == MediaFrameSourceKind.Color);
-
-            if (videoSource != null)
-            {
-                matchingGroup = group;
-                videoSourceInfo = videoSource;
-                break;
-            }
-        }
-
-        if (matchingGroup == null || videoSourceInfo == null)
+        if (videoSourceInfo == null)
         {
             // Fallback to using compressed recording for uncompressed - use very high bitrate
             var profile = MediaEncodingProfile.CreateAvi(VideoEncodingQuality.HD1080p);
@@ -511,15 +1731,6 @@ public class CaptureService : IDisposable
             settings.Height,
             (uint)settings.FrameRate);
 
-        // Reinitialize MediaCapture with frame source
-        await _mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
-        {
-            SourceGroup = matchingGroup,
-            SharingMode = MediaCaptureSharingMode.ExclusiveControl,
-            MemoryPreference = MediaCaptureMemoryPreference.Cpu,
-            StreamingCaptureMode = StreamingCaptureMode.Video
-        });
-
         var frameSource = _mediaCapture.FrameSources[videoSourceInfo.Id];
         _frameReader = await _mediaCapture.CreateFrameReaderAsync(frameSource);
         _frameReader.FrameArrived += FrameReader_FrameArrived;
@@ -531,6 +1742,9 @@ public class CaptureService : IDisposable
 
     private async void FrameReader_FrameArrived(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
     {
+        // Capture local reference to avoid race condition with StopRecordingAsync
+        var aviWriter = _aviWriter;
+
         using var frame = sender.TryAcquireLatestFrame();
         if (frame?.VideoMediaFrame?.SoftwareBitmap == null) return;
 
@@ -544,9 +1758,9 @@ public class CaptureService : IDisposable
                 softwareBitmap = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8);
             }
 
-            if (_aviWriter != null)
+            if (aviWriter != null)
             {
-                await _aviWriter.WriteFrameAsync(softwareBitmap);
+                await aviWriter.WriteFrameAsync(softwareBitmap);
             }
             _frameCount++;
             FrameCaptured?.Invoke(this, _frameCount);
@@ -564,6 +1778,12 @@ public class CaptureService : IDisposable
         try
         {
             Logger.Log("=== Stopping recording ===");
+            var shouldPostMux = _postMuxAudioEnabled &&
+                                !string.IsNullOrEmpty(_finalOutputPath) &&
+                                !string.IsNullOrEmpty(_audioTempPath);
+            var tempVideoPath = _recordingFile?.Path;
+            var audioTempPath = _audioTempPath;
+            var finalOutputPath = _finalOutputPath;
 
             // Stop recording frame reader (FFmpeg recording)
             if (_recordingFrameReader != null)
@@ -578,18 +1798,47 @@ public class CaptureService : IDisposable
             // Stop recording audio graph
             if (_recordingAudioGraph != null)
             {
-                _recordingAudioGraph.QuantumStarted -= RecordingAudioGraph_QuantumStarted;
-                _recordingAudioGraph.Stop();
-                _audioFrameOutputNode?.Dispose();
-                _audioFrameOutputNode = null;
-                _recordingAudioGraph.Dispose();
-                _recordingAudioGraph = null;
+                CleanupRecordingAudioGraph();
                 Logger.Log("Recording audio graph stopped");
             }
 
+            // Stop conversion worker
+            if (_conversionQueue != null)
+            {
+                _conversionQueue.CompleteAdding(); // Signal no more frames coming
+                Logger.Log("Waiting for conversion queue to drain...");
+            }
+
+            if (_conversionCancellation != null)
+            {
+                _conversionCancellation.Cancel();
+            }
+
+            if (_conversionWorkerTask != null)
+            {
+                await _conversionWorkerTask;
+                _conversionWorkerTask = null;
+            }
+
+            // Dispose conversion queue and remaining frames
+            if (_conversionQueue != null)
+            {
+                foreach (var frame in _conversionQueue)
+                {
+                    frame?.Dispose();
+                }
+                _conversionQueue.Dispose();
+                _conversionQueue = null;
+            }
+
+            _conversionCancellation?.Dispose();
+            _conversionCancellation = null;
+
             // Stop FFmpeg encoder
+            long encoderDropped = 0;
             if (_ffmpegEncoder != null)
             {
+                encoderDropped = _ffmpegEncoder.DroppedVideoFrames;
                 await _ffmpegEncoder.StopEncodingAsync();
                 _ffmpegEncoder.Dispose();
                 _ffmpegEncoder = null;
@@ -611,6 +1860,41 @@ public class CaptureService : IDisposable
                 await _aviWriter.FinalizeAsync();
                 _aviWriter.Dispose();
                 _aviWriter = null;
+            }
+
+            if (_recordingStopwatch.IsRunning)
+            {
+                if (Logger.VerboseEnabled)
+                {
+                    var durationMs = _recordingStopwatch.ElapsedMilliseconds;
+                    Logger.LogVerbose(
+                        $"Pipeline summary: durationMs={durationMs} arrived={Interlocked.Read(ref _videoFramesArrived)} " +
+                        $"queued={Interlocked.Read(ref _videoFramesQueued)} dropped={Interlocked.Read(ref _videoFramesDropped)} " +
+                        $"converted={Interlocked.Read(ref _videoFramesConverted)} enqueued={Interlocked.Read(ref _videoFramesEnqueued)} " +
+                        $"nv12Direct={Interlocked.Read(ref _videoFramesDirectNv12)} nv12Converted={Interlocked.Read(ref _videoFramesConvertedNv12)} " +
+                        $"ffmpegDropped={encoderDropped}");
+                }
+                _recordingStopwatch.Stop();
+            }
+
+            if (_postMuxAudioEnabled)
+            {
+                FinalizeAudioCaptureFile();
+
+                if (shouldPostMux && !string.IsNullOrWhiteSpace(tempVideoPath) &&
+                    !string.IsNullOrWhiteSpace(audioTempPath) && !string.IsNullOrWhiteSpace(finalOutputPath))
+                {
+                    var muxed = await MuxAudioIntoVideoAsync(tempVideoPath, audioTempPath, finalOutputPath);
+                    if (muxed)
+                    {
+                        TryDeleteFile(tempVideoPath);
+                        TryDeleteFile(audioTempPath);
+                    }
+                }
+
+                _postMuxAudioEnabled = false;
+                _audioTempPath = null;
+                _finalOutputPath = null;
             }
 
             _isRecording = false;
@@ -709,7 +1993,15 @@ public class CaptureService : IDisposable
             _audioInputNode = inputResult.DeviceInputNode;
             Logger.Log("Audio input node created successfully");
 
-            // Connect input to output - AudioGraph handles format conversion
+            // Create a frame output node for meter levels
+            var previewOutputFormat = AudioEncodingProperties.CreatePcm(48000, 2, 16);
+            _previewAudioFrameOutputNode = _audioGraph.CreateFrameOutputNode(previewOutputFormat);
+            _previewAudioFormat = _previewAudioFrameOutputNode.EncodingProperties;
+            _audioGraph.QuantumStarted += PreviewAudioGraph_QuantumStarted;
+            Logger.Log($"Preview audio output format: {_previewAudioFormat.Subtype}, {_previewAudioFormat.BitsPerSample} bits, {_previewAudioFormat.SampleRate} Hz, {_previewAudioFormat.ChannelCount} ch");
+
+            // Connect input to output nodes - AudioGraph handles format conversion
+            _audioInputNode.AddOutgoingConnection(_previewAudioFrameOutputNode);
             _audioInputNode.AddOutgoingConnection(_audioOutputNode);
             Logger.Log("Audio nodes connected");
 
@@ -745,6 +2037,13 @@ public class CaptureService : IDisposable
                 _audioInputNode = null;
             }
 
+            if (_previewAudioFrameOutputNode != null)
+            {
+                _previewAudioFrameOutputNode.Dispose();
+                _previewAudioFrameOutputNode = null;
+                _previewAudioFormat = null;
+            }
+
             if (_audioOutputNode != null)
             {
                 _audioOutputNode.Dispose();
@@ -753,13 +2052,14 @@ public class CaptureService : IDisposable
 
             if (_audioGraph != null)
             {
+                _audioGraph.QuantumStarted -= PreviewAudioGraph_QuantumStarted;
                 _audioGraph.Stop();
                 _audioGraph.Dispose();
                 _audioGraph = null;
             }
 
             _isAudioPreviewActive = false;
-            Logger.Log("✓ Audio preview stopped");
+            Logger.Log("Audio preview stopped");
             StatusChanged?.Invoke(this, "Audio preview stopped");
         }
         catch (Exception ex)
@@ -767,8 +2067,6 @@ public class CaptureService : IDisposable
             Logger.LogException(ex);
             ErrorOccurred?.Invoke(this, ex);
         }
-
-        await Task.CompletedTask;
     }
 
     public async Task CleanupAsync()
@@ -795,7 +2093,85 @@ public class CaptureService : IDisposable
 
     public void Dispose()
     {
-        CleanupAsync().GetAwaiter().GetResult();
+        if (_isDisposed) return;
+        _isDisposed = true;
+
+        // Don't block with GetAwaiter().GetResult() - it can deadlock on UI thread
+        // Instead, do synchronous cleanup for critical resources
+        try
+        {
+            _isRecording = false;
+            _isInitialized = false;
+
+            // Stop and dispose audio graphs synchronously
+            try
+            {
+                _recordingAudioGraph?.Stop();
+                _recordingAudioInputNode?.Dispose();
+                _audioFrameOutputNode?.Dispose();
+                _recordingAudioGraph?.Dispose();
+                _recordingAudioFormat = null;
+            }
+            catch (Exception ex) { Logger.Log($"Error stopping recording audio graph: {ex.Message}"); }
+
+            try
+            {
+                if (_audioGraph != null)
+                {
+                    _audioGraph.QuantumStarted -= PreviewAudioGraph_QuantumStarted;
+                }
+                _audioGraph?.Stop();
+                _audioInputNode?.Dispose();
+                _previewAudioFrameOutputNode?.Dispose();
+                _audioOutputNode?.Dispose();
+                _audioGraph?.Dispose();
+            }
+            catch (Exception ex) { Logger.Log($"Error stopping audio preview graph: {ex.Message}"); }
+
+            // Dispose FFmpeg encoder
+            try
+            {
+                _ffmpegEncoder?.Dispose();
+            }
+            catch (Exception ex) { Logger.Log($"Error disposing FFmpeg encoder: {ex.Message}"); }
+
+            // Dispose frame readers
+            try
+            {
+                _frameReader?.Dispose();
+                _recordingFrameReader?.Dispose();
+            }
+            catch (Exception ex) { Logger.Log($"Error disposing frame readers: {ex.Message}"); }
+
+            // Dispose AVI writer
+            try
+            {
+                _aviWriter?.Dispose();
+            }
+            catch (Exception ex) { Logger.Log($"Error disposing AVI writer: {ex.Message}"); }
+
+            // Dispose MediaCapture last
+            try
+            {
+                _mediaCapture?.Dispose();
+            }
+            catch (Exception ex) { Logger.Log($"Error disposing MediaCapture: {ex.Message}"); }
+
+            Logger.Log("CaptureService disposed");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Error during CaptureService disposal: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_isDisposed) return;
+        _isDisposed = true;
+
+        await CleanupAsync();
+        Logger.Log("CaptureService disposed (async)");
     }
 }
 

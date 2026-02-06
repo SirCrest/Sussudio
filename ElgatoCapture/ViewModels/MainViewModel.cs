@@ -1,9 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -23,9 +23,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private readonly Stopwatch _recordingStopwatch = new();
     private DispatcherQueueTimer? _timer;
     private IntPtr _windowHandle;
+    private readonly Queue<(long Tick, long Bytes)> _bitrateSamples = new();
+    private const int BitrateWindowMs = 5000;
 
     [ObservableProperty]
     private ObservableCollection<CaptureDevice> _devices = new();
+
+    [ObservableProperty]
+    private ObservableCollection<AudioInputDevice> _audioInputDevices = new();
+
+    [ObservableProperty]
+    private AudioInputDevice? _selectedAudioInputDevice;
+
+    [ObservableProperty]
+    private bool _isCustomAudioInputEnabled;
 
     [ObservableProperty]
     private CaptureDevice? _selectedDevice;
@@ -95,6 +106,12 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private string _recordingTime = "00:00:00";
 
     [ObservableProperty]
+    private string _recordingSizeInfo = "--";
+
+    [ObservableProperty]
+    private string _recordingBitrateInfo = "--";
+
+    [ObservableProperty]
     private bool _isRecording;
 
     [ObservableProperty]
@@ -106,10 +123,19 @@ public partial class MainViewModel : ObservableObject, IDisposable
     [ObservableProperty]
     private string _diskSpaceInfo = "";
 
+    [ObservableProperty]
+    private double _audioPeak;
+
+    [ObservableProperty]
+    private bool _audioClipping;
+
+    private const double MeterFloorDb = -60.0;
+    private const double MeterDecayDbPerSecond = 40.0 / 1.7; // OBS-like PPM decay
+    private double _audioMeterDb = MeterFloorDb;
+    private long _audioMeterLastTick;
+
     public MediaCapture? MediaCapture => _captureService.MediaCapture;
 
-    public event EventHandler? RequestPreviewStop;
-    public event EventHandler? PreviewNeedsRestart;
 
     public MainViewModel()
     {
@@ -120,31 +146,68 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _captureService.StatusChanged += OnCaptureStatusChanged;
         _captureService.ErrorOccurred += OnCaptureError;
         _captureService.FrameCaptured += OnFrameCaptured;
-        _captureService.RequestPreviewStop += OnRequestPreviewStop;
-        _captureService.PreviewNeedsRestart += OnPreviewNeedsRestart;
+        _captureService.AudioLevelUpdated += OnAudioLevelUpdated;
 
         SetupTimer();
         UpdateDiskSpace();
     }
 
-    private void OnRequestPreviewStop(object? sender, EventArgs e)
+    public async Task InitializeAsync()
     {
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            Logger.Log("=== Preview stop requested (MediaCapture about to be disposed) ===");
-            RequestPreviewStop?.Invoke(this, EventArgs.Empty);
-        });
+        await RefreshRecordingFormatsAsync();
     }
 
-    private void OnPreviewNeedsRestart(object? sender, EventArgs e)
+    private async Task RefreshRecordingFormatsAsync()
     {
-        _dispatcherQueue.TryEnqueue(() =>
+        var support = await FFmpegEncoderService.GetEncoderSupportAsync();
+        var formats = new List<string>();
+
+        if (support.HasH264)
         {
-            Logger.Log("=== Preview needs restart (MediaCapture reinitialized) ===");
-            OnPropertyChanged(nameof(MediaCapture));
-            PreviewNeedsRestart?.Invoke(this, EventArgs.Empty);
-        });
+            formats.Add("H.264 (MP4)");
+        }
+
+        if (support.HasHevc)
+        {
+            formats.Add("HEVC (MP4)");
+        }
+
+        if (support.HasAv1)
+        {
+            formats.Add("AV1 (MP4)");
+        }
+
+        formats.Add("Uncompressed (AVI)");
+
+        void ApplyFormats()
+        {
+            AvailableRecordingFormats.Clear();
+            foreach (var format in formats)
+            {
+                AvailableRecordingFormats.Add(format);
+            }
+
+            var preferred = "H.264 (MP4)";
+            if (formats.Contains(preferred))
+            {
+                SelectedRecordingFormat = preferred;
+            }
+            else if (!string.IsNullOrWhiteSpace(formats.FirstOrDefault()))
+            {
+                SelectedRecordingFormat = formats.First();
+            }
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            ApplyFormats();
+        }
+        else
+        {
+            _dispatcherQueue.TryEnqueue(ApplyFormats);
+        }
     }
+
 
     public void SetWindowHandle(IntPtr handle)
     {
@@ -160,6 +223,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (IsRecording)
             {
                 RecordingTime = _recordingStopwatch.Elapsed.ToString(@"hh\:mm\:ss");
+                UpdateRecordingStats();
             }
             UpdateDiskSpace();
         };
@@ -201,13 +265,36 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Could update frame count display if needed
     }
 
+    private void OnAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
+    {
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            AudioPeak = UpdateMeterLevel(e.Peak);
+            AudioClipping = e.Clipped;
+        });
+    }
+
     public async Task RefreshDevicesAsync()
     {
         StatusText = "Scanning for devices...";
         Devices.Clear();
+        AudioInputDevices.Clear();
 
         try
         {
+            var previousAudioId = SelectedAudioInputDevice?.Id;
+            var audioDevices = await _deviceService.EnumerateAudioCaptureDevicesAsync();
+            foreach (var audioDevice in audioDevices)
+            {
+                AudioInputDevices.Add(audioDevice);
+            }
+
+            if (AudioInputDevices.Count > 0)
+            {
+                SelectedAudioInputDevice = AudioInputDevices.FirstOrDefault(d => d.Id == previousAudioId)
+                    ?? AudioInputDevices[0];
+            }
+
             var devices = await _deviceService.EnumerateVideoCaptureDevicesAsync();
             foreach (var device in devices)
             {
@@ -354,19 +441,20 @@ public partial class MainViewModel : ObservableObject, IDisposable
             Logger.Log($"=== Format changed to {value.Width}x{value.Height}@{value.FrameRate}fps - reinitializing device ===");
             _dispatcherQueue.TryEnqueue(async () =>
             {
-                await ReinitializeWithNewFormatAsync();
+                await ReinitializeDeviceAsync("format change");
             });
         }
     }
 
-    private async Task ReinitializeWithNewFormatAsync()
+    private async Task ReinitializeDeviceAsync(string reason)
     {
         if (SelectedDevice == null || SelectedFormat == null)
             return;
 
         try
         {
-            StatusText = "Applying new format...";
+            StatusText = "Applying new settings...";
+            Logger.Log($"=== Reinitializing device ({reason}) ===");
 
             // Stop preview (this will stop the frame reader in MainWindow)
             IsPreviewing = false;
@@ -385,7 +473,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 OnPropertyChanged(nameof(MediaCapture));
 
                 // Restart audio preview if it was enabled
-                if (IsAudioPreviewEnabled)
+                if (IsAudioPreviewEnabled && IsAudioEnabled)
                 {
                     await _captureService.StartAudioPreviewAsync();
                 }
@@ -405,8 +493,66 @@ public partial class MainViewModel : ObservableObject, IDisposable
         IsCustomBitrateVisible = value == "Custom";
     }
 
+    partial void OnIsCustomAudioInputEnabledChanged(bool value)
+    {
+        if (IsRecording)
+        {
+            Logger.Log("Custom audio input change ignored while recording");
+            return;
+        }
+
+        if (value)
+        {
+            if (AudioInputDevices.Count == 0)
+            {
+                Logger.Log("Custom audio input enabled but no audio devices found");
+                IsCustomAudioInputEnabled = false;
+                return;
+            }
+
+            if (SelectedAudioInputDevice == null)
+            {
+                SelectedAudioInputDevice = AudioInputDevices[0];
+            }
+        }
+
+        _dispatcherQueue.TryEnqueue(async () =>
+        {
+            await ApplyAudioInputSelectionAsync("custom audio toggle");
+        });
+    }
+
+    partial void OnSelectedAudioInputDeviceChanged(AudioInputDevice? value)
+    {
+        if (IsRecording)
+        {
+            return;
+        }
+
+        if (!IsCustomAudioInputEnabled || value == null)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(async () =>
+        {
+            await ApplyAudioInputSelectionAsync("custom audio device change");
+        });
+    }
+
     partial void OnIsAudioPreviewEnabledChanged(bool value)
     {
+        if (value && !IsAudioEnabled)
+        {
+            Logger.Log("Audio preview requested but audio capture is disabled");
+            IsAudioPreviewEnabled = false;
+            return;
+        }
+        else if (!value && !IsRecording)
+        {
+            ResetAudioMeter();
+        }
+
         // Toggle audio preview if preview is already running
         if (IsPreviewing && IsInitialized)
         {
@@ -422,6 +568,166 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 }
             });
         }
+    }
+
+    private async Task ApplyAudioInputSelectionAsync(string reason)
+    {
+        if (!IsInitialized)
+        {
+            return;
+        }
+
+        string? audioDeviceId = null;
+        string? audioDeviceName = null;
+
+        if (IsCustomAudioInputEnabled)
+        {
+            audioDeviceId = SelectedAudioInputDevice?.Id;
+            audioDeviceName = SelectedAudioInputDevice?.Name;
+        }
+        else
+        {
+            audioDeviceId = SelectedDevice?.AudioDeviceId;
+            audioDeviceName = SelectedDevice?.AudioDeviceName;
+        }
+
+        Logger.Log($"=== Updating audio input ({reason}) ===");
+        Logger.Log($"  Audio device: {audioDeviceName ?? "(none)"}");
+
+        await _captureService.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);
+    }
+
+    partial void OnIsAudioEnabledChanged(bool value)
+    {
+        Logger.Log($"Audio capture enabled: {value}");
+
+        if (!value)
+        {
+            if (IsAudioPreviewEnabled)
+            {
+                IsAudioPreviewEnabled = false;
+            }
+
+            if (_captureService.IsAudioPreviewActive)
+            {
+                _dispatcherQueue.TryEnqueue(async () =>
+                {
+                    await _captureService.StopAudioPreviewAsync();
+                });
+            }
+
+            ResetAudioMeter();
+        }
+    }
+
+    partial void OnIsRecordingChanged(bool value)
+    {
+        if (!value)
+        {
+            ResetAudioMeter();
+            RecordingSizeInfo = "--";
+            RecordingBitrateInfo = "--";
+            _bitrateSamples.Clear();
+        }
+    }
+
+    private void ResetAudioMeter()
+    {
+        _audioMeterDb = MeterFloorDb;
+        _audioMeterLastTick = 0;
+        AudioPeak = 0;
+        AudioClipping = false;
+    }
+
+    private double UpdateMeterLevel(double peak)
+    {
+        var targetDb = peak > 0 ? 20.0 * Math.Log10(peak) : MeterFloorDb;
+        if (targetDb < MeterFloorDb) targetDb = MeterFloorDb;
+        if (targetDb > 0) targetDb = 0;
+
+        var nowTick = Environment.TickCount64;
+        if (_audioMeterLastTick == 0)
+        {
+            _audioMeterDb = targetDb;
+            _audioMeterLastTick = nowTick;
+        }
+        else
+        {
+            var dtSeconds = Math.Max(0, (nowTick - _audioMeterLastTick) / 1000.0);
+            _audioMeterLastTick = nowTick;
+
+            if (targetDb >= _audioMeterDb)
+            {
+                _audioMeterDb = targetDb;
+            }
+            else
+            {
+                var decay = MeterDecayDbPerSecond * dtSeconds;
+                _audioMeterDb = Math.Max(targetDb, _audioMeterDb - decay);
+            }
+        }
+
+        var level = (_audioMeterDb - MeterFloorDb) / -MeterFloorDb;
+        return Math.Clamp(level, 0, 1);
+    }
+
+    private void UpdateRecordingStats()
+    {
+        var stats = _captureService.GetRecordingStats();
+        var totalBytes = stats.TotalBytes;
+        RecordingSizeInfo = FormatBytes(totalBytes);
+
+        var now = Environment.TickCount64;
+        _bitrateSamples.Enqueue((now, totalBytes));
+        while (_bitrateSamples.Count > 0 && now - _bitrateSamples.Peek().Tick > BitrateWindowMs)
+        {
+            _bitrateSamples.Dequeue();
+        }
+
+        if (_bitrateSamples.Count >= 2)
+        {
+            var first = _bitrateSamples.Peek();
+            var last = _bitrateSamples.Last();
+            var deltaBytes = Math.Max(0, last.Bytes - first.Bytes);
+            var deltaSeconds = Math.Max(0.001, (last.Tick - first.Tick) / 1000.0);
+            var bitsPerSecond = (deltaBytes * 8.0) / deltaSeconds;
+            RecordingBitrateInfo = FormatBitrate(bitsPerSecond);
+        }
+        else
+        {
+            RecordingBitrateInfo = "Bitrate: --";
+        }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        const double scale = 1024;
+        double value = Math.Max(0, bytes);
+        string[] units = { "B", "KB", "MB", "GB", "TB" };
+        var unit = 0;
+        while (value >= scale && unit < units.Length - 1)
+        {
+            value /= scale;
+            unit++;
+        }
+        return $"{Math.Round(value):0} {units[unit]}";
+    }
+
+    private static string FormatBitrate(double bitsPerSecond)
+    {
+        if (bitsPerSecond <= 0)
+        {
+            return "0 bps";
+        }
+
+        string[] units = { "bps", "Kbps", "Mbps", "Gbps" };
+        var unit = 0;
+        while (bitsPerSecond >= 1000 && unit < units.Length - 1)
+        {
+            bitsPerSecond /= 1000;
+            unit++;
+        }
+        return $"{Math.Round(bitsPerSecond):0} {units[unit]}";
     }
 
     private async Task InitializeDeviceAsync()
@@ -500,7 +806,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             StatusText = "Preview starting...";
 
             // Start audio preview if enabled
-            if (IsAudioPreviewEnabled)
+            if (IsAudioPreviewEnabled && IsAudioEnabled)
             {
                 Logger.Log("Starting audio preview...");
                 await _captureService.StartAudioPreviewAsync();
@@ -561,6 +867,9 @@ public partial class MainViewModel : ObservableObject, IDisposable
             await _captureService.StartRecordingAsync(settings);
             IsRecording = true;
             _recordingStopwatch.Restart();
+            _bitrateSamples.Clear();
+            RecordingSizeInfo = "0 B";
+            RecordingBitrateInfo = "--";
             StatusText = "Recording...";
         }
         catch (Exception ex)
@@ -612,6 +921,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         var format = SelectedRecordingFormat switch
         {
             "HEVC (MP4)" => RecordingFormat.HevcMp4,
+            "AV1 (MP4)" => RecordingFormat.Av1Mp4,
             "Uncompressed (AVI)" => RecordingFormat.UncompressedAvi,
             _ => RecordingFormat.H264Mp4
         };
@@ -628,7 +938,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             _ => VideoQuality.High
         };
 
-        return new CaptureSettings
+        var settings = new CaptureSettings
         {
             Width = SelectedFormat?.Width ?? 1920,
             Height = SelectedFormat?.Height ?? 1080,
@@ -640,6 +950,15 @@ public partial class MainViewModel : ObservableObject, IDisposable
             OutputPath = OutputPath,
             AudioEnabled = IsAudioEnabled
         };
+
+        settings.UseCustomAudioInput = IsCustomAudioInputEnabled;
+        if (IsCustomAudioInputEnabled && SelectedAudioInputDevice != null)
+        {
+            settings.AudioDeviceId = SelectedAudioInputDevice.Id;
+            settings.AudioDeviceName = SelectedAudioInputDevice.Name;
+        }
+
+        return settings;
     }
 
     public void Dispose()
@@ -648,8 +967,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         _captureService.StatusChanged -= OnCaptureStatusChanged;
         _captureService.ErrorOccurred -= OnCaptureError;
         _captureService.FrameCaptured -= OnFrameCaptured;
-        _captureService.RequestPreviewStop -= OnRequestPreviewStop;
-        _captureService.PreviewNeedsRestart -= OnPreviewNeedsRestart;
+        _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
         _captureService.Dispose();
     }
 }

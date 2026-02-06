@@ -7,6 +7,7 @@ public enum RecordingFormat
 {
     H264Mp4,
     HevcMp4,
+    Av1Mp4,
     UncompressedAvi
 }
 
@@ -32,6 +33,9 @@ public class CaptureSettings
     public bool HdrEnabled { get; set; }
     public string OutputPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
     public bool AudioEnabled { get; set; } = true;
+    public bool UseCustomAudioInput { get; set; }
+    public string? AudioDeviceId { get; set; }
+    public string? AudioDeviceName { get; set; }
 
     /// <summary>
     /// Calculates the target video bitrate based on quality setting, resolution, and frame rate.
@@ -65,8 +69,13 @@ public class CaptureSettings
         // Scale by frame rate (relative to 30fps)
         double frameRateScale = FrameRate / 30.0;
 
-        // HEVC is more efficient (~40% better compression)
-        double codecFactor = Format == RecordingFormat.HevcMp4 ? 0.6 : 1.0;
+        // Codec efficiency factors (lower = more efficient)
+        double codecFactor = Format switch
+        {
+            RecordingFormat.HevcMp4 => 0.6,
+            RecordingFormat.Av1Mp4 => 0.5,
+            _ => 1.0
+        };
 
         // Calculate final bitrate
         double finalMbps = baseMbps * resolutionScale * frameRateScale * codecFactor;
@@ -86,6 +95,7 @@ public class CaptureSettings
         {
             RecordingFormat.H264Mp4 => "H264",
             RecordingFormat.HevcMp4 => "HEVC",
+            RecordingFormat.Av1Mp4 => "AV1",
             RecordingFormat.UncompressedAvi => "RAW",
             _ => "VIDEO"
         };

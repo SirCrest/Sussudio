@@ -16,10 +16,11 @@ public class DeviceService
     private static readonly string[] AllowedDevices = new[]
     {
         "Game Capture Neo",
-        // Add more devices here as needed:
-        // "HD60 S+",
-        // "4K60 Pro",
-        // "4K X",
+        "HD60 S+",
+        "HD60 X",
+        "4K60 Pro",
+        "4K X",
+        "4K S",
     };
 
     public async Task<ObservableCollection<CaptureDevice>> EnumerateVideoCaptureDevicesAsync()
@@ -173,9 +174,13 @@ public class DeviceService
         }
     }
 
-    public async Task<List<(string Id, string Name)>> EnumerateAudioCaptureDevicesAsync()
+    public async Task<List<AudioInputDevice>> EnumerateAudioCaptureDevicesAsync()
     {
         var audioDevices = await DeviceInformation.FindAllAsync(DeviceClass.AudioCapture);
-        return audioDevices.Select(d => (d.Id, d.Name)).ToList();
+        return audioDevices.Select(d => new AudioInputDevice
+        {
+            Id = d.Id,
+            Name = d.Name
+        }).ToList();
     }
 }

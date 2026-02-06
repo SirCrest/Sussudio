@@ -22,32 +22,71 @@
         </Grid.RowDefinitions>
 
         <!-- Device Selection Row -->
-        <Grid Grid.Row="0">
+        <Grid Grid.Row="0" ColumnSpacing="10" RowSpacing="4">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
-            <TextBlock Grid.Column="0"
-                       Text="Device:"
-                       VerticalAlignment="Center"
-                       Margin="0,0,12,0"
-                       FontWeight="SemiBold"/>
+            <TextBlock Grid.Row="0" Grid.Column="0"
+                       Text="Device"
+                       FontSize="12"
+                       Opacity="0.7"
+                       VerticalAlignment="Bottom"
+                       Margin="0,0,0,2"/>
 
-            <ComboBox Grid.Column="1"
+            <TextBlock Grid.Row="0" Grid.Column="2"
+                       Text="Custom Audio Input"
+                       FontSize="12"
+                       Opacity="0.7"
+                       VerticalAlignment="Bottom"
+                       Margin="0,0,0,2"/>
+
+            <TextBlock x:Name="AudioInputLabel"
+                       Grid.Row="0" Grid.Column="3"
+                       Text="Audio Input"
+                       FontSize="12"
+                       Opacity="0.7"
+                       VerticalAlignment="Bottom"
+                       Margin="0,0,0,2"
+                       Visibility="Collapsed"/>
+
+            <ComboBox Grid.Row="1" Grid.Column="0"
                       x:Name="DeviceComboBox"
-                      HorizontalAlignment="Stretch"
+                      Width="520"
+                      VerticalAlignment="Center"
                       DisplayMemberPath="Name"
                       PlaceholderText="Select a capture device"/>
 
-            <Button Grid.Column="2"
+            <Button Grid.Row="1" Grid.Column="1"
                     x:Name="RefreshButton"
-                    Margin="8,0,0,0"
                     Click="RefreshButton_Click"
-                    ToolTipService.ToolTip="Refresh device list">
+                    ToolTipService.ToolTip="Refresh device list"
+                    VerticalAlignment="Center">
                 <FontIcon Glyph="&#xE72C;" FontSize="14"/>
             </Button>
+
+            <ToggleSwitch Grid.Row="1" Grid.Column="2"
+                          x:Name="CustomAudioToggle"
+                          OnContent="On" OffContent="Off"
+                          MinWidth="0"
+                          VerticalAlignment="Center"
+                          Margin="0,2,0,0"/>
+
+            <ComboBox Grid.Row="1" Grid.Column="3"
+                      x:Name="AudioInputComboBox"
+                      Width="320"
+                      VerticalAlignment="Center"
+                      DisplayMemberPath="Name"
+                      PlaceholderText="Select audio input"
+                      Visibility="Collapsed"/>
         </Grid>
 
         <!-- Video Preview Area -->
@@ -106,6 +145,8 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <!-- Resolution -->
@@ -155,24 +196,82 @@
             <!-- Spacer -->
             <Border Grid.Column="5"/>
 
-            <!-- HDR Toggle -->
-            <StackPanel Grid.Column="6" VerticalAlignment="Center">
-                <TextBlock Text="HDR" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
-                <ToggleSwitch x:Name="HdrToggle"
-                              OnContent="On" OffContent="Off"
-                              MinWidth="0"/>
-            </StackPanel>
+            <!-- HDR + Audio Controls -->
+            <StackPanel Grid.Column="6"
+                        Grid.ColumnSpan="4"
+                        Orientation="Horizontal"
+                        Spacing="16"
+                        VerticalAlignment="Center">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="HDR" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
+                    <ToggleSwitch x:Name="HdrToggle"
+                                  OnContent="" OffContent=""
+                                  Width="44"
+                                  Height="32"
+                                  MinWidth="0"/>
+                </StackPanel>
 
-            <!-- Audio Preview Toggle -->
-            <StackPanel Grid.Column="7" VerticalAlignment="Center">
-                <TextBlock Text="Audio" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
-                <ToggleButton x:Name="AudioPreviewToggle"
-                              IsChecked="True"
-                              Width="40"
-                              Height="32"
-                              ToolTipService.ToolTip="Toggle audio preview">
-                    <FontIcon Glyph="&#xE767;" FontSize="14"/>
-                </ToggleButton>
+                <StackPanel VerticalAlignment="Center" Spacing="6">
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Grid x:Name="AudioMeterTrack" Width="200" Height="8">
+                            <Border Background="#1E1E1E"
+                                    BorderBrush="#333333"
+                                    BorderThickness="1"
+                                    CornerRadius="2">
+                                <Grid x:Name="AudioMeterFillHost">
+                                    <Rectangle x:Name="AudioMeterFill"
+                                               Height="6"
+                                               RadiusX="1"
+                                               RadiusY="1"
+                                               HorizontalAlignment="Stretch"
+                                               VerticalAlignment="Center">
+                                        <Rectangle.Fill>
+                                            <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                                <GradientStop Color="#32CD32" Offset="0"/>
+                                                <GradientStop Color="#32CD32" Offset="0.6667"/>
+                                                <GradientStop Color="#DAA520" Offset="0.6667"/>
+                                                <GradientStop Color="#DAA520" Offset="0.85"/>
+                                                <GradientStop Color="#FF4500" Offset="0.85"/>
+                                                <GradientStop Color="#FF4500" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Rectangle.Fill>
+                                    </Rectangle>
+                                    <Rectangle x:Name="AudioMeterMask"
+                                               Height="6"
+                                               RadiusX="1"
+                                               RadiusY="1"
+                                               Fill="#1E1E1E"
+                                               HorizontalAlignment="Right"
+                                               VerticalAlignment="Center"/>
+                                </Grid>
+                            </Border>
+                        </Grid>
+                        <TextBlock x:Name="AudioClipText"
+                                   Text="CLIP"
+                                   Foreground="#D13438"
+                                   FontSize="11"
+                                   FontWeight="SemiBold"
+                                   Visibility="Collapsed"
+                                   VerticalAlignment="Center"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <ToggleButton x:Name="AudioRecordToggle"
+                                      IsChecked="True"
+                                      Width="44"
+                                      Height="32"
+                                      ToolTipService.ToolTip="Record audio">
+                            <FontIcon Glyph="&#xE720;" FontSize="14"/>
+                        </ToggleButton>
+                        <ToggleButton x:Name="AudioPreviewToggle"
+                                      IsChecked="True"
+                                      Width="44"
+                                      Height="32"
+                                      ToolTipService.ToolTip="Preview audio">
+                            <FontIcon Glyph="&#xE767;" FontSize="14"/>
+                        </ToggleButton>
+                    </StackPanel>
+                </StackPanel>
             </StackPanel>
         </Grid>
 
@@ -186,76 +285,94 @@
             <!-- Output Path and Status -->
             <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="8">
                 <!-- Output Path Row -->
-                <Grid ColumnSpacing="8">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0"
-                               Text="Output:"
-                               VerticalAlignment="Center"
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Output"
                                FontSize="12"
-                               Opacity="0.7"/>
-                    <TextBox Grid.Column="1"
-                             x:Name="OutputPathTextBox"
-                             IsReadOnly="True"
-                             VerticalAlignment="Center"
-                             FontSize="12"/>
-                    <Button Grid.Column="2"
-                            x:Name="BrowseButton"
-                            Content="Browse..."
-                            Click="BrowseButton_Click"
-                            Padding="12,4"/>
-                </Grid>
+                               Opacity="0.7"
+                               Margin="0,0,0,2"/>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <TextBox x:Name="OutputPathTextBox"
+                                 IsReadOnly="True"
+                                 VerticalAlignment="Center"
+                                 FontSize="12"
+                                 Height="36"
+                                 Width="560"/>
+                        <Button x:Name="BrowseButton"
+                                Click="BrowseButton_Click"
+                                Width="36"
+                                Height="36"
+                                Padding="0"
+                                ToolTipService.ToolTip="Choose output folder">
+                            <FontIcon Glyph="&#xE838;"
+                                      FontSize="16"
+                                      VerticalAlignment="Center"
+                                      HorizontalAlignment="Center"/>
+                        </Button>
+                    </StackPanel>
+                </StackPanel>
 
                 <!-- Status Row -->
                 <Grid ColumnSpacing="24">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Status -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                        <TextBlock Text="Status:" FontSize="12" Opacity="0.7" VerticalAlignment="Center"/>
-                        <TextBlock x:Name="StatusTextBlock"
-                                   Text="Ready"
-                                   FontSize="12"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"/>
-                    </StackPanel>
-
-                    <!-- Disk Space -->
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
                         <FontIcon Glyph="&#xEDA2;" FontSize="12" Opacity="0.5" VerticalAlignment="Center"/>
                         <TextBlock x:Name="DiskSpaceTextBlock"
                                    FontSize="12"
                                    Opacity="0.7"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="24">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Size:" FontSize="12" Opacity="0.7" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="RecordingSizeTextBlock"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       MinWidth="72"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock Text="Bitrate:" FontSize="12" Opacity="0.7" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="RecordingBitrateTextBlock"
+                                       FontSize="12"
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       MinWidth="64"/>
+                        </StackPanel>
+                    </StackPanel>
                 </Grid>
+
+                
             </StackPanel>
 
             <!-- Recording Controls -->
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+            <StackPanel Grid.Column="1" Orientation="Vertical" Spacing="6" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <!-- Preview Button -->
-                <Button x:Name="PreviewButton"
-                        Content="Start Preview"
-                        Click="PreviewButton_Click"
-                        VerticalAlignment="Center"
-                        Height="40"
-                        Padding="16,0"/>
+                <StackPanel Orientation="Horizontal" Spacing="12" HorizontalAlignment="Right">
+                    <Button x:Name="PreviewButton"
+                            Content="Start Preview"
+                            Click="PreviewButton_Click"
+                            VerticalAlignment="Center"
+                            Height="44"
+                            MinWidth="160"
+                            Padding="16,0"
+                            CornerRadius="4"/>
 
                 <!-- Record Button - transforms to show timer when recording -->
-                <Button x:Name="RecordButton"
-                        Click="RecordButton_Click"
-                        Height="44"
-                        MinWidth="140"
-                        Padding="16,0"
-                        Background="#E81123"
-                        BorderBrush="#C50F1F"
-                        CornerRadius="4">
+                    <Button x:Name="RecordButton"
+                            Click="RecordButton_Click"
+                            Height="44"
+                            MinWidth="160"
+                            Padding="16,0"
+                            Background="#E81123"
+                            BorderBrush="#C50F1F"
+                            CornerRadius="4">
                     <Button.Resources>
                         <SolidColorBrush x:Key="ButtonBackgroundPointerOver">#F1707A</SolidColorBrush>
                         <SolidColorBrush x:Key="ButtonBackgroundPressed">#C50F1F</SolidColorBrush>
@@ -296,7 +413,14 @@
                                     VerticalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
-                </Button>
+                    </Button>
+                </StackPanel>
+
+                <TextBlock x:Name="StatusTextBlock"
+                           Text="Ready"
+                           FontSize="12"
+                           Opacity="0.7"
+                           HorizontalAlignment="Right"/>
             </StackPanel>
         </Grid>
     </Grid>

@@ -1,6 +1,9 @@
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Threading;
+using System.Threading.Tasks;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -17,6 +20,14 @@ public sealed partial class MainWindow : Window
     private MediaFrameReader? _previewFrameReader;
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
+    private long _previewFramesArrived;
+    private long _previewFramesDisplayed;
+    private long _previewFramesDropped;
+    private long _previewLastLogTick;
+    private int _previewUiInFlight;
+
+    private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.1)
+        => Math.Abs(a - b) < tolerance;
 
     public MainWindow()
     {
@@ -53,8 +64,6 @@ public sealed partial class MainWindow : Window
 
         // Subscribe to ViewModel changes
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-        ViewModel.RequestPreviewStop += ViewModel_RequestPreviewStop;
-        ViewModel.PreviewNeedsRestart += ViewModel_PreviewNeedsRestart;
 
         // Wire up UI controls to ViewModel
         SetupBindings();
@@ -68,6 +77,7 @@ public sealed partial class MainWindow : Window
     {
         // Bind all collections to ComboBoxes
         DeviceComboBox.ItemsSource = ViewModel.Devices;
+        AudioInputComboBox.ItemsSource = ViewModel.AudioInputDevices;
         ResolutionComboBox.ItemsSource = ViewModel.AvailableResolutions;
         FrameRateComboBox.ItemsSource = ViewModel.AvailableFrameRates;
         FormatComboBox.ItemsSource = ViewModel.AvailableRecordingFormats;
@@ -86,7 +96,7 @@ public sealed partial class MainWindow : Window
                     {
                         // Find matching item in the collection
                         var matchingRate = ViewModel.AvailableFrameRates
-                            .FirstOrDefault(f => Math.Abs(f - ViewModel.SelectedFrameRate) < 0.1);
+                            .FirstOrDefault(f => IsFrameRateMatch(f, ViewModel.SelectedFrameRate));
                         if (matchingRate > 0)
                         {
                             FrameRateComboBox.SelectedItem = matchingRate;
@@ -99,11 +109,24 @@ public sealed partial class MainWindow : Window
         // Set initial values
         OutputPathTextBox.Text = ViewModel.OutputPath;
         DiskSpaceTextBlock.Text = ViewModel.DiskSpaceInfo;
+        RecordingSizeTextBlock.Text = ViewModel.RecordingSizeInfo;
+        RecordingBitrateTextBlock.Text = ViewModel.RecordingBitrateInfo;
+        AudioRecordToggle.IsChecked = ViewModel.IsAudioEnabled;
         AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
+        AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled;
+        CustomAudioToggle.IsOn = ViewModel.IsCustomAudioInputEnabled;
+        CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
+        var customAudioVisible = ViewModel.IsCustomAudioInputEnabled ? Visibility.Visible : Visibility.Collapsed;
+        AudioInputLabel.Visibility = customAudioVisible;
+        AudioInputComboBox.Visibility = customAudioVisible;
+        AudioInputComboBox.SelectedItem = ViewModel.SelectedAudioInputDevice;
+        AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
         FormatComboBox.SelectedItem = ViewModel.SelectedRecordingFormat;
         QualityComboBox.SelectedItem = ViewModel.SelectedQuality;
         CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
         CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
+        UpdateAudioMeterLevel(ViewModel.AudioPeak);
+        AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
 
         // Wire up selection changes with loop prevention
         DeviceComboBox.SelectionChanged += (s, e) =>
@@ -112,6 +135,15 @@ public sealed partial class MainWindow : Window
                 DeviceComboBox.SelectedItem != ViewModel.SelectedDevice)
             {
                 ViewModel.SelectedDevice = (ElgatoCapture.Models.CaptureDevice)DeviceComboBox.SelectedItem;
+            }
+        };
+
+        AudioInputComboBox.SelectionChanged += (s, e) =>
+        {
+            if (AudioInputComboBox.SelectedItem is ElgatoCapture.Models.AudioInputDevice device &&
+                device != ViewModel.SelectedAudioInputDevice)
+            {
+                ViewModel.SelectedAudioInputDevice = device;
             }
         };
 
@@ -127,7 +159,7 @@ public sealed partial class MainWindow : Window
         FrameRateComboBox.SelectionChanged += (s, e) =>
         {
             if (FrameRateComboBox.SelectedItem is double frameRate &&
-                Math.Abs(frameRate - ViewModel.SelectedFrameRate) > 0.1)
+                !IsFrameRateMatch(frameRate, ViewModel.SelectedFrameRate))
             {
                 ViewModel.SelectedFrameRate = frameRate;
             }
@@ -158,8 +190,12 @@ public sealed partial class MainWindow : Window
         };
 
         HdrToggle.Toggled += (s, e) => ViewModel.IsHdrEnabled = HdrToggle.IsOn;
+        AudioRecordToggle.Checked += (s, e) => ViewModel.IsAudioEnabled = true;
+        AudioRecordToggle.Unchecked += (s, e) => ViewModel.IsAudioEnabled = false;
         AudioPreviewToggle.Checked += (s, e) => ViewModel.IsAudioPreviewEnabled = true;
         AudioPreviewToggle.Unchecked += (s, e) => ViewModel.IsAudioPreviewEnabled = false;
+        CustomAudioToggle.Toggled += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsOn;
+        AudioMeterFillHost.SizeChanged += (s, e) => UpdateAudioMeterLevel(ViewModel.AudioPeak);
     }
 
     private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -168,35 +204,14 @@ public sealed partial class MainWindow : Window
         ((FrameworkElement)this.Content).Loaded -= MainWindow_Loaded;
 
         Logger.Log("=== MainWindow_Loaded - Starting device enumeration ===");
+        await ViewModel.InitializeAsync();
         await ViewModel.RefreshDevicesAsync();
     }
 
     private void MainWindow_Closed(object sender, WindowEventArgs args)
     {
-        ViewModel.RequestPreviewStop -= ViewModel_RequestPreviewStop;
-        ViewModel.PreviewNeedsRestart -= ViewModel_PreviewNeedsRestart;
         StopPreviewInternal();
         ViewModel.Dispose();
-    }
-
-    private void ViewModel_RequestPreviewStop(object? sender, EventArgs e)
-    {
-        Logger.Log("=== Stopping preview (MediaCapture about to be disposed) ===");
-        StopPreviewInternal();
-    }
-
-    private async void ViewModel_PreviewNeedsRestart(object? sender, EventArgs e)
-    {
-        Logger.Log("=== Restarting preview after MediaCapture reinitialization ===");
-
-        // Stop the current frame reader
-        StopPreviewInternal();
-
-        // Restart preview with the new MediaCapture instance
-        if (ViewModel.IsPreviewing && ViewModel.MediaCapture != null)
-        {
-            await StartPreviewInternalAsync();
-        }
     }
 
     private async void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -223,6 +238,9 @@ public sealed partial class MainWindow : Window
                 // Toggle record button content between normal and recording states
                 RecordButtonNormalContent.Visibility = ViewModel.IsRecording ? Visibility.Collapsed : Visibility.Visible;
                 RecordButtonRecordingContent.Visibility = ViewModel.IsRecording ? Visibility.Visible : Visibility.Collapsed;
+                AudioRecordToggle.IsEnabled = !ViewModel.IsRecording;
+                CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
+                AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
                 break;
 
             case nameof(MainViewModel.StatusText):
@@ -236,9 +254,23 @@ public sealed partial class MainWindow : Window
             case nameof(MainViewModel.DiskSpaceInfo):
                 DiskSpaceTextBlock.Text = ViewModel.DiskSpaceInfo;
                 break;
+            case nameof(MainViewModel.RecordingSizeInfo):
+                RecordingSizeTextBlock.Text = ViewModel.RecordingSizeInfo;
+                break;
+            case nameof(MainViewModel.RecordingBitrateInfo):
+                RecordingBitrateTextBlock.Text = ViewModel.RecordingBitrateInfo;
+                break;
 
             case nameof(MainViewModel.OutputPath):
                 OutputPathTextBox.Text = ViewModel.OutputPath;
+                break;
+
+            case nameof(MainViewModel.AudioPeak):
+                UpdateAudioMeterLevel(ViewModel.AudioPeak);
+                break;
+
+            case nameof(MainViewModel.AudioClipping):
+                AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
                 break;
 
             case nameof(MainViewModel.SelectedDevice):
@@ -281,9 +313,9 @@ public sealed partial class MainWindow : Window
                 if (ViewModel.SelectedFrameRate > 0 && FrameRateComboBox.Items.Count > 0)
                 {
                     var matchingRate = ViewModel.AvailableFrameRates
-                        .FirstOrDefault(f => Math.Abs(f - ViewModel.SelectedFrameRate) < 0.1);
+                        .FirstOrDefault(f => IsFrameRateMatch(f, ViewModel.SelectedFrameRate));
                     if (matchingRate > 0 && FrameRateComboBox.SelectedItem is not double currentFps ||
-                        FrameRateComboBox.SelectedItem is double currentFps2 && Math.Abs(currentFps2 - matchingRate) > 0.1)
+                        FrameRateComboBox.SelectedItem is double currentFps2 && !IsFrameRateMatch(currentFps2, matchingRate))
                     {
                         FrameRateComboBox.SelectedItem = matchingRate;
                     }
@@ -301,24 +333,65 @@ public sealed partial class MainWindow : Window
             case nameof(MainViewModel.IsCustomBitrateVisible):
                 CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
                 break;
+
+            case nameof(MainViewModel.IsCustomAudioInputEnabled):
+                if (CustomAudioToggle.IsOn != ViewModel.IsCustomAudioInputEnabled)
+                {
+                    CustomAudioToggle.IsOn = ViewModel.IsCustomAudioInputEnabled;
+                }
+                var isVisible = ViewModel.IsCustomAudioInputEnabled ? Visibility.Visible : Visibility.Collapsed;
+                AudioInputLabel.Visibility = isVisible;
+                AudioInputComboBox.Visibility = isVisible;
+                AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+                break;
+
+            case nameof(MainViewModel.SelectedAudioInputDevice):
+                if (AudioInputComboBox.SelectedItem != ViewModel.SelectedAudioInputDevice)
+                {
+                    AudioInputComboBox.SelectedItem = ViewModel.SelectedAudioInputDevice;
+                }
+                break;
+
+            case nameof(MainViewModel.SelectedRecordingFormat):
+                if (FormatComboBox.SelectedItem as string != ViewModel.SelectedRecordingFormat)
+                {
+                    FormatComboBox.SelectedItem = ViewModel.SelectedRecordingFormat;
+                }
+                break;
+
+            case nameof(MainViewModel.IsAudioEnabled):
+                if (AudioRecordToggle.IsChecked != ViewModel.IsAudioEnabled)
+                {
+                    AudioRecordToggle.IsChecked = ViewModel.IsAudioEnabled;
+                }
+                AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled;
+                if (!ViewModel.IsAudioEnabled && AudioPreviewToggle.IsChecked == true)
+                {
+                    AudioPreviewToggle.IsChecked = false;
+                }
+                break;
+
+            case nameof(MainViewModel.IsAudioPreviewEnabled):
+                if (AudioPreviewToggle.IsChecked != ViewModel.IsAudioPreviewEnabled)
+                {
+                    AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
+                }
+                break;
         }
     }
 
     private async System.Threading.Tasks.Task StartPreviewInternalAsync()
     {
         Logger.Log("=== START PREVIEW BEGIN ===");
-        System.Diagnostics.Debug.WriteLine("=== StartPreviewInternalAsync BEGIN ===");
 
         if (ViewModel.MediaCapture == null)
         {
             Logger.Log("ERROR: MediaCapture is NULL!");
-            System.Diagnostics.Debug.WriteLine("ERROR: MediaCapture is NULL!");
             ViewModel.StatusText = "Preview failed: MediaCapture not initialized";
             return;
         }
 
         Logger.Log($"MediaCapture state: {ViewModel.MediaCapture}");
-        System.Diagnostics.Debug.WriteLine($"MediaCapture state: {ViewModel.MediaCapture}");
 
         try
         {
@@ -326,24 +399,22 @@ public sealed partial class MainWindow : Window
             _previewSource = new SoftwareBitmapSource();
             PreviewImage.Source = _previewSource;
             Logger.Log("Preview image source created");
-            System.Diagnostics.Debug.WriteLine("Preview image source created");
+            _previewFramesArrived = 0;
+            _previewFramesDisplayed = 0;
+            _previewFramesDropped = 0;
+            _previewLastLogTick = 0;
+            _previewUiInFlight = 0;
 
             // Find the video preview stream
             Logger.Log("Finding frame source groups...");
-            System.Diagnostics.Debug.WriteLine("Finding frame source groups...");
             var frameSourceGroups = await Windows.Media.Capture.Frames.MediaFrameSourceGroup.FindAllAsync();
             Logger.Log($"Found {frameSourceGroups.Count} frame source groups");
-            System.Diagnostics.Debug.WriteLine($"Found {frameSourceGroups.Count} frame source groups");
 
             Logger.Log($"MediaCapture.FrameSources count: {ViewModel.MediaCapture.FrameSources.Count}");
-            System.Diagnostics.Debug.WriteLine($"MediaCapture.FrameSources count: {ViewModel.MediaCapture.FrameSources.Count}");
 
             foreach (var source in ViewModel.MediaCapture.FrameSources)
             {
                 Logger.Log($"  Source ID: {source.Key}, Type: {source.Value.Info.MediaStreamType}, Kind: {source.Value.Info.SourceKind}");
-                System.Diagnostics.Debug.WriteLine($"  - Source ID: {source.Key}");
-                System.Diagnostics.Debug.WriteLine($"    MediaStreamType: {source.Value.Info.MediaStreamType}");
-                System.Diagnostics.Debug.WriteLine($"    SourceKind: {source.Value.Info.SourceKind}");
             }
 
             var colorSourceInfo = ViewModel.MediaCapture.FrameSources.Values
@@ -353,7 +424,6 @@ public sealed partial class MainWindow : Window
             if (colorSourceInfo != null)
             {
                 Logger.Log($"Found color source: {colorSourceInfo.Info.Id}");
-                System.Diagnostics.Debug.WriteLine($"Found color source: {colorSourceInfo.Info.Id}");
 
                 // Log available formats
                 Logger.Log($"Available formats count: {colorSourceInfo.SupportedFormats.Count}");
@@ -397,56 +467,44 @@ public sealed partial class MainWindow : Window
                 }
 
                 Logger.Log("Creating frame reader...");
-                System.Diagnostics.Debug.WriteLine("Creating frame reader...");
 
                 // Create frame reader for preview
                 _previewFrameReader = await ViewModel.MediaCapture.CreateFrameReaderAsync(colorSourceInfo);
                 Logger.Log("Frame reader created successfully");
-                System.Diagnostics.Debug.WriteLine("Frame reader created successfully");
 
                 _previewFrameReader.FrameArrived += PreviewFrameReader_FrameArrived;
                 Logger.Log("FrameArrived event handler attached");
-                System.Diagnostics.Debug.WriteLine("FrameArrived event handler attached");
 
                 var startResult = await _previewFrameReader.StartAsync();
                 Logger.Log($"Frame reader start result: {startResult}");
-                System.Diagnostics.Debug.WriteLine($"Frame reader start result: {startResult}");
 
                 if (startResult == Windows.Media.Capture.Frames.MediaFrameReaderStartStatus.Success)
                 {
-                    Logger.Log("✓ Preview started successfully!");
-                    System.Diagnostics.Debug.WriteLine("✓ Preview started successfully!");
+                    Logger.Log("Preview started successfully");
                     ViewModel.StatusText = "Preview active - waiting for frames...";
                 }
                 else
                 {
-                    Logger.Log($"✗ Frame reader failed to start: {startResult}");
-                    System.Diagnostics.Debug.WriteLine($"✗ Frame reader failed to start: {startResult}");
+                    Logger.Log($"Frame reader failed to start: {startResult}");
                     ViewModel.StatusText = $"Preview failed to start: {startResult}";
                 }
             }
             else
             {
                 Logger.Log("No suitable frame source found, trying fallback...");
-                System.Diagnostics.Debug.WriteLine("No suitable frame source found, trying fallback...");
                 // Fallback: try using MediaCapture.StartPreviewAsync() for older devices
                 await ViewModel.MediaCapture.StartPreviewAsync();
                 Logger.Log("Fallback preview started");
-                System.Diagnostics.Debug.WriteLine("Fallback preview started");
                 ViewModel.StatusText = "Preview active (fallback mode)";
             }
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
-            System.Diagnostics.Debug.WriteLine($"✗ EXCEPTION in StartPreviewInternalAsync: {ex.GetType().Name}");
-            System.Diagnostics.Debug.WriteLine($"  Message: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"  StackTrace: {ex.StackTrace}");
             ViewModel.StatusText = $"Preview failed: {ex.Message}";
         }
 
         Logger.Log("=== START PREVIEW END ===");
-        System.Diagnostics.Debug.WriteLine("=== StartPreviewInternalAsync END ===");
     }
 
     private void StopPreviewInternal()
@@ -468,10 +526,11 @@ public sealed partial class MainWindow : Window
 
             PreviewImage.Source = null;
             _previewSource = null;
+            _frameCounter = 0; // Reset for next preview session
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Stop preview failed: {ex.Message}");
+            Logger.Log($"Stop preview failed: {ex.Message}");
         }
     }
 
@@ -483,7 +542,6 @@ public sealed partial class MainWindow : Window
         if (_frameCounter % 30 == 1) // Log every 30th frame to avoid spam
         {
             Logger.Log($"Frame #{_frameCounter} arrived");
-            System.Diagnostics.Debug.WriteLine($"Frame #{_frameCounter} arrived");
         }
 
         MediaFrameReference? frame;
@@ -510,7 +568,6 @@ public sealed partial class MainWindow : Window
             if (_frameCounter <= 5)
             {
                 Logger.Log("  - VideoMediaFrame is NULL");
-                System.Diagnostics.Debug.WriteLine("  - VideoMediaFrame is NULL");
             }
             return;
         }
@@ -520,11 +577,11 @@ public sealed partial class MainWindow : Window
         // Try to get SoftwareBitmap directly first
         if (frameRef.VideoMediaFrame.SoftwareBitmap != null)
         {
-            softwareBitmap = frameRef.VideoMediaFrame.SoftwareBitmap;
+            // Copy to detach lifetime from MediaFrameReference
+            softwareBitmap = SoftwareBitmap.Copy(frameRef.VideoMediaFrame.SoftwareBitmap);
             if (_frameCounter <= 3)
             {
                 Logger.Log("  - Got SoftwareBitmap directly");
-                System.Diagnostics.Debug.WriteLine("  - Got SoftwareBitmap directly");
             }
         }
         // If not available, try to get it from Direct3DSurface (hardware-accelerated formats like YUY2, NV12)
@@ -533,7 +590,6 @@ public sealed partial class MainWindow : Window
             if (_frameCounter <= 3)
             {
                 Logger.Log("  - SoftwareBitmap is NULL, trying Direct3DSurface...");
-                System.Diagnostics.Debug.WriteLine("  - SoftwareBitmap is NULL, trying Direct3DSurface...");
             }
 
             try
@@ -541,16 +597,14 @@ public sealed partial class MainWindow : Window
                 softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(frameRef.VideoMediaFrame.Direct3DSurface);
                 if (_frameCounter <= 3)
                 {
-                    Logger.Log($"  - ✓ Created SoftwareBitmap from Direct3DSurface");
-                    System.Diagnostics.Debug.WriteLine($"  - ✓ Created SoftwareBitmap from Direct3DSurface");
+                    Logger.Log("  - Created SoftwareBitmap from Direct3DSurface");
                 }
             }
             catch (Exception ex)
             {
                 if (_frameCounter <= 3)
                 {
-                    Logger.Log($"  - ✗ Failed to create from surface: {ex.Message}");
-                    System.Diagnostics.Debug.WriteLine($"  - ✗ Failed to create from surface: {ex.Message}");
+                    Logger.Log($"  - Failed to create from surface: {ex.Message}");
                 }
                 return;
             }
@@ -560,7 +614,6 @@ public sealed partial class MainWindow : Window
             if (_frameCounter <= 5)
             {
                 Logger.Log("  - No SoftwareBitmap or Direct3DSurface available");
-                System.Diagnostics.Debug.WriteLine("  - No SoftwareBitmap or Direct3DSurface available");
             }
             return;
         }
@@ -572,56 +625,118 @@ public sealed partial class MainWindow : Window
 
         if (_frameCounter <= 3)
         {
-            Logger.Log($"  - Bitmap size: {softwareBitmap.PixelWidth}x{softwareBitmap.PixelHeight}");
-            Logger.Log($"  - Bitmap format: {softwareBitmap.BitmapPixelFormat}");
-            Logger.Log($"  - Alpha mode: {softwareBitmap.BitmapAlphaMode}");
-            System.Diagnostics.Debug.WriteLine($"  - Bitmap size: {softwareBitmap.PixelWidth}x{softwareBitmap.PixelHeight}");
-            System.Diagnostics.Debug.WriteLine($"  - Bitmap format: {softwareBitmap.BitmapPixelFormat}");
-            System.Diagnostics.Debug.WriteLine($"  - Alpha mode: {softwareBitmap.BitmapAlphaMode}");
+            Logger.Log($"  - Bitmap: {softwareBitmap.PixelWidth}x{softwareBitmap.PixelHeight}, {softwareBitmap.BitmapPixelFormat}, {softwareBitmap.BitmapAlphaMode}");
         }
 
         // Convert to BGRA8 premultiplied for display
         if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
             softwareBitmap.BitmapAlphaMode != BitmapAlphaMode.Premultiplied)
         {
-            softwareBitmap = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+            var converted = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+            softwareBitmap.Dispose();
+            softwareBitmap = converted;
             if (_frameCounter <= 3)
             {
                 Logger.Log("  - Converted bitmap format");
-                System.Diagnostics.Debug.WriteLine("  - Converted bitmap format");
             }
+        }
+
+        Interlocked.Increment(ref _previewFramesArrived);
+        var enqueueTick = Environment.TickCount64;
+        var inFlight = Interlocked.CompareExchange(ref _previewUiInFlight, 1, 0);
+        if (inFlight != 0)
+        {
+            Interlocked.Increment(ref _previewFramesDropped);
+            MaybeLogPreviewStats(enqueueTick, queueDelayMs: -1, setMs: -1);
+            softwareBitmap.Dispose();
+            return;
         }
 
         // Update the image on the UI thread
         var bitmap = softwareBitmap;
         _dispatcherQueue.TryEnqueue(async () =>
         {
+            var uiStartTick = Environment.TickCount64;
+            var queueDelayMs = uiStartTick - enqueueTick;
+            var setStopwatch = Stopwatch.StartNew();
             try
             {
                 if (_previewSource != null)
                 {
                     await _previewSource.SetBitmapAsync(bitmap);
+                    setStopwatch.Stop();
                     if (_frameCounter <= 3)
                     {
-                        Logger.Log("  - ✓ Bitmap displayed on UI");
-                        System.Diagnostics.Debug.WriteLine("  - ✓ Bitmap displayed on UI");
+                        Logger.Log("  - Bitmap displayed on UI");
                     }
+                    Interlocked.Increment(ref _previewFramesDisplayed);
                 }
                 else
                 {
                     if (_frameCounter <= 3)
                     {
-                        Logger.Log("  - ✗ _previewSource is NULL!");
-                        System.Diagnostics.Debug.WriteLine("  - ✗ _previewSource is NULL!");
+                        Logger.Log("  - _previewSource is NULL");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Logger.Log($"  - ✗ Error displaying frame: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"  - ✗ Error displaying frame: {ex.Message}");
+                if (ex is not TaskCanceledException && ex is not OperationCanceledException)
+                {
+                    Logger.Log($"  - Error displaying frame: {ex.Message}");
+                }
+            }
+            finally
+            {
+                if (setStopwatch.IsRunning)
+                {
+                    setStopwatch.Stop();
+                }
+                Interlocked.Exchange(ref _previewUiInFlight, 0);
+                MaybeLogPreviewStats(uiStartTick, queueDelayMs, (long)setStopwatch.ElapsedMilliseconds);
+                bitmap.Dispose();
             }
         });
+    }
+
+    private void MaybeLogPreviewStats(long nowTick, long queueDelayMs, long setMs)
+    {
+        var inFlightNow = Volatile.Read(ref _previewUiInFlight);
+        var issue = inFlightNow > 1 || queueDelayMs >= 50 || setMs >= 50;
+        if (!issue)
+        {
+            return;
+        }
+
+        var last = Interlocked.Read(ref _previewLastLogTick);
+        if (nowTick - last < 1000)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref _previewLastLogTick, nowTick, last) != last)
+        {
+            return;
+        }
+
+        var arrived = Interlocked.Read(ref _previewFramesArrived);
+        var displayed = Interlocked.Read(ref _previewFramesDisplayed);
+        var dropped = Interlocked.Read(ref _previewFramesDropped);
+        var queueDelayText = queueDelayMs >= 0 ? $"{queueDelayMs}ms" : "n/a";
+        var setText = setMs >= 0 ? $"{setMs}ms" : "n/a";
+        Logger.Log($"Preview UI stall: inFlight={inFlightNow} queueDelay={queueDelayText} setMs={setText} arrived={arrived} displayed={displayed} dropped={dropped}");
+    }
+
+    private void UpdateAudioMeterLevel(double level)
+    {
+        var clamped = Math.Clamp(level, 0, 1);
+        var hostWidth = AudioMeterFillHost.ActualWidth;
+        if (hostWidth <= 0)
+        {
+            return;
+        }
+
+        AudioMeterMask.Width = hostWidth * (1 - clamped);
     }
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e)
