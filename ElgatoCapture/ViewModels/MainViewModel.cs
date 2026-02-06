@@ -27,38 +27,38 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private const int BitrateWindowMs = 5000;
 
     [ObservableProperty]
-    private ObservableCollection<CaptureDevice> _devices = new();
+    public partial ObservableCollection<CaptureDevice> Devices { get; set; } = new();
 
     [ObservableProperty]
-    private ObservableCollection<AudioInputDevice> _audioInputDevices = new();
+    public partial ObservableCollection<AudioInputDevice> AudioInputDevices { get; set; } = new();
 
     [ObservableProperty]
-    private AudioInputDevice? _selectedAudioInputDevice;
+    public partial AudioInputDevice? SelectedAudioInputDevice { get; set; }
 
     [ObservableProperty]
-    private bool _isCustomAudioInputEnabled;
+    public partial bool IsCustomAudioInputEnabled { get; set; }
 
     [ObservableProperty]
-    private CaptureDevice? _selectedDevice;
+    public partial CaptureDevice? SelectedDevice { get; set; }
 
     [ObservableProperty]
-    private ObservableCollection<MediaFormat> _availableFormats = new();
+    public partial ObservableCollection<MediaFormat> AvailableFormats { get; set; } = new();
 
     [ObservableProperty]
-    private MediaFormat? _selectedFormat;
+    public partial MediaFormat? SelectedFormat { get; set; }
 
     // Resolution/Frame Rate separation
     [ObservableProperty]
-    private ObservableCollection<string> _availableResolutions = new();
+    public partial ObservableCollection<string> AvailableResolutions { get; set; } = new();
 
     [ObservableProperty]
-    private string? _selectedResolution;
+    public partial string? SelectedResolution { get; set; }
 
     [ObservableProperty]
-    private ObservableCollection<double> _availableFrameRates = new();
+    public partial ObservableCollection<double> AvailableFrameRates { get; set; } = new();
 
     [ObservableProperty]
-    private double _selectedFrameRate = 60;
+    public partial double SelectedFrameRate { get; set; } = 60;
 
     // Mapping from resolution string to available frame rates
     private Dictionary<string, List<double>> _resolutionToFrameRates = new();
@@ -67,67 +67,67 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isChangingDevice;
 
     [ObservableProperty]
-    private ObservableCollection<string> _availableRecordingFormats = new() { "H.264 (MP4)", "HEVC (MP4)", "Uncompressed (AVI)" };
+    public partial ObservableCollection<string> AvailableRecordingFormats { get; set; } = new() { "H.264 (MP4)", "HEVC (MP4)", "Uncompressed (AVI)" };
 
     [ObservableProperty]
-    private string _selectedRecordingFormat = "H.264 (MP4)";
+    public partial string SelectedRecordingFormat { get; set; } = "H.264 (MP4)";
 
     [ObservableProperty]
-    private ObservableCollection<string> _availableQualities = new() { "Auto", "Low", "Medium", "High", "Very High", "Lossless", "Custom" };
+    public partial ObservableCollection<string> AvailableQualities { get; set; } = new() { "Auto", "Low", "Medium", "High", "Very High", "Lossless", "Custom" };
 
     [ObservableProperty]
-    private string _selectedQuality = "High";
+    public partial string SelectedQuality { get; set; } = "High";
 
     [ObservableProperty]
-    private double _customBitrateMbps = 50;
+    public partial double CustomBitrateMbps { get; set; } = 50;
 
     [ObservableProperty]
-    private bool _isCustomBitrateVisible;
+    public partial bool IsCustomBitrateVisible { get; set; }
 
     [ObservableProperty]
-    private bool _isHdrEnabled;
+    public partial bool IsHdrEnabled { get; set; }
 
     [ObservableProperty]
-    private bool _isHdrAvailable;
+    public partial bool IsHdrAvailable { get; set; }
 
     [ObservableProperty]
-    private bool _isAudioEnabled = true;
+    public partial bool IsAudioEnabled { get; set; } = true;
 
     [ObservableProperty]
-    private bool _isAudioPreviewEnabled = true;
+    public partial bool IsAudioPreviewEnabled { get; set; } = true;
 
     [ObservableProperty]
-    private string _outputPath = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
+    public partial string OutputPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
 
     [ObservableProperty]
-    private string _statusText = "Ready";
+    public partial string StatusText { get; set; } = "Ready";
 
     [ObservableProperty]
-    private string _recordingTime = "00:00:00";
+    public partial string RecordingTime { get; set; } = "00:00:00";
 
     [ObservableProperty]
-    private string _recordingSizeInfo = "--";
+    public partial string RecordingSizeInfo { get; set; } = "--";
 
     [ObservableProperty]
-    private string _recordingBitrateInfo = "--";
+    public partial string RecordingBitrateInfo { get; set; } = "--";
 
     [ObservableProperty]
-    private bool _isRecording;
+    public partial bool IsRecording { get; set; }
 
     [ObservableProperty]
-    private bool _isPreviewing;
+    public partial bool IsPreviewing { get; set; }
 
     [ObservableProperty]
-    private bool _isInitialized;
+    public partial bool IsInitialized { get; set; }
 
     [ObservableProperty]
-    private string _diskSpaceInfo = "";
+    public partial string DiskSpaceInfo { get; set; } = "";
 
     [ObservableProperty]
-    private double _audioPeak;
+    public partial double AudioPeak { get; set; }
 
     [ObservableProperty]
-    private bool _audioClipping;
+    public partial bool AudioClipping { get; set; }
 
     private const double MeterFloorDb = -60.0;
     private const double MeterDecayDbPerSecond = 40.0 / 1.7; // OBS-like PPM decay

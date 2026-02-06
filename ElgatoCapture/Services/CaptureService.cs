@@ -92,6 +92,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private string? _audioTempPath;
     private string? _finalOutputPath;
     private bool _postMuxAudioEnabled;
+    private string _activeAudioPathMode = "None";
+    private bool _muxAttempted;
+    private bool? _muxSucceeded;
     private string? _ffmpegPathForMux;
     private const int RecordingAudioSampleRate = 48000;
     private const short RecordingAudioChannels = 2;
@@ -219,6 +222,42 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         return new RecordingStats(videoBytes, audioBytes);
+    }
+
+    public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()
+    {
+        var encoder = _ffmpegEncoder;
+        var elapsedMs = _recordingStopwatch.IsRunning ? _recordingStopwatch.ElapsedMilliseconds : 0;
+        var lastArrivalMs = Interlocked.Read(ref _lastFrameArrivalMs);
+        var estimatedLatencyMs = (elapsedMs > 0 && lastArrivalMs > 0)
+            ? Math.Max(0, elapsedMs - lastArrivalMs)
+            : 0;
+
+        var muxResult = _muxAttempted
+            ? (_muxSucceeded == true ? "Succeeded" : "Failed")
+            : "NotAttempted";
+
+        return new CaptureDiagnosticsSnapshot
+        {
+            TimestampUtc = DateTimeOffset.UtcNow,
+            SessionState = SessionState,
+            IsRecording = _isRecording,
+            AudioPathMode = _activeAudioPathMode,
+            MuxResult = muxResult,
+            RecordingElapsedMs = elapsedMs,
+            LastFrameArrivalMs = lastArrivalMs,
+            EstimatedPipelineLatencyMs = estimatedLatencyMs,
+            ConversionQueueDepth = _conversionQueue?.Count ?? 0,
+            FfmpegVideoQueueDepth = encoder?.VideoQueueCount ?? 0,
+            FfmpegAudioQueueDepth = encoder?.AudioQueueCount ?? 0,
+            VideoFramesArrived = Interlocked.Read(ref _videoFramesArrived),
+            VideoFramesQueued = Interlocked.Read(ref _videoFramesQueued),
+            VideoFramesDropped = Interlocked.Read(ref _videoFramesDropped),
+            VideoFramesDroppedBacklog = Interlocked.Read(ref _videoFramesDroppedFromBacklog),
+            VideoFramesConverted = Interlocked.Read(ref _videoFramesConverted),
+            VideoFramesEnqueued = Interlocked.Read(ref _videoFramesEnqueued),
+            AudioChunksDropped = Interlocked.Read(ref _audioFileWriteDropped)
+        };
     }
 
     public async Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName)
@@ -410,6 +449,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
             var useNamedPipeAudio = isCompressedFormat &&
                                     canCaptureAudio &&
                                     settings.AudioPathMode == AudioPathMode.NamedPipeExperimental;
+            _muxAttempted = false;
+            _muxSucceeded = null;
+            _activeAudioPathMode = !settings.AudioEnabled || !canCaptureAudio
+                ? "Disabled"
+                : !isCompressedFormat
+                    ? "EmbeddedCapture"
+                    : useNamedPipeAudio
+                        ? AudioPathMode.NamedPipeExperimental.ToString()
+                        : AudioPathMode.PostMuxDefault.ToString();
             Logger.Log($"Audio in recording: {(canCaptureAudio ? "Yes" : "No")}");
             Logger.Log($"Audio path mode requested: {settings.AudioPathMode}");
 
@@ -2129,7 +2177,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 if (shouldPostMux && !string.IsNullOrWhiteSpace(tempVideoPath) &&
                     !string.IsNullOrWhiteSpace(audioTempPath) && !string.IsNullOrWhiteSpace(finalOutputPath))
                 {
+                    _muxAttempted = true;
                     var muxed = await MuxAudioIntoVideoAsync(tempVideoPath, audioTempPath, finalOutputPath);
+                    _muxSucceeded = muxed;
                     if (muxed)
                     {
                         TryDeleteFile(tempVideoPath);
@@ -2156,6 +2206,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             Logger.Log($"Recording stopped. Audio preview status: {(_isAudioPreviewActive ? "still active" : "inactive")}");
+            Logger.LogStructured("CaptureDiagnostics", GetDiagnosticsSnapshot());
             StatusChanged?.Invoke(this, stopStatus);
         }
         catch (Exception ex)

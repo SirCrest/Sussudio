@@ -3,6 +3,7 @@ using System.IO;
 using System.Management;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using System.Threading;
 
 namespace ElgatoCapture;
@@ -142,6 +143,19 @@ public static class Logger
         Log($"EXCEPTION: {ex.GetType().Name}", caller);
         Log($"  Message: {ex.Message}", caller);
         Log($"  StackTrace: {ex.StackTrace}", caller);
+    }
+
+    public static void LogStructured(string eventName, object payload, [CallerMemberName] string caller = "")
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(payload);
+            Log($"{eventName}: {json}", caller);
+        }
+        catch (Exception ex)
+        {
+            Log($"Failed to serialize structured log '{eventName}': {ex.Message}", caller);
+        }
     }
 
     public static string GetLogFilePath() => LogFilePath;
