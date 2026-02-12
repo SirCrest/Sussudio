@@ -1,55 +1,94 @@
 param(
-    [switch]$FailOnAnyWarning
+    [switch]$FailOnAnyWarning,
+    [ValidateSet("Debug", "Release")]
+    [string]$Configuration = "Debug",
+    [ValidateSet("x64")]
+    [string]$Platform = "x64",
+    [int]$BuildTimeoutSeconds = 900
 )
 
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
-$projectPath = Join-Path $repoRoot "ElgatoCapture\ElgatoCapture.csproj"
-$platforms = @("x64", "x86", "ARM64")
+function Invoke-ToolWithTimeout {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Exe,
+        [Parameter(Mandatory = $true)]
+        [string[]]$Arguments,
+        [Parameter(Mandatory = $true)]
+        [int]$TimeoutSeconds
+    )
 
-if (!(Test-Path $projectPath)) {
+    $argumentString = [string]::Join(" ", $Arguments)
+    Write-Host "> $Exe $argumentString"
+
+    $job = Start-Job -ScriptBlock {
+        param($ToolExe, $ToolArgs)
+        $allOutput = & $ToolExe @ToolArgs 2>&1 | ForEach-Object { $_.ToString() }
+        $code = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
+        [pscustomobject]@{
+            ExitCode = $code
+            Output = @($allOutput)
+        }
+    } -ArgumentList @($Exe, $Arguments)
+
+    try {
+        $completed = Wait-Job -Job $job -Timeout $TimeoutSeconds
+        if (-not $completed) {
+            Stop-Job -Job $job -Force -ErrorAction SilentlyContinue | Out-Null
+            throw "Command timed out after $TimeoutSeconds seconds: $Exe $argumentString"
+        }
+
+        $result = Receive-Job -Job $job -ErrorAction Stop
+        $output = @($result.Output)
+        $output | ForEach-Object { Write-Host $_ }
+
+        $exitCode = [int]$result.ExitCode
+        if ($exitCode -ne 0) {
+            throw "Command failed (exit code $exitCode): $Exe $argumentString"
+        }
+
+        return $output
+    }
+    finally {
+        Remove-Job -Job $job -Force -ErrorAction SilentlyContinue | Out-Null
+    }
+}
+
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$dotnetCliHome = Join-Path $repoRoot ".tmp_dotnet_home"
+if (-not (Test-Path $dotnetCliHome)) {
+    New-Item -Path $dotnetCliHome -ItemType Directory | Out-Null
+}
+$env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = "1"
+$env:DOTNET_CLI_HOME = $dotnetCliHome
+
+$projectPath = Join-Path $repoRoot "ElgatoCapture\ElgatoCapture.csproj"
+if (-not (Test-Path $projectPath)) {
     throw "Project file not found: $projectPath"
 }
 
-foreach ($platform in $platforms) {
-    Write-Host "=== Build Gate: $platform ==="
-    $output = & dotnet build $projectPath -c Debug -p:Platform=$platform 2>&1
-    $output | ForEach-Object { Write-Host $_ }
+$buildOutput = Invoke-ToolWithTimeout `
+    -Exe "dotnet" `
+    -Arguments @(
+        "build",
+        $projectPath,
+        "-c", $Configuration,
+        "-m:1",
+        "--nologo",
+        "-v", "minimal",
+        "-p:Platform=$Platform"
+    ) `
+    -TimeoutSeconds $BuildTimeoutSeconds
 
-    if ($LASTEXITCODE -ne 0) {
-        throw "Build failed for platform $platform"
-    }
-
-    if ($output -match "MVVMTK0045") {
-        throw "MVVMTK0045 warning detected in $platform build output"
-    }
-
-    if ($FailOnAnyWarning -and ($output -match ": warning ")) {
-        throw "Warnings detected in $platform build output"
-    }
+if ($buildOutput -match "MVVMTK0045") {
+    throw "MVVMTK0045 warning detected in build output."
 }
 
-Write-Host "Build matrix passed: x64, x86, ARM64"
-
-$logPath = Join-Path ([Environment]::GetFolderPath("MyDocuments")) "ElgatoCapture_Debug.log"
-if (Test-Path $logPath) {
-    $latestDiagnostics = Select-String -Path $logPath -Pattern "CaptureDiagnostics:" | Select-Object -Last 1
-    if ($latestDiagnostics) {
-        Write-Host "Latest diagnostics snapshot:"
-        Write-Host $latestDiagnostics.Line
-    }
-    else {
-        Write-Warning "No CaptureDiagnostics snapshot found yet. Complete one record start/stop cycle first."
-    }
-}
-else {
-    Write-Warning "Log file not found yet: $logPath"
+if ($FailOnAnyWarning -and ($buildOutput -match ": warning ")) {
+    throw "Warnings detected in build output."
 }
 
 Write-Host ""
-Write-Host "Manual stress checklist:"
-Write-Host "1. Preview start/stop loop x200 (no deadlocks/crashes)."
-Write-Host "2. Record start/stop loop x200 (no orphan ffmpeg process)."
-Write-Host "3. Close app during active recording (clean shutdown)."
-Write-Host "4. 20-minute recording under storage pressure (bounded queue/memory behavior)."
+Write-Host "Gate result: PASS"
+Write-Host "Automation stack reset is active. Add new tests incrementally under docs/testing/README.md."

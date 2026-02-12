@@ -212,6 +212,7 @@ if (encoder == null || outputNode == null) return;
 - Primary test device: **Elgato Game Capture Neo**
 - FFmpeg must be in PATH or application directory
 - WinUI 3 quirk: No Width/Height in Window XAML - use `AppWindow.Resize()`
+- Automation testing is currently reset; rebuild guidance lives in `docs/testing/README.md`
 
 
 

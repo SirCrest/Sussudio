@@ -2,11 +2,12 @@ using System;
 
 namespace ElgatoCapture.Models;
 
-public sealed class CaptureDiagnosticsSnapshot
+public sealed class CaptureHealthSnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
     public CaptureSessionState SessionState { get; init; }
     public bool IsRecording { get; init; }
+    public string RecordingBackend { get; init; } = "None";
     public string AudioPathMode { get; init; } = "None";
     public string MuxResult { get; init; } = "NotAttempted";
 

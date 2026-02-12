@@ -4,12 +4,15 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
+using ElgatoCapture.Models;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics.Imaging;
 using Windows.Media.Capture.Frames;
+using Windows.Media.Core;
+using Windows.Media.Playback;
 using WinRT.Interop;
 
 namespace ElgatoCapture;
@@ -20,14 +23,184 @@ public sealed partial class MainWindow : Window
     private MediaFrameReader? _previewFrameReader;
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
+    private MediaPlayer? _previewMediaPlayer;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
     private long _previewLastLogTick;
+    private long _previewLastResizeLogTick;
+    private long _previewLastPresentedTick;
+    private long _previewResizeSuppressUntilTick;
     private int _previewUiInFlight;
+    private readonly bool _previewCapOverrideProvided;
+    private readonly int _previewPresentationFpsCap;
+    private int _previewActivePresentationFpsCap;
+    private long _previewMinPresentationIntervalMs;
+    private readonly int _previewResizeDebounceMs;
+    private readonly bool _preferGpuPreview;
+    private readonly bool _forceFrameReaderDuringRecording;
+    private readonly int _previewShutdownTimeoutMs;
 
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.1)
         => Math.Abs(a - b) < tolerance;
+
+    private static double GetFrameRate(MediaFrameFormat format)
+    {
+        if (format.FrameRate.Denominator == 0)
+        {
+            return 0;
+        }
+
+        return format.FrameRate.Numerator / (double)format.FrameRate.Denominator;
+    }
+
+    private static bool IsHdrSubtype(string? subtype)
+        => !string.IsNullOrWhiteSpace(subtype) &&
+           (subtype.Contains("P010", StringComparison.OrdinalIgnoreCase) ||
+            subtype.Contains("HDR", StringComparison.OrdinalIgnoreCase));
+
+    private static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)
+    {
+        var rawValue = Environment.GetEnvironmentVariable(variableName);
+        if (int.TryParse(rawValue, out var parsedValue))
+        {
+            return Math.Clamp(parsedValue, minValue, maxValue);
+        }
+
+        return defaultValue;
+    }
+
+    private static bool TryGetIntFromEnv(string variableName, out int parsedValue)
+    {
+        parsedValue = 0;
+        var rawValue = Environment.GetEnvironmentVariable(variableName);
+        return !string.IsNullOrWhiteSpace(rawValue) && int.TryParse(rawValue, out parsedValue);
+    }
+
+    private static bool GetBoolFromEnv(string variableName, bool defaultValue)
+    {
+        var rawValue = Environment.GetEnvironmentVariable(variableName);
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            return defaultValue;
+        }
+
+        if (bool.TryParse(rawValue, out var boolValue))
+        {
+            return boolValue;
+        }
+
+        if (int.TryParse(rawValue, out var intValue))
+        {
+            return intValue != 0;
+        }
+
+        return defaultValue;
+    }
+
+    private int ResolvePreviewPresentationCap(MediaFrameFormat? activeFormat)
+    {
+        if (_previewCapOverrideProvided)
+        {
+            return _previewPresentationFpsCap;
+        }
+
+        return ComputeAdaptivePreviewCap(activeFormat);
+    }
+
+    private int ComputeAdaptivePreviewCap(MediaFrameFormat? activeFormat)
+    {
+        if (activeFormat == null)
+        {
+            return Math.Clamp(60, 15, _previewPresentationFpsCap);
+        }
+
+        var sourceFps = (int)Math.Round(GetFrameRate(activeFormat));
+        if (sourceFps <= 0)
+        {
+            sourceFps = 60;
+        }
+
+        var pixelCount = (long)activeFormat.VideoFormat.Width * activeFormat.VideoFormat.Height;
+        int adaptiveCap;
+
+        if (pixelCount >= 3840L * 2160L)
+        {
+            adaptiveCap = sourceFps >= 60 ? 45 : 30;
+        }
+        else if (pixelCount >= 2560L * 1440L)
+        {
+            adaptiveCap = sourceFps >= 60 ? 60 : 45;
+        }
+        else if (pixelCount >= 1920L * 1080L)
+        {
+            adaptiveCap = Math.Min(sourceFps, 60);
+        }
+        else
+        {
+            adaptiveCap = Math.Min(sourceFps, 90);
+        }
+
+        return Math.Clamp(adaptiveCap, 15, _previewPresentationFpsCap);
+    }
+
+    private bool TryStartGpuPreview(MediaFrameSource colorSourceInfo)
+    {
+        if (!_preferGpuPreview)
+        {
+            Logger.Log("GPU preview path disabled via ELGATOCAPTURE_PREVIEW_USE_GPU.");
+            return false;
+        }
+
+        try
+        {
+            StopGpuPreview();
+
+            var mediaSource = MediaSource.CreateFromMediaFrameSource(colorSourceInfo);
+            _previewMediaPlayer = new MediaPlayer
+            {
+                RealTimePlayback = true,
+                IsMuted = true,
+                Source = mediaSource
+            };
+
+            PreviewPlayerElement.SetMediaPlayer(_previewMediaPlayer);
+            PreviewPlayerElement.Visibility = Visibility.Visible;
+            PreviewImage.Visibility = Visibility.Collapsed;
+            _previewMediaPlayer.Play();
+            Logger.Log("Preview started on GPU path (MediaPlayerElement).");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"GPU preview path unavailable: {ex.Message}. Falling back to frame-reader preview.");
+            StopGpuPreview();
+            return false;
+        }
+    }
+
+    private void StopGpuPreview()
+    {
+        try
+        {
+            if (_previewMediaPlayer != null)
+            {
+                _previewMediaPlayer.Pause();
+                _previewMediaPlayer.Source = null;
+                _previewMediaPlayer.Dispose();
+                _previewMediaPlayer = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"GPU preview cleanup warning: {ex.Message}");
+        }
+        finally
+        {
+            PreviewPlayerElement.SetMediaPlayer(null);
+            PreviewPlayerElement.Visibility = Visibility.Collapsed;
+        }
+    }
 
     public MainWindow()
     {
@@ -35,6 +208,14 @@ public sealed partial class MainWindow : Window
 
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         ViewModel = new MainViewModel();
+        _previewCapOverrideProvided = TryGetIntFromEnv("ELGATOCAPTURE_PREVIEW_FPS_CAP", out var previewCapOverrideRaw);
+        _previewPresentationFpsCap = Math.Clamp(_previewCapOverrideProvided ? previewCapOverrideRaw : 120, 15, 120);
+        _previewActivePresentationFpsCap = Math.Clamp(60, 15, _previewPresentationFpsCap);
+        _previewMinPresentationIntervalMs = Math.Max(1, 1000 / _previewActivePresentationFpsCap);
+        _previewResizeDebounceMs = GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RESIZE_DEBOUNCE_MS", defaultValue: 250, minValue: 50, maxValue: 2000);
+        _preferGpuPreview = GetBoolFromEnv("ELGATOCAPTURE_PREVIEW_USE_GPU", defaultValue: true);
+        _forceFrameReaderDuringRecording = GetBoolFromEnv("ELGATOCAPTURE_FORCE_FRAME_READER_DURING_RECORDING", defaultValue: false);
+        _previewShutdownTimeoutMs = GetIntFromEnv("ELGATOCAPTURE_PREVIEW_SHUTDOWN_TIMEOUT_MS", defaultValue: 3000, minValue: 250, maxValue: 30000);
 
         // Set window handle for folder picker
         var hwnd = WindowNative.GetWindowHandle(this);
@@ -69,7 +250,9 @@ public sealed partial class MainWindow : Window
         SetupBindings();
 
         // Refresh devices on load - use Loaded event to ensure XAML is fully parsed
-        ((FrameworkElement)this.Content).Loaded += MainWindow_Loaded;
+        var mainContent = (FrameworkElement)this.Content;
+        mainContent.Loaded += MainWindow_Loaded;
+        mainContent.SizeChanged += MainWindow_SizeChanged;
         Closed += MainWindow_Closed;
     }
 
@@ -104,6 +287,36 @@ public sealed partial class MainWindow : Window
                     }
                 });
             }
+        };
+
+        ViewModel.AvailableRecordingFormats.CollectionChanged += (s, e) =>
+        {
+            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+            {
+                return;
+            }
+
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                if (ViewModel.AvailableRecordingFormats.Count == 0)
+                {
+                    return;
+                }
+
+                var matchingFormat = ViewModel.AvailableRecordingFormats
+                    .FirstOrDefault(f => string.Equals(f, ViewModel.SelectedRecordingFormat, StringComparison.OrdinalIgnoreCase));
+
+                if (!string.IsNullOrWhiteSpace(matchingFormat))
+                {
+                    FormatComboBox.SelectedItem = matchingFormat;
+                    return;
+                }
+
+                var fallbackFormat = ViewModel.AvailableRecordingFormats[0];
+                FormatComboBox.SelectedItem = fallbackFormat;
+                ViewModel.SelectedRecordingFormat = fallbackFormat;
+            });
         };
 
         // Set initial values
@@ -198,23 +411,111 @@ public sealed partial class MainWindow : Window
         AudioMeterFillHost.SizeChanged += (s, e) => UpdateAudioMeterLevel(ViewModel.AudioPeak);
     }
 
-    private async void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
         // Unsubscribe immediately - we only want this to run once
         ((FrameworkElement)this.Content).Loaded -= MainWindow_Loaded;
 
-        Logger.Log("=== MainWindow_Loaded - Starting device enumeration ===");
-        await ViewModel.InitializeAsync();
-        await ViewModel.RefreshDevicesAsync();
+        _ = RunUiEventHandlerAsync(async () =>
+        {
+            Logger.Log("=== MainWindow_Loaded - Starting device enumeration ===");
+            await ViewModel.InitializeAsync();
+            await ViewModel.RefreshDevicesAsync();
+        }, nameof(MainWindow_Loaded));
     }
 
-    private async void MainWindow_Closed(object sender, WindowEventArgs args)
+    private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        await StopPreviewInternalAsync();
-        ViewModel.Dispose();
+        var nowTick = Environment.TickCount64;
+        Interlocked.Exchange(ref _previewResizeSuppressUntilTick, nowTick + _previewResizeDebounceMs);
+
+        if (!ViewModel.IsPreviewing)
+        {
+            return;
+        }
+
+        var lastLogTick = Interlocked.Read(ref _previewLastResizeLogTick);
+        if (nowTick - lastLogTick < 1000)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref _previewLastResizeLogTick, nowTick, lastLogTick) == lastLogTick)
+        {
+            Logger.Log($"Preview resize active. Suppressing frame presents for {_previewResizeDebounceMs}ms.");
+        }
     }
 
-    private async void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    private void MainWindow_Closed(object sender, WindowEventArgs args)
+    {
+        if (this.Content is FrameworkElement mainContent)
+        {
+            mainContent.SizeChanged -= MainWindow_SizeChanged;
+        }
+
+        try
+        {
+            StopPreviewForShutdown();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Preview shutdown cleanup failed: {ex.Message}");
+        }
+
+        try
+        {
+            ViewModel.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"ViewModel dispose during window close failed: {ex.Message}");
+        }
+    }
+
+    private void StopPreviewForShutdown()
+    {
+        StopGpuPreview();
+
+        if (_previewFrameReader != null)
+        {
+            try
+            {
+                _previewFrameReader.FrameArrived -= PreviewFrameReader_FrameArrived;
+                var stopTask = _previewFrameReader.StopAsync().AsTask();
+                var completed = Task.WhenAny(stopTask, Task.Delay(_previewShutdownTimeoutMs)).GetAwaiter().GetResult();
+                if (completed != stopTask)
+                {
+                    Logger.Log($"Frame reader stop during shutdown timed out after {_previewShutdownTimeoutMs} ms.");
+                }
+                else
+                {
+                    stopTask.GetAwaiter().GetResult();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Frame reader stop during shutdown failed: {ex.Message}");
+            }
+            finally
+            {
+                _previewFrameReader.Dispose();
+                _previewFrameReader = null;
+            }
+        }
+
+        PreviewImage.Source = null;
+        PreviewImage.Visibility = Visibility.Collapsed;
+        _previewSource = null;
+    }
+
+    private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(
+            () => HandleViewModelPropertyChangedAsync(e),
+            $"ViewModel_PropertyChanged:{e.PropertyName}");
+    }
+
+    private async Task HandleViewModelPropertyChangedAsync(System.ComponentModel.PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
         {
@@ -380,7 +681,20 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async System.Threading.Tasks.Task StartPreviewInternalAsync()
+    private async Task RunUiEventHandlerAsync(Func<Task> operation, string operationName)
+    {
+        try
+        {
+            await operation();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex);
+            ViewModel.StatusText = $"{operationName} failed: {ex.Message}";
+        }
+    }
+
+    private async Task StartPreviewInternalAsync(bool forceFrameReader = false)
     {
         Logger.Log("=== START PREVIEW BEGIN ===");
 
@@ -395,15 +709,21 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            // Create a preview source
-            _previewSource = new SoftwareBitmapSource();
-            PreviewImage.Source = _previewSource;
-            Logger.Log("Preview image source created");
+            StopGpuPreview();
+            _previewSource = null;
+            PreviewImage.Source = null;
+            PreviewImage.Visibility = Visibility.Collapsed;
             _previewFramesArrived = 0;
             _previewFramesDisplayed = 0;
             _previewFramesDropped = 0;
             _previewLastLogTick = 0;
+            _previewLastResizeLogTick = 0;
+            _previewLastPresentedTick = 0;
+            _previewResizeSuppressUntilTick = 0;
             _previewUiInFlight = 0;
+            Logger.Log($"Preview presentation cap max: {_previewPresentationFpsCap} fps (override={_previewCapOverrideProvided})");
+            Logger.Log($"Preview resize debounce: {_previewResizeDebounceMs} ms");
+            Logger.Log($"Preview mode: {(forceFrameReader ? "Frame-reader forced" : (_preferGpuPreview ? "GPU-first" : "Frame-reader only"))}");
 
             // Find the video preview stream
             Logger.Log("Finding frame source groups...");
@@ -418,8 +738,9 @@ public sealed partial class MainWindow : Window
             }
 
             var colorSourceInfo = ViewModel.MediaCapture.FrameSources.Values
-                .FirstOrDefault(source => source.Info.MediaStreamType == Windows.Media.Capture.MediaStreamType.VideoPreview ||
-                                         source.Info.MediaStreamType == Windows.Media.Capture.MediaStreamType.VideoRecord);
+                .FirstOrDefault(source => source.Info.MediaStreamType == Windows.Media.Capture.MediaStreamType.VideoPreview)
+                ?? ViewModel.MediaCapture.FrameSources.Values
+                    .FirstOrDefault(source => source.Info.MediaStreamType == Windows.Media.Capture.MediaStreamType.VideoRecord);
 
             if (colorSourceInfo != null)
             {
@@ -437,26 +758,35 @@ public sealed partial class MainWindow : Window
 
                 if (ViewModel.SelectedFormat != null)
                 {
-                    // Find format matching user's selection
+                    // Find format matching user selection, including pixel format preference.
                     desiredFormat = colorSourceInfo.SupportedFormats
-                        .FirstOrDefault(f =>
+                        .Where(f =>
                             f.VideoFormat.Width == ViewModel.SelectedFormat.Width &&
                             f.VideoFormat.Height == ViewModel.SelectedFormat.Height &&
-                            Math.Abs(f.FrameRate.Numerator / (double)f.FrameRate.Denominator - ViewModel.SelectedFormat.FrameRate) < 1);
+                            Math.Abs(GetFrameRate(f) - ViewModel.SelectedFormat.FrameRate) < 1)
+                        .OrderBy(f => string.Equals(f.Subtype, ViewModel.SelectedFormat.PixelFormat, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                        .ThenBy(f => IsHdrSubtype(f.Subtype) == ViewModel.SelectedFormat.IsHdr ? 0 : 1)
+                        .ThenBy(f => MediaFormat.GetPixelFormatPriority(f.Subtype))
+                        .FirstOrDefault();
 
                     if (desiredFormat == null)
                     {
                         // Fallback: match resolution only
                         desiredFormat = colorSourceInfo.SupportedFormats
-                            .FirstOrDefault(f =>
+                            .Where(f =>
                                 f.VideoFormat.Width == ViewModel.SelectedFormat.Width &&
-                                f.VideoFormat.Height == ViewModel.SelectedFormat.Height);
+                                f.VideoFormat.Height == ViewModel.SelectedFormat.Height)
+                            .OrderBy(f => MediaFormat.GetPixelFormatPriority(f.Subtype))
+                            .ThenByDescending(GetFrameRate)
+                            .FirstOrDefault();
                     }
                 }
 
                 // Final fallback: use largest format
                 desiredFormat ??= colorSourceInfo.SupportedFormats
                     .OrderByDescending(f => f.VideoFormat.Width * f.VideoFormat.Height)
+                    .ThenByDescending(GetFrameRate)
+                    .ThenBy(f => MediaFormat.GetPixelFormatPriority(f.Subtype))
                     .FirstOrDefault();
 
                 if (desiredFormat != null)
@@ -466,27 +796,43 @@ public sealed partial class MainWindow : Window
                     await colorSourceInfo.SetFormatAsync(desiredFormat);
                 }
 
-                Logger.Log("Creating frame reader...");
+                _previewActivePresentationFpsCap = ResolvePreviewPresentationCap(desiredFormat);
+                _previewMinPresentationIntervalMs = Math.Max(1, 1000 / _previewActivePresentationFpsCap);
+                Logger.Log($"Preview presentation cap active: {_previewActivePresentationFpsCap} fps");
 
-                // Create frame reader for preview
-                _previewFrameReader = await ViewModel.MediaCapture.CreateFrameReaderAsync(colorSourceInfo);
-                Logger.Log("Frame reader created successfully");
-
-                _previewFrameReader.FrameArrived += PreviewFrameReader_FrameArrived;
-                Logger.Log("FrameArrived event handler attached");
-
-                var startResult = await _previewFrameReader.StartAsync();
-                Logger.Log($"Frame reader start result: {startResult}");
-
-                if (startResult == Windows.Media.Capture.Frames.MediaFrameReaderStartStatus.Success)
+                if (!forceFrameReader && TryStartGpuPreview(colorSourceInfo))
                 {
                     Logger.Log("Preview started successfully");
-                    ViewModel.StatusText = "Preview active - waiting for frames...";
+                    ViewModel.StatusText = "Preview active (GPU presenter)";
                 }
                 else
                 {
-                    Logger.Log($"Frame reader failed to start: {startResult}");
-                    ViewModel.StatusText = $"Preview failed to start: {startResult}";
+                    _previewSource = new SoftwareBitmapSource();
+                    PreviewImage.Source = _previewSource;
+                    PreviewImage.Visibility = Visibility.Visible;
+                    Logger.Log("Preview image source created (frame-reader fallback)");
+                    Logger.Log("Creating frame reader...");
+
+                    // Create frame reader for fallback preview
+                    _previewFrameReader = await ViewModel.MediaCapture.CreateFrameReaderAsync(colorSourceInfo);
+                    Logger.Log("Frame reader created successfully");
+
+                    _previewFrameReader.FrameArrived += PreviewFrameReader_FrameArrived;
+                    Logger.Log("FrameArrived event handler attached");
+
+                    var startResult = await _previewFrameReader.StartAsync();
+                    Logger.Log($"Frame reader start result: {startResult}");
+
+                    if (startResult == Windows.Media.Capture.Frames.MediaFrameReaderStartStatus.Success)
+                    {
+                        Logger.Log("Preview started successfully");
+                        ViewModel.StatusText = "Preview active (frame-reader fallback)";
+                    }
+                    else
+                    {
+                        Logger.Log($"Frame reader failed to start: {startResult}");
+                        ViewModel.StatusText = $"Preview failed to start: {startResult}";
+                    }
                 }
             }
             else
@@ -511,6 +857,8 @@ public sealed partial class MainWindow : Window
     {
         try
         {
+            StopGpuPreview();
+
             if (_previewFrameReader != null)
             {
                 _previewFrameReader.FrameArrived -= PreviewFrameReader_FrameArrived;
@@ -525,7 +873,13 @@ public sealed partial class MainWindow : Window
             }
 
             PreviewImage.Source = null;
+            PreviewImage.Visibility = Visibility.Collapsed;
             _previewSource = null;
+            _previewLastPresentedTick = 0;
+            _previewResizeSuppressUntilTick = 0;
+            _previewUiInFlight = 0;
+            _previewActivePresentationFpsCap = Math.Clamp(60, 15, _previewPresentationFpsCap);
+            _previewMinPresentationIntervalMs = Math.Max(1, 1000 / _previewActivePresentationFpsCap);
             _frameCounter = 0; // Reset for next preview session
         }
         catch (Exception ex)
@@ -572,95 +926,123 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        Interlocked.Increment(ref _previewFramesArrived);
+        var nowTick = Environment.TickCount64;
+        var lastPresentedTick = Interlocked.Read(ref _previewLastPresentedTick);
+        if (lastPresentedTick > 0 && nowTick - lastPresentedTick < _previewMinPresentationIntervalMs)
+        {
+            Interlocked.Increment(ref _previewFramesDropped);
+            return;
+        }
+
+        var resizeSuppressUntil = Interlocked.Read(ref _previewResizeSuppressUntilTick);
+        if (nowTick < resizeSuppressUntil)
+        {
+            Interlocked.Increment(ref _previewFramesDropped);
+            return;
+        }
+
+        var inFlight = Interlocked.CompareExchange(ref _previewUiInFlight, 1, 0);
+        if (inFlight != 0)
+        {
+            Interlocked.Increment(ref _previewFramesDropped);
+            MaybeLogPreviewStats(nowTick, queueDelayMs: -1, setMs: -1);
+            return;
+        }
+
         SoftwareBitmap? softwareBitmap = null;
 
-        // Try to get SoftwareBitmap directly first
-        if (frameRef.VideoMediaFrame.SoftwareBitmap != null)
+        try
         {
-            // Copy to detach lifetime from MediaFrameReference
-            softwareBitmap = SoftwareBitmap.Copy(frameRef.VideoMediaFrame.SoftwareBitmap);
-            if (_frameCounter <= 3)
+            // Try to get SoftwareBitmap directly first
+            if (frameRef.VideoMediaFrame.SoftwareBitmap != null)
             {
-                Logger.Log("  - Got SoftwareBitmap directly");
+                // Copy to detach lifetime from MediaFrameReference
+                softwareBitmap = SoftwareBitmap.Copy(frameRef.VideoMediaFrame.SoftwareBitmap);
+                if (_frameCounter <= 3)
+                {
+                    Logger.Log("  - Got SoftwareBitmap directly");
+                }
             }
-        }
-        // If not available, try to get it from Direct3DSurface (hardware-accelerated formats like YUY2, NV12)
-        else if (frameRef.VideoMediaFrame.Direct3DSurface != null)
-        {
-            if (_frameCounter <= 3)
+            // If not available, try to get it from Direct3DSurface (hardware-accelerated formats like YUY2, NV12)
+            else if (frameRef.VideoMediaFrame.Direct3DSurface != null)
             {
-                Logger.Log("  - SoftwareBitmap is NULL, trying Direct3DSurface...");
-            }
+                if (_frameCounter <= 3)
+                {
+                    Logger.Log("  - SoftwareBitmap is NULL, trying Direct3DSurface...");
+                }
 
-            try
-            {
                 softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(frameRef.VideoMediaFrame.Direct3DSurface);
                 if (_frameCounter <= 3)
                 {
                     Logger.Log("  - Created SoftwareBitmap from Direct3DSurface");
                 }
             }
-            catch (Exception ex)
+            else
             {
-                if (_frameCounter <= 3)
+                if (_frameCounter <= 5)
                 {
-                    Logger.Log($"  - Failed to create from surface: {ex.Message}");
+                    Logger.Log("  - No SoftwareBitmap or Direct3DSurface available");
                 }
+
+                Interlocked.Increment(ref _previewFramesDropped);
                 return;
             }
-        }
-        else
-        {
-            if (_frameCounter <= 5)
+
+            if (softwareBitmap == null)
             {
-                Logger.Log("  - No SoftwareBitmap or Direct3DSurface available");
+                Interlocked.Increment(ref _previewFramesDropped);
+                return;
             }
-            return;
-        }
 
-        if (softwareBitmap == null)
-        {
-            return;
-        }
-
-        if (_frameCounter <= 3)
-        {
-            Logger.Log($"  - Bitmap: {softwareBitmap.PixelWidth}x{softwareBitmap.PixelHeight}, {softwareBitmap.BitmapPixelFormat}, {softwareBitmap.BitmapAlphaMode}");
-        }
-
-        // Convert to BGRA8 premultiplied for display
-        if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
-            softwareBitmap.BitmapAlphaMode != BitmapAlphaMode.Premultiplied)
-        {
-            var converted = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
-            softwareBitmap.Dispose();
-            softwareBitmap = converted;
             if (_frameCounter <= 3)
             {
-                Logger.Log("  - Converted bitmap format");
+                Logger.Log($"  - Bitmap: {softwareBitmap.PixelWidth}x{softwareBitmap.PixelHeight}, {softwareBitmap.BitmapPixelFormat}, {softwareBitmap.BitmapAlphaMode}");
+            }
+
+            // Convert to BGRA8 premultiplied for display.
+            if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
+                softwareBitmap.BitmapAlphaMode != BitmapAlphaMode.Premultiplied)
+            {
+                var converted = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+                softwareBitmap.Dispose();
+                softwareBitmap = converted;
+                if (_frameCounter <= 3)
+                {
+                    Logger.Log("  - Converted bitmap format");
+                }
             }
         }
-
-        Interlocked.Increment(ref _previewFramesArrived);
-        var enqueueTick = Environment.TickCount64;
-        var inFlight = Interlocked.CompareExchange(ref _previewUiInFlight, 1, 0);
-        if (inFlight != 0)
+        catch (Exception ex)
         {
+            if (ex is not TaskCanceledException && ex is not OperationCanceledException)
+            {
+                Logger.Log($"  - Error preparing frame for preview: {ex.Message}");
+            }
+
             Interlocked.Increment(ref _previewFramesDropped);
-            MaybeLogPreviewStats(enqueueTick, queueDelayMs: -1, setMs: -1);
-            softwareBitmap.Dispose();
+            softwareBitmap?.Dispose();
+            Interlocked.Exchange(ref _previewUiInFlight, 0);
             return;
         }
 
-        // Update the image on the UI thread
+        // Update the image on the UI thread.
+        var enqueueTick = Environment.TickCount64;
         var bitmap = softwareBitmap;
-        _dispatcherQueue.TryEnqueue(async () =>
+        var enqueued = _dispatcherQueue.TryEnqueue(async () =>
         {
             var uiStartTick = Environment.TickCount64;
             var queueDelayMs = uiStartTick - enqueueTick;
             var setStopwatch = Stopwatch.StartNew();
             try
             {
+                var suppressUntil = Interlocked.Read(ref _previewResizeSuppressUntilTick);
+                if (uiStartTick < suppressUntil)
+                {
+                    Interlocked.Increment(ref _previewFramesDropped);
+                    return;
+                }
+
                 if (_previewSource != null)
                 {
                     await _previewSource.SetBitmapAsync(bitmap);
@@ -669,7 +1051,9 @@ public sealed partial class MainWindow : Window
                     {
                         Logger.Log("  - Bitmap displayed on UI");
                     }
+
                     Interlocked.Increment(ref _previewFramesDisplayed);
+                    Interlocked.Exchange(ref _previewLastPresentedTick, uiStartTick);
                 }
                 else
                 {
@@ -677,6 +1061,8 @@ public sealed partial class MainWindow : Window
                     {
                         Logger.Log("  - _previewSource is NULL");
                     }
+
+                    Interlocked.Increment(ref _previewFramesDropped);
                 }
             }
             catch (Exception ex)
@@ -685,6 +1071,8 @@ public sealed partial class MainWindow : Window
                 {
                     Logger.Log($"  - Error displaying frame: {ex.Message}");
                 }
+
+                Interlocked.Increment(ref _previewFramesDropped);
             }
             finally
             {
@@ -692,11 +1080,19 @@ public sealed partial class MainWindow : Window
                 {
                     setStopwatch.Stop();
                 }
+
                 Interlocked.Exchange(ref _previewUiInFlight, 0);
                 MaybeLogPreviewStats(uiStartTick, queueDelayMs, (long)setStopwatch.ElapsedMilliseconds);
                 bitmap.Dispose();
             }
         });
+
+        if (!enqueued)
+        {
+            Interlocked.Increment(ref _previewFramesDropped);
+            Interlocked.Exchange(ref _previewUiInFlight, 0);
+            bitmap.Dispose();
+        }
     }
 
     private void MaybeLogPreviewStats(long nowTick, long queueDelayMs, long setMs)
@@ -739,30 +1135,64 @@ public sealed partial class MainWindow : Window
         AudioMeterMask.Width = hostWidth * (1 - clamped);
     }
 
-    private async void RefreshButton_Click(object sender, RoutedEventArgs e)
+    private void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
-        await ViewModel.RefreshDevicesAsync();
+        _ = RunUiEventHandlerAsync(() => ViewModel.RefreshDevicesAsync(), nameof(RefreshButton_Click));
     }
 
-    private async void PreviewButton_Click(object sender, RoutedEventArgs e)
+    private void PreviewButton_Click(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.IsPreviewing)
+        _ = RunUiEventHandlerAsync(async () =>
         {
-            await ViewModel.StopPreviewAsync();
-        }
-        else
+            if (ViewModel.IsPreviewing)
+            {
+                await ViewModel.StopPreviewAsync();
+            }
+            else
+            {
+                await ViewModel.StartPreviewAsync();
+            }
+        }, nameof(PreviewButton_Click));
+    }
+
+    private void RecordButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(async () =>
         {
-            await ViewModel.StartPreviewAsync();
-        }
+            var startingRecording = !ViewModel.IsRecording;
+
+            if (startingRecording &&
+                _forceFrameReaderDuringRecording &&
+                _previewMediaPlayer != null)
+            {
+                // Optional compatibility mode for specific drivers:
+                // switch GPU preview to frame-reader path before recording.
+                Logger.Log("Switching preview to frame-reader mode before recording (compatibility mode).");
+                await StartPreviewInternalAsync(forceFrameReader: true);
+            }
+
+            await ViewModel.ToggleRecordingAsync();
+
+            if (ViewModel.IsRecording)
+            {
+                var gpuActive = _previewMediaPlayer != null;
+                var frameReaderActive = _previewFrameReader != null;
+                var rendererActive = gpuActive || frameReaderActive;
+                var placeholderVisible = NoDevicePlaceholder.Visibility == Visibility.Visible;
+                Logger.Log(
+                    $"PreviewStateDuringRecording: rendererActive={rendererActive}, gpuActive={gpuActive}, " +
+                    $"frameReaderActive={frameReaderActive}, placeholderVisible={placeholderVisible}");
+
+                if (!rendererActive || placeholderVisible)
+                {
+                    Logger.Log("WARNING: preview renderer appears inactive while recording.");
+                }
+            }
+        }, nameof(RecordButton_Click));
     }
 
-    private async void RecordButton_Click(object sender, RoutedEventArgs e)
+    private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
-        await ViewModel.ToggleRecordingAsync();
-    }
-
-    private async void BrowseButton_Click(object sender, RoutedEventArgs e)
-    {
-        await ViewModel.BrowseOutputPathAsync();
+        _ = RunUiEventHandlerAsync(() => ViewModel.BrowseOutputPathAsync(), nameof(BrowseButton_Click));
     }
 }

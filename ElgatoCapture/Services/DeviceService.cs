@@ -295,7 +295,7 @@ public class DeviceService
                     IsHdr = isHdr
                 };
 
-                var formatKey = $"{format.Width}x{format.Height}@{format.FrameRate}{(format.IsHdr ? "_HDR" : "")}";
+                var formatKey = $"{format.Width}x{format.Height}@{format.FrameRate}_{format.PixelFormat}_{(format.IsHdr ? "HDR" : "SDR")}";
                 if (uniqueFormats.Add(formatKey))
                 {
                     device.SupportedFormats.Add(format);
@@ -305,6 +305,7 @@ public class DeviceService
             var sortedFormats = device.SupportedFormats
                 .OrderByDescending(f => (long)f.Width * f.Height)
                 .ThenByDescending(f => f.FrameRate)
+                .ThenBy(f => MediaFormat.GetPixelFormatPriority(f.PixelFormat))
                 .ToList();
 
             device.SupportedFormats.Clear();

@@ -5,6 +5,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace ElgatoCapture;
 
@@ -15,8 +17,16 @@ public static class Logger
         "ElgatoCapture_Debug.log");
 
     private static readonly object _lockObject = new();
+    private static readonly Channel<string> _logChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(8192)
+    {
+        SingleReader = true,
+        SingleWriter = false,
+        FullMode = BoundedChannelFullMode.Wait
+    });
+    private static readonly CancellationTokenSource _logWriterCancellation = new();
     public static bool VerboseEnabled { get; set; }
     private static int _systemInfoLogged;
+    private static long _droppedLogMessages;
 
     static Logger()
     {
@@ -32,6 +42,8 @@ public static class Logger
             File.AppendAllText(LogFilePath, $"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n\n");
         }
         catch { }
+
+        _ = Task.Run(RunLogWriterAsync);
     }
 
     public static void Log(string message, [CallerMemberName] string caller = "")
@@ -42,15 +54,19 @@ public static class Logger
         // Write to debug output
         System.Diagnostics.Debug.WriteLine(logMessage.TrimEnd());
 
-        // Write to file
-        try
+        if (_logChannel.Writer.TryWrite(logMessage))
         {
-            lock (_lockObject)
-            {
-                File.AppendAllText(LogFilePath, logMessage);
-            }
+            return;
         }
-        catch { }
+
+        var dropped = Interlocked.Increment(ref _droppedLogMessages);
+        if (dropped == 1 || dropped % 100 == 0)
+        {
+            WriteDirect($"[{timestamp}] [Logger] Warning: log channel saturated, dropped messages={dropped}\n");
+        }
+
+        // Best-effort fallback path when the channel is saturated.
+        WriteDirect(logMessage);
     }
 
     public static void LogVerbose(string message, [CallerMemberName] string caller = "")
@@ -124,6 +140,43 @@ public static class Logger
         }
     }
 
+    private static async Task RunLogWriterAsync()
+    {
+        try
+        {
+            while (await _logChannel.Reader.WaitToReadAsync(_logWriterCancellation.Token))
+            {
+                while (_logChannel.Reader.TryRead(out var entry))
+                {
+                    WriteDirect(entry);
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected during shutdown.
+        }
+        catch
+        {
+            // Logging must never throw.
+        }
+    }
+
+    private static void WriteDirect(string entry)
+    {
+        try
+        {
+            lock (_lockObject)
+            {
+                File.AppendAllText(LogFilePath, entry);
+            }
+        }
+        catch
+        {
+            // Best effort only.
+        }
+    }
+
     private static string FormatBytes(ulong bytes)
     {
         const double scale = 1024;
@@ -155,6 +208,36 @@ public static class Logger
         catch (Exception ex)
         {
             Log($"Failed to serialize structured log '{eventName}': {ex.Message}", caller);
+        }
+    }
+
+    public static void LogEvent(string eventId, string message, [CallerMemberName] string caller = "")
+    {
+        Log($"[{eventId}] {message}", caller);
+    }
+
+    public static void LogFatalBreadcrumb(string message, Exception? ex = null)
+    {
+        var utc = DateTime.UtcNow.ToString("O");
+        var processId = Environment.ProcessId;
+        var breadcrumb = $"[{utc}] [FATAL] [PID:{processId}] {message}";
+
+        if (ex != null)
+        {
+            breadcrumb += $"\n[{utc}] [FATAL] Exception: {ex.GetType().Name}: {ex.Message}\n[{utc}] [FATAL] StackTrace: {ex.StackTrace}";
+        }
+
+        breadcrumb += "\n";
+
+        WriteDirect(breadcrumb);
+
+        try
+        {
+            System.Diagnostics.Debug.WriteLine(breadcrumb.TrimEnd());
+        }
+        catch
+        {
+            // Best effort only.
         }
     }
 

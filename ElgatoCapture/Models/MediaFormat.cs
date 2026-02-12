@@ -28,4 +28,41 @@ public class MediaFormat
     }
 
     public override int GetHashCode() => HashCode.Combine(Width, Height, FrameRate, PixelFormat, IsHdr);
+
+    public static int GetPixelFormatPriority(string? pixelFormat)
+    {
+        if (string.IsNullOrWhiteSpace(pixelFormat))
+        {
+            return 100;
+        }
+
+        if (pixelFormat.Equals("YUY2", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        if (pixelFormat.Equals("NV12", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
+        if (pixelFormat.Equals("MJPG", StringComparison.OrdinalIgnoreCase))
+        {
+            return 2;
+        }
+
+        if (pixelFormat.Equals("BGRA8", StringComparison.OrdinalIgnoreCase) ||
+            pixelFormat.Equals("RGB32", StringComparison.OrdinalIgnoreCase))
+        {
+            return 3;
+        }
+
+        if (pixelFormat.Contains("P010", StringComparison.OrdinalIgnoreCase) ||
+            pixelFormat.Contains("HDR", StringComparison.OrdinalIgnoreCase))
+        {
+            return 20;
+        }
+
+        return 10;
+    }
 }

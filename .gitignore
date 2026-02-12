@@ -34,3 +34,15 @@ Desktop.ini
 
 # App packages (generated build artifacts)
 AppPackages/
+
+# Root-level staged app builds for local testing convenience
+builds/
+
+# Goal runner evidence outputs
+artifacts/goal-runs/
+
+# Local temp artifacts from ad-hoc reliability/automation work
+.tmp*
+.dotnet/
+.dotnet-cli-home/
+.tmp_dotnet_home/

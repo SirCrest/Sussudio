@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -15,16 +16,19 @@ using Windows.Storage.Pickers;
 
 namespace ElgatoCapture.ViewModels;
 
-public partial class MainViewModel : ObservableObject, IDisposable
+public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable
 {
     private readonly DeviceService _deviceService;
     private readonly CaptureService _captureService;
+    private readonly ICaptureSessionCoordinator _sessionCoordinator;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly Stopwatch _recordingStopwatch = new();
     private DispatcherQueueTimer? _timer;
     private IntPtr _windowHandle;
     private readonly Queue<(long Tick, long Bytes)> _bitrateSamples = new();
     private const int BitrateWindowMs = 5000;
+    private const string DefaultRecordingFormat = "H.264 (MP4)";
+    private const int DefaultDisposeTimeoutMs = 30000;
 
     [ObservableProperty]
     public partial ObservableCollection<CaptureDevice> Devices { get; set; } = new();
@@ -67,10 +71,10 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private bool _isChangingDevice;
 
     [ObservableProperty]
-    public partial ObservableCollection<string> AvailableRecordingFormats { get; set; } = new() { "H.264 (MP4)", "HEVC (MP4)", "Uncompressed (AVI)" };
+    public partial ObservableCollection<string> AvailableRecordingFormats { get; set; } = new() { DefaultRecordingFormat, "HEVC (MP4)", "Uncompressed (AVI)" };
 
     [ObservableProperty]
-    public partial string SelectedRecordingFormat { get; set; } = "H.264 (MP4)";
+    public partial string SelectedRecordingFormat { get; set; } = DefaultRecordingFormat;
 
     [ObservableProperty]
     public partial ObservableCollection<string> AvailableQualities { get; set; } = new() { "Auto", "Low", "Medium", "High", "Very High", "Lossless", "Custom" };
@@ -133,6 +137,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     private const double MeterDecayDbPerSecond = 40.0 / 1.7; // OBS-like PPM decay
     private double _audioMeterDb = MeterFloorDb;
     private long _audioMeterLastTick;
+    private int _disposeState;
 
     public MediaCapture? MediaCapture => _captureService.MediaCapture;
 
@@ -141,6 +146,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         _deviceService = new DeviceService();
         _captureService = new CaptureService();
+        _sessionCoordinator = new CaptureSessionCoordinator(_captureService);
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         _captureService.StatusChanged += OnCaptureStatusChanged;
@@ -150,6 +156,49 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
         SetupTimer();
         UpdateDiskSpace();
+    }
+
+    private void EnqueueUiOperation(Func<Task> operation, string operationName)
+    {
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            _ = ExecuteUiOperationAsync(operation, operationName);
+        });
+    }
+
+    private async Task ExecuteUiOperationAsync(Func<Task> operation, string operationName)
+    {
+        try
+        {
+            await operation();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex);
+            StatusText = $"{operationName} failed: {ex.Message}";
+        }
+    }
+
+    private static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)
+    {
+        var rawValue = Environment.GetEnvironmentVariable(variableName);
+        if (int.TryParse(rawValue, out var parsedValue))
+        {
+            return Math.Clamp(parsedValue, minValue, maxValue);
+        }
+
+        return defaultValue;
+    }
+
+    private static async Task AwaitWithTimeoutAsync(Task task, int timeoutMs, string operationName)
+    {
+        var completed = await Task.WhenAny(task, Task.Delay(timeoutMs)).ConfigureAwait(false);
+        if (completed != task)
+        {
+            throw new TimeoutException($"{operationName} timed out after {timeoutMs} ms.");
+        }
+
+        await task.ConfigureAwait(false);
     }
 
     public async Task InitializeAsync()
@@ -187,15 +236,30 @@ public partial class MainViewModel : ObservableObject, IDisposable
                 AvailableRecordingFormats.Add(format);
             }
 
-            var preferred = "H.264 (MP4)";
-            if (formats.Contains(preferred))
+            var preferred = formats.FirstOrDefault(format =>
+                format.Contains("H.264", StringComparison.OrdinalIgnoreCase) ||
+                format.Contains("H264", StringComparison.OrdinalIgnoreCase));
+            var targetFormat = preferred;
+            if (string.IsNullOrWhiteSpace(targetFormat))
             {
-                SelectedRecordingFormat = preferred;
+                targetFormat = formats.FirstOrDefault();
             }
-            else if (!string.IsNullOrWhiteSpace(formats.FirstOrDefault()))
+
+            if (string.IsNullOrWhiteSpace(targetFormat))
             {
-                SelectedRecordingFormat = formats.First();
+                targetFormat = DefaultRecordingFormat;
             }
+
+            var previousSelection = SelectedRecordingFormat;
+            SelectedRecordingFormat = targetFormat;
+            if (string.Equals(previousSelection, targetFormat, StringComparison.Ordinal))
+            {
+                // Force UI sync when collection rebuild clears ComboBox selected item.
+                OnPropertyChanged(nameof(SelectedRecordingFormat));
+            }
+
+            Logger.Log($"Recording formats refreshed: {string.Join(", ", formats)}");
+            Logger.Log($"Selected recording format: {SelectedRecordingFormat}");
         }
 
         if (_dispatcherQueue.HasThreadAccess)
@@ -426,10 +490,34 @@ public partial class MainViewModel : ObservableObject, IDisposable
             var parts = SelectedResolution.Split('x');
             if (parts.Length == 2 && uint.TryParse(parts[0], out var width) && uint.TryParse(parts[1], out var height))
             {
-                SelectedFormat = AvailableFormats.FirstOrDefault(f =>
-                    f.Width == width && f.Height == height && Math.Abs(f.FrameRate - SelectedFrameRate) < 0.1);
+                var candidates = AvailableFormats
+                    .Where(f => f.Width == width &&
+                                f.Height == height &&
+                                Math.Abs(f.FrameRate - SelectedFrameRate) < 0.1)
+                    .OrderBy(GetHdrPreferenceRank)
+                    .ThenBy(f => MediaFormat.GetPixelFormatPriority(f.PixelFormat))
+                    .ThenByDescending(f => f.FrameRate)
+                    .ToList();
+
+                SelectedFormat = candidates.FirstOrDefault();
             }
         }
+    }
+
+    private int GetHdrPreferenceRank(MediaFormat format)
+    {
+        // When HDR is enabled, prefer HDR-capable pixel formats; otherwise prefer SDR formats.
+        if (IsHdrEnabled)
+        {
+            return format.IsHdr ? 0 : 1;
+        }
+
+        return format.IsHdr ? 1 : 0;
+    }
+
+    partial void OnIsHdrEnabledChanged(bool value)
+    {
+        UpdateSelectedFormat();
     }
 
     partial void OnSelectedFormatChanged(MediaFormat? value)
@@ -438,10 +526,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         if (value != null && !_isChangingDevice && IsPreviewing && IsInitialized)
         {
             Logger.Log($"=== Format changed to {value.Width}x{value.Height}@{value.FrameRate}fps - reinitializing device ===");
-            _dispatcherQueue.TryEnqueue(async () =>
-            {
-                await ReinitializeDeviceAsync("format change");
-            });
+            EnqueueUiOperation(() => ReinitializeDeviceAsync("format change"), "format change reinitialize");
         }
     }
 
@@ -507,10 +592,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             }
         }
 
-        _dispatcherQueue.TryEnqueue(async () =>
-        {
-            await ApplyAudioInputSelectionAsync("custom audio toggle");
-        });
+        EnqueueUiOperation(() => ApplyAudioInputSelectionAsync("custom audio toggle"), "custom audio toggle");
     }
 
     partial void OnSelectedAudioInputDeviceChanged(AudioInputDevice? value)
@@ -525,10 +607,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             return;
         }
 
-        _dispatcherQueue.TryEnqueue(async () =>
-        {
-            await ApplyAudioInputSelectionAsync("custom audio device change");
-        });
+        EnqueueUiOperation(() => ApplyAudioInputSelectionAsync("custom audio device change"), "custom audio device change");
     }
 
     partial void OnIsAudioPreviewEnabledChanged(bool value)
@@ -547,17 +626,17 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Toggle audio preview if preview is already running
         if (IsPreviewing && IsInitialized)
         {
-            _dispatcherQueue.TryEnqueue(async () =>
+            EnqueueUiOperation(async () =>
             {
                 if (value)
                 {
-                    await _captureService.StartAudioPreviewAsync();
+                    await _sessionCoordinator.StartAudioPreviewAsync();
                 }
                 else
                 {
-                    await _captureService.StopAudioPreviewAsync();
+                    await _sessionCoordinator.StopAudioPreviewAsync();
                 }
-            });
+            }, "audio preview toggle");
         }
     }
 
@@ -585,7 +664,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         Logger.Log($"=== Updating audio input ({reason}) ===");
         Logger.Log($"  Audio device: {audioDeviceName ?? "(none)"}");
 
-        await _captureService.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);
+        await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);
     }
 
     partial void OnIsAudioEnabledChanged(bool value)
@@ -601,10 +680,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
 
             if (_captureService.IsAudioPreviewActive)
             {
-                _dispatcherQueue.TryEnqueue(async () =>
-                {
-                    await _captureService.StopAudioPreviewAsync();
-                });
+                EnqueueUiOperation(() => _sessionCoordinator.StopAudioPreviewAsync(), "audio preview stop");
             }
 
             ResetAudioMeter();
@@ -745,7 +821,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             System.Diagnostics.Debug.WriteLine($"Settings: {settings.Width}x{settings.Height} @ {settings.FrameRate}fps");
             System.Diagnostics.Debug.WriteLine($"Format: {settings.Format}, HDR: {settings.HdrEnabled}, Audio: {settings.AudioEnabled}");
 
-            await _captureService.InitializeAsync(SelectedDevice, settings);
+            await _sessionCoordinator.InitializeAsync(SelectedDevice, settings);
             Logger.Log("✓ CaptureService initialized");
             System.Diagnostics.Debug.WriteLine("✓ CaptureService initialized");
 
@@ -800,7 +876,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
             if (IsAudioPreviewEnabled && IsAudioEnabled)
             {
                 Logger.Log("Starting audio preview...");
-                await _captureService.StartAudioPreviewAsync();
+                await _sessionCoordinator.StartAudioPreviewAsync();
             }
         }
         else
@@ -821,7 +897,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         // Stop audio preview
         if (_captureService.IsAudioPreviewActive)
         {
-            await _captureService.StopAudioPreviewAsync();
+            await _sessionCoordinator.StopAudioPreviewAsync();
         }
 
         StatusText = "Preview stopped";
@@ -855,7 +931,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
         try
         {
             var settings = BuildCaptureSettings();
-            await _captureService.StartRecordingAsync(settings);
+            await _sessionCoordinator.StartRecordingAsync(settings);
             IsRecording = true;
             _recordingStopwatch.Restart();
             _bitrateSamples.Clear();
@@ -873,7 +949,7 @@ public partial class MainViewModel : ObservableObject, IDisposable
     {
         try
         {
-            await _captureService.StopRecordingAsync();
+            await _sessionCoordinator.StopRecordingAsync();
             IsRecording = false;
             _recordingStopwatch.Stop();
             StatusText = $"Recording saved ({RecordingTime})";
@@ -952,13 +1028,103 @@ public partial class MainViewModel : ObservableObject, IDisposable
         return settings;
     }
 
-    public void Dispose()
+    private async Task DisposeCoreAsync()
     {
+        if (Interlocked.Exchange(ref _disposeState, 1) == 1)
+        {
+            return;
+        }
+
         _timer?.Stop();
         _captureService.StatusChanged -= OnCaptureStatusChanged;
         _captureService.ErrorOccurred -= OnCaptureError;
         _captureService.FrameCaptured -= OnFrameCaptured;
         _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
-        _captureService.Dispose();
+        var stepTimeoutMs = GetIntFromEnv(
+            "ELGATOCAPTURE_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
+            DefaultDisposeTimeoutMs,
+            1000,
+            300000);
+
+        try
+        {
+            await AwaitWithTimeoutAsync(_sessionCoordinator.CleanupAsync(), stepTimeoutMs, "Coordinator cleanup")
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"ViewModel cleanup during dispose failed: {ex.Message}");
+        }
+
+        try
+        {
+            await AwaitWithTimeoutAsync(_sessionCoordinator.DisposeAsync().AsTask(), stepTimeoutMs, "Coordinator dispose")
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Coordinator dispose failed: {ex.Message}");
+        }
+
+        try
+        {
+            await AwaitWithTimeoutAsync(_captureService.DisposeAsync().AsTask(), stepTimeoutMs, "Capture service dispose")
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Capture service async dispose failed: {ex.Message}");
+            _captureService.Dispose();
+        }
+    }
+
+    public void Dispose()
+    {
+        var disposeTimeoutMs = GetIntFromEnv(
+            "ELGATOCAPTURE_VIEWMODEL_DISPOSE_TIMEOUT_MS",
+            DefaultDisposeTimeoutMs,
+            1000,
+            300000);
+        var disposeTask = Task.Run(DisposeCoreAsync);
+        var completed = Task.WhenAny(disposeTask, Task.Delay(disposeTimeoutMs)).GetAwaiter().GetResult();
+        if (completed != disposeTask)
+        {
+            Logger.Log($"ViewModel dispose timed out after {disposeTimeoutMs} ms.");
+            return;
+        }
+
+        try
+        {
+            disposeTask.GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"ViewModel dispose failed: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        var disposeTimeoutMs = GetIntFromEnv(
+            "ELGATOCAPTURE_VIEWMODEL_DISPOSE_TIMEOUT_MS",
+            DefaultDisposeTimeoutMs,
+            1000,
+            300000);
+        var disposeTask = DisposeCoreAsync();
+        var completed = await Task.WhenAny(disposeTask, Task.Delay(disposeTimeoutMs)).ConfigureAwait(false);
+        if (completed != disposeTask)
+        {
+            Logger.Log($"ViewModel async dispose timed out after {disposeTimeoutMs} ms.");
+            return;
+        }
+
+        try
+        {
+            await disposeTask.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"ViewModel async dispose failed: {ex.Message}");
+        }
     }
 }

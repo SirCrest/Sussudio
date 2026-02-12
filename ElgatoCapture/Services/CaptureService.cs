@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -8,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using Windows.Media;
@@ -34,27 +34,40 @@ unsafe interface IMemoryBufferByteAccess
 
 public class CaptureService : IDisposable, IAsyncDisposable
 {
+    private enum RecordingBackend
+    {
+        None,
+        Ffmpeg,
+        AviWriter,
+        MediaCaptureFallback
+    }
+
     private MediaCapture? _mediaCapture;
     private MediaFrameReader? _frameReader;
     private MediaFrameReader? _recordingFrameReader; // Separate reader for recording
     private StorageFile? _recordingFile;
-    private AviWriter? _aviWriter;
+    private IRecordingSink? _recordingSink;
+    private RecordingContext? _recordingContext;
     private bool _isRecording;
     private bool _isInitialized;
     private readonly object _lockObject = new();
     private bool _isDisposed;
     private readonly SemaphoreSlim _sessionTransitionLock = new(1, 1);
     private volatile CaptureSessionState _sessionState = CaptureSessionState.Uninitialized;
+    private volatile RecordingBackend _recordingBackend = RecordingBackend.None;
+    private readonly IProcessSupervisor _processSupervisor;
+    private readonly RecordingArtifactManager _artifactManager = new();
 
     // FFmpeg encoder for CFR output
     private FFmpegEncoderService? _ffmpegEncoder;
 
     // Frame conversion pipeline - decouples GPU copy from format conversion
-    private BlockingCollection<SoftwareBitmap>? _conversionQueue;
+    private Channel<SoftwareBitmap>? _conversionQueue;
     private Task? _conversionWorkerTask;
     private CancellationTokenSource? _conversionCancellation;
     private RecordingPipelineOptions _activePipelineOptions = new();
     private int _conversionQueueCapacity = 8;
+    private int _conversionQueueDepth;
     private const string VideoInputPixelFormat = "nv12";
     private readonly Stopwatch _recordingStopwatch = new();
     private long _videoFramesArrived;
@@ -68,6 +81,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private long _lastFrameArrivalMs;
     private long _lastConversionIdleLogMs;
     private long _lastEncoderNotReadyLogMs;
+    private long _lastHealthSnapshotLogMs;
     private int _loggedFirstFrameArrival;
     private int _loggedFirstFrameQueued;
     private int _loggedFirstFrameConverted;
@@ -84,7 +98,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private long _lastAudioClipLogTick;
     private string? _detectedAudioSubtype; // Track format for consistency detection
     private FileStream? _audioFileStream;
-    private BlockingCollection<byte[]>? _audioFileWriteQueue;
+    private Channel<byte[]>? _audioFileWriteQueue;
     private CancellationTokenSource? _audioFileWriteCancellation;
     private Task? _audioFileWriteTask;
     private long _audioBytesWritten;
@@ -100,6 +114,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private const short RecordingAudioChannels = 2;
     private const short RecordingAudioBitsPerSample = 32;
     private const int AudioWriteQueueCapacity = 512;
+    private const int MuxTimeoutMs = 45_000;
+    private const int ConversionDrainTimeoutMs = 5000;
+    private const int ConversionCancelGraceMs = 2000;
     private long _lastAudioLevelUpdateTick;
 
     // Audio preview
@@ -131,6 +148,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public MediaCapture? MediaCapture => _mediaCapture;
     public CaptureSessionState SessionState => _sessionState;
 
+    public CaptureService() : this(new ProcessSupervisor())
+    {
+    }
+
+    internal CaptureService(IProcessSupervisor processSupervisor)
+    {
+        _processSupervisor = processSupervisor ?? throw new ArgumentNullException(nameof(processSupervisor));
+    }
+
     private CaptureSessionState ResolveSteadyState()
     {
         if (_isDisposed)
@@ -159,7 +185,17 @@ public class CaptureService : IDisposable, IAsyncDisposable
         Func<Task> action,
         bool allowWhenDisposed = false)
     {
-        await _sessionTransitionLock.WaitAsync();
+        var sessionLockTimeoutMs = GetIntFromEnv(
+            "ELGATOCAPTURE_SESSION_TRANSITION_TIMEOUT_MS",
+            60000,
+            1000,
+            300000);
+        if (!await _sessionTransitionLock.WaitAsync(sessionLockTimeoutMs))
+        {
+            throw new TimeoutException(
+                $"Session transition lock wait timed out after {sessionLockTimeoutMs} ms for {operationName}.");
+        }
+
         var previousState = _sessionState;
         try
         {
@@ -226,6 +262,36 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
     public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()
     {
+        var health = GetHealthSnapshot();
+        return new CaptureDiagnosticsSnapshot
+        {
+            TimestampUtc = health.TimestampUtc,
+            SessionState = health.SessionState,
+            IsRecording = health.IsRecording,
+            AudioPathMode = health.AudioPathMode,
+            MuxResult = health.MuxResult,
+            RecordingElapsedMs = health.RecordingElapsedMs,
+            LastFrameArrivalMs = health.LastFrameArrivalMs,
+            EstimatedPipelineLatencyMs = health.EstimatedPipelineLatencyMs,
+            ConversionQueueDepth = health.ConversionQueueDepth,
+            FfmpegVideoQueueDepth = health.FfmpegVideoQueueDepth,
+            FfmpegAudioQueueDepth = health.FfmpegAudioQueueDepth,
+            VideoFramesArrived = health.VideoFramesArrived,
+            VideoFramesQueued = health.VideoFramesQueued,
+            VideoFramesDropped = health.VideoFramesDropped,
+            VideoFramesDroppedBacklog = health.VideoFramesDroppedBacklog,
+            VideoFramesConverted = health.VideoFramesConverted,
+            VideoFramesEnqueued = health.VideoFramesEnqueued,
+            VideoDropsQueueSaturated = health.VideoDropsQueueSaturated,
+            VideoDropsBacklogEviction = health.VideoDropsBacklogEviction,
+            AudioDropsQueueSaturated = health.AudioDropsQueueSaturated,
+            AudioDropsBacklogEviction = health.AudioDropsBacklogEviction,
+            AudioChunksDropped = health.AudioChunksDropped
+        };
+    }
+
+    public CaptureHealthSnapshot GetHealthSnapshot()
+    {
         var encoder = _ffmpegEncoder;
         var elapsedMs = _recordingStopwatch.IsRunning ? _recordingStopwatch.ElapsedMilliseconds : 0;
         var lastArrivalMs = Interlocked.Read(ref _lastFrameArrivalMs);
@@ -237,17 +303,18 @@ public class CaptureService : IDisposable, IAsyncDisposable
             ? (_muxSucceeded == true ? "Succeeded" : "Failed")
             : "NotAttempted";
 
-        return new CaptureDiagnosticsSnapshot
+        return new CaptureHealthSnapshot
         {
             TimestampUtc = DateTimeOffset.UtcNow,
             SessionState = SessionState,
             IsRecording = _isRecording,
+            RecordingBackend = _recordingBackend.ToString(),
             AudioPathMode = _activeAudioPathMode,
             MuxResult = muxResult,
             RecordingElapsedMs = elapsedMs,
             LastFrameArrivalMs = lastArrivalMs,
             EstimatedPipelineLatencyMs = estimatedLatencyMs,
-            ConversionQueueDepth = _conversionQueue?.Count ?? 0,
+            ConversionQueueDepth = Volatile.Read(ref _conversionQueueDepth),
             FfmpegVideoQueueDepth = encoder?.VideoQueueCount ?? 0,
             FfmpegAudioQueueDepth = encoder?.AudioQueueCount ?? 0,
             VideoFramesArrived = Interlocked.Read(ref _videoFramesArrived),
@@ -256,6 +323,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
             VideoFramesDroppedBacklog = Interlocked.Read(ref _videoFramesDroppedFromBacklog),
             VideoFramesConverted = Interlocked.Read(ref _videoFramesConverted),
             VideoFramesEnqueued = Interlocked.Read(ref _videoFramesEnqueued),
+            VideoDropsQueueSaturated = encoder?.VideoDropsQueueSaturated ?? 0,
+            VideoDropsBacklogEviction = encoder?.VideoDropsBacklogEviction ?? 0,
+            AudioDropsQueueSaturated = encoder?.AudioDropsQueueSaturated ?? 0,
+            AudioDropsBacklogEviction = encoder?.AudioDropsBacklogEviction ?? 0,
             AudioChunksDropped = Interlocked.Read(ref _audioFileWriteDropped)
         };
     }
@@ -443,14 +514,23 @@ public class CaptureService : IDisposable, IAsyncDisposable
         try
         {
             Logger.Log("=== Starting recording (seamless - no reinitialization needed) ===");
+            Logger.LogEvent("CAP-REC-START", $"format={settings.Format} path={settings.OutputPath}");
             Logger.Log($"Audio preview active: {_isAudioPreviewActive}");
             var canCaptureAudio = settings.AudioEnabled && !string.IsNullOrEmpty(_audioDeviceId);
             var isCompressedFormat = settings.Format != RecordingFormat.UncompressedAvi;
             var useNamedPipeAudio = isCompressedFormat &&
                                     canCaptureAudio &&
                                     settings.AudioPathMode == AudioPathMode.NamedPipeExperimental;
+            var effectiveFrameRate = _actualFrameRate ?? settings.FrameRate;
+            var frameRateArg = !string.IsNullOrWhiteSpace(_actualFrameRateArg)
+                ? _actualFrameRateArg
+                : effectiveFrameRate.ToString("0.###", CultureInfo.InvariantCulture);
+            var effectiveWidth = _actualWidth ?? settings.Width;
+            var effectiveHeight = _actualHeight ?? settings.Height;
+
             _muxAttempted = false;
             _muxSucceeded = null;
+            _postMuxAudioEnabled = isCompressedFormat && canCaptureAudio && !useNamedPipeAudio;
             _activeAudioPathMode = !settings.AudioEnabled || !canCaptureAudio
                 ? "Disabled"
                 : !isCompressedFormat
@@ -462,48 +542,44 @@ public class CaptureService : IDisposable, IAsyncDisposable
             Logger.Log($"Audio path mode requested: {settings.AudioPathMode}");
 
             var folder = await StorageFolder.GetFolderFromPathAsync(settings.OutputPath);
-            var outputFile = await folder.CreateFileAsync(
-                settings.GetOutputFileName(),
-                CreationCollisionOption.GenerateUniqueName);
+            var sinkAudioDevice = isCompressedFormat && canCaptureAudio && !_postMuxAudioEnabled
+                ? _audioDeviceName
+                : null;
+            _recordingContext = await _artifactManager.CreateContextAsync(
+                folder,
+                settings,
+                _postMuxAudioEnabled,
+                sinkAudioDevice,
+                effectiveFrameRate,
+                frameRateArg,
+                effectiveWidth,
+                effectiveHeight,
+                VideoInputPixelFormat);
 
-            _postMuxAudioEnabled = isCompressedFormat && canCaptureAudio && !useNamedPipeAudio;
-            _finalOutputPath = null;
-            _audioTempPath = null;
+            _recordingFile = await StorageFile.GetFileFromPathAsync(_recordingContext.VideoOutputPath);
+            _finalOutputPath = _recordingContext.UsePostMuxAudio ? _recordingContext.FinalOutputPath : null;
+            _audioTempPath = _recordingContext.AudioTempPath;
 
-            if (_postMuxAudioEnabled)
+            if (_recordingContext.UsePostMuxAudio)
             {
-                _finalOutputPath = outputFile.Path;
-                var baseName = Path.GetFileNameWithoutExtension(outputFile.Path);
-                var extension = Path.GetExtension(outputFile.Path);
-                var tempVideoFile = await folder.CreateFileAsync(
-                    $"{baseName}_video{extension}",
-                    CreationCollisionOption.GenerateUniqueName);
-                var tempAudioFile = await folder.CreateFileAsync(
-                    $"{baseName}_audio.wav",
-                    CreationCollisionOption.GenerateUniqueName);
-
-                _recordingFile = tempVideoFile;
-                _audioTempPath = tempAudioFile.Path;
-                StartAudioCaptureFile(_audioTempPath);
+                if (!string.IsNullOrWhiteSpace(_audioTempPath))
+                {
+                    StartAudioCaptureFile(_audioTempPath);
+                }
 
                 Logger.Log("Post-mux audio enabled");
-                Logger.Log($"Video temp file: {_recordingFile.Path}");
+                Logger.Log($"Video temp file: {_recordingContext.VideoOutputPath}");
                 Logger.Log($"Audio temp file: {_audioTempPath}");
-                Logger.Log($"Final output file: {_finalOutputPath}");
+                Logger.Log($"Final output file: {_recordingContext.FinalOutputPath}");
             }
             else if (useNamedPipeAudio)
             {
                 Logger.Log("Named-pipe audio path enabled (experimental mode)");
-                _recordingFile = outputFile;
-            }
-            else
-            {
-                _recordingFile = outputFile;
             }
 
             if (settings.Format == RecordingFormat.UncompressedAvi)
             {
-                await StartUncompressedRecordingAsync(settings);
+                await StartUncompressedRecordingAsync();
             }
             else
             {
@@ -517,6 +593,22 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
+            try
+            {
+                await CleanupRecordingResourcesOnErrorAsync();
+            }
+            catch (Exception cleanupEx)
+            {
+                Logger.Log($"Start-recording rollback failed: {cleanupEx.Message}");
+            }
+
+            _recordingContext = null;
+            _recordingFile = null;
+            _recordingBackend = RecordingBackend.None;
+            _postMuxAudioEnabled = false;
+            _audioTempPath = null;
+            _finalOutputPath = null;
+
             ErrorOccurred?.Invoke(this, ex);
             throw;
         }
@@ -526,6 +618,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         if (_mediaCapture == null || _recordingFile == null) return;
 
+        _recordingBackend = RecordingBackend.Ffmpeg;
         var startupStopwatch = System.Diagnostics.Stopwatch.StartNew();
         Logger.Log("=== Starting FFmpeg-based recording for CFR output ===");
         ResetPipelineStats();
@@ -538,6 +631,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         _ffmpegEncoder.ErrorOccurred += (s, err) => Logger.Log($"[FFmpegEncoder] ERROR: {err}");
         _ffmpegEncoder.FrameEncoded += (s, count) => FrameCaptured?.Invoke(this, count);
         _ffmpegPathForMux = _ffmpegEncoder.FfmpegPath;
+        _recordingSink = new FfmpegRecordingSink(_ffmpegEncoder);
 
         // Determine if we're using audio
         // Audio is captured via AudioGraph and piped to FFmpeg via named pipe
@@ -562,7 +656,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             // Initialize conversion pipeline
             _conversionQueueCapacity = ResolveConversionQueueCapacity(settings);
-            _conversionQueue = new BlockingCollection<SoftwareBitmap>(_conversionQueueCapacity);
+            _conversionQueue = Channel.CreateBounded<SoftwareBitmap>(new BoundedChannelOptions(_conversionQueueCapacity)
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
+            });
+            Interlocked.Exchange(ref _conversionQueueDepth, 0);
             _conversionCancellation = new CancellationTokenSource();
             _conversionWorkerTask = Task.Run(() => RunConversionWorkerAsync(_conversionCancellation.Token));
             Logger.Log(
@@ -579,18 +679,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 Logger.Log("Audio capture started - buffering while FFmpeg initializes");
             }
 
-            // Start FFmpeg encoder with output path and audio device name
-            // (FFmpeg will create named pipe for audio if audioDevice is specified)
-            var effectiveFrameRate = _actualFrameRate ?? settings.FrameRate;
-            var frameRateArg = !string.IsNullOrWhiteSpace(_actualFrameRateArg)
-                ? _actualFrameRateArg
-                : effectiveFrameRate.ToString("0.###", CultureInfo.InvariantCulture);
-            var effectiveWidth = _actualWidth ?? settings.Width;
-            var effectiveHeight = _actualHeight ?? settings.Height;
-            var ffmpegSettings = settings;
+            // Start FFmpeg encoder through sink with contextualized contract.
+            var context = _recordingContext ?? throw new InvalidOperationException("Recording context not initialized.");
             if (_postMuxAudioEnabled && captureAudio)
             {
-                ffmpegSettings = new CaptureSettings
+                var ffmpegSettings = new CaptureSettings
                 {
                     Width = settings.Width,
                     Height = settings.Height,
@@ -601,21 +694,47 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     HdrEnabled = settings.HdrEnabled,
                     OutputPath = settings.OutputPath,
                     AudioEnabled = false,
+                    UseCustomAudioInput = settings.UseCustomAudioInput,
+                    AudioDeviceId = settings.AudioDeviceId,
+                    AudioDeviceName = settings.AudioDeviceName,
                     AudioPathMode = settings.AudioPathMode,
                     PipelineOptions = settings.PipelineOptions
                 };
+
+                context = new RecordingContext
+                {
+                    Settings = ffmpegSettings,
+                    VideoOutputPath = context.VideoOutputPath,
+                    FinalOutputPath = context.FinalOutputPath,
+                    AudioTempPath = context.AudioTempPath,
+                    UsePostMuxAudio = context.UsePostMuxAudio,
+                    AudioDeviceName = null,
+                    EffectiveFrameRate = context.EffectiveFrameRate,
+                    FrameRateArg = context.FrameRateArg,
+                    EffectiveWidth = context.EffectiveWidth,
+                    EffectiveHeight = context.EffectiveHeight,
+                    VideoInputPixelFormat = context.VideoInputPixelFormat
+                };
+            }
+            else if (!string.IsNullOrWhiteSpace(audioDevice) && !string.Equals(context.AudioDeviceName, audioDevice, StringComparison.Ordinal))
+            {
+                context = new RecordingContext
+                {
+                    Settings = context.Settings,
+                    VideoOutputPath = context.VideoOutputPath,
+                    FinalOutputPath = context.FinalOutputPath,
+                    AudioTempPath = context.AudioTempPath,
+                    UsePostMuxAudio = context.UsePostMuxAudio,
+                    AudioDeviceName = audioDevice,
+                    EffectiveFrameRate = context.EffectiveFrameRate,
+                    FrameRateArg = context.FrameRateArg,
+                    EffectiveWidth = context.EffectiveWidth,
+                    EffectiveHeight = context.EffectiveHeight,
+                    VideoInputPixelFormat = context.VideoInputPixelFormat
+                };
             }
 
-            await _ffmpegEncoder.StartEncodingAsync(
-                ffmpegSettings,
-                _recordingFile.Path,
-                audioDevice,
-                effectiveFrameRate,
-                frameRateArg,
-                effectiveWidth,
-                effectiveHeight,
-                VideoInputPixelFormat,
-                _activePipelineOptions);
+            await _recordingSink.StartAsync(context);
             Logger.LogVerbose($"FFmpeg StartEncodingAsync returned at {startupStopwatch.ElapsedMilliseconds} ms");
 
             // Set up frame reader for recording (uses existing MediaCapture)
@@ -626,80 +745,178 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
         catch
         {
-            await CleanupRecordingResourcesOnErrorAsync();
             throw;
         }
     }
 
     private async Task SetupRecordingFrameReaderAsync(CaptureSettings settings)
     {
-        if (_mediaCapture == null) return;
-
-        // Find video frame source
-        var frameSourceGroups = await MediaFrameSourceGroup.FindAllAsync();
-        MediaFrameSourceGroup? matchingGroup = null;
-        MediaFrameSourceInfo? videoSourceInfo = null;
-
-        foreach (var group in frameSourceGroups)
+        if (_mediaCapture == null)
         {
-            var videoSource = group.SourceInfos.FirstOrDefault(si =>
-                si.MediaStreamType == MediaStreamType.VideoRecord &&
-                si.SourceKind == MediaFrameSourceKind.Color);
-
-            if (videoSource != null)
-            {
-                matchingGroup = group;
-                videoSourceInfo = videoSource;
-                break;
-            }
-        }
-
-        if (matchingGroup == null || videoSourceInfo == null)
-        {
-            Logger.Log("WARNING: Could not find frame source for FFmpeg recording");
-            // Try to use VideoPreview stream instead
-            var previewSources = _mediaCapture.FrameSources.Values
-                .Where(fs => fs.Info.MediaStreamType == MediaStreamType.VideoPreview ||
-                             fs.Info.MediaStreamType == MediaStreamType.VideoRecord)
-                .ToList();
-
-            if (previewSources.Count > 0)
-            {
-                Logger.Log($"Using alternative frame source: {previewSources[0].Info.MediaStreamType}");
-                _recordingFrameReader = await _mediaCapture.CreateFrameReaderAsync(previewSources[0]);
-            }
-            else
-            {
-                throw new InvalidOperationException("No suitable frame source available for FFmpeg recording");
-            }
-        }
-        else
-        {
-            // Use the identified frame source
-            if (_mediaCapture.FrameSources.TryGetValue(videoSourceInfo.Id, out var frameSource))
-            {
-                _recordingFrameReader = await _mediaCapture.CreateFrameReaderAsync(frameSource);
-            }
-            else
-            {
-                // Fallback: try any available frame source
-                var anySource = _mediaCapture.FrameSources.Values.FirstOrDefault();
-                if (anySource != null)
-                {
-                    _recordingFrameReader = await _mediaCapture.CreateFrameReaderAsync(anySource);
-                }
-                else
-                {
-                    throw new InvalidOperationException("No frame sources available");
-                }
-            }
+            return;
         }
 
         if (_recordingFrameReader != null)
         {
-            _recordingFrameReader.FrameArrived += RecordingFrameReader_FrameArrived;
-            var result = await _recordingFrameReader.StartAsync();
-            Logger.Log($"Recording frame reader started: {result}");
+            try
+            {
+                _recordingFrameReader.FrameArrived -= RecordingFrameReader_FrameArrived;
+                await _recordingFrameReader.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Recording frame reader cleanup warning: {ex.Message}");
+            }
+            finally
+            {
+                _recordingFrameReader.Dispose();
+                _recordingFrameReader = null;
+            }
+        }
+
+        var firstFrameTimeoutMs = GetIntFromEnv(
+            "ELGATOCAPTURE_RECORDING_FIRST_FRAME_TIMEOUT_MS",
+            defaultValue: 5000,
+            minValue: 500,
+            maxValue: 30000);
+
+        // Only consider sources that belong to this MediaCapture instance.
+        // This avoids attaching to unrelated camera sources exposed system-wide.
+        var candidateSources = _mediaCapture.FrameSources.Values
+            .Where(fs =>
+                fs.Info.SourceKind == MediaFrameSourceKind.Color &&
+                (fs.Info.MediaStreamType == MediaStreamType.VideoRecord ||
+                 fs.Info.MediaStreamType == MediaStreamType.VideoPreview))
+            .OrderBy(fs => fs.Info.MediaStreamType == MediaStreamType.VideoRecord ? 0 : 1)
+            .ThenBy(fs => fs.Info.Id, StringComparer.Ordinal)
+            .ToList();
+
+        if (candidateSources.Count == 0)
+        {
+            candidateSources = _mediaCapture.FrameSources.Values
+                .Where(fs => fs.Info.SourceKind == MediaFrameSourceKind.Color)
+                .OrderBy(fs => fs.Info.Id, StringComparer.Ordinal)
+                .ToList();
+        }
+
+        if (candidateSources.Count == 0)
+        {
+            throw new InvalidOperationException("No color frame sources available for recording");
+        }
+
+        Logger.Log($"Recording frame source candidates: {candidateSources.Count} (first-frame timeout: {firstFrameTimeoutMs} ms)");
+        foreach (var source in candidateSources)
+        {
+            Logger.Log($"  Candidate source: id={source.Info.Id}, stream={source.Info.MediaStreamType}, kind={source.Info.SourceKind}");
+        }
+
+        foreach (var source in candidateSources)
+        {
+            MediaFrameReader? candidateReader = null;
+            try
+            {
+                candidateReader = await _mediaCapture.CreateFrameReaderAsync(source);
+                if (candidateReader == null)
+                {
+                    Logger.Log($"Failed to create recording frame reader for source {source.Info.Id}");
+                    continue;
+                }
+
+                if (!await TryStartReaderAndAwaitFirstFrameAsync(candidateReader, source, firstFrameTimeoutMs))
+                {
+                    continue;
+                }
+
+                _recordingFrameReader = candidateReader;
+                _recordingFrameReader.FrameArrived += RecordingFrameReader_FrameArrived;
+                Logger.Log($"Recording frame reader attached: id={source.Info.Id}, stream={source.Info.MediaStreamType}");
+                return;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Recording frame source rejected ({source.Info.Id}): {ex.Message}");
+            }
+            finally
+            {
+                if (candidateReader != null && !ReferenceEquals(candidateReader, _recordingFrameReader))
+                {
+                    try
+                    {
+                        await candidateReader.StopAsync();
+                    }
+                    catch
+                    {
+                        // Best effort cleanup.
+                    }
+
+                    candidateReader.Dispose();
+                }
+            }
+        }
+
+        throw new InvalidOperationException("Unable to acquire recording frame source with live video frames");
+    }
+
+    private static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)
+    {
+        var rawValue = Environment.GetEnvironmentVariable(variableName);
+        if (int.TryParse(rawValue, out var parsedValue))
+        {
+            return Math.Clamp(parsedValue, minValue, maxValue);
+        }
+
+        return defaultValue;
+    }
+
+    private static async Task<bool> TryStartReaderAndAwaitFirstFrameAsync(
+        MediaFrameReader reader,
+        MediaFrameSource source,
+        int firstFrameTimeoutMs)
+    {
+        var firstFrameSeen = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        void WarmupHandler(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
+        {
+            try
+            {
+                using var frame = sender.TryAcquireLatestFrame();
+                if (frame?.VideoMediaFrame != null)
+                {
+                    firstFrameSeen.TrySetResult(true);
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+                // Reader stopped while probing source viability.
+            }
+        }
+
+        reader.FrameArrived += WarmupHandler;
+        try
+        {
+            var startResult = await reader.StartAsync();
+            Logger.Log($"Recording frame reader start status ({source.Info.Id}): {startResult}");
+            if (startResult != MediaFrameReaderStartStatus.Success)
+            {
+                return false;
+            }
+
+            var firstFrameTask = firstFrameSeen.Task;
+            var completed = await Task.WhenAny(firstFrameTask, Task.Delay(firstFrameTimeoutMs));
+            if (completed != firstFrameTask || !firstFrameTask.Result)
+            {
+                Logger.Log(
+                    $"Recording frame reader warm-up timeout for source {source.Info.Id} " +
+                    $"({source.Info.MediaStreamType}) after {firstFrameTimeoutMs} ms");
+                return false;
+            }
+
+            Logger.Log($"Recording frame reader warm-up succeeded for source {source.Info.Id}");
+            return true;
+        }
+        finally
+        {
+            reader.FrameArrived -= WarmupHandler;
         }
     }
 
@@ -707,7 +924,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         // Capture local reference to avoid race condition
         var conversionQueue = _conversionQueue;
-        if (conversionQueue == null || conversionQueue.IsAddingCompleted) return;
+        if (conversionQueue == null || _conversionCancellation?.IsCancellationRequested == true) return;
 
         using var frame = sender.TryAcquireLatestFrame();
         if (frame?.VideoMediaFrame == null) return;
@@ -777,7 +994,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 var queuedCount = Interlocked.Increment(ref _videoFramesQueued);
                 if (Logger.VerboseEnabled && Interlocked.Exchange(ref _loggedFirstFrameQueued, 1) == 0)
                 {
-                    Logger.LogVerbose($"First frame queued at {_recordingStopwatch.ElapsedMilliseconds} ms (queueCount={conversionQueue.Count})");
+                    Logger.LogVerbose($"First frame queued at {_recordingStopwatch.ElapsedMilliseconds} ms (queueCount={Volatile.Read(ref _conversionQueueDepth)})");
                 }
 
                 if (Logger.VerboseEnabled && lastArrivalMs > 0 && queuedCount % 120 == 0)
@@ -788,6 +1005,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             LogPipelineStatsIfNeeded();
+            LogHealthSnapshotIfNeeded();
         }
         catch (Exception ex)
         {
@@ -811,9 +1029,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
                 try
                 {
-                    // Wait for unconverted frame (blocks if queue empty)
-                    if (!queue.TryTake(out sourceBitmap, 100, cancellationToken))
+                    if (!queue.Reader.TryRead(out sourceBitmap))
                     {
+                        if (queue.Reader.Completion.IsCompleted)
+                        {
+                            break;
+                        }
+
                         if (Logger.VerboseEnabled)
                         {
                             var nowMs = _recordingStopwatch.ElapsedMilliseconds;
@@ -821,17 +1043,23 @@ public class CaptureService : IDisposable, IAsyncDisposable
                             if (nowMs - lastIdle >= 1000 &&
                                 Interlocked.CompareExchange(ref _lastConversionIdleLogMs, nowMs, lastIdle) == lastIdle)
                             {
-                                Logger.LogVerbose($"Conversion worker idle: no frames (queueCount={queue.Count})");
+                                Logger.LogVerbose($"Conversion worker idle: no frames (queueCount={Volatile.Read(ref _conversionQueueDepth)})");
                             }
                         }
+                        await Task.Delay(100, cancellationToken);
                         continue;
                     }
+                    Interlocked.Decrement(ref _conversionQueueDepth);
 
-                    // Get encoder reference each iteration (might change during startup)
+                    // Get sink/encoder references each iteration (may change during startup/shutdown).
+                    var sink = _recordingSink;
                     var encoder = _ffmpegEncoder;
-                    if (encoder == null || !encoder.IsEncoding)
+                    var sinkUnavailable = sink == null;
+                    var ffmpegUnavailable = _recordingBackend == RecordingBackend.Ffmpeg &&
+                        (encoder == null || !encoder.IsEncoding);
+                    if (sinkUnavailable || ffmpegUnavailable)
                     {
-                        // Encoder unavailable: drop frame to keep latency bounded.
+                        // Sink unavailable: drop frame to keep latency bounded.
                         Interlocked.Increment(ref _videoFramesDropped);
                         sourceBitmap.Dispose();
                         sourceBitmap = null;
@@ -843,7 +1071,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                             if (nowMs - lastNotReady >= 1000 &&
                                 Interlocked.CompareExchange(ref _lastEncoderNotReadyLogMs, nowMs, lastNotReady) == lastNotReady)
                             {
-                                Logger.LogVerbose("Conversion worker: encoder unavailable, dropping frame");
+                                Logger.LogVerbose("Conversion worker: sink unavailable, dropping frame");
                             }
                         }
                         continue;
@@ -872,15 +1100,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
                         sourceBitmap.Dispose(); // Dispose unconverted frame
                     }
 
-                    // Send converted frame to FFmpeg encoder
+                    // Send converted frame through the active sink contract.
                     var enqueueStartTicks = Logger.VerboseEnabled ? Stopwatch.GetTimestamp() : 0;
-                    encoder.EnqueueVideoFrame(nv12Frame);
+                    await sink!.WriteVideoAsync(nv12Frame, cancellationToken);
                     if (Logger.VerboseEnabled && enqueueStartTicks != 0)
                     {
                         var enqueueMs = (Stopwatch.GetTimestamp() - enqueueStartTicks) * 1000.0 / Stopwatch.Frequency;
                         if (enqueueMs >= 5)
                         {
-                            Logger.LogVerbose($"EnqueueVideoFrame took {enqueueMs:0.00} ms");
+                            Logger.LogVerbose($"Sink WriteVideoAsync took {enqueueMs:0.00} ms");
                         }
                     }
 
@@ -903,6 +1131,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     }
 
                     LogPipelineStatsIfNeeded();
+                    LogHealthSnapshotIfNeeded();
                 }
                 catch (OperationCanceledException)
                 {
@@ -936,10 +1165,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
         Interlocked.Exchange(ref _lastFrameArrivalMs, 0);
         Interlocked.Exchange(ref _lastConversionIdleLogMs, 0);
         Interlocked.Exchange(ref _lastEncoderNotReadyLogMs, 0);
+        Interlocked.Exchange(ref _lastHealthSnapshotLogMs, 0);
         Interlocked.Exchange(ref _loggedFirstFrameArrival, 0);
         Interlocked.Exchange(ref _loggedFirstFrameQueued, 0);
         Interlocked.Exchange(ref _loggedFirstFrameConverted, 0);
         Interlocked.Exchange(ref _loggedFirstFrameEnqueued, 0);
+        Interlocked.Exchange(ref _conversionQueueDepth, 0);
     }
 
     private void LogPipelineStatsIfNeeded()
@@ -962,7 +1193,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         var encoder = _ffmpegEncoder;
-        var conversionQueueCount = _conversionQueue?.Count ?? 0;
+        var conversionQueueCount = Volatile.Read(ref _conversionQueueDepth);
         var videoQueueCount = encoder?.VideoQueueCount ?? 0;
         var audioQueueCount = encoder?.AudioQueueCount ?? 0;
         var arrived = Interlocked.Read(ref _videoFramesArrived);
@@ -980,6 +1211,28 @@ public class CaptureService : IDisposable, IAsyncDisposable
             $"convQ={conversionQueueCount} ffmpegVQ={videoQueueCount} ffmpegAQ={audioQueueCount}");
     }
 
+    private void LogHealthSnapshotIfNeeded()
+    {
+        if (!_recordingStopwatch.IsRunning)
+        {
+            return;
+        }
+
+        var nowMs = _recordingStopwatch.ElapsedMilliseconds;
+        var last = Interlocked.Read(ref _lastHealthSnapshotLogMs);
+        if (nowMs - last < 5000)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref _lastHealthSnapshotLogMs, nowMs, last) != last)
+        {
+            return;
+        }
+
+        Logger.LogStructured("CaptureHealth", GetHealthSnapshot());
+    }
+
     private int ResolveConversionQueueCapacity(CaptureSettings settings)
     {
         _activePipelineOptions = settings.PipelineOptions ?? new RecordingPipelineOptions();
@@ -987,26 +1240,28 @@ public class CaptureService : IDisposable, IAsyncDisposable
         return _activePipelineOptions.ResolveVideoQueueCapacity(frameRate);
     }
 
-    private bool TryEnqueueConversionFrame(BlockingCollection<SoftwareBitmap> queue, SoftwareBitmap frame)
+    private bool TryEnqueueConversionFrame(Channel<SoftwareBitmap> queue, SoftwareBitmap frame)
     {
-        if (queue.IsAddingCompleted)
+        if (_conversionCancellation?.IsCancellationRequested == true)
         {
             return false;
         }
 
         var capacity = Math.Max(1, _conversionQueueCapacity);
-        if (_activePipelineOptions.VideoDropPolicy == VideoFrameDropPolicy.DropNewest && queue.Count >= capacity)
+        if (_activePipelineOptions.VideoDropPolicy == VideoFrameDropPolicy.DropNewest &&
+            Volatile.Read(ref _conversionQueueDepth) >= capacity)
         {
             return false;
         }
 
-        while (queue.Count >= capacity)
+        while (Volatile.Read(ref _conversionQueueDepth) >= capacity)
         {
-            if (!queue.TryTake(out var droppedFrame, 0))
+            if (!queue.Reader.TryRead(out var droppedFrame))
             {
                 break;
             }
 
+            Interlocked.Decrement(ref _conversionQueueDepth);
             droppedFrame.Dispose();
             Interlocked.Increment(ref _videoFramesDropped);
             var backlogDrops = Interlocked.Increment(ref _videoFramesDroppedFromBacklog);
@@ -1016,7 +1271,71 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
         }
 
-        return queue.TryAdd(frame, 0);
+        if (queue.Writer.TryWrite(frame))
+        {
+            Interlocked.Increment(ref _conversionQueueDepth);
+            return true;
+        }
+
+        return false;
+    }
+
+    private void DrainConversionQueueFrames(Channel<SoftwareBitmap>? queue)
+    {
+        if (queue == null)
+        {
+            return;
+        }
+
+        while (queue.Reader.TryRead(out var frame))
+        {
+            Interlocked.Decrement(ref _conversionQueueDepth);
+            frame.Dispose();
+        }
+
+        if (Volatile.Read(ref _conversionQueueDepth) < 0)
+        {
+            Interlocked.Exchange(ref _conversionQueueDepth, 0);
+        }
+    }
+
+    private async Task StopConversionWorkerAsync(bool cancelIfStalled)
+    {
+        if (_conversionQueue != null)
+        {
+            _conversionQueue.Writer.TryComplete();
+        }
+
+        if (_conversionWorkerTask == null)
+        {
+            return;
+        }
+
+        var workerTask = _conversionWorkerTask;
+        var completedInTime = await Task.WhenAny(workerTask, Task.Delay(ConversionDrainTimeoutMs)) == workerTask;
+        if (!completedInTime && cancelIfStalled)
+        {
+            Logger.Log($"Conversion worker drain exceeded {ConversionDrainTimeoutMs} ms; canceling worker");
+            _conversionCancellation?.Cancel();
+            await Task.WhenAny(workerTask, Task.Delay(ConversionCancelGraceMs));
+        }
+
+        try
+        {
+            await workerTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when cancellation fallback is used.
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Conversion worker error during shutdown: {ex.Message}");
+        }
+        finally
+        {
+            _conversionWorkerTask = null;
+        }
     }
 
     private async Task SetupRecordingAudioCaptureAsync()
@@ -1151,8 +1470,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
             Interlocked.Exchange(ref _audioFileWriteDropped, 0);
             WriteWavHeader(_audioFileStream, 0);
 
-            _audioFileWriteQueue?.Dispose();
-            _audioFileWriteQueue = new BlockingCollection<byte[]>(AudioWriteQueueCapacity);
+            _audioFileWriteQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(AudioWriteQueueCapacity)
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
+            });
             _audioFileWriteCancellation?.Dispose();
             _audioFileWriteCancellation = new CancellationTokenSource();
             _audioFileWriteTask = Task.Run(() => RunAudioFileWriterAsync(_audioFileWriteCancellation.Token));
@@ -1169,7 +1492,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var queue = _audioFileWriteQueue;
         if (queue != null)
         {
-            try { queue.CompleteAdding(); }
+            try { queue.Writer.TryComplete(); }
             catch (Exception ex) { Logger.Log($"Audio queue completion failed: {ex.Message}"); }
         }
 
@@ -1196,7 +1519,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _audioFileWriteTask = null;
         }
 
-        queue?.Dispose();
         _audioFileWriteQueue = null;
 
         _audioFileWriteCancellation?.Dispose();
@@ -1241,22 +1563,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             while (true)
             {
-                byte[]? payload = null;
-
-                try
+                if (!queue.Reader.TryRead(out var payload))
                 {
-                    if (!queue.TryTake(out payload, 100, cancellationToken))
+                    if (queue.Reader.Completion.IsCompleted)
                     {
-                        if (queue.IsCompleted)
-                        {
-                            break;
-                        }
-                        continue;
+                        break;
                     }
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
+
+                    await Task.Delay(50, cancellationToken);
+                    continue;
                 }
 
                 if (payload == null || payload.Length == 0)
@@ -1301,7 +1616,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         var queue = _audioFileWriteQueue;
-        if (queue == null || queue.IsAddingCompleted)
+        if (queue == null || queue.Reader.Completion.IsCompleted)
         {
             return;
         }
@@ -1309,14 +1624,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var copy = new byte[data.Length];
         System.Buffer.BlockCopy(data, 0, copy, 0, data.Length);
 
-        if (!queue.TryAdd(copy, 0))
+        if (!queue.Writer.TryWrite(copy))
         {
-            if (queue.TryTake(out _))
+            if (queue.Reader.TryRead(out _))
             {
                 Interlocked.Increment(ref _audioFileWriteDropped);
             }
 
-            if (!queue.TryAdd(copy, 0))
+            if (!queue.Writer.TryWrite(copy))
             {
                 var dropped = Interlocked.Increment(ref _audioFileWriteDropped);
                 if (dropped == 1 || dropped % 120 == 0)
@@ -1334,20 +1649,26 @@ public class CaptureService : IDisposable, IAsyncDisposable
             dataBytes = 0;
         }
 
-        if (dataBytes > uint.MaxValue)
-        {
-            Logger.Log($"WARNING: Audio data exceeds WAV 4GB limit ({dataBytes} bytes). File may be invalid.");
-        }
-
         var blockAlign = (short)(RecordingAudioChannels * (RecordingAudioBitsPerSample / 8));
         var byteRate = RecordingAudioSampleRate * blockAlign;
-        var riffSize = 4 + (8 + 16) + (8 + dataBytes);
+        var sampleFrames = blockAlign > 0 ? dataBytes / blockAlign : 0;
+        var riffSize = 4L + (8 + 28) + (8 + 16) + (8 + dataBytes); // RF64 + ds64 + fmt + data
 
         stream.Seek(0, SeekOrigin.Begin);
         using var writer = new BinaryWriter(stream, Encoding.ASCII, leaveOpen: true);
-        writer.Write(Encoding.ASCII.GetBytes("RIFF"));
-        writer.Write((uint)riffSize);
+
+        // Always emit RF64 so recordings beyond 4GB remain valid for post-mux workflows.
+        writer.Write(Encoding.ASCII.GetBytes("RF64"));
+        writer.Write(uint.MaxValue); // RF64 placeholder (actual size in ds64)
         writer.Write(Encoding.ASCII.GetBytes("WAVE"));
+
+        writer.Write(Encoding.ASCII.GetBytes("ds64"));
+        writer.Write((uint)28); // ds64 payload size
+        writer.Write((ulong)riffSize);
+        writer.Write((ulong)dataBytes);
+        writer.Write((ulong)sampleFrames);
+        writer.Write((uint)0); // table length
+
         writer.Write(Encoding.ASCII.GetBytes("fmt "));
         writer.Write((uint)16);
         writer.Write((ushort)3); // IEEE float
@@ -1357,21 +1678,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
         writer.Write((ushort)blockAlign);
         writer.Write((ushort)RecordingAudioBitsPerSample);
         writer.Write(Encoding.ASCII.GetBytes("data"));
-        writer.Write((uint)dataBytes);
+        writer.Write(uint.MaxValue); // RF64 placeholder (actual size in ds64)
         writer.Flush();
-    }
-
-    private async Task CleanupPostMuxFilesAsync()
-    {
-        await StopAudioCaptureFileWriterAsync(finalizeHeader: false, cancelPendingWrites: true);
-
-        TryDeleteFile(_audioTempPath);
-        _audioTempPath = null;
-
-        if (_postMuxAudioEnabled && _recordingFile != null)
-        {
-            TryDeleteFile(_recordingFile.Path);
-        }
     }
 
     private async Task<bool> MuxAudioIntoVideoAsync(string videoPath, string audioPath, string outputPath)
@@ -1394,37 +1702,46 @@ public class CaptureService : IDisposable, IAsyncDisposable
             var args = $"-y -i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a aac -b:a 320k -shortest -movflags +faststart \"{outputPath}\"";
 
             Logger.Log($"Muxing audio into video: {outputPath}");
-            var startInfo = new ProcessStartInfo
+            var result = await _processSupervisor.RunAsync(new ProcessSpec
             {
                 FileName = ffmpegPath,
                 Arguments = args,
-                UseShellExecute = false,
-                RedirectStandardError = true,
-                RedirectStandardOutput = true,
-                CreateNoWindow = true
-            };
+                TimeoutMs = MuxTimeoutMs,
+                WorkingDirectory = Path.GetDirectoryName(outputPath)
+            });
 
-            using var process = Process.Start(startInfo);
-            if (process == null)
+            if (!result.Started)
             {
-                Logger.Log("Mux failed: could not start ffmpeg process");
+                var reason = result.StartException?.Message ?? "process could not start";
+                Logger.Log($"Mux failed: {reason}");
                 return false;
             }
 
-            var stderr = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            if (!string.IsNullOrWhiteSpace(stderr))
+            if (!string.IsNullOrWhiteSpace(result.StdOut))
             {
-                foreach (var line in stderr.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                foreach (var line in result.StdOut.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
                 {
-                    Logger.Log($"[FFmpeg Mux] {line}");
+                    Logger.Log($"[FFmpeg Mux][stdout] {line}");
                 }
             }
 
-            if (process.ExitCode != 0)
+            if (!string.IsNullOrWhiteSpace(result.StdErr))
             {
-                Logger.Log($"Mux failed: ffmpeg exited with code {process.ExitCode}");
+                foreach (var line in result.StdErr.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    Logger.Log($"[FFmpeg Mux][stderr] {line}");
+                }
+            }
+
+            if (result.TimedOut)
+            {
+                Logger.Log($"Mux failed: ffmpeg timed out after {MuxTimeoutMs} ms");
+                return false;
+            }
+
+            if (result.ExitCode != 0)
+            {
+                Logger.Log($"Mux failed: ffmpeg exited with code {result.ExitCode}");
                 return false;
             }
 
@@ -1438,87 +1755,71 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    private static void TryDeleteFile(string? path)
-    {
-        if (string.IsNullOrWhiteSpace(path))
-        {
-            return;
-        }
-
-        try
-        {
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Failed to delete temp file '{path}': {ex.Message}");
-        }
-    }
-
     private async Task CleanupRecordingResourcesOnErrorAsync()
     {
-        if (_conversionQueue != null)
-        {
-            _conversionQueue.CompleteAdding();
-        }
-
-        if (_conversionCancellation != null)
-        {
-            _conversionCancellation.Cancel();
-        }
-
-        if (_conversionWorkerTask != null)
-        {
-            try { await _conversionWorkerTask; }
-            catch (Exception ex) { Logger.Log($"Conversion worker error during cleanup: {ex.Message}"); }
-            _conversionWorkerTask = null;
-        }
+        await StopConversionWorkerAsync(cancelIfStalled: true);
 
         if (_conversionQueue != null)
         {
-            foreach (var frame in _conversionQueue)
-            {
-                frame?.Dispose();
-            }
-            _conversionQueue.Dispose();
+            DrainConversionQueueFrames(_conversionQueue);
             _conversionQueue = null;
         }
+        Interlocked.Exchange(ref _conversionQueueDepth, 0);
 
         _conversionCancellation?.Dispose();
         _conversionCancellation = null;
 
         CleanupRecordingAudioGraph();
 
-        if (_ffmpegEncoder != null)
+        if (_recordingSink != null)
         {
-            try { await _ffmpegEncoder.StopEncodingAsync(); }
-            catch (Exception ex) { Logger.Log($"Error stopping FFmpeg after failure: {ex.Message}"); }
-            try { _ffmpegEncoder.Dispose(); }
-            catch (Exception ex) { Logger.Log($"Error disposing FFmpeg after failure: {ex.Message}"); }
-            _ffmpegEncoder = null;
+            try { await _recordingSink.StopAsync(); }
+            catch (Exception ex) { Logger.Log($"Error stopping recording sink after failure: {ex.Message}"); }
+            try { await _recordingSink.DisposeAsync(); }
+            catch (Exception ex) { Logger.Log($"Error disposing recording sink after failure: {ex.Message}"); }
+            _recordingSink = null;
         }
 
         if (_postMuxAudioEnabled)
         {
-            await CleanupPostMuxFilesAsync();
+            await StopAudioCaptureFileWriterAsync(finalizeHeader: false, cancelPendingWrites: true);
+        }
+
+        try
+        {
+            await _artifactManager.RollbackAsync(_recordingContext);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Error rolling back recording artifacts: {ex.Message}");
+        }
+
+        _recordingContext = null;
+        _recordingBackend = RecordingBackend.None;
+        _postMuxAudioEnabled = false;
+        _audioTempPath = null;
+        _finalOutputPath = null;
+        _recordingFile = null;
+        _ffmpegPathForMux = null;
+        if (_ffmpegEncoder != null)
+        {
+            try { _ffmpegEncoder.Dispose(); }
+            catch (Exception ex) { Logger.Log($"Error disposing FFmpeg after failure: {ex.Message}"); }
+            _ffmpegEncoder = null;
         }
     }
 
     private void RecordingAudioGraph_QuantumStarted(AudioGraph sender, object args)
     {
         // Capture local references to avoid race conditions with StopRecordingAsync
-        var encoder = _ffmpegEncoder;
+        var sink = _recordingSink;
         var outputNode = _audioFrameOutputNode;
         var usePostMux = _postMuxAudioEnabled;
 
         // Don't check IsEncoding here - we want to buffer audio samples while FFmpeg is starting up
-        // The EnqueueAudioSamples method will handle rejecting samples if queue isn't ready
+        // The sink handles accepting/rejecting queued samples while the backend is starting.
         if (outputNode == null) return;
-        if (!usePostMux && encoder == null) return;
-        var encoderInstance = encoder!;
+        if (!usePostMux && sink == null) return;
 
         try
         {
@@ -1664,7 +1965,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                                 {
                                     System.Buffer.MemoryCopy(dataInBytes, outputBytes, byteCount, byteCount);
                                 }
-                                encoderInstance.EnqueueAudioSamples(audioData);
+                                QueueAudioSamplesToSink(sink, audioData);
                             }
                         }
                         else if (effectiveSubtype == MediaEncodingSubtypes.Pcm && bitsPerSample == 32)
@@ -1707,7 +2008,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                             }
                             else
                             {
-                                encoderInstance.EnqueueAudioSamples(audioData);
+                                QueueAudioSamplesToSink(sink, audioData);
                             }
                         }
                         else
@@ -1750,7 +2051,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                             }
                             else
                             {
-                                encoderInstance.EnqueueAudioSamples(audioData);
+                                QueueAudioSamplesToSink(sink, audioData);
                             }
                         }
 
@@ -1816,6 +2117,24 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             // Log to file instead of just Debug for visibility
             Logger.Log($"Audio frame error: {ex.Message}");
+        }
+    }
+
+    private void QueueAudioSamplesToSink(IRecordingSink? sink, byte[] audioData)
+    {
+        if (sink == null || audioData.Length == 0)
+        {
+            return;
+        }
+
+        var writeTask = sink.WriteAudioAsync(audioData);
+        if (!writeTask.IsCompletedSuccessfully)
+        {
+            _ = writeTask.ContinueWith(
+                t => Logger.Log($"Audio sink write failed: {t.Exception?.GetBaseException().Message}"),
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default);
         }
     }
 
@@ -1969,9 +2288,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    private async Task StartUncompressedRecordingAsync(CaptureSettings settings)
+    private async Task StartUncompressedRecordingAsync()
     {
-        if (_mediaCapture == null || _recordingFile == null) return;
+        if (_mediaCapture == null || _recordingFile == null || _recordingContext == null)
+        {
+            return;
+        }
+
+        _recordingBackend = RecordingBackend.None;
 
         // Find a frame source from the already-initialized MediaCapture
         var videoSourceInfo = _mediaCapture.FrameSources.Values
@@ -1982,34 +2306,17 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         if (videoSourceInfo == null)
         {
-            // Fallback to using compressed recording for uncompressed - use very high bitrate
-            var profile = MediaEncodingProfile.CreateAvi(VideoEncodingQuality.HD1080p);
-            if (profile.Video != null)
-            {
-                profile.Video.Width = settings.Width;
-                profile.Video.Height = settings.Height;
-                profile.Video.FrameRate.Numerator = (uint)settings.FrameRate;
-                profile.Video.FrameRate.Denominator = 1;
-                profile.Video.Bitrate = 200_000_000; // 200 Mbps for near-lossless
-            }
-
-            if (!settings.AudioEnabled)
-            {
-                profile.Audio = null;
-            }
-
-            // Use standard recording API for CFR output
-            await _mediaCapture.StartRecordToStorageFileAsync(profile, _recordingFile);
+            _recordingBackend = RecordingBackend.MediaCaptureFallback;
+            _recordingSink = new MediaCaptureFallbackSink(_mediaCapture);
+            await _recordingSink.StartAsync(_recordingContext);
             Logger.Log("Started AVI fallback recording with standard API (CFR mode)");
             return;
         }
 
         // Initialize AVI writer for true uncompressed
-        _aviWriter = new AviWriter(
-            await _recordingFile.OpenAsync(FileAccessMode.ReadWrite),
-            settings.Width,
-            settings.Height,
-            (uint)settings.FrameRate);
+        _recordingBackend = RecordingBackend.AviWriter;
+        _recordingSink = new AviRecordingSink();
+        await _recordingSink.StartAsync(_recordingContext);
 
         var frameSource = _mediaCapture.FrameSources[videoSourceInfo.Id];
         _frameReader = await _mediaCapture.CreateFrameReaderAsync(frameSource);
@@ -2022,25 +2329,27 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
     private async void FrameReader_FrameArrived(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
     {
-        // Capture local reference to avoid race condition with StopRecordingAsync
-        var aviWriter = _aviWriter;
+        // Capture local reference to avoid race condition with StopRecordingAsync.
+        var sink = _recordingSink;
 
         using var frame = sender.TryAcquireLatestFrame();
         if (frame?.VideoMediaFrame?.SoftwareBitmap == null) return;
 
         var softwareBitmap = frame.VideoMediaFrame.SoftwareBitmap;
+        SoftwareBitmap? convertedBitmap = null;
 
         try
         {
             // Convert to BGRA8 if needed
             if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8)
             {
-                softwareBitmap = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8);
+                convertedBitmap = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8);
+                softwareBitmap = convertedBitmap;
             }
 
-            if (aviWriter != null)
+            if (sink != null)
             {
-                await aviWriter.WriteFrameAsync(softwareBitmap);
+                await sink.WriteVideoAsync(softwareBitmap);
             }
             _frameCount++;
             FrameCaptured?.Invoke(this, _frameCount);
@@ -2048,6 +2357,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             ErrorOccurred?.Invoke(this, ex);
+        }
+        finally
+        {
+            convertedBitmap?.Dispose();
         }
     }
 
@@ -2064,13 +2377,18 @@ public class CaptureService : IDisposable, IAsyncDisposable
         try
         {
             Logger.Log("=== Stopping recording ===");
+            Logger.LogEvent("CAP-REC-STOP", $"backend={_recordingBackend}");
             var shouldPostMux = _postMuxAudioEnabled &&
-                                !string.IsNullOrEmpty(_finalOutputPath) &&
-                                !string.IsNullOrEmpty(_audioTempPath);
+                                _recordingContext?.UsePostMuxAudio == true &&
+                                !string.IsNullOrEmpty(_recordingContext.AudioTempPath) &&
+                                !string.IsNullOrEmpty(_recordingContext.FinalOutputPath);
             var stopStatus = "Stopped";
-            var tempVideoPath = _recordingFile?.Path;
-            var audioTempPath = _audioTempPath;
-            var finalOutputPath = _finalOutputPath;
+            var tempVideoPath = _recordingContext?.VideoOutputPath ?? _recordingFile?.Path;
+            var audioTempPath = _recordingContext?.AudioTempPath ?? _audioTempPath;
+            var finalOutputPath = _recordingContext?.FinalOutputPath ?? _finalOutputPath;
+            var muxFailureReason = (string?)null;
+            var muxed = true;
+            var encoderDropped = _ffmpegEncoder?.DroppedVideoFrames ?? 0;
 
             // Stop recording frame reader (FFmpeg recording)
             if (_recordingFrameReader != null)
@@ -2092,45 +2410,20 @@ public class CaptureService : IDisposable, IAsyncDisposable
             // Stop conversion worker
             if (_conversionQueue != null)
             {
-                _conversionQueue.CompleteAdding(); // Signal no more frames coming
                 Logger.Log("Waiting for conversion queue to drain...");
             }
-
-            if (_conversionCancellation != null)
-            {
-                _conversionCancellation.Cancel();
-            }
-
-            if (_conversionWorkerTask != null)
-            {
-                await _conversionWorkerTask;
-                _conversionWorkerTask = null;
-            }
+            await StopConversionWorkerAsync(cancelIfStalled: true);
 
             // Dispose conversion queue and remaining frames
             if (_conversionQueue != null)
             {
-                foreach (var frame in _conversionQueue)
-                {
-                    frame?.Dispose();
-                }
-                _conversionQueue.Dispose();
+                DrainConversionQueueFrames(_conversionQueue);
                 _conversionQueue = null;
             }
+            Interlocked.Exchange(ref _conversionQueueDepth, 0);
 
             _conversionCancellation?.Dispose();
             _conversionCancellation = null;
-
-            // Stop FFmpeg encoder
-            long encoderDropped = 0;
-            if (_ffmpegEncoder != null)
-            {
-                encoderDropped = _ffmpegEncoder.DroppedVideoFrames;
-                await _ffmpegEncoder.StopEncodingAsync();
-                _ffmpegEncoder.Dispose();
-                _ffmpegEncoder = null;
-                Logger.Log("FFmpeg encoder stopped");
-            }
 
             // Legacy: Stop AVI frame reader
             if (_frameReader != null)
@@ -2141,13 +2434,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _frameReader = null;
             }
 
-            // Legacy: Finalize AVI writer
-            if (_aviWriter != null)
+            FinalizeResult sinkResult = FinalizeResult.Success(finalOutputPath ?? string.Empty, "Stopped");
+            if (_recordingSink != null)
             {
-                await _aviWriter.FinalizeAsync();
-                _aviWriter.Dispose();
-                _aviWriter = null;
+                sinkResult = await _recordingSink.StopAsync();
+                await _recordingSink.DisposeAsync();
+                _recordingSink = null;
             }
+            _ffmpegEncoder = null;
 
             if (_recordingStopwatch.IsRunning)
             {
@@ -2174,28 +2468,58 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     Logger.Log($"Audio writer dropped {droppedAudioChunks} queued chunk(s) under storage pressure");
                 }
 
-                if (shouldPostMux && !string.IsNullOrWhiteSpace(tempVideoPath) &&
+                if (!sinkResult.Succeeded)
+                {
+                    _muxAttempted = false;
+                    _muxSucceeded = false;
+                    muxed = false;
+                    muxFailureReason = sinkResult.StatusMessage;
+                }
+                else if (shouldPostMux && !string.IsNullOrWhiteSpace(tempVideoPath) &&
                     !string.IsNullOrWhiteSpace(audioTempPath) && !string.IsNullOrWhiteSpace(finalOutputPath))
                 {
                     _muxAttempted = true;
-                    var muxed = await MuxAudioIntoVideoAsync(tempVideoPath, audioTempPath, finalOutputPath);
+                    muxed = await MuxAudioIntoVideoAsync(tempVideoPath, audioTempPath, finalOutputPath);
                     _muxSucceeded = muxed;
-                    if (muxed)
-                    {
-                        TryDeleteFile(tempVideoPath);
-                        TryDeleteFile(audioTempPath);
-                    }
-                    else
-                    {
-                        stopStatus = "Stopped (mux failed)";
-                        ErrorOccurred?.Invoke(this, new Exception("Mux failed - temporary audio/video files were preserved."));
-                        Logger.Log("Audio mux failed; temporary files preserved for recovery");
-                    }
+                    muxFailureReason = muxed ? null : "ffmpeg mux execution failed";
                 }
+                else
+                {
+                    _muxAttempted = true;
+                    _muxSucceeded = false;
+                    muxed = false;
+                    muxFailureReason = "missing mux input artifacts";
+                }
+            }
 
-                _postMuxAudioEnabled = false;
-                _audioTempPath = null;
-                _finalOutputPath = null;
+            var finalizeResult = sinkResult;
+            if (_recordingContext != null)
+            {
+                if (_recordingContext.UsePostMuxAudio)
+                {
+                    var artifactResult = _artifactManager.FinalizeContext(_recordingContext, muxed, muxFailureReason);
+                    finalizeResult = sinkResult.Succeeded
+                        ? artifactResult
+                        : FinalizeResult.Failure(
+                            artifactResult.OutputPath,
+                            sinkResult.StatusMessage,
+                            artifactResult.PreservedArtifacts);
+                }
+                else if (sinkResult.Succeeded)
+                {
+                    finalizeResult = _artifactManager.FinalizeContext(_recordingContext, muxSucceeded: true);
+                }
+            }
+            stopStatus = finalizeResult.StatusMessage;
+
+            if (!finalizeResult.Succeeded)
+            {
+                ErrorOccurred?.Invoke(this, new Exception(finalizeResult.StatusMessage));
+                Logger.Log($"Recording finalization failed: {finalizeResult.StatusMessage}");
+                if (finalizeResult.PreservedArtifacts.Count > 0)
+                {
+                    Logger.Log($"Preserved artifacts: {string.Join(", ", finalizeResult.PreservedArtifacts)}");
+                }
             }
 
             _isRecording = false;
@@ -2208,6 +2532,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
             Logger.Log($"Recording stopped. Audio preview status: {(_isAudioPreviewActive ? "still active" : "inactive")}");
             Logger.LogStructured("CaptureDiagnostics", GetDiagnosticsSnapshot());
             StatusChanged?.Invoke(this, stopStatus);
+
+            _recordingBackend = RecordingBackend.None;
+            _recordingContext = null;
+            _recordingFile = null;
+            _postMuxAudioEnabled = false;
+            _audioTempPath = null;
+            _finalOutputPath = null;
         }
         catch (Exception ex)
         {
@@ -2408,6 +2739,37 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             await StopRecordingCoreAsync();
         }
+        else if (_recordingSink != null)
+        {
+            try
+            {
+                await _recordingSink.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error stopping recording sink during cleanup: {ex.Message}");
+            }
+
+            try
+            {
+                await _recordingSink.DisposeAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error disposing recording sink during cleanup: {ex.Message}");
+            }
+
+            _recordingSink = null;
+            _ffmpegEncoder = null;
+            _recordingBackend = RecordingBackend.None;
+        }
+
+        if (_postMuxAudioEnabled)
+        {
+            await StopAudioCaptureFileWriterAsync(finalizeHeader: false, cancelPendingWrites: true);
+            await _artifactManager.RollbackAsync(_recordingContext);
+            _postMuxAudioEnabled = false;
+        }
 
         if (_isAudioPreviewActive)
         {
@@ -2422,6 +2784,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         _isInitialized = false;
+        _recordingContext = null;
+        _recordingFile = null;
+        _audioTempPath = null;
+        _finalOutputPath = null;
         if (!_isDisposed)
         {
             _sessionState = CaptureSessionState.Uninitialized;
@@ -2434,13 +2800,33 @@ public class CaptureService : IDisposable, IAsyncDisposable
         _isDisposed = true;
         _sessionState = CaptureSessionState.Disposed;
 
-        // Don't block with GetAwaiter().GetResult() - it can deadlock on UI thread
-        // Instead, do synchronous cleanup for critical resources
+        // Attempt graceful asynchronous cleanup first so active recordings finalize.
         try
         {
-            _isRecording = false;
-            _isInitialized = false;
+            var cleanupTimeoutMs = GetIntFromEnv(
+                "ELGATOCAPTURE_DISPOSE_CLEANUP_TIMEOUT_MS",
+                30000,
+                1000,
+                300000);
+            var cleanupTask = Task.Run(CleanupAsync);
+            var completed = Task.WhenAny(cleanupTask, Task.Delay(cleanupTimeoutMs)).GetAwaiter().GetResult();
+            if (completed != cleanupTask)
+            {
+                Logger.Log($"Graceful cleanup during dispose timed out after {cleanupTimeoutMs} ms.");
+            }
+            else
+            {
+                cleanupTask.GetAwaiter().GetResult();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Graceful cleanup during dispose failed: {ex.Message}");
+        }
 
+        // Fallback synchronous cleanup for any remaining resources.
+        try
+        {
             // Stop and dispose audio graphs synchronously
             try
             {
@@ -2469,9 +2855,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
             // Dispose FFmpeg encoder
             try
             {
+                _recordingSink?.Dispose();
                 _ffmpegEncoder?.Dispose();
             }
-            catch (Exception ex) { Logger.Log($"Error disposing FFmpeg encoder: {ex.Message}"); }
+            catch (Exception ex) { Logger.Log($"Error disposing recording sink/encoder: {ex.Message}"); }
 
             // Dispose frame readers
             try
@@ -2481,19 +2868,19 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
             catch (Exception ex) { Logger.Log($"Error disposing frame readers: {ex.Message}"); }
 
-            // Dispose AVI writer
-            try
-            {
-                _aviWriter?.Dispose();
-            }
-            catch (Exception ex) { Logger.Log($"Error disposing AVI writer: {ex.Message}"); }
-
             // Dispose MediaCapture last
             try
             {
                 _mediaCapture?.Dispose();
             }
             catch (Exception ex) { Logger.Log($"Error disposing MediaCapture: {ex.Message}"); }
+
+            _recordingSink = null;
+            _ffmpegEncoder = null;
+            _recordingContext = null;
+            _recordingBackend = RecordingBackend.None;
+            _isRecording = false;
+            _isInitialized = false;
 
             Logger.Log("CaptureService disposed");
         }
@@ -2512,7 +2899,22 @@ public class CaptureService : IDisposable, IAsyncDisposable
         if (_isDisposed) return;
         _isDisposed = true;
 
-        await CleanupAsync();
+        var cleanupTimeoutMs = GetIntFromEnv(
+            "ELGATOCAPTURE_DISPOSE_CLEANUP_TIMEOUT_MS",
+            30000,
+            1000,
+            300000);
+        var cleanupTask = CleanupAsync();
+        var completed = await Task.WhenAny(cleanupTask, Task.Delay(cleanupTimeoutMs));
+        if (completed != cleanupTask)
+        {
+            Logger.Log($"CaptureService async dispose cleanup timed out after {cleanupTimeoutMs} ms.");
+        }
+        else
+        {
+            await cleanupTask;
+        }
+
         _sessionState = CaptureSessionState.Disposed;
         _sessionTransitionLock.Dispose();
         Logger.Log("CaptureService disposed (async)");

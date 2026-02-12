@@ -43,12 +43,26 @@ namespace ElgatoCapture
             Logger.LogSystemInfo();
         }
 
+        private static bool IsRecoverableUnhandled(Exception ex)
+        {
+            return ex is OperationCanceledException;
+        }
+
         private void App_UnhandledException(object sender, Microsoft.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             Logger.Log("=== UNHANDLED EXCEPTION ===");
             Logger.LogException(e.Exception);
             Logger.Log($"Message: {e.Message}");
-            e.Handled = true; // Prevent crash, allow app to continue
+
+            if (IsRecoverableUnhandled(e.Exception))
+            {
+                Logger.Log("Unhandled exception classified as recoverable; continuing execution.");
+                e.Handled = true;
+                return;
+            }
+
+            Logger.LogFatalBreadcrumb("Fatal UI unhandled exception. Terminating process.", e.Exception);
+            Environment.FailFast($"Fatal UI unhandled exception: {e.Message}", e.Exception);
         }
 
         private void CurrentDomain_UnhandledException(object sender, System.UnhandledExceptionEventArgs e)
@@ -63,6 +77,12 @@ namespace ElgatoCapture
                 Logger.Log($"Non-exception error: {e.ExceptionObject}");
             }
             Logger.Log($"IsTerminating: {e.IsTerminating}");
+
+            if (!e.IsTerminating && e.ExceptionObject is Exception unhandledEx && !IsRecoverableUnhandled(unhandledEx))
+            {
+                Logger.LogFatalBreadcrumb("Escalating non-terminating AppDomain unhandled exception to fail-fast.", unhandledEx);
+                Environment.FailFast("Fatal AppDomain unhandled exception", unhandledEx);
+            }
         }
 
         /// <summary>
