@@ -52,3 +52,6 @@ artifacts/goal-runs/
 # Repo-local temp dumping ground (keep folder, ignore contents)
 temp/*
 !temp/.gitkeep
+
+# Local session notes
+.claude/napkin.md
