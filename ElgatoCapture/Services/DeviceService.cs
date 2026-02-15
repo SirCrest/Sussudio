@@ -269,8 +269,10 @@ public class DeviceService
                     continue;
                 }
 
-                var frameRate = videoProps.FrameRate.Numerator > 0 && videoProps.FrameRate.Denominator > 0
-                    ? (double)videoProps.FrameRate.Numerator / videoProps.FrameRate.Denominator
+                var numerator = videoProps.FrameRate.Numerator;
+                var denominator = videoProps.FrameRate.Denominator;
+                var frameRate = numerator > 0 && denominator > 0
+                    ? (double)numerator / denominator
                     : 0;
 
                 if (videoProps.Width <= 0 || videoProps.Height <= 0 || frameRate <= 0)
@@ -290,12 +292,14 @@ public class DeviceService
                 {
                     Width = videoProps.Width,
                     Height = videoProps.Height,
-                    FrameRate = Math.Round(frameRate),
+                    FrameRate = frameRate,
+                    FrameRateNumerator = numerator,
+                    FrameRateDenominator = denominator,
                     PixelFormat = videoProps.Subtype,
                     IsHdr = isHdr
                 };
 
-                var formatKey = $"{format.Width}x{format.Height}@{format.FrameRate}_{format.PixelFormat}_{(format.IsHdr ? "HDR" : "SDR")}";
+                var formatKey = $"{format.Width}x{format.Height}@{format.FrameRateNumerator}/{format.FrameRateDenominator}_{format.PixelFormat}_{(format.IsHdr ? "HDR" : "SDR")}";
                 if (uniqueFormats.Add(formatKey))
                 {
                     device.SupportedFormats.Add(format);
@@ -320,8 +324,24 @@ public class DeviceService
         catch (Exception ex)
         {
             Logger.Log($"Format discovery failed for {device.Name}: {ex.Message}");
-            device.SupportedFormats.Add(new MediaFormat { Width = 1920, Height = 1080, FrameRate = 60, PixelFormat = "NV12" });
-            device.SupportedFormats.Add(new MediaFormat { Width = 1920, Height = 1080, FrameRate = 30, PixelFormat = "NV12" });
+            device.SupportedFormats.Add(new MediaFormat
+            {
+                Width = 1920,
+                Height = 1080,
+                FrameRate = 60,
+                FrameRateNumerator = 60,
+                FrameRateDenominator = 1,
+                PixelFormat = "NV12"
+            });
+            device.SupportedFormats.Add(new MediaFormat
+            {
+                Width = 1920,
+                Height = 1080,
+                FrameRate = 30,
+                FrameRateNumerator = 30,
+                FrameRateDenominator = 1,
+                PixelFormat = "NV12"
+            });
             return false;
         }
     }

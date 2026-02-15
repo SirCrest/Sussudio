@@ -22,6 +22,7 @@ public sealed class RecordingContext
     public uint EffectiveWidth { get; init; }
     public uint EffectiveHeight { get; init; }
     public string VideoInputPixelFormat { get; init; } = "nv12";
+    public bool HdrPipelineActive { get; init; }
 }
 
 public sealed class FinalizeResult

@@ -7,10 +7,40 @@ public class MediaFormat
     public uint Width { get; set; }
     public uint Height { get; set; }
     public double FrameRate { get; set; }
+    public uint FrameRateNumerator { get; set; }
+    public uint FrameRateDenominator { get; set; }
     public string PixelFormat { get; set; } = string.Empty;
     public bool IsHdr { get; set; }
 
-    public string DisplayName => $"{Width}x{Height} @ {FrameRate:F0}fps{(IsHdr ? " (HDR)" : "")}";
+    public double FrameRateExact
+    {
+        get
+        {
+            if (FrameRateNumerator > 0 && FrameRateDenominator > 0)
+            {
+                return (double)FrameRateNumerator / FrameRateDenominator;
+            }
+
+            return FrameRate;
+        }
+    }
+
+    public string FrameRateRational =>
+        FrameRateNumerator > 0 && FrameRateDenominator > 0
+            ? $"{FrameRateNumerator}/{FrameRateDenominator}"
+            : string.Empty;
+
+    public string DisplayName
+    {
+        get
+        {
+            var fps = FrameRateExact;
+            var rationalSuffix = string.IsNullOrWhiteSpace(FrameRateRational)
+                ? string.Empty
+                : $" ({FrameRateRational})";
+            return $"{Width}x{Height} @ {fps:0.###}fps{rationalSuffix}{(IsHdr ? " (HDR)" : "")}";
+        }
+    }
 
     public override string ToString() => DisplayName;
 
@@ -18,16 +48,37 @@ public class MediaFormat
     {
         if (obj is MediaFormat other)
         {
+            var hasRational = FrameRateNumerator > 0 && FrameRateDenominator > 0;
+            var otherHasRational = other.FrameRateNumerator > 0 && other.FrameRateDenominator > 0;
+            var rationalMatches = hasRational && otherHasRational
+                ? FrameRateNumerator == other.FrameRateNumerator &&
+                  FrameRateDenominator == other.FrameRateDenominator
+                : Math.Abs(FrameRateExact - other.FrameRateExact) < 0.01;
+
             return Width == other.Width &&
                    Height == other.Height &&
-                   Math.Abs(FrameRate - other.FrameRate) < 0.1 &&
+                   rationalMatches &&
                    PixelFormat == other.PixelFormat &&
                    IsHdr == other.IsHdr;
         }
         return false;
     }
 
-    public override int GetHashCode() => HashCode.Combine(Width, Height, FrameRate, PixelFormat, IsHdr);
+    public override int GetHashCode()
+    {
+        if (FrameRateNumerator > 0 && FrameRateDenominator > 0)
+        {
+            return HashCode.Combine(
+                Width,
+                Height,
+                FrameRateNumerator,
+                FrameRateDenominator,
+                PixelFormat,
+                IsHdr);
+        }
+
+        return HashCode.Combine(Width, Height, Math.Round(FrameRateExact, 3), PixelFormat, IsHdr);
+    }
 
     public static int GetPixelFormatPriority(string? pixelFormat)
     {

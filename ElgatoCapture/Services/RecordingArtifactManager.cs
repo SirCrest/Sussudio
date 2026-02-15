@@ -45,7 +45,8 @@ public sealed class RecordingArtifactManager
                 FrameRateArg = frameRateArg,
                 EffectiveWidth = effectiveWidth,
                 EffectiveHeight = effectiveHeight,
-                VideoInputPixelFormat = videoInputPixelFormat
+                VideoInputPixelFormat = videoInputPixelFormat,
+                HdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
             };
         }
 
@@ -72,7 +73,8 @@ public sealed class RecordingArtifactManager
             FrameRateArg = frameRateArg,
             EffectiveWidth = effectiveWidth,
             EffectiveHeight = effectiveHeight,
-            VideoInputPixelFormat = videoInputPixelFormat
+            VideoInputPixelFormat = videoInputPixelFormat,
+            HdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
         };
     }
 

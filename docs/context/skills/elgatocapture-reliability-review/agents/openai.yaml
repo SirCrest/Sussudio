@@ -1,4 +1,0 @@
-interface:
-  display_name: "Reliability Review"
-  short_description: "Run seeded reliability pass reviews for ElgatoCapture"
-  default_prompt: "Use $elgatocapture-reliability-review to review a CU file, update pass findings, and compute the consensus gate."

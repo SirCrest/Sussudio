@@ -37,6 +37,8 @@ AppPackages/
 
 # Root-level staged app builds for local testing convenience
 builds/
+latest-build/
+/ElgatoCapture.exe
 
 # Goal runner evidence outputs
 artifacts/goal-runs/
@@ -46,3 +48,7 @@ artifacts/goal-runs/
 .dotnet/
 .dotnet-cli-home/
 .tmp_dotnet_home/
+
+# Repo-local temp dumping ground (keep folder, ignore contents)
+temp/*
+!temp/.gitkeep

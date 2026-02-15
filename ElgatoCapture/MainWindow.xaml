@@ -19,6 +19,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Device Selection Row -->
@@ -173,15 +174,40 @@
                 <TextBlock Text="Resolution" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
                 <ComboBox x:Name="ResolutionComboBox"
                           AutomationProperties.AutomationId="ResolutionComboBox"
-                          MinWidth="120"/>
+                          MinWidth="120"
+                          DisplayMemberPath="DisplayText">
+                    <ComboBox.ItemContainerStyle>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
+                            <Setter Property="ToolTipService.ToolTip" Value="{Binding DisableReason}"/>
+                        </Style>
+                    </ComboBox.ItemContainerStyle>
+                </ComboBox>
             </StackPanel>
 
             <!-- Frame Rate -->
             <StackPanel Grid.Column="1">
                 <TextBlock Text="Frame Rate" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
+                <TextBlock x:Name="HdrFpsHintTextBlock"
+                           AutomationProperties.AutomationId="HdrFpsHintTextBlock"
+                           FontSize="11"
+                           Foreground="#F5C542"
+                           Opacity="0.9"
+                           Margin="0,0,0,4"
+                           TextWrapping="Wrap"
+                           MaxWidth="200"
+                           Visibility="Collapsed"/>
                 <ComboBox x:Name="FrameRateComboBox"
                           AutomationProperties.AutomationId="FrameRateComboBox"
-                          MinWidth="90"/>
+                          MinWidth="90"
+                          DisplayMemberPath="DisplayText">
+                    <ComboBox.ItemContainerStyle>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
+                            <Setter Property="ToolTipService.ToolTip" Value="{Binding DisableReason}"/>
+                        </Style>
+                    </ComboBox.ItemContainerStyle>
+                </ComboBox>
             </StackPanel>
 
             <!-- Recording Format (codec) -->
@@ -460,5 +486,104 @@
                            HorizontalAlignment="Right"/>
             </StackPanel>
         </Grid>
+
+        <Expander x:Name="DiagnosticsExpander"
+                  Grid.Row="4"
+                  Header="Automation Diagnostics"
+                  IsExpanded="False"
+                  AutomationProperties.AutomationId="DiagnosticsExpander">
+            <Border Margin="0,6,0,0"
+                    Padding="10"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <Grid ColumnSpacing="18" RowSpacing="6">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Session" FontSize="12" Opacity="0.7"/>
+                    <TextBlock x:Name="DiagSessionTextBlock"
+                               Grid.Row="0"
+                               Grid.Column="1"
+                               FontSize="12"
+                               FontFamily="Consolas"
+                               TextWrapping="Wrap"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Devices" FontSize="12" Opacity="0.7"/>
+                    <TextBlock x:Name="DiagDeviceTextBlock"
+                               Grid.Row="1"
+                               Grid.Column="1"
+                               FontSize="12"
+                               FontFamily="Consolas"
+                               TextWrapping="Wrap"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Capture" FontSize="12" Opacity="0.7"/>
+                    <TextBlock x:Name="DiagCaptureTextBlock"
+                               Grid.Row="2"
+                               Grid.Column="1"
+                               FontSize="12"
+                               FontFamily="Consolas"
+                               TextWrapping="Wrap"/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Audio/Preview" FontSize="12" Opacity="0.7"/>
+                    <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
+                        <TextBlock x:Name="DiagAudioTextBlock"
+                                   FontSize="12"
+                                   FontFamily="Consolas"
+                                   TextWrapping="Wrap"/>
+                        <TextBlock x:Name="DiagPreviewTextBlock"
+                                   FontSize="12"
+                                   FontFamily="Consolas"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Recording" FontSize="12" Opacity="0.7"/>
+                    <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
+                        <TextBlock x:Name="DiagRecordingTextBlock"
+                                   FontSize="12"
+                                   FontFamily="Consolas"
+                                   TextWrapping="Wrap"/>
+                        <TextBlock x:Name="DiagOutputTextBlock"
+                                   FontSize="12"
+                                   FontFamily="Consolas"
+                                   TextWrapping="Wrap"/>
+                        <TextBlock x:Name="DiagVerificationTextBlock"
+                                   FontSize="12"
+                                   FontFamily="Consolas"
+                                   FontWeight="SemiBold"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Events" FontSize="12" Opacity="0.7"/>
+                    <ListView x:Name="DiagEventsListView"
+                              Grid.Row="5"
+                              Grid.Column="1"
+                              AutomationProperties.AutomationId="DiagEventsTextBlock"
+                              MaxHeight="120"
+                              SelectionMode="None"
+                              ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           FontFamily="Consolas"
+                                           FontSize="11"
+                                           TextWrapping="Wrap"/>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </Border>
+        </Expander>
     </Grid>
 </Window>

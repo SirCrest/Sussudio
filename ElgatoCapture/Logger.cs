@@ -7,14 +7,13 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using ElgatoCapture.Models;
 
 namespace ElgatoCapture;
 
 public static class Logger
 {
-    private static readonly string LogFilePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-        "ElgatoCapture_Debug.log");
+    private static readonly string LogFilePath = RuntimePaths.GetRepoLogFile("ElgatoCapture_Debug.log");
 
     private static readonly object _lockObject = new();
     private static readonly Channel<string> _logChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(8192)
@@ -202,7 +201,16 @@ public static class Logger
     {
         try
         {
-            var json = JsonSerializer.Serialize(payload);
+            var json = payload switch
+            {
+                CaptureHealthSnapshot healthSnapshot =>
+                    JsonSerializer.Serialize(healthSnapshot, LoggingJsonContext.Default.CaptureHealthSnapshot),
+                CaptureDiagnosticsSnapshot diagnosticsSnapshot =>
+                    JsonSerializer.Serialize(diagnosticsSnapshot, LoggingJsonContext.Default.CaptureDiagnosticsSnapshot),
+                _ when JsonSerializer.IsReflectionEnabledByDefault =>
+                    JsonSerializer.Serialize(payload),
+                _ => payload.ToString() ?? "<null>"
+            };
             Log($"{eventName}: {json}", caller);
         }
         catch (Exception ex)

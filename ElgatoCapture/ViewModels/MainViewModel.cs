@@ -28,6 +28,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly Queue<(long Tick, long Bytes)> _bitrateSamples = new();
     private const int BitrateWindowMs = 5000;
     private const string DefaultRecordingFormat = "H.264 (MP4)";
+    private const string HevcRecordingFormat = "HEVC (MP4)";
+    private const string Av1RecordingFormat = "AV1 (MP4)";
     private const int DefaultDisposeTimeoutMs = 30000;
 
     [ObservableProperty]
@@ -53,19 +55,30 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     // Resolution/Frame Rate separation
     [ObservableProperty]
-    public partial ObservableCollection<string> AvailableResolutions { get; set; } = new();
+    public partial ObservableCollection<ResolutionOption> AvailableResolutions { get; set; } = new();
 
     [ObservableProperty]
     public partial string? SelectedResolution { get; set; }
 
     [ObservableProperty]
-    public partial ObservableCollection<double> AvailableFrameRates { get; set; } = new();
+    public partial ObservableCollection<FrameRateOption> AvailableFrameRates { get; set; } = new();
 
     [ObservableProperty]
     public partial double SelectedFrameRate { get; set; } = 60;
 
-    // Mapping from resolution string to available frame rates
-    private Dictionary<string, List<double>> _resolutionToFrameRates = new();
+    // Resolution capability matrix keyed by "{width}x{height}".
+    private readonly Dictionary<string, List<MediaFormat>> _resolutionToFormats =
+        new(StringComparer.OrdinalIgnoreCase);
+    private enum FrameRateTimingFamily
+    {
+        Unknown,
+        Integer,
+        Ntsc1001
+    }
+    private bool _isRebuildingModeOptions;
+    private bool _isApplyingAutomaticFrameRateSelection;
+    private bool _hasUserOverriddenFrameRateForCurrentMode;
+    private List<string> _detectedRecordingFormats = new();
 
     // Flag to prevent reinitialization during initial device setup
     private bool _isChangingDevice;
@@ -93,6 +106,18 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     [ObservableProperty]
     public partial bool IsHdrAvailable { get; set; }
+
+    [ObservableProperty]
+    public partial string HdrResolutionSupportHint { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial double? DetectedSourceFrameRate { get; set; }
+
+    [ObservableProperty]
+    public partial string? DetectedSourceFrameRateArg { get; set; }
+
+    [ObservableProperty]
+    public partial string SourceFrameRateOrigin { get; set; } = "Unknown";
 
     [ObservableProperty]
     public partial bool IsAudioEnabled { get; set; } = true;
@@ -140,6 +165,16 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private int _disposeState;
 
     public MediaCapture? MediaCapture => _captureService.MediaCapture;
+    public CaptureRuntimeSnapshot GetCaptureRuntimeSnapshot() => _captureService.GetRuntimeSnapshot();
+    public CaptureHealthSnapshot GetCaptureHealthSnapshot() => _captureService.GetHealthSnapshot();
+    public CaptureDiagnosticsSnapshot GetCaptureDiagnosticsSnapshot() => _captureService.GetDiagnosticsSnapshot();
+    public RecordingStats GetRecordingStatsSnapshot() => _captureService.GetRecordingStats();
+    public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
+        => InvokeOnUiThreadAsync(() => _captureService.GetRuntimeSnapshot(), cancellationToken);
+    public Task<CaptureHealthSnapshot> GetCaptureHealthSnapshotAsync(CancellationToken cancellationToken = default)
+        => InvokeOnUiThreadAsync(() => _captureService.GetHealthSnapshot(), cancellationToken);
+    public Task<RecordingStats> GetRecordingStatsSnapshotAsync(CancellationToken cancellationToken = default)
+        => InvokeOnUiThreadAsync(() => _captureService.GetRecordingStats(), cancellationToken);
 
 
     public MainViewModel()
@@ -177,6 +212,158 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             Logger.LogException(ex);
             StatusText = $"{operationName} failed: {ex.Message}";
         }
+    }
+
+    private Task InvokeOnUiThreadAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+    {
+        if (operation == null)
+        {
+            throw new ArgumentNullException(nameof(operation));
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled(cancellationToken);
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            return operation();
+        }
+
+        var completion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
+        if (cancellationToken.CanBeCanceled)
+        {
+            registration = cancellationToken.Register(() =>
+            {
+                completion.TrySetCanceled(cancellationToken);
+            });
+        }
+
+        var enqueued = _dispatcherQueue.TryEnqueue(async () =>
+        {
+            try
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    completion.TrySetCanceled(cancellationToken);
+                    return;
+                }
+
+                await operation();
+                completion.TrySetResult(null);
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+            finally
+            {
+                registration.Dispose();
+            }
+        });
+
+        if (!enqueued)
+        {
+            registration.Dispose();
+            completion.TrySetException(new InvalidOperationException("Failed to enqueue UI operation."));
+        }
+
+        return completion.Task;
+    }
+
+    private Task<T> InvokeOnUiThreadAsync<T>(Func<T> operation, CancellationToken cancellationToken = default)
+    {
+        if (operation == null)
+        {
+            throw new ArgumentNullException(nameof(operation));
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled<T>(cancellationToken);
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            return Task.FromResult(operation());
+        }
+
+        var completion = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
+        if (cancellationToken.CanBeCanceled)
+        {
+            registration = cancellationToken.Register(() =>
+            {
+                completion.TrySetCanceled(cancellationToken);
+            });
+        }
+
+        var enqueued = _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    completion.TrySetCanceled(cancellationToken);
+                    return;
+                }
+
+                completion.TrySetResult(operation());
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+            finally
+            {
+                registration.Dispose();
+            }
+        });
+
+        if (!enqueued)
+        {
+            registration.Dispose();
+            completion.TrySetException(new InvalidOperationException("Failed to enqueue UI operation."));
+        }
+
+        return completion.Task;
+    }
+
+    public Task<ViewModelRuntimeSnapshot> GetViewModelRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() => new ViewModelRuntimeSnapshot
+        {
+            TimestampUtc = DateTimeOffset.UtcNow,
+            IsInitialized = IsInitialized,
+            IsPreviewing = IsPreviewing,
+            IsRecording = IsRecording,
+            IsAudioEnabled = IsAudioEnabled,
+            IsAudioPreviewEnabled = IsAudioPreviewEnabled,
+            IsCustomAudioInputEnabled = IsCustomAudioInputEnabled,
+            StatusText = StatusText,
+            SelectedDeviceId = SelectedDevice?.Id,
+            SelectedDeviceName = SelectedDevice?.Name,
+            SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,
+            SelectedAudioInputDeviceName = SelectedAudioInputDevice?.Name,
+            SelectedResolution = SelectedResolution,
+            SelectedFrameRate = SelectedFrameRate,
+            HdrResolutionSupportHint = HdrResolutionSupportHint,
+            DetectedSourceFrameRate = DetectedSourceFrameRate,
+            DetectedSourceFrameRateArg = DetectedSourceFrameRateArg,
+            SourceFrameRateOrigin = SourceFrameRateOrigin,
+            SelectedRecordingFormat = SelectedRecordingFormat,
+            SelectedQuality = SelectedQuality,
+            CustomBitrateMbps = CustomBitrateMbps,
+            IsHdrEnabled = IsHdrEnabled,
+            OutputPath = OutputPath,
+            RecordingTime = RecordingTime,
+            RecordingSizeInfo = RecordingSizeInfo,
+            RecordingBitrateInfo = RecordingBitrateInfo,
+            AudioPeak = AudioPeak,
+            AudioClipping = AudioClipping
+        }, cancellationToken);
     }
 
     private static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)
@@ -230,36 +417,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         void ApplyFormats()
         {
-            AvailableRecordingFormats.Clear();
-            foreach (var format in formats)
-            {
-                AvailableRecordingFormats.Add(format);
-            }
-
-            var preferred = formats.FirstOrDefault(format =>
-                format.Contains("H.264", StringComparison.OrdinalIgnoreCase) ||
-                format.Contains("H264", StringComparison.OrdinalIgnoreCase));
-            var targetFormat = preferred;
-            if (string.IsNullOrWhiteSpace(targetFormat))
-            {
-                targetFormat = formats.FirstOrDefault();
-            }
-
-            if (string.IsNullOrWhiteSpace(targetFormat))
-            {
-                targetFormat = DefaultRecordingFormat;
-            }
-
-            var previousSelection = SelectedRecordingFormat;
-            SelectedRecordingFormat = targetFormat;
-            if (string.Equals(previousSelection, targetFormat, StringComparison.Ordinal))
-            {
-                // Force UI sync when collection rebuild clears ComboBox selected item.
-                OnPropertyChanged(nameof(SelectedRecordingFormat));
-            }
-
-            Logger.Log($"Recording formats refreshed: {string.Join(", ", formats)}");
-            Logger.Log($"Selected recording format: {SelectedRecordingFormat}");
+            _detectedRecordingFormats = formats
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            RebuildRecordingFormatOptions();
+            Logger.Log($"Recording formats refreshed: {string.Join(", ", _detectedRecordingFormats)}");
         }
 
         if (_dispatcherQueue.HasThreadAccess)
@@ -392,55 +554,29 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         // Set flag to prevent format change from triggering reinitialization during device setup
         _isChangingDevice = true;
+        ResetFrameRateSelectionState();
+        HdrResolutionSupportHint = string.Empty;
 
         AvailableFormats.Clear();
         AvailableResolutions.Clear();
         AvailableFrameRates.Clear();
-        _resolutionToFrameRates.Clear();
+        _resolutionToFormats.Clear();
 
         if (value != null)
         {
-            // Build resolution-to-framerate mapping from device's supported formats
+            // Build resolution-to-format capability matrix from device's supported formats.
             foreach (var format in value.SupportedFormats)
             {
                 AvailableFormats.Add(format);
 
-                var resolutionKey = $"{format.Width}x{format.Height}";
-                if (!_resolutionToFrameRates.ContainsKey(resolutionKey))
+                var resolutionKey = GetResolutionKey(format.Width, format.Height);
+                if (!_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
                 {
-                    _resolutionToFrameRates[resolutionKey] = new List<double>();
+                    formats = new List<MediaFormat>();
+                    _resolutionToFormats[resolutionKey] = formats;
                 }
 
-                if (!_resolutionToFrameRates[resolutionKey].Contains(format.FrameRate))
-                {
-                    _resolutionToFrameRates[resolutionKey].Add(format.FrameRate);
-                }
-            }
-
-            // Sort frame rates descending for each resolution
-            foreach (var key in _resolutionToFrameRates.Keys.ToList())
-            {
-                _resolutionToFrameRates[key] = _resolutionToFrameRates[key].OrderByDescending(f => f).ToList();
-            }
-
-            // Add unique resolutions sorted by pixel count descending
-            var sortedResolutions = _resolutionToFrameRates.Keys
-                .OrderByDescending(r =>
-                {
-                    var parts = r.Split('x');
-                    return int.Parse(parts[0]) * int.Parse(parts[1]);
-                })
-                .ToList();
-
-            foreach (var resolution in sortedResolutions)
-            {
-                AvailableResolutions.Add(resolution);
-            }
-
-            // Select first resolution (will trigger OnSelectedResolutionChanged)
-            if (AvailableResolutions.Count > 0)
-            {
-                SelectedResolution = AvailableResolutions[0];
+                formats.Add(format);
             }
 
             IsHdrAvailable = value.IsHdrCapable;
@@ -448,6 +584,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             {
                 IsHdrEnabled = false;
             }
+
+            RebuildResolutionOptions();
 
             // Device initialization is now handled by StartPreviewAsync
         }
@@ -457,67 +595,662 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     partial void OnSelectedResolutionChanged(string? value)
     {
-        AvailableFrameRates.Clear();
-
-        if (value != null && _resolutionToFrameRates.TryGetValue(value, out var frameRates))
+        if (_isRebuildingModeOptions)
         {
-            foreach (var frameRate in frameRates)
-            {
-                AvailableFrameRates.Add(frameRate);
-            }
-
-            // Prefer 60fps as default if available, otherwise use highest
-            if (AvailableFrameRates.Count > 0)
-            {
-                var preferred60 = AvailableFrameRates.FirstOrDefault(f => Math.Abs(f - 60) < 0.1);
-                SelectedFrameRate = preferred60 > 0 ? preferred60 : AvailableFrameRates[0];
-            }
+            return;
         }
 
-        UpdateSelectedFormat();
+        ResetFrameRateSelectionState();
+        RebuildFrameRateOptions();
     }
 
     partial void OnSelectedFrameRateChanged(double value)
     {
+        if (!_isRebuildingModeOptions && !_isApplyingAutomaticFrameRateSelection)
+        {
+            _hasUserOverriddenFrameRateForCurrentMode = true;
+        }
+
         UpdateSelectedFormat();
     }
 
     private void UpdateSelectedFormat()
     {
-        // Find the MediaFormat matching current resolution and frame rate
-        if (SelectedResolution != null)
+        if (!TryParseResolutionKey(SelectedResolution, out var width, out var height))
         {
-            var parts = SelectedResolution.Split('x');
-            if (parts.Length == 2 && uint.TryParse(parts[0], out var width) && uint.TryParse(parts[1], out var height))
-            {
-                var candidates = AvailableFormats
-                    .Where(f => f.Width == width &&
-                                f.Height == height &&
-                                Math.Abs(f.FrameRate - SelectedFrameRate) < 0.1)
-                    .OrderBy(GetHdrPreferenceRank)
-                    .ThenBy(f => MediaFormat.GetPixelFormatPriority(f.PixelFormat))
-                    .ThenByDescending(f => f.FrameRate)
-                    .ToList();
-
-                SelectedFormat = candidates.FirstOrDefault();
-            }
+            SelectedFormat = null;
+            return;
         }
-    }
 
-    private int GetHdrPreferenceRank(MediaFormat format)
-    {
-        // When HDR is enabled, prefer HDR-capable pixel formats; otherwise prefer SDR formats.
+        var candidates = AvailableFormats
+            .Where(f => f.Width == width && f.Height == height)
+            .ToList();
         if (IsHdrEnabled)
         {
-            return format.IsHdr ? 0 : 1;
+            candidates = candidates.Where(f => f.IsHdr).ToList();
         }
 
-        return format.IsHdr ? 1 : 0;
+        if (candidates.Count == 0)
+        {
+            SelectedFormat = null;
+            return;
+        }
+
+        var selectedRateOption = AvailableFrameRates
+            .FirstOrDefault(option => IsFrameRateMatch(option.Value, SelectedFrameRate))
+            ?? AvailableFrameRates.FirstOrDefault(option => IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
+        var friendlyBucket = selectedRateOption != null
+            ? (int)Math.Round(selectedRateOption.FriendlyValue, MidpointRounding.AwayFromZero)
+            : GetFriendlyFrameRateBucket(SelectedFrameRate);
+
+        var timingFamily = ResolvePreferredTimingFamily(SelectedResolution, SelectedFrameRate);
+        if (selectedRateOption != null &&
+            TryInferFrameRateTimingFamily(selectedRateOption.Rational, selectedRateOption.Value, out var optionFamily))
+        {
+            timingFamily = optionFamily;
+        }
+
+        var rateCandidates = candidates
+            .Where(format => GetFriendlyFrameRateBucket(format.FrameRateExact) == friendlyBucket)
+            .ToList();
+        if (rateCandidates.Count == 0)
+        {
+            rateCandidates = candidates;
+        }
+
+        SelectedFormat = SelectPreferredFrameRateFormat(rateCandidates, friendlyBucket, timingFamily);
+    }
+
+    private static bool IsHdrCompatibleRecordingFormat(string format)
+        => format.Contains("HEVC", StringComparison.OrdinalIgnoreCase) ||
+           format.Contains("AV1", StringComparison.OrdinalIgnoreCase);
+
+    private void RebuildRecordingFormatOptions()
+    {
+        var sourceFormats = _detectedRecordingFormats.Count > 0
+            ? _detectedRecordingFormats
+            : AvailableRecordingFormats.ToList();
+        var formats = IsHdrEnabled
+            ? sourceFormats.Where(IsHdrCompatibleRecordingFormat).ToList()
+            : sourceFormats.ToList();
+
+        AvailableRecordingFormats.Clear();
+        foreach (var format in formats)
+        {
+            AvailableRecordingFormats.Add(format);
+        }
+
+        string? targetFormat;
+        if (IsHdrEnabled)
+        {
+            targetFormat = formats.FirstOrDefault(format =>
+                string.Equals(format, HevcRecordingFormat, StringComparison.OrdinalIgnoreCase))
+                ?? formats.FirstOrDefault(format =>
+                    string.Equals(format, Av1RecordingFormat, StringComparison.OrdinalIgnoreCase))
+                ?? formats.FirstOrDefault();
+        }
+        else
+        {
+            targetFormat = SelectedRecordingFormat;
+            if (string.IsNullOrWhiteSpace(targetFormat) ||
+                !formats.Any(format => string.Equals(format, targetFormat, StringComparison.OrdinalIgnoreCase)))
+            {
+                targetFormat = formats.FirstOrDefault(format =>
+                    format.Contains("H.264", StringComparison.OrdinalIgnoreCase) ||
+                    format.Contains("H264", StringComparison.OrdinalIgnoreCase))
+                    ?? formats.FirstOrDefault();
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(targetFormat))
+        {
+            targetFormat = DefaultRecordingFormat;
+        }
+
+        var previousSelection = SelectedRecordingFormat;
+        SelectedRecordingFormat = targetFormat;
+        if (string.Equals(previousSelection, targetFormat, StringComparison.Ordinal))
+        {
+            OnPropertyChanged(nameof(SelectedRecordingFormat));
+        }
+
+        if (IsHdrEnabled && !IsHdrCompatibleRecordingFormat(SelectedRecordingFormat))
+        {
+            StatusText = "HDR recording requires HEVC or AV1 (10-bit).";
+        }
+
+        Logger.Log($"Selected recording format: {SelectedRecordingFormat}");
+    }
+
+    private int GetHdrPixelFormatRank(MediaFormat format)
+    {
+        if (!IsHdrEnabled)
+        {
+            return 0;
+        }
+
+        if (format.PixelFormat.Contains("P010", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        return format.IsHdr ? 1 : 2;
     }
 
     partial void OnIsHdrEnabledChanged(bool value)
     {
+        if (!_isChangingDevice)
+        {
+            ResetFrameRateSelectionState();
+            RebuildResolutionOptions();
+            RebuildRecordingFormatOptions();
+        }
+    }
+
+    private void RebuildResolutionOptions()
+    {
+        var previousSelection = SelectedResolution;
+        var previousRate = SelectedFrameRate;
+        var options = _resolutionToFormats
+            .Select(entry =>
+            {
+                var formats = entry.Value;
+                var first = formats[0];
+                var hdrSupported = formats.Any(f => f.IsHdr);
+                var enabled = !IsHdrEnabled || hdrSupported;
+                return new ResolutionOption
+                {
+                    Value = entry.Key,
+                    Width = first.Width,
+                    Height = first.Height,
+                    IsEnabled = enabled,
+                    DisableReason = enabled
+                        ? string.Empty
+                        : "HDR mode is not supported at this resolution."
+                };
+            })
+            .OrderByDescending(option => (long)option.Width * option.Height)
+            .ToList();
+
+        string? hdrHint = null;
+        var selected = IsHdrEnabled
+            ? SelectHdrResolutionOption(options, previousSelection, previousRate, out hdrHint)
+            : options.FirstOrDefault(option =>
+                option.IsEnabled &&
+                string.Equals(option.Value, previousSelection, StringComparison.OrdinalIgnoreCase))
+                ?? options.FirstOrDefault(option => option.IsEnabled)
+                ?? options.FirstOrDefault();
+
+        _isRebuildingModeOptions = true;
+        try
+        {
+            AvailableResolutions.Clear();
+            foreach (var option in options)
+            {
+                AvailableResolutions.Add(option);
+            }
+
+            SelectedResolution = selected?.Value;
+            if (IsHdrEnabled)
+            {
+                HdrResolutionSupportHint = hdrHint ?? BuildHdrSupportHintForResolution(selected?.Value);
+            }
+            else
+            {
+                HdrResolutionSupportHint = string.Empty;
+            }
+
+            if (IsHdrEnabled && selected is { IsEnabled: false })
+            {
+                StatusText = "No HDR-capable resolution is available for this device.";
+            }
+        }
+        finally
+        {
+            _isRebuildingModeOptions = false;
+        }
+
+        RebuildFrameRateOptions();
+    }
+
+    private void RebuildFrameRateOptions()
+    {
+        var previousRate = SelectedFrameRate;
+        var options = new List<FrameRateOption>();
+        var timingFamily = ResolvePreferredTimingFamily(SelectedResolution, previousRate);
+
+        if (!string.IsNullOrWhiteSpace(SelectedResolution) &&
+            _resolutionToFormats.TryGetValue(SelectedResolution, out var formats))
+        {
+            options = formats
+                .GroupBy(format => GetFriendlyFrameRateBucket(format.FrameRateExact))
+                .Select(group =>
+                {
+                    var allFormats = group.ToList();
+                    var hdrSupported = allFormats.Any(format => format.IsHdr);
+                    var enabled = !IsHdrEnabled || hdrSupported;
+                    var selectionPool = IsHdrEnabled && hdrSupported
+                        ? allFormats.Where(format => format.IsHdr).ToList()
+                        : allFormats;
+                    var preferred = SelectPreferredFrameRateFormat(selectionPool, group.Key, timingFamily);
+                    var numerator = preferred.FrameRateNumerator > 0 ? preferred.FrameRateNumerator : (uint?)null;
+                    var denominator = preferred.FrameRateDenominator > 0 ? preferred.FrameRateDenominator : (uint?)null;
+                    return new FrameRateOption
+                    {
+                        FriendlyValue = group.Key,
+                        Value = preferred.FrameRateExact,
+                        Rational = preferred.FrameRateRational,
+                        Numerator = numerator,
+                        Denominator = denominator,
+                        IsEnabled = enabled,
+                        DisableReason = enabled
+                            ? string.Empty
+                            : "HDR mode is not supported at this frame rate."
+                    };
+                })
+                .OrderByDescending(option => option.FriendlyValue)
+                .ToList();
+        }
+
+        var sourceRate = ResolveDetectedSourceFrameRate(SelectedResolution, options, previousRate);
+        DetectedSourceFrameRate = sourceRate.Rate;
+        DetectedSourceFrameRateArg = sourceRate.Arg;
+        SourceFrameRateOrigin = sourceRate.Origin;
+
+        _isRebuildingModeOptions = true;
+        try
+        {
+            AvailableFrameRates.Clear();
+            foreach (var option in options)
+            {
+                AvailableFrameRates.Add(option);
+            }
+
+            FrameRateOption? selected = null;
+            if (!_hasUserOverriddenFrameRateForCurrentMode && sourceRate.Rate.HasValue)
+            {
+                selected = options
+                    .Where(option => option.IsEnabled)
+                    .OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))
+                    .FirstOrDefault();
+            }
+
+            selected ??= options.FirstOrDefault(option =>
+                option.IsEnabled && IsFrameRateMatch(option.Value, previousRate))
+                ?? options.FirstOrDefault(option =>
+                    option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, previousRate))
+                ?? options.FirstOrDefault(option =>
+                    option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, 60))
+                ?? options.FirstOrDefault(option => option.IsEnabled)
+                ?? options.FirstOrDefault();
+
+            _isApplyingAutomaticFrameRateSelection = true;
+            SelectedFrameRate = selected?.Value ?? 0;
+            _isApplyingAutomaticFrameRateSelection = false;
+            if (IsHdrEnabled && selected is { IsEnabled: false })
+            {
+                StatusText = $"No HDR-capable frame rate is available for {SelectedResolution}.";
+            }
+        }
+        finally
+        {
+            _isApplyingAutomaticFrameRateSelection = false;
+            _isRebuildingModeOptions = false;
+        }
+
         UpdateSelectedFormat();
+    }
+
+    private void ResetFrameRateSelectionState()
+    {
+        _hasUserOverriddenFrameRateForCurrentMode = false;
+    }
+
+    private ResolutionOption? SelectHdrResolutionOption(
+        IReadOnlyList<ResolutionOption> options,
+        string? previousSelection,
+        double preferredFrameRate,
+        out string? hint)
+    {
+        hint = null;
+        if (options.Count == 0)
+        {
+            return null;
+        }
+
+        var previous = options.FirstOrDefault(option =>
+            string.Equals(option.Value, previousSelection, StringComparison.OrdinalIgnoreCase));
+        if (previous is { IsEnabled: true } &&
+            ResolutionSupportsFrameRate(previous.Value, preferredFrameRate, hdrOnly: true))
+        {
+            hint = BuildHdrSupportHintForResolution(previous.Value);
+            return previous;
+        }
+
+        var sameFpsCandidates = options
+            .Where(option =>
+                option.IsEnabled &&
+                ResolutionSupportsFrameRate(option.Value, preferredFrameRate, hdrOnly: true))
+            .ToList();
+
+        var selected = SelectNearestResolution(previousSelection, sameFpsCandidates)
+            ?? SelectNearestResolution(previousSelection, options.Where(option => option.IsEnabled).ToList())
+            ?? options.FirstOrDefault(option => option.IsEnabled)
+            ?? options.FirstOrDefault();
+
+        if (!string.IsNullOrWhiteSpace(previousSelection) &&
+            !string.Equals(previousSelection, selected?.Value, StringComparison.OrdinalIgnoreCase))
+        {
+            var previousMax = GetMaxFrameRateForResolution(previousSelection, hdrOnly: true);
+            if (previousMax > 0)
+            {
+                hint = $"HDR at {previousSelection} supported up to {FormatFriendlyFrameRate(previousMax)} fps.";
+            }
+        }
+
+        hint ??= BuildHdrSupportHintForResolution(selected?.Value);
+        return selected;
+    }
+
+    private static ResolutionOption? SelectNearestResolution(string? baselineResolution, IReadOnlyList<ResolutionOption> candidates)
+    {
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        if (!TryParseResolutionKey(baselineResolution, out var baseWidth, out var baseHeight))
+        {
+            return candidates
+                .OrderByDescending(option => (long)option.Width * option.Height)
+                .FirstOrDefault();
+        }
+
+        var baseArea = (long)baseWidth * baseHeight;
+        var lowerCandidate = candidates
+            .Where(option => ((long)option.Width * option.Height) < baseArea)
+            .OrderByDescending(option => (long)option.Width * option.Height)
+            .FirstOrDefault();
+        if (lowerCandidate != null)
+        {
+            return lowerCandidate;
+        }
+
+        return candidates
+            .OrderBy(option => Math.Abs(((long)option.Width * option.Height) - baseArea))
+            .ThenByDescending(option => (long)option.Width * option.Height)
+            .FirstOrDefault();
+    }
+
+    private static bool TryParseResolutionKey(string? resolutionKey, out uint width, out uint height)
+    {
+        width = 0;
+        height = 0;
+        if (string.IsNullOrWhiteSpace(resolutionKey))
+        {
+            return false;
+        }
+
+        var parts = resolutionKey.Split('x');
+        return parts.Length == 2 &&
+               uint.TryParse(parts[0], out width) &&
+               uint.TryParse(parts[1], out height);
+    }
+
+    private bool ResolutionSupportsFrameRate(string resolutionKey, double frameRate, bool hdrOnly)
+    {
+        if (!_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
+        {
+            return false;
+        }
+
+        return formats.Any(format =>
+            (!hdrOnly || format.IsHdr) &&
+            IsFrameRateMatch(format.FrameRateExact, frameRate));
+    }
+
+    private double GetMaxFrameRateForResolution(string? resolutionKey, bool hdrOnly)
+    {
+        if (string.IsNullOrWhiteSpace(resolutionKey) ||
+            !_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
+        {
+            return 0;
+        }
+
+        var candidates = hdrOnly
+            ? formats.Where(format => format.IsHdr).ToList()
+            : formats;
+        if (candidates.Count == 0)
+        {
+            return 0;
+        }
+
+        return candidates.Max(format => format.FrameRateExact);
+    }
+
+    private string BuildHdrSupportHintForResolution(string? resolutionKey)
+    {
+        if (!IsHdrEnabled || string.IsNullOrWhiteSpace(resolutionKey))
+        {
+            return string.Empty;
+        }
+
+        var maxHdrRate = GetMaxFrameRateForResolution(resolutionKey, hdrOnly: true);
+        if (maxHdrRate <= 0)
+        {
+            return $"HDR is not supported at {resolutionKey}.";
+        }
+
+        return $"HDR at {resolutionKey} supported up to {FormatFriendlyFrameRate(maxHdrRate)} fps.";
+    }
+
+    private static string FormatFriendlyFrameRate(double frameRate)
+        => $"{Math.Round(frameRate):0}";
+
+    private FrameRateTimingFamily ResolvePreferredTimingFamily(string? resolutionKey, double previousRate)
+    {
+        var runtime = _captureService.GetRuntimeSnapshot();
+        if (TryParseResolutionKey(resolutionKey, out var selectedWidth, out var selectedHeight))
+        {
+            if (runtime.ActualWidth == selectedWidth &&
+                runtime.ActualHeight == selectedHeight &&
+                TryInferFrameRateTimingFamily(
+                    runtime.ActualFrameRateArg ?? runtime.NegotiatedFrameRateArg,
+                    runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate,
+                    out var runtimeFamily))
+            {
+                return runtimeFamily;
+            }
+
+            if (runtime.NegotiatedWidth == selectedWidth &&
+                runtime.NegotiatedHeight == selectedHeight &&
+                TryInferFrameRateTimingFamily(
+                    runtime.NegotiatedFrameRateArg,
+                    runtime.NegotiatedFrameRate,
+                    out var negotiatedFamily))
+            {
+                return negotiatedFamily;
+            }
+        }
+
+        if (TryInferFrameRateTimingFamily(SelectedFormat?.FrameRateRational, SelectedFormat?.FrameRateExact, out var selectedFamily))
+        {
+            return selectedFamily;
+        }
+
+        var selectedOption = AvailableFrameRates.FirstOrDefault(option => IsFrameRateMatch(option.Value, previousRate));
+        if (selectedOption != null &&
+            TryInferFrameRateTimingFamily(selectedOption.Rational, selectedOption.Value, out var optionFamily))
+        {
+            return optionFamily;
+        }
+
+        if (TryInferFrameRateTimingFamily(null, previousRate, out var previousFamily))
+        {
+            return previousFamily;
+        }
+
+        return FrameRateTimingFamily.Unknown;
+    }
+
+    private static MediaFormat SelectPreferredFrameRateFormat(
+        IReadOnlyList<MediaFormat> candidates,
+        int friendlyBucket,
+        FrameRateTimingFamily timingFamily)
+    {
+        if (candidates.Count == 0)
+        {
+            throw new InvalidOperationException("No frame-rate candidates are available.");
+        }
+
+        return candidates
+            .OrderBy(format => GetTimingFamilyRank(format, friendlyBucket, timingFamily))
+            .ThenBy(format => Math.Abs(format.FrameRateExact - friendlyBucket))
+            .ThenBy(format => MediaFormat.GetPixelFormatPriority(format.PixelFormat))
+            .ThenByDescending(format => format.IsHdr)
+            .First();
+    }
+
+    private static int GetTimingFamilyRank(MediaFormat format, int friendlyBucket, FrameRateTimingFamily timingFamily)
+    {
+        if (format.FrameRateNumerator > 0 && format.FrameRateDenominator > 0)
+        {
+            return timingFamily switch
+            {
+                FrameRateTimingFamily.Ntsc1001 when format.FrameRateDenominator == 1001
+                    => Math.Abs((int)format.FrameRateNumerator - friendlyBucket * 1000),
+                FrameRateTimingFamily.Integer when format.FrameRateDenominator == 1
+                    => Math.Abs((int)format.FrameRateNumerator - friendlyBucket),
+                FrameRateTimingFamily.Ntsc1001 => 5000 + Math.Abs((int)format.FrameRateNumerator - friendlyBucket * 1000),
+                FrameRateTimingFamily.Integer => 5000 + Math.Abs((int)format.FrameRateNumerator - friendlyBucket),
+                _ => 100 + (int)Math.Round(Math.Abs(format.FrameRateExact - friendlyBucket) * 100)
+            };
+        }
+
+        return 100 + (int)Math.Round(Math.Abs(format.FrameRateExact - friendlyBucket) * 100);
+    }
+
+    private static bool TryInferFrameRateTimingFamily(
+        string? frameRateArg,
+        double? frameRate,
+        out FrameRateTimingFamily family)
+    {
+        family = FrameRateTimingFamily.Unknown;
+
+        if (TryParseFrameRateRational(frameRateArg, out var numerator, out var denominator))
+        {
+            if (denominator == 1001)
+            {
+                family = FrameRateTimingFamily.Ntsc1001;
+                return true;
+            }
+
+            if (denominator == 1)
+            {
+                family = FrameRateTimingFamily.Integer;
+                return true;
+            }
+        }
+
+        if (!frameRate.HasValue || frameRate.Value <= 0)
+        {
+            return false;
+        }
+
+        var value = frameRate.Value;
+        var rounded = Math.Round(value);
+        if (Math.Abs(value - rounded) <= 0.01)
+        {
+            family = FrameRateTimingFamily.Integer;
+            return true;
+        }
+
+        var ntscCandidate = rounded * 1000.0 / 1001.0;
+        if (Math.Abs(value - ntscCandidate) <= 0.03)
+        {
+            family = FrameRateTimingFamily.Ntsc1001;
+            return true;
+        }
+
+        return false;
+    }
+
+    private (double? Rate, string? Arg, string Origin) ResolveDetectedSourceFrameRate(
+        string? resolutionKey,
+        IReadOnlyList<FrameRateOption> options,
+        double previousRate)
+    {
+        var runtime = _captureService.GetRuntimeSnapshot();
+        if (TryParseResolutionKey(resolutionKey, out var selectedWidth, out var selectedHeight))
+        {
+            if (runtime.ActualFrameRate.HasValue &&
+                runtime.ActualWidth == selectedWidth &&
+                runtime.ActualHeight == selectedHeight)
+            {
+                return (
+                    runtime.ActualFrameRate,
+                    runtime.ActualFrameRateArg ??
+                    runtime.NegotiatedFrameRateArg,
+                    "NegotiatedDeviceFormat");
+            }
+
+            if (runtime.NegotiatedFrameRate.HasValue &&
+                runtime.NegotiatedWidth == selectedWidth &&
+                runtime.NegotiatedHeight == selectedHeight)
+            {
+                return (
+                    runtime.NegotiatedFrameRate,
+                    runtime.NegotiatedFrameRateArg,
+                    "NegotiatedDeviceFormat");
+            }
+        }
+
+        if (SelectedFormat != null &&
+            options.Any(option => IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFormat.FrameRateExact)))
+        {
+            return (
+                SelectedFormat.FrameRateExact,
+                string.IsNullOrWhiteSpace(SelectedFormat.FrameRateRational)
+                    ? null
+                    : SelectedFormat.FrameRateRational,
+                "SelectedMode");
+        }
+
+        if (previousRate > 0 &&
+            options.Any(option => IsFriendlyFrameRateMatch(option.FriendlyValue, previousRate)))
+        {
+            return (previousRate, null, "SelectedMode");
+        }
+
+        return (null, null, "Unknown");
+    }
+
+    private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
+        => Math.Abs(a - b) < tolerance;
+
+    private static bool IsFriendlyFrameRateMatch(double optionFriendlyRate, double requestedRate)
+        => Math.Round(optionFriendlyRate) == Math.Round(requestedRate);
+
+    private static string GetResolutionKey(uint width, uint height)
+        => $"{width}x{height}";
+
+    private static int GetFriendlyFrameRateBucket(double frameRate)
+        => (int)Math.Round(frameRate, MidpointRounding.AwayFromZero);
+
+    private static bool TryParseFrameRateRational(string? rational, out uint numerator, out uint denominator)
+    {
+        numerator = 0;
+        denominator = 0;
+        if (string.IsNullOrWhiteSpace(rational))
+        {
+            return false;
+        }
+
+        var split = rational.Split('/');
+        return split.Length == 2 &&
+               uint.TryParse(split[0], out numerator) &&
+               uint.TryParse(split[1], out denominator) &&
+               denominator > 0;
     }
 
     partial void OnSelectedFormatChanged(MediaFormat? value)
@@ -983,6 +1716,285 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
+    public Task RefreshDevicesForAutomationAsync(CancellationToken cancellationToken = default)
+        => InvokeOnUiThreadAsync(() => RefreshDevicesAsync(), cancellationToken);
+
+    public Task SelectDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var target = ResolveDevice(deviceId, deviceName);
+            if (target == null)
+            {
+                throw new InvalidOperationException($"Capture device not found. Id='{deviceId ?? "(null)"}', Name='{deviceName ?? "(null)"}'.");
+            }
+
+            SelectedDevice = target;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SelectAudioInputDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var target = ResolveAudioDevice(deviceId, deviceName);
+            if (target == null)
+            {
+                throw new InvalidOperationException($"Audio input device not found. Id='{deviceId ?? "(null)"}', Name='{deviceName ?? "(null)"}'.");
+            }
+
+            SelectedAudioInputDevice = target;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetCustomAudioInputEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            if (IsRecording)
+            {
+                throw new InvalidOperationException("Custom audio input cannot be changed while recording.");
+            }
+
+            IsCustomAudioInputEnabled = enabled;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var matched = AvailableResolutions.FirstOrDefault(r =>
+                string.Equals(r.Value, resolution, StringComparison.OrdinalIgnoreCase));
+            if (matched == null)
+            {
+                throw new InvalidOperationException($"Resolution '{resolution}' is not available.");
+            }
+            if (!matched.IsEnabled)
+            {
+                throw new InvalidOperationException(
+                    string.IsNullOrWhiteSpace(matched.DisableReason)
+                        ? $"Resolution '{resolution}' is currently disabled."
+                        : matched.DisableReason);
+            }
+
+            SelectedResolution = matched.Value;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            if (AvailableFrameRates.Count == 0)
+            {
+                throw new InvalidOperationException("No frame rates are available.");
+            }
+
+            var enabledRates = AvailableFrameRates
+                .Where(rate => rate.IsEnabled)
+                .ToList();
+            if (enabledRates.Count == 0)
+            {
+                throw new InvalidOperationException("No enabled frame rates are available for the current selection.");
+            }
+
+            var requestedFriendly = Math.Round(frameRate);
+            var friendlyMatches = enabledRates
+                .Where(rate => Math.Round(rate.FriendlyValue) == requestedFriendly)
+                .OrderBy(rate => Math.Abs(rate.FriendlyValue - frameRate))
+                .ThenBy(rate => Math.Abs(rate.Value - frameRate))
+                .ToList();
+
+            var matched = (friendlyMatches.Count > 0 ? friendlyMatches : enabledRates)
+                .OrderBy(rate => Math.Abs(rate.Value - frameRate))
+                .First();
+
+            if (friendlyMatches.Count == 0 && !IsFrameRateMatch(matched.Value, frameRate))
+            {
+                throw new InvalidOperationException(
+                    $"Frame rate '{frameRate:0.###}' is not available for {SelectedResolution ?? "the current resolution"}.");
+            }
+
+            SelectedFrameRate = matched.Value;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetRecordingFormatAsync(string format, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var matched = AvailableRecordingFormats.FirstOrDefault(value =>
+                string.Equals(value, format, StringComparison.OrdinalIgnoreCase));
+            if (matched == null)
+            {
+                throw new InvalidOperationException($"Recording format '{format}' is not available.");
+            }
+            if (IsHdrEnabled && !IsHdrCompatibleRecordingFormat(matched))
+            {
+                throw new InvalidOperationException("HDR recording requires HEVC or AV1 (10-bit).");
+            }
+
+            SelectedRecordingFormat = matched;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var matched = AvailableQualities.FirstOrDefault(value =>
+                string.Equals(value, quality, StringComparison.OrdinalIgnoreCase));
+            if (matched == null)
+            {
+                throw new InvalidOperationException($"Quality '{quality}' is not available.");
+            }
+
+            SelectedQuality = matched;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            CustomBitrateMbps = Math.Clamp(bitrateMbps, 1, 300);
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            if (enabled && !IsHdrAvailable)
+            {
+                throw new InvalidOperationException("HDR is not available on the selected device.");
+            }
+
+            IsHdrEnabled = enabled;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetAudioEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            IsAudioEnabled = enabled;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetAudioPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            IsAudioPreviewEnabled = enabled;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetOutputPathAsync(string outputPath, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            if (string.IsNullOrWhiteSpace(outputPath))
+            {
+                throw new InvalidOperationException("Output path cannot be empty.");
+            }
+
+            Directory.CreateDirectory(outputPath);
+            OutputPath = outputPath;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetPreviewEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(async () =>
+        {
+            if (enabled == IsPreviewing)
+            {
+                return;
+            }
+
+            if (enabled)
+            {
+                await StartPreviewAsync();
+            }
+            else
+            {
+                await StopPreviewAsync();
+            }
+        }, cancellationToken);
+    }
+
+    public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(async () =>
+        {
+            if (enabled == IsRecording)
+            {
+                return;
+            }
+
+            if (enabled)
+            {
+                await StartRecordingAsync();
+            }
+            else
+            {
+                await StopRecordingAsync();
+            }
+        }, cancellationToken);
+    }
+
+    private CaptureDevice? ResolveDevice(string? deviceId, string? deviceName)
+    {
+        if (!string.IsNullOrWhiteSpace(deviceId))
+        {
+            var byId = Devices.FirstOrDefault(d => string.Equals(d.Id, deviceId, StringComparison.OrdinalIgnoreCase));
+            if (byId != null)
+            {
+                return byId;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(deviceName))
+        {
+            return Devices.FirstOrDefault(d => string.Equals(d.Name, deviceName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return null;
+    }
+
+    private AudioInputDevice? ResolveAudioDevice(string? deviceId, string? deviceName)
+    {
+        if (!string.IsNullOrWhiteSpace(deviceId))
+        {
+            var byId = AudioInputDevices.FirstOrDefault(d => string.Equals(d.Id, deviceId, StringComparison.OrdinalIgnoreCase));
+            if (byId != null)
+            {
+                return byId;
+            }
+        }
+
+        if (!string.IsNullOrWhiteSpace(deviceName))
+        {
+            return AudioInputDevices.FirstOrDefault(d => string.Equals(d.Name, deviceName, StringComparison.OrdinalIgnoreCase));
+        }
+
+        return null;
+    }
+
     private CaptureSettings BuildCaptureSettings()
     {
         var format = SelectedRecordingFormat switch
@@ -1005,11 +2017,79 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             _ => VideoQuality.High
         };
 
+        var selectedFrameRateOption = AvailableFrameRates
+            .FirstOrDefault(option => IsFrameRateMatch(option.Value, SelectedFrameRate))
+            ?? AvailableFrameRates.FirstOrDefault(option => IsFriendlyFrameRateMatch(option.FriendlyValue, SelectedFrameRate));
+
+        var requestedFrameRateArg = selectedFrameRateOption?.Rational;
+        var requestedFrameRateNumerator = selectedFrameRateOption?.Numerator;
+        var requestedFrameRateDenominator = selectedFrameRateOption?.Denominator;
+        var runtime = _captureService.GetRuntimeSnapshot();
+        var selectedFriendlyRate = selectedFrameRateOption?.FriendlyValue ?? SelectedFrameRate;
+        var runtimeRate = runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate;
+        var runtimeRateArg = runtime.ActualFrameRateArg ?? runtime.NegotiatedFrameRateArg;
+        var runtimeMatchesResolution = false;
+        if (TryParseResolutionKey(SelectedResolution, out var selectedWidth, out var selectedHeight))
+        {
+            runtimeMatchesResolution =
+                (runtime.ActualWidth == selectedWidth && runtime.ActualHeight == selectedHeight) ||
+                (runtime.NegotiatedWidth == selectedWidth && runtime.NegotiatedHeight == selectedHeight);
+        }
+
+        if (runtimeMatchesResolution &&
+            runtimeRate.HasValue &&
+            runtimeRate.Value > 0 &&
+            IsFriendlyFrameRateMatch(selectedFriendlyRate, runtimeRate.Value))
+        {
+            if (!string.IsNullOrWhiteSpace(runtimeRateArg))
+            {
+                requestedFrameRateArg = runtimeRateArg;
+            }
+
+            if (runtime.NegotiatedFrameRateNumerator.HasValue &&
+                runtime.NegotiatedFrameRateDenominator.HasValue &&
+                runtime.NegotiatedFrameRateDenominator.Value > 0)
+            {
+                requestedFrameRateNumerator = runtime.NegotiatedFrameRateNumerator;
+                requestedFrameRateDenominator = runtime.NegotiatedFrameRateDenominator;
+            }
+            else if (TryParseFrameRateRational(runtimeRateArg, out var runtimeNumerator, out var runtimeDenominator))
+            {
+                requestedFrameRateNumerator = runtimeNumerator;
+                requestedFrameRateDenominator = runtimeDenominator;
+            }
+        }
+
+        if ((requestedFrameRateNumerator == null || requestedFrameRateDenominator == null) &&
+            TryParseFrameRateRational(requestedFrameRateArg, out var parsedNumerator, out var parsedDenominator))
+        {
+            requestedFrameRateNumerator = parsedNumerator;
+            requestedFrameRateDenominator = parsedDenominator;
+        }
+
+        if (requestedFrameRateNumerator == null || requestedFrameRateDenominator == null)
+        {
+            if (SelectedFormat?.FrameRateNumerator > 0 && SelectedFormat.FrameRateDenominator > 0)
+            {
+                requestedFrameRateNumerator = SelectedFormat.FrameRateNumerator;
+                requestedFrameRateDenominator = SelectedFormat.FrameRateDenominator;
+                requestedFrameRateArg = SelectedFormat.FrameRateRational;
+            }
+            else
+            {
+                requestedFrameRateArg = SelectedFrameRate.ToString("0.###");
+            }
+        }
+
         var settings = new CaptureSettings
         {
             Width = SelectedFormat?.Width ?? 1920,
             Height = SelectedFormat?.Height ?? 1080,
             FrameRate = SelectedFrameRate,
+            RequestedFrameRateArg = requestedFrameRateArg,
+            RequestedFrameRateNumerator = requestedFrameRateNumerator,
+            RequestedFrameRateDenominator = requestedFrameRateDenominator,
+            RequestedPixelFormat = SelectedFormat?.PixelFormat,
             Format = format,
             Quality = quality,
             CustomBitrateMbps = CustomBitrateMbps,

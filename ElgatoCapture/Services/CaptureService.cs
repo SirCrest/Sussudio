@@ -68,7 +68,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private RecordingPipelineOptions _activePipelineOptions = new();
     private int _conversionQueueCapacity = 8;
     private int _conversionQueueDepth;
-    private const string VideoInputPixelFormat = "nv12";
+    private const string DefaultVideoInputPixelFormat = "nv12";
+    private const string HdrVideoInputPixelFormat = "p010le";
     private readonly Stopwatch _recordingStopwatch = new();
     private long _videoFramesArrived;
     private long _videoFramesQueued;
@@ -87,6 +88,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private int _loggedFirstFrameConverted;
     private int _loggedFirstFrameEnqueued;
     private long _videoFramesDroppedFromBacklog;
+    private readonly object _captureCadenceLock = new();
+    private readonly double[] _captureFrameIntervalWindowMs = new double[600];
+    private int _captureFrameIntervalCount;
+    private int _captureFrameIntervalIndex;
+    private long _captureLastArrivalTick;
 
     private AudioGraph? _recordingAudioGraph; // Separate graph for recording audio capture
     private AudioFrameOutputNode? _audioFrameOutputNode;
@@ -105,6 +111,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private long _audioFileWriteDropped;
     private string? _audioTempPath;
     private string? _finalOutputPath;
+    private string? _lastOutputPath;
+    private string _lastFinalizeStatus = "None";
+    private DateTimeOffset? _lastFinalizeUtc;
+    private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();
     private bool _postMuxAudioEnabled;
     private string _activeAudioPathMode = "None";
     private bool _muxAttempted;
@@ -118,6 +128,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private const int ConversionDrainTimeoutMs = 5000;
     private const int ConversionCancelGraceMs = 2000;
     private long _lastAudioLevelUpdateTick;
+    private const int ComInteropErrorLogIntervalMs = 2000;
+    private long _lastComInteropErrorLogTick;
+    private long _suppressedComInteropErrorCount;
 
     // Audio preview
     private AudioGraph? _audioGraph;
@@ -132,10 +145,32 @@ public class CaptureService : IDisposable, IAsyncDisposable
     // Stored device info for reinitialization
     private CaptureDevice? _currentDevice;
     private CaptureSettings? _currentSettings;
+    private CaptureSettings? _activeRecordingSettings;
+    private CaptureSettings? _lastRecordingSettings;
     private double? _actualFrameRate;
     private string? _actualFrameRateArg;
+    private uint? _actualFrameRateNumerator;
+    private uint? _actualFrameRateDenominator;
     private uint? _actualWidth;
     private uint? _actualHeight;
+    private string? _actualPixelFormat;
+    private string _activeVideoInputPixelFormat = DefaultVideoInputPixelFormat;
+    private bool _hdrOutputActive;
+    private string _hdrActivationReason = "HDR inactive";
+    private bool _lastRecordingHdrOutputActive;
+    private string _lastHdrActivationReason = "HDR inactive";
+    private string? _recordingReaderSourceStreamType;
+    private string? _recordingReaderSourceSubtype;
+    private string? _recordingReaderRequestedSubtype;
+    private string? _firstObservedFramePixelFormat;
+    private string? _latestObservedFramePixelFormat;
+    private long _observedP010FrameCount;
+    private long _observedNv12FrameCount;
+    private long _observedOtherFrameCount;
+    private bool _hdrAutoDowngraded;
+    private string _hdrAutoDowngradeReason = string.Empty;
+    private bool _hdrSourceNot10BitDetected;
+    private bool _recordingFrameHandlerAttached;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<Exception>? ErrorOccurred;
@@ -156,6 +191,18 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         _processSupervisor = processSupervisor ?? throw new ArgumentNullException(nameof(processSupervisor));
     }
+
+    private readonly record struct CaptureCadenceMetrics(
+        int SampleCount,
+        double ObservedFps,
+        double ExpectedIntervalMs,
+        double AverageIntervalMs,
+        double P95IntervalMs,
+        double MaxIntervalMs,
+        double JitterStdDevMs,
+        long SevereGapCount,
+        long EstimatedDroppedFrames,
+        double EstimatedDropPercent);
 
     private CaptureSessionState ResolveSteadyState()
     {
@@ -268,11 +315,40 @@ public class CaptureService : IDisposable, IAsyncDisposable
             TimestampUtc = health.TimestampUtc,
             SessionState = health.SessionState,
             IsRecording = health.IsRecording,
+            RecordingBackend = health.RecordingBackend,
             AudioPathMode = health.AudioPathMode,
             MuxResult = health.MuxResult,
             RecordingElapsedMs = health.RecordingElapsedMs,
             LastFrameArrivalMs = health.LastFrameArrivalMs,
             EstimatedPipelineLatencyMs = health.EstimatedPipelineLatencyMs,
+            ExpectedFrameRate = health.ExpectedFrameRate,
+            NegotiatedWidth = health.NegotiatedWidth,
+            NegotiatedHeight = health.NegotiatedHeight,
+            NegotiatedFrameRate = health.NegotiatedFrameRate,
+            NegotiatedFrameRateArg = health.NegotiatedFrameRateArg,
+            NegotiatedFrameRateNumerator = health.NegotiatedFrameRateNumerator,
+            NegotiatedFrameRateDenominator = health.NegotiatedFrameRateDenominator,
+            NegotiatedPixelFormat = health.NegotiatedPixelFormat,
+            RequestedReaderSubtype = health.RequestedReaderSubtype,
+            ReaderSourceStreamType = health.ReaderSourceStreamType,
+            ReaderSourceSubtype = health.ReaderSourceSubtype,
+            FirstObservedFramePixelFormat = health.FirstObservedFramePixelFormat,
+            LatestObservedFramePixelFormat = health.LatestObservedFramePixelFormat,
+            ObservedP010FrameCount = health.ObservedP010FrameCount,
+            ObservedNv12FrameCount = health.ObservedNv12FrameCount,
+            ObservedOtherFrameCount = health.ObservedOtherFrameCount,
+            HdrAutoDowngraded = health.HdrAutoDowngraded,
+            HdrAutoDowngradeReason = health.HdrAutoDowngradeReason,
+            CaptureCadenceSampleCount = health.CaptureCadenceSampleCount,
+            CaptureCadenceObservedFps = health.CaptureCadenceObservedFps,
+            CaptureCadenceExpectedIntervalMs = health.CaptureCadenceExpectedIntervalMs,
+            CaptureCadenceAverageIntervalMs = health.CaptureCadenceAverageIntervalMs,
+            CaptureCadenceP95IntervalMs = health.CaptureCadenceP95IntervalMs,
+            CaptureCadenceMaxIntervalMs = health.CaptureCadenceMaxIntervalMs,
+            CaptureCadenceJitterStdDevMs = health.CaptureCadenceJitterStdDevMs,
+            CaptureCadenceSevereGapCount = health.CaptureCadenceSevereGapCount,
+            CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,
+            CaptureCadenceEstimatedDropPercent = health.CaptureCadenceEstimatedDropPercent,
             ConversionQueueDepth = health.ConversionQueueDepth,
             FfmpegVideoQueueDepth = health.FfmpegVideoQueueDepth,
             FfmpegAudioQueueDepth = health.FfmpegAudioQueueDepth,
@@ -290,6 +366,97 @@ public class CaptureService : IDisposable, IAsyncDisposable
         };
     }
 
+    public CaptureRuntimeSnapshot GetRuntimeSnapshot()
+    {
+        var requestedSettings = _recordingContext?.Settings ?? _activeRecordingSettings ?? _currentSettings ?? _lastRecordingSettings;
+        var outputPath = _lastOutputPath
+            ?? _recordingContext?.FinalOutputPath
+            ?? _recordingFile?.Path;
+        var requestedFrameRateArg = requestedSettings?.RequestedFrameRateArg;
+        if (string.IsNullOrWhiteSpace(requestedFrameRateArg) &&
+            requestedSettings?.RequestedFrameRateNumerator.HasValue == true &&
+            requestedSettings?.RequestedFrameRateDenominator.HasValue == true &&
+            requestedSettings.RequestedFrameRateNumerator.Value > 0 &&
+            requestedSettings.RequestedFrameRateDenominator.Value > 0)
+        {
+            var requestedNumerator = requestedSettings.RequestedFrameRateNumerator.Value;
+            var requestedDenominator = requestedSettings.RequestedFrameRateDenominator.Value;
+            requestedFrameRateArg = $"{requestedNumerator}/{requestedDenominator}";
+        }
+        if (string.IsNullOrWhiteSpace(requestedFrameRateArg) &&
+            requestedSettings != null &&
+            requestedSettings.FrameRate > 0)
+        {
+            var requestedFrameRate = requestedSettings.FrameRate;
+            requestedFrameRateArg = requestedFrameRate.ToString("0.###", CultureInfo.InvariantCulture);
+        }
+
+        return new CaptureRuntimeSnapshot
+        {
+            TimestampUtc = DateTimeOffset.UtcNow,
+            IsInitialized = _isInitialized,
+            IsRecording = _isRecording,
+            IsAudioPreviewActive = _isAudioPreviewActive,
+            SessionState = _sessionState.ToString(),
+            CurrentDeviceId = _currentDevice?.Id,
+            CurrentDeviceName = _currentDevice?.Name,
+            ActiveAudioDeviceId = _audioDeviceId,
+            ActiveAudioDeviceName = _audioDeviceName,
+            RequestedWidth = requestedSettings?.Width,
+            RequestedHeight = requestedSettings?.Height,
+            RequestedFrameRate = requestedSettings?.FrameRate,
+            RequestedFrameRateArg = requestedFrameRateArg,
+            RequestedFrameRateNumerator = requestedSettings?.RequestedFrameRateNumerator,
+            RequestedFrameRateDenominator = requestedSettings?.RequestedFrameRateDenominator,
+            RequestedPixelFormat = requestedSettings?.RequestedPixelFormat,
+            RequestedFormat = requestedSettings?.Format.ToString(),
+            RequestedQuality = requestedSettings?.Quality.ToString(),
+            RequestedAudioEnabled = requestedSettings?.AudioEnabled,
+            RequestedHdrEnabled = requestedSettings?.HdrEnabled,
+            RequestedHdrMasteringMetadata = requestedSettings != null &&
+                                           (!string.IsNullOrWhiteSpace(requestedSettings.HdrMasterDisplayMetadata) ||
+                                            (requestedSettings.HdrMaxCll > 0 && requestedSettings.HdrMaxFall > 0)),
+            HdrOutputActive = _isRecording ? _hdrOutputActive : _lastRecordingHdrOutputActive,
+            HdrActivationReason = _isRecording ? _hdrActivationReason : _lastHdrActivationReason,
+            HdrAutoDowngraded = _hdrAutoDowngraded,
+            HdrAutoDowngradeReason = _hdrAutoDowngradeReason,
+            HdrRequestedButSourceNot10Bit = _hdrSourceNot10BitDetected,
+            RequestedOutputPath = requestedSettings?.OutputPath,
+            ActualWidth = _actualWidth,
+            ActualHeight = _actualHeight,
+            ActualFrameRate = _actualFrameRate,
+            ActualFrameRateArg = _actualFrameRateArg,
+            NegotiatedWidth = _actualWidth,
+            NegotiatedHeight = _actualHeight,
+            NegotiatedFrameRate = _actualFrameRate,
+            NegotiatedFrameRateArg = _actualFrameRateArg,
+            NegotiatedFrameRateNumerator = _actualFrameRateNumerator,
+            NegotiatedFrameRateDenominator = _actualFrameRateDenominator,
+            NegotiatedPixelFormat = _actualPixelFormat,
+            RequestedReaderSubtype = _recordingReaderRequestedSubtype,
+            ReaderSourceStreamType = _recordingReaderSourceStreamType,
+            ReaderSourceSubtype = _recordingReaderSourceSubtype,
+            FirstObservedFramePixelFormat = _firstObservedFramePixelFormat,
+            LatestObservedFramePixelFormat = _latestObservedFramePixelFormat,
+            ObservedP010FrameCount = Interlocked.Read(ref _observedP010FrameCount),
+            ObservedNv12FrameCount = Interlocked.Read(ref _observedNv12FrameCount),
+            ObservedOtherFrameCount = Interlocked.Read(ref _observedOtherFrameCount),
+            EncoderInputPixelFormat = _activeVideoInputPixelFormat,
+            EncoderOutputPixelFormat = _ffmpegEncoder?.ActiveOutputPixelFormat,
+            DetectedSourceFrameRate = _actualFrameRate,
+            DetectedSourceFrameRateArg = _actualFrameRateArg,
+            SourceFrameRateOrigin = _actualFrameRate.HasValue ? "NegotiatedDeviceFormat" : "Unknown",
+            RecordingBackend = _recordingBackend.ToString(),
+            AudioPathMode = _activeAudioPathMode,
+            MuxAttempted = _muxAttempted,
+            MuxSucceeded = _muxSucceeded,
+            LastOutputPath = outputPath,
+            LastFinalizeStatus = _lastFinalizeStatus,
+            LastFinalizeUtc = _lastFinalizeUtc,
+            LastPreservedArtifacts = _lastPreservedArtifacts
+        };
+    }
+
     public CaptureHealthSnapshot GetHealthSnapshot()
     {
         var encoder = _ffmpegEncoder;
@@ -298,6 +465,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var estimatedLatencyMs = (elapsedMs > 0 && lastArrivalMs > 0)
             ? Math.Max(0, elapsedMs - lastArrivalMs)
             : 0;
+        var expectedFrameRate =
+            _actualFrameRate ??
+            _activeRecordingSettings?.FrameRate ??
+            _currentSettings?.FrameRate ??
+            _lastRecordingSettings?.FrameRate ??
+            0;
+        var cadence = GetCaptureCadenceMetrics(expectedFrameRate);
 
         var muxResult = _muxAttempted
             ? (_muxSucceeded == true ? "Succeeded" : "Failed")
@@ -314,6 +488,34 @@ public class CaptureService : IDisposable, IAsyncDisposable
             RecordingElapsedMs = elapsedMs,
             LastFrameArrivalMs = lastArrivalMs,
             EstimatedPipelineLatencyMs = estimatedLatencyMs,
+            ExpectedFrameRate = expectedFrameRate,
+            NegotiatedWidth = _actualWidth,
+            NegotiatedHeight = _actualHeight,
+            NegotiatedFrameRate = _actualFrameRate,
+            NegotiatedFrameRateArg = _actualFrameRateArg,
+            NegotiatedFrameRateNumerator = _actualFrameRateNumerator,
+            NegotiatedFrameRateDenominator = _actualFrameRateDenominator,
+            NegotiatedPixelFormat = _actualPixelFormat,
+            RequestedReaderSubtype = _recordingReaderRequestedSubtype,
+            ReaderSourceStreamType = _recordingReaderSourceStreamType,
+            ReaderSourceSubtype = _recordingReaderSourceSubtype,
+            FirstObservedFramePixelFormat = _firstObservedFramePixelFormat,
+            LatestObservedFramePixelFormat = _latestObservedFramePixelFormat,
+            ObservedP010FrameCount = Interlocked.Read(ref _observedP010FrameCount),
+            ObservedNv12FrameCount = Interlocked.Read(ref _observedNv12FrameCount),
+            ObservedOtherFrameCount = Interlocked.Read(ref _observedOtherFrameCount),
+            HdrAutoDowngraded = _hdrAutoDowngraded,
+            HdrAutoDowngradeReason = _hdrAutoDowngradeReason,
+            CaptureCadenceSampleCount = cadence.SampleCount,
+            CaptureCadenceObservedFps = cadence.ObservedFps,
+            CaptureCadenceExpectedIntervalMs = cadence.ExpectedIntervalMs,
+            CaptureCadenceAverageIntervalMs = cadence.AverageIntervalMs,
+            CaptureCadenceP95IntervalMs = cadence.P95IntervalMs,
+            CaptureCadenceMaxIntervalMs = cadence.MaxIntervalMs,
+            CaptureCadenceJitterStdDevMs = cadence.JitterStdDevMs,
+            CaptureCadenceSevereGapCount = cadence.SevereGapCount,
+            CaptureCadenceEstimatedDroppedFrames = cadence.EstimatedDroppedFrames,
+            CaptureCadenceEstimatedDropPercent = cadence.EstimatedDropPercent,
             ConversionQueueDepth = Volatile.Read(ref _conversionQueueDepth),
             FfmpegVideoQueueDepth = encoder?.VideoQueueCount ?? 0,
             FfmpegAudioQueueDepth = encoder?.AudioQueueCount ?? 0,
@@ -362,8 +564,28 @@ public class CaptureService : IDisposable, IAsyncDisposable
         _currentSettings = settings;
         _actualFrameRate = null;
         _actualFrameRateArg = null;
+        _actualFrameRateNumerator = null;
+        _actualFrameRateDenominator = null;
         _actualWidth = null;
         _actualHeight = null;
+        _actualPixelFormat = null;
+        _activeVideoInputPixelFormat = DefaultVideoInputPixelFormat;
+        _hdrOutputActive = false;
+        _hdrActivationReason = "HDR inactive";
+        _lastRecordingHdrOutputActive = false;
+        _lastHdrActivationReason = "HDR inactive";
+        _recordingReaderSourceStreamType = null;
+        _recordingReaderSourceSubtype = null;
+        _recordingReaderRequestedSubtype = null;
+        _firstObservedFramePixelFormat = null;
+        _latestObservedFramePixelFormat = null;
+        _hdrAutoDowngraded = false;
+        _hdrAutoDowngradeReason = string.Empty;
+        _hdrSourceNot10BitDetected = false;
+        _recordingFrameHandlerAttached = false;
+        Interlocked.Exchange(ref _observedP010FrameCount, 0);
+        Interlocked.Exchange(ref _observedNv12FrameCount, 0);
+        Interlocked.Exchange(ref _observedOtherFrameCount, 0);
 
         _mediaCapture = new MediaCapture();
 
@@ -428,52 +650,125 @@ public class CaptureService : IDisposable, IAsyncDisposable
             var videoController = _mediaCapture.VideoDeviceController;
             var availableProperties = videoController.GetAvailableMediaStreamProperties(MediaStreamType.VideoRecord);
 
+            var videoProperties = availableProperties.OfType<VideoEncodingProperties>().ToList();
             Logger.Log($"Device has {availableProperties.Count} available formats");
+            if (!string.IsNullOrWhiteSpace(settings.RequestedPixelFormat))
+            {
+                Logger.Log($"Requested pixel format: {settings.RequestedPixelFormat}");
+            }
 
-            var matchingFormat = availableProperties
-                .OfType<VideoEncodingProperties>()
-                .FirstOrDefault(p =>
-                    p.Width == settings.Width &&
-                    p.Height == settings.Height &&
-                    Math.Abs((double)p.FrameRate.Numerator / p.FrameRate.Denominator - settings.FrameRate) < 1);
+            if (settings.RequestedFrameRateNumerator.HasValue &&
+                settings.RequestedFrameRateDenominator.HasValue &&
+                settings.RequestedFrameRateNumerator.Value > 0 &&
+                settings.RequestedFrameRateDenominator.Value > 0)
+            {
+                var reqNumerator = settings.RequestedFrameRateNumerator.Value;
+                var reqDenominator = settings.RequestedFrameRateDenominator.Value;
+                Logger.Log($"Requested frame-rate rational: {reqNumerator}/{reqDenominator}");
+            }
+
+            var sizeCandidates = videoProperties
+                .Where(p => p.Width == settings.Width && p.Height == settings.Height)
+                .ToList();
+            var frameRateCandidates = sizeCandidates
+                .Where(p => IsFrameRateClose(p, settings.FrameRate))
+                .ToList();
+
+            if (settings.RequestedFrameRateNumerator.HasValue &&
+                settings.RequestedFrameRateDenominator.HasValue &&
+                settings.RequestedFrameRateNumerator.Value > 0 &&
+                settings.RequestedFrameRateDenominator.Value > 0)
+            {
+                var requestedNumerator = settings.RequestedFrameRateNumerator.Value;
+                var requestedDenominator = settings.RequestedFrameRateDenominator.Value;
+                var exactFrameRateCandidates = sizeCandidates
+                    .Where(p => p.FrameRate.Numerator == requestedNumerator && p.FrameRate.Denominator == requestedDenominator)
+                    .ToList();
+                if (exactFrameRateCandidates.Count > 0)
+                {
+                    frameRateCandidates = exactFrameRateCandidates;
+                }
+                else
+                {
+                    Logger.Log(
+                        $"Requested exact frame-rate {requestedNumerator}/{requestedDenominator} was unavailable; " +
+                        $"falling back to closest fps match near {settings.FrameRate:0.###}.");
+                }
+            }
+
+            if (settings.HdrEnabled)
+            {
+                var hdrCandidates = frameRateCandidates
+                    .Where(p => IsHdrSubtype(p.Subtype))
+                    .ToList();
+                if (hdrCandidates.Count == 0)
+                {
+                    Logger.Log(
+                        $"No HDR-capable subtype is available for {settings.Width}x{settings.Height}@{settings.FrameRate:0.###}.");
+                    throw new InvalidOperationException(
+                        $"HDR mode is not available for {settings.Width}x{settings.Height}@{settings.FrameRate:0.###}.");
+                }
+
+                frameRateCandidates = hdrCandidates;
+            }
+
+            var matchingFormat = frameRateCandidates
+                .OrderBy(p => GetSubtypePreferenceRank(p.Subtype, settings.RequestedPixelFormat, settings.HdrEnabled))
+                .ThenBy(p => Math.Abs(ResolveFrameRate(p.FrameRate.Numerator, p.FrameRate.Denominator, settings.FrameRate) - settings.FrameRate))
+                .FirstOrDefault();
 
             if (matchingFormat != null)
             {
-                var fps = (double)matchingFormat.FrameRate.Numerator / matchingFormat.FrameRate.Denominator;
-                _actualFrameRate = fps;
-                _actualFrameRateArg = $"{matchingFormat.FrameRate.Numerator}/{matchingFormat.FrameRate.Denominator}";
-                _actualWidth = matchingFormat.Width;
-                _actualHeight = matchingFormat.Height;
-                Logger.Log($"✓ Found matching format: {matchingFormat.Width}x{matchingFormat.Height}@{fps:F1}fps ({matchingFormat.Subtype})");
+                var fps = ResolveFrameRate(
+                    matchingFormat.FrameRate.Numerator,
+                    matchingFormat.FrameRate.Denominator,
+                    settings.FrameRate);
+                Logger.Log($"Found matching format: {matchingFormat.Width}x{matchingFormat.Height}@{fps:0.###}fps ({matchingFormat.Subtype})");
                 if (Math.Abs(fps - settings.FrameRate) > 0.01)
                 {
                     Logger.Log($"Requested FPS {settings.FrameRate:F3} differs from device FPS {fps:F3}. Using device FPS for FFmpeg.");
                 }
                 await videoController.SetMediaStreamPropertiesAsync(MediaStreamType.VideoRecord, matchingFormat);
-                Logger.Log($"✓ Device format set successfully");
+                Logger.Log("Device format set successfully");
+
+                if (videoController.GetMediaStreamProperties(MediaStreamType.VideoRecord) is VideoEncodingProperties appliedProps)
+                {
+                    SetNegotiatedVideoFormat(appliedProps, settings.FrameRate);
+                    var appliedFps = ResolveFrameRate(
+                        appliedProps.FrameRate.Numerator,
+                        appliedProps.FrameRate.Denominator,
+                        settings.FrameRate);
+                    Logger.Log($"Applied video-record format: {appliedProps.Width}x{appliedProps.Height}@{appliedFps:0.###}fps ({appliedProps.Subtype})");
+                }
+                else
+                {
+                    SetNegotiatedVideoFormat(matchingFormat, settings.FrameRate);
+                }
             }
             else
             {
-                Logger.Log($"✗ No matching format found for {settings.Width}x{settings.Height}@{settings.FrameRate}fps");
+                Logger.Log($"No matching format found for {settings.Width}x{settings.Height}@{settings.FrameRate:0.###}fps");
                 Logger.Log("Available formats:");
-                foreach (var prop in availableProperties.OfType<VideoEncodingProperties>().Take(10))
+                foreach (var prop in videoProperties.Take(10))
                 {
-                    var fps = (double)prop.FrameRate.Numerator / prop.FrameRate.Denominator;
-                    Logger.Log($"  - {prop.Width}x{prop.Height}@{fps:F1}fps ({prop.Subtype})");
+                    var fps = ResolveFrameRate(prop.FrameRate.Numerator, prop.FrameRate.Denominator, settings.FrameRate);
+                    Logger.Log($"  - {prop.Width}x{prop.Height}@{fps:0.###}fps ({prop.Subtype})");
+                }
+
+                if (settings.HdrEnabled)
+                {
+                    throw new InvalidOperationException(
+                        $"HDR mode is not available for {settings.Width}x{settings.Height}@{settings.FrameRate:0.###}.");
                 }
 
                 if (videoController.GetMediaStreamProperties(MediaStreamType.VideoRecord) is VideoEncodingProperties currentProps)
                 {
-                    var fps = currentProps.FrameRate.Denominator > 0
-                        ? (double)currentProps.FrameRate.Numerator / currentProps.FrameRate.Denominator
-                        : settings.FrameRate;
-                    _actualFrameRate = fps;
-                    _actualFrameRateArg = currentProps.FrameRate.Denominator > 0
-                        ? $"{currentProps.FrameRate.Numerator}/{currentProps.FrameRate.Denominator}"
-                        : null;
-                    _actualWidth = currentProps.Width;
-                    _actualHeight = currentProps.Height;
-                    Logger.Log($"Using current device format for FFmpeg: {currentProps.Width}x{currentProps.Height}@{fps:F1}fps ({currentProps.Subtype})");
+                    var fps = ResolveFrameRate(
+                        currentProps.FrameRate.Numerator,
+                        currentProps.FrameRate.Denominator,
+                        settings.FrameRate);
+                    SetNegotiatedVideoFormat(currentProps, settings.FrameRate);
+                    Logger.Log($"Using current device format for FFmpeg: {currentProps.Width}x{currentProps.Height}@{fps:0.###}fps ({currentProps.Subtype})");
                 }
             }
 
@@ -516,6 +811,23 @@ public class CaptureService : IDisposable, IAsyncDisposable
             Logger.Log("=== Starting recording (seamless - no reinitialization needed) ===");
             Logger.LogEvent("CAP-REC-START", $"format={settings.Format} path={settings.OutputPath}");
             Logger.Log($"Audio preview active: {_isAudioPreviewActive}");
+            _currentSettings = settings;
+            _activeRecordingSettings = settings;
+            _lastFinalizeStatus = "Recording";
+            _lastFinalizeUtc = DateTimeOffset.UtcNow;
+            _lastPreservedArtifacts = Array.Empty<string>();
+            _recordingReaderSourceStreamType = null;
+            _recordingReaderSourceSubtype = null;
+            _recordingReaderRequestedSubtype = null;
+            _firstObservedFramePixelFormat = null;
+            _latestObservedFramePixelFormat = null;
+            _hdrAutoDowngraded = false;
+            _hdrAutoDowngradeReason = string.Empty;
+            _hdrSourceNot10BitDetected = false;
+            _recordingFrameHandlerAttached = false;
+            Interlocked.Exchange(ref _observedP010FrameCount, 0);
+            Interlocked.Exchange(ref _observedNv12FrameCount, 0);
+            Interlocked.Exchange(ref _observedOtherFrameCount, 0);
             var canCaptureAudio = settings.AudioEnabled && !string.IsNullOrEmpty(_audioDeviceId);
             var isCompressedFormat = settings.Format != RecordingFormat.UncompressedAvi;
             var useNamedPipeAudio = isCompressedFormat &&
@@ -527,6 +839,38 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 : effectiveFrameRate.ToString("0.###", CultureInfo.InvariantCulture);
             var effectiveWidth = _actualWidth ?? settings.Width;
             var effectiveHeight = _actualHeight ?? settings.Height;
+            var useHdrVideoPipeline = IsHdrOutputEnabled(settings);
+            var videoInputPixelFormat = useHdrVideoPipeline
+                ? HdrVideoInputPixelFormat
+                : DefaultVideoInputPixelFormat;
+
+            if (settings.HdrEnabled &&
+                settings.HdrOutputMode == HdrOutputMode.Hdr10Pq &&
+                !useHdrVideoPipeline)
+            {
+                throw new InvalidOperationException(
+                    "HDR was requested, but HDR output is disabled by environment override. " +
+                    "Unset ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF (or set ELGATOCAPTURE_HDR_OUTPUT_ENABLED=1).");
+            }
+
+            if (useHdrVideoPipeline && !IsHdrSubtype(_actualPixelFormat))
+            {
+                throw new InvalidOperationException(
+                    "HDR recording requires an HDR-capable negotiated device pixel format, " +
+                    $"but got '{_actualPixelFormat ?? "unknown"}'.");
+            }
+
+            _activeVideoInputPixelFormat = videoInputPixelFormat;
+            _hdrOutputActive = useHdrVideoPipeline;
+            _hdrActivationReason = useHdrVideoPipeline
+                ? $"Active (requested={settings.HdrEnabled}, mode={settings.HdrOutputMode}, negotiated={_actualPixelFormat ?? "unknown"})"
+                : settings.HdrEnabled && settings.HdrOutputMode == HdrOutputMode.Hdr10Pq
+                    ? "Inactive (requested HDR10 but override disabled pipeline)"
+                    : "Inactive (HDR toggle or mode is off)";
+            if (useHdrVideoPipeline)
+            {
+                Logger.Log("HDR output pipeline enabled: requesting 10-bit P010 input for encoder.");
+            }
 
             _muxAttempted = false;
             _muxSucceeded = null;
@@ -554,11 +898,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 frameRateArg,
                 effectiveWidth,
                 effectiveHeight,
-                VideoInputPixelFormat);
+                videoInputPixelFormat);
 
             _recordingFile = await StorageFile.GetFileFromPathAsync(_recordingContext.VideoOutputPath);
             _finalOutputPath = _recordingContext.UsePostMuxAudio ? _recordingContext.FinalOutputPath : null;
             _audioTempPath = _recordingContext.AudioTempPath;
+            _lastOutputPath = _recordingContext.UsePostMuxAudio
+                ? _recordingContext.FinalOutputPath
+                : _recordingContext.VideoOutputPath;
 
             if (_recordingContext.UsePostMuxAudio)
             {
@@ -608,6 +955,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _postMuxAudioEnabled = false;
             _audioTempPath = null;
             _finalOutputPath = null;
+            _activeRecordingSettings = null;
+            _lastFinalizeStatus = $"StartFailed: {ex.Message}";
+            _lastFinalizeUtc = DateTimeOffset.UtcNow;
+            _lastPreservedArtifacts = Array.Empty<string>();
 
             ErrorOccurred?.Invoke(this, ex);
             throw;
@@ -658,7 +1009,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _conversionQueueCapacity = ResolveConversionQueueCapacity(settings);
             _conversionQueue = Channel.CreateBounded<SoftwareBitmap>(new BoundedChannelOptions(_conversionQueueCapacity)
             {
-                SingleReader = true,
+                SingleReader = _activePipelineOptions.VideoDropPolicy != VideoFrameDropPolicy.DropOldest,
                 SingleWriter = false,
                 FullMode = BoundedChannelFullMode.Wait
             });
@@ -688,10 +1039,19 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     Width = settings.Width,
                     Height = settings.Height,
                     FrameRate = settings.FrameRate,
+                    RequestedFrameRateArg = settings.RequestedFrameRateArg,
+                    RequestedFrameRateNumerator = settings.RequestedFrameRateNumerator,
+                    RequestedFrameRateDenominator = settings.RequestedFrameRateDenominator,
+                    RequestedPixelFormat = settings.RequestedPixelFormat,
                     Format = settings.Format,
                     Quality = settings.Quality,
                     CustomBitrateMbps = settings.CustomBitrateMbps,
                     HdrEnabled = settings.HdrEnabled,
+                    HdrOutputMode = settings.HdrOutputMode,
+                    HdrNominalPeakNits = settings.HdrNominalPeakNits,
+                    HdrMaxCll = settings.HdrMaxCll,
+                    HdrMaxFall = settings.HdrMaxFall,
+                    HdrMasterDisplayMetadata = settings.HdrMasterDisplayMetadata,
                     OutputPath = settings.OutputPath,
                     AudioEnabled = false,
                     UseCustomAudioInput = settings.UseCustomAudioInput,
@@ -713,7 +1073,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     FrameRateArg = context.FrameRateArg,
                     EffectiveWidth = context.EffectiveWidth,
                     EffectiveHeight = context.EffectiveHeight,
-                    VideoInputPixelFormat = context.VideoInputPixelFormat
+                    VideoInputPixelFormat = context.VideoInputPixelFormat,
+                    HdrPipelineActive = context.HdrPipelineActive
                 };
             }
             else if (!string.IsNullOrWhiteSpace(audioDevice) && !string.Equals(context.AudioDeviceName, audioDevice, StringComparison.Ordinal))
@@ -730,16 +1091,29 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     FrameRateArg = context.FrameRateArg,
                     EffectiveWidth = context.EffectiveWidth,
                     EffectiveHeight = context.EffectiveHeight,
-                    VideoInputPixelFormat = context.VideoInputPixelFormat
+                    VideoInputPixelFormat = context.VideoInputPixelFormat,
+                    HdrPipelineActive = context.HdrPipelineActive
                 };
             }
 
+            // Probe and start the recording frame reader before FFmpeg launch so we can
+            // verify the real incoming frame format and auto-downgrade HDR if needed.
+            await SetupRecordingFrameReaderAsync(settings, attachFrameHandler: false);
+            Logger.LogVerbose($"Recording frame reader warm-up completed at {startupStopwatch.ElapsedMilliseconds} ms");
+
+            if (!_hdrOutputActive &&
+                string.Equals(context.VideoInputPixelFormat, HdrVideoInputPixelFormat, StringComparison.OrdinalIgnoreCase))
+            {
+                context = CreateHdrDowngradedRecordingContext(context);
+            }
+
+            _recordingContext = context;
+            _activeVideoInputPixelFormat = context.VideoInputPixelFormat;
             await _recordingSink.StartAsync(context);
             Logger.LogVerbose($"FFmpeg StartEncodingAsync returned at {startupStopwatch.ElapsedMilliseconds} ms");
 
-            // Set up frame reader for recording (uses existing MediaCapture)
-            await SetupRecordingFrameReaderAsync(settings);
-            Logger.LogVerbose($"Recording frame reader started at {startupStopwatch.ElapsedMilliseconds} ms");
+            AttachRecordingFrameReaderHandler();
+            Logger.LogVerbose($"Recording frame reader attached at {startupStopwatch.ElapsedMilliseconds} ms");
 
             Logger.Log("FFmpeg recording started - frames will be piped to encoder");
         }
@@ -749,18 +1123,26 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    private async Task SetupRecordingFrameReaderAsync(CaptureSettings settings)
+    private async Task SetupRecordingFrameReaderAsync(CaptureSettings settings, bool attachFrameHandler)
     {
         if (_mediaCapture == null)
         {
             return;
         }
 
+        _recordingReaderRequestedSubtype = null;
+        _firstObservedFramePixelFormat = null;
+        _latestObservedFramePixelFormat = null;
+
         if (_recordingFrameReader != null)
         {
             try
             {
-                _recordingFrameReader.FrameArrived -= RecordingFrameReader_FrameArrived;
+                if (_recordingFrameHandlerAttached)
+                {
+                    _recordingFrameReader.FrameArrived -= RecordingFrameReader_FrameArrived;
+                    _recordingFrameHandlerAttached = false;
+                }
                 await _recordingFrameReader.StopAsync();
             }
             catch (Exception ex)
@@ -780,8 +1162,42 @@ public class CaptureService : IDisposable, IAsyncDisposable
             minValue: 500,
             maxValue: 30000);
 
-        // Only consider sources that belong to this MediaCapture instance.
-        // This avoids attaching to unrelated camera sources exposed system-wide.
+        var hdrRequested = _hdrOutputActive &&
+                           settings.HdrEnabled &&
+                           settings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
+
+        if (await TrySetupRecordingFrameReaderCoreAsync(hdrRequested, firstFrameTimeoutMs, attachFrameHandler).ConfigureAwait(false))
+        {
+            return;
+        }
+
+        if (hdrRequested)
+        {
+            var downgradeReason =
+                $"HDR source verification failed: expected true 10-bit P010 frames but observed '{_firstObservedFramePixelFormat ?? "unknown"}'. " +
+                "Switched to SDR for this recording.";
+            AutoDowngradeHdr(downgradeReason);
+            _recordingReaderRequestedSubtype = null;
+            _recordingReaderSourceStreamType = null;
+            _recordingReaderSourceSubtype = null;
+            _firstObservedFramePixelFormat = null;
+            _latestObservedFramePixelFormat = null;
+            if (await TrySetupRecordingFrameReaderCoreAsync(hdrRequested: false, firstFrameTimeoutMs, attachFrameHandler).ConfigureAwait(false))
+            {
+                return;
+            }
+        }
+
+        throw new InvalidOperationException("Unable to acquire recording frame source with live video frames");
+    }
+
+    private async Task<bool> TrySetupRecordingFrameReaderCoreAsync(bool hdrRequested, int firstFrameTimeoutMs, bool attachFrameHandler)
+    {
+        if (_mediaCapture == null)
+        {
+            return false;
+        }
+
         var candidateSources = _mediaCapture.FrameSources.Values
             .Where(fs =>
                 fs.Info.SourceKind == MediaFrameSourceKind.Color &&
@@ -804,7 +1220,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
             throw new InvalidOperationException("No color frame sources available for recording");
         }
 
-        Logger.Log($"Recording frame source candidates: {candidateSources.Count} (first-frame timeout: {firstFrameTimeoutMs} ms)");
+        Logger.Log(
+            $"Recording frame source candidates: {candidateSources.Count} (first-frame timeout: {firstFrameTimeoutMs} ms, hdrRequested={hdrRequested})");
         foreach (var source in candidateSources)
         {
             Logger.Log($"  Candidate source: id={source.Info.Id}, stream={source.Info.MediaStreamType}, kind={source.Info.SourceKind}");
@@ -815,22 +1232,77 @@ public class CaptureService : IDisposable, IAsyncDisposable
             MediaFrameReader? candidateReader = null;
             try
             {
-                candidateReader = await _mediaCapture.CreateFrameReaderAsync(source);
+                string? requestedSubtype = null;
+                if (hdrRequested)
+                {
+                    if (source.Info.MediaStreamType != MediaStreamType.VideoRecord)
+                    {
+                        Logger.Log($"Skipping non-VideoRecord source for HDR: {source.Info.Id}");
+                        continue;
+                    }
+
+                    requestedSubtype = ResolveHdrReaderSubtype(source);
+                    if (string.IsNullOrWhiteSpace(requestedSubtype))
+                    {
+                        Logger.Log($"Skipping source without HDR-compatible subtype: {source.Info.Id}");
+                        continue;
+                    }
+
+                    _recordingReaderRequestedSubtype ??= requestedSubtype;
+
+                    candidateReader = await _mediaCapture.CreateFrameReaderAsync(source, requestedSubtype);
+                }
+                else
+                {
+                    candidateReader = await _mediaCapture.CreateFrameReaderAsync(source);
+                }
+
                 if (candidateReader == null)
                 {
                     Logger.Log($"Failed to create recording frame reader for source {source.Info.Id}");
                     continue;
                 }
 
-                if (!await TryStartReaderAndAwaitFirstFrameAsync(candidateReader, source, firstFrameTimeoutMs))
+                var warmupResult = await TryStartReaderAndAwaitFirstFrameAsync(
+                    candidateReader,
+                    source,
+                    firstFrameTimeoutMs).ConfigureAwait(false);
+                if (!warmupResult.Success)
                 {
                     continue;
                 }
 
+                if (hdrRequested)
+                {
+                    var sourceSubtype = warmupResult.FrameSubtype ?? requestedSubtype ?? source.CurrentFormat?.Subtype;
+                    var pixelFormat = warmupResult.FramePixelFormat;
+                    var isTrue10Bit = pixelFormat.HasValue && pixelFormat.Value == BitmapPixelFormat.P010;
+                    if (!isTrue10Bit)
+                    {
+                        Logger.Log(
+                            $"HDR source rejected: source={source.Info.Id}, stream={source.Info.MediaStreamType}, " +
+                            $"subtype={sourceSubtype ?? "unknown"}, observedPixelFormat={pixelFormat?.ToString() ?? "unknown"}");
+                        continue;
+                    }
+                }
+
                 _recordingFrameReader = candidateReader;
-                _recordingFrameReader.FrameArrived += RecordingFrameReader_FrameArrived;
-                Logger.Log($"Recording frame reader attached: id={source.Info.Id}, stream={source.Info.MediaStreamType}");
-                return;
+                _recordingReaderSourceStreamType = source.Info.MediaStreamType.ToString();
+                _recordingReaderSourceSubtype = warmupResult.FrameSubtype ??
+                    source.CurrentFormat?.Subtype ??
+                    source.SupportedFormats.FirstOrDefault()?.Subtype;
+                var warmupPixelFormat = warmupResult.FramePixelFormat?.ToString();
+                _firstObservedFramePixelFormat ??= warmupPixelFormat;
+                _latestObservedFramePixelFormat = warmupPixelFormat;
+                if (attachFrameHandler)
+                {
+                    AttachRecordingFrameReaderHandler();
+                }
+
+                Logger.Log(
+                    $"Recording frame reader ready: id={source.Info.Id}, stream={source.Info.MediaStreamType}, " +
+                    $"subtype={_recordingReaderSourceSubtype ?? "unknown"}, firstPixelFormat={_firstObservedFramePixelFormat ?? "unknown"}");
+                return true;
             }
             catch (Exception ex)
             {
@@ -854,7 +1326,99 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
         }
 
-        throw new InvalidOperationException("Unable to acquire recording frame source with live video frames");
+        return false;
+    }
+
+    private void AttachRecordingFrameReaderHandler()
+    {
+        if (_recordingFrameReader == null || _recordingFrameHandlerAttached)
+        {
+            return;
+        }
+
+        _recordingFrameReader.FrameArrived += RecordingFrameReader_FrameArrived;
+        _recordingFrameHandlerAttached = true;
+    }
+
+    private static string? ResolveHdrReaderSubtype(MediaFrameSource source)
+    {
+        var preferred = source.SupportedFormats
+            .FirstOrDefault(format =>
+                !string.IsNullOrWhiteSpace(format.Subtype) &&
+                format.Subtype.Contains("P010", StringComparison.OrdinalIgnoreCase));
+        if (!string.IsNullOrWhiteSpace(preferred?.Subtype))
+        {
+            return preferred.Subtype;
+        }
+
+        var hdrFallback = source.SupportedFormats
+            .FirstOrDefault(format =>
+                !string.IsNullOrWhiteSpace(format.Subtype) &&
+                format.Subtype.Contains("HDR", StringComparison.OrdinalIgnoreCase));
+        return hdrFallback?.Subtype;
+    }
+
+    private void AutoDowngradeHdr(string reason)
+    {
+        _hdrOutputActive = false;
+        _activeVideoInputPixelFormat = DefaultVideoInputPixelFormat;
+        _hdrAutoDowngraded = true;
+        _hdrAutoDowngradeReason = reason;
+        _hdrSourceNot10BitDetected = true;
+        _hdrActivationReason = $"AutoDowngradedToSdr ({reason})";
+        Logger.Log($"HDR AUTO-DOWNGRADE: {reason}");
+        StatusChanged?.Invoke(this, $"HDR disabled for this recording. {reason}");
+    }
+
+    private RecordingContext CreateHdrDowngradedRecordingContext(RecordingContext context)
+    {
+        if (_activeRecordingSettings == null)
+        {
+            return context;
+        }
+
+        var downgradedSettings = new CaptureSettings
+        {
+            Width = context.Settings.Width,
+            Height = context.Settings.Height,
+            FrameRate = context.Settings.FrameRate,
+            RequestedFrameRateArg = context.Settings.RequestedFrameRateArg,
+            RequestedFrameRateNumerator = context.Settings.RequestedFrameRateNumerator,
+            RequestedFrameRateDenominator = context.Settings.RequestedFrameRateDenominator,
+            RequestedPixelFormat = context.Settings.RequestedPixelFormat,
+            Format = context.Settings.Format,
+            Quality = context.Settings.Quality,
+            CustomBitrateMbps = context.Settings.CustomBitrateMbps,
+            HdrEnabled = false,
+            HdrOutputMode = HdrOutputMode.Off,
+            HdrNominalPeakNits = context.Settings.HdrNominalPeakNits,
+            HdrMaxCll = context.Settings.HdrMaxCll,
+            HdrMaxFall = context.Settings.HdrMaxFall,
+            HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,
+            OutputPath = context.Settings.OutputPath,
+            AudioEnabled = context.Settings.AudioEnabled,
+            UseCustomAudioInput = context.Settings.UseCustomAudioInput,
+            AudioDeviceId = context.Settings.AudioDeviceId,
+            AudioDeviceName = context.Settings.AudioDeviceName,
+            AudioPathMode = context.Settings.AudioPathMode,
+            PipelineOptions = context.Settings.PipelineOptions
+        };
+
+        return new RecordingContext
+        {
+            Settings = downgradedSettings,
+            VideoOutputPath = context.VideoOutputPath,
+            FinalOutputPath = context.FinalOutputPath,
+            AudioTempPath = context.AudioTempPath,
+            UsePostMuxAudio = context.UsePostMuxAudio,
+            AudioDeviceName = context.AudioDeviceName,
+            EffectiveFrameRate = context.EffectiveFrameRate,
+            FrameRateArg = context.FrameRateArg,
+            EffectiveWidth = context.EffectiveWidth,
+            EffectiveHeight = context.EffectiveHeight,
+            VideoInputPixelFormat = DefaultVideoInputPixelFormat,
+            HdrPipelineActive = false
+        };
     }
 
     private static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)
@@ -868,55 +1432,166 @@ public class CaptureService : IDisposable, IAsyncDisposable
         return defaultValue;
     }
 
-    private static async Task<bool> TryStartReaderAndAwaitFirstFrameAsync(
+    private static bool GetBoolFromEnv(string variableName, bool defaultValue)
+    {
+        var rawValue = Environment.GetEnvironmentVariable(variableName);
+        if (string.IsNullOrWhiteSpace(rawValue))
+        {
+            return defaultValue;
+        }
+
+        if (bool.TryParse(rawValue, out var parsedBool))
+        {
+            return parsedBool;
+        }
+
+        if (int.TryParse(rawValue, out var parsedInt))
+        {
+            return parsedInt != 0;
+        }
+
+        return defaultValue;
+    }
+
+    private static double ResolveFrameRate(uint numerator, uint denominator, double fallback)
+    {
+        if (numerator > 0 && denominator > 0)
+        {
+            return (double)numerator / denominator;
+        }
+
+        return fallback;
+    }
+
+    private static bool IsFrameRateClose(VideoEncodingProperties properties, double requestedFrameRate, double tolerance = 0.01)
+    {
+        var fps = ResolveFrameRate(properties.FrameRate.Numerator, properties.FrameRate.Denominator, requestedFrameRate);
+        return Math.Abs(fps - requestedFrameRate) <= tolerance;
+    }
+
+    private static bool IsHdrSubtype(string? subtype)
+        => !string.IsNullOrWhiteSpace(subtype) &&
+           (subtype.Contains("P010", StringComparison.OrdinalIgnoreCase) ||
+            subtype.Contains("HDR", StringComparison.OrdinalIgnoreCase));
+
+    private static int GetSubtypePreferenceRank(string? subtype, string? requestedPixelFormat, bool hdrRequested)
+    {
+        if (!string.IsNullOrWhiteSpace(requestedPixelFormat) &&
+            !string.IsNullOrWhiteSpace(subtype) &&
+            string.Equals(subtype, requestedPixelFormat, StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        if (hdrRequested)
+        {
+            if (!string.IsNullOrWhiteSpace(subtype) &&
+                subtype.Contains("P010", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+
+            if (IsHdrSubtype(subtype))
+            {
+                return 2;
+            }
+
+            return 100;
+        }
+
+        return 10 + MediaFormat.GetPixelFormatPriority(subtype);
+    }
+
+    private void SetNegotiatedVideoFormat(VideoEncodingProperties properties, double fallbackFrameRate)
+    {
+        _actualWidth = properties.Width;
+        _actualHeight = properties.Height;
+        _actualPixelFormat = properties.Subtype;
+
+        var numerator = properties.FrameRate.Numerator;
+        var denominator = properties.FrameRate.Denominator;
+        if (numerator > 0 && denominator > 0)
+        {
+            _actualFrameRateNumerator = numerator;
+            _actualFrameRateDenominator = denominator;
+            _actualFrameRateArg = $"{numerator}/{denominator}";
+            _actualFrameRate = (double)numerator / denominator;
+            return;
+        }
+
+        _actualFrameRateNumerator = null;
+        _actualFrameRateDenominator = null;
+        _actualFrameRateArg = null;
+        _actualFrameRate = fallbackFrameRate;
+    }
+
+    private static bool IsHdrOutputEnabled(CaptureSettings settings)
+    {
+        return HdrOutputPolicy.IsEnabled(settings);
+    }
+
+    private readonly record struct FrameWarmupResult(
+        bool Success,
+        string? FrameSubtype,
+        BitmapPixelFormat? FramePixelFormat);
+
+    private static async Task<FrameWarmupResult> TryStartReaderAndAwaitFirstFrameAsync(
         MediaFrameReader reader,
         MediaFrameSource source,
         int firstFrameTimeoutMs)
     {
-        var firstFrameSeen = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-        void WarmupHandler(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
-        {
-            try
-            {
-                using var frame = sender.TryAcquireLatestFrame();
-                if (frame?.VideoMediaFrame != null)
-                {
-                    firstFrameSeen.TrySetResult(true);
-                }
-            }
-            catch (ObjectDisposedException)
-            {
-                // Reader stopped while probing source viability.
-            }
-        }
-
-        reader.FrameArrived += WarmupHandler;
         try
         {
             var startResult = await reader.StartAsync();
             Logger.Log($"Recording frame reader start status ({source.Info.Id}): {startResult}");
             if (startResult != MediaFrameReaderStartStatus.Success)
             {
-                return false;
+                return default;
             }
 
-            var firstFrameTask = firstFrameSeen.Task;
-            var completed = await Task.WhenAny(firstFrameTask, Task.Delay(firstFrameTimeoutMs));
-            if (completed != firstFrameTask || !firstFrameTask.Result)
+            var deadline = Stopwatch.GetTimestamp() +
+                (long)(firstFrameTimeoutMs / 1000.0 * Stopwatch.Frequency);
+            while (Stopwatch.GetTimestamp() <= deadline)
             {
-                Logger.Log(
-                    $"Recording frame reader warm-up timeout for source {source.Info.Id} " +
-                    $"({source.Info.MediaStreamType}) after {firstFrameTimeoutMs} ms");
-                return false;
+                using var frame = reader.TryAcquireLatestFrame();
+                var videoFrame = frame?.VideoMediaFrame;
+                if (videoFrame != null)
+                {
+                    string? frameSubtype = source.CurrentFormat?.Subtype;
+                    BitmapPixelFormat? framePixelFormat = null;
+
+                    if (videoFrame.SoftwareBitmap != null)
+                    {
+                        framePixelFormat = videoFrame.SoftwareBitmap.BitmapPixelFormat;
+                    }
+                    else if (videoFrame.Direct3DSurface != null)
+                    {
+                        using var copied = await SoftwareBitmap.CreateCopyFromSurfaceAsync(
+                            videoFrame.Direct3DSurface,
+                            BitmapAlphaMode.Ignore);
+                        framePixelFormat = copied.BitmapPixelFormat;
+                    }
+
+                    Logger.Log(
+                        $"Recording frame reader warm-up succeeded for source {source.Info.Id} " +
+                        $"(subtype={frameSubtype ?? "unknown"}, pixelFormat={framePixelFormat?.ToString() ?? "unknown"})");
+                    return new FrameWarmupResult(
+                        Success: true,
+                        FrameSubtype: frameSubtype,
+                        FramePixelFormat: framePixelFormat);
+                }
+
+                await Task.Delay(15).ConfigureAwait(false);
             }
 
-            Logger.Log($"Recording frame reader warm-up succeeded for source {source.Info.Id}");
-            return true;
+            Logger.Log(
+                $"Recording frame reader warm-up timeout for source {source.Info.Id} " +
+                $"({source.Info.MediaStreamType}) after {firstFrameTimeoutMs} ms");
+            return default;
         }
-        finally
+        catch (ObjectDisposedException)
         {
-            reader.FrameArrived -= WarmupHandler;
+            return default;
         }
     }
 
@@ -934,6 +1609,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SoftwareBitmap? softwareBitmap = null;
             var frameIndex = Interlocked.Increment(ref _videoFramesArrived);
             var nowMs = _recordingStopwatch.ElapsedMilliseconds;
+            TrackCaptureFrameArrivalCadence();
             var lastArrivalMs = Interlocked.Exchange(ref _lastFrameArrivalMs, nowMs);
             if (Logger.VerboseEnabled && frameIndex == 1)
             {
@@ -974,6 +1650,31 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             if (softwareBitmap == null) return;
+            _firstObservedFramePixelFormat ??= softwareBitmap.BitmapPixelFormat.ToString();
+            _latestObservedFramePixelFormat = softwareBitmap.BitmapPixelFormat.ToString();
+            switch (softwareBitmap.BitmapPixelFormat)
+            {
+                case BitmapPixelFormat.P010:
+                    Interlocked.Increment(ref _observedP010FrameCount);
+                    break;
+                case BitmapPixelFormat.Nv12:
+                    Interlocked.Increment(ref _observedNv12FrameCount);
+                    break;
+                default:
+                    Interlocked.Increment(ref _observedOtherFrameCount);
+                    break;
+            }
+
+            if (_hdrOutputActive && softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.P010)
+            {
+                _hdrSourceNot10BitDetected = true;
+                if (!_hdrAutoDowngraded && string.IsNullOrWhiteSpace(_hdrAutoDowngradeReason))
+                {
+                    _hdrAutoDowngradeReason =
+                        $"HDR requested but observed runtime frame format {softwareBitmap.BitmapPixelFormat} instead of P010.";
+                }
+            }
+
             if (Logger.VerboseEnabled && frameIndex == 1)
             {
                 var relTime = frame.SystemRelativeTime?.TotalMilliseconds;
@@ -1077,32 +1778,41 @@ public class CaptureService : IDisposable, IAsyncDisposable
                         continue;
                     }
 
-                    // Convert to NV12 for NVENC-friendly input (reduces conversion overhead vs BGRA)
-                    SoftwareBitmap nv12Frame;
-                    if (sourceBitmap.BitmapPixelFormat == BitmapPixelFormat.Nv12)
+                    // Convert to the encoder input pixel format (NV12 for SDR, P010 for HDR10).
+                    var targetPixelFormat = ResolveTargetVideoPixelFormat();
+                    SoftwareBitmap convertedFrame;
+                    if (sourceBitmap.BitmapPixelFormat == targetPixelFormat)
                     {
-                        Interlocked.Increment(ref _videoFramesDirectNv12);
-                        nv12Frame = sourceBitmap;
+                        if (targetPixelFormat == BitmapPixelFormat.Nv12)
+                        {
+                            Interlocked.Increment(ref _videoFramesDirectNv12);
+                        }
+
+                        convertedFrame = sourceBitmap;
                     }
                     else
                     {
                         var convertStartTicks = Logger.VerboseEnabled ? Stopwatch.GetTimestamp() : 0;
-                        nv12Frame = SoftwareBitmap.Convert(sourceBitmap, BitmapPixelFormat.Nv12, BitmapAlphaMode.Ignore);
+                        convertedFrame = SoftwareBitmap.Convert(sourceBitmap, targetPixelFormat, BitmapAlphaMode.Ignore);
                         if (Logger.VerboseEnabled && convertStartTicks != 0)
                         {
                             var convertMs = (Stopwatch.GetTimestamp() - convertStartTicks) * 1000.0 / Stopwatch.Frequency;
                             if (convertMs >= 5)
                             {
-                                Logger.LogVerbose($"SoftwareBitmap.Convert to NV12 took {convertMs:0.00} ms");
+                                Logger.LogVerbose($"SoftwareBitmap.Convert to {targetPixelFormat} took {convertMs:0.00} ms");
                             }
                         }
-                        Interlocked.Increment(ref _videoFramesConvertedNv12);
+                        if (targetPixelFormat == BitmapPixelFormat.Nv12)
+                        {
+                            Interlocked.Increment(ref _videoFramesConvertedNv12);
+                        }
+
                         sourceBitmap.Dispose(); // Dispose unconverted frame
                     }
 
                     // Send converted frame through the active sink contract.
                     var enqueueStartTicks = Logger.VerboseEnabled ? Stopwatch.GetTimestamp() : 0;
-                    await sink!.WriteVideoAsync(nv12Frame, cancellationToken);
+                    await sink!.WriteVideoAsync(convertedFrame, cancellationToken);
                     if (Logger.VerboseEnabled && enqueueStartTicks != 0)
                     {
                         var enqueueMs = (Stopwatch.GetTimestamp() - enqueueStartTicks) * 1000.0 / Stopwatch.Frequency;
@@ -1113,7 +1823,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     }
 
                     // Dispose converted frame (FFmpeg has copied the data)
-                    nv12Frame.Dispose();
+                    convertedFrame.Dispose();
 
                     var convertedCount = Interlocked.Increment(ref _videoFramesConverted);
                     var enqueuedCount = Interlocked.Increment(ref _videoFramesEnqueued);
@@ -1151,6 +1861,137 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
+    private void TrackCaptureFrameArrivalCadence()
+    {
+        var nowTick = Stopwatch.GetTimestamp();
+        var previousTick = Interlocked.Exchange(ref _captureLastArrivalTick, nowTick);
+        if (previousTick <= 0)
+        {
+            return;
+        }
+
+        var intervalMs = (nowTick - previousTick) * 1000.0 / Stopwatch.Frequency;
+        if (intervalMs <= 0 || intervalMs > 5000)
+        {
+            return;
+        }
+
+        lock (_captureCadenceLock)
+        {
+            _captureFrameIntervalWindowMs[_captureFrameIntervalIndex] = intervalMs;
+            _captureFrameIntervalIndex = (_captureFrameIntervalIndex + 1) % _captureFrameIntervalWindowMs.Length;
+            if (_captureFrameIntervalCount < _captureFrameIntervalWindowMs.Length)
+            {
+                _captureFrameIntervalCount++;
+            }
+        }
+    }
+
+    private BitmapPixelFormat ResolveTargetVideoPixelFormat()
+    {
+        return string.Equals(_activeVideoInputPixelFormat, HdrVideoInputPixelFormat, StringComparison.OrdinalIgnoreCase)
+            ? BitmapPixelFormat.P010
+            : BitmapPixelFormat.Nv12;
+    }
+
+    private CaptureCadenceMetrics GetCaptureCadenceMetrics(double expectedFrameRate)
+    {
+        double[] samples;
+        lock (_captureCadenceLock)
+        {
+            if (_captureFrameIntervalCount <= 0)
+            {
+                var expectedInterval = expectedFrameRate > 0 ? 1000.0 / expectedFrameRate : 0;
+                return new CaptureCadenceMetrics(
+                    SampleCount: 0,
+                    ObservedFps: 0,
+                    ExpectedIntervalMs: expectedInterval,
+                    AverageIntervalMs: 0,
+                    P95IntervalMs: 0,
+                    MaxIntervalMs: 0,
+                    JitterStdDevMs: 0,
+                    SevereGapCount: 0,
+                    EstimatedDroppedFrames: 0,
+                    EstimatedDropPercent: 0);
+            }
+
+            samples = new double[_captureFrameIntervalCount];
+            for (var i = 0; i < _captureFrameIntervalCount; i++)
+            {
+                var ringIndex = (_captureFrameIntervalIndex - _captureFrameIntervalCount + i + _captureFrameIntervalWindowMs.Length)
+                    % _captureFrameIntervalWindowMs.Length;
+                samples[i] = _captureFrameIntervalWindowMs[ringIndex];
+            }
+        }
+
+        var sampleCount = samples.Length;
+        if (sampleCount == 0)
+        {
+            return default;
+        }
+
+        var sum = 0.0;
+        var max = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            sum += samples[i];
+            if (samples[i] > max)
+            {
+                max = samples[i];
+            }
+        }
+
+        var average = sum / sampleCount;
+        var observedFps = average > double.Epsilon ? 1000.0 / average : 0;
+        var expectedIntervalMs = expectedFrameRate > 0 ? 1000.0 / expectedFrameRate : average;
+        var severeGapThresholdMs = expectedIntervalMs * 2.25;
+
+        var varianceSum = 0.0;
+        long severeGaps = 0;
+        long estimatedDropped = 0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            var delta = samples[i] - average;
+            varianceSum += delta * delta;
+
+            var interval = samples[i];
+            if (interval >= severeGapThresholdMs)
+            {
+                severeGaps++;
+            }
+
+            if (expectedIntervalMs > double.Epsilon)
+            {
+                var missingFrames = (long)Math.Floor((interval + expectedIntervalMs * 0.20) / expectedIntervalMs) - 1;
+                if (missingFrames > 0)
+                {
+                    estimatedDropped += missingFrames;
+                }
+            }
+        }
+
+        var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
+        var sorted = (double[])samples.Clone();
+        Array.Sort(sorted);
+        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
+        var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
+        var dropPercent = estimatedDropped <= 0
+            ? 0
+            : (double)estimatedDropped / Math.Max(1, sampleCount + estimatedDropped) * 100.0;
+
+        return new CaptureCadenceMetrics(
+            SampleCount: sampleCount,
+            ObservedFps: observedFps,
+            ExpectedIntervalMs: expectedIntervalMs,
+            AverageIntervalMs: average,
+            P95IntervalMs: p95IntervalMs,
+            MaxIntervalMs: max,
+            JitterStdDevMs: jitterStdDevMs,
+            SevereGapCount: severeGaps,
+            EstimatedDroppedFrames: estimatedDropped,
+            EstimatedDropPercent: dropPercent);
+    }
+
     private void ResetPipelineStats()
     {
         Interlocked.Exchange(ref _videoFramesArrived, 0);
@@ -1171,6 +2012,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
         Interlocked.Exchange(ref _loggedFirstFrameConverted, 0);
         Interlocked.Exchange(ref _loggedFirstFrameEnqueued, 0);
         Interlocked.Exchange(ref _conversionQueueDepth, 0);
+        Interlocked.Exchange(ref _captureLastArrivalTick, 0);
+        lock (_captureCadenceLock)
+        {
+            Array.Clear(_captureFrameIntervalWindowMs, 0, _captureFrameIntervalWindowMs.Length);
+            _captureFrameIntervalCount = 0;
+            _captureFrameIntervalIndex = 0;
+        }
     }
 
     private void LogPipelineStatsIfNeeded()
@@ -1254,27 +2102,40 @@ public class CaptureService : IDisposable, IAsyncDisposable
             return false;
         }
 
-        while (Volatile.Read(ref _conversionQueueDepth) >= capacity)
+        if (queue.Writer.TryWrite(frame))
         {
-            if (!queue.Reader.TryRead(out var droppedFrame))
+            var nextDepth = Interlocked.Increment(ref _conversionQueueDepth);
+            if (nextDepth > capacity)
             {
-                break;
+                Interlocked.Exchange(ref _conversionQueueDepth, capacity);
             }
 
+            return true;
+        }
+
+        if (_activePipelineOptions.VideoDropPolicy == VideoFrameDropPolicy.DropOldest &&
+            queue.Reader.TryRead(out var evictedFrame))
+        {
             Interlocked.Decrement(ref _conversionQueueDepth);
-            droppedFrame.Dispose();
             Interlocked.Increment(ref _videoFramesDropped);
             var backlogDrops = Interlocked.Increment(ref _videoFramesDroppedFromBacklog);
             if (backlogDrops == 1 || backlogDrops % 60 == 0)
             {
                 Logger.Log($"Video backlog drop: {backlogDrops} frame(s) evicted from conversion queue");
             }
-        }
 
-        if (queue.Writer.TryWrite(frame))
-        {
-            Interlocked.Increment(ref _conversionQueueDepth);
-            return true;
+            evictedFrame.Dispose();
+
+            if (queue.Writer.TryWrite(frame))
+            {
+                var depthAfterWrite = Interlocked.Increment(ref _conversionQueueDepth);
+                if (depthAfterWrite > capacity)
+                {
+                    Interlocked.Exchange(ref _conversionQueueDepth, capacity);
+                }
+
+                return true;
+            }
         }
 
         return false;
@@ -1472,7 +2333,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
             _audioFileWriteQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(AudioWriteQueueCapacity)
             {
-                SingleReader = true,
+                SingleReader = false,
                 SingleWriter = false,
                 FullMode = BoundedChannelFullMode.Wait
             });
@@ -1563,24 +2424,22 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             while (true)
             {
-                if (!queue.Reader.TryRead(out var payload))
+                var hasPayload = await queue.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false);
+                if (!hasPayload)
                 {
-                    if (queue.Reader.Completion.IsCompleted)
+                    break;
+                }
+
+                while (queue.Reader.TryRead(out var payload))
+                {
+                    if (payload == null || payload.Length == 0)
                     {
-                        break;
+                        continue;
                     }
 
-                    await Task.Delay(50, cancellationToken);
-                    continue;
+                    await stream.WriteAsync(payload, 0, payload.Length, cancellationToken).ConfigureAwait(false);
+                    Interlocked.Add(ref _audioBytesWritten, payload.Length);
                 }
-
-                if (payload == null || payload.Length == 0)
-                {
-                    continue;
-                }
-
-                await stream.WriteAsync(payload, 0, payload.Length, cancellationToken);
-                Interlocked.Add(ref _audioBytesWritten, payload.Length);
             }
         }
         catch (OperationCanceledException)
@@ -1605,10 +2464,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             System.Buffer.MemoryCopy(data, outputBytes, byteCount, byteCount);
         }
-        QueueAudioBytesForFile(copy);
+        QueueAudioBytesForFile(copy, cloneInput: false);
     }
 
     private void QueueAudioBytesForFile(byte[] data)
+    {
+        QueueAudioBytesForFile(data, cloneInput: true);
+    }
+
+    private void QueueAudioBytesForFile(byte[] data, bool cloneInput)
     {
         if (data.Length == 0)
         {
@@ -1621,17 +2485,25 @@ public class CaptureService : IDisposable, IAsyncDisposable
             return;
         }
 
-        var copy = new byte[data.Length];
-        System.Buffer.BlockCopy(data, 0, copy, 0, data.Length);
+        var payload = data;
+        if (cloneInput)
+        {
+            payload = new byte[data.Length];
+            System.Buffer.BlockCopy(data, 0, payload, 0, data.Length);
+        }
 
-        if (!queue.Writer.TryWrite(copy))
+        if (!queue.Writer.TryWrite(payload))
         {
             if (queue.Reader.TryRead(out _))
             {
-                Interlocked.Increment(ref _audioFileWriteDropped);
+                var backlogDropped = Interlocked.Increment(ref _audioFileWriteDropped);
+                if (backlogDropped == 1 || backlogDropped % 120 == 0)
+                {
+                    Logger.Log($"Audio write backlog saturated, dropped oldest chunks: {backlogDropped}");
+                }
             }
 
-            if (!queue.Writer.TryWrite(copy))
+            if (!queue.Writer.TryWrite(payload))
             {
                 var dropped = Interlocked.Increment(ref _audioFileWriteDropped);
                 if (dropped == 1 || dropped % 120 == 0)
@@ -1768,6 +2640,31 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         _conversionCancellation?.Dispose();
         _conversionCancellation = null;
+
+        if (_recordingFrameReader != null)
+        {
+            try
+            {
+                if (_recordingFrameHandlerAttached)
+                {
+                    _recordingFrameReader.FrameArrived -= RecordingFrameReader_FrameArrived;
+                    _recordingFrameHandlerAttached = false;
+                }
+                await _recordingFrameReader.StopAsync();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Error stopping recording frame reader after failure: {ex.Message}");
+            }
+            finally
+            {
+                _recordingFrameReader.Dispose();
+                _recordingFrameReader = null;
+            }
+        }
+        _recordingReaderRequestedSubtype = null;
+        _firstObservedFramePixelFormat = null;
+        _latestObservedFramePixelFormat = null;
 
         CleanupRecordingAudioGraph();
 
@@ -2115,8 +3012,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            // Log to file instead of just Debug for visibility
-            Logger.Log($"Audio frame error: {ex.Message}");
+            LogComInteropAwareError("Audio frame error", ex);
         }
     }
 
@@ -2136,6 +3032,32 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 TaskContinuationOptions.OnlyOnFaulted,
                 TaskScheduler.Default);
         }
+    }
+
+    private static bool IsComInteropDisabledException(Exception ex)
+        => ex is NotSupportedException &&
+           ex.Message.Contains("Built-in COM has been disabled", StringComparison.OrdinalIgnoreCase);
+
+    private void LogComInteropAwareError(string prefix, Exception ex)
+    {
+        if (!IsComInteropDisabledException(ex))
+        {
+            Logger.Log($"{prefix}: {ex.Message}");
+            return;
+        }
+
+        var nowTick = Environment.TickCount64;
+        var lastTick = Interlocked.Read(ref _lastComInteropErrorLogTick);
+        if (nowTick - lastTick < ComInteropErrorLogIntervalMs ||
+            Interlocked.CompareExchange(ref _lastComInteropErrorLogTick, nowTick, lastTick) != lastTick)
+        {
+            Interlocked.Increment(ref _suppressedComInteropErrorCount);
+            return;
+        }
+
+        var suppressed = Interlocked.Exchange(ref _suppressedComInteropErrorCount, 0);
+        var suffix = suppressed > 0 ? $" (suppressed repeats: {suppressed})" : string.Empty;
+        Logger.Log($"{prefix}: {ex.Message}{suffix}");
     }
 
     private void PreviewAudioGraph_QuantumStarted(AudioGraph sender, object args)
@@ -2284,7 +3206,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"Audio preview frame error: {ex.Message}");
+            LogComInteropAwareError("Audio preview frame error", ex);
         }
     }
 
@@ -2393,7 +3315,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
             // Stop recording frame reader (FFmpeg recording)
             if (_recordingFrameReader != null)
             {
-                _recordingFrameReader.FrameArrived -= RecordingFrameReader_FrameArrived;
+                if (_recordingFrameHandlerAttached)
+                {
+                    _recordingFrameReader.FrameArrived -= RecordingFrameReader_FrameArrived;
+                    _recordingFrameHandlerAttached = false;
+                }
                 await _recordingFrameReader.StopAsync();
                 _recordingFrameReader.Dispose();
                 _recordingFrameReader = null;
@@ -2511,6 +3437,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 }
             }
             stopStatus = finalizeResult.StatusMessage;
+            _lastFinalizeStatus = finalizeResult.StatusMessage;
+            _lastFinalizeUtc = DateTimeOffset.UtcNow;
+            _lastOutputPath = !string.IsNullOrWhiteSpace(finalizeResult.OutputPath)
+                ? finalizeResult.OutputPath
+                : (finalOutputPath ?? tempVideoPath ?? _recordingFile?.Path);
+            _lastPreservedArtifacts = finalizeResult.PreservedArtifacts.ToArray();
+            _lastRecordingSettings = _activeRecordingSettings ?? _currentSettings;
+            _activeRecordingSettings = null;
 
             if (!finalizeResult.Succeeded)
             {
@@ -2522,7 +3456,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 }
             }
 
+            _lastRecordingHdrOutputActive = _hdrOutputActive;
+            _lastHdrActivationReason = _hdrActivationReason;
             _isRecording = false;
+            _hdrOutputActive = false;
+            _hdrActivationReason = "HDR inactive";
             _frameCount = 0;
             if (_isInitialized)
             {
@@ -2539,6 +3477,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _postMuxAudioEnabled = false;
             _audioTempPath = null;
             _finalOutputPath = null;
+            _activeVideoInputPixelFormat = DefaultVideoInputPixelFormat;
         }
         catch (Exception ex)
         {
@@ -2788,6 +3727,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
         _recordingFile = null;
         _audioTempPath = null;
         _finalOutputPath = null;
+        _activeRecordingSettings = null;
+        _recordingReaderSourceStreamType = null;
+        _recordingReaderSourceSubtype = null;
+        _recordingReaderRequestedSubtype = null;
+        _firstObservedFramePixelFormat = null;
+        _latestObservedFramePixelFormat = null;
         if (!_isDisposed)
         {
             _sessionState = CaptureSessionState.Uninitialized;
@@ -2880,7 +3825,18 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _recordingContext = null;
             _recordingBackend = RecordingBackend.None;
             _isRecording = false;
+            _hdrOutputActive = false;
+            _lastRecordingHdrOutputActive = false;
+            _hdrActivationReason = "HDR inactive";
+            _lastHdrActivationReason = "HDR inactive";
+            _recordingReaderSourceStreamType = null;
+            _recordingReaderSourceSubtype = null;
+            _recordingReaderRequestedSubtype = null;
+            _firstObservedFramePixelFormat = null;
+            _latestObservedFramePixelFormat = null;
+            _recordingFrameHandlerAttached = false;
             _isInitialized = false;
+            _activeRecordingSettings = null;
 
             Logger.Log("CaptureService disposed");
         }

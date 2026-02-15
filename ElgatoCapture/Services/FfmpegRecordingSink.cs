@@ -39,6 +39,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
             context.EffectiveWidth,
             context.EffectiveHeight,
             context.VideoInputPixelFormat,
+            context.HdrPipelineActive,
             context.Settings.PipelineOptions);
 
         _started = true;
@@ -62,7 +63,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
             return Task.CompletedTask;
         }
 
-        _encoder.EnqueueAudioSamples(samples.ToArray());
+        _encoder.EnqueueAudioSamples(samples);
         return Task.CompletedTask;
     }
 

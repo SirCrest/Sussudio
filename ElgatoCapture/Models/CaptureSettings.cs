@@ -22,15 +22,31 @@ public enum VideoQuality
     Custom      // User-specified bitrate
 }
 
+public enum HdrOutputMode
+{
+    Off,
+    Hdr10Pq
+}
+
 public class CaptureSettings
 {
     public uint Width { get; set; } = 1920;
     public uint Height { get; set; } = 1080;
     public double FrameRate { get; set; } = 60;
+    public string? RequestedFrameRateArg { get; set; }
+    public uint? RequestedFrameRateNumerator { get; set; }
+    public uint? RequestedFrameRateDenominator { get; set; }
+    public string? RequestedPixelFormat { get; set; }
     public RecordingFormat Format { get; set; } = RecordingFormat.H264Mp4;
     public VideoQuality Quality { get; set; } = VideoQuality.High;
     public double CustomBitrateMbps { get; set; } = 50; // Used when Quality is Custom
     public bool HdrEnabled { get; set; }
+    public HdrOutputMode HdrOutputMode { get; set; } = HdrOutputMode.Hdr10Pq;
+    public int HdrNominalPeakNits { get; set; } = 1000;
+    public int HdrMaxCll { get; set; } = 1000;
+    public int HdrMaxFall { get; set; } = 400;
+    public string HdrMasterDisplayMetadata { get; set; } =
+        "G(13250,34500)B(7500,3000)R(34000,16000)L(10000000,1)";
     public string OutputPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
     public bool AudioEnabled { get; set; } = true;
     public bool UseCustomAudioInput { get; set; }

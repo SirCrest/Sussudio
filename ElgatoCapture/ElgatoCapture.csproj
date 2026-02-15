@@ -82,7 +82,37 @@
   <PropertyGroup>
     <PublishReadyToRun Condition="'$(Configuration)' == 'Debug'">False</PublishReadyToRun>
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
-    <PublishTrimmed Condition="'$(Configuration)' == 'Debug'">False</PublishTrimmed>
-    <PublishTrimmed Condition="'$(Configuration)' != 'Debug'">True</PublishTrimmed>
+    <PublishTrimmed>false</PublishTrimmed>
+    <LatestBuildRoot>$(MSBuildProjectDirectory)\..\latest-build\</LatestBuildRoot>
+    <LatestRootExe>$(MSBuildProjectDirectory)\..\$(AssemblyName).exe</LatestRootExe>
   </PropertyGroup>
+
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="true" />
+    <RuntimeHostConfigurationOption Include="System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault" Value="true" />
+  </ItemGroup>
+
+  <Target Name="StageLatestBuildToRepoRoot"
+          AfterTargets="Build"
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+    <Message Text="Staging latest build output to $(LatestBuildRoot)" Importance="High" />
+    <RemoveDir Directories="$(LatestBuildRoot)" />
+    <MakeDir Directories="$(LatestBuildRoot)" />
+    <ItemGroup>
+      <LatestBuildFiles Include="$(TargetDir)**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(LatestBuildFiles)"
+          DestinationFiles="@(LatestBuildFiles->'$(LatestBuildRoot)%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="false" />
+    <PropertyGroup>
+      <BuiltExePath>$(TargetDir)$(AssemblyName).exe</BuiltExePath>
+    </PropertyGroup>
+    <Copy SourceFiles="$(BuiltExePath)"
+          DestinationFiles="$(LatestRootExe)"
+          SkipUnchangedFiles="false"
+          Condition="Exists('$(BuiltExePath)')" />
+    <Message Text="Staging latest executable to $(LatestRootExe)"
+             Importance="High"
+             Condition="Exists('$(BuiltExePath)')" />
+  </Target>
 </Project>

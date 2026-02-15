@@ -93,6 +93,7 @@ namespace ElgatoCapture
         {
             _window = new MainWindow();
             _window.Activate();
+            // WinAppSDK terminates the dispatcher thread once the last window closes, so no extra Exit call is needed here.
         }
     }
 }

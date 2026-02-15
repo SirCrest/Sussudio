@@ -5,6 +5,7 @@ using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -17,7 +18,7 @@ using WinRT.Interop;
 
 namespace ElgatoCapture;
 
-public sealed partial class MainWindow : Window
+public sealed partial class MainWindow : Window, IAutomationWindowControl
 {
     public MainViewModel ViewModel { get; }
     private MediaFrameReader? _previewFrameReader;
@@ -31,7 +32,18 @@ public sealed partial class MainWindow : Window
     private long _previewLastResizeLogTick;
     private long _previewLastPresentedTick;
     private long _previewResizeSuppressUntilTick;
+    private long _previewGpuStartTick;
+    private long _previewGpuLastPositionMs;
+    private long _previewGpuLastProgressTick;
     private int _previewUiInFlight;
+    private long _lastDiagnosticsUiUpdateTick;
+    private readonly object _previewCadenceLock = new();
+    private readonly double[] _previewDisplayIntervalWindowMs = new double[300];
+    private int _previewDisplayIntervalCount;
+    private int _previewDisplayIntervalIndex;
+    private long _previewLastDisplayTick;
+    private int _windowCloseRequested;
+    private int _windowCloseCleanupStarted;
     private readonly bool _previewCapOverrideProvided;
     private readonly int _previewPresentationFpsCap;
     private int _previewActivePresentationFpsCap;
@@ -40,8 +52,11 @@ public sealed partial class MainWindow : Window
     private readonly bool _preferGpuPreview;
     private readonly bool _forceFrameReaderDuringRecording;
     private readonly int _previewShutdownTimeoutMs;
+    private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
+    private readonly NamedPipeAutomationServer _automationPipeServer;
+    private int _automationServicesStarted;
 
-    private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.1)
+    private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
 
     private static double GetFrameRate(MediaFrameFormat format)
@@ -168,6 +183,10 @@ public sealed partial class MainWindow : Window
             PreviewPlayerElement.Visibility = Visibility.Visible;
             PreviewImage.Visibility = Visibility.Collapsed;
             _previewMediaPlayer.Play();
+            var nowTick = Environment.TickCount64;
+            Interlocked.Exchange(ref _previewGpuStartTick, nowTick);
+            Interlocked.Exchange(ref _previewGpuLastProgressTick, nowTick);
+            Interlocked.Exchange(ref _previewGpuLastPositionMs, 0);
             Logger.Log("Preview started on GPU path (MediaPlayerElement).");
             return true;
         }
@@ -208,6 +227,25 @@ public sealed partial class MainWindow : Window
 
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         ViewModel = new MainViewModel();
+        var automationToken = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_TOKEN");
+        var automationPipeName = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_PIPE");
+        if (string.IsNullOrWhiteSpace(automationPipeName))
+        {
+            automationPipeName = "ElgatoCaptureAutomation";
+        }
+
+        _automationDiagnosticsHub = new AutomationDiagnosticsHub(
+            ViewModel,
+            GetPreviewRuntimeSnapshotAsync,
+            new RecordingVerifier());
+        _automationDiagnosticsHub.SnapshotUpdated += AutomationDiagnosticsHub_SnapshotUpdated;
+
+        var automationDispatcher = new AutomationCommandDispatcher(
+            ViewModel,
+            _automationDiagnosticsHub,
+            this,
+            automationToken);
+        _automationPipeServer = new NamedPipeAutomationServer(automationDispatcher, automationPipeName);
         _previewCapOverrideProvided = TryGetIntFromEnv("ELGATOCAPTURE_PREVIEW_FPS_CAP", out var previewCapOverrideRaw);
         _previewPresentationFpsCap = Math.Clamp(_previewCapOverrideProvided ? previewCapOverrideRaw : 120, 15, 120);
         _previewActivePresentationFpsCap = Math.Clamp(60, 15, _previewPresentationFpsCap);
@@ -254,6 +292,7 @@ public sealed partial class MainWindow : Window
         mainContent.Loaded += MainWindow_Loaded;
         mainContent.SizeChanged += MainWindow_SizeChanged;
         Closed += MainWindow_Closed;
+
     }
 
     private void SetupBindings()
@@ -279,8 +318,8 @@ public sealed partial class MainWindow : Window
                     {
                         // Find matching item in the collection
                         var matchingRate = ViewModel.AvailableFrameRates
-                            .FirstOrDefault(f => IsFrameRateMatch(f, ViewModel.SelectedFrameRate));
-                        if (matchingRate > 0)
+                            .FirstOrDefault(f => IsFrameRateMatch(f.Value, ViewModel.SelectedFrameRate));
+                        if (matchingRate != null)
                         {
                             FrameRateComboBox.SelectedItem = matchingRate;
                         }
@@ -340,6 +379,10 @@ public sealed partial class MainWindow : Window
         CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
         UpdateAudioMeterLevel(ViewModel.AudioPeak);
         AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
+        HdrFpsHintTextBlock.Text = ViewModel.HdrResolutionSupportHint;
+        HdrFpsHintTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.HdrResolutionSupportHint)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
 
         // Wire up selection changes with loop prevention
         DeviceComboBox.SelectionChanged += (s, e) =>
@@ -362,19 +405,21 @@ public sealed partial class MainWindow : Window
 
         ResolutionComboBox.SelectionChanged += (s, e) =>
         {
-            if (ResolutionComboBox.SelectedItem is string resolution &&
-                resolution != ViewModel.SelectedResolution)
+            if (ResolutionComboBox.SelectedItem is ResolutionOption resolution &&
+                resolution.IsEnabled &&
+                !string.Equals(resolution.Value, ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase))
             {
-                ViewModel.SelectedResolution = resolution;
+                ViewModel.SelectedResolution = resolution.Value;
             }
         };
 
         FrameRateComboBox.SelectionChanged += (s, e) =>
         {
-            if (FrameRateComboBox.SelectedItem is double frameRate &&
-                !IsFrameRateMatch(frameRate, ViewModel.SelectedFrameRate))
+            if (FrameRateComboBox.SelectedItem is FrameRateOption frameRate &&
+                frameRate.IsEnabled &&
+                !IsFrameRateMatch(frameRate.Value, ViewModel.SelectedFrameRate))
             {
-                ViewModel.SelectedFrameRate = frameRate;
+                ViewModel.SelectedFrameRate = frameRate.Value;
             }
         };
 
@@ -419,9 +464,36 @@ public sealed partial class MainWindow : Window
         _ = RunUiEventHandlerAsync(async () =>
         {
             Logger.Log("=== MainWindow_Loaded - Starting device enumeration ===");
-            await ViewModel.InitializeAsync();
-            await ViewModel.RefreshDevicesAsync();
+            try
+            {
+                await ViewModel.InitializeAsync();
+                await ViewModel.RefreshDevicesAsync();
+            }
+            finally
+            {
+                StartAutomationServices();
+            }
         }, nameof(MainWindow_Loaded));
+    }
+
+    private void StartAutomationServices()
+    {
+        if (Interlocked.Exchange(ref _automationServicesStarted, 1) != 0)
+        {
+            return;
+        }
+
+        _automationDiagnosticsHub.Start();
+        _automationPipeServer.Start();
+        var automationToken = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_TOKEN");
+        var automationPipeName = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_PIPE");
+        if (string.IsNullOrWhiteSpace(automationPipeName))
+        {
+            automationPipeName = "ElgatoCaptureAutomation";
+        }
+
+        Logger.Log(
+            $"Automation control ready on pipe '{automationPipeName}' (token required={!string.IsNullOrWhiteSpace(automationToken)}).");
     }
 
     private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -446,8 +518,13 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void MainWindow_Closed(object sender, WindowEventArgs args)
+    private async void MainWindow_Closed(object sender, WindowEventArgs args)
     {
+        if (Interlocked.Exchange(ref _windowCloseCleanupStarted, 1) != 0)
+        {
+            return;
+        }
+
         if (this.Content is FrameworkElement mainContent)
         {
             mainContent.SizeChanged -= MainWindow_SizeChanged;
@@ -464,12 +541,544 @@ public sealed partial class MainWindow : Window
 
         try
         {
-            ViewModel.Dispose();
+            _automationDiagnosticsHub.SnapshotUpdated -= AutomationDiagnosticsHub_SnapshotUpdated;
+            await _automationPipeServer.DisposeAsync();
+            await _automationDiagnosticsHub.DisposeAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Automation shutdown cleanup failed: {ex.Message}");
+        }
+
+        try
+        {
+            await ViewModel.DisposeAsync();
         }
         catch (Exception ex)
         {
             Logger.Log($"ViewModel dispose during window close failed: {ex.Message}");
         }
+    }
+
+    private void AutomationDiagnosticsHub_SnapshotUpdated(object? sender, AutomationSnapshot snapshot)
+    {
+        var nowTick = Environment.TickCount64;
+        var lastUpdateTick = Interlocked.Read(ref _lastDiagnosticsUiUpdateTick);
+        if (nowTick - lastUpdateTick < 1000)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref _lastDiagnosticsUiUpdateTick, nowTick, lastUpdateTick) != lastUpdateTick)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            if (!DiagnosticsExpander.IsExpanded)
+            {
+                return;
+            }
+
+            UpdateDiagnosticsPanel(snapshot);
+        });
+    }
+
+    private readonly record struct PreviewCadenceMetrics(
+        int SampleCount,
+        double ObservedFps,
+        double ExpectedIntervalMs,
+        double AverageIntervalMs,
+        double P95IntervalMs,
+        double MaxIntervalMs,
+        double JitterStdDevMs,
+        long SlowFrameCount,
+        double SlowFramePercent);
+
+    private void TrackPreviewDisplayCadence()
+    {
+        var nowTick = Stopwatch.GetTimestamp();
+        var previousTick = Interlocked.Exchange(ref _previewLastDisplayTick, nowTick);
+        if (previousTick <= 0)
+        {
+            return;
+        }
+
+        var intervalMs = (nowTick - previousTick) * 1000.0 / Stopwatch.Frequency;
+        if (intervalMs <= 0 || intervalMs > 5000)
+        {
+            return;
+        }
+
+        lock (_previewCadenceLock)
+        {
+            _previewDisplayIntervalWindowMs[_previewDisplayIntervalIndex] = intervalMs;
+            _previewDisplayIntervalIndex = (_previewDisplayIntervalIndex + 1) % _previewDisplayIntervalWindowMs.Length;
+            if (_previewDisplayIntervalCount < _previewDisplayIntervalWindowMs.Length)
+            {
+                _previewDisplayIntervalCount++;
+            }
+        }
+    }
+
+    private void ResetPreviewCadenceTracking()
+    {
+        Interlocked.Exchange(ref _previewLastDisplayTick, 0);
+        lock (_previewCadenceLock)
+        {
+            Array.Clear(_previewDisplayIntervalWindowMs, 0, _previewDisplayIntervalWindowMs.Length);
+            _previewDisplayIntervalCount = 0;
+            _previewDisplayIntervalIndex = 0;
+        }
+    }
+
+    private PreviewCadenceMetrics GetPreviewCadenceMetrics(double expectedIntervalMs)
+    {
+        double[] samples;
+        lock (_previewCadenceLock)
+        {
+            if (_previewDisplayIntervalCount <= 0)
+            {
+                return new PreviewCadenceMetrics(
+                    SampleCount: 0,
+                    ObservedFps: 0,
+                    ExpectedIntervalMs: expectedIntervalMs,
+                    AverageIntervalMs: 0,
+                    P95IntervalMs: 0,
+                    MaxIntervalMs: 0,
+                    JitterStdDevMs: 0,
+                    SlowFrameCount: 0,
+                    SlowFramePercent: 0);
+            }
+
+            samples = new double[_previewDisplayIntervalCount];
+            for (var i = 0; i < _previewDisplayIntervalCount; i++)
+            {
+                var ringIndex = (_previewDisplayIntervalIndex - _previewDisplayIntervalCount + i + _previewDisplayIntervalWindowMs.Length)
+                    % _previewDisplayIntervalWindowMs.Length;
+                samples[i] = _previewDisplayIntervalWindowMs[ringIndex];
+            }
+        }
+
+        var sampleCount = samples.Length;
+        var sum = 0.0;
+        var max = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            sum += samples[i];
+            if (samples[i] > max)
+            {
+                max = samples[i];
+            }
+        }
+
+        var average = sum / sampleCount;
+        var observedFps = average > double.Epsilon ? 1000.0 / average : 0;
+        var targetIntervalMs = expectedIntervalMs > 0 ? expectedIntervalMs : average;
+        var slowThresholdMs = targetIntervalMs * 1.6;
+
+        long slowFrameCount = 0;
+        var varianceSum = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            var delta = samples[i] - average;
+            varianceSum += delta * delta;
+            if (samples[i] >= slowThresholdMs)
+            {
+                slowFrameCount++;
+            }
+        }
+
+        var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
+        var sorted = (double[])samples.Clone();
+        Array.Sort(sorted);
+        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
+        var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
+        var slowPercent = slowFrameCount <= 0
+            ? 0
+            : (double)slowFrameCount / Math.Max(1, sampleCount) * 100.0;
+
+        return new PreviewCadenceMetrics(
+            SampleCount: sampleCount,
+            ObservedFps: observedFps,
+            ExpectedIntervalMs: targetIntervalMs,
+            AverageIntervalMs: average,
+            P95IntervalMs: p95IntervalMs,
+            MaxIntervalMs: max,
+            JitterStdDevMs: jitterStdDevMs,
+            SlowFrameCount: slowFrameCount,
+            SlowFramePercent: slowPercent);
+    }
+
+    private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()
+    {
+        var nowTick = Environment.TickCount64;
+        var framesArrived = Interlocked.Read(ref _previewFramesArrived);
+        var framesDisplayed = Interlocked.Read(ref _previewFramesDisplayed);
+        var framesDropped = Interlocked.Read(ref _previewFramesDropped);
+        var lastPresentedTick = Interlocked.Read(ref _previewLastPresentedTick);
+        var gpuActive = _previewMediaPlayer != null;
+        var frameReaderActive = _previewFrameReader != null;
+        var gpuStartTick = Interlocked.Read(ref _previewGpuStartTick);
+        var gpuLastProgressTick = Interlocked.Read(ref _previewGpuLastProgressTick);
+        var gpuLastPositionMs = Interlocked.Read(ref _previewGpuLastPositionMs);
+
+        if (gpuActive && _previewMediaPlayer?.PlaybackSession != null)
+        {
+            try
+            {
+                var positionMs = (long)_previewMediaPlayer.PlaybackSession.Position.TotalMilliseconds;
+                if (positionMs > gpuLastPositionMs)
+                {
+                    Interlocked.Exchange(ref _previewGpuLastPositionMs, positionMs);
+                    Interlocked.Exchange(ref _previewGpuLastProgressTick, nowTick);
+                    gpuLastPositionMs = positionMs;
+                    gpuLastProgressTick = nowTick;
+                }
+            }
+            catch
+            {
+                // Best-effort diagnostics only.
+            }
+        }
+
+        var rendererMode = gpuActive
+            ? "GpuMediaPlayer"
+            : frameReaderActive
+                ? "FrameReader"
+                : "None";
+
+        var frameReaderBlank = ViewModel.IsPreviewing &&
+                               frameReaderActive &&
+                               framesArrived > 30 &&
+                               framesDisplayed == 0;
+        var gpuBlank = ViewModel.IsPreviewing &&
+                       gpuActive &&
+                       gpuStartTick > 0 &&
+                       nowTick - gpuStartTick > 5000 &&
+                       gpuLastPositionMs <= 0;
+        var blankSuspected = frameReaderBlank || gpuBlank;
+
+        var frameReaderStall = ViewModel.IsPreviewing &&
+                               frameReaderActive &&
+                               lastPresentedTick > 0 &&
+                               nowTick - lastPresentedTick > 3000;
+        var gpuStall = ViewModel.IsPreviewing &&
+                       gpuActive &&
+                       gpuLastProgressTick > 0 &&
+                       nowTick - gpuLastProgressTick > 4000;
+        var stallSuspected = frameReaderStall || gpuStall;
+        var cadence = GetPreviewCadenceMetrics(_previewMinPresentationIntervalMs);
+
+        return new PreviewRuntimeSnapshot
+        {
+            TimestampUtc = DateTimeOffset.UtcNow,
+            IsPreviewing = ViewModel.IsPreviewing,
+            GpuActive = gpuActive,
+            FrameReaderActive = frameReaderActive,
+            PlaceholderVisible = !ViewModel.IsPreviewing,
+            FramesArrived = framesArrived,
+            FramesDisplayed = framesDisplayed,
+            FramesDropped = framesDropped,
+            DisplayCadenceSampleCount = cadence.SampleCount,
+            DisplayCadenceObservedFps = cadence.ObservedFps,
+            DisplayCadenceExpectedIntervalMs = cadence.ExpectedIntervalMs,
+            DisplayCadenceAverageIntervalMs = cadence.AverageIntervalMs,
+            DisplayCadenceP95IntervalMs = cadence.P95IntervalMs,
+            DisplayCadenceMaxIntervalMs = cadence.MaxIntervalMs,
+            DisplayCadenceJitterStdDevMs = cadence.JitterStdDevMs,
+            DisplayCadenceSlowFrameCount = cadence.SlowFrameCount,
+            DisplayCadenceSlowFramePercent = cadence.SlowFramePercent,
+            BlankSuspected = blankSuspected,
+            StallSuspected = stallSuspected,
+            RendererMode = rendererMode
+        };
+    }
+
+    private Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled<PreviewRuntimeSnapshot>(cancellationToken);
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            return Task.FromResult(GetPreviewRuntimeSnapshot());
+        }
+
+        var completion = new TaskCompletionSource<PreviewRuntimeSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
+        if (cancellationToken.CanBeCanceled)
+        {
+            registration = cancellationToken.Register(() =>
+            {
+                completion.TrySetCanceled(cancellationToken);
+            });
+        }
+
+        var enqueued = _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    completion.TrySetCanceled(cancellationToken);
+                    return;
+                }
+
+                completion.TrySetResult(GetPreviewRuntimeSnapshot());
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+            finally
+            {
+                registration.Dispose();
+            }
+        });
+
+        if (!enqueued)
+        {
+            registration.Dispose();
+            completion.TrySetException(new InvalidOperationException("Failed to enqueue preview snapshot operation."));
+        }
+
+        return completion.Task;
+    }
+
+    private void UpdateDiagnosticsPanel(AutomationSnapshot snapshot)
+    {
+        static string OnOff(bool value) => value ? "On" : "Off";
+        static string YesNo(bool value) => value ? "Yes" : "No";
+        static string DescribeMismatch(string mismatch)
+        {
+            if (string.IsNullOrWhiteSpace(mismatch))
+            {
+                return "Unknown verification issue.";
+            }
+
+            return mismatch switch
+            {
+                var m when m.StartsWith("codec-mismatch", StringComparison.OrdinalIgnoreCase)
+                    => "Codec did not match the selected recording format.",
+                var m when m.StartsWith("container-mismatch", StringComparison.OrdinalIgnoreCase)
+                    => "Container did not match expected output format.",
+                var m when m.StartsWith("resolution-mismatch", StringComparison.OrdinalIgnoreCase)
+                    => "Output resolution did not match requested resolution.",
+                var m when m.StartsWith("fps-mismatch", StringComparison.OrdinalIgnoreCase)
+                    => "Output frame rate did not match requested frame rate.",
+                var m when m.StartsWith("pixfmt-not-10bit", StringComparison.OrdinalIgnoreCase)
+                    => "HDR expected 10-bit output, but output pixel format was not 10-bit.",
+                var m when m.StartsWith("colorimetry-mismatch", StringComparison.OrdinalIgnoreCase)
+                    => "HDR color metadata did not match expected BT.2020/PQ values.",
+                var m when m.StartsWith("hdr-metadata-missing", StringComparison.OrdinalIgnoreCase)
+                    => "HDR mastering metadata was expected but missing.",
+                var m when m.StartsWith("cadence-drop-high", StringComparison.OrdinalIgnoreCase)
+                    => "Output cadence suggests dropped frames were too high.",
+                var m when m.StartsWith("cadence-gaps-high", StringComparison.OrdinalIgnoreCase)
+                    => "Output cadence has too many severe frame-time gaps.",
+                var m when m.StartsWith("cadence-p95-high", StringComparison.OrdinalIgnoreCase)
+                    => "Output frame pacing p95 latency is too high.",
+                var m when m.StartsWith("ffprobe-failed", StringComparison.OrdinalIgnoreCase)
+                    => "ffprobe analysis failed or timed out.",
+                var m when m.StartsWith("output-not-found", StringComparison.OrdinalIgnoreCase)
+                    => "Output file was not found for verification.",
+                var m when m.StartsWith("output-empty", StringComparison.OrdinalIgnoreCase)
+                    => "Output file is empty.",
+                _ => mismatch
+            };
+        }
+
+        DiagSessionTextBlock.Text =
+            $"State: {snapshot.SessionState}{Environment.NewLine}" +
+            $"Preview: {OnOff(snapshot.IsPreviewing)} | Recording: {OnOff(snapshot.IsRecording)}{Environment.NewLine}" +
+            $"Performance: {snapshot.PerformanceScore:0.##} ({(snapshot.PerformancePerfectionMet ? "Perfect" : "Tune")})";
+
+        DiagDeviceTextBlock.Text =
+            $"Video Device: {snapshot.SelectedDeviceName ?? "(none)"}{Environment.NewLine}" +
+            $"Audio Device: {snapshot.SelectedAudioInputDeviceName ?? "(default)"}";
+
+        var requestedFrameRateText = snapshot.RequestedFrameRateArg
+            ?? snapshot.RequestedFrameRate?.ToString("0.###")
+            ?? "?";
+        var actualFrameRateText = snapshot.NegotiatedFrameRateArg
+            ?? snapshot.ActualFrameRateArg
+            ?? snapshot.NegotiatedFrameRate?.ToString("0.###")
+            ?? snapshot.ActualFrameRate?.ToString("0.###")
+            ?? "?";
+        var requestedFormatText = snapshot.RequestedReaderSubtype
+            ?? snapshot.RequestedPixelFormat
+            ?? "(unknown)";
+        var negotiatedFormatText = snapshot.ReaderSourceSubtype
+            ?? snapshot.NegotiatedPixelFormat
+            ?? "(unknown)";
+        var observedFormatText = snapshot.LatestObservedFramePixelFormat
+            ?? snapshot.FirstObservedFramePixelFormat
+            ?? "(unknown)";
+        var observedCountsText =
+            $"P010={snapshot.ObservedP010FrameCount}, NV12={snapshot.ObservedNv12FrameCount}, Other={snapshot.ObservedOtherFrameCount}";
+        var sourceFrameRateText = snapshot.DetectedSourceFrameRateArg
+            ?? snapshot.DetectedSourceFrameRate?.ToString("0.###")
+            ?? "?";
+
+        static string NormalizeFormatToken(string? text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                return string.Empty;
+            }
+
+            var value = text.Trim();
+            if (value.Contains("P010", StringComparison.OrdinalIgnoreCase))
+            {
+                return "P010";
+            }
+            if (value.Contains("NV12", StringComparison.OrdinalIgnoreCase))
+            {
+                return "NV12";
+            }
+            if (value.Contains("YUY2", StringComparison.OrdinalIgnoreCase))
+            {
+                return "YUY2";
+            }
+
+            return value.ToUpperInvariant();
+        }
+
+        var negotiatedToken = NormalizeFormatToken(negotiatedFormatText);
+        var observedToken = NormalizeFormatToken(observedFormatText);
+        var observedFrameCount = snapshot.ObservedP010FrameCount +
+                                 snapshot.ObservedNv12FrameCount +
+                                 snapshot.ObservedOtherFrameCount;
+        var hasObservedToken = !string.IsNullOrWhiteSpace(observedToken) &&
+                               !string.Equals(observedToken, "(UNKNOWN)", StringComparison.OrdinalIgnoreCase);
+        var hasObservedEvidence = observedFrameCount > 0 || hasObservedToken;
+        var formatMismatch = hasObservedEvidence &&
+                             !string.IsNullOrWhiteSpace(negotiatedToken) &&
+                             !string.IsNullOrWhiteSpace(observedToken) &&
+                             !string.Equals(negotiatedToken, observedToken, StringComparison.OrdinalIgnoreCase);
+        var hdrExpected = snapshot.IsHdrEnabled || snapshot.HdrOutputActive || snapshot.RequestedHdrEnabled == true;
+        var hdrObserved10Bit = string.Equals(observedToken, "P010", StringComparison.OrdinalIgnoreCase) ||
+                               snapshot.ObservedP010FrameCount > 0;
+        var hdrMismatch = hdrExpected && hasObservedEvidence && !hdrObserved10Bit;
+        var mismatchStatusText = (formatMismatch, hdrMismatch) switch
+        {
+            (true, true) => "Format mismatch and HDR mismatch",
+            (true, false) => "Format mismatch",
+            (false, true) => "HDR mismatch (expected 10-bit)",
+            _ => "Healthy"
+        };
+        string captureStatus;
+        if (!snapshot.IsPreviewing && !snapshot.IsRecording)
+        {
+            captureStatus = "Idle";
+        }
+        else if (!hasObservedEvidence)
+        {
+            captureStatus = snapshot.IsPreviewing
+                ? "Waiting for preview frames"
+                : snapshot.IsRecording
+                    ? "Waiting for capture frames"
+                    : "Idle";
+        }
+        else
+        {
+            captureStatus = mismatchStatusText;
+        }
+
+        DiagCaptureTextBlock.Text =
+            $"Requested: {snapshot.RequestedWidth?.ToString() ?? "?"}x{snapshot.RequestedHeight?.ToString() ?? "?"} @ {requestedFrameRateText} ({snapshot.RequestedFrameRate?.ToString("0.###") ?? "?"} fps), fmt={requestedFormatText}{Environment.NewLine}" +
+            $"Negotiated: {snapshot.NegotiatedWidth?.ToString() ?? snapshot.ActualWidth?.ToString() ?? "?"}x{snapshot.NegotiatedHeight?.ToString() ?? snapshot.ActualHeight?.ToString() ?? "?"} @ {actualFrameRateText} ({snapshot.NegotiatedFrameRate?.ToString("0.###") ?? snapshot.ActualFrameRate?.ToString("0.###") ?? "?"} fps), fmt={negotiatedFormatText}{Environment.NewLine}" +
+            $"Observed: fmt={observedFormatText} | {observedCountsText}{Environment.NewLine}" +
+            $"Source FPS: {sourceFrameRateText} ({snapshot.SourceFrameRateOrigin}){Environment.NewLine}" +
+            $"Status: {captureStatus}";
+
+        DiagAudioTextBlock.Text =
+            $"Capture Audio: {OnOff(snapshot.IsAudioEnabled)} | Preview Audio: {OnOff(snapshot.IsAudioPreviewEnabled)}{Environment.NewLine}" +
+            $"Signal: {YesNo(snapshot.AudioSignalPresent)} | Muted Suspected: {YesNo(snapshot.AudioMutedSuspected)} | Peak: {snapshot.AudioPeak:0.000}{Environment.NewLine}" +
+            $"Drops: Realtime={snapshot.AudioQueueDropsRealtime} | FileWriter={snapshot.AudioQueueDropsFileWriter}";
+
+        DiagPreviewTextBlock.Text =
+            $"Renderer: {snapshot.PreviewRendererMode}{Environment.NewLine}" +
+            $"Frames: Arrived={snapshot.PreviewFramesArrived}, Displayed={snapshot.PreviewFramesDisplayed}, Dropped={snapshot.PreviewFramesDropped}{Environment.NewLine}" +
+            $"Health: Blank={YesNo(snapshot.PreviewBlankSuspected)} | Stall={YesNo(snapshot.PreviewStalled)} | " +
+            $"Cadence avg/p95={snapshot.PreviewCadenceAverageIntervalMs:0.##}/{snapshot.PreviewCadenceP95IntervalMs:0.##} ms | Slow={snapshot.PreviewCadenceSlowFramePercent:0.##}%";
+
+        DiagRecordingTextBlock.Text =
+            $"Backend: {snapshot.RecordingBackend} | Audio Path: {snapshot.AudioPathMode}{Environment.NewLine}" +
+            $"Growing: {YesNo(snapshot.RecordingFileGrowing)} | Bytes: {snapshot.RecordingTotalBytes}{Environment.NewLine}" +
+            $"Mux: {snapshot.MuxResult} | Capture Drop: {snapshot.CaptureCadenceEstimatedDropPercent:0.##}% | p95={snapshot.CaptureCadenceP95IntervalMs:0.##} ms";
+
+        DiagOutputTextBlock.Text =
+            $"Finalize: {snapshot.LastFinalizeStatus}{Environment.NewLine}" +
+            $"Output: {snapshot.LastOutputPath ?? "(none)"}{Environment.NewLine}" +
+            $"Perf Summary: {snapshot.PerformanceSummary}";
+
+        if (snapshot.IsRecording)
+        {
+            if (snapshot.LastVerification is { } lastVerification)
+            {
+                DiagVerificationTextBlock.Text =
+                    $"Verification: waiting for recording to stop{Environment.NewLine}" +
+                    $"Last result: {(lastVerification.Succeeded ? "PASS" : "FAIL")} ({lastVerification.VerificationMode})";
+            }
+            else
+            {
+                DiagVerificationTextBlock.Text = "Verification: waiting for recording to stop";
+            }
+        }
+        else if (snapshot.VerificationInProgress)
+        {
+            DiagVerificationTextBlock.Text = "Verification: in progress (analyzing recording...)";
+        }
+        else if (snapshot.LastVerification == null)
+        {
+            var waitingForAutoVerify = !string.IsNullOrWhiteSpace(snapshot.LastOutputPath) &&
+                                       !string.Equals(snapshot.LastFinalizeStatus, "None", StringComparison.OrdinalIgnoreCase);
+            DiagVerificationTextBlock.Text = waitingForAutoVerify
+                ? "Verification: waiting to analyze recording..."
+                : "Verification: not run yet";
+        }
+        else
+        {
+            var verification = snapshot.LastVerification;
+            var cadenceSuffix = verification.CadenceSampleCount.HasValue
+                ? $"{Environment.NewLine}Cadence: drop={verification.CadenceEstimatedDropPercent.GetValueOrDefault():0.##}% | " +
+                  $"p95={verification.CadenceP95IntervalMs.GetValueOrDefault():0.##} ms"
+                : string.Empty;
+            var mediaSummary =
+                $"{verification.DetectedVideoCodec ?? "?"}, {verification.DetectedPixelFormat ?? "?"}, " +
+                $"{verification.DetectedWidth?.ToString() ?? "?"}x{verification.DetectedHeight?.ToString() ?? "?"} @ {verification.DetectedFrameRate?.ToString("0.###") ?? "?"} fps";
+            var mismatchReasons = verification.Mismatches
+                .Take(3)
+                .Select(DescribeMismatch)
+                .ToList();
+            var mismatchSuffix = verification.Mismatches.Count > mismatchReasons.Count
+                ? $" (+{verification.Mismatches.Count - mismatchReasons.Count} more)"
+                : string.Empty;
+            var reasonText = verification.Succeeded
+                ? "All strict checks passed."
+                : mismatchReasons.Count > 0
+                    ? $"{string.Join(" | ", mismatchReasons)}{mismatchSuffix}"
+                    : verification.Message;
+            var primaryMismatchText = verification.Succeeded || string.IsNullOrWhiteSpace(verification.PrimaryMismatchCode)
+                ? string.Empty
+                : $"{Environment.NewLine}Primary: {verification.PrimaryMismatchCode}" +
+                  $"{(string.IsNullOrWhiteSpace(verification.PrimaryMismatchExpected) ? string.Empty : $" | expected={verification.PrimaryMismatchExpected}")}" +
+                  $"{(string.IsNullOrWhiteSpace(verification.PrimaryMismatchActual) ? string.Empty : $" | actual={verification.PrimaryMismatchActual}")}";
+            DiagVerificationTextBlock.Text =
+                $"Verification: {(verification.Succeeded ? "PASS" : "FAIL")} ({verification.VerificationMode}){Environment.NewLine}" +
+                $"Reason: {reasonText}{primaryMismatchText}{Environment.NewLine}" +
+                $"Media: {mediaSummary}{cadenceSuffix}";
+        }
+
+        var events = _automationDiagnosticsHub.GetRecentEvents(6);
+        DiagEventsListView.ItemsSource = events
+            .Select(evt => $"{evt.TimestampUtc:HH:mm:ss} [{evt.Severity}] {evt.Category}: {evt.Message}")
+            .ToList();
     }
 
     private void StopPreviewForShutdown()
@@ -506,6 +1115,10 @@ public sealed partial class MainWindow : Window
         PreviewImage.Source = null;
         PreviewImage.Visibility = Visibility.Collapsed;
         _previewSource = null;
+        _previewGpuStartTick = 0;
+        _previewGpuLastProgressTick = 0;
+        _previewGpuLastPositionMs = 0;
+        ResetPreviewCadenceTracking();
     }
 
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -602,9 +1215,12 @@ public sealed partial class MainWindow : Window
                 break;
 
             case nameof(MainViewModel.SelectedResolution):
-                if (ResolutionComboBox.SelectedItem as string != ViewModel.SelectedResolution)
+                if (ResolutionComboBox.SelectedItem is not ResolutionOption selectedResolutionOption ||
+                    !string.Equals(selectedResolutionOption.Value, ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase))
                 {
-                    ResolutionComboBox.SelectedItem = ViewModel.SelectedResolution;
+                    var matchingResolution = ViewModel.AvailableResolutions.FirstOrDefault(option =>
+                        string.Equals(option.Value, ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase));
+                    ResolutionComboBox.SelectedItem = matchingResolution;
                 }
                 break;
 
@@ -614,9 +1230,10 @@ public sealed partial class MainWindow : Window
                 if (ViewModel.SelectedFrameRate > 0 && FrameRateComboBox.Items.Count > 0)
                 {
                     var matchingRate = ViewModel.AvailableFrameRates
-                        .FirstOrDefault(f => IsFrameRateMatch(f, ViewModel.SelectedFrameRate));
-                    if (matchingRate > 0 && FrameRateComboBox.SelectedItem is not double currentFps ||
-                        FrameRateComboBox.SelectedItem is double currentFps2 && !IsFrameRateMatch(currentFps2, matchingRate))
+                        .FirstOrDefault(f => IsFrameRateMatch(f.Value, ViewModel.SelectedFrameRate));
+                    if (matchingRate != null &&
+                        (FrameRateComboBox.SelectedItem is not FrameRateOption currentFps ||
+                         !IsFrameRateMatch(currentFps.Value, matchingRate.Value)))
                     {
                         FrameRateComboBox.SelectedItem = matchingRate;
                     }
@@ -627,8 +1244,19 @@ public sealed partial class MainWindow : Window
                 ResolutionComboBox.ItemsSource = ViewModel.AvailableResolutions;
                 break;
 
+            case nameof(MainViewModel.AvailableFrameRates):
+                FrameRateComboBox.ItemsSource = ViewModel.AvailableFrameRates;
+                break;
+
             case nameof(MainViewModel.IsHdrAvailable):
                 HdrToggle.IsEnabled = ViewModel.IsHdrAvailable;
+                break;
+
+            case nameof(MainViewModel.HdrResolutionSupportHint):
+                HdrFpsHintTextBlock.Text = ViewModel.HdrResolutionSupportHint;
+                HdrFpsHintTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.HdrResolutionSupportHint)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
                 break;
 
             case nameof(MainViewModel.IsCustomBitrateVisible):
@@ -681,6 +1309,209 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private Task InvokeOnUiThreadAsync(Action action, CancellationToken cancellationToken = default)
+    {
+        if (action == null)
+        {
+            throw new ArgumentNullException(nameof(action));
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled(cancellationToken);
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            action();
+            return Task.CompletedTask;
+        }
+
+        var completion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
+        if (cancellationToken.CanBeCanceled)
+        {
+            registration = cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
+        }
+
+        var enqueued = _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    completion.TrySetCanceled(cancellationToken);
+                    return;
+                }
+
+                action();
+                completion.TrySetResult(null);
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+            finally
+            {
+                registration.Dispose();
+            }
+        });
+
+        if (!enqueued)
+        {
+            registration.Dispose();
+            completion.TrySetException(new InvalidOperationException("Failed to enqueue window action on the UI thread."));
+        }
+
+        return completion.Task;
+    }
+
+    private Microsoft.UI.Windowing.AppWindow GetAppWindow()
+    {
+        var hwnd = WindowNative.GetWindowHandle(this);
+        var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+        return Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+    }
+
+    public Task MinimizeAsync(CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var appWindow = GetAppWindow();
+            if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+            {
+                presenter.Minimize();
+            }
+        }, cancellationToken);
+    }
+
+    public Task MaximizeAsync(CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var appWindow = GetAppWindow();
+            if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+            {
+                presenter.Maximize();
+            }
+        }, cancellationToken);
+    }
+
+    public Task RestoreAsync(CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var appWindow = GetAppWindow();
+            if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
+            {
+                presenter.Restore();
+            }
+        }, cancellationToken);
+    }
+
+    public Task CloseAsync(CancellationToken cancellationToken = default)
+    {
+        if (Volatile.Read(ref _windowCloseCleanupStarted) != 0)
+        {
+            return Task.CompletedTask;
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            RequestWindowClose();
+            return Task.CompletedTask;
+        }
+
+        var completion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration registration = default;
+        if (cancellationToken.CanBeCanceled)
+        {
+            registration = cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
+        }
+
+        var enqueued = _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    completion.TrySetCanceled(cancellationToken);
+                    return;
+                }
+
+                RequestWindowClose();
+                completion.TrySetResult(null);
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetException(ex);
+            }
+            finally
+            {
+                registration.Dispose();
+            }
+        });
+
+        if (!enqueued)
+        {
+            registration.Dispose();
+            if (Volatile.Read(ref _windowCloseCleanupStarted) != 0)
+            {
+                completion.TrySetResult(null);
+            }
+            else
+            {
+                completion.TrySetException(new InvalidOperationException("Failed to enqueue window close action on the UI thread."));
+            }
+        }
+
+        return completion.Task;
+    }
+
+    private void RequestWindowClose()
+    {
+        if (Volatile.Read(ref _windowCloseCleanupStarted) != 0)
+        {
+            return;
+        }
+
+        if (Interlocked.Exchange(ref _windowCloseRequested, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            Close();
+        }
+        catch (Exception ex) when (IsCloseAlreadyInProgressException(ex))
+        {
+            Logger.Log($"Window close already in progress ({ex.GetType().Name}); treating close request as successful.");
+        }
+        catch (System.Runtime.InteropServices.COMException ex)
+        {
+            Logger.Log($"Window.Close COMException (0x{ex.HResult:X8}); using Application.Current.Exit() fallback.");
+            Application.Current.Exit();
+        }
+        catch
+        {
+            Interlocked.Exchange(ref _windowCloseRequested, 0);
+            throw;
+        }
+    }
+
+    private static bool IsCloseAlreadyInProgressException(Exception ex)
+    {
+        if (ex is InvalidOperationException && string.IsNullOrWhiteSpace(ex.Message))
+        {
+            return true;
+        }
+
+        var message = ex.Message ?? string.Empty;
+        return message.IndexOf("closing", StringComparison.OrdinalIgnoreCase) >= 0 ||
+               message.IndexOf("closed", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
     private async Task RunUiEventHandlerAsync(Func<Task> operation, string operationName)
     {
         try
@@ -720,7 +1551,11 @@ public sealed partial class MainWindow : Window
             _previewLastResizeLogTick = 0;
             _previewLastPresentedTick = 0;
             _previewResizeSuppressUntilTick = 0;
+            _previewGpuStartTick = 0;
+            _previewGpuLastProgressTick = 0;
+            _previewGpuLastPositionMs = 0;
             _previewUiInFlight = 0;
+            ResetPreviewCadenceTracking();
             Logger.Log($"Preview presentation cap max: {_previewPresentationFpsCap} fps (override={_previewCapOverrideProvided})");
             Logger.Log($"Preview resize debounce: {_previewResizeDebounceMs} ms");
             Logger.Log($"Preview mode: {(forceFrameReader ? "Frame-reader forced" : (_preferGpuPreview ? "GPU-first" : "Frame-reader only"))}");
@@ -877,7 +1712,11 @@ public sealed partial class MainWindow : Window
             _previewSource = null;
             _previewLastPresentedTick = 0;
             _previewResizeSuppressUntilTick = 0;
+            _previewGpuStartTick = 0;
+            _previewGpuLastProgressTick = 0;
+            _previewGpuLastPositionMs = 0;
             _previewUiInFlight = 0;
+            ResetPreviewCadenceTracking();
             _previewActivePresentationFpsCap = Math.Clamp(60, 15, _previewPresentationFpsCap);
             _previewMinPresentationIntervalMs = Math.Max(1, 1000 / _previewActivePresentationFpsCap);
             _frameCounter = 0; // Reset for next preview session
@@ -1043,20 +1882,21 @@ public sealed partial class MainWindow : Window
                     return;
                 }
 
-                if (_previewSource != null)
-                {
-                    await _previewSource.SetBitmapAsync(bitmap);
-                    setStopwatch.Stop();
-                    if (_frameCounter <= 3)
+                    if (_previewSource != null)
+                    {
+                        await _previewSource.SetBitmapAsync(bitmap);
+                        setStopwatch.Stop();
+                        if (_frameCounter <= 3)
                     {
                         Logger.Log("  - Bitmap displayed on UI");
                     }
 
-                    Interlocked.Increment(ref _previewFramesDisplayed);
-                    Interlocked.Exchange(ref _previewLastPresentedTick, uiStartTick);
-                }
-                else
-                {
+                        Interlocked.Increment(ref _previewFramesDisplayed);
+                        Interlocked.Exchange(ref _previewLastPresentedTick, uiStartTick);
+                        TrackPreviewDisplayCadence();
+                    }
+                    else
+                    {
                     if (_frameCounter <= 3)
                     {
                         Logger.Log("  - _previewSource is NULL");

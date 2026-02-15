@@ -43,6 +43,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private EncoderSupport _encoderSupport = EncoderSupport.Empty;
     private static Task<EncoderSupport>? _encoderProbeTask;
     private static readonly object _encoderProbeLock = new();
+    private static Task<HdrArgumentSupport>? _hdrArgumentProbeTask;
+    private static readonly object _hdrArgumentProbeLock = new();
+    private HdrArgumentSupport _hdrArgumentSupport = HdrArgumentSupport.Unknown;
     private readonly Stopwatch _startupStopwatch = new();
     private int _loggedFirstVideoWrite;
     private int _loggedFirstAudioWrite;
@@ -64,9 +67,15 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private long _audioDropsBacklogEviction;
     private int? _lastExitCode;
     private bool _lastStopTimedOut;
+    private string _activeInputPixelFormat = "nv12";
+    private string _activeOutputPixelFormat = "yuv420p";
+    private const int ComInteropErrorLogIntervalMs = 2000;
+    private long _lastComInteropErrorLogTick;
+    private long _suppressedComInteropErrorCount;
 
     // Frame buffer pool to reduce GC pressure
     private const int MaxQueueSize = 360;
+    private const int AudioQueueCapacity = MaxQueueSize * 10;
     private const string AudioPipePrefix = "ElgatoCaptureAudio";
     private const int WriterDrainTimeoutMs = 5000;
     private const int WriterCancelGraceMs = 3000;
@@ -88,8 +97,28 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     public long AudioDropsBacklogEviction => Interlocked.Read(ref _audioDropsBacklogEviction);
     public int? LastExitCode => _lastExitCode;
     public bool LastStopTimedOut => _lastStopTimedOut;
+    public string ActiveInputPixelFormat => _activeInputPixelFormat;
+    public string ActiveOutputPixelFormat => _activeOutputPixelFormat;
 
     private readonly record struct VideoFramePacket(byte[] Buffer, int Length);
+    private readonly record struct HdrArgumentSupport(
+        bool SupportsP010Input,
+        bool SupportsColorPrimaries,
+        bool SupportsColorTransfer,
+        bool SupportsColorSpace,
+        bool SupportsColorRange,
+        bool SupportsMasterDisplay,
+        bool SupportsMaxCll)
+    {
+        public static HdrArgumentSupport Unknown => new(
+            SupportsP010Input: true,
+            SupportsColorPrimaries: true,
+            SupportsColorTransfer: true,
+            SupportsColorSpace: true,
+            SupportsColorRange: true,
+            SupportsMasterDisplay: false,
+            SupportsMaxCll: false);
+    }
 
     public FFmpegEncoderService()
     {
@@ -110,11 +139,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
 
         Logger.Log("Preparing audio queue for early buffering");
-        _audioSampleQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(MaxQueueSize * 10)
+        _audioSampleQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(AudioQueueCapacity)
         {
             SingleReader = true,
             SingleWriter = false,
-            FullMode = BoundedChannelFullMode.Wait
+            FullMode = BoundedChannelFullMode.DropOldest
         });
         Interlocked.Exchange(ref _audioQueueDepth, 0);
         _audioQueueReady = true;
@@ -182,6 +211,15 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
     }
 
+    private static Task<HdrArgumentSupport> GetHdrArgumentSupportAsync()
+    {
+        lock (_hdrArgumentProbeLock)
+        {
+            _hdrArgumentProbeTask ??= ProbeHdrArgumentSupportAsync();
+            return _hdrArgumentProbeTask;
+        }
+    }
+
     private static async Task<EncoderSupport> ProbeEncoderSupportAsync()
     {
         var ffmpegPath = FindFFmpegPath();
@@ -235,7 +273,125 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
     }
 
-    public async Task StartEncodingAsync(CaptureSettings settings, string outputPath, string? audioDeviceName = null, double? actualFrameRate = null, string? actualFrameRateArg = null, uint? actualWidth = null, uint? actualHeight = null, string inputPixelFormat = "bgra", RecordingPipelineOptions? pipelineOptions = null)
+    private static async Task<HdrArgumentSupport> ProbeHdrArgumentSupportAsync()
+    {
+        var ffmpegPath = FindFFmpegPath();
+        try
+        {
+            var fullHelpTask = RunProbeCommandAsync(ffmpegPath, "-hide_banner -h full");
+            var pixFmtTask = RunProbeCommandAsync(ffmpegPath, "-hide_banner -pix_fmts");
+            var masterDisplayTask = SupportsFfmpegOptionAsync(
+                ffmpegPath,
+                "master_display",
+                "-master_display \"G(13250,34500)B(7500,3000)R(34000,16000)L(10000000,1)\"");
+            var maxCllTask = SupportsFfmpegOptionAsync(
+                ffmpegPath,
+                "max_cll",
+                "-max_cll 1000,400");
+            await Task.WhenAll(fullHelpTask, pixFmtTask, masterDisplayTask, maxCllTask).ConfigureAwait(false);
+
+            var fullHelp = fullHelpTask.Result;
+            var pixFmts = pixFmtTask.Result;
+            var supportsP010 = pixFmts.Contains("p010", StringComparison.OrdinalIgnoreCase);
+            var supportsColorPrimaries = fullHelp.Contains("color_primaries", StringComparison.OrdinalIgnoreCase);
+            var supportsColorTransfer = fullHelp.Contains("color_trc", StringComparison.OrdinalIgnoreCase);
+            var supportsColorSpace = fullHelp.Contains("colorspace", StringComparison.OrdinalIgnoreCase);
+            var supportsColorRange = fullHelp.Contains("color_range", StringComparison.OrdinalIgnoreCase);
+            var supportsMasterDisplay = masterDisplayTask.Result;
+            var supportsMaxCll = maxCllTask.Result;
+
+            var support = new HdrArgumentSupport(
+                SupportsP010Input: supportsP010,
+                SupportsColorPrimaries: supportsColorPrimaries,
+                SupportsColorTransfer: supportsColorTransfer,
+                SupportsColorSpace: supportsColorSpace,
+                SupportsColorRange: supportsColorRange,
+                SupportsMasterDisplay: supportsMasterDisplay,
+                SupportsMaxCll: supportsMaxCll);
+
+            Logger.Log(
+                $"HDR argument support: p010={support.SupportsP010Input}, color_primaries={support.SupportsColorPrimaries}, " +
+                $"color_trc={support.SupportsColorTransfer}, colorspace={support.SupportsColorSpace}, " +
+                $"color_range={support.SupportsColorRange}, master_display={support.SupportsMasterDisplay}, max_cll={support.SupportsMaxCll}");
+
+            return support;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"HDR argument support probe failed: {ex.Message}");
+            return HdrArgumentSupport.Unknown;
+        }
+    }
+
+    private static async Task<bool> SupportsFfmpegOptionAsync(string ffmpegPath, string optionName, string optionArguments)
+    {
+        var probeArgs =
+            "-hide_banner -loglevel error " +
+            "-f lavfi -i color=size=16x16:rate=1:color=black " +
+            "-frames:v 1 " +
+            $"{optionArguments} " +
+            "-f null -";
+
+        var result = await RunProbeCommandWithExitCodeAsync(ffmpegPath, probeArgs).ConfigureAwait(false);
+        var output = result.Output ?? string.Empty;
+        if (output.Contains($"Unrecognized option '{optionName}'", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return result.ExitCode == 0;
+    }
+
+    private static async Task<string> RunProbeCommandAsync(string fileName, string arguments)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(startInfo);
+        if (process == null)
+        {
+            return string.Empty;
+        }
+
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync().ConfigureAwait(false);
+        return (await stdoutTask.ConfigureAwait(false)) + Environment.NewLine + (await stderrTask.ConfigureAwait(false));
+    }
+
+    private static async Task<(string Output, int ExitCode)> RunProbeCommandWithExitCodeAsync(string fileName, string arguments)
+    {
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = fileName,
+            Arguments = arguments,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = Process.Start(startInfo);
+        if (process == null)
+        {
+            return (string.Empty, -1);
+        }
+
+        var stdoutTask = process.StandardOutput.ReadToEndAsync();
+        var stderrTask = process.StandardError.ReadToEndAsync();
+        await process.WaitForExitAsync().ConfigureAwait(false);
+        var output = (await stdoutTask.ConfigureAwait(false)) + Environment.NewLine + (await stderrTask.ConfigureAwait(false));
+        return (output, process.ExitCode);
+    }
+
+    public async Task StartEncodingAsync(CaptureSettings settings, string outputPath, string? audioDeviceName = null, double? actualFrameRate = null, string? actualFrameRateArg = null, uint? actualWidth = null, uint? actualHeight = null, string inputPixelFormat = "bgra", bool hdrPipelineActive = false, RecordingPipelineOptions? pipelineOptions = null)
     {
         if (_isEncoding)
         {
@@ -274,6 +430,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _startupStopwatch.Restart();
         Logger.LogVerbose("Encoder probe: awaiting cached result");
         _encoderSupport = await GetEncoderSupportAsync();
+        _hdrArgumentSupport = await GetHdrArgumentSupportAsync();
         Logger.LogVerbose($"Encoder probe complete in {_startupStopwatch.ElapsedMilliseconds} ms");
 
         _cts = new CancellationTokenSource();
@@ -296,7 +453,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
         _videoFrameQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(videoQueueSize)
         {
-            SingleReader = true,
+            SingleReader = false,
             SingleWriter = false,
             FullMode = BoundedChannelFullMode.Wait
         });
@@ -316,11 +473,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             var createdAudioQueue = false;
             if (_audioSampleQueue == null)
             {
-                _audioSampleQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(MaxQueueSize * 10)
+                _audioSampleQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(AudioQueueCapacity)
                 {
                     SingleReader = true,
                     SingleWriter = false,
-                    FullMode = BoundedChannelFullMode.Wait
+                    FullMode = BoundedChannelFullMode.DropOldest
                 });
                 createdAudioQueue = true;
             }
@@ -357,7 +514,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
 
         // Build FFmpeg command (uses stdin for video, named pipe for audio)
-        var ffmpegArgs = BuildFFmpegArguments(settings, outputPath, _useAudioPipe, frameRateArg, effectiveWidth, effectiveHeight, inputPixelFormat, _audioPipeName);
+        var ffmpegArgs = BuildFFmpegArguments(settings, outputPath, _useAudioPipe, frameRateArg, effectiveWidth, effectiveHeight, inputPixelFormat, hdrPipelineActive, _audioPipeName);
         Logger.Log($"FFmpeg arguments: {ffmpegArgs}");
 
         // Start FFmpeg process
@@ -420,10 +577,42 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
     }
 
-    private string BuildFFmpegArguments(CaptureSettings settings, string outputPath, bool useAudioPipe, string frameRateArg, uint effectiveWidth, uint effectiveHeight, string inputPixelFormat, string? audioPipeName)
+    private string BuildFFmpegArguments(CaptureSettings settings, string outputPath, bool useAudioPipe, string frameRateArg, uint effectiveWidth, uint effectiveHeight, string inputPixelFormat, bool hdrPipelineActive, string? audioPipeName)
     {
+        var hdrRequested = hdrPipelineActive &&
+                           settings.HdrEnabled &&
+                           settings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
+
+        var hdrMasterRequested = !string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata);
+        var hdrCllRequested = settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0;
+
         // Get encoder and quality settings
-        var (videoCodec, qualityArgs) = GetEncoderSettings(settings);
+        var (videoCodec, qualityArgs) = GetEncoderSettings(settings, hdrRequested, preferSoftwareHevc: false);
+
+        if (hdrRequested &&
+            videoCodec.Equals("hevc_nvenc", StringComparison.OrdinalIgnoreCase) &&
+            (hdrMasterRequested || hdrCllRequested))
+        {
+            var missingMasterSupport = hdrMasterRequested && !_hdrArgumentSupport.SupportsMasterDisplay;
+            var missingCllSupport = hdrCllRequested && !_hdrArgumentSupport.SupportsMaxCll;
+            if (missingMasterSupport || missingCllSupport)
+            {
+                var support = _encoderSupport ?? EncoderSupport.Empty;
+                if (support.HasLibX265)
+                {
+                    Logger.Log(
+                        "HDR mastering metadata flags are unsupported on the current FFmpeg/NVENC path. " +
+                        "Falling back to libx265 for HDR metadata compatibility.");
+                    (videoCodec, qualityArgs) = GetEncoderSettings(settings, hdrRequested, preferSoftwareHevc: true);
+                }
+                else
+                {
+                    Logger.Log(
+                        "HDR mastering metadata flags are unsupported and libx265 is unavailable. " +
+                        "Continuing without mastering metadata flags.");
+                }
+            }
+        }
 
         // Build audio input string
         // Using named pipe for audio gives us full timestamp control - both streams start at 0
@@ -465,6 +654,106 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         var outputPixelFormat = videoCodec.Contains("_nvenc", StringComparison.OrdinalIgnoreCase) && inputPixelFormat.Equals("nv12", StringComparison.OrdinalIgnoreCase)
             ? "nv12"
             : "yuv420p";
+        var hdrMetadataArgs = string.Empty;
+
+        if (hdrRequested)
+        {
+            if (!_hdrArgumentSupport.SupportsP010Input)
+            {
+                throw new InvalidOperationException(
+                    "The current FFmpeg build does not advertise p010 10-bit input support required for HDR.");
+            }
+
+            if (!inputPixelFormat.Equals("p010le", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"HDR output requires p010le input frames, but got '{inputPixelFormat}'.");
+            }
+
+            var isHevcNvenc = videoCodec.Equals("hevc_nvenc", StringComparison.OrdinalIgnoreCase);
+            var isLibx265 = videoCodec.Equals("libx265", StringComparison.OrdinalIgnoreCase);
+            var isAv1 = videoCodec.Contains("av1", StringComparison.OrdinalIgnoreCase);
+            if (!isHevcNvenc && !isLibx265 && !isAv1)
+            {
+                throw new InvalidOperationException(
+                    $"HDR10 output requires HEVC or AV1 10-bit encoding, but resolved codec is '{videoCodec}'.");
+            }
+
+            outputPixelFormat = isHevcNvenc ? "p010le" : "yuv420p10le";
+            if (_hdrArgumentSupport.SupportsColorPrimaries)
+            {
+                hdrMetadataArgs += "-color_primaries bt2020 ";
+            }
+
+            if (_hdrArgumentSupport.SupportsColorTransfer)
+            {
+                hdrMetadataArgs += "-color_trc smpte2084 ";
+            }
+
+            if (_hdrArgumentSupport.SupportsColorSpace)
+            {
+                hdrMetadataArgs += "-colorspace bt2020nc ";
+            }
+
+            if (_hdrArgumentSupport.SupportsColorRange)
+            {
+                hdrMetadataArgs += "-color_range tv ";
+            }
+
+            if (isLibx265)
+            {
+                var x265Params = new List<string>
+                {
+                    "hdr-opt=1",
+                    "repeat-headers=1",
+                    "colorprim=bt2020",
+                    "transfer=smpte2084",
+                    "colormatrix=bt2020nc"
+                };
+                if (!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata))
+                {
+                    x265Params.Add($"master-display={settings.HdrMasterDisplayMetadata}");
+                }
+                if (settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0)
+                {
+                    x265Params.Add($"max-cll={settings.HdrMaxCll},{settings.HdrMaxFall}");
+                }
+
+                var x265HdrParams = string.Join(":", x265Params);
+                qualityArgs = $"{qualityArgs} -x265-params \"{x265HdrParams}\"";
+            }
+            else
+            {
+                if (hdrMasterRequested)
+                {
+                    if (_hdrArgumentSupport.SupportsMasterDisplay)
+                    {
+                        hdrMetadataArgs += $"-master_display \"{settings.HdrMasterDisplayMetadata}\" ";
+                    }
+                    else
+                    {
+                        Logger.Log("Skipping unsupported FFmpeg option -master_display on current build.");
+                    }
+                }
+
+                if (hdrCllRequested)
+                {
+                    if (_hdrArgumentSupport.SupportsMaxCll)
+                    {
+                        hdrMetadataArgs += $"-max_cll {settings.HdrMaxCll},{settings.HdrMaxFall} ";
+                    }
+                    else
+                    {
+                        Logger.Log("Skipping unsupported FFmpeg option -max_cll on current build.");
+                    }
+                }
+            }
+
+            Logger.Log($"HDR10 output enabled: codec={videoCodec}, pix_fmt={outputPixelFormat}, maxCLL={settings.HdrMaxCll}, maxFALL={settings.HdrMaxFall}");
+        }
+
+        _activeInputPixelFormat = inputPixelFormat;
+        _activeOutputPixelFormat = outputPixelFormat;
 
         var args = $"-y " +
                    // Video input from stdin (pipe:0) - immediately available
@@ -483,6 +772,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                    $"{qualityArgs} " +
                    $"-r {frameRateArg} " + // Force output frame rate (CFR)
                    $"-pix_fmt {outputPixelFormat} " +
+                   $"{hdrMetadataArgs}" +
                    // Audio encoding (or disable audio)
                    audioArgs +
                    // Output options
@@ -507,7 +797,10 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         return $"{AudioPipePrefix}_{Environment.ProcessId}_{Guid.NewGuid():N}";
     }
 
-    private (string codec, string qualityArgs) GetEncoderSettings(CaptureSettings settings)
+    private (string codec, string qualityArgs) GetEncoderSettings(
+        CaptureSettings settings,
+        bool hdrRequested,
+        bool preferSoftwareHevc)
     {
         string codec;
         string qualityArgs;
@@ -519,7 +812,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         switch (settings.Format)
         {
             case RecordingFormat.HevcMp4:
-                codec = support.HasHevcNvenc ? "hevc_nvenc" : "libx265";
+                codec = preferSoftwareHevc && support.HasLibX265
+                    ? "libx265"
+                    : support.HasHevcNvenc ? "hevc_nvenc" : "libx265";
                 useNvenc = codec.EndsWith("_nvenc", StringComparison.OrdinalIgnoreCase);
                 break;
             case RecordingFormat.Av1Mp4:
@@ -537,11 +832,33 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                 break;
         }
 
+        if (hdrRequested &&
+            !codec.Contains("hevc", StringComparison.OrdinalIgnoreCase) &&
+            !codec.Contains("av1", StringComparison.OrdinalIgnoreCase))
+        {
+            if (support.HasHevc)
+            {
+                codec = support.HasHevcNvenc ? "hevc_nvenc" : "libx265";
+                useNvenc = codec.EndsWith("_nvenc", StringComparison.OrdinalIgnoreCase);
+            }
+            else if (support.HasAv1)
+            {
+                codec = support.PreferredAv1Encoder ?? "libsvtav1";
+                useNvenc = codec.EndsWith("_nvenc", StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                throw new InvalidOperationException("HDR10 output requires HEVC or AV1 10-bit encoder support, but no compatible encoder was detected.");
+            }
+        }
+
         // Determine quality settings
         var isAv1 = codec.Contains("av1", StringComparison.OrdinalIgnoreCase);
         var isSvtAv1 = codec.Equals("libsvtav1", StringComparison.OrdinalIgnoreCase);
         var isAomAv1 = codec.Equals("libaom-av1", StringComparison.OrdinalIgnoreCase);
-        var nvencProfile = codec.Contains("hevc", StringComparison.OrdinalIgnoreCase) ? "main" : "high";
+        var nvencProfile = codec.Contains("hevc", StringComparison.OrdinalIgnoreCase)
+            ? (hdrRequested ? "main10" : "main")
+            : "high";
         var nvencProfileArg = useNvenc && !isAv1 ? $"-profile:v {nvencProfile} " : string.Empty;
         if (settings.Quality == VideoQuality.Custom)
         {
@@ -676,6 +993,10 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             {
                 CopyNv12ToBuffer(frame, buffer);
             }
+            else if (frame.BitmapPixelFormat == BitmapPixelFormat.P010)
+            {
+                CopyP010ToBuffer(frame, buffer);
+            }
             else
             {
                 // BGRA/YUY2 fallback
@@ -695,8 +1016,34 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Logger.LogException(ex);
+            LogComInteropAwareException(ex);
         }
+    }
+
+    private static bool IsComInteropDisabledException(Exception ex)
+        => ex is NotSupportedException &&
+           ex.Message.Contains("Built-in COM has been disabled", StringComparison.OrdinalIgnoreCase);
+
+    private void LogComInteropAwareException(Exception ex)
+    {
+        if (!IsComInteropDisabledException(ex))
+        {
+            Logger.LogException(ex);
+            return;
+        }
+
+        var nowTick = Environment.TickCount64;
+        var lastTick = Interlocked.Read(ref _lastComInteropErrorLogTick);
+        if (nowTick - lastTick < ComInteropErrorLogIntervalMs ||
+            Interlocked.CompareExchange(ref _lastComInteropErrorLogTick, nowTick, lastTick) != lastTick)
+        {
+            Interlocked.Increment(ref _suppressedComInteropErrorCount);
+            return;
+        }
+
+        var suppressed = Interlocked.Exchange(ref _suppressedComInteropErrorCount, 0);
+        var suffix = suppressed > 0 ? $" (suppressed repeats: {suppressed})" : string.Empty;
+        Logger.Log($"Video frame enqueue error: {ex.Message}{suffix}");
     }
 
     private bool TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
@@ -736,9 +1083,19 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     /// </summary>
     public void EnqueueAudioSamples(byte[] samples)
     {
+        if (samples == null || samples.Length == 0)
+        {
+            return;
+        }
+
+        EnqueueAudioSamples((ReadOnlyMemory<byte>)samples);
+    }
+
+    public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)
+    {
         // Accept audio samples as soon as queue is ready (not just when encoding)
         // This allows audio to buffer while FFmpeg is starting up
-        if (!_audioQueueReady || _audioSampleQueue == null || _cts?.IsCancellationRequested == true)
+        if (!_audioQueueReady || _audioSampleQueue == null || _cts?.IsCancellationRequested == true || samples.IsEmpty)
         {
             return;
         }
@@ -751,39 +1108,37 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
         try
         {
-            // Make a copy of the samples
             var buffer = new byte[samples.Length];
-            Buffer.BlockCopy(samples, 0, buffer, 0, samples.Length);
+            samples.Span.CopyTo(buffer);
 
-            // Try to add to queue (non-blocking)
-            if (!_audioSampleQueue.Writer.TryWrite(buffer))
+            var priorDepth = Volatile.Read(ref _audioQueueDepth);
+            if (_audioSampleQueue.Writer.TryWrite(buffer))
             {
-                // Queue full - drop oldest samples
-                if (_audioSampleQueue.Reader.TryRead(out _))
+                if (priorDepth >= AudioQueueCapacity)
                 {
-                    Interlocked.Decrement(ref _audioQueueDepth);
+                    Interlocked.Exchange(ref _audioQueueDepth, AudioQueueCapacity);
                     var backlogDrops = Interlocked.Increment(ref _audioDropsBacklogEviction);
                     if (backlogDrops == 1 || backlogDrops % 120 == 0)
                     {
                         Logger.Log($"Warning: Dropped oldest audio samples to relieve queue pressure. Total evicted: {backlogDrops}");
                     }
                 }
-                if (_audioSampleQueue.Writer.TryWrite(buffer))
-                {
-                    Interlocked.Increment(ref _audioQueueDepth);
-                }
                 else
                 {
-                    var saturatedDrops = Interlocked.Increment(ref _audioDropsQueueSaturated);
-                    if (saturatedDrops == 1 || saturatedDrops % 120 == 0)
+                    var nextDepth = Interlocked.Increment(ref _audioQueueDepth);
+                    if (nextDepth > AudioQueueCapacity)
                     {
-                        Logger.Log($"Warning: Dropped audio samples (queue still saturated). Total saturated drops: {saturatedDrops}");
+                        Interlocked.Exchange(ref _audioQueueDepth, AudioQueueCapacity);
                     }
                 }
+
+                return;
             }
-            else
+
+            var saturatedDrops = Interlocked.Increment(ref _audioDropsQueueSaturated);
+            if (saturatedDrops == 1 || saturatedDrops % 120 == 0)
             {
-                Interlocked.Increment(ref _audioQueueDepth);
+                Logger.Log($"Warning: Dropped audio samples (queue saturated or completed). Total saturated drops: {saturatedDrops}");
             }
         }
         catch (Exception ex)
@@ -828,13 +1183,31 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
                 try
                 {
-                    // Block until frame available or cancellation
-                    if (videoQueue.Reader.TryRead(out var framePacket))
+                    var hasFrame = await videoQueue.Reader.WaitToReadAsync(ct).ConfigureAwait(false);
+                    if (!hasFrame)
+                    {
+                        break;
+                    }
+
+                    if (Logger.VerboseEnabled)
+                    {
+                        var now = Environment.TickCount64;
+                        var idleMs = now - _lastVideoWriteTick;
+                        if (idleMs >= 1000 && now - _lastVideoIdleLogTick >= 1000)
+                        {
+                            _lastVideoIdleLogTick = now;
+                            var lastEnqueueAge = _lastVideoEnqueueTick == 0 ? -1 : now - _lastVideoEnqueueTick;
+                            Logger.LogVerbose(
+                                $"Video writer idle: {idleMs} ms (queue={Volatile.Read(ref _videoQueueDepth)}, lastEnqueueMs={lastEnqueueAge}, dropped={Interlocked.Read(ref _droppedVideoFrames)})");
+                        }
+                    }
+
+                    while (videoQueue.Reader.TryRead(out var framePacket))
                     {
                         Interlocked.Decrement(ref _videoQueueDepth);
                         try
                         {
-                            await videoStream.WriteAsync(framePacket.Buffer, 0, framePacket.Length, ct);
+                            await videoStream.WriteAsync(framePacket.Buffer, 0, framePacket.Length, ct).ConfigureAwait(false);
                             var count = Interlocked.Increment(ref _encodedFrameCount);
                             FrameEncoded?.Invoke(this, count);
                             _lastVideoWriteTick = Environment.TickCount64;
@@ -847,32 +1220,6 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                         {
                             ReturnFrameBuffer(framePacket.Buffer);
                         }
-                    }
-                    else if (Logger.VerboseEnabled)
-                    {
-                        if (videoQueue.Reader.Completion.IsCompleted)
-                        {
-                            break;
-                        }
-
-                        var now = Environment.TickCount64;
-                        var idleMs = now - _lastVideoWriteTick;
-                        if (idleMs >= 1000 && now - _lastVideoIdleLogTick >= 1000)
-                        {
-                            _lastVideoIdleLogTick = now;
-                            var lastEnqueueAge = _lastVideoEnqueueTick == 0 ? -1 : now - _lastVideoEnqueueTick;
-                            Logger.LogVerbose(
-                                $"Video writer idle: {idleMs} ms (queue={Volatile.Read(ref _videoQueueDepth)}, lastEnqueueMs={lastEnqueueAge}, dropped={Interlocked.Read(ref _droppedVideoFrames)})");
-                        }
-                        await Task.Delay(100, ct);
-                    }
-                    else
-                    {
-                        if (videoQueue.Reader.Completion.IsCompleted)
-                        {
-                            break;
-                        }
-                        await Task.Delay(25, ct);
                     }
                 }
                 catch (OperationCanceledException)
@@ -990,24 +1337,14 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
                 try
                 {
-                    // Block until samples available or cancellation
-                    if (audioQueue.Reader.TryRead(out var audioData))
+                    var hasSamples = await audioQueue.Reader.WaitToReadAsync(ct).ConfigureAwait(false);
+                    if (!hasSamples)
                     {
-                        Interlocked.Decrement(ref _audioQueueDepth);
-                        await audioPipe.WriteAsync(audioData, 0, audioData.Length, ct);
-                        _lastAudioWriteTick = Environment.TickCount64;
-                        if (Interlocked.Exchange(ref _loggedFirstAudioWrite, 1) == 0)
-                        {
-                            Logger.LogVerbose($"First audio bytes written after {_startupStopwatch.ElapsedMilliseconds} ms");
-                        }
+                        break;
                     }
-                    else if (Logger.VerboseEnabled)
-                    {
-                        if (audioQueue.Reader.Completion.IsCompleted)
-                        {
-                            break;
-                        }
 
+                    if (Logger.VerboseEnabled)
+                    {
                         var now = Environment.TickCount64;
                         var idleMs = now - _lastAudioWriteTick;
                         if (idleMs >= 1000 && now - _lastAudioIdleLogTick >= 1000)
@@ -1017,15 +1354,17 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                             Logger.LogVerbose(
                                 $"Audio writer idle: {idleMs} ms (queue={Volatile.Read(ref _audioQueueDepth)}, lastEnqueueMs={lastEnqueueAge})");
                         }
-                        await Task.Delay(100, ct);
                     }
-                    else
+
+                    while (audioQueue.Reader.TryRead(out var audioData))
                     {
-                        if (audioQueue.Reader.Completion.IsCompleted)
+                        Interlocked.Decrement(ref _audioQueueDepth);
+                        await audioPipe.WriteAsync(audioData, 0, audioData.Length, ct).ConfigureAwait(false);
+                        _lastAudioWriteTick = Environment.TickCount64;
+                        if (Interlocked.Exchange(ref _loggedFirstAudioWrite, 1) == 0)
                         {
-                            break;
+                            Logger.LogVerbose($"First audio bytes written after {_startupStopwatch.ElapsedMilliseconds} ms");
                         }
-                        await Task.Delay(25, ct);
                     }
                 }
                 catch (OperationCanceledException)
@@ -1243,6 +1582,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         return frame.BitmapPixelFormat switch
         {
             BitmapPixelFormat.Nv12 => (width * height * 3) / 2,
+            BitmapPixelFormat.P010 => width * height * 3,
             BitmapPixelFormat.Yuy2 => width * height * 2,
             BitmapPixelFormat.Bgra8 => width * height * 4,
             _ => -1
@@ -1323,6 +1663,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
         _ffmpegProcess?.Dispose();
         _ffmpegProcess = null;
+        _activeInputPixelFormat = "nv12";
+        _activeOutputPixelFormat = "yuv420p";
+        _hdrArgumentSupport = HdrArgumentSupport.Unknown;
 
         _cts?.Dispose();
         _cts = null;
@@ -1348,6 +1691,56 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         if (Volatile.Read(ref _videoQueueDepth) < 0)
         {
             Interlocked.Exchange(ref _videoQueueDepth, 0);
+        }
+    }
+
+    private static unsafe void CopyP010ToBuffer(SoftwareBitmap frame, byte[] destination)
+    {
+        using var bitmapBuffer = frame.LockBuffer(BitmapBufferAccessMode.Read);
+        using var reference = bitmapBuffer.CreateReference();
+
+        byte* dataInBytes;
+        uint capacityInBytes;
+        var byteAccess = reference.As<IMemoryBufferByteAccess>();
+        byteAccess.GetBuffer(out dataInBytes, out capacityInBytes);
+
+        var planeY = bitmapBuffer.GetPlaneDescription(0);
+        var planeUV = bitmapBuffer.GetPlaneDescription(1);
+
+        var width = frame.PixelWidth;
+        var height = frame.PixelHeight;
+        var yRowBytes = width * 2;
+        var uvRowBytes = width * 2;
+        var uvHeight = height / 2;
+        var ySize = yRowBytes * height;
+        var uvSize = uvRowBytes * uvHeight;
+        var totalSize = ySize + uvSize;
+
+        if (destination.Length < totalSize)
+        {
+            throw new ArgumentException("Destination buffer too small for P010 frame.");
+        }
+
+        fixed (byte* dest = destination)
+        {
+            for (var row = 0; row < height; row++)
+            {
+                Buffer.MemoryCopy(
+                    dataInBytes + planeY.StartIndex + (row * planeY.Stride),
+                    dest + (row * yRowBytes),
+                    yRowBytes,
+                    yRowBytes);
+            }
+
+            var uvDest = dest + ySize;
+            for (var row = 0; row < uvHeight; row++)
+            {
+                Buffer.MemoryCopy(
+                    dataInBytes + planeUV.StartIndex + (row * planeUV.Stride),
+                    uvDest + (row * uvRowBytes),
+                    uvRowBytes,
+                    uvRowBytes);
+            }
         }
     }
 
@@ -1488,6 +1881,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             _audioSampleQueue = null;
             Interlocked.Exchange(ref _videoQueueDepth, 0);
             Interlocked.Exchange(ref _audioQueueDepth, 0);
+            _activeInputPixelFormat = "nv12";
+            _activeOutputPixelFormat = "yuv420p";
+            _hdrArgumentSupport = HdrArgumentSupport.Unknown;
 
             Logger.Log("FFmpegEncoderService disposed");
         }
