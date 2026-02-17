@@ -84,7 +84,6 @@
     <PublishReadyToRun Condition="'$(Configuration)' != 'Debug'">True</PublishReadyToRun>
     <PublishTrimmed>false</PublishTrimmed>
     <LatestBuildRoot>$(MSBuildProjectDirectory)\..\latest-build\</LatestBuildRoot>
-    <LatestRootExe>$(MSBuildProjectDirectory)\..\$(AssemblyName).exe</LatestRootExe>
   </PropertyGroup>
 
   <ItemGroup>
@@ -104,15 +103,5 @@
     <Copy SourceFiles="@(LatestBuildFiles)"
           DestinationFiles="@(LatestBuildFiles->'$(LatestBuildRoot)%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="false" />
-    <PropertyGroup>
-      <BuiltExePath>$(TargetDir)$(AssemblyName).exe</BuiltExePath>
-    </PropertyGroup>
-    <Copy SourceFiles="$(BuiltExePath)"
-          DestinationFiles="$(LatestRootExe)"
-          SkipUnchangedFiles="false"
-          Condition="Exists('$(BuiltExePath)')" />
-    <Message Text="Staging latest executable to $(LatestRootExe)"
-             Importance="High"
-             Condition="Exists('$(BuiltExePath)')" />
   </Target>
 </Project>

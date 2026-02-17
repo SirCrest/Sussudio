@@ -379,12 +379,44 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             SelectedAudioInputDeviceName = viewModelSnapshot.SelectedAudioInputDeviceName,
             SelectedResolution = viewModelSnapshot.SelectedResolution,
             SelectedFrameRate = viewModelSnapshot.SelectedFrameRate,
+            SelectedFriendlyFrameRate = viewModelSnapshot.SelectedFriendlyFrameRate ?? Math.Round(viewModelSnapshot.SelectedFrameRate),
+            SelectedExactFrameRate = viewModelSnapshot.SelectedExactFrameRate ?? viewModelSnapshot.SelectedFrameRate,
+            SelectedExactFrameRateArg = viewModelSnapshot.SelectedExactFrameRateArg,
+            DisabledResolutionReason = viewModelSnapshot.DisabledResolutionReason,
+            DisabledFrameRateReason = viewModelSnapshot.DisabledFrameRateReason,
             DetectedSourceFrameRate = viewModelSnapshot.DetectedSourceFrameRate ?? captureRuntime.DetectedSourceFrameRate,
             DetectedSourceFrameRateArg = viewModelSnapshot.DetectedSourceFrameRateArg ?? captureRuntime.DetectedSourceFrameRateArg,
             SourceFrameRateOrigin = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceFrameRateOrigin) &&
                                     !string.Equals(viewModelSnapshot.SourceFrameRateOrigin, "Unknown", StringComparison.OrdinalIgnoreCase)
                 ? viewModelSnapshot.SourceFrameRateOrigin
                 : captureRuntime.SourceFrameRateOrigin,
+            SourceWidth = viewModelSnapshot.SourceWidth ?? captureRuntime.SourceWidth,
+            SourceHeight = viewModelSnapshot.SourceHeight ?? captureRuntime.SourceHeight,
+            SourceIsHdr = viewModelSnapshot.SourceIsHdr ?? captureRuntime.SourceIsHdr,
+            SourceTelemetryAvailability = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryAvailability) &&
+                                          !string.Equals(viewModelSnapshot.SourceTelemetryAvailability, "Unknown", StringComparison.OrdinalIgnoreCase)
+                ? viewModelSnapshot.SourceTelemetryAvailability
+                : captureRuntime.SourceTelemetryAvailability,
+            SourceTelemetryOriginDetail = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryOriginDetail) &&
+                                          !string.Equals(viewModelSnapshot.SourceTelemetryOriginDetail, "Unknown", StringComparison.OrdinalIgnoreCase)
+                ? viewModelSnapshot.SourceTelemetryOriginDetail
+                : captureRuntime.SourceTelemetryOriginDetail,
+            SourceTelemetryConfidence = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryConfidence) &&
+                                        !string.Equals(viewModelSnapshot.SourceTelemetryConfidence, "Unknown", StringComparison.OrdinalIgnoreCase)
+                ? viewModelSnapshot.SourceTelemetryConfidence
+                : captureRuntime.SourceTelemetryConfidence,
+            SourceTelemetryDiagnosticSummary = viewModelSnapshot.SourceTelemetryDiagnosticSummary ?? captureRuntime.SourceTelemetryDiagnosticSummary,
+            SourceTelemetryTimestampUtc = viewModelSnapshot.SourceTelemetryTimestampUtc ?? captureRuntime.SourceTelemetryTimestampUtc,
+            SourceTelemetryAgeSeconds = ResolveTelemetryAgeSeconds(
+                viewModelSnapshot.SourceTelemetryAgeSeconds,
+                viewModelSnapshot.SourceTelemetryTimestampUtc ?? captureRuntime.SourceTelemetryTimestampUtc,
+                DateTimeOffset.UtcNow),
+            SourceTelemetryBackend = captureRuntime.SourceTelemetryBackend,
+            SourceTelemetrySuppressed = captureRuntime.SourceTelemetrySuppressed,
+            SourceTelemetrySuppressedReason = captureRuntime.SourceTelemetrySuppressedReason,
+            SourceTelemetryCircuitState = captureRuntime.SourceTelemetryCircuitState,
+            SourceTelemetrySummaryText = viewModelSnapshot.SourceTelemetrySummaryText,
+            SourceTargetSummaryText = viewModelSnapshot.SourceTargetSummaryText,
             SelectedRecordingFormat = viewModelSnapshot.SelectedRecordingFormat,
             SelectedQuality = viewModelSnapshot.SelectedQuality,
             CustomBitrateMbps = viewModelSnapshot.CustomBitrateMbps,
@@ -792,6 +824,27 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         return subtype.Contains("P010", StringComparison.OrdinalIgnoreCase) ||
                subtype.Contains("HDR", StringComparison.OrdinalIgnoreCase) ||
                subtype.Contains("BT2020", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static int? ResolveTelemetryAgeSeconds(int? reportedAgeSeconds, DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)
+    {
+        if (reportedAgeSeconds.HasValue)
+        {
+            return Math.Max(0, reportedAgeSeconds.Value);
+        }
+
+        if (!timestampUtc.HasValue)
+        {
+            return null;
+        }
+
+        var age = nowUtc - timestampUtc.Value;
+        if (age < TimeSpan.Zero)
+        {
+            return 0;
+        }
+
+        return (int)Math.Floor(age.TotalSeconds);
     }
 
     private static double GetDoubleFromEnv(string variableName, double defaultValue, double minValue, double maxValue)

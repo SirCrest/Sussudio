@@ -103,6 +103,11 @@ public sealed class AutomationSnapshot
 
     public string? SelectedResolution { get; init; }
     public double SelectedFrameRate { get; init; }
+    public double? SelectedFriendlyFrameRate { get; init; }
+    public double? SelectedExactFrameRate { get; init; }
+    public string? SelectedExactFrameRateArg { get; init; }
+    public string? DisabledResolutionReason { get; init; }
+    public string? DisabledFrameRateReason { get; init; }
     public string SelectedRecordingFormat { get; init; } = string.Empty;
     public string SelectedQuality { get; init; } = string.Empty;
     public double CustomBitrateMbps { get; init; }
@@ -164,6 +169,21 @@ public sealed class AutomationSnapshot
     public double? DetectedSourceFrameRate { get; init; }
     public string? DetectedSourceFrameRateArg { get; init; }
     public string SourceFrameRateOrigin { get; init; } = "Unknown";
+    public int? SourceWidth { get; init; }
+    public int? SourceHeight { get; init; }
+    public bool? SourceIsHdr { get; init; }
+    public string SourceTelemetryAvailability { get; init; } = "Unknown";
+    public string SourceTelemetryOriginDetail { get; init; } = "Unknown";
+    public string SourceTelemetryConfidence { get; init; } = "Unknown";
+    public string? SourceTelemetryDiagnosticSummary { get; init; }
+    public DateTimeOffset? SourceTelemetryTimestampUtc { get; init; }
+    public int? SourceTelemetryAgeSeconds { get; init; }
+    public string SourceTelemetryBackend { get; init; } = "Unknown";
+    public bool SourceTelemetrySuppressed { get; init; }
+    public string? SourceTelemetrySuppressedReason { get; init; }
+    public string SourceTelemetryCircuitState { get; init; } = "Closed";
+    public string SourceTelemetrySummaryText { get; init; } = string.Empty;
+    public string SourceTargetSummaryText { get; init; } = string.Empty;
 
     public long PreviewFramesArrived { get; init; }
     public long PreviewFramesDisplayed { get; init; }
@@ -376,6 +396,19 @@ public sealed class CaptureRuntimeSnapshot
     public double? DetectedSourceFrameRate { get; init; }
     public string? DetectedSourceFrameRateArg { get; init; }
     public string SourceFrameRateOrigin { get; init; } = "Unknown";
+    public int? SourceWidth { get; init; }
+    public int? SourceHeight { get; init; }
+    public bool? SourceIsHdr { get; init; }
+    public string SourceTelemetryAvailability { get; init; } = "Unknown";
+    public string SourceTelemetryOriginDetail { get; init; } = "Unknown";
+    public string SourceTelemetryConfidence { get; init; } = "Unknown";
+    public string? SourceTelemetryDiagnosticSummary { get; init; }
+    public DateTimeOffset? SourceTelemetryTimestampUtc { get; init; }
+    public int? SourceTelemetryAgeSeconds { get; init; }
+    public string SourceTelemetryBackend { get; init; } = "Unknown";
+    public bool SourceTelemetrySuppressed { get; init; }
+    public string? SourceTelemetrySuppressedReason { get; init; }
+    public string SourceTelemetryCircuitState { get; init; } = "Closed";
 
     public string RecordingBackend { get; init; } = "None";
     public string AudioPathMode { get; init; } = "None";
@@ -404,10 +437,26 @@ public sealed class ViewModelRuntimeSnapshot
     public string? SelectedAudioInputDeviceName { get; init; }
     public string? SelectedResolution { get; init; }
     public double SelectedFrameRate { get; init; }
+    public double? SelectedFriendlyFrameRate { get; init; }
+    public double? SelectedExactFrameRate { get; init; }
+    public string? SelectedExactFrameRateArg { get; init; }
+    public string? DisabledResolutionReason { get; init; }
+    public string? DisabledFrameRateReason { get; init; }
     public string HdrResolutionSupportHint { get; init; } = string.Empty;
     public double? DetectedSourceFrameRate { get; init; }
     public string? DetectedSourceFrameRateArg { get; init; }
     public string SourceFrameRateOrigin { get; init; } = "Unknown";
+    public int? SourceWidth { get; init; }
+    public int? SourceHeight { get; init; }
+    public bool? SourceIsHdr { get; init; }
+    public string SourceTelemetryAvailability { get; init; } = "Unknown";
+    public string SourceTelemetryOriginDetail { get; init; } = "Unknown";
+    public string SourceTelemetryConfidence { get; init; } = "Unknown";
+    public string? SourceTelemetryDiagnosticSummary { get; init; }
+    public DateTimeOffset? SourceTelemetryTimestampUtc { get; init; }
+    public int? SourceTelemetryAgeSeconds { get; init; }
+    public string SourceTelemetrySummaryText { get; init; } = string.Empty;
+    public string SourceTargetSummaryText { get; init; } = string.Empty;
     public string SelectedRecordingFormat { get; init; } = string.Empty;
     public string SelectedQuality { get; init; } = string.Empty;
     public double CustomBitrateMbps { get; init; }

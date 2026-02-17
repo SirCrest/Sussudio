@@ -77,7 +77,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     }
     private bool _isRebuildingModeOptions;
     private bool _isApplyingAutomaticFrameRateSelection;
+    private bool _isApplyingAutomaticResolutionSelection;
     private bool _hasUserOverriddenFrameRateForCurrentMode;
+    private bool _hasUserOverriddenResolutionForCurrentMode;
+    private bool _forceSourceAutoRetarget;
+    private string? _lastSourceModeKey;
+    private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
+    private int? _lastTelemetryAgeBucket;
     private List<string> _detectedRecordingFormats = new();
 
     // Flag to prevent reinitialization during initial device setup
@@ -118,6 +124,51 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     [ObservableProperty]
     public partial string SourceFrameRateOrigin { get; set; } = "Unknown";
+
+    [ObservableProperty]
+    public partial double? SelectedFriendlyFrameRate { get; set; }
+
+    [ObservableProperty]
+    public partial double? SelectedExactFrameRate { get; set; }
+
+    [ObservableProperty]
+    public partial string? SelectedExactFrameRateArg { get; set; }
+
+    [ObservableProperty]
+    public partial string DisabledResolutionReason { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string DisabledFrameRateReason { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial int? SourceWidth { get; set; }
+
+    [ObservableProperty]
+    public partial int? SourceHeight { get; set; }
+
+    [ObservableProperty]
+    public partial bool? SourceIsHdr { get; set; }
+
+    [ObservableProperty]
+    public partial string SourceTelemetryAvailability { get; set; } = "Unknown";
+
+    [ObservableProperty]
+    public partial string SourceTelemetryOriginDetail { get; set; } = "Unknown";
+
+    [ObservableProperty]
+    public partial string SourceTelemetryConfidence { get; set; } = "Unknown";
+
+    [ObservableProperty]
+    public partial string? SourceTelemetryDiagnosticSummary { get; set; }
+
+    [ObservableProperty]
+    public partial DateTimeOffset? SourceTelemetryTimestampUtc { get; set; }
+
+    [ObservableProperty]
+    public partial string SourceTelemetrySummaryText { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string SourceTargetSummaryText { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial bool IsAudioEnabled { get; set; } = true;
@@ -188,6 +239,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.ErrorOccurred += OnCaptureError;
         _captureService.FrameCaptured += OnFrameCaptured;
         _captureService.AudioLevelUpdated += OnAudioLevelUpdated;
+        _captureService.SourceTelemetryUpdated += OnSourceTelemetryUpdated;
+        _latestSourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();
+        ApplySourceTelemetrySnapshot(_latestSourceTelemetry, allowAutoRetarget: false);
 
         SetupTimer();
         UpdateDiskSpace();
@@ -349,10 +403,26 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             SelectedAudioInputDeviceName = SelectedAudioInputDevice?.Name,
             SelectedResolution = SelectedResolution,
             SelectedFrameRate = SelectedFrameRate,
+            SelectedFriendlyFrameRate = SelectedFriendlyFrameRate,
+            SelectedExactFrameRate = SelectedExactFrameRate,
+            SelectedExactFrameRateArg = SelectedExactFrameRateArg,
+            DisabledResolutionReason = DisabledResolutionReason,
+            DisabledFrameRateReason = DisabledFrameRateReason,
             HdrResolutionSupportHint = HdrResolutionSupportHint,
             DetectedSourceFrameRate = DetectedSourceFrameRate,
             DetectedSourceFrameRateArg = DetectedSourceFrameRateArg,
             SourceFrameRateOrigin = SourceFrameRateOrigin,
+            SourceWidth = SourceWidth,
+            SourceHeight = SourceHeight,
+            SourceIsHdr = SourceIsHdr,
+            SourceTelemetryAvailability = SourceTelemetryAvailability,
+            SourceTelemetryOriginDetail = SourceTelemetryOriginDetail,
+            SourceTelemetryConfidence = SourceTelemetryConfidence,
+            SourceTelemetryDiagnosticSummary = SourceTelemetryDiagnosticSummary,
+            SourceTelemetryTimestampUtc = SourceTelemetryTimestampUtc,
+            SourceTelemetryAgeSeconds = ComputeTelemetryAgeSeconds(SourceTelemetryTimestampUtc, DateTimeOffset.UtcNow),
+            SourceTelemetrySummaryText = SourceTelemetrySummaryText,
+            SourceTargetSummaryText = SourceTargetSummaryText,
             SelectedRecordingFormat = SelectedRecordingFormat,
             SelectedQuality = SelectedQuality,
             CustomBitrateMbps = CustomBitrateMbps,
@@ -452,8 +522,29 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 UpdateRecordingStats();
             }
             UpdateDiskSpace();
+            RefreshSourceTelemetrySummaryAge();
         };
         _timer.Start();
+    }
+
+    private void RefreshSourceTelemetrySummaryAge()
+    {
+        var ageSeconds = ComputeTelemetryAgeSeconds(SourceTelemetryTimestampUtc, DateTimeOffset.UtcNow);
+        var ageBucket = ageSeconds.HasValue ? ageSeconds.Value / 5 : (int?)null;
+        if (_lastTelemetryAgeBucket.HasValue &&
+            ageBucket.HasValue &&
+            _lastTelemetryAgeBucket.Value == ageBucket.Value)
+        {
+            return;
+        }
+
+        var refreshedSummary = BuildSourceTelemetrySummaryText(_latestSourceTelemetry, DateTimeOffset.UtcNow);
+        if (!string.Equals(SourceTelemetrySummaryText, refreshedSummary, StringComparison.Ordinal))
+        {
+            SourceTelemetrySummaryText = refreshedSummary;
+        }
+
+        _lastTelemetryAgeBucket = ageBucket;
     }
 
     private void UpdateDiskSpace()
@@ -498,6 +589,120 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             AudioPeak = UpdateMeterLevel(e.Peak);
             AudioClipping = e.Clipped;
         });
+    }
+
+    private void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)
+    {
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            ApplySourceTelemetrySnapshot(snapshot, allowAutoRetarget: true);
+        });
+    }
+
+    private void ApplySourceTelemetrySnapshot(SourceSignalTelemetrySnapshot snapshot, bool allowAutoRetarget)
+    {
+        _latestSourceTelemetry = snapshot;
+        SourceWidth = snapshot.Width;
+        SourceHeight = snapshot.Height;
+        SourceIsHdr = snapshot.IsHdr;
+        SourceTelemetryAvailability = snapshot.Availability.ToString();
+        SourceTelemetryOriginDetail = snapshot.OriginDetail;
+        SourceTelemetryConfidence = snapshot.Confidence.ToString();
+        SourceTelemetryDiagnosticSummary = snapshot.DiagnosticSummary;
+        SourceTelemetryTimestampUtc = snapshot.TimestampUtc;
+        DetectedSourceFrameRate = snapshot.FrameRateExact;
+        DetectedSourceFrameRateArg = snapshot.FrameRateArg;
+        SourceFrameRateOrigin = snapshot.Origin != SourceTelemetryOrigin.Unknown
+            ? snapshot.Origin.ToString()
+            : "Unknown";
+        _lastTelemetryAgeBucket = null;
+        SourceTelemetrySummaryText = BuildSourceTelemetrySummaryText(snapshot, DateTimeOffset.UtcNow);
+
+        var modeKey = snapshot.GetModeKey();
+        if (!string.IsNullOrWhiteSpace(modeKey) &&
+            !string.Equals(modeKey, _lastSourceModeKey, StringComparison.Ordinal))
+        {
+            _lastSourceModeKey = modeKey;
+            if (allowAutoRetarget)
+            {
+                _forceSourceAutoRetarget = true;
+                _hasUserOverriddenResolutionForCurrentMode = false;
+                _hasUserOverriddenFrameRateForCurrentMode = false;
+            }
+        }
+
+        var shouldRebuildModeOptions = allowAutoRetarget &&
+                                       (_forceSourceAutoRetarget ||
+                                        (snapshot.HasSignalData && AvailableResolutions.Count == 0));
+        if (shouldRebuildModeOptions)
+        {
+            RebuildResolutionOptions();
+        }
+        else
+        {
+            UpdateTargetSummary();
+        }
+    }
+
+    private static string BuildSourceTelemetrySummaryText(SourceSignalTelemetrySnapshot snapshot, DateTimeOffset nowUtc)
+    {
+        if (!snapshot.HasSignalData &&
+            snapshot.Availability is Models.SourceTelemetryAvailability.Unavailable or Models.SourceTelemetryAvailability.Unknown)
+        {
+            return "Source: waiting for signal telemetry";
+        }
+
+        var resolution = snapshot.HasDimensions
+            ? $"{snapshot.Width}x{snapshot.Height}"
+            : "?x?";
+        var fps = snapshot.FrameRateArg ??
+                  snapshot.FrameRateExact?.ToString("0.###") ??
+                  "?";
+        var hdr = snapshot.IsHdr.HasValue ? (snapshot.IsHdr.Value ? "HDR" : "SDR") : "HDR?";
+        var ageText = BuildTelemetryAgeText(snapshot.TimestampUtc, nowUtc);
+        return $"Source: {resolution} @ {fps} | {hdr} | {snapshot.Availability}/{snapshot.Confidence} | {ageText}";
+    }
+
+    private static string BuildTelemetryAgeText(DateTimeOffset timestampUtc, DateTimeOffset nowUtc)
+    {
+        var ageSeconds = ComputeTelemetryAgeSeconds(timestampUtc, nowUtc);
+        if (!ageSeconds.HasValue)
+        {
+            return "updated ?";
+        }
+
+        return ageSeconds.Value <= 0
+            ? "updated now"
+            : $"updated {ageSeconds.Value}s ago";
+    }
+
+    private static int? ComputeTelemetryAgeSeconds(DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)
+    {
+        if (!timestampUtc.HasValue)
+        {
+            return null;
+        }
+
+        var age = nowUtc - timestampUtc.Value;
+        if (age < TimeSpan.Zero)
+        {
+            return 0;
+        }
+
+        return (int)Math.Floor(age.TotalSeconds);
+    }
+
+    private void UpdateTargetSummary()
+    {
+        var friendly = SelectedFriendlyFrameRate ?? Math.Round(SelectedFrameRate);
+        var exact = SelectedExactFrameRate ?? SelectedFrameRate;
+        var exactArg = SelectedExactFrameRateArg;
+        var exactText = !string.IsNullOrWhiteSpace(exactArg)
+            ? exactArg
+            : exact > 0
+                ? exact.ToString("0.###")
+                : "?";
+        SourceTargetSummaryText = $"Target: {(SelectedResolution ?? "?")} @ {friendly:0} (exact {exactText})";
     }
 
     public async Task RefreshDevicesAsync()
@@ -561,6 +766,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         AvailableResolutions.Clear();
         AvailableFrameRates.Clear();
         _resolutionToFormats.Clear();
+        ApplySourceTelemetrySnapshot(
+            SourceSignalTelemetrySnapshot.CreateUnavailable("awaiting-source-telemetry"),
+            allowAutoRetarget: false);
 
         if (value != null)
         {
@@ -595,13 +803,20 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     partial void OnSelectedResolutionChanged(string? value)
     {
+        if (!_isRebuildingModeOptions && !_isApplyingAutomaticResolutionSelection)
+        {
+            _hasUserOverriddenResolutionForCurrentMode = true;
+        }
+
         if (_isRebuildingModeOptions)
         {
             return;
         }
 
+        _forceSourceAutoRetarget = false;
         ResetFrameRateSelectionState();
         RebuildFrameRateOptions();
+        UpdateTargetSummary();
     }
 
     partial void OnSelectedFrameRateChanged(double value)
@@ -611,7 +826,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             _hasUserOverriddenFrameRateForCurrentMode = true;
         }
 
+        var selected = AvailableFrameRates
+            .FirstOrDefault(option => IsFrameRateMatch(option.Value, value))
+            ?? AvailableFrameRates.FirstOrDefault(option => IsFriendlyFrameRateMatch(option.FriendlyValue, value));
+        SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(value, MidpointRounding.AwayFromZero);
+        SelectedExactFrameRate = selected?.Value ?? value;
+        SelectedExactFrameRateArg = selected?.Rational;
+
         UpdateSelectedFormat();
+        UpdateTargetSummary();
     }
 
     private void UpdateSelectedFormat()
@@ -741,7 +964,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         if (!_isChangingDevice)
         {
-            ResetFrameRateSelectionState();
+            ResetModeSelectionState();
             RebuildResolutionOptions();
             RebuildRecordingFormatOptions();
         }
@@ -773,13 +996,49 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             .ToList();
 
         string? hdrHint = null;
-        var selected = IsHdrEnabled
-            ? SelectHdrResolutionOption(options, previousSelection, previousRate, out hdrHint)
-            : options.FirstOrDefault(option =>
-                option.IsEnabled &&
-                string.Equals(option.Value, previousSelection, StringComparison.OrdinalIgnoreCase))
-                ?? options.FirstOrDefault(option => option.IsEnabled)
-                ?? options.FirstOrDefault();
+        var allowSourceAutoSelect = _forceSourceAutoRetarget || !_hasUserOverriddenResolutionForCurrentMode;
+        var sourceSelected = allowSourceAutoSelect
+            ? TrySelectSourceResolutionOption(options, previousSelection)
+            : null;
+        var sourceSelectedValue = sourceSelected?.Value;
+        if (IsHdrEnabled &&
+            sourceSelected is { IsEnabled: true } &&
+            previousRate > 0 &&
+            !ResolutionSupportsFrameRate(sourceSelected.Value, previousRate, hdrOnly: true))
+        {
+            var sourceMax = GetMaxFrameRateForResolution(sourceSelected.Value, hdrOnly: true);
+            if (sourceMax > 0)
+            {
+                hdrHint = $"HDR at {sourceSelected.Value} supported up to {FormatFriendlyFrameRate(sourceMax)} fps.";
+            }
+
+            sourceSelected = null;
+        }
+
+        var selected = sourceSelected;
+        if (selected == null)
+        {
+            selected = IsHdrEnabled
+                ? SelectHdrResolutionOption(options, previousSelection, previousRate, out hdrHint)
+                : options.FirstOrDefault(option =>
+                    option.IsEnabled &&
+                    string.Equals(option.Value, previousSelection, StringComparison.OrdinalIgnoreCase))
+                    ?? options.FirstOrDefault(option => option.IsEnabled)
+                    ?? options.FirstOrDefault();
+
+            if (IsHdrEnabled &&
+                !string.IsNullOrWhiteSpace(sourceSelectedValue) &&
+                selected != null &&
+                !string.Equals(sourceSelectedValue, selected.Value, StringComparison.OrdinalIgnoreCase) &&
+                previousRate > 0)
+            {
+                var sourceMax = GetMaxFrameRateForResolution(sourceSelectedValue, hdrOnly: true);
+                if (sourceMax > 0 && previousRate > sourceMax + 0.01)
+                {
+                    hdrHint = $"HDR at {sourceSelectedValue} supported up to {FormatFriendlyFrameRate(sourceMax)} fps; switched to {selected.Value} to keep {FormatFriendlyFrameRate(previousRate)} fps.";
+                }
+            }
+        }
 
         _isRebuildingModeOptions = true;
         try
@@ -790,7 +1049,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 AvailableResolutions.Add(option);
             }
 
+            _isApplyingAutomaticResolutionSelection = true;
             SelectedResolution = selected?.Value;
+            _isApplyingAutomaticResolutionSelection = false;
             if (IsHdrEnabled)
             {
                 HdrResolutionSupportHint = hdrHint ?? BuildHdrSupportHintForResolution(selected?.Value);
@@ -804,9 +1065,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             {
                 StatusText = "No HDR-capable resolution is available for this device.";
             }
+
+            DisabledResolutionReason = selected is { IsEnabled: false }
+                ? selected.DisableReason
+                : string.Empty;
         }
         finally
         {
+            _isApplyingAutomaticResolutionSelection = false;
             _isRebuildingModeOptions = false;
         }
 
@@ -818,6 +1084,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         var previousRate = SelectedFrameRate;
         var options = new List<FrameRateOption>();
         var timingFamily = ResolvePreferredTimingFamily(SelectedResolution, previousRate);
+        if (_latestSourceTelemetry.HasFrameRate &&
+            TryInferFrameRateTimingFamily(_latestSourceTelemetry.FrameRateArg, _latestSourceTelemetry.FrameRateExact, out var sourceFamilyHint))
+        {
+            timingFamily = sourceFamilyHint;
+        }
 
         if (!string.IsNullOrWhiteSpace(SelectedResolution) &&
             _resolutionToFormats.TryGetValue(SelectedResolution, out var formats))
@@ -853,6 +1124,52 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         var sourceRate = ResolveDetectedSourceFrameRate(SelectedResolution, options, previousRate);
+        var sourceTimingFamilyKnown = TryInferFrameRateTimingFamily(sourceRate.Arg, sourceRate.Rate, out var sourceTimingFamily);
+        var sourceFriendlyRate = sourceRate.Rate.HasValue
+            ? Math.Round(sourceRate.Rate.Value, MidpointRounding.AwayFromZero)
+            : (double?)null;
+        var cappedOptions = options
+            .Select(option =>
+            {
+                var enabled = option.IsEnabled;
+                var disableReason = option.DisableReason;
+
+                if (enabled && sourceFriendlyRate.HasValue)
+                {
+                    if (option.FriendlyValue > sourceFriendlyRate.Value + 0.01)
+                    {
+                        enabled = false;
+                        disableReason = $"Source signal is {sourceFriendlyRate.Value:0} fps; higher capture fps duplicates frames.";
+                    }
+                    else if (sourceTimingFamilyKnown &&
+                             sourceRate.Rate.HasValue &&
+                             TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily) &&
+                             optionFamily != FrameRateTimingFamily.Unknown &&
+                             sourceTimingFamily != FrameRateTimingFamily.Unknown &&
+                             optionFamily != sourceTimingFamily &&
+                             ResolutionHasTimingFamilyVariant(SelectedResolution, option.FriendlyValue, sourceTimingFamily) &&
+                             IsFriendlyFrameRateMatch(option.FriendlyValue, sourceFriendlyRate.Value) &&
+                             option.Value > sourceRate.Rate.Value + 0.03)
+                    {
+                        enabled = false;
+                        disableReason = $"Source timing is {sourceRate.Arg ?? sourceRate.Rate.Value.ToString("0.###")} so this duplicate variant is hidden.";
+                    }
+                }
+
+                return new FrameRateOption
+                {
+                    FriendlyValue = option.FriendlyValue,
+                    Value = option.Value,
+                    Rational = option.Rational,
+                    Numerator = option.Numerator,
+                    Denominator = option.Denominator,
+                    IsEnabled = enabled,
+                    DisableReason = enabled ? string.Empty : disableReason
+                };
+            })
+            .ToList();
+
+        options = cappedOptions;
         DetectedSourceFrameRate = sourceRate.Rate;
         DetectedSourceFrameRateArg = sourceRate.Arg;
         SourceFrameRateOrigin = sourceRate.Origin;
@@ -867,11 +1184,17 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
 
             FrameRateOption? selected = null;
-            if (!_hasUserOverriddenFrameRateForCurrentMode && sourceRate.Rate.HasValue)
+            if ((_forceSourceAutoRetarget || !_hasUserOverriddenFrameRateForCurrentMode) && sourceRate.Rate.HasValue)
             {
                 selected = options
                     .Where(option => option.IsEnabled)
                     .OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))
+                    .ThenBy(option =>
+                        sourceTimingFamilyKnown &&
+                        TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily) &&
+                        optionFamily == sourceTimingFamily
+                            ? 0
+                            : 1)
                     .FirstOrDefault();
             }
 
@@ -887,6 +1210,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             _isApplyingAutomaticFrameRateSelection = true;
             SelectedFrameRate = selected?.Value ?? 0;
             _isApplyingAutomaticFrameRateSelection = false;
+            SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(SelectedFrameRate);
+            SelectedExactFrameRate = selected?.Value;
+            SelectedExactFrameRateArg = selected?.Rational;
+            DisabledFrameRateReason = selected is { IsEnabled: false }
+                ? selected.DisableReason
+                : string.Empty;
             if (IsHdrEnabled && selected is { IsEnabled: false })
             {
                 StatusText = $"No HDR-capable frame rate is available for {SelectedResolution}.";
@@ -899,11 +1228,58 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         UpdateSelectedFormat();
+        UpdateTargetSummary();
+        _forceSourceAutoRetarget = false;
     }
 
     private void ResetFrameRateSelectionState()
     {
         _hasUserOverriddenFrameRateForCurrentMode = false;
+    }
+
+    private void ResetModeSelectionState()
+    {
+        _hasUserOverriddenFrameRateForCurrentMode = false;
+        _hasUserOverriddenResolutionForCurrentMode = false;
+        _forceSourceAutoRetarget = false;
+        _lastSourceModeKey = null;
+    }
+
+    private ResolutionOption? TrySelectSourceResolutionOption(
+        IReadOnlyList<ResolutionOption> options,
+        string? previousSelection)
+    {
+        if (options.Count == 0 || !_latestSourceTelemetry.HasDimensions)
+        {
+            return null;
+        }
+
+        var sourceWidth = (uint)Math.Max(0, _latestSourceTelemetry.Width ?? 0);
+        var sourceHeight = (uint)Math.Max(0, _latestSourceTelemetry.Height ?? 0);
+        if (sourceWidth == 0 || sourceHeight == 0)
+        {
+            return null;
+        }
+
+        var exact = options.FirstOrDefault(option =>
+            option.IsEnabled &&
+            option.Width == sourceWidth &&
+            option.Height == sourceHeight);
+        if (exact != null)
+        {
+            return exact;
+        }
+
+        var sourceKey = GetResolutionKey(sourceWidth, sourceHeight);
+        var enabled = options.Where(option => option.IsEnabled).ToList();
+        if (enabled.Count == 0)
+        {
+            return options.FirstOrDefault();
+        }
+
+        return SelectNearestResolution(sourceKey, enabled)
+            ?? SelectNearestResolution(previousSelection, enabled)
+            ?? enabled.FirstOrDefault();
     }
 
     private ResolutionOption? SelectHdrResolutionOption(
@@ -1009,6 +1385,36 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             IsFrameRateMatch(format.FrameRateExact, frameRate));
     }
 
+    private bool ResolutionHasTimingFamilyVariant(
+        string? resolutionKey,
+        double friendlyFrameRate,
+        FrameRateTimingFamily family)
+    {
+        if (family == FrameRateTimingFamily.Unknown ||
+            string.IsNullOrWhiteSpace(resolutionKey) ||
+            !_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
+        {
+            return false;
+        }
+
+        var bucket = (int)Math.Round(friendlyFrameRate, MidpointRounding.AwayFromZero);
+        foreach (var format in formats)
+        {
+            if (GetFriendlyFrameRateBucket(format.FrameRateExact) != bucket)
+            {
+                continue;
+            }
+
+            if (TryInferFrameRateTimingFamily(format.FrameRateRational, format.FrameRateExact, out var formatFamily) &&
+                formatFamily == family)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private double GetMaxFrameRateForResolution(string? resolutionKey, bool hdrOnly)
     {
         if (string.IsNullOrWhiteSpace(resolutionKey) ||
@@ -1039,6 +1445,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (maxHdrRate <= 0)
         {
             return $"HDR is not supported at {resolutionKey}.";
+        }
+
+        if (SelectedFrameRate > 0 && maxHdrRate >= SelectedFrameRate - 0.01)
+        {
+            return string.Empty;
         }
 
         return $"HDR at {resolutionKey} supported up to {FormatFriendlyFrameRate(maxHdrRate)} fps.";
@@ -1180,6 +1591,16 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         IReadOnlyList<FrameRateOption> options,
         double previousRate)
     {
+        if (_latestSourceTelemetry.HasFrameRate)
+        {
+            return (
+                _latestSourceTelemetry.FrameRateExact,
+                _latestSourceTelemetry.FrameRateArg,
+                _latestSourceTelemetry.Origin != SourceTelemetryOrigin.Unknown
+                    ? _latestSourceTelemetry.Origin.ToString()
+                    : "SourceTelemetry");
+        }
+
         var runtime = _captureService.GetRuntimeSnapshot();
         if (TryParseResolutionKey(resolutionKey, out var selectedWidth, out var selectedHeight))
         {
@@ -1611,6 +2032,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 Logger.Log("Starting audio preview...");
                 await _sessionCoordinator.StartAudioPreviewAsync();
             }
+
+            ApplySourceTelemetrySnapshot(_captureService.GetLatestSourceTelemetrySnapshot(), allowAutoRetarget: true);
         }
         else
         {
@@ -2025,6 +2448,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         var requestedFrameRateNumerator = selectedFrameRateOption?.Numerator;
         var requestedFrameRateDenominator = selectedFrameRateOption?.Denominator;
         var runtime = _captureService.GetRuntimeSnapshot();
+        var sourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();
         var selectedFriendlyRate = selectedFrameRateOption?.FriendlyValue ?? SelectedFrameRate;
         var runtimeRate = runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate;
         var runtimeRateArg = runtime.ActualFrameRateArg ?? runtime.NegotiatedFrameRateArg;
@@ -2057,6 +2481,21 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             {
                 requestedFrameRateNumerator = runtimeNumerator;
                 requestedFrameRateDenominator = runtimeDenominator;
+            }
+        }
+
+        if (sourceTelemetry.HasFrameRate &&
+            IsFriendlyFrameRateMatch(selectedFriendlyRate, sourceTelemetry.FrameRateExact ?? 0))
+        {
+            if (!string.IsNullOrWhiteSpace(sourceTelemetry.FrameRateArg))
+            {
+                requestedFrameRateArg = sourceTelemetry.FrameRateArg;
+            }
+
+            if (TryParseFrameRateRational(sourceTelemetry.FrameRateArg, out var sourceNumerator, out var sourceDenominator))
+            {
+                requestedFrameRateNumerator = sourceNumerator;
+                requestedFrameRateDenominator = sourceDenominator;
             }
         }
 
@@ -2120,6 +2559,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.ErrorOccurred -= OnCaptureError;
         _captureService.FrameCaptured -= OnFrameCaptured;
         _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
+        _captureService.SourceTelemetryUpdated -= OnSourceTelemetryUpdated;
         var stepTimeoutMs = GetIntFromEnv(
             "ELGATOCAPTURE_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,

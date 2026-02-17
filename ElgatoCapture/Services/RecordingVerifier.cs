@@ -160,9 +160,10 @@ public sealed class RecordingVerifier : IRecordingVerifier
         {
             hdrSideDataPresent = await TryDetectHdrSideDataAsync(outputPath, cancellationToken).ConfigureAwait(false);
         }
+        var expectedFrameRate = ResolveExpectedFrameRate(runtimeSnapshot);
         var cadenceMetrics = await AnalyzeCadenceMetricsAsync(
             outputPath,
-            runtimeSnapshot.RequestedFrameRate ?? detectedFrameRate,
+            expectedFrameRate ?? detectedFrameRate,
             cancellationToken).ConfigureAwait(false);
         if ((!detectedFrameRate.HasValue || detectedFrameRate.Value <= 0) &&
             cadenceMetrics.HasValue &&
@@ -175,7 +176,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
         ValidateContainer(runtimeSnapshot, formatName, outputPath, mismatches);
         ValidateCodec(runtimeSnapshot, codecName, mismatches);
         ValidateDimensions(runtimeSnapshot, detectedWidth, detectedHeight, mismatches);
-        ValidateFrameRate(runtimeSnapshot, detectedFrameRate, mismatches);
+        ValidateFrameRate(runtimeSnapshot, detectedFrameRate, expectedFrameRate, mismatches);
         var hdrValidation = ValidateHdrMetadata(
             runtimeSnapshot,
             pixelFormatRaw,
@@ -653,9 +654,10 @@ public sealed class RecordingVerifier : IRecordingVerifier
     private static void ValidateFrameRate(
         CaptureRuntimeSnapshot runtimeSnapshot,
         double? detectedFrameRate,
+        double? expectedFrameRate,
         List<string> mismatches)
     {
-        if (!runtimeSnapshot.RequestedFrameRate.HasValue)
+        if (!expectedFrameRate.HasValue)
         {
             return;
         }
@@ -666,13 +668,31 @@ public sealed class RecordingVerifier : IRecordingVerifier
             return;
         }
 
-        var expected = runtimeSnapshot.RequestedFrameRate.Value;
+        var expected = expectedFrameRate.Value;
         var actual = detectedFrameRate.Value;
         const double tolerance = 0.75;
         if (Math.Abs(expected - actual) > tolerance)
         {
             mismatches.Add($"fps-mismatch(expected={expected:0.###},actual={actual:0.###})");
         }
+    }
+
+    private static double? ResolveExpectedFrameRate(CaptureRuntimeSnapshot runtimeSnapshot)
+    {
+        if (runtimeSnapshot.RequestedFrameRateNumerator.HasValue &&
+            runtimeSnapshot.RequestedFrameRateDenominator.HasValue &&
+            runtimeSnapshot.RequestedFrameRateDenominator.Value > 0)
+        {
+            return runtimeSnapshot.RequestedFrameRateNumerator.Value /
+                   (double)runtimeSnapshot.RequestedFrameRateDenominator.Value;
+        }
+
+        if (TryParseRational(runtimeSnapshot.RequestedFrameRateArg).HasValue)
+        {
+            return TryParseRational(runtimeSnapshot.RequestedFrameRateArg);
+        }
+
+        return runtimeSnapshot.RequestedFrameRate;
     }
 
     private static HdrValidationResult ValidateHdrMetadata(

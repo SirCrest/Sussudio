@@ -171,11 +171,28 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private string _hdrAutoDowngradeReason = string.Empty;
     private bool _hdrSourceNot10BitDetected;
     private bool _recordingFrameHandlerAttached;
+    private readonly ISourceSignalTelemetryProvider _sourceSignalTelemetryProvider;
+    private readonly object _sourceTelemetryLock = new();
+    private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
+    private SourceSignalTelemetrySnapshot? _lastSuccessfulSourceTelemetry;
+    private CancellationTokenSource? _sourceTelemetryCancellation;
+    private Task? _sourceTelemetryTask;
+    private long _sourceTelemetryRunId;
+    private string? _lastSourceTelemetryTransitionSignature;
+    private long _lastSourceTelemetryErrorLogTick;
+    private bool _sourceTelemetrySuppressed;
+    private string? _sourceTelemetrySuppressedReason;
+    private readonly Queue<DateTimeOffset> _sourceTelemetryFailureTimestamps = new();
+    private string _sourceTelemetryBackend = "EgavInProc";
+    private string _sourceTelemetryCircuitState = "Closed";
+    private const int SourceTelemetryErrorLogIntervalMs = 30000;
+    private const int SourceTelemetryReadHangLogIntervalMs = 30000;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<Exception>? ErrorOccurred;
     public event EventHandler<ulong>? FrameCaptured;
     public event EventHandler<AudioLevelEventArgs>? AudioLevelUpdated;
+    public event EventHandler<SourceSignalTelemetrySnapshot>? SourceTelemetryUpdated;
 
     public bool IsRecording => _isRecording;
     public bool IsInitialized => _isInitialized;
@@ -183,13 +200,35 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public MediaCapture? MediaCapture => _mediaCapture;
     public CaptureSessionState SessionState => _sessionState;
 
-    public CaptureService() : this(new ProcessSupervisor())
+    public CaptureService() : this(new ProcessSupervisor(), null)
     {
     }
 
-    internal CaptureService(IProcessSupervisor processSupervisor)
+    internal CaptureService(IProcessSupervisor processSupervisor, ISourceSignalTelemetryProvider? sourceSignalTelemetryProvider = null)
     {
         _processSupervisor = processSupervisor ?? throw new ArgumentNullException(nameof(processSupervisor));
+        if (sourceSignalTelemetryProvider != null)
+        {
+            _sourceSignalTelemetryProvider = sourceSignalTelemetryProvider;
+            _sourceTelemetryBackend = sourceSignalTelemetryProvider.GetType().Name;
+        }
+        else
+        {
+            var providerMode = Environment.GetEnvironmentVariable("ELGATOCAPTURE_SOURCE_TELEMETRY_PROVIDER");
+            if (string.Equals(providerMode, "disabled", StringComparison.OrdinalIgnoreCase))
+            {
+                _sourceSignalTelemetryProvider = new DisabledSourceSignalTelemetryProvider();
+                _sourceTelemetryBackend = "FallbackOnly";
+                _sourceTelemetrySuppressed = true;
+                _sourceTelemetrySuppressedReason = "provider-disabled";
+                _sourceTelemetryCircuitState = "Open";
+            }
+            else
+            {
+                _sourceSignalTelemetryProvider = new EgavSourceSignalTelemetryProvider();
+                _sourceTelemetryBackend = "EgavInProc";
+            }
+        }
     }
 
     private readonly record struct CaptureCadenceMetrics(
@@ -307,6 +346,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
         return new RecordingStats(videoBytes, audioBytes);
     }
 
+    public SourceSignalTelemetrySnapshot GetLatestSourceTelemetrySnapshot()
+    {
+        lock (_sourceTelemetryLock)
+        {
+            return _latestSourceTelemetry;
+        }
+    }
+
     public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()
     {
         var health = GetHealthSnapshot();
@@ -337,6 +384,21 @@ public class CaptureService : IDisposable, IAsyncDisposable
             ObservedP010FrameCount = health.ObservedP010FrameCount,
             ObservedNv12FrameCount = health.ObservedNv12FrameCount,
             ObservedOtherFrameCount = health.ObservedOtherFrameCount,
+            SourceTelemetryAvailability = health.SourceTelemetryAvailability,
+            SourceTelemetryOrigin = health.SourceTelemetryOrigin,
+            SourceTelemetryConfidence = health.SourceTelemetryConfidence,
+            SourceTelemetryOriginDetail = health.SourceTelemetryOriginDetail,
+            SourceTelemetryDiagnosticSummary = health.SourceTelemetryDiagnosticSummary,
+            SourceTelemetryTimestampUtc = health.SourceTelemetryTimestampUtc,
+            SourceTelemetryBackend = health.SourceTelemetryBackend,
+            SourceTelemetrySuppressed = health.SourceTelemetrySuppressed,
+            SourceTelemetrySuppressedReason = health.SourceTelemetrySuppressedReason,
+            SourceTelemetryCircuitState = health.SourceTelemetryCircuitState,
+            SourceWidth = health.SourceWidth,
+            SourceHeight = health.SourceHeight,
+            SourceFrameRateExact = health.SourceFrameRateExact,
+            SourceFrameRateArg = health.SourceFrameRateArg,
+            SourceIsHdr = health.SourceIsHdr,
             HdrAutoDowngraded = health.HdrAutoDowngraded,
             HdrAutoDowngradeReason = health.HdrAutoDowngradeReason,
             CaptureCadenceSampleCount = health.CaptureCadenceSampleCount,
@@ -369,6 +431,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public CaptureRuntimeSnapshot GetRuntimeSnapshot()
     {
         var requestedSettings = _recordingContext?.Settings ?? _activeRecordingSettings ?? _currentSettings ?? _lastRecordingSettings;
+        var sourceTelemetry = GetLatestSourceTelemetrySnapshot();
         var outputPath = _lastOutputPath
             ?? _recordingContext?.FinalOutputPath
             ?? _recordingFile?.Path;
@@ -443,9 +506,26 @@ public class CaptureService : IDisposable, IAsyncDisposable
             ObservedOtherFrameCount = Interlocked.Read(ref _observedOtherFrameCount),
             EncoderInputPixelFormat = _activeVideoInputPixelFormat,
             EncoderOutputPixelFormat = _ffmpegEncoder?.ActiveOutputPixelFormat,
-            DetectedSourceFrameRate = _actualFrameRate,
-            DetectedSourceFrameRateArg = _actualFrameRateArg,
-            SourceFrameRateOrigin = _actualFrameRate.HasValue ? "NegotiatedDeviceFormat" : "Unknown",
+            DetectedSourceFrameRate = sourceTelemetry.FrameRateExact ?? _actualFrameRate,
+            DetectedSourceFrameRateArg = sourceTelemetry.FrameRateArg ?? _actualFrameRateArg,
+            SourceFrameRateOrigin = sourceTelemetry.Origin != SourceTelemetryOrigin.Unknown
+                ? sourceTelemetry.Origin.ToString()
+                : _actualFrameRate.HasValue
+                    ? "NegotiatedDeviceFormat"
+                    : "Unknown",
+            SourceWidth = sourceTelemetry.Width,
+            SourceHeight = sourceTelemetry.Height,
+            SourceIsHdr = sourceTelemetry.IsHdr,
+            SourceTelemetryAvailability = sourceTelemetry.Availability.ToString(),
+            SourceTelemetryOriginDetail = sourceTelemetry.OriginDetail,
+            SourceTelemetryConfidence = sourceTelemetry.Confidence.ToString(),
+            SourceTelemetryDiagnosticSummary = sourceTelemetry.DiagnosticSummary,
+            SourceTelemetryTimestampUtc = sourceTelemetry.TimestampUtc,
+            SourceTelemetryAgeSeconds = ComputeTelemetryAgeSeconds(sourceTelemetry.TimestampUtc, DateTimeOffset.UtcNow),
+            SourceTelemetryBackend = _sourceTelemetryBackend,
+            SourceTelemetrySuppressed = _sourceTelemetrySuppressed,
+            SourceTelemetrySuppressedReason = _sourceTelemetrySuppressedReason,
+            SourceTelemetryCircuitState = _sourceTelemetryCircuitState,
             RecordingBackend = _recordingBackend.ToString(),
             AudioPathMode = _activeAudioPathMode,
             MuxAttempted = _muxAttempted,
@@ -460,6 +540,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public CaptureHealthSnapshot GetHealthSnapshot()
     {
         var encoder = _ffmpegEncoder;
+        var sourceTelemetry = GetLatestSourceTelemetrySnapshot();
         var elapsedMs = _recordingStopwatch.IsRunning ? _recordingStopwatch.ElapsedMilliseconds : 0;
         var lastArrivalMs = Interlocked.Read(ref _lastFrameArrivalMs);
         var estimatedLatencyMs = (elapsedMs > 0 && lastArrivalMs > 0)
@@ -504,6 +585,21 @@ public class CaptureService : IDisposable, IAsyncDisposable
             ObservedP010FrameCount = Interlocked.Read(ref _observedP010FrameCount),
             ObservedNv12FrameCount = Interlocked.Read(ref _observedNv12FrameCount),
             ObservedOtherFrameCount = Interlocked.Read(ref _observedOtherFrameCount),
+            SourceTelemetryAvailability = sourceTelemetry.Availability,
+            SourceTelemetryOrigin = sourceTelemetry.Origin,
+            SourceTelemetryConfidence = sourceTelemetry.Confidence,
+            SourceTelemetryOriginDetail = sourceTelemetry.OriginDetail,
+            SourceTelemetryDiagnosticSummary = sourceTelemetry.DiagnosticSummary,
+            SourceTelemetryTimestampUtc = sourceTelemetry.TimestampUtc,
+            SourceTelemetryBackend = _sourceTelemetryBackend,
+            SourceTelemetrySuppressed = _sourceTelemetrySuppressed,
+            SourceTelemetrySuppressedReason = _sourceTelemetrySuppressedReason,
+            SourceTelemetryCircuitState = _sourceTelemetryCircuitState,
+            SourceWidth = sourceTelemetry.Width,
+            SourceHeight = sourceTelemetry.Height,
+            SourceFrameRateExact = sourceTelemetry.FrameRateExact,
+            SourceFrameRateArg = sourceTelemetry.FrameRateArg,
+            SourceIsHdr = sourceTelemetry.IsHdr,
             HdrAutoDowngraded = _hdrAutoDowngraded,
             HdrAutoDowngradeReason = _hdrAutoDowngradeReason,
             CaptureCadenceSampleCount = cadence.SampleCount,
@@ -531,6 +627,514 @@ public class CaptureService : IDisposable, IAsyncDisposable
             AudioDropsBacklogEviction = encoder?.AudioDropsBacklogEviction ?? 0,
             AudioChunksDropped = Interlocked.Read(ref _audioFileWriteDropped)
         };
+    }
+
+    private async Task StartSourceTelemetryPollingAsync()
+    {
+        if (_sourceTelemetrySuppressed)
+        {
+            Logger.Log($"Source telemetry polling suppressed: {_sourceTelemetrySuppressedReason ?? "unknown"}");
+            PublishSourceTelemetry(
+                SourceSignalTelemetrySnapshot.CreateUnavailable(
+                    "telemetry-suppressed",
+                    _sourceTelemetrySuppressedReason ?? "unknown"),
+                int.MaxValue);
+            return;
+        }
+
+        var stopCompleted = await StopSourceTelemetryPollingAsync().ConfigureAwait(false);
+        if (!stopCompleted)
+        {
+            SuppressSourceTelemetry("stop-timeout");
+            Logger.Log("Source telemetry stop timed out; suppressing EGAV telemetry for this session.");
+            PublishSourceTelemetry(
+                SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-stop-timeout", "suppressed"),
+                int.MaxValue);
+            return;
+        }
+
+        if (_isDisposed)
+        {
+            return;
+        }
+
+        var runId = Interlocked.Increment(ref _sourceTelemetryRunId);
+        var cts = new CancellationTokenSource();
+        lock (_sourceTelemetryLock)
+        {
+            _sourceTelemetryCancellation = cts;
+            _sourceTelemetryTask = Task.Run(() => RunSourceTelemetryPollingAsync(cts.Token, runId), cts.Token);
+        }
+    }
+
+    private async Task<bool> StopSourceTelemetryPollingAsync()
+    {
+        CancellationTokenSource? cts = null;
+        Task? task = null;
+        lock (_sourceTelemetryLock)
+        {
+            cts = _sourceTelemetryCancellation;
+            task = _sourceTelemetryTask;
+        }
+
+        if (cts == null)
+        {
+            return true;
+        }
+
+        try
+        {
+            cts.Cancel();
+        }
+        catch
+        {
+            // Best effort cancellation.
+        }
+
+        var stopCompleted = true;
+        var stopTimeoutMs = GetIntFromEnv(
+            "ELGATOCAPTURE_SOURCE_TELEMETRY_STOP_TIMEOUT_MS",
+            3000,
+            1000,
+            15000);
+        if (task != null)
+        {
+            var completion = await Task.WhenAny(task, Task.Delay(stopTimeoutMs)).ConfigureAwait(false);
+            if (!ReferenceEquals(completion, task))
+            {
+                stopCompleted = false;
+                Logger.Log($"Source telemetry poll stop timed out after {stopTimeoutMs} ms.");
+                PublishSourceTelemetry(
+                    SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-stop-timeout", $"{stopTimeoutMs}ms"),
+                    int.MaxValue);
+            }
+            else
+            {
+                try
+                {
+                    await task.ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected during cancellation.
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Source telemetry poll stop error: {ex.Message}");
+                }
+            }
+        }
+
+        lock (_sourceTelemetryLock)
+        {
+            if (ReferenceEquals(_sourceTelemetryCancellation, cts))
+            {
+                _sourceTelemetryCancellation = null;
+            }
+
+            if (ReferenceEquals(_sourceTelemetryTask, task))
+            {
+                _sourceTelemetryTask = null;
+            }
+
+            Interlocked.Increment(ref _sourceTelemetryRunId);
+        }
+
+        if (stopCompleted)
+        {
+            cts.Dispose();
+        }
+
+        return stopCompleted;
+    }
+
+    private async Task RunSourceTelemetryPollingAsync(CancellationToken cancellationToken, long runId)
+    {
+        var pollIntervalMs = GetIntFromEnv(
+            "ELGATOCAPTURE_SOURCE_TELEMETRY_POLL_MS",
+            1000,
+            500,
+            2000);
+        var staleThresholdMs = GetIntFromEnv(
+            "ELGATOCAPTURE_SOURCE_TELEMETRY_STALE_MS",
+            5000,
+            1000,
+            30000);
+        var readTimeoutMs = GetIntFromEnv(
+            "ELGATOCAPTURE_SOURCE_TELEMETRY_READ_TIMEOUT_MS",
+            750,
+            250,
+            3000);
+        var openFailBackoffMs = GetIntFromEnv(
+            "ELGATOCAPTURE_SOURCE_TELEMETRY_OPEN_FAIL_BACKOFF_MS",
+            2000,
+            1000,
+            5000);
+        var openFailBackoffThreshold = GetIntFromEnv(
+            "ELGATOCAPTURE_SOURCE_TELEMETRY_OPEN_FAIL_BACKOFF_THRESHOLD",
+            3,
+            1,
+            20);
+        var consecutiveOpenFailures = 0;
+        Task<SourceSignalTelemetrySnapshot>? readTask = null;
+        long readStartedTick = 0;
+        long lastReadHangLogTick = 0;
+
+        while (!cancellationToken.IsCancellationRequested &&
+               runId == Volatile.Read(ref _sourceTelemetryRunId))
+        {
+            SourceSignalTelemetrySnapshot sample;
+            try
+            {
+                if (readTask == null || readTask.IsCompleted)
+                {
+                    var device = _currentDevice;
+                    readStartedTick = Environment.TickCount64;
+                    readTask = Task.Run(
+                        async () => await _sourceSignalTelemetryProvider.ReadAsync(device, cancellationToken).ConfigureAwait(false),
+                        cancellationToken);
+                }
+
+                var completed = await Task.WhenAny(readTask, Task.Delay(readTimeoutMs, cancellationToken)).ConfigureAwait(false);
+                if (ReferenceEquals(completed, readTask))
+                {
+                    sample = await readTask.ConfigureAwait(false);
+                    readTask = null;
+                }
+                else
+                {
+                    sample = SourceSignalTelemetrySnapshot.CreateUnavailable(
+                        "telemetry-read-timeout",
+                        $"{readTimeoutMs}ms");
+
+                    var nowTick = Environment.TickCount64;
+                    var readDurationMs = nowTick - readStartedTick;
+                    if (readDurationMs >= readTimeoutMs * 4 &&
+                        nowTick - lastReadHangLogTick >= SourceTelemetryReadHangLogIntervalMs)
+                    {
+                        lastReadHangLogTick = nowTick;
+                        Logger.Log($"Source telemetry read appears hung ({readDurationMs} ms); continuing with timeout-degraded samples.");
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+            catch (Exception ex)
+            {
+                var nowTick = Environment.TickCount64;
+                if (nowTick - Interlocked.Read(ref _lastSourceTelemetryErrorLogTick) >= SourceTelemetryErrorLogIntervalMs)
+                {
+                    Interlocked.Exchange(ref _lastSourceTelemetryErrorLogTick, nowTick);
+                    Logger.Log($"Source telemetry provider error: {ex.Message}");
+                }
+
+                sample = SourceSignalTelemetrySnapshot.CreateUnavailable(
+                    "telemetry-provider-exception",
+                    $"{ex.GetType().Name}: {ex.Message}");
+            }
+
+            if (runId != Volatile.Read(ref _sourceTelemetryRunId))
+            {
+                break;
+            }
+
+            sample = ApplyRuntimeFallbackToTelemetry(sample);
+
+            if (ShouldCountAsTelemetryFailure(sample))
+            {
+                RegisterTelemetryFailure(sample);
+            }
+            else if (sample.Availability == SourceTelemetryAvailability.Available && sample.HasSignalData)
+            {
+                ClearTelemetryFailures();
+            }
+
+            if (_sourceTelemetrySuppressed)
+            {
+                sample = SourceSignalTelemetrySnapshot.CreateUnavailable(
+                    "telemetry-suppressed",
+                    _sourceTelemetrySuppressedReason ?? "unknown");
+            }
+
+            if (IsEgavOpenFailure(sample))
+            {
+                consecutiveOpenFailures = Math.Min(consecutiveOpenFailures + 1, 1000);
+            }
+            else if (sample.Availability == SourceTelemetryAvailability.Available && sample.HasSignalData)
+            {
+                consecutiveOpenFailures = 0;
+            }
+
+            PublishSourceTelemetry(sample, staleThresholdMs);
+
+            var nextDelayMs = pollIntervalMs;
+            if (consecutiveOpenFailures >= openFailBackoffThreshold)
+            {
+                nextDelayMs = Math.Max(nextDelayMs, openFailBackoffMs);
+            }
+
+            try
+            {
+                await Task.Delay(nextDelayMs, cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private SourceSignalTelemetrySnapshot ApplyRuntimeFallbackToTelemetry(SourceSignalTelemetrySnapshot sample)
+    {
+        var fallbackWidth = _actualWidth.HasValue && _actualWidth.Value <= int.MaxValue
+            ? (int?)_actualWidth.Value
+            : null;
+        var fallbackHeight = _actualHeight.HasValue && _actualHeight.Value <= int.MaxValue
+            ? (int?)_actualHeight.Value
+            : null;
+        var fallbackRate = _actualFrameRate;
+        var fallbackRateArg = _actualFrameRateArg;
+        var hasFallback = fallbackWidth.HasValue && fallbackHeight.HasValue && fallbackRate.HasValue && fallbackRate.Value > 0;
+        if (!hasFallback)
+        {
+            return sample;
+        }
+
+        if (sample.HasSignalData && sample.Availability == SourceTelemetryAvailability.Available)
+        {
+            return sample;
+        }
+
+        var inferredRateArg = !string.IsNullOrWhiteSpace(fallbackRateArg)
+            ? fallbackRateArg
+            : sample.FrameRateArg;
+        if (string.IsNullOrWhiteSpace(inferredRateArg) && fallbackRate.HasValue)
+        {
+            inferredRateArg = fallbackRate.Value.ToString("0.###", CultureInfo.InvariantCulture);
+        }
+
+        var fallbackAvailability = sample.Availability == SourceTelemetryAvailability.Unavailable
+            ? SourceTelemetryAvailability.Inconclusive
+            : sample.Availability;
+
+        return sample with
+        {
+            TimestampUtc = DateTimeOffset.UtcNow,
+            Availability = fallbackAvailability,
+            Origin = SourceTelemetryOrigin.DeviceFormatFallback,
+            OriginDetail = "NegotiatedDeviceFormat",
+            Confidence = SourceTelemetryConfidence.Low,
+            Width = fallbackWidth,
+            Height = fallbackHeight,
+            FrameRateExact = fallbackRate,
+            FrameRateArg = inferredRateArg,
+            IsHdr = sample.IsHdr,
+            DiagnosticSummary = string.IsNullOrWhiteSpace(sample.DiagnosticSummary)
+                ? "fallback:negotiated-device-format"
+                : $"{sample.DiagnosticSummary};fallback:negotiated-device-format"
+        };
+    }
+
+    private void PublishSourceTelemetry(SourceSignalTelemetrySnapshot sample, int staleThresholdMs)
+    {
+        var now = DateTimeOffset.UtcNow;
+        SourceSignalTelemetrySnapshot? staleFrom = null;
+        SourceSignalTelemetrySnapshot published;
+
+        lock (_sourceTelemetryLock)
+        {
+            if (sample.Availability == SourceTelemetryAvailability.Available && sample.HasSignalData)
+            {
+                _lastSuccessfulSourceTelemetry = sample;
+            }
+            else if (_lastSuccessfulSourceTelemetry != null)
+            {
+                var ageMs = (now - _lastSuccessfulSourceTelemetry.TimestampUtc).TotalMilliseconds;
+                if (ageMs >= staleThresholdMs)
+                {
+                    staleFrom = _lastSuccessfulSourceTelemetry;
+                }
+            }
+
+            published = staleFrom == null
+                ? sample
+                : staleFrom with
+                {
+                    TimestampUtc = now,
+                    Availability = SourceTelemetryAvailability.Stale,
+                    DiagnosticSummary = string.IsNullOrWhiteSpace(sample.DiagnosticSummary)
+                        ? "telemetry-stale:last-known-good"
+                        : $"telemetry-stale:last-known-good;{sample.DiagnosticSummary}"
+                };
+            _latestSourceTelemetry = published;
+        }
+
+        var signature = BuildSourceTelemetrySignature(published);
+        if (!string.Equals(signature, _lastSourceTelemetryTransitionSignature, StringComparison.Ordinal))
+        {
+            _lastSourceTelemetryTransitionSignature = signature;
+            Logger.Log(
+                $"Source telemetry: availability={published.Availability}, origin={published.Origin}, " +
+                $"mode={published.Width?.ToString() ?? "?"}x{published.Height?.ToString() ?? "?"}@" +
+                $"{published.FrameRateArg ?? published.FrameRateExact?.ToString("0.###") ?? "?"}, hdr={published.IsHdr?.ToString() ?? "?"}, " +
+                $"confidence={published.Confidence}");
+            var handlers = SourceTelemetryUpdated;
+            if (handlers == null)
+            {
+                return;
+            }
+
+            foreach (var handler in handlers.GetInvocationList())
+            {
+                if (handler is not EventHandler<SourceSignalTelemetrySnapshot> typedHandler)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    typedHandler(this, published);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Source telemetry subscriber error: {ex.Message}");
+                }
+            }
+        }
+    }
+
+    private static string BuildSourceTelemetrySignature(SourceSignalTelemetrySnapshot snapshot)
+    {
+        var modeKey = snapshot.GetModeKey();
+        return $"{snapshot.Availability}|{snapshot.Origin}|{snapshot.Confidence}|{modeKey}";
+    }
+
+    private static int? ComputeTelemetryAgeSeconds(DateTimeOffset? timestampUtc, DateTimeOffset nowUtc)
+    {
+        if (!timestampUtc.HasValue)
+        {
+            return null;
+        }
+
+        var age = nowUtc - timestampUtc.Value;
+        if (age < TimeSpan.Zero)
+        {
+            return 0;
+        }
+
+        return (int)Math.Floor(age.TotalSeconds);
+    }
+
+    private static bool IsEgavOpenFailure(SourceSignalTelemetrySnapshot sample)
+    {
+        return !string.IsNullOrWhiteSpace(sample.DiagnosticSummary) &&
+               sample.DiagnosticSummary.StartsWith("egav-open-failed", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool ShouldCountAsTelemetryFailure(SourceSignalTelemetrySnapshot sample)
+    {
+        var summary = sample.DiagnosticSummary ?? string.Empty;
+        if (summary.Length == 0)
+        {
+            return false;
+        }
+
+        return summary.Contains("egav-open-failed", StringComparison.OrdinalIgnoreCase) ||
+               summary.Contains("egav-initialize-failed", StringComparison.OrdinalIgnoreCase) ||
+               summary.Contains("telemetry-read-timeout", StringComparison.OrdinalIgnoreCase) ||
+               summary.Contains("telemetry-provider-exception", StringComparison.OrdinalIgnoreCase) ||
+               summary.Contains("egav-native-busy", StringComparison.OrdinalIgnoreCase) ||
+               summary.Contains("egav-device-unsupported", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void RegisterTelemetryFailure(SourceSignalTelemetrySnapshot sample)
+    {
+        if (_sourceTelemetrySuppressed)
+        {
+            return;
+        }
+
+        var threshold = GetIntFromEnv(
+            "ELGATOCAPTURE_SOURCE_TELEMETRY_BREAKER_THRESHOLD",
+            3,
+            1,
+            20);
+        var windowMs = GetIntFromEnv(
+            "ELGATOCAPTURE_SOURCE_TELEMETRY_BREAKER_WINDOW_MS",
+            30000,
+            5000,
+            300000);
+        var now = DateTimeOffset.UtcNow;
+
+        lock (_sourceTelemetryLock)
+        {
+            while (_sourceTelemetryFailureTimestamps.Count > 0 &&
+                   (now - _sourceTelemetryFailureTimestamps.Peek()).TotalMilliseconds > windowMs)
+            {
+                _sourceTelemetryFailureTimestamps.Dequeue();
+            }
+
+            _sourceTelemetryFailureTimestamps.Enqueue(now);
+            if (_sourceTelemetryFailureTimestamps.Count < threshold)
+            {
+                return;
+            }
+        }
+
+        var reason = sample.DiagnosticSummary ?? "telemetry-failure-threshold-reached";
+        SuppressSourceTelemetry($"circuit-open:{reason}");
+        Logger.Log($"Source telemetry circuit breaker opened after repeated EGAV failures: {reason}");
+    }
+
+    private void ClearTelemetryFailures()
+    {
+        lock (_sourceTelemetryLock)
+        {
+            _sourceTelemetryFailureTimestamps.Clear();
+            if (!_sourceTelemetrySuppressed)
+            {
+                _sourceTelemetryCircuitState = "Closed";
+            }
+        }
+    }
+
+    private void SuppressSourceTelemetry(string reason)
+    {
+        lock (_sourceTelemetryLock)
+        {
+            _sourceTelemetrySuppressed = true;
+            _sourceTelemetrySuppressedReason = reason;
+            _sourceTelemetryCircuitState = "Open";
+            _sourceTelemetryFailureTimestamps.Clear();
+        }
+    }
+
+    private void ResetTelemetrySuppressionForInitialize()
+    {
+        var resetOnReinit = GetIntFromEnv(
+            "ELGATOCAPTURE_SOURCE_TELEMETRY_BREAKER_RESET_ON_REINIT",
+            1,
+            0,
+            1) == 1;
+        if (!resetOnReinit)
+        {
+            return;
+        }
+
+        lock (_sourceTelemetryLock)
+        {
+            if (string.Equals(_sourceTelemetryBackend, "FallbackOnly", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            _sourceTelemetrySuppressed = false;
+            _sourceTelemetrySuppressedReason = null;
+            _sourceTelemetryCircuitState = "Closed";
+            _sourceTelemetryFailureTimestamps.Clear();
+        }
     }
 
     public async Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName)
@@ -586,6 +1190,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         Interlocked.Exchange(ref _observedP010FrameCount, 0);
         Interlocked.Exchange(ref _observedNv12FrameCount, 0);
         Interlocked.Exchange(ref _observedOtherFrameCount, 0);
+        ResetTelemetrySuppressionForInitialize();
 
         _mediaCapture = new MediaCapture();
 
@@ -773,6 +1378,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             _isInitialized = true;
+            await StartSourceTelemetryPollingAsync().ConfigureAwait(false);
             _sessionState = CaptureSessionState.Ready;
             StatusChanged?.Invoke(this, "Initialized");
         }
@@ -3674,6 +4280,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
     private async Task CleanupCoreAsync()
     {
+        await StopSourceTelemetryPollingAsync().ConfigureAwait(false);
+
         if (_isRecording)
         {
             await StopRecordingCoreAsync();
@@ -3733,6 +4341,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
         _recordingReaderRequestedSubtype = null;
         _firstObservedFramePixelFormat = null;
         _latestObservedFramePixelFormat = null;
+        lock (_sourceTelemetryLock)
+        {
+            _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
+            _lastSuccessfulSourceTelemetry = null;
+            _lastSourceTelemetryTransitionSignature = null;
+        }
         if (!_isDisposed)
         {
             _sessionState = CaptureSessionState.Uninitialized;
@@ -3767,6 +4381,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             Logger.Log($"Graceful cleanup during dispose failed: {ex.Message}");
+        }
+
+        try
+        {
+            StopSourceTelemetryPollingAsync().GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Source telemetry stop during dispose failed: {ex.Message}");
         }
 
         // Fallback synchronous cleanup for any remaining resources.

@@ -9,6 +9,8 @@ using ElgatoCapture.Services;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics.Imaging;
 using Windows.Media.Capture.Frames;
@@ -25,6 +27,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
     private MediaPlayer? _previewMediaPlayer;
+    private bool _previewUsedLegacyStart;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
@@ -55,6 +58,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private int _automationServicesStarted;
+    private DispatcherQueueTimer? _infoBarDismissTimer;
 
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
@@ -383,6 +387,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         HdrFpsHintTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.HdrResolutionSupportHint)
             ? Visibility.Collapsed
             : Visibility.Visible;
+        SourceTelemetryTextBlock.Text = ViewModel.SourceTelemetrySummaryText;
+        SourceTelemetryTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.SourceTelemetrySummaryText)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        TargetTelemetryTextBlock.Text = ViewModel.SourceTargetSummaryText;
+        TargetTelemetryTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.SourceTargetSummaryText)
+            ? Visibility.Collapsed
+            : Visibility.Visible;
 
         // Wire up selection changes with loop prevention
         DeviceComboBox.SelectionChanged += (s, e) =>
@@ -453,7 +465,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioPreviewToggle.Checked += (s, e) => ViewModel.IsAudioPreviewEnabled = true;
         AudioPreviewToggle.Unchecked += (s, e) => ViewModel.IsAudioPreviewEnabled = false;
         CustomAudioToggle.Toggled += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsOn;
-        AudioMeterFillHost.SizeChanged += (s, e) => UpdateAudioMeterLevel(ViewModel.AudioPeak);
+        AudioMeterTrack.SizeChanged += (s, e) => UpdateAudioMeterLevel(ViewModel.AudioPeak);
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -923,6 +935,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var sourceFrameRateText = snapshot.DetectedSourceFrameRateArg
             ?? snapshot.DetectedSourceFrameRate?.ToString("0.###")
             ?? "?";
+        var sourceResolutionText = snapshot.SourceWidth.HasValue && snapshot.SourceHeight.HasValue
+            ? $"{snapshot.SourceWidth}x{snapshot.SourceHeight}"
+            : "?x?";
+        var sourceHdrText = snapshot.SourceIsHdr.HasValue
+            ? (snapshot.SourceIsHdr.Value ? "HDR" : "SDR")
+            : "HDR?";
 
         static string NormalizeFormatToken(string? text)
         {
@@ -993,7 +1011,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             $"Requested: {snapshot.RequestedWidth?.ToString() ?? "?"}x{snapshot.RequestedHeight?.ToString() ?? "?"} @ {requestedFrameRateText} ({snapshot.RequestedFrameRate?.ToString("0.###") ?? "?"} fps), fmt={requestedFormatText}{Environment.NewLine}" +
             $"Negotiated: {snapshot.NegotiatedWidth?.ToString() ?? snapshot.ActualWidth?.ToString() ?? "?"}x{snapshot.NegotiatedHeight?.ToString() ?? snapshot.ActualHeight?.ToString() ?? "?"} @ {actualFrameRateText} ({snapshot.NegotiatedFrameRate?.ToString("0.###") ?? snapshot.ActualFrameRate?.ToString("0.###") ?? "?"} fps), fmt={negotiatedFormatText}{Environment.NewLine}" +
             $"Observed: fmt={observedFormatText} | {observedCountsText}{Environment.NewLine}" +
-            $"Source FPS: {sourceFrameRateText} ({snapshot.SourceFrameRateOrigin}){Environment.NewLine}" +
+            $"Source: {sourceResolutionText} @ {sourceFrameRateText} | {sourceHdrText} | {snapshot.SourceTelemetryAvailability}/{snapshot.SourceTelemetryConfidence} ({snapshot.SourceTelemetryOriginDetail}){Environment.NewLine}" +
+            $"Telemetry: backend={snapshot.SourceTelemetryBackend}, circuit={snapshot.SourceTelemetryCircuitState}, suppressed={YesNo(snapshot.SourceTelemetrySuppressed)}{(string.IsNullOrWhiteSpace(snapshot.SourceTelemetrySuppressedReason) ? string.Empty : $" ({snapshot.SourceTelemetrySuppressedReason})")}{Environment.NewLine}" +
             $"Status: {captureStatus}";
 
         DiagAudioTextBlock.Text =
@@ -1135,14 +1154,17 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             case nameof(MainViewModel.IsPreviewing):
                 if (ViewModel.IsPreviewing)
                 {
+                    FadeOutElement(NoDevicePlaceholder);
+                    PreviewLoadingOverlay.Visibility = Visibility.Visible;
                     await StartPreviewInternalAsync();
-                    NoDevicePlaceholder.Visibility = Visibility.Collapsed;
+                    PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
                     PreviewButton.Content = "Stop Preview";
                 }
                 else
                 {
+                    PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
                     await StopPreviewInternalAsync();
-                    NoDevicePlaceholder.Visibility = Visibility.Visible;
+                    FadeInElement(NoDevicePlaceholder);
                     PreviewButton.Content = "Start Preview";
                 }
                 break;
@@ -1155,14 +1177,30 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 AudioRecordToggle.IsEnabled = !ViewModel.IsRecording;
                 CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+                if (ViewModel.IsRecording)
+                    RecPulseStoryboard.Begin();
+                else
+                {
+                    RecPulseStoryboard.Stop();
+                    Title = "Elgato Capture";
+                }
                 break;
 
             case nameof(MainViewModel.StatusText):
                 StatusTextBlock.Text = ViewModel.StatusText;
+                var statusText = ViewModel.StatusText;
+                if (statusText.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+                    statusText.Contains("failed", StringComparison.OrdinalIgnoreCase))
+                    ShowStatusNotification(statusText, InfoBarSeverity.Error);
+                else if (statusText.Contains("saved", StringComparison.OrdinalIgnoreCase) ||
+                         statusText.Contains("Found", StringComparison.OrdinalIgnoreCase))
+                    ShowStatusNotification(statusText, InfoBarSeverity.Success);
                 break;
 
             case nameof(MainViewModel.RecordingTime):
                 RecordingTimeTextBlock.Text = ViewModel.RecordingTime;
+                if (ViewModel.IsRecording)
+                    Title = $"Elgato Capture \u2014 REC {ViewModel.RecordingTime}";
                 break;
 
             case nameof(MainViewModel.DiskSpaceInfo):
@@ -1255,6 +1293,20 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             case nameof(MainViewModel.HdrResolutionSupportHint):
                 HdrFpsHintTextBlock.Text = ViewModel.HdrResolutionSupportHint;
                 HdrFpsHintTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.HdrResolutionSupportHint)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
+                break;
+
+            case nameof(MainViewModel.SourceTelemetrySummaryText):
+                SourceTelemetryTextBlock.Text = ViewModel.SourceTelemetrySummaryText;
+                SourceTelemetryTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.SourceTelemetrySummaryText)
+                    ? Visibility.Collapsed
+                    : Visibility.Visible;
+                break;
+
+            case nameof(MainViewModel.SourceTargetSummaryText):
+                TargetTelemetryTextBlock.Text = ViewModel.SourceTargetSummaryText;
+                TargetTelemetryTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.SourceTargetSummaryText)
                     ? Visibility.Collapsed
                     : Visibility.Visible;
                 break;
@@ -1675,6 +1727,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 Logger.Log("No suitable frame source found, trying fallback...");
                 // Fallback: try using MediaCapture.StartPreviewAsync() for older devices
                 await ViewModel.MediaCapture.StartPreviewAsync();
+                _previewUsedLegacyStart = true;
                 Logger.Log("Fallback preview started");
                 ViewModel.StatusText = "Preview active (fallback mode)";
             }
@@ -1702,9 +1755,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 _previewFrameReader = null;
             }
 
-            if (ViewModel.MediaCapture != null)
+            if (_previewUsedLegacyStart && ViewModel.MediaCapture != null)
             {
                 await ViewModel.MediaCapture.StopPreviewAsync();
+                _previewUsedLegacyStart = false;
             }
 
             PreviewImage.Source = null;
@@ -1965,19 +2019,79 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void UpdateAudioMeterLevel(double level)
     {
-        var clamped = Math.Clamp(level, 0, 1);
-        var hostWidth = AudioMeterFillHost.ActualWidth;
-        if (hostWidth <= 0)
-        {
-            return;
-        }
+        var clamped = Math.Clamp(level, 0.0, 1.0);
+        var trackWidth = AudioMeterTrack.ActualWidth;
+        if (trackWidth <= 0) return;
+        AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * clamped, 8);
+    }
 
-        AudioMeterMask.Width = hostWidth * (1 - clamped);
+    private void ShowStatusNotification(string message, InfoBarSeverity severity, int autoCloseMs = 5000)
+    {
+        StatusInfoBar.Message = message;
+        StatusInfoBar.Severity = severity;
+        StatusInfoBar.IsOpen = true;
+
+        _infoBarDismissTimer?.Stop();
+        _infoBarDismissTimer = _dispatcherQueue.CreateTimer();
+        _infoBarDismissTimer.Interval = TimeSpan.FromMilliseconds(autoCloseMs);
+        _infoBarDismissTimer.IsRepeating = false;
+        _infoBarDismissTimer.Tick += (_, _) => StatusInfoBar.IsOpen = false;
+        _infoBarDismissTimer.Start();
+    }
+
+    private static void FadeOutElement(UIElement element)
+    {
+        var animation = new DoubleAnimation
+        {
+            From = 1.0,
+            To = 0.0,
+            Duration = new Duration(TimeSpan.FromMilliseconds(200))
+        };
+        var storyboard = new Storyboard();
+        Storyboard.SetTarget(animation, element);
+        Storyboard.SetTargetProperty(animation, "Opacity");
+        storyboard.Completed += (_, _) =>
+        {
+            element.Visibility = Visibility.Collapsed;
+            element.Opacity = 1.0;
+        };
+        storyboard.Children.Add(animation);
+        storyboard.Begin();
+    }
+
+    private static void FadeInElement(UIElement element)
+    {
+        element.Opacity = 0.0;
+        element.Visibility = Visibility.Visible;
+        var animation = new DoubleAnimation
+        {
+            From = 0.0,
+            To = 1.0,
+            Duration = new Duration(TimeSpan.FromMilliseconds(200))
+        };
+        var storyboard = new Storyboard();
+        Storyboard.SetTarget(animation, element);
+        Storyboard.SetTargetProperty(animation, "Opacity");
+        storyboard.Children.Add(animation);
+        storyboard.Begin();
     }
 
     private void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
-        _ = RunUiEventHandlerAsync(() => ViewModel.RefreshDevicesAsync(), nameof(RefreshButton_Click));
+        _ = RunUiEventHandlerAsync(async () =>
+        {
+            RefreshButton.Content = new Microsoft.UI.Xaml.Controls.ProgressRing { Width = 16, Height = 16, IsActive = true };
+            RefreshButton.IsEnabled = false;
+            try
+            {
+                await ViewModel.RefreshDevicesAsync();
+            }
+            finally
+            {
+                RefreshButton.Content = new Microsoft.UI.Xaml.Controls.FontIcon { Glyph = "\uE72C", FontSize = 14 };
+                RefreshButton.IsEnabled = true;
+            }
+        }, nameof(RefreshButton_Click));
     }
 
     private void PreviewButton_Click(object sender, RoutedEventArgs e)

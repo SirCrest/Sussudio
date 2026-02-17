@@ -1,0 +1,39 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ResourceDictionary.ThemeDictionaries>
+        <!-- Dark theme (Default) -->
+        <ResourceDictionary x:Key="Default">
+            <SolidColorBrush x:Key="AudioMeterTrackBrush" Color="#1E1E1E"/>
+            <SolidColorBrush x:Key="AudioMeterBorderBrush" Color="#333333"/>
+            <SolidColorBrush x:Key="RecordButtonBrush" Color="#E81123"/>
+            <SolidColorBrush x:Key="RecordButtonHoverBrush" Color="#F1707A"/>
+            <SolidColorBrush x:Key="RecordButtonPressedBrush" Color="#C50F1F"/>
+            <SolidColorBrush x:Key="RecordButtonBorderBrush" Color="#C50F1F"/>
+            <SolidColorBrush x:Key="RecordingIndicatorBrush" Color="#E0FF0000"/>
+            <SolidColorBrush x:Key="WarningHintBrush" Color="#F5C542"/>
+            <SolidColorBrush x:Key="ClipAlertBrush" Color="#D13438"/>
+        </ResourceDictionary>
+
+        <!-- Light theme -->
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="AudioMeterTrackBrush" Color="#E8E8E8"/>
+            <SolidColorBrush x:Key="AudioMeterBorderBrush" Color="#CCCCCC"/>
+            <SolidColorBrush x:Key="RecordButtonBrush" Color="#E81123"/>
+            <SolidColorBrush x:Key="RecordButtonHoverBrush" Color="#F1707A"/>
+            <SolidColorBrush x:Key="RecordButtonPressedBrush" Color="#C50F1F"/>
+            <SolidColorBrush x:Key="RecordButtonBorderBrush" Color="#C50F1F"/>
+            <SolidColorBrush x:Key="RecordingIndicatorBrush" Color="#E0FF0000"/>
+            <SolidColorBrush x:Key="WarningHintBrush" Color="#C49000"/>
+            <SolidColorBrush x:Key="ClipAlertBrush" Color="#D13438"/>
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+
+    <!-- Secondary label style for Opacity="0.7" + FontSize="12" pattern -->
+    <Style x:Key="SecondaryLabelStyle" TargetType="TextBlock">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
+    </Style>
+
+</ResourceDictionary>

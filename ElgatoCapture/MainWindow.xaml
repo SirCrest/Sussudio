@@ -14,9 +14,19 @@
     </Window.SystemBackdrop>
 
     <Grid Padding="16" RowSpacing="12">
+        <Grid.Resources>
+            <Storyboard x:Name="RecPulseStoryboard" RepeatBehavior="Forever">
+                <DoubleAnimation Storyboard.TargetName="RecIndicatorDot"
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="1.0" To="0.3"
+                                 Duration="0:0:0.8"
+                                 AutoReverse="True"/>
+            </Storyboard>
+        </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -29,32 +39,29 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="2*" MinWidth="300"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*" MinWidth="200"/>
+                <ColumnDefinition Width="0"/>
             </Grid.ColumnDefinitions>
 
             <TextBlock Grid.Row="0" Grid.Column="0"
                        Text="Device"
-                       FontSize="12"
-                       Opacity="0.7"
+                       Style="{StaticResource SecondaryLabelStyle}"
                        VerticalAlignment="Bottom"
                        Margin="0,0,0,2"/>
 
             <TextBlock Grid.Row="0" Grid.Column="2"
                        Text="Custom Audio Input"
-                       FontSize="12"
-                       Opacity="0.7"
+                       Style="{StaticResource SecondaryLabelStyle}"
                        VerticalAlignment="Bottom"
                        Margin="0,0,0,2"/>
 
             <TextBlock x:Name="AudioInputLabel"
                        Grid.Row="0" Grid.Column="3"
                        Text="Audio Input"
-                       FontSize="12"
-                       Opacity="0.7"
+                       Style="{StaticResource SecondaryLabelStyle}"
                        VerticalAlignment="Bottom"
                        Margin="0,0,0,2"
                        Visibility="Collapsed"/>
@@ -62,7 +69,7 @@
             <ComboBox Grid.Row="1" Grid.Column="0"
                       x:Name="DeviceComboBox"
                       AutomationProperties.AutomationId="DeviceComboBox"
-                      Width="520"
+                      HorizontalAlignment="Stretch"
                       VerticalAlignment="Center"
                       DisplayMemberPath="Name"
                       PlaceholderText="Select a capture device"/>
@@ -87,7 +94,7 @@
             <ComboBox Grid.Row="1" Grid.Column="3"
                       x:Name="AudioInputComboBox"
                       AutomationProperties.AutomationId="AudioInputComboBox"
-                      Width="320"
+                      HorizontalAlignment="Stretch"
                       VerticalAlignment="Center"
                       DisplayMemberPath="Name"
                       PlaceholderText="Select audio input"
@@ -129,7 +136,7 @@
                         Margin="12"
                         Padding="8,4"
                         CornerRadius="4"
-                        Background="#E0FF0000">
+                        Background="{ThemeResource RecordingIndicatorBrush}">
                     <StackPanel Orientation="Horizontal" Spacing="6">
                         <Ellipse x:Name="RecIndicatorDot" Width="10" Height="10" Fill="White"/>
                         <TextBlock Text="REC" Foreground="White" FontWeight="Bold" FontSize="12"/>
@@ -140,167 +147,190 @@
                 <StackPanel x:Name="NoDevicePlaceholder"
                             AutomationProperties.AutomationId="NoDevicePlaceholder"
                             HorizontalAlignment="Center"
-                            VerticalAlignment="Center">
-                    <FontIcon Glyph="&#xE714;" FontSize="64" Opacity="0.3"/>
+                            VerticalAlignment="Center"
+                            Spacing="8">
+                    <FontIcon Glyph="&#xE714;" FontSize="48"
+                              Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
                     <TextBlock Text="No preview available"
-                               Opacity="0.5"
-                               Margin="0,12,0,0"
+                               Style="{ThemeResource SubtitleTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                HorizontalAlignment="Center"/>
-                    <TextBlock Text="Select a device and click Start Preview"
-                               Opacity="0.3"
-                               FontSize="12"
+                    <TextBlock Text="Select a capture device above, then click Start Preview"
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               HorizontalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Preview Loading Overlay -->
+                <StackPanel x:Name="PreviewLoadingOverlay"
+                            Visibility="Collapsed"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="12">
+                    <ProgressRing IsActive="True" Width="40" Height="40"/>
+                    <TextBlock x:Name="PreviewLoadingText"
+                               Text="Starting preview..."
+                               Style="{ThemeResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                HorizontalAlignment="Center"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Settings Row -->
-        <Grid Grid.Row="2" ColumnSpacing="16">
+        <Grid Grid.Row="2" ColumnSpacing="12">
+            <Grid.ChildrenTransitions>
+                <EntranceThemeTransition/>
+            </Grid.ChildrenTransitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Resolution -->
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="Resolution" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
-                <ComboBox x:Name="ResolutionComboBox"
-                          AutomationProperties.AutomationId="ResolutionComboBox"
-                          MinWidth="120"
-                          DisplayMemberPath="DisplayText">
-                    <ComboBox.ItemContainerStyle>
-                        <Style TargetType="ComboBoxItem">
-                            <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
-                            <Setter Property="ToolTipService.ToolTip" Value="{Binding DisableReason}"/>
-                        </Style>
-                    </ComboBox.ItemContainerStyle>
-                </ComboBox>
-            </StackPanel>
+            <!-- Capture Settings Card -->
+            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Orientation="Horizontal" Spacing="16">
+                    <!-- Resolution -->
+                    <StackPanel>
+                        <TextBlock Text="Resolution" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="ResolutionComboBox"
+                                  AutomationProperties.AutomationId="ResolutionComboBox"
+                                  MinWidth="120"
+                                  DisplayMemberPath="DisplayText">
+                            <ComboBox.ItemContainerStyle>
+                                <Style TargetType="ComboBoxItem">
+                                    <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
+                                    <Setter Property="ToolTipService.ToolTip" Value="{Binding DisableReason}"/>
+                                </Style>
+                            </ComboBox.ItemContainerStyle>
+                        </ComboBox>
+                    </StackPanel>
 
-            <!-- Frame Rate -->
-            <StackPanel Grid.Column="1">
-                <TextBlock Text="Frame Rate" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
-                <TextBlock x:Name="HdrFpsHintTextBlock"
-                           AutomationProperties.AutomationId="HdrFpsHintTextBlock"
-                           FontSize="11"
-                           Foreground="#F5C542"
-                           Opacity="0.9"
-                           Margin="0,0,0,4"
-                           TextWrapping="Wrap"
-                           MaxWidth="200"
-                           Visibility="Collapsed"/>
-                <ComboBox x:Name="FrameRateComboBox"
-                          AutomationProperties.AutomationId="FrameRateComboBox"
-                          MinWidth="90"
-                          DisplayMemberPath="DisplayText">
-                    <ComboBox.ItemContainerStyle>
-                        <Style TargetType="ComboBoxItem">
-                            <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
-                            <Setter Property="ToolTipService.ToolTip" Value="{Binding DisableReason}"/>
-                        </Style>
-                    </ComboBox.ItemContainerStyle>
-                </ComboBox>
-            </StackPanel>
+                    <!-- Frame Rate -->
+                    <StackPanel>
+                        <TextBlock Text="Frame Rate" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
+                        <TextBlock x:Name="HdrFpsHintTextBlock"
+                                   AutomationProperties.AutomationId="HdrFpsHintTextBlock"
+                                   FontSize="11"
+                                   Foreground="{ThemeResource WarningHintBrush}"
+                                   Opacity="0.9"
+                                   Margin="0,0,0,4"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="200"
+                                   Visibility="Collapsed"/>
+                        <TextBlock x:Name="SourceTelemetryTextBlock"
+                                   AutomationProperties.AutomationId="SourceTelemetryTextBlock"
+                                   FontSize="11"
+                                   Opacity="0.85"
+                                   Margin="0,0,0,4"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="220"
+                                   Visibility="Collapsed"/>
+                        <TextBlock x:Name="TargetTelemetryTextBlock"
+                                   AutomationProperties.AutomationId="TargetTelemetryTextBlock"
+                                   FontSize="11"
+                                   Opacity="0.8"
+                                   Margin="0,0,0,4"
+                                   TextWrapping="Wrap"
+                                   MaxWidth="220"
+                                   Visibility="Collapsed"/>
+                        <ComboBox x:Name="FrameRateComboBox"
+                                  AutomationProperties.AutomationId="FrameRateComboBox"
+                                  MinWidth="90"
+                                  DisplayMemberPath="DisplayText">
+                            <ComboBox.ItemContainerStyle>
+                                <Style TargetType="ComboBoxItem">
+                                    <Setter Property="IsEnabled" Value="{Binding IsEnabled}"/>
+                                    <Setter Property="ToolTipService.ToolTip" Value="{Binding DisableReason}"/>
+                                </Style>
+                            </ComboBox.ItemContainerStyle>
+                        </ComboBox>
+                    </StackPanel>
 
-            <!-- Recording Format (codec) -->
-            <StackPanel Grid.Column="2">
-                <TextBlock Text="Format" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
-                <ComboBox x:Name="FormatComboBox"
-                          AutomationProperties.AutomationId="FormatComboBox"
-                          MinWidth="160"/>
-            </StackPanel>
+                    <!-- Recording Format (codec) -->
+                    <StackPanel>
+                        <TextBlock Text="Format" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="FormatComboBox"
+                                  AutomationProperties.AutomationId="FormatComboBox"
+                                  MinWidth="160"/>
+                    </StackPanel>
 
-            <!-- Quality -->
-            <StackPanel Grid.Column="3">
-                <TextBlock Text="Quality" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
-                <ComboBox x:Name="QualityComboBox"
-                          AutomationProperties.AutomationId="QualityComboBox"
-                          MinWidth="100"/>
-            </StackPanel>
+                    <!-- Quality -->
+                    <StackPanel>
+                        <TextBlock Text="Quality" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="QualityComboBox"
+                                  AutomationProperties.AutomationId="QualityComboBox"
+                                  MinWidth="100"/>
+                    </StackPanel>
 
-            <!-- Custom Bitrate (visible only when Quality is Custom) -->
-            <StackPanel x:Name="CustomBitratePanel" Grid.Column="4" Visibility="Collapsed">
-                <TextBlock Text="Bitrate" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                    <NumberBox x:Name="CustomBitrateNumberBox"
-                               AutomationProperties.AutomationId="CustomBitrateNumberBox"
-                               Value="50"
-                               Minimum="1"
-                               Maximum="300"
-                               SpinButtonPlacementMode="Compact"
-                               SmallChange="5"
-                               LargeChange="10"
-                               MinWidth="90"/>
-                    <TextBlock Text="Mbps" VerticalAlignment="Center" Opacity="0.7"/>
+                    <!-- Custom Bitrate (visible only when Quality is Custom) -->
+                    <StackPanel x:Name="CustomBitratePanel" Visibility="Collapsed">
+                        <TextBlock Text="Bitrate" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <NumberBox x:Name="CustomBitrateNumberBox"
+                                       AutomationProperties.AutomationId="CustomBitrateNumberBox"
+                                       Value="50"
+                                       Minimum="1"
+                                       Maximum="300"
+                                       SpinButtonPlacementMode="Compact"
+                                       SmallChange="5"
+                                       LargeChange="10"
+                                       MinWidth="90"/>
+                            <TextBlock Text="Mbps" VerticalAlignment="Center" Style="{StaticResource SecondaryLabelStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- HDR -->
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="HDR" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
+                        <ToggleSwitch x:Name="HdrToggle"
+                                      AutomationProperties.AutomationId="HdrToggle"
+                                      OnContent="" OffContent=""
+                                      Width="44"
+                                      Height="32"
+                                      MinWidth="0"/>
+                    </StackPanel>
                 </StackPanel>
-            </StackPanel>
+            </Border>
 
-            <!-- Spacer -->
-            <Border Grid.Column="5"/>
-
-            <!-- HDR + Audio Controls -->
-            <StackPanel Grid.Column="6"
-                        Grid.ColumnSpan="4"
-                        Orientation="Horizontal"
-                        Spacing="16"
-                        VerticalAlignment="Center">
-                <StackPanel VerticalAlignment="Center">
-                    <TextBlock Text="HDR" FontSize="12" Opacity="0.7" Margin="0,0,0,4"/>
-                    <ToggleSwitch x:Name="HdrToggle"
-                                  AutomationProperties.AutomationId="HdrToggle"
-                                  OnContent="" OffContent=""
-                                  Width="44"
-                                  Height="32"
-                                  MinWidth="0"/>
-                </StackPanel>
-
-                <StackPanel VerticalAlignment="Center" Spacing="6">
+            <!-- Audio Card -->
+            <Border Grid.Column="1"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="16">
+                <StackPanel Spacing="8">
                     <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Grid x:Name="AudioMeterTrack" Width="200" Height="8">
-                            <Border Background="#1E1E1E"
-                                    BorderBrush="#333333"
-                                    BorderThickness="1"
-                                    CornerRadius="2">
-                                <Grid x:Name="AudioMeterFillHost">
-                                    <Rectangle x:Name="AudioMeterFill"
-                                               Height="6"
-                                               RadiusX="1"
-                                               RadiusY="1"
-                                               HorizontalAlignment="Stretch"
-                                               VerticalAlignment="Center">
-                                        <Rectangle.Fill>
-                                            <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                                <GradientStop Color="#32CD32" Offset="0"/>
-                                                <GradientStop Color="#32CD32" Offset="0.6667"/>
-                                                <GradientStop Color="#DAA520" Offset="0.6667"/>
-                                                <GradientStop Color="#DAA520" Offset="0.85"/>
-                                                <GradientStop Color="#FF4500" Offset="0.85"/>
-                                                <GradientStop Color="#FF4500" Offset="1"/>
-                                            </LinearGradientBrush>
-                                        </Rectangle.Fill>
-                                    </Rectangle>
-                                    <Rectangle x:Name="AudioMeterMask"
-                                               Height="6"
-                                               RadiusX="1"
-                                               RadiusY="1"
-                                               Fill="#1E1E1E"
-                                               HorizontalAlignment="Right"
-                                               VerticalAlignment="Center"/>
-                                </Grid>
-                            </Border>
-                        </Grid>
+                        <Border x:Name="AudioMeterTrack"
+                                MinWidth="120" MaxWidth="300" Height="8"
+                                HorizontalAlignment="Stretch"
+                                Background="{ThemeResource AudioMeterTrackBrush}"
+                                BorderBrush="{ThemeResource AudioMeterBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="4">
+                            <Grid>
+                                <Border x:Name="AudioMeterFill"
+                                        CornerRadius="4">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                            <GradientStop Color="#32CD32" Offset="0"/>
+                                            <GradientStop Color="#32CD32" Offset="0.6"/>
+                                            <GradientStop Color="#DAA520" Offset="0.75"/>
+                                            <GradientStop Color="#FF8C00" Offset="0.88"/>
+                                            <GradientStop Color="#FF4500" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Border.Clip>
+                                        <RectangleGeometry x:Name="AudioMeterClip" Rect="0,0,0,8"/>
+                                    </Border.Clip>
+                                </Border>
+                            </Grid>
+                        </Border>
                         <TextBlock x:Name="AudioClipText"
                                    AutomationProperties.AutomationId="AudioClipText"
                                    Text="CLIP"
-                                   Foreground="#D13438"
+                                   Foreground="{ThemeResource ClipAlertBrush}"
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    Visibility="Collapsed"
@@ -326,7 +356,7 @@
                         </ToggleButton>
                     </StackPanel>
                 </StackPanel>
-            </StackPanel>
+            </Border>
         </Grid>
 
         <!-- Bottom Controls Row -->
@@ -341,18 +371,21 @@
                 <!-- Output Path Row -->
                 <StackPanel Spacing="4">
                     <TextBlock Text="Output"
-                               FontSize="12"
-                               Opacity="0.7"
+                               Style="{StaticResource SecondaryLabelStyle}"
                                Margin="0,0,0,2"/>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Grid ColumnSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
                         <TextBox x:Name="OutputPathTextBox"
                                  AutomationProperties.AutomationId="OutputPathTextBox"
                                  IsReadOnly="True"
                                  VerticalAlignment="Center"
                                  FontSize="12"
-                                 Height="36"
-                                 Width="560"/>
+                                 Height="36"/>
                         <Button x:Name="BrowseButton"
+                                Grid.Column="1"
                                 AutomationProperties.AutomationId="BrowseButton"
                                 Click="BrowseButton_Click"
                                 Width="36"
@@ -364,7 +397,7 @@
                                       VerticalAlignment="Center"
                                       HorizontalAlignment="Center"/>
                         </Button>
-                    </StackPanel>
+                    </Grid>
                 </StackPanel>
 
                 <!-- Status Row -->
@@ -377,17 +410,16 @@
 
                     <!-- Status -->
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="6">
-                        <FontIcon Glyph="&#xEDA2;" FontSize="12" Opacity="0.5" VerticalAlignment="Center"/>
+                        <FontIcon Glyph="&#xEDA2;" FontSize="12" Foreground="{ThemeResource TextFillColorTertiaryBrush}" VerticalAlignment="Center"/>
                         <TextBlock x:Name="DiskSpaceTextBlock"
                                    AutomationProperties.AutomationId="DiskSpaceTextBlock"
-                                   FontSize="12"
-                                   Opacity="0.7"
+                                   Style="{StaticResource SecondaryLabelStyle}"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="24">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="Size:" FontSize="12" Opacity="0.7" VerticalAlignment="Center"/>
+                            <TextBlock Text="Size:" Style="{StaticResource SecondaryLabelStyle}" VerticalAlignment="Center"/>
                             <TextBlock x:Name="RecordingSizeTextBlock"
                                        AutomationProperties.AutomationId="RecordingSizeTextBlock"
                                        FontSize="12"
@@ -396,7 +428,7 @@
                                        MinWidth="72"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <TextBlock Text="Bitrate:" FontSize="12" Opacity="0.7" VerticalAlignment="Center"/>
+                            <TextBlock Text="Bitrate:" Style="{StaticResource SecondaryLabelStyle}" VerticalAlignment="Center"/>
                             <TextBlock x:Name="RecordingBitrateTextBlock"
                                        AutomationProperties.AutomationId="RecordingBitrateTextBlock"
                                        FontSize="12"
@@ -431,15 +463,15 @@
                             Height="44"
                             MinWidth="160"
                             Padding="16,0"
-                            Background="#E81123"
-                            BorderBrush="#C50F1F"
+                            Background="{ThemeResource RecordButtonBrush}"
+                            BorderBrush="{ThemeResource RecordButtonBorderBrush}"
                             CornerRadius="4">
                     <Button.Resources>
-                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver">#F1707A</SolidColorBrush>
-                        <SolidColorBrush x:Key="ButtonBackgroundPressed">#C50F1F</SolidColorBrush>
-                        <SolidColorBrush x:Key="ButtonForeground">White</SolidColorBrush>
-                        <SolidColorBrush x:Key="ButtonForegroundPointerOver">White</SolidColorBrush>
-                        <SolidColorBrush x:Key="ButtonForegroundPressed">White</SolidColorBrush>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#F1707A"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#C50F1F"/>
+                        <SolidColorBrush x:Key="ButtonForeground" Color="White"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
                     </Button.Resources>
 
                     <Grid>
@@ -481,14 +513,20 @@
                 <TextBlock x:Name="StatusTextBlock"
                            AutomationProperties.AutomationId="StatusTextBlock"
                            Text="Ready"
-                           FontSize="12"
-                           Opacity="0.7"
+                           Style="{StaticResource SecondaryLabelStyle}"
                            HorizontalAlignment="Right"/>
             </StackPanel>
         </Grid>
 
+        <InfoBar x:Name="StatusInfoBar"
+                 Grid.Row="4"
+                 AutomationProperties.AutomationId="StatusInfoBar"
+                 IsOpen="False"
+                 IsClosable="True"
+                 Severity="Informational"/>
+
         <Expander x:Name="DiagnosticsExpander"
-                  Grid.Row="4"
+                  Grid.Row="5"
                   Header="Automation Diagnostics"
                   IsExpanded="False"
                   AutomationProperties.AutomationId="DiagnosticsExpander">
@@ -512,7 +550,7 @@
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Session" FontSize="12" Opacity="0.7"/>
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Session" Style="{StaticResource SecondaryLabelStyle}"/>
                     <TextBlock x:Name="DiagSessionTextBlock"
                                Grid.Row="0"
                                Grid.Column="1"
@@ -520,7 +558,7 @@
                                FontFamily="Consolas"
                                TextWrapping="Wrap"/>
 
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Devices" FontSize="12" Opacity="0.7"/>
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Devices" Style="{StaticResource SecondaryLabelStyle}"/>
                     <TextBlock x:Name="DiagDeviceTextBlock"
                                Grid.Row="1"
                                Grid.Column="1"
@@ -528,7 +566,7 @@
                                FontFamily="Consolas"
                                TextWrapping="Wrap"/>
 
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Capture" FontSize="12" Opacity="0.7"/>
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Capture" Style="{StaticResource SecondaryLabelStyle}"/>
                     <TextBlock x:Name="DiagCaptureTextBlock"
                                Grid.Row="2"
                                Grid.Column="1"
@@ -536,7 +574,7 @@
                                FontFamily="Consolas"
                                TextWrapping="Wrap"/>
 
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Audio/Preview" FontSize="12" Opacity="0.7"/>
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Audio/Preview" Style="{StaticResource SecondaryLabelStyle}"/>
                     <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
                         <TextBlock x:Name="DiagAudioTextBlock"
                                    FontSize="12"
@@ -548,7 +586,7 @@
                                    TextWrapping="Wrap"/>
                     </StackPanel>
 
-                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Recording" FontSize="12" Opacity="0.7"/>
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Recording" Style="{StaticResource SecondaryLabelStyle}"/>
                     <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
                         <TextBlock x:Name="DiagRecordingTextBlock"
                                    FontSize="12"
@@ -565,7 +603,7 @@
                                    TextWrapping="Wrap"/>
                     </StackPanel>
 
-                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Events" FontSize="12" Opacity="0.7"/>
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Events" Style="{StaticResource SecondaryLabelStyle}"/>
                     <ListView x:Name="DiagEventsListView"
                               Grid.Row="5"
                               Grid.Column="1"

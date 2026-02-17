@@ -58,10 +58,26 @@ public class DeviceService
     {
         var discovered = new ObservableCollection<CaptureDevice>();
 
-        var videoFilter = DeviceInformation.GetAqsFilterFromDeviceClass(DeviceClass.VideoCapture);
-        var audioFilter = DeviceInformation.GetAqsFilterFromDeviceClass(DeviceClass.AudioCapture);
-        var videoDevices = await DeviceInformation.FindAllAsync(videoFilter, AdditionalDeviceProperties);
-        var audioDevices = await DeviceInformation.FindAllAsync(audioFilter, AdditionalDeviceProperties);
+        DeviceInformationCollection videoDevices;
+        DeviceInformationCollection audioDevices;
+        try
+        {
+            var videoFilter = DeviceInformation.GetAqsFilterFromDeviceClass(DeviceClass.VideoCapture);
+            var audioFilter = DeviceInformation.GetAqsFilterFromDeviceClass(DeviceClass.AudioCapture);
+            videoDevices = await DeviceInformation.FindAllAsync(videoFilter, AdditionalDeviceProperties);
+            audioDevices = await DeviceInformation.FindAllAsync(audioFilter, AdditionalDeviceProperties);
+        }
+        catch (Exception ex)
+        {
+            LastDiscoverySummary = $"Video devices: enumeration failed ({ex.GetType().Name}: {ex.Message})";
+            Logger.Log($"Device discovery failed while querying DeviceInformation: {ex}");
+            return discovered;
+        }
+
+        if (videoDevices.Count == 0)
+        {
+            Logger.Log("Device discovery returned zero video devices. Check camera privacy permissions and elevated/runtime context.");
+        }
 
         var evaluated = new List<DeviceCandidate>();
         foreach (var videoDevice in videoDevices)
