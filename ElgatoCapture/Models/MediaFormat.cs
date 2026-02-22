@@ -4,6 +4,18 @@ namespace ElgatoCapture.Models;
 
 public class MediaFormat
 {
+    private static readonly string[] HdrSubtypeTokens =
+    {
+        "P010",
+        "P016",
+        "I010",
+        "Y210",
+        "Y410",
+        "Y416",
+        "R10G10B10",
+        "XR10"
+    };
+
     public uint Width { get; set; }
     public uint Height { get; set; }
     public double FrameRate { get; set; }
@@ -108,12 +120,48 @@ public class MediaFormat
             return 3;
         }
 
-        if (pixelFormat.Contains("P010", StringComparison.OrdinalIgnoreCase) ||
-            pixelFormat.Contains("HDR", StringComparison.OrdinalIgnoreCase))
+        if (IsHdrPixelFormat(pixelFormat))
         {
             return 20;
         }
 
         return 10;
+    }
+
+    public static bool IsHdrPixelFormat(string? pixelFormat)
+    {
+        if (string.IsNullOrWhiteSpace(pixelFormat))
+        {
+            return false;
+        }
+
+        foreach (var token in HdrSubtypeTokens)
+        {
+            if (pixelFormat.Contains(token, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return pixelFormat.Contains("BT2020", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("ST2084", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("HDR", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsTrue10BitPixelFormat(string? pixelFormat)
+    {
+        if (string.IsNullOrWhiteSpace(pixelFormat))
+        {
+            return false;
+        }
+
+        return pixelFormat.Contains("P010", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("P016", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("I010", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("Y210", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("Y410", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("Y416", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("R10G10B10", StringComparison.OrdinalIgnoreCase) ||
+               pixelFormat.Contains("XR10", StringComparison.OrdinalIgnoreCase);
     }
 }

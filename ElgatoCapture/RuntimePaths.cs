@@ -7,12 +7,13 @@ namespace ElgatoCapture;
 
 public static class RuntimePaths
 {
+    private const string LogRootEnvVar = "ELGATOCAPTURE_LOG_ROOT";
     private static readonly Lazy<string> RepoRoot = new(ResolveRepoRoot, LazyThreadSafetyMode.ExecutionAndPublication);
     private static readonly Lazy<string> RepoTempRoot = new(
         () => EnsureDirectory(Path.Combine(RepoRoot.Value, "temp")),
         LazyThreadSafetyMode.ExecutionAndPublication);
     private static readonly Lazy<string> RepoLogRoot = new(
-        () => EnsureDirectory(Path.Combine(RepoTempRoot.Value, "logs")),
+        () => EnsureDirectory(ResolveLogRoot()),
         LazyThreadSafetyMode.ExecutionAndPublication);
 
     public static string GetRepoRoot() => RepoRoot.Value;
@@ -20,6 +21,40 @@ public static class RuntimePaths
     public static string GetRepoLogRoot() => RepoLogRoot.Value;
     public static string GetRepoTempFile(string fileName) => Path.Combine(GetRepoTempRoot(), fileName);
     public static string GetRepoLogFile(string fileName) => Path.Combine(GetRepoLogRoot(), fileName);
+
+    private static string ResolveLogRoot()
+    {
+        var envOverride = Environment.GetEnvironmentVariable(LogRootEnvVar);
+        if (!string.IsNullOrWhiteSpace(envOverride))
+        {
+            try
+            {
+                return EnsureDirectory(Path.GetFullPath(envOverride));
+            }
+            catch
+            {
+                // Ignore invalid override and fall back.
+            }
+        }
+
+        // Prefer repo-local logs when we can identify a repo root (development scenario).
+        var repoRoot = RepoRoot.Value;
+        if (!string.IsNullOrWhiteSpace(repoRoot))
+        {
+            try
+            {
+                return EnsureDirectory(Path.Combine(repoRoot, "temp", "logs"));
+            }
+            catch
+            {
+                // Fall back below.
+            }
+        }
+
+        // Non-repo scenario: keep logs in a stable per-user location.
+        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        return EnsureDirectory(Path.Combine(localAppData, "ElgatoCapture", "logs"));
+    }
 
     private static string ResolveRepoRoot()
     {
@@ -76,8 +111,15 @@ public static class RuntimePaths
             {
                 var full = current.FullName;
                 if (Directory.Exists(Path.Combine(full, ".git")) ||
+                    File.Exists(Path.Combine(full, ".git")) ||
                     Directory.Exists(Path.Combine(full, ".claude")) ||
                     File.Exists(Path.Combine(full, "AGENTS.md")))
+                {
+                    return full;
+                }
+
+                if (File.Exists(Path.Combine(full, "ElgatoCapture.slnx")) ||
+                    File.Exists(Path.Combine(full, "ElgatoCapture.sln")))
                 {
                     return full;
                 }
