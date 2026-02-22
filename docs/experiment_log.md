@@ -66,6 +66,19 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (depends on whether frames were encoded).
 - Conclusion: Removes a logic bug that would silently drop valid surface-copied frames; future runs must either encode frames or emit a structured ingest failure line proving where HDR ingress breaks.
+
+## E8 - Log runtime build identity (`APP_START`)
+- Timestamp (UTC): 2026-02-22T13:05:40.4929683Z
+- Commit Hash: a25163913abeb20b7b6dfa6d2af1d782913a051d
+- What Changed (single change): Logged `APP_START` at launch with the exe path + timestamp so logs can be tied to the exact binary that produced them.
+- How To Run:
+  1. Build + run the app.
+  2. Confirm the first lines of `temp/logs/ElgatoCapture_Debug.log` include `APP_START exe='...' exe_mtime_utc='...'`.
+- Validator Output:
+  - N/A
+- ffprobe Evidence:
+  - N/A
+- Conclusion: Eliminates ambiguity between “repo source code” vs “which exe actually ran” when diagnosing HDR ingest/encode failures from logs.
 ## E<id> - <short title>
 - Timestamp (UTC): <yyyy-mm-ddThh:mm:ssZ>
 - Commit Hash: <git hash>
