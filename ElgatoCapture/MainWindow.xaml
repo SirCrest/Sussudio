@@ -183,18 +183,25 @@
                 <EntranceThemeTransition/>
             </Grid.ChildrenTransitions>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
-            <!-- Capture Settings Card -->
-            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            <!-- Video Card -->
+            <Border Grid.Column="0"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1" CornerRadius="8" Padding="16">
-                <StackPanel Orientation="Horizontal" Spacing="16">
+                    BorderThickness="1" CornerRadius="8" Padding="12">
+                <StackPanel Orientation="Horizontal" Spacing="12">
                     <!-- Resolution -->
                     <StackPanel>
-                        <TextBlock Text="Resolution" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,0,4"
+                                    ToolTipService.ToolTip="Resolution">
+                            <FontIcon Glyph="&#xE7F4;" FontSize="12"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="Res" Style="{StaticResource SecondaryLabelStyle}"/>
+                        </StackPanel>
                         <ComboBox x:Name="ResolutionComboBox"
                                   AutomationProperties.AutomationId="ResolutionComboBox"
                                   MinWidth="120"
@@ -210,32 +217,12 @@
 
                     <!-- Frame Rate -->
                     <StackPanel>
-                        <TextBlock Text="Frame Rate" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
-                        <TextBlock x:Name="HdrFpsHintTextBlock"
-                                   AutomationProperties.AutomationId="HdrFpsHintTextBlock"
-                                   FontSize="11"
-                                   Foreground="{ThemeResource WarningHintBrush}"
-                                   Opacity="0.9"
-                                   Margin="0,0,0,4"
-                                   TextWrapping="Wrap"
-                                   MaxWidth="200"
-                                   Visibility="Collapsed"/>
-                        <TextBlock x:Name="SourceTelemetryTextBlock"
-                                   AutomationProperties.AutomationId="SourceTelemetryTextBlock"
-                                   FontSize="11"
-                                   Opacity="0.85"
-                                   Margin="0,0,0,4"
-                                   TextWrapping="Wrap"
-                                   MaxWidth="220"
-                                   Visibility="Collapsed"/>
-                        <TextBlock x:Name="TargetTelemetryTextBlock"
-                                   AutomationProperties.AutomationId="TargetTelemetryTextBlock"
-                                   FontSize="11"
-                                   Opacity="0.8"
-                                   Margin="0,0,0,4"
-                                   TextWrapping="Wrap"
-                                   MaxWidth="220"
-                                   Visibility="Collapsed"/>
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,0,4"
+                                    ToolTipService.ToolTip="Frame Rate">
+                            <FontIcon Glyph="&#xE916;" FontSize="12"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="FPS" Style="{StaticResource SecondaryLabelStyle}"/>
+                        </StackPanel>
                         <ComboBox x:Name="FrameRateComboBox"
                                   AutomationProperties.AutomationId="FrameRateComboBox"
                                   MinWidth="90"
@@ -248,10 +235,23 @@
                             </ComboBox.ItemContainerStyle>
                         </ComboBox>
                     </StackPanel>
+                </StackPanel>
+            </Border>
 
+            <!-- Encoding Card -->
+            <Border Grid.Column="1"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1" CornerRadius="8" Padding="12">
+                <StackPanel Orientation="Horizontal" Spacing="12">
                     <!-- Recording Format (codec) -->
                     <StackPanel>
-                        <TextBlock Text="Format" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,0,4"
+                                    ToolTipService.ToolTip="Format">
+                            <FontIcon Glyph="&#xE8A1;" FontSize="12"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="Fmt" Style="{StaticResource SecondaryLabelStyle}"/>
+                        </StackPanel>
                         <ComboBox x:Name="FormatComboBox"
                                   AutomationProperties.AutomationId="FormatComboBox"
                                   MinWidth="160"/>
@@ -259,7 +259,11 @@
 
                     <!-- Quality -->
                     <StackPanel>
-                        <TextBlock Text="Quality" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,0,4">
+                            <FontIcon Glyph="&#xE734;" FontSize="12"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="Quality" Style="{StaticResource SecondaryLabelStyle}"/>
+                        </StackPanel>
                         <ComboBox x:Name="QualityComboBox"
                                   AutomationProperties.AutomationId="QualityComboBox"
                                   MinWidth="100"/>
@@ -284,9 +288,28 @@
 
                     <!-- HDR -->
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="HDR" Style="{StaticResource SecondaryLabelStyle}" Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,0,4">
+                            <FontIcon Glyph="&#xE706;" FontSize="12"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="HDR" Style="{StaticResource SecondaryLabelStyle}"/>
+                        </StackPanel>
                         <ToggleSwitch x:Name="HdrToggle"
                                       AutomationProperties.AutomationId="HdrToggle"
+                                      OnContent="" OffContent=""
+                                      Width="44"
+                                      Height="32"
+                                      MinWidth="0"/>
+                    </StackPanel>
+
+                    <!-- True HDR Preview -->
+                    <StackPanel VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal" Spacing="4" Margin="0,0,0,4">
+                            <FontIcon Glyph="&#xE706;" FontSize="12"
+                                      Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <TextBlock Text="HDR Prev" Style="{StaticResource SecondaryLabelStyle}"/>
+                        </StackPanel>
+                        <ToggleSwitch x:Name="TrueHdrPreviewToggle"
+                                      AutomationProperties.AutomationId="TrueHdrPreviewToggle"
                                       OnContent="" OffContent=""
                                       Width="44"
                                       Height="32"
@@ -296,7 +319,7 @@
             </Border>
 
             <!-- Audio Card -->
-            <Border Grid.Column="1"
+            <Border Grid.Column="2"
                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1" CornerRadius="8" Padding="16">
@@ -527,101 +550,137 @@
 
         <Expander x:Name="DiagnosticsExpander"
                   Grid.Row="5"
-                  Header="Automation Diagnostics"
                   IsExpanded="False"
                   AutomationProperties.AutomationId="DiagnosticsExpander">
-            <Border Margin="0,6,0,0"
-                    Padding="10"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="8">
-                <Grid ColumnSpacing="18" RowSpacing="6">
+            <Expander.Header>
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <TextBlock Text="Automation Diagnostics"/>
+                    <TextBlock x:Name="DiagHeaderSummaryTextBlock"
+                               Style="{StaticResource SecondaryLabelStyle}"
+                               Text="State: Idle"/>
+                </StackPanel>
+            </Expander.Header>
+            <StackPanel Margin="0,6,0,0" Spacing="10">
+                <Border Padding="10"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="8">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Overview" Style="{StaticResource SecondaryLabelStyle}"/>
+                        <TextBlock x:Name="DiagSessionTextBlock"
+                                   FontSize="12"
+                                   FontFamily="Consolas"
+                                   TextWrapping="Wrap"/>
+                        <TextBlock x:Name="DiagDeviceTextBlock"
+                                   FontSize="12"
+                                   FontFamily="Consolas"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <Grid ColumnSpacing="10" RowSpacing="10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Session" Style="{StaticResource SecondaryLabelStyle}"/>
-                    <TextBlock x:Name="DiagSessionTextBlock"
-                               Grid.Row="0"
-                               Grid.Column="1"
-                               FontSize="12"
-                               FontFamily="Consolas"
-                               TextWrapping="Wrap"/>
-
-                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Devices" Style="{StaticResource SecondaryLabelStyle}"/>
-                    <TextBlock x:Name="DiagDeviceTextBlock"
-                               Grid.Row="1"
-                               Grid.Column="1"
-                               FontSize="12"
-                               FontFamily="Consolas"
-                               TextWrapping="Wrap"/>
-
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Capture" Style="{StaticResource SecondaryLabelStyle}"/>
-                    <TextBlock x:Name="DiagCaptureTextBlock"
-                               Grid.Row="2"
-                               Grid.Column="1"
-                               FontSize="12"
-                               FontFamily="Consolas"
-                               TextWrapping="Wrap"/>
-
-                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Audio/Preview" Style="{StaticResource SecondaryLabelStyle}"/>
-                    <StackPanel Grid.Row="3" Grid.Column="1" Spacing="4">
-                        <TextBlock x:Name="DiagAudioTextBlock"
-                                   FontSize="12"
-                                   FontFamily="Consolas"
-                                   TextWrapping="Wrap"/>
-                        <TextBlock x:Name="DiagPreviewTextBlock"
-                                   FontSize="12"
-                                   FontFamily="Consolas"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-
-                    <TextBlock Grid.Row="4" Grid.Column="0" Text="Recording" Style="{StaticResource SecondaryLabelStyle}"/>
-                    <StackPanel Grid.Row="4" Grid.Column="1" Spacing="4">
-                        <TextBlock x:Name="DiagRecordingTextBlock"
-                                   FontSize="12"
-                                   FontFamily="Consolas"
-                                   TextWrapping="Wrap"/>
-                        <TextBlock x:Name="DiagOutputTextBlock"
-                                   FontSize="12"
-                                   FontFamily="Consolas"
-                                   TextWrapping="Wrap"/>
-                        <TextBlock x:Name="DiagVerificationTextBlock"
-                                   FontSize="12"
-                                   FontFamily="Consolas"
-                                   FontWeight="SemiBold"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
-
-                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Events" Style="{StaticResource SecondaryLabelStyle}"/>
-                    <ListView x:Name="DiagEventsListView"
-                              Grid.Row="5"
-                              Grid.Column="1"
-                              AutomationProperties.AutomationId="DiagEventsTextBlock"
-                              MaxHeight="120"
-                              SelectionMode="None"
-                              ScrollViewer.VerticalScrollBarVisibility="Auto">
-                        <ListView.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}"
+                    <Border Grid.Row="0"
+                            Grid.Column="0"
+                            Padding="10"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Capture" Style="{StaticResource SecondaryLabelStyle}"/>
+                            <TextBlock x:Name="DiagCaptureTextBlock"
+                                       FontSize="12"
+                                       FontFamily="Consolas"
+                                       TextWrapping="Wrap"/>
+                            <Expander Header="Advanced Capture Details"
+                                      IsExpanded="False"
+                                      AutomationProperties.AutomationId="DiagCaptureAdvancedExpander">
+                                <TextBlock x:Name="DiagCaptureAdvancedTextBlock"
+                                           Margin="0,6,0,0"
+                                           FontSize="12"
                                            FontFamily="Consolas"
-                                           FontSize="11"
                                            TextWrapping="Wrap"/>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
-                    </ListView>
+                            </Expander>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="0"
+                            Grid.Column="1"
+                            Padding="10"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Audio and Preview" Style="{StaticResource SecondaryLabelStyle}"/>
+                            <TextBlock x:Name="DiagAudioTextBlock"
+                                       FontSize="12"
+                                       FontFamily="Consolas"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock x:Name="DiagPreviewTextBlock"
+                                       FontSize="12"
+                                       FontFamily="Consolas"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1"
+                            Grid.Column="0"
+                            Padding="10"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Recording and Output" Style="{StaticResource SecondaryLabelStyle}"/>
+                            <TextBlock x:Name="DiagRecordingTextBlock"
+                                       FontSize="12"
+                                       FontFamily="Consolas"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock x:Name="DiagOutputTextBlock"
+                                       FontSize="12"
+                                       FontFamily="Consolas"
+                                       TextWrapping="Wrap"/>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="1"
+                            Grid.Column="1"
+                            Padding="10"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="8">
+                        <StackPanel Spacing="6">
+                            <TextBlock Text="Verification" Style="{StaticResource SecondaryLabelStyle}"/>
+                            <TextBlock x:Name="DiagVerificationTextBlock"
+                                       FontSize="12"
+                                       FontFamily="Consolas"
+                                       FontWeight="SemiBold"
+                                       TextWrapping="Wrap"/>
+                            <Expander Header="Advanced Verification Details"
+                                      IsExpanded="False"
+                                      AutomationProperties.AutomationId="DiagVerificationAdvancedExpander">
+                                <TextBlock x:Name="DiagVerificationAdvancedTextBlock"
+                                           Margin="0,6,0,0"
+                                           FontSize="12"
+                                           FontFamily="Consolas"
+                                           TextWrapping="Wrap"/>
+                            </Expander>
+                        </StackPanel>
+                    </Border>
                 </Grid>
-            </Border>
+            </StackPanel>
         </Expander>
     </Grid>
 </Window>
