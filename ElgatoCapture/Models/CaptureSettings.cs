@@ -7,8 +7,7 @@ public enum RecordingFormat
 {
     H264Mp4,
     HevcMp4,
-    Av1Mp4,
-    UncompressedAvi
+    Av1Mp4
 }
 
 public enum VideoQuality
@@ -28,6 +27,12 @@ public enum HdrOutputMode
     Hdr10Pq
 }
 
+public enum PreviewMode
+{
+    GpuFast,
+    TrueHdr
+}
+
 public class CaptureSettings
 {
     public uint Width { get; set; } = 1920;
@@ -43,10 +48,11 @@ public class CaptureSettings
     public bool HdrEnabled { get; set; }
     public HdrOutputMode HdrOutputMode { get; set; } = HdrOutputMode.Hdr10Pq;
     public int HdrNominalPeakNits { get; set; } = 1000;
-    public int HdrMaxCll { get; set; } = 1000;
-    public int HdrMaxFall { get; set; } = 400;
-    public string HdrMasterDisplayMetadata { get; set; } =
-        "G(13250,34500)B(7500,3000)R(34000,16000)L(10000000,1)";
+    // Optional HDR10 static metadata (only emitted when explicitly configured).
+    public int HdrMaxCll { get; set; }
+    public int HdrMaxFall { get; set; }
+    public string HdrMasterDisplayMetadata { get; set; } = string.Empty;
+    public PreviewMode PreviewMode { get; set; } = PreviewMode.GpuFast;
     public string OutputPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
     public bool AudioEnabled { get; set; } = true;
     public bool UseCustomAudioInput { get; set; }
@@ -108,13 +114,12 @@ public class CaptureSettings
     public string GetOutputFileName()
     {
         var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
-        var extension = Format == RecordingFormat.UncompressedAvi ? "avi" : "mp4";
+        const string extension = "mp4";
         var formatSuffix = Format switch
         {
             RecordingFormat.H264Mp4 => "H264",
             RecordingFormat.HevcMp4 => "HEVC",
             RecordingFormat.Av1Mp4 => "AV1",
-            RecordingFormat.UncompressedAvi => "RAW",
             _ => "VIDEO"
         };
         return $"Capture_{timestamp}_{formatSuffix}.{extension}";

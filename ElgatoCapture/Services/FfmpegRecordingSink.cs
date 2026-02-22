@@ -69,9 +69,11 @@ public sealed class FfmpegRecordingSink : IRecordingSink
 
     public async Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)
     {
+        var outputPath = _context?.FinalOutputPath ?? string.Empty;
+
         if (_disposed)
         {
-            return FinalizeResult.Success(_context?.FinalOutputPath ?? string.Empty, "Stopped");
+            return FinalizeResult.Success(outputPath, "Stopped");
         }
 
         if (_started)
@@ -83,18 +85,29 @@ public sealed class FfmpegRecordingSink : IRecordingSink
         if (_encoder.LastStopTimedOut)
         {
             return FinalizeResult.Failure(
-                _context?.FinalOutputPath ?? string.Empty,
+                outputPath,
                 "Stopped (encoder stop timed out)");
         }
 
         if (_encoder.LastExitCode is int exitCode && exitCode != 0)
         {
             return FinalizeResult.Failure(
-                _context?.FinalOutputPath ?? string.Empty,
+                outputPath,
                 $"Stopped (encoder failed: exit code {exitCode})");
         }
 
-        return FinalizeResult.Success(_context?.FinalOutputPath ?? string.Empty, "Stopped");
+        var (validationSucceeded, validationDetail) = await HdrValidationRunner
+            .RunAsync(_context, outputPath, cancellationToken)
+            .ConfigureAwait(false);
+        if (!validationSucceeded)
+        {
+            return FinalizeResult.Failure(
+                outputPath,
+                $"Stopped (hdr validation failed: {validationDetail})",
+                new[] { outputPath });
+        }
+
+        return FinalizeResult.Success(outputPath, "Stopped");
     }
 
     public void Dispose()

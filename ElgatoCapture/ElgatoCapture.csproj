@@ -93,15 +93,16 @@
 
   <Target Name="StageLatestBuildToRepoRoot"
           AfterTargets="Build"
-          Condition="'$(DesignTimeBuild)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+          Condition="'$(StageLatestBuild)' == 'true' and '$(DesignTimeBuild)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
     <Message Text="Staging latest build output to $(LatestBuildRoot)" Importance="High" />
-    <RemoveDir Directories="$(LatestBuildRoot)" />
-    <MakeDir Directories="$(LatestBuildRoot)" />
+    <RemoveDir Directories="$(LatestBuildRoot)" ContinueOnError="WarnAndContinue" />
+    <MakeDir Directories="$(LatestBuildRoot)" ContinueOnError="WarnAndContinue" />
     <ItemGroup>
       <LatestBuildFiles Include="$(TargetDir)**\*" />
     </ItemGroup>
     <Copy SourceFiles="@(LatestBuildFiles)"
           DestinationFiles="@(LatestBuildFiles->'$(LatestBuildRoot)%(RecursiveDir)%(Filename)%(Extension)')"
-          SkipUnchangedFiles="false" />
+          SkipUnchangedFiles="false"
+          ContinueOnError="WarnAndContinue" />
   </Target>
 </Project>
