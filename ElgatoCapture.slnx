@@ -6,4 +6,8 @@
     <Platform Solution="*|x64" Project="x64" />
     <Deploy />
   </Project>
+  <Project Path="tests/ElgatoCapture.HdrLab/ElgatoCapture.HdrLab.csproj">
+    <Platform Solution="*|x64" Project="x64" />
+  </Project>
+  <Project Path="tests/ElgatoCapture.FfmpegEncodeLab/ElgatoCapture.FfmpegEncodeLab.csproj" />
 </Solution>
