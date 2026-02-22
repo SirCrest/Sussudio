@@ -10,6 +10,8 @@ namespace ElgatoCapture.Services;
 public enum CaptureCommandKind
 {
     Initialize,
+    StartVideoPreview,
+    StopVideoPreview,
     StartRecording,
     StopRecording,
     StartAudioPreview,
@@ -33,6 +35,7 @@ public sealed class CaptureSessionSnapshot
     public CaptureSessionState SessionState { get; init; }
     public bool IsRecording { get; init; }
     public bool IsInitialized { get; init; }
+    public bool IsVideoPreviewActive { get; init; }
     public bool IsAudioPreviewActive { get; init; }
 }
 
@@ -41,6 +44,8 @@ public interface ICaptureSessionCoordinator : IDisposable, IAsyncDisposable
     CaptureSessionSnapshot Snapshot { get; }
 
     Task InitializeAsync(CaptureDevice device, CaptureSettings settings, CancellationToken cancellationToken = default);
+    Task StartVideoPreviewAsync(CaptureSettings settings, CancellationToken cancellationToken = default);
+    Task StopVideoPreviewAsync(CancellationToken cancellationToken = default);
     Task StartRecordingAsync(CaptureSettings settings, CancellationToken cancellationToken = default);
     Task StopRecordingAsync(CancellationToken cancellationToken = default);
     Task StartAudioPreviewAsync(CancellationToken cancellationToken = default);
@@ -56,6 +61,7 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
     private readonly CancellationTokenSource _workerCancellation = new();
     private readonly Task _workerTask;
     private readonly object _snapshotLock = new();
+    private readonly object _disposeLock = new();
     private bool _isDisposed;
     private int _pendingCommands;
     private DateTimeOffset _lastTransitionUtc = DateTimeOffset.UtcNow;
@@ -100,6 +106,7 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
                     SessionState = _captureService.SessionState,
                     IsRecording = _captureService.IsRecording,
                     IsInitialized = _captureService.IsInitialized,
+                    IsVideoPreviewActive = _captureService.IsVideoPreviewActive,
                     IsAudioPreviewActive = _captureService.IsAudioPreviewActive
                 };
             }
@@ -107,28 +114,34 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
     }
 
     public Task InitializeAsync(CaptureDevice device, CaptureSettings settings, CancellationToken cancellationToken = default)
-        => EnqueueAsync(CaptureCommandKind.Initialize, _ => _captureService.InitializeAsync(device, settings), cancellationToken);
+        => EnqueueAsync(CaptureCommandKind.Initialize, ct => _captureService.InitializeAsync(device, settings, ct), cancellationToken);
+
+    public Task StartVideoPreviewAsync(CaptureSettings settings, CancellationToken cancellationToken = default)
+        => EnqueueAsync(CaptureCommandKind.StartVideoPreview, ct => _captureService.StartVideoPreviewAsync(settings, ct), cancellationToken);
+
+    public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)
+        => EnqueueAsync(CaptureCommandKind.StopVideoPreview, ct => _captureService.StopVideoPreviewAsync(ct), cancellationToken);
 
     public Task StartRecordingAsync(CaptureSettings settings, CancellationToken cancellationToken = default)
-        => EnqueueAsync(CaptureCommandKind.StartRecording, _ => _captureService.StartRecordingAsync(settings), cancellationToken);
+        => EnqueueAsync(CaptureCommandKind.StartRecording, ct => _captureService.StartRecordingAsync(settings, ct), cancellationToken);
 
     public Task StopRecordingAsync(CancellationToken cancellationToken = default)
-        => EnqueueAsync(CaptureCommandKind.StopRecording, _ => _captureService.StopRecordingAsync(), cancellationToken);
+        => EnqueueAsync(CaptureCommandKind.StopRecording, ct => _captureService.StopRecordingAsync(ct), cancellationToken);
 
     public Task StartAudioPreviewAsync(CancellationToken cancellationToken = default)
-        => EnqueueAsync(CaptureCommandKind.StartAudioPreview, _ => _captureService.StartAudioPreviewAsync(), cancellationToken);
+        => EnqueueAsync(CaptureCommandKind.StartAudioPreview, ct => _captureService.StartAudioPreviewAsync(ct), cancellationToken);
 
     public Task StopAudioPreviewAsync(CancellationToken cancellationToken = default)
-        => EnqueueAsync(CaptureCommandKind.StopAudioPreview, _ => _captureService.StopAudioPreviewAsync(), cancellationToken);
+        => EnqueueAsync(CaptureCommandKind.StopAudioPreview, ct => _captureService.StopAudioPreviewAsync(ct), cancellationToken);
 
     public Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default)
         => EnqueueAsync(
             CaptureCommandKind.UpdateAudioInput,
-            _ => _captureService.UpdateAudioInputAsync(audioDeviceId, audioDeviceName),
+            ct => _captureService.UpdateAudioInputAsync(audioDeviceId, audioDeviceName, ct),
             cancellationToken);
 
     public Task CleanupAsync(CancellationToken cancellationToken = default)
-        => EnqueueAsync(CaptureCommandKind.Cleanup, _ => _captureService.CleanupAsync(), cancellationToken);
+        => EnqueueAsync(CaptureCommandKind.Cleanup, ct => _captureService.CleanupAsync(ct), cancellationToken);
 
     private Task EnqueueAsync(
         CaptureCommandKind kind,
@@ -169,21 +182,29 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
 
                 try
                 {
-                    if (workItem.CancellationToken.IsCancellationRequested)
+                    using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
+                        workItem.CancellationToken,
+                        _workerCancellation.Token);
+                    var operationToken = linkedCancellation.Token;
+
+                    if (operationToken.IsCancellationRequested)
                     {
-                        workItem.Completion.TrySetCanceled(workItem.CancellationToken);
+                        workItem.Completion.TrySetCanceled(operationToken);
                         UpdateSnapshot(workItem.Command, "Canceled before execution");
                         continue;
                     }
 
-                    await workItem.Operation(workItem.CancellationToken);
+                    await workItem.Operation(operationToken);
                     workItem.Completion.TrySetResult(null);
                     UpdateSnapshot(workItem.Command, null);
                     Logger.LogEvent("CAP-COORD-DONE", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
                 }
-                catch (OperationCanceledException oce) when (workItem.CancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException oce) when (workItem.CancellationToken.IsCancellationRequested || _workerCancellation.IsCancellationRequested)
                 {
-                    workItem.Completion.TrySetCanceled(workItem.CancellationToken);
+                    var cancelToken = workItem.CancellationToken.IsCancellationRequested
+                        ? workItem.CancellationToken
+                        : _workerCancellation.Token;
+                    workItem.Completion.TrySetCanceled(cancelToken);
                     UpdateSnapshot(workItem.Command, oce.Message);
                     Logger.LogEvent("CAP-COORD-CANCEL", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
                 }
@@ -259,13 +280,18 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
 
     public void Dispose()
     {
-        if (_isDisposed)
+        lock (_disposeLock)
         {
-            return;
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _isDisposed = true;
         }
 
-        _isDisposed = true;
         _queue.Writer.TryComplete();
+        _workerCancellation.Cancel();
         var drainTimeoutMs = GetIntFromEnv(
             "ELGATOCAPTURE_COORDINATOR_DISPOSE_TIMEOUT_MS",
             DefaultDisposeDrainTimeoutMs,
@@ -277,15 +303,7 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
             var completed = Task.WhenAny(_workerTask, Task.Delay(drainTimeoutMs)).GetAwaiter().GetResult();
             if (completed != _workerTask)
             {
-                Logger.Log($"CaptureSessionCoordinator dispose timed out after {drainTimeoutMs} ms; cancelling worker.");
-                _workerCancellation.Cancel();
-
-                var cancelWaitMs = Math.Clamp(drainTimeoutMs / 3, 1000, 10000);
-                completed = Task.WhenAny(_workerTask, Task.Delay(cancelWaitMs)).GetAwaiter().GetResult();
-                if (completed != _workerTask)
-                {
-                    Logger.Log($"CaptureSessionCoordinator worker still running after cancel wait ({cancelWaitMs} ms).");
-                }
+                Logger.Log($"CaptureSessionCoordinator dispose timed out after {drainTimeoutMs} ms.");
             }
 
             if (_workerTask.IsCompleted)
@@ -303,20 +321,32 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
         }
         finally
         {
-            _workerCancellation.Cancel();
-            _workerCancellation.Dispose();
+            try
+            {
+                _workerCancellation.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            DisposeWorkerCancellationWhenSafe();
         }
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_isDisposed)
+        lock (_disposeLock)
         {
-            return;
+            if (_isDisposed)
+            {
+                return;
+            }
+
+            _isDisposed = true;
         }
 
-        _isDisposed = true;
         _queue.Writer.TryComplete();
+        _workerCancellation.Cancel();
         var drainTimeoutMs = GetIntFromEnv(
             "ELGATOCAPTURE_COORDINATOR_DISPOSE_TIMEOUT_MS",
             DefaultDisposeDrainTimeoutMs,
@@ -328,15 +358,7 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
             var completed = await Task.WhenAny(_workerTask, Task.Delay(drainTimeoutMs));
             if (completed != _workerTask)
             {
-                Logger.Log($"CaptureSessionCoordinator async dispose timed out after {drainTimeoutMs} ms; cancelling worker.");
-                _workerCancellation.Cancel();
-
-                var cancelWaitMs = Math.Clamp(drainTimeoutMs / 3, 1000, 10000);
-                completed = await Task.WhenAny(_workerTask, Task.Delay(cancelWaitMs));
-                if (completed != _workerTask)
-                {
-                    Logger.Log($"CaptureSessionCoordinator worker still running after async cancel wait ({cancelWaitMs} ms).");
-                }
+                Logger.Log($"CaptureSessionCoordinator async dispose timed out after {drainTimeoutMs} ms.");
             }
 
             if (_workerTask.IsCompleted)
@@ -354,8 +376,41 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
         }
         finally
         {
-            _workerCancellation.Cancel();
-            _workerCancellation.Dispose();
+            try
+            {
+                _workerCancellation.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+
+            DisposeWorkerCancellationWhenSafe();
         }
+    }
+
+    private void DisposeWorkerCancellationWhenSafe()
+    {
+        if (_workerTask.IsCompleted)
+        {
+            _workerCancellation.Dispose();
+            return;
+        }
+
+        _ = _workerTask.ContinueWith(
+            static (_, state) =>
+            {
+                var cancellation = (CancellationTokenSource)state!;
+                try
+                {
+                    cancellation.Dispose();
+                }
+                catch (ObjectDisposedException)
+                {
+                }
+            },
+            _workerCancellation,
+            CancellationToken.None,
+            TaskContinuationOptions.ExecuteSynchronously,
+            TaskScheduler.Default);
     }
 }
