@@ -4,7 +4,13 @@ param(
     [string]$Configuration = "Debug",
     [ValidateSet("x64")]
     [string]$Platform = "x64",
-    [int]$BuildTimeoutSeconds = 900
+    [int]$BuildTimeoutSeconds = 900,
+    [string]$ValidateHdrFile,
+    [switch]$ValidateHdrExpectHdr,
+    [ValidateSet("hevc", "av1", "either")]
+    [string]$ValidateHdrCodec = "either",
+    [switch]$ValidateHdrRequireHdr10StaticMetadata,
+    [double]$ValidateHdrExpectedFps = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,21 +22,25 @@ function Invoke-ToolWithTimeout {
         [Parameter(Mandatory = $true)]
         [string[]]$Arguments,
         [Parameter(Mandatory = $true)]
-        [int]$TimeoutSeconds
+        [int]$TimeoutSeconds,
+        [string]$WorkingDirectory = (Get-Location).Path
     )
 
     $argumentString = [string]::Join(" ", $Arguments)
     Write-Host "> $Exe $argumentString"
 
     $job = Start-Job -ScriptBlock {
-        param($ToolExe, $ToolArgs)
+        param($ToolExe, $ToolArgs, $ToolWorkingDirectory)
+        if (-not [string]::IsNullOrWhiteSpace($ToolWorkingDirectory)) {
+            Set-Location -Path $ToolWorkingDirectory
+        }
         $allOutput = & $ToolExe @ToolArgs 2>&1 | ForEach-Object { $_.ToString() }
         $code = if ($null -eq $LASTEXITCODE) { 0 } else { [int]$LASTEXITCODE }
         [pscustomobject]@{
             ExitCode = $code
             Output = @($allOutput)
         }
-    } -ArgumentList @($Exe, $Arguments)
+    } -ArgumentList @($Exe, $Arguments, $WorkingDirectory)
 
     try {
         $completed = Wait-Job -Job $job -Timeout $TimeoutSeconds
@@ -79,7 +89,8 @@ $buildOutput = Invoke-ToolWithTimeout `
         "-v", "minimal",
         "-p:Platform=$Platform"
     ) `
-    -TimeoutSeconds $BuildTimeoutSeconds
+    -TimeoutSeconds $BuildTimeoutSeconds `
+    -WorkingDirectory $repoRoot
 
 if ($buildOutput -match "MVVMTK0045") {
     throw "MVVMTK0045 warning detected in build output."
@@ -87,6 +98,37 @@ if ($buildOutput -match "MVVMTK0045") {
 
 if ($FailOnAnyWarning -and ($buildOutput -match ": warning ")) {
     throw "Warnings detected in build output."
+}
+
+if (-not [string]::IsNullOrWhiteSpace($ValidateHdrFile)) {
+    $validatorPath = Join-Path $repoRoot "tools\\validate_hdr.ps1"
+    if (-not (Test-Path $validatorPath)) {
+        throw "HDR validator script not found: $validatorPath"
+    }
+
+    $validatorArgs = @(
+        "-NoProfile",
+        "-ExecutionPolicy", "Bypass",
+        "-File", $validatorPath,
+        "-File", $ValidateHdrFile,
+        "-Codec", $ValidateHdrCodec
+    )
+
+    if ($ValidateHdrExpectHdr) {
+        $validatorArgs += "-ExpectHdr"
+    }
+    if ($ValidateHdrRequireHdr10StaticMetadata) {
+        $validatorArgs += "-RequireHdr10StaticMetadata"
+    }
+    if ($ValidateHdrExpectedFps -gt 0) {
+        $validatorArgs += @("-ExpectedFps", $ValidateHdrExpectedFps.ToString([Globalization.CultureInfo]::InvariantCulture))
+    }
+
+    Invoke-ToolWithTimeout `
+        -Exe "powershell" `
+        -Arguments $validatorArgs `
+        -TimeoutSeconds 120 `
+        -WorkingDirectory $repoRoot
 }
 
 Write-Host ""
