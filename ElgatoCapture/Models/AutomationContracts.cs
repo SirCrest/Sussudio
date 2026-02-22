@@ -66,6 +66,7 @@ public sealed class AutomationCommandResponse
     public string CorrelationId { get; init; } = string.Empty;
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
     public string Status { get; init; } = "ok";
+    public string CommandLifecycle { get; init; } = "completed";
     public int? RetryAfterMs { get; init; }
     public long? ElapsedMs { get; init; }
     public string Message { get; init; } = string.Empty;
@@ -111,8 +112,24 @@ public sealed class AutomationSnapshot
     public string SelectedRecordingFormat { get; init; } = string.Empty;
     public string SelectedQuality { get; init; } = string.Empty;
     public double CustomBitrateMbps { get; init; }
+    public bool IsHdrAvailable { get; init; }
     public bool IsHdrEnabled { get; init; }
     public bool HdrOutputActive { get; init; }
+    public string HdrRuntimeState { get; init; } = "Inactive";
+    public string HdrReadinessReason { get; init; } = string.Empty;
+    public string HdrWarmupState { get; init; } = "NotStarted";
+    public int HdrWarmupRequiredP010Frames { get; init; }
+    public int HdrWarmupAllowedNonP010Frames { get; init; }
+    public int HdrWarmupObservedP010Frames { get; init; }
+    public int HdrWarmupObservedNonP010Frames { get; init; }
+    public string HdrDowngradeCode { get; init; } = string.Empty;
+    public string RequestedPipelineMode { get; init; } = "SDR";
+    public string ActivePipelineMode { get; init; } = "SDR";
+    public bool PipelineModeMatched { get; init; } = true;
+    public string PipelineModeStatus { get; init; } = "Ready";
+    public string PipelineModeReason { get; init; } = string.Empty;
+    public string TelemetryAlignmentStatus { get; init; } = "Unknown";
+    public string TelemetryAlignmentReason { get; init; } = string.Empty;
 
     public string OutputPath { get; init; } = string.Empty;
     public string RecordingTime { get; init; } = string.Empty;
@@ -161,11 +178,20 @@ public sealed class AutomationSnapshot
     public string? ReaderSourceSubtype { get; init; }
     public string? FirstObservedFramePixelFormat { get; init; }
     public string? LatestObservedFramePixelFormat { get; init; }
+    public string? LatestObservedSurfaceFormat { get; init; }
     public long ObservedP010FrameCount { get; init; }
     public long ObservedNv12FrameCount { get; init; }
     public long ObservedOtherFrameCount { get; init; }
+    public long ObservedP010BitDepthSampleCount { get; init; }
+    public double ObservedP010Low2BitNonZeroPercent { get; init; }
+    public bool? ObservedP010Likely8BitUpscaled { get; init; }
     public string? EncoderInputPixelFormat { get; init; }
     public string? EncoderOutputPixelFormat { get; init; }
+    public string? EncoderVideoCodec { get; init; }
+    public string? EncoderVideoProfile { get; init; }
+    public bool? EncoderTenBitPipelineConfirmed { get; init; }
+    public bool? MfReadwriteDisableConverters { get; init; }
+    public string? NegotiatedMediaSubtypeToken { get; init; }
     public double? DetectedSourceFrameRate { get; init; }
     public string? DetectedSourceFrameRateArg { get; init; }
     public string SourceFrameRateOrigin { get; init; } = "Unknown";
@@ -247,6 +273,7 @@ public sealed class AutomationSnapshot
     public long? LastOutputSizeBytes { get; init; }
 
     public RecordingVerificationResult? LastVerification { get; init; }
+    public HdrTruthVerdict? HdrTruthVerdict { get; init; }
 }
 
 public enum DiagnosticsSeverity
@@ -291,6 +318,7 @@ public sealed class RecordingVerificationResult
     public string? DetectedColorPrimaries { get; init; }
     public string? DetectedColorTransfer { get; init; }
     public string? DetectedColorSpace { get; init; }
+    public IReadOnlyList<string> DetectedHdrSideDataTypes { get; init; } = Array.Empty<string>();
     public bool? HdrMetadataPresent { get; init; }
     public bool? HdrColorimetryValid { get; init; }
     public bool? HdrMasteringMetadataPresent { get; init; }
@@ -313,6 +341,37 @@ public sealed class RecordingVerificationResult
     public string? PrimaryMismatchExpected { get; init; }
     public string? PrimaryMismatchActual { get; init; }
     public IReadOnlyList<string> Mismatches { get; init; } = Array.Empty<string>();
+    public HdrParityResult? HdrParity { get; init; }
+}
+
+public sealed class HdrParityResult
+{
+    public bool Requested { get; init; }
+    public bool Activated { get; init; }
+    public bool Verified { get; init; }
+    public bool Downgraded { get; init; }
+    public string VerificationLevel { get; init; } = "NotHdr";
+    public string Status { get; init; } = "NotRequested";
+    public IReadOnlyList<MismatchTaxonomyEntry> MismatchTaxonomy { get; init; } = Array.Empty<MismatchTaxonomyEntry>();
+}
+
+public sealed class HdrTruthVerdict
+{
+    public string PipelineFormat { get; init; } = "unknown";
+    public string EffectiveBitDepth { get; init; } = "unknown";
+    public string HdrMetadataState { get; init; } = "unknown";
+    public string SourceVsCaptureParity { get; init; } = "unknown";
+    public string FinalClassification { get; init; } = "inconclusive";
+    public IReadOnlyList<string> Evidence { get; init; } = Array.Empty<string>();
+}
+
+public sealed class MismatchTaxonomyEntry
+{
+    public string Category { get; init; } = "General";
+    public string Code { get; init; } = string.Empty;
+    public string Severity { get; init; } = "Warning";
+    public string? Expected { get; init; }
+    public string? Actual { get; init; }
 }
 
 public sealed class PreviewRuntimeSnapshot
@@ -367,9 +426,22 @@ public sealed class CaptureRuntimeSnapshot
     public bool? RequestedHdrMasteringMetadata { get; init; }
     public bool HdrOutputActive { get; init; }
     public string HdrActivationReason { get; init; } = "Unknown";
+    public string HdrRuntimeState { get; init; } = "Inactive";
+    public string HdrReadinessReason { get; init; } = string.Empty;
+    public string HdrWarmupState { get; init; } = "NotStarted";
+    public int HdrWarmupRequiredP010Frames { get; init; }
+    public int HdrWarmupAllowedNonP010Frames { get; init; }
+    public int HdrWarmupObservedP010Frames { get; init; }
+    public int HdrWarmupObservedNonP010Frames { get; init; }
     public bool HdrAutoDowngraded { get; init; }
+    public string HdrDowngradeCode { get; init; } = string.Empty;
     public string HdrAutoDowngradeReason { get; init; } = string.Empty;
     public bool HdrRequestedButSourceNot10Bit { get; init; }
+    public string RequestedPipelineMode { get; init; } = "SDR";
+    public string ActivePipelineMode { get; init; } = "SDR";
+    public bool PipelineModeMatched { get; init; } = true;
+    public string PipelineModeStatus { get; init; } = "Ready";
+    public string PipelineModeReason { get; init; } = string.Empty;
     public string? RequestedOutputPath { get; init; }
 
     public uint? ActualWidth { get; init; }
@@ -388,11 +460,20 @@ public sealed class CaptureRuntimeSnapshot
     public string? ReaderSourceSubtype { get; init; }
     public string? FirstObservedFramePixelFormat { get; init; }
     public string? LatestObservedFramePixelFormat { get; init; }
+    public string? LatestObservedSurfaceFormat { get; init; }
     public long ObservedP010FrameCount { get; init; }
     public long ObservedNv12FrameCount { get; init; }
     public long ObservedOtherFrameCount { get; init; }
+    public long ObservedP010BitDepthSampleCount { get; init; }
+    public double ObservedP010Low2BitNonZeroPercent { get; init; }
+    public bool? ObservedP010Likely8BitUpscaled { get; init; }
     public string? EncoderInputPixelFormat { get; init; }
     public string? EncoderOutputPixelFormat { get; init; }
+    public string? EncoderVideoCodec { get; init; }
+    public string? EncoderVideoProfile { get; init; }
+    public bool? EncoderTenBitPipelineConfirmed { get; init; }
+    public bool? MfReadwriteDisableConverters { get; init; }
+    public string? NegotiatedMediaSubtypeToken { get; init; }
     public double? DetectedSourceFrameRate { get; init; }
     public string? DetectedSourceFrameRateArg { get; init; }
     public string SourceFrameRateOrigin { get; init; } = "Unknown";
@@ -409,6 +490,8 @@ public sealed class CaptureRuntimeSnapshot
     public bool SourceTelemetrySuppressed { get; init; }
     public string? SourceTelemetrySuppressedReason { get; init; }
     public string SourceTelemetryCircuitState { get; init; } = "Closed";
+    public string TelemetryAlignmentStatus { get; init; } = "Unknown";
+    public string TelemetryAlignmentReason { get; init; } = string.Empty;
 
     public string RecordingBackend { get; init; } = "None";
     public string AudioPathMode { get; init; } = "None";
@@ -460,7 +543,10 @@ public sealed class ViewModelRuntimeSnapshot
     public string SelectedRecordingFormat { get; init; } = string.Empty;
     public string SelectedQuality { get; init; } = string.Empty;
     public double CustomBitrateMbps { get; init; }
+    public bool IsHdrAvailable { get; init; }
     public bool IsHdrEnabled { get; init; }
+    public string HdrRuntimeState { get; init; } = "Inactive";
+    public string HdrReadinessReason { get; init; } = string.Empty;
     public string OutputPath { get; init; } = string.Empty;
     public string RecordingTime { get; init; } = string.Empty;
     public string RecordingSizeInfo { get; init; } = string.Empty;

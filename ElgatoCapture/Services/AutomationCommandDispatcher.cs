@@ -97,14 +97,14 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                 case AutomationCommandKind.RefreshDevices:
                     await _viewModel.RefreshDevicesForAutomationAsync(cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, "Device list refreshed.");
+                    return CreateAcknowledgedResponse(correlationId, "Device list refresh requested.");
 
                 case AutomationCommandKind.SelectDevice:
                 {
                     var deviceId = GetString(payload, "deviceId");
                     var deviceName = GetString(payload, "deviceName");
                     await _viewModel.SelectDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, "Capture device selected.");
+                    return CreateAcknowledgedResponse(correlationId, "Capture device selection requested.");
                 }
 
                 case AutomationCommandKind.SelectAudioInputDevice:
@@ -112,91 +112,91 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var deviceId = GetString(payload, "deviceId");
                     var deviceName = GetString(payload, "deviceName");
                     await _viewModel.SelectAudioInputDeviceAsync(deviceId, deviceName, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, "Audio input device selected.");
+                    return CreateAcknowledgedResponse(correlationId, "Audio input device selection requested.");
                 }
 
                 case AutomationCommandKind.SetCustomAudioInput:
                 {
                     var enabled = RequireBool(payload, "enabled");
                     await _viewModel.SetCustomAudioInputEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Custom audio input {(enabled ? "enabled" : "disabled")}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Custom audio input {(enabled ? "enable" : "disable")} requested.");
                 }
 
                 case AutomationCommandKind.SetResolution:
                 {
                     var resolution = RequireString(payload, "resolution");
                     await _viewModel.SetResolutionAsync(resolution, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Resolution set to {resolution}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Resolution change requested: {resolution}.");
                 }
 
                 case AutomationCommandKind.SetFrameRate:
                 {
                     var frameRate = RequireDouble(payload, "frameRate");
                     await _viewModel.SetFrameRateAsync(frameRate, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Frame rate requested: {frameRate:0.###}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Frame rate change requested: {frameRate:0.###}.");
                 }
 
                 case AutomationCommandKind.SetRecordingFormat:
                 {
                     var format = RequireString(payload, "format");
                     await _viewModel.SetRecordingFormatAsync(format, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Recording format set to {format}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Recording format change requested: {format}.");
                 }
 
                 case AutomationCommandKind.SetQuality:
                 {
                     var quality = RequireString(payload, "quality");
                     await _viewModel.SetQualityAsync(quality, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Quality set to {quality}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Quality change requested: {quality}.");
                 }
 
                 case AutomationCommandKind.SetCustomBitrate:
                 {
                     var bitrate = RequireDouble(payload, "bitrateMbps");
                     await _viewModel.SetCustomBitrateAsync(bitrate, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Custom bitrate set to {bitrate:0.###} Mbps.");
+                    return CreateAcknowledgedResponse(correlationId, $"Custom bitrate change requested: {bitrate:0.###} Mbps.");
                 }
 
                 case AutomationCommandKind.SetHdrEnabled:
                 {
                     var enabled = RequireBool(payload, "enabled");
                     await _viewModel.SetHdrEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"HDR {(enabled ? "enabled" : "disabled")}.");
+                    return CreateAcknowledgedResponse(correlationId, $"HDR {(enabled ? "enable" : "disable")} requested.");
                 }
 
                 case AutomationCommandKind.SetAudioEnabled:
                 {
                     var enabled = RequireBool(payload, "enabled");
                     await _viewModel.SetAudioEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Audio capture {(enabled ? "enabled" : "disabled")}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Audio capture {(enabled ? "enable" : "disable")} requested.");
                 }
 
                 case AutomationCommandKind.SetAudioPreviewEnabled:
                 {
                     var enabled = RequireBool(payload, "enabled");
                     await _viewModel.SetAudioPreviewEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Audio preview {(enabled ? "enabled" : "disabled")}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Audio preview {(enabled ? "enable" : "disable")} requested.");
                 }
 
                 case AutomationCommandKind.SetOutputPath:
                 {
                     var outputPath = RequireString(payload, "outputPath");
                     await _viewModel.SetOutputPathAsync(outputPath, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Output path set to {outputPath}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Output path change requested: {outputPath}.");
                 }
 
                 case AutomationCommandKind.SetPreviewEnabled:
                 {
                     var enabled = RequireBool(payload, "enabled");
                     await _viewModel.SetPreviewEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Preview {(enabled ? "enabled" : "disabled")}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Preview {(enabled ? "enable" : "disable")} requested.");
                 }
 
                 case AutomationCommandKind.SetRecordingEnabled:
                 {
                     var enabled = RequireBool(payload, "enabled");
                     await _viewModel.SetRecordingEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Recording {(enabled ? "enabled" : "disabled")}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Recording {(enabled ? "start" : "stop")} requested.");
                 }
 
                 case AutomationCommandKind.ArmClose:
@@ -206,7 +206,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     {
                         _closeArmed = armed;
                     }
-                    return CreateSuccessResponse(correlationId, $"Window close arm state: {(armed ? "armed" : "disarmed")}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Window close arm state requested: {(armed ? "armed" : "disarmed")}.");
                 }
 
                 case AutomationCommandKind.WindowAction:
@@ -251,11 +251,11 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                             TaskContinuationOptions.OnlyOnFaulted,
                             TaskScheduler.Default);
 
-                        return CreateSuccessResponse(correlationId, "Window close requested.");
+                        return CreateAcknowledgedResponse(correlationId, "Window close requested.");
                     }
 
                     await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, $"Window action executed: {action}.");
+                    return CreateAcknowledgedResponse(correlationId, $"Window action requested: {action}.");
                 }
 
                 case AutomationCommandKind.WaitForCondition:
@@ -290,7 +290,11 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateSuccessResponse(
                         correlationId,
                         verification.Message,
-                        data: verification,
+                        data: new
+                        {
+                            Verification = verification,
+                            HdrParity = verification.HdrParity
+                        },
                         errorCode: verification.Succeeded ? null : "verification-failed",
                         success: verification.Succeeded,
                         status: verification.Succeeded ? "ok" : "error",
@@ -374,14 +378,17 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         bool success = true,
         bool includeSnapshot = true,
         string status = "ok",
+        string? commandLifecycle = null,
         int? retryAfterMs = null,
         long? elapsedMs = null)
     {
+        var lifecycle = commandLifecycle ?? (success ? "completed" : "failed");
         return new AutomationCommandResponse
         {
             Success = success,
             CorrelationId = correlationId,
             Status = status,
+            CommandLifecycle = lifecycle,
             RetryAfterMs = retryAfterMs,
             ElapsedMs = elapsedMs,
             Message = message,
@@ -389,6 +396,21 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             Data = data,
             Snapshot = includeSnapshot ? _diagnosticsHub.GetLatestSnapshot() : null
         };
+    }
+
+    private AutomationCommandResponse CreateAcknowledgedResponse(
+        string correlationId,
+        string message,
+        object? data = null,
+        bool includeSnapshot = true)
+    {
+        return CreateSuccessResponse(
+            correlationId,
+            message,
+            data: data,
+            includeSnapshot: includeSnapshot,
+            status: "ok",
+            commandLifecycle: "acknowledged");
     }
 
     private bool IsAutomationReady()
@@ -521,8 +543,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             AutomationWaitCondition.HdrVerificationReady =>
                 snapshot.LastVerification is { } verification &&
                 (!snapshot.HdrOutputActive ||
-                 verification.HdrMetadataPresent == true ||
-                 verification.VerificationMode.Equals("basic", StringComparison.OrdinalIgnoreCase)),
+                 verification.HdrParity is { Requested: true, Verified: true } ||
+                 verification.HdrMetadataPresent == true),
             _ => false
         };
     }
