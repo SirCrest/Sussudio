@@ -12,6 +12,10 @@ using ElgatoCapture.Models;
 using ElgatoCapture.Services;
 using Microsoft.UI.Dispatching;
 using Windows.Media.Capture;
+using Windows.Media.Capture.Frames;
+using Windows.Media.Core;
+using Windows.Media.MediaProperties;
+using Windows.Media.Playback;
 using Windows.Storage.Pickers;
 
 namespace ElgatoCapture.ViewModels;
@@ -24,6 +28,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly Stopwatch _recordingStopwatch = new();
     private DispatcherQueueTimer? _timer;
+    private MediaCapture? _previewMediaCapture;
+    private MediaFrameSource? _previewMediaFrameSource;
     private IntPtr _windowHandle;
     private readonly Queue<(long Tick, long Bytes)> _bitrateSamples = new();
     private const int BitrateWindowMs = 5000;
@@ -31,6 +37,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private const string HevcRecordingFormat = "HEVC (MP4)";
     private const string Av1RecordingFormat = "AV1 (MP4)";
     private const int DefaultDisposeTimeoutMs = 30000;
+    private const string HdrToggleBlockedWhileRecordingMessage = "Stop recording before switching between HDR and SDR pipelines.";
 
     [ObservableProperty]
     public partial ObservableCollection<CaptureDevice> Devices { get; set; } = new();
@@ -82,15 +89,20 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _hasUserOverriddenResolutionForCurrentMode;
     private bool _forceSourceAutoRetarget;
     private string? _lastSourceModeKey;
+    private string? _lastKnownResolutionKey;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private int? _lastTelemetryAgeBucket;
     private List<string> _detectedRecordingFormats = new();
+    private long _deviceScanGeneration;
 
     // Flag to prevent reinitialization during initial device setup
     private bool _isChangingDevice;
+    private bool _suppressFormatChangeReinitialize;
+    private bool _isRevertingHdrToggle;
 
     [ObservableProperty]
-    public partial ObservableCollection<string> AvailableRecordingFormats { get; set; } = new() { DefaultRecordingFormat, "HEVC (MP4)", "Uncompressed (AVI)" };
+    public partial ObservableCollection<string> AvailableRecordingFormats { get; set; } =
+        new() { DefaultRecordingFormat, HevcRecordingFormat, Av1RecordingFormat };
 
     [ObservableProperty]
     public partial string SelectedRecordingFormat { get; set; } = DefaultRecordingFormat;
@@ -114,7 +126,16 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial bool IsHdrAvailable { get; set; }
 
     [ObservableProperty]
+    public partial bool IsTrueHdrPreviewEnabled { get; set; }
+
+    [ObservableProperty]
     public partial string HdrResolutionSupportHint { get; set; } = string.Empty;
+
+    [ObservableProperty]
+    public partial string HdrRuntimeState { get; set; } = "Inactive";
+
+    [ObservableProperty]
+    public partial string HdrReadinessReason { get; set; } = string.Empty;
 
     [ObservableProperty]
     public partial double? DetectedSourceFrameRate { get; set; }
@@ -198,6 +219,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial bool IsPreviewing { get; set; }
 
     [ObservableProperty]
+    public partial bool PreviewGpuActive { get; set; }
+
+    [ObservableProperty]
+    public partial string PreviewRendererMode { get; set; } = "None";
+
+    [ObservableProperty]
+    public partial IMediaPlaybackSource? PreviewPlaybackSource { get; set; }
+
+    [ObservableProperty]
     public partial bool IsInitialized { get; set; }
 
     [ObservableProperty]
@@ -215,7 +245,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private long _audioMeterLastTick;
     private int _disposeState;
 
-    public MediaCapture? MediaCapture => _captureService.MediaCapture;
+    public event EventHandler<PreviewFrame>? PreviewFrameReady;
     public CaptureRuntimeSnapshot GetCaptureRuntimeSnapshot() => _captureService.GetRuntimeSnapshot();
     public CaptureHealthSnapshot GetCaptureHealthSnapshot() => _captureService.GetHealthSnapshot();
     public CaptureDiagnosticsSnapshot GetCaptureDiagnosticsSnapshot() => _captureService.GetDiagnosticsSnapshot();
@@ -231,6 +261,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public MainViewModel()
     {
         _deviceService = new DeviceService();
+        _deviceService.FormatProbeCompleted += OnDeviceFormatProbeCompleted;
         _captureService = new CaptureService();
         _sessionCoordinator = new CaptureSessionCoordinator(_captureService);
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
@@ -240,8 +271,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.FrameCaptured += OnFrameCaptured;
         _captureService.AudioLevelUpdated += OnAudioLevelUpdated;
         _captureService.SourceTelemetryUpdated += OnSourceTelemetryUpdated;
+        _captureService.PreviewFrameReady += OnPreviewFrameReady;
+        _captureService.PreviewPlaybackSourceChanged += OnPreviewPlaybackSourceChanged;
         _latestSourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();
         ApplySourceTelemetrySnapshot(_latestSourceTelemetry, allowAutoRetarget: false);
+        UpdateHdrRuntimeStatusFromCapture();
 
         SetupTimer();
         UpdateDiskSpace();
@@ -426,7 +460,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             SelectedRecordingFormat = SelectedRecordingFormat,
             SelectedQuality = SelectedQuality,
             CustomBitrateMbps = CustomBitrateMbps,
+            IsHdrAvailable = IsHdrAvailable,
             IsHdrEnabled = IsHdrEnabled,
+            HdrRuntimeState = HdrRuntimeState,
+            HdrReadinessReason = HdrReadinessReason,
             OutputPath = OutputPath,
             RecordingTime = RecordingTime,
             RecordingSizeInfo = RecordingSizeInfo,
@@ -483,8 +520,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             formats.Add("AV1 (MP4)");
         }
 
-        formats.Add("Uncompressed (AVI)");
-
         void ApplyFormats()
         {
             _detectedRecordingFormats = formats
@@ -523,8 +558,17 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
             UpdateDiskSpace();
             RefreshSourceTelemetrySummaryAge();
+            UpdateHdrRuntimeStatusFromCapture();
         };
         _timer.Start();
+    }
+
+    private void UpdateHdrRuntimeStatusFromCapture()
+    {
+        var runtime = _captureService.GetRuntimeSnapshot();
+        HdrRuntimeState = runtime.HdrRuntimeState;
+        HdrReadinessReason = runtime.HdrReadinessReason;
+        UpdateTargetSummary();
     }
 
     private void RefreshSourceTelemetrySummaryAge()
@@ -566,6 +610,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _dispatcherQueue.TryEnqueue(() =>
         {
             StatusText = status;
+            UpdateHdrRuntimeStatusFromCapture();
         });
     }
 
@@ -702,43 +747,45 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             : exact > 0
                 ? exact.ToString("0.###")
                 : "?";
-        SourceTargetSummaryText = $"Target: {(SelectedResolution ?? "?")} @ {friendly:0} (exact {exactText})";
+        var hdrStateText = string.IsNullOrWhiteSpace(HdrRuntimeState) ? "Unknown" : HdrRuntimeState;
+        SourceTargetSummaryText = $"Target: {(SelectedResolution ?? "?")} @ {friendly:0} (exact {exactText}) | HDR={hdrStateText}";
     }
 
     public async Task RefreshDevicesAsync()
     {
         StatusText = "Scanning for devices...";
-        Devices.Clear();
-        AudioInputDevices.Clear();
 
         try
         {
+            var discoveryStopwatch = Stopwatch.StartNew();
+            var scanGeneration = Interlocked.Increment(ref _deviceScanGeneration);
             var previousAudioId = SelectedAudioInputDevice?.Id;
+            var previousDeviceId = SelectedDevice?.Id;
             var audioDevices = await _deviceService.EnumerateAudioCaptureDevicesAsync();
-            foreach (var audioDevice in audioDevices)
+            var devices = await _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
+            discoveryStopwatch.Stop();
+
+            ReplaceCollection(AudioInputDevices, audioDevices.ToList());
+            SelectedAudioInputDevice = AudioInputDevices.FirstOrDefault(d => d.Id == previousAudioId)
+                ?? AudioInputDevices.FirstOrDefault();
+
+            ReplaceCollection(Devices, devices.ToList());
+            foreach (var discoveredDevice in Devices)
             {
-                AudioInputDevices.Add(audioDevice);
+                _deviceService.BeginBackgroundFormatProbe(discoveredDevice, scanGeneration);
             }
 
-            if (AudioInputDevices.Count > 0)
-            {
-                SelectedAudioInputDevice = AudioInputDevices.FirstOrDefault(d => d.Id == previousAudioId)
-                    ?? AudioInputDevices[0];
-            }
-
-            var devices = await _deviceService.EnumerateVideoCaptureDevicesAsync();
-            foreach (var device in devices)
-            {
-                Devices.Add(device);
-            }
             var discoverySummary = _deviceService.LastDiscoverySummary;
             Logger.Log($"Device discovery summary (ViewModel): {discoverySummary}");
 
             if (Devices.Count > 0)
             {
-                StatusText = $"Found {Devices.Count} device(s)";
+                StatusText = discoveryStopwatch.ElapsedMilliseconds <= 1500
+                    ? $"Found {Devices.Count} device(s) in {discoveryStopwatch.ElapsedMilliseconds} ms"
+                    : $"Found {Devices.Count} device(s) in {discoveryStopwatch.ElapsedMilliseconds} ms (slow scan: waiting on system device enumeration/probe startup)";
 
-                SelectedDevice = Devices[0];
+                var nextSelectedDevice = Devices.FirstOrDefault(d => d.Id == previousDeviceId) ?? Devices[0];
+                SelectedDevice = nextSelectedDevice;
                 Logger.Log($"Auto-selected device: {SelectedDevice?.Name}");
 
                 // Auto-start preview (StartPreviewAsync will initialize device if needed)
@@ -746,6 +793,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
             else
             {
+                SelectedDevice = null;
                 StatusText = "No compatible video capture devices found (see log for discovery summary)";
             }
         }
@@ -755,54 +803,231 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
+    private static void ReplaceCollection<T>(ObservableCollection<T> target, IReadOnlyList<T> source)
+    {
+        target.Clear();
+        foreach (var item in source)
+        {
+            target.Add(item);
+        }
+    }
+
     partial void OnSelectedDeviceChanged(CaptureDevice? value)
     {
-        // Set flag to prevent format change from triggering reinitialization during device setup
+        RebuildSelectedDeviceCapabilities(value, resetTelemetryState: true);
+    }
+
+    private void RebuildSelectedDeviceCapabilities(CaptureDevice? device, bool resetTelemetryState)
+    {
         _isChangingDevice = true;
-        ResetFrameRateSelectionState();
-        HdrResolutionSupportHint = string.Empty;
-
-        AvailableFormats.Clear();
-        AvailableResolutions.Clear();
-        AvailableFrameRates.Clear();
-        _resolutionToFormats.Clear();
-        ApplySourceTelemetrySnapshot(
-            SourceSignalTelemetrySnapshot.CreateUnavailable("awaiting-source-telemetry"),
-            allowAutoRetarget: false);
-
-        if (value != null)
+        try
         {
-            // Build resolution-to-format capability matrix from device's supported formats.
-            foreach (var format in value.SupportedFormats)
+            ResetFrameRateSelectionState();
+            HdrResolutionSupportHint = string.Empty;
+
+            AvailableFormats.Clear();
+            AvailableFrameRates.Clear();
+            _resolutionToFormats.Clear();
+            if (resetTelemetryState)
             {
-                AvailableFormats.Add(format);
-
-                var resolutionKey = GetResolutionKey(format.Width, format.Height);
-                if (!_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
-                {
-                    formats = new List<MediaFormat>();
-                    _resolutionToFormats[resolutionKey] = formats;
-                }
-
-                formats.Add(format);
+                ApplySourceTelemetrySnapshot(
+                    SourceSignalTelemetrySnapshot.CreateUnavailable("awaiting-source-telemetry"),
+                    allowAutoRetarget: false);
             }
 
-            IsHdrAvailable = value.IsHdrCapable;
-            if (!IsHdrAvailable)
+            if (device != null)
             {
-                IsHdrEnabled = false;
+                foreach (var format in device.SupportedFormats)
+                {
+                    AvailableFormats.Add(format);
+
+                    var resolutionKey = GetResolutionKey(format.Width, format.Height);
+                    if (!_resolutionToFormats.TryGetValue(resolutionKey, out var formats))
+                    {
+                        formats = new List<MediaFormat>();
+                        _resolutionToFormats[resolutionKey] = formats;
+                    }
+
+                    formats.Add(format);
+                }
+
+                IsHdrAvailable = device.IsHdrCapable;
+                if (!IsHdrAvailable)
+                {
+                    IsHdrEnabled = false;
+                }
             }
 
             RebuildResolutionOptions();
-
-            // Device initialization is now handled by StartPreviewAsync
         }
+        finally
+        {
+            _isChangingDevice = false;
+        }
+    }
 
-        _isChangingDevice = false;
+    private void OnDeviceFormatProbeCompleted(object? sender, DeviceService.DeviceFormatProbeCompletedEventArgs e)
+    {
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            if (e.RequestId != Interlocked.Read(ref _deviceScanGeneration))
+            {
+                return;
+            }
+
+            var target = Devices.FirstOrDefault(d => string.Equals(d.Id, e.DeviceId, StringComparison.OrdinalIgnoreCase));
+            if (target == null)
+            {
+                return;
+            }
+
+            target.SupportedFormats.Clear();
+            foreach (var format in e.Formats)
+            {
+                target.SupportedFormats.Add(new MediaFormat
+                {
+                    Width = format.Width,
+                    Height = format.Height,
+                    FrameRate = format.FrameRate,
+                    FrameRateNumerator = format.FrameRateNumerator,
+                    FrameRateDenominator = format.FrameRateDenominator,
+                    PixelFormat = format.PixelFormat,
+                    IsHdr = format.IsHdr
+                });
+            }
+
+            target.IsHdrCapable = e.IsHdrCapable;
+            if (!e.Succeeded)
+            {
+                Logger.Log($"Format probe failed for {e.DeviceName}: {e.Error}");
+                return;
+            }
+
+            if (SelectedDevice == null ||
+                !string.Equals(SelectedDevice.Id, target.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            var preserveActiveSelection = IsPreviewing || IsRecording;
+            var allowProbeDrivenRetarget = IsPreviewing && IsInitialized && !IsRecording;
+            var previousResolution = SelectedResolution;
+            var previousFrameRate = SelectedFrameRate;
+
+            if (preserveActiveSelection)
+            {
+                Logger.Log($"Refreshing selected-device capabilities during active capture for {e.DeviceName} (preserveSelection={!allowProbeDrivenRetarget}).");
+            }
+
+            _suppressFormatChangeReinitialize = preserveActiveSelection;
+            try
+            {
+                RebuildSelectedDeviceCapabilities(SelectedDevice, resetTelemetryState: false);
+            }
+            finally
+            {
+                _suppressFormatChangeReinitialize = false;
+            }
+
+            var modeChanged = !string.Equals(previousResolution, SelectedResolution, StringComparison.OrdinalIgnoreCase) ||
+                              !IsFrameRateMatch(previousFrameRate, SelectedFrameRate);
+
+            if (allowProbeDrivenRetarget &&
+                IsHdrEnabled &&
+                modeChanged)
+            {
+                Logger.Log($"Format probe updated HDR mode set; applying new mode {SelectedResolution}@{SelectedFrameRate:0.###} via device renegotiation.");
+                EnqueueUiOperation(() => ReinitializeDeviceAsync("format probe (HDR retarget)"), "format probe hdr retarget");
+                return;
+            }
+
+            if (allowProbeDrivenRetarget &&
+                !IsHdrEnabled &&
+                SelectedFormat?.PixelFormat.Equals("MJPG", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                var preferredRate = previousFrameRate > 0 ? previousFrameRate : SelectedFrameRate;
+                var preferredBucket = GetFriendlyFrameRateBucket(preferredRate);
+                var nv12Candidates = target.SupportedFormats
+                    .Where(format => format.PixelFormat.Equals("NV12", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                MediaFormat? selectedNv12 = nv12Candidates
+                    .Where(format => GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredBucket)
+                    .OrderByDescending(format => (long)format.Width * format.Height)
+                    .FirstOrDefault();
+
+                selectedNv12 ??= nv12Candidates
+                    .OrderBy(format => Math.Abs(format.FrameRateExact - preferredRate))
+                    .ThenByDescending(format => (long)format.Width * format.Height)
+                    .FirstOrDefault();
+
+                if (selectedNv12 != null)
+                {
+                    var targetResolution = GetResolutionKey(selectedNv12.Width, selectedNv12.Height);
+                    if (!string.Equals(targetResolution, SelectedResolution, StringComparison.OrdinalIgnoreCase))
+                    {
+                        Logger.Log(
+                            $"Format probe detected MJPG-only mode at {SelectedResolution}@{SelectedFrameRate:0.###}; " +
+                            $"retargeting SDR to NV12-capable mode {targetResolution}@{selectedNv12.FrameRateExact:0.###}.");
+
+                        _isRebuildingModeOptions = true;
+                        _isApplyingAutomaticResolutionSelection = true;
+                        try
+                        {
+                            SelectedResolution = targetResolution;
+                        }
+                        finally
+                        {
+                            _isApplyingAutomaticResolutionSelection = false;
+                            _isRebuildingModeOptions = false;
+                        }
+
+                        _suppressFormatChangeReinitialize = true;
+                        try
+                        {
+                            RebuildFrameRateOptions();
+                        }
+                        finally
+                        {
+                            _suppressFormatChangeReinitialize = false;
+                        }
+                        EnqueueUiOperation(() => ReinitializeDeviceAsync("format probe (SDR nv12 retarget)"), "format probe sdr retarget");
+                        return;
+                    }
+                }
+            }
+
+            if (preserveActiveSelection &&
+                !allowProbeDrivenRetarget &&
+                modeChanged &&
+                !string.IsNullOrWhiteSpace(previousResolution) &&
+                AvailableResolutions.Any(option => string.Equals(option.Value, previousResolution, StringComparison.OrdinalIgnoreCase)))
+            {
+                _isRebuildingModeOptions = true;
+                _isApplyingAutomaticResolutionSelection = true;
+                try
+                {
+                    SelectedResolution = previousResolution;
+                    SelectedFrameRate = previousFrameRate;
+                    UpdateSelectedFormat();
+                    UpdateTargetSummary();
+                }
+                finally
+                {
+                    _isApplyingAutomaticResolutionSelection = false;
+                    _isRebuildingModeOptions = false;
+                }
+            }
+        });
     }
 
     partial void OnSelectedResolutionChanged(string? value)
     {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            _lastKnownResolutionKey = value;
+        }
+
         if (!_isRebuildingModeOptions && !_isApplyingAutomaticResolutionSelection)
         {
             _hasUserOverriddenResolutionForCurrentMode = true;
@@ -850,7 +1075,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             .ToList();
         if (IsHdrEnabled)
         {
-            candidates = candidates.Where(f => f.IsHdr).ToList();
+            candidates = candidates.Where(IsHdrModeCandidate).ToList();
         }
 
         if (candidates.Count == 0)
@@ -890,12 +1115,22 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void RebuildRecordingFormatOptions()
     {
-        var sourceFormats = _detectedRecordingFormats.Count > 0
+        var sourceFormats = (_detectedRecordingFormats.Count > 0
             ? _detectedRecordingFormats
-            : AvailableRecordingFormats.ToList();
+            : AvailableRecordingFormats.ToList())
+            .ToList();
+        if (sourceFormats.Count == 0)
+        {
+            sourceFormats.Add(DefaultRecordingFormat);
+        }
         var formats = IsHdrEnabled
             ? sourceFormats.Where(IsHdrCompatibleRecordingFormat).ToList()
             : sourceFormats.ToList();
+        if (formats.Count == 0 && AvailableRecordingFormats.Count > 0)
+        {
+            // Keep the last known real formats visible if capability refresh temporarily produced none.
+            formats = AvailableRecordingFormats.ToList();
+        }
 
         AvailableRecordingFormats.Clear();
         foreach (var format in formats)
@@ -945,28 +1180,51 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         Logger.Log($"Selected recording format: {SelectedRecordingFormat}");
     }
 
-    private int GetHdrPixelFormatRank(MediaFormat format)
-    {
-        if (!IsHdrEnabled)
-        {
-            return 0;
-        }
-
-        if (format.PixelFormat.Contains("P010", StringComparison.OrdinalIgnoreCase))
-        {
-            return 0;
-        }
-
-        return format.IsHdr ? 1 : 2;
-    }
+    private static bool IsHdrModeCandidate(MediaFormat format)
+        => format.IsHdr || MediaFormat.IsTrue10BitPixelFormat(format.PixelFormat);
 
     partial void OnIsHdrEnabledChanged(bool value)
     {
+        if (_isRevertingHdrToggle)
+        {
+            return;
+        }
+
+        if (IsRecording)
+        {
+            _isRevertingHdrToggle = true;
+            try
+            {
+                IsHdrEnabled = !value;
+            }
+            finally
+            {
+                _isRevertingHdrToggle = false;
+            }
+
+            StatusText = HdrToggleBlockedWhileRecordingMessage;
+            return;
+        }
+
         if (!_isChangingDevice)
         {
-            ResetModeSelectionState();
-            RebuildResolutionOptions();
-            RebuildRecordingFormatOptions();
+            _suppressFormatChangeReinitialize = true;
+            try
+            {
+                ResetModeSelectionState();
+                RebuildResolutionOptions();
+                RebuildRecordingFormatOptions();
+            }
+            finally
+            {
+                _suppressFormatChangeReinitialize = false;
+            }
+
+            if (IsInitialized && !IsRecording && SelectedDevice != null && SelectedFormat != null)
+            {
+                Logger.Log($"HDR toggle changed to {(value ? "On" : "Off")} - forcing immediate device renegotiation");
+                EnqueueUiOperation(() => ReinitializeDeviceAsync("HDR toggle"), "hdr toggle reinitialize");
+            }
         }
     }
 
@@ -974,12 +1232,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         var previousSelection = SelectedResolution;
         var previousRate = SelectedFrameRate;
+        var desiredSelection = !string.IsNullOrWhiteSpace(previousSelection)
+            ? previousSelection
+            : _lastKnownResolutionKey;
         var options = _resolutionToFormats
             .Select(entry =>
             {
                 var formats = entry.Value;
                 var first = formats[0];
-                var hdrSupported = formats.Any(f => f.IsHdr);
+                var hdrSupported = formats.Any(IsHdrModeCandidate);
                 var enabled = !IsHdrEnabled || hdrSupported;
                 return new ResolutionOption
                 {
@@ -995,10 +1256,66 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             .OrderByDescending(option => (long)option.Width * option.Height)
             .ToList();
 
+        if (options.Count == 0)
+        {
+            if (SelectedDevice != null && IsPreviewing && AvailableResolutions.Count > 0)
+            {
+                var retainedSelection = AvailableResolutions.FirstOrDefault(option =>
+                        string.Equals(option.Value, SelectedResolution, StringComparison.OrdinalIgnoreCase))
+                    ?? AvailableResolutions.FirstOrDefault(option => option.IsEnabled)
+                    ?? AvailableResolutions.FirstOrDefault();
+                if (retainedSelection != null)
+                {
+                    _isRebuildingModeOptions = true;
+                    _isApplyingAutomaticResolutionSelection = true;
+                    try
+                    {
+                        var previousSelectedResolution = SelectedResolution;
+                        SelectedResolution = retainedSelection.Value;
+                        if (string.Equals(previousSelectedResolution, retainedSelection.Value, StringComparison.OrdinalIgnoreCase))
+                        {
+                            OnPropertyChanged(nameof(SelectedResolution));
+                        }
+
+                        _lastKnownResolutionKey = retainedSelection.Value;
+                    }
+                    finally
+                    {
+                        _isApplyingAutomaticResolutionSelection = false;
+                        _isRebuildingModeOptions = false;
+                    }
+                }
+
+                RebuildFrameRateOptions();
+                UpdateTargetSummary();
+                return;
+            }
+
+            _isRebuildingModeOptions = true;
+            try
+            {
+                AvailableResolutions.Clear();
+                _isApplyingAutomaticResolutionSelection = true;
+                SelectedResolution = null;
+                _isApplyingAutomaticResolutionSelection = false;
+                HdrResolutionSupportHint = string.Empty;
+                DisabledResolutionReason = string.Empty;
+            }
+            finally
+            {
+                _isApplyingAutomaticResolutionSelection = false;
+                _isRebuildingModeOptions = false;
+            }
+
+            RebuildFrameRateOptions();
+            UpdateTargetSummary();
+            return;
+        }
+
         string? hdrHint = null;
         var allowSourceAutoSelect = _forceSourceAutoRetarget || !_hasUserOverriddenResolutionForCurrentMode;
         var sourceSelected = allowSourceAutoSelect
-            ? TrySelectSourceResolutionOption(options, previousSelection)
+            ? TrySelectSourceResolutionOption(options, desiredSelection)
             : null;
         var sourceSelectedValue = sourceSelected?.Value;
         if (IsHdrEnabled &&
@@ -1019,10 +1336,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (selected == null)
         {
             selected = IsHdrEnabled
-                ? SelectHdrResolutionOption(options, previousSelection, previousRate, out hdrHint)
+                ? SelectHdrResolutionOption(options, desiredSelection, previousRate, out hdrHint)
                 : options.FirstOrDefault(option =>
                     option.IsEnabled &&
-                    string.Equals(option.Value, previousSelection, StringComparison.OrdinalIgnoreCase))
+                    string.Equals(option.Value, desiredSelection, StringComparison.OrdinalIgnoreCase))
                     ?? options.FirstOrDefault(option => option.IsEnabled)
                     ?? options.FirstOrDefault();
 
@@ -1050,8 +1367,22 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
 
             _isApplyingAutomaticResolutionSelection = true;
-            SelectedResolution = selected?.Value;
+            if (selected != null)
+            {
+                var previousSelectedResolution = SelectedResolution;
+                SelectedResolution = selected.Value;
+                if (string.Equals(previousSelectedResolution, selected.Value, StringComparison.OrdinalIgnoreCase))
+                {
+                    OnPropertyChanged(nameof(SelectedResolution));
+                }
+            }
+
             _isApplyingAutomaticResolutionSelection = false;
+            if (!string.IsNullOrWhiteSpace(SelectedResolution))
+            {
+                _lastKnownResolutionKey = SelectedResolution;
+            }
+
             if (IsHdrEnabled)
             {
                 HdrResolutionSupportHint = hdrHint ?? BuildHdrSupportHintForResolution(selected?.Value);
@@ -1098,10 +1429,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 .Select(group =>
                 {
                     var allFormats = group.ToList();
-                    var hdrSupported = allFormats.Any(format => format.IsHdr);
+                    var hdrSupported = allFormats.Any(IsHdrModeCandidate);
                     var enabled = !IsHdrEnabled || hdrSupported;
                     var selectionPool = IsHdrEnabled && hdrSupported
-                        ? allFormats.Where(format => format.IsHdr).ToList()
+                        ? allFormats.Where(IsHdrModeCandidate).ToList()
                         : allFormats;
                     var preferred = SelectPreferredFrameRateFormat(selectionPool, group.Key, timingFamily);
                     var numerator = preferred.FrameRateNumerator > 0 ? preferred.FrameRateNumerator : (uint?)null;
@@ -1380,9 +1711,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             return false;
         }
 
+        if (frameRate <= 0)
+        {
+            return false;
+        }
+
+        var requestedBucket = GetFriendlyFrameRateBucket(frameRate);
         return formats.Any(format =>
-            (!hdrOnly || format.IsHdr) &&
-            IsFrameRateMatch(format.FrameRateExact, frameRate));
+            (!hdrOnly || IsHdrModeCandidate(format)) &&
+            GetFriendlyFrameRateBucket(format.FrameRateExact) == requestedBucket);
     }
 
     private bool ResolutionHasTimingFamilyVariant(
@@ -1424,7 +1761,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         var candidates = hdrOnly
-            ? formats.Where(format => format.IsHdr).ToList()
+            ? formats.Where(IsHdrModeCandidate).ToList()
             : formats;
         if (candidates.Count == 0)
         {
@@ -1517,8 +1854,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         return candidates
             .OrderBy(format => GetTimingFamilyRank(format, friendlyBucket, timingFamily))
             .ThenBy(format => Math.Abs(format.FrameRateExact - friendlyBucket))
+            .ThenByDescending(IsHdrModeCandidate)
             .ThenBy(format => MediaFormat.GetPixelFormatPriority(format.PixelFormat))
-            .ThenByDescending(format => format.IsHdr)
             .First();
     }
 
@@ -1677,7 +2014,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     partial void OnSelectedFormatChanged(MediaFormat? value)
     {
         // If preview is active and this isn't during initial device setup, reinitialize with new format
-        if (value != null && !_isChangingDevice && IsPreviewing && IsInitialized)
+        if (value != null && !_isChangingDevice && !_suppressFormatChangeReinitialize && IsPreviewing && IsInitialized)
         {
             Logger.Log($"=== Format changed to {value.Width}x{value.Height}@{value.FrameRate}fps - reinitializing device ===");
             EnqueueUiOperation(() => ReinitializeDeviceAsync("format change"), "format change reinitialize");
@@ -1980,9 +2317,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             System.Diagnostics.Debug.WriteLine("✓ CaptureService initialized");
 
             IsInitialized = true;
-            OnPropertyChanged(nameof(MediaCapture));
-            Logger.Log($"MediaCapture object: {MediaCapture}");
-            System.Diagnostics.Debug.WriteLine($"MediaCapture object: {MediaCapture}");
             StatusText = "Device ready";
         }
         catch (Exception ex)
@@ -2018,12 +2352,22 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         if (IsInitialized)
         {
+            var settings = BuildCaptureSettings();
+            try
+            {
+                await _sessionCoordinator.StartVideoPreviewAsync(settings).ConfigureAwait(true);
+            }
+            catch
+            {
+                PreviewPlaybackSource = null;
+                PreviewGpuActive = false;
+                PreviewRendererMode = "None";
+                throw;
+            }
+
             Logger.Log("Setting IsPreviewing = true");
             System.Diagnostics.Debug.WriteLine("Setting IsPreviewing = true");
             IsPreviewing = true;
-            OnPropertyChanged(nameof(MediaCapture));
-            Logger.Log($"MediaCapture in ViewModel: {MediaCapture}");
-            System.Diagnostics.Debug.WriteLine($"MediaCapture in ViewModel: {MediaCapture}");
             StatusText = "Preview starting...";
 
             // Start audio preview if enabled
@@ -2048,6 +2392,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public async Task StopPreviewAsync()
     {
+        await _sessionCoordinator.StopVideoPreviewAsync();
         IsPreviewing = false;
 
         // Stop audio preview
@@ -2056,7 +2401,259 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             await _sessionCoordinator.StopAudioPreviewAsync();
         }
 
+        PreviewPlaybackSource = null;
+        PreviewGpuActive = false;
+        PreviewRendererMode = "None";
         StatusText = "Preview stopped";
+    }
+
+    private async Task StartGpuPreviewAsync(CaptureSettings settings)
+    {
+        await StopGpuPreviewAsync().ConfigureAwait(true);
+
+        if (SelectedDevice == null)
+        {
+            throw new InvalidOperationException("No capture device selected for GPU preview.");
+        }
+
+        var previewMode = settings.PreviewMode;
+        var hdrToggleEnabled = settings.HdrEnabled;
+        var trueHdrPreviewRequested = previewMode == PreviewMode.TrueHdr;
+        Logger.Log($"GPU preview requested (mode={previewMode}, deviceId={SelectedDevice.Id}, {settings.Width}x{settings.Height}@{settings.FrameRate:0.###}).");
+        Logger.Log(
+            "HDR_REQUEST_STATE scope=preview " +
+            $"hdr_toggle={hdrToggleEnabled} " +
+            $"require_p010={hdrToggleEnabled} " +
+            $"hdr_prev_render={trueHdrPreviewRequested} " +
+            $"mode={settings.Width}x{settings.Height}@{settings.FrameRate:0.###}");
+
+        var mediaCapture = new MediaCapture();
+        try
+        {
+            await mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
+            {
+                VideoDeviceId = SelectedDevice.Id,
+                StreamingCaptureMode = StreamingCaptureMode.Video,
+                MemoryPreference = MediaCaptureMemoryPreference.Auto
+            });
+        }
+        catch (Exception ex)
+        {
+            mediaCapture.Dispose();
+            throw new InvalidOperationException($"GPU preview MediaCapture initialization failed: {ex.Message}", ex);
+        }
+
+        var colorSources = mediaCapture.FrameSources.Values
+            .Where(source => source.Info.SourceKind == MediaFrameSourceKind.Color)
+            .ToList();
+
+        MediaFrameSource? frameSource;
+        if (hdrToggleEnabled)
+        {
+            // Many capture devices only expose P010 on the record stream, not the preview stream.
+            frameSource = colorSources.FirstOrDefault(source => source.Info.MediaStreamType == MediaStreamType.VideoRecord)
+                ?? colorSources.FirstOrDefault(source => source.Info.MediaStreamType == MediaStreamType.VideoPreview)
+                ?? colorSources.FirstOrDefault();
+        }
+        else
+        {
+            frameSource = colorSources.FirstOrDefault(source => source.Info.MediaStreamType == MediaStreamType.VideoPreview)
+                ?? colorSources.FirstOrDefault(source => source.Info.MediaStreamType == MediaStreamType.VideoRecord)
+                ?? colorSources.FirstOrDefault();
+        }
+
+        if (frameSource == null)
+        {
+            mediaCapture.Dispose();
+            throw new InvalidOperationException("GPU preview failed: no color video frame source is available.");
+        }
+
+        Logger.Log($"GPU preview frame source: kind={frameSource.Info.SourceKind} stream={frameSource.Info.MediaStreamType} id={frameSource.Info.Id}.");
+
+        var requireP010 = hdrToggleEnabled;
+        await ConfigurePreviewFormatAsync(frameSource, settings, requireP010).ConfigureAwait(true);
+
+        var mediaSource = MediaSource.CreateFromMediaFrameSource(frameSource);
+
+        _previewMediaCapture = mediaCapture;
+        _previewMediaFrameSource = frameSource;
+        PreviewPlaybackSource = mediaSource;
+        PreviewGpuActive = true;
+        PreviewRendererMode = trueHdrPreviewRequested ? "MediaPlayerElement-TrueHdrRender" : "MediaPlayerElement";
+    }
+
+    private static async Task ConfigurePreviewFormatAsync(
+        MediaFrameSource frameSource,
+        CaptureSettings settings,
+        bool requireP010)
+    {
+        var supported = frameSource.SupportedFormats;
+        if (supported == null || supported.Count == 0)
+        {
+            if (requireP010)
+            {
+                throw new InvalidOperationException("HDR preview requested, but the device reports no supported formats.");
+            }
+
+            return;
+        }
+
+        var requestedWidth = (int)settings.Width;
+        var requestedHeight = (int)settings.Height;
+
+        static double ToFps(MediaFrameFormat format)
+            => format.FrameRate.Denominator > 0
+                ? (double)format.FrameRate.Numerator / format.FrameRate.Denominator
+                : 0;
+
+        static bool IsP010(MediaFrameFormat format)
+            => string.Equals(format.Subtype, "P010", StringComparison.OrdinalIgnoreCase);
+
+        static int GetPreviewSubtypePriority(string? subtype)
+        {
+            if (string.IsNullOrWhiteSpace(subtype))
+            {
+                return 100;
+            }
+
+            // Prefer uncompressed formats that MediaPlayerElement reliably renders.
+            if (subtype.Equals(MediaEncodingSubtypes.Nv12, StringComparison.OrdinalIgnoreCase))
+            {
+                return 0;
+            }
+
+            if (subtype.Equals("YUY2", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+
+            if (subtype.Equals("UYVY", StringComparison.OrdinalIgnoreCase))
+            {
+                return 2;
+            }
+
+            if (subtype.Equals(MediaEncodingSubtypes.Bgra8, StringComparison.OrdinalIgnoreCase))
+            {
+                return 3;
+            }
+
+            if (subtype.Equals("MJPG", StringComparison.OrdinalIgnoreCase) ||
+                subtype.Equals("MJPEG", StringComparison.OrdinalIgnoreCase))
+            {
+                return 50;
+            }
+
+            return 10;
+        }
+
+        IEnumerable<MediaFrameFormat> candidates = supported;
+
+        var sizeMatches = supported.Where(fmt =>
+            fmt.VideoFormat.Width == requestedWidth &&
+            fmt.VideoFormat.Height == requestedHeight).ToList();
+
+        if (requireP010)
+        {
+            if (sizeMatches.Count > 0)
+            {
+                candidates = sizeMatches;
+            }
+
+            candidates = candidates.Where(IsP010).ToList();
+            if (!candidates.Any())
+            {
+                var distinctSubtypes = string.Join(
+                    ", ",
+                    supported.Select(fmt => fmt.Subtype).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().Take(8));
+                throw new InvalidOperationException(
+                    $"HDR preview requires P010, but no P010 formats were found for {requestedWidth}x{requestedHeight}. " +
+                    $"Reported subtypes include: {distinctSubtypes}.");
+            }
+        }
+        else
+        {
+            // Avoid MJPG when possible; it often results in a blank MediaPlayerElement with MediaFrameSource-backed playback.
+            // If the requested resolution only exists as MJPG, we must retarget to a different resolution/subtype to avoid a blank preview.
+            var renderableAtRequestedSize = sizeMatches
+                .Where(fmt => GetPreviewSubtypePriority(fmt.Subtype) < 50)
+                .ToList();
+            if (renderableAtRequestedSize.Count > 0)
+            {
+                candidates = renderableAtRequestedSize;
+            }
+            else
+            {
+                var renderableAnywhere = supported
+                    .Where(fmt => GetPreviewSubtypePriority(fmt.Subtype) < 50)
+                    .ToList();
+                if (renderableAnywhere.Count > 0)
+                {
+                    candidates = renderableAnywhere;
+                }
+                else if (sizeMatches.Count > 0)
+                {
+                    // Only MJPG (or other non-renderable) exists at the requested size; fall back to that rather than failing preview start.
+                    candidates = sizeMatches;
+                }
+            }
+        }
+
+        var requestedFps = settings.FrameRate;
+        var selected = candidates
+            .OrderBy(fmt => GetPreviewSubtypePriority(fmt.Subtype))
+            .ThenBy(fmt =>
+            {
+                var fps = ToFps(fmt);
+                return fps > 0 ? Math.Abs(fps - requestedFps) : 9999;
+            })
+            .ThenByDescending(fmt => (long)fmt.VideoFormat.Width * fmt.VideoFormat.Height)
+            .First();
+
+        var selectedFps = ToFps(selected);
+        Logger.Log(
+            $"GPU preview format select: subtype={selected.Subtype} {selected.VideoFormat.Width}x{selected.VideoFormat.Height} " +
+            $"fps={selectedFps:0.###} (requested {settings.Width}x{settings.Height}@{requestedFps:0.###}, requireP010={requireP010}).");
+
+        if (!requireP010 &&
+            (selected.VideoFormat.Width != requestedWidth || selected.VideoFormat.Height != requestedHeight))
+        {
+            Logger.Log(
+                $"GPU preview retarget: requested {requestedWidth}x{requestedHeight}@{requestedFps:0.###} but selected " +
+                $"{selected.VideoFormat.Width}x{selected.VideoFormat.Height}@{selectedFps:0.###} to avoid non-renderable subtypes (e.g., MJPG).");
+        }
+
+        await frameSource.SetFormatAsync(selected);
+
+        if (requireP010)
+        {
+            var activeSubtype = frameSource.CurrentFormat?.Subtype ?? string.Empty;
+            if (!string.Equals(activeSubtype, "P010", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"HDR preview requested P010, but negotiated subtype is '{activeSubtype}'.");
+            }
+        }
+    }
+
+    private Task StopGpuPreviewAsync()
+    {
+        PreviewPlaybackSource = null;
+        PreviewGpuActive = false;
+        PreviewRendererMode = "None";
+
+        var mediaCapture = _previewMediaCapture;
+        _previewMediaCapture = null;
+        _previewMediaFrameSource = null;
+
+        try
+        {
+            mediaCapture?.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"GPU preview dispose warning: {ex.Message}");
+        }
+
+        return Task.CompletedTask;
     }
 
     public async Task ToggleRecordingAsync()
@@ -2088,6 +2685,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             var settings = BuildCaptureSettings();
             await _sessionCoordinator.StartRecordingAsync(settings);
+
             IsRecording = true;
             _recordingStopwatch.Restart();
             _bitrateSamples.Clear();
@@ -2141,6 +2739,24 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public Task RefreshDevicesForAutomationAsync(CancellationToken cancellationToken = default)
         => InvokeOnUiThreadAsync(() => RefreshDevicesAsync(), cancellationToken);
+
+    private void OnPreviewFrameReady(object? sender, PreviewFrame frame)
+    {
+        PreviewFrameReady?.Invoke(this, frame);
+    }
+
+    private void OnPreviewPlaybackSourceChanged(object? sender, IMediaPlaybackSource? source)
+    {
+        EnqueueUiOperation(() =>
+        {
+            PreviewPlaybackSource = source;
+            PreviewGpuActive = source != null;
+            PreviewRendererMode = source != null
+                ? (IsTrueHdrPreviewEnabled ? "MediaPlayerElement-TrueHdrRender" : "MediaPlayerElement")
+                : "None";
+            return Task.CompletedTask;
+        }, "preview playback source update");
+    }
 
     public Task SelectDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
     {
@@ -2297,6 +2913,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         return InvokeOnUiThreadAsync(() =>
         {
+            if (IsRecording)
+            {
+                throw new InvalidOperationException(HdrToggleBlockedWhileRecordingMessage);
+            }
+
             if (enabled && !IsHdrAvailable)
             {
                 throw new InvalidOperationException("HDR is not available on the selected device.");
@@ -2424,7 +3045,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             "HEVC (MP4)" => RecordingFormat.HevcMp4,
             "AV1 (MP4)" => RecordingFormat.Av1Mp4,
-            "Uncompressed (AVI)" => RecordingFormat.UncompressedAvi,
             _ => RecordingFormat.H264Mp4
         };
 
@@ -2533,6 +3153,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             Quality = quality,
             CustomBitrateMbps = CustomBitrateMbps,
             HdrEnabled = IsHdrEnabled,
+            HdrOutputMode = IsHdrEnabled ? HdrOutputMode.Hdr10Pq : HdrOutputMode.Off,
+            PreviewMode = IsTrueHdrPreviewEnabled ? PreviewMode.TrueHdr : PreviewMode.GpuFast,
             OutputPath = OutputPath,
             AudioEnabled = IsAudioEnabled
         };
@@ -2555,11 +3177,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         _timer?.Stop();
+        await StopGpuPreviewAsync().ConfigureAwait(false);
+        _deviceService.FormatProbeCompleted -= OnDeviceFormatProbeCompleted;
         _captureService.StatusChanged -= OnCaptureStatusChanged;
         _captureService.ErrorOccurred -= OnCaptureError;
         _captureService.FrameCaptured -= OnFrameCaptured;
         _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
         _captureService.SourceTelemetryUpdated -= OnSourceTelemetryUpdated;
+        _captureService.PreviewFrameReady -= OnPreviewFrameReady;
         var stepTimeoutMs = GetIntFromEnv(
             "ELGATOCAPTURE_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,

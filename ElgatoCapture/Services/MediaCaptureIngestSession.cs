@@ -14,7 +14,8 @@ namespace ElgatoCapture.Services;
 
 internal sealed class MediaCaptureIngestSession : IAsyncDisposable
 {
-    private readonly MediaCapture _mediaCapture = new();
+    private readonly MediaCapture _mediaCapture;
+    private readonly bool _ownsMediaCapture;
     private MediaFrameReader? _videoReader;
     private MediaFrameReader? _audioReader;
     private IRecordingSink? _sink;
@@ -30,6 +31,18 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
     private int _loggedFirstVideoFrame;
     private long _videoIngestErrorCount;
     private long _lastVideoIngestErrorLogTick;
+
+    public MediaCaptureIngestSession()
+    {
+        _mediaCapture = new MediaCapture();
+        _ownsMediaCapture = true;
+    }
+
+    public MediaCaptureIngestSession(MediaCapture mediaCapture)
+    {
+        _mediaCapture = mediaCapture ?? throw new ArgumentNullException(nameof(mediaCapture));
+        _ownsMediaCapture = false;
+    }
 
     private static string FormatAudioProps(AudioEncodingProperties? props)
     {
@@ -89,19 +102,22 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
         _requireP010 = requireP010;
         _audioEnabled = audioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId);
 
-        try
+        if (_ownsMediaCapture)
         {
-            await _mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
+            try
             {
-                VideoDeviceId = videoDeviceId,
-                AudioDeviceId = _audioEnabled ? audioDeviceId : null,
-                StreamingCaptureMode = _audioEnabled ? StreamingCaptureMode.AudioAndVideo : StreamingCaptureMode.Video,
-                MemoryPreference = MediaCaptureMemoryPreference.Cpu
-            }).AsTask(cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException($"MediaCapture ingestion initialization failed: {ex.Message}", ex);
+                await _mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
+                {
+                    VideoDeviceId = videoDeviceId,
+                    AudioDeviceId = _audioEnabled ? audioDeviceId : null,
+                    StreamingCaptureMode = _audioEnabled ? StreamingCaptureMode.AudioAndVideo : StreamingCaptureMode.Video,
+                    MemoryPreference = MediaCaptureMemoryPreference.Cpu
+                }).AsTask(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"MediaCapture ingestion initialization failed: {ex.Message}", ex);
+            }
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -502,13 +518,16 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
         }
 
         _sink = null;
-        try
+        if (_ownsMediaCapture)
         {
-            _mediaCapture.Dispose();
-        }
-        catch
-        {
-            // Best-effort.
+            try
+            {
+                _mediaCapture.Dispose();
+            }
+            catch
+            {
+                // Best-effort.
+            }
         }
     }
 }
