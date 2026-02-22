@@ -142,3 +142,36 @@ Do not rewrite or delete prior entries. Append new entries only.
 - Validator Output:
   - Expected: validator completes (PASS/FAIL) and StopRecording returns.
 - Conclusion: Aligns SDR ingest with the same stream the GPU preview uses; should reduce “preview freezes / bitrate drops to 0 / stop hangs” symptoms caused by stream contention.
+
+## E13 - Stop button freezes timer immediately and always exits recording state
+- Timestamp (UTC): 2026-02-22T15:21:20Z
+- Commit Hash: d7affca34f817e7abe3e69a5b338643dc1d0c907
+- What Changed (single change): `StopRecordingAsync` now stops the stopwatch immediately (timer freezes on click) and sets `IsRecording=false` even if finalization fails, so the UI never gets stuck in “recording” state.
+- How To Run:
+  1. Start a recording, then click Stop.
+  2. Confirm the timer freezes immediately and the record button returns to RECORD even if an error occurs.
+- Validator Output:
+  - N/A
+- Conclusion: Fixes the user-visible “record button doesn’t stop / timer keeps going” failure mode when stop throws or finalization is slow.
+
+## E14 - Recording size/bitrate driven by FFmpeg progress (not file length)
+- Timestamp (UTC): 2026-02-22T15:21:20Z
+- Commit Hash: 232ee12f423498d1c10828ef8323e52a244c3cb4
+- What Changed (single change): Parse FFmpeg progress (`size=... bitrate=...`) and surface it through `CaptureService.GetRecordingStats()` so the UI bitrate/size updates during recording even if the OS hasn’t flushed the MP4 file length yet.
+- How To Run:
+  1. Start a recording and watch the UI’s Size/Bitrate fields.
+  2. Confirm `temp/logs/ElgatoCapture_Debug.log` contains `[FFmpeg] frame=... size=... bitrate=...` lines and the UI updates while recording.
+- Validator Output:
+  - N/A
+- Conclusion: Makes the “bitrate should move up” experience reflect the encoder’s real progress instead of a stale file size.
+
+## E15 - Faster stop (shorter writer drain timeout)
+- Timestamp (UTC): 2026-02-22T15:21:20Z
+- Commit Hash: 71d097cfc95ec0b62ffbf51871a47f79b9f646d2
+- What Changed (single change): Reduced FFmpeg writer drain/cancel timeouts so StopRecording completes faster under backpressure.
+- How To Run:
+  1. Start a recording, then click Stop.
+  2. Compare stop latency in `temp/logs/ElgatoCapture_Debug.log` around `=== FFmpeg Encoder Stopping ===` before/after this change.
+- Validator Output:
+  - N/A
+- Conclusion: Improves the expected “click stop, it stops” UX without changing the capture/encode pipeline logic.
