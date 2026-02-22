@@ -93,8 +93,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private const int MaxQueueSize = 360;
     private const int AudioQueueCapacity = MaxQueueSize * 10;
     private const string AudioPipePrefix = "ElgatoCaptureAudio";
-    private const int WriterDrainTimeoutMs = 5000;
-    private const int WriterCancelGraceMs = 3000;
+    private const int WriterDrainTimeoutMs = 1000;
+    private const int WriterCancelGraceMs = 1000;
     private const int AudioPipeConnectTimeoutMs = 15000;
     private const int AudioPipeConnectAttempts = 3;
     private const int DirectShowHdrProbeMaxAttempts = 3;
