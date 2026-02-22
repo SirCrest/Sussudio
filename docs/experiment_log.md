@@ -120,3 +120,14 @@ Do not rewrite or delete prior entries. Append new entries only.
 - Validator Output:
   - N/A
 - Conclusion: Removes misleading warnings that made it look like preview stopped when it was actually using the GPU preview path.
+
+## E11 - HDR recording mode no longer forces P010 on the preview path (GpuFast stays renderable)
+- Timestamp (UTC): 2026-02-22T14:30:57Z
+- Commit Hash: 6e74888fd354ab72848595de3319cfa43a24e500
+- What Changed (single change): In GPU preview (`SharedMediaCapture`), only require P010 when `PreviewMode=TrueHdr`; HDR recording mode now leaves `PreviewMode=GpuFast` on an NV12-capable stream so preview doesn’t go blank when the device/MediaPlayerElement can’t render P010.
+- How To Run:
+  1. Run `latest-build/ElgatoCapture.exe`, enable HDR, keep Preview mode on GPU (non-true-HDR preview), start preview.
+  2. Confirm the log line `HDR_REQUEST_STATE scope=preview ... require_p010=False` while HDR toggle is on, and that preview remains visible.
+- Validator Output:
+  - N/A
+- Conclusion: Separates “record requires P010” from “preview must be renderable”; avoids breaking preview in HDR mode while keeping the record path strict.
