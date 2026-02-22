@@ -131,3 +131,14 @@ Do not rewrite or delete prior entries. Append new entries only.
 - Validator Output:
   - N/A
 - Conclusion: Separates “record requires P010” from “preview must be renderable”; avoids breaking preview in HDR mode while keeping the record path strict.
+
+## E12 - SDR recording ingests from VideoPreview stream (reduce dual-stream contention)
+- Timestamp (UTC): 2026-02-22T15:01:39Z
+- Commit Hash: 9e3d794b764a4165d0c6e8ce7742d328a67ff6bf
+- What Changed (single change): MediaCapture ingest now selects `VideoPreview` when `requireP010=false` (SDR), and only uses `VideoRecord` when `requireP010=true` (HDR), to avoid running preview+record on separate streams that can tank throughput on some cards/drivers.
+- How To Run:
+  1. Run `latest-build/ElgatoCapture.exe` in SDR, start preview, click Record for ~5 seconds, click Stop.
+  2. Confirm log shows `HDR_REQUEST_STATE scope=ingest-video require_p010=False stream=VideoPreview` and that bitrate/preview remain responsive.
+- Validator Output:
+  - Expected: validator completes (PASS/FAIL) and StopRecording returns.
+- Conclusion: Aligns SDR ingest with the same stream the GPU preview uses; should reduce “preview freezes / bitrate drops to 0 / stop hangs” symptoms caused by stream contention.
