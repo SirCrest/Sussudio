@@ -98,3 +98,25 @@ Do not rewrite or delete prior entries. Append new entries only.
   - side_data_list=<...>
 - Conclusion: <what was proven/falsified and next action>
 ```
+
+## E9 - Validator script discovery works from staged builds
+- Timestamp (UTC): 2026-02-22T14:27:46Z
+- Commit Hash: 5210b2144cd0409b085c4d838a8054b46469a166
+- What Changed (single change): Fixed `HdrValidationRunner` to discover `tools/validate_hdr.ps1` by searching parent directories from the staged exe (`latest-build`) instead of assuming a fixed relative depth.
+- How To Run:
+  1. Run `latest-build/ElgatoCapture.exe`, start/stop a short recording (SDR is fine).
+  2. Confirm `temp/logs/ElgatoCapture_Debug.log` contains `HDR validator stdout:` with `HDR_VALIDATE_RESULT PASS ...` (or a real FAIL mismatch), not `validator-script-missing`.
+- Validator Output:
+  - Expected: `HDR_VALIDATE_RESULT PASS ...` for SDR recordings (validator runs without `-ExpectHdr`).
+- Conclusion: Recording stop no longer hard-fails due to `validator-script-missing` when running the staged binary.
+
+## E10 - Recording no longer logs false preview-inactive warnings on GPU preview
+- Timestamp (UTC): 2026-02-22T14:27:46Z
+- Commit Hash: 8de8ff9536543f40434f267751f2d7b84cf9f70b
+- What Changed (single change): Corrected `PreviewStateDuringRecording` detection to treat the GPU preview path (`MediaPlayerElement` + `PreviewPlaybackSource`) as active instead of checking only the CPU `SoftwareBitmapSource` path.
+- How To Run:
+  1. Run `latest-build/ElgatoCapture.exe` and wait for preview to appear.
+  2. Click Record and check `temp/logs/ElgatoCapture_Debug.log` for `PreviewStateDuringRecording: rendererActive=True`.
+- Validator Output:
+  - N/A
+- Conclusion: Removes misleading warnings that made it look like preview stopped when it was actually using the GPU preview path.
