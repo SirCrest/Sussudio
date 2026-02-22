@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -91,6 +93,37 @@ namespace ElgatoCapture
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(Microsoft.UI.Xaml.LaunchActivatedEventArgs args)
         {
+            try
+            {
+                var exePath = Environment.ProcessPath ?? Process.GetCurrentProcess().MainModule?.FileName ?? "unknown";
+                var exeMtimeUtc = "unknown";
+                try
+                {
+                    if (!string.IsNullOrWhiteSpace(exePath) && File.Exists(exePath))
+                    {
+                        exeMtimeUtc = File.GetLastWriteTimeUtc(exePath).ToString("o");
+                    }
+                }
+                catch
+                {
+                    // Best-effort.
+                }
+
+                var assembly = Assembly.GetExecutingAssembly();
+                var assemblyName = assembly.GetName();
+                Logger.Log(
+                    "APP_START " +
+                    $"exe='{exePath}' " +
+                    $"exe_mtime_utc='{exeMtimeUtc}' " +
+                    $"assembly='{assemblyName.Name}' " +
+                    $"assembly_version='{assemblyName.Version}' " +
+                    $"base_dir='{AppContext.BaseDirectory}'");
+            }
+            catch
+            {
+                // Best-effort.
+            }
+
             _window = new MainWindow();
             _window.Activate();
             // WinAppSDK terminates the dispatcher thread once the last window closes, so no extra Exit call is needed here.
