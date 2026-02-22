@@ -31,6 +31,9 @@ public sealed class RecordingVerifier : IRecordingVerifier
         bool? ColorimetryValid,
         bool? MasteringMetadataPresent,
         string VerificationLevel);
+    private readonly record struct HdrSideDataProbeResult(
+        bool? MetadataPresent,
+        IReadOnlyList<string> SideDataTypes);
 
     public RecordingVerifier() : this(new ProcessSupervisor(), FindFfprobePath())
     {
@@ -93,13 +96,14 @@ public sealed class RecordingVerifier : IRecordingVerifier
         {
             return new RecordingVerificationResult
             {
-                Succeeded = true,
-                Message = "Strict verification unavailable because ffprobe is not accessible; basic validation passed.",
+                Succeeded = false,
+                Message = "Strict verification failed: ffprobe is not accessible.",
                 OutputPath = outputPath,
                 FileExists = true,
                 FileSizeBytes = fileSize,
-                VerificationMode = "basic",
-                Mismatches = Array.Empty<string>()
+                VerificationMode = "none",
+                PrimaryMismatchCode = "ffprobe-unavailable",
+                Mismatches = new[] { "ffprobe-unavailable" }
             };
         }
 
@@ -155,11 +159,9 @@ public sealed class RecordingVerifier : IRecordingVerifier
         var detectedWidth = TryParseUInt(widthRaw);
         var detectedHeight = TryParseUInt(heightRaw);
         var detectedFrameRate = TryParseRational(avgFpsRaw) ?? TryParseRational(rFpsRaw);
-        bool? hdrSideDataPresent = null;
-        if (runtimeSnapshot.RequestedHdrEnabled ?? false)
-        {
-            hdrSideDataPresent = await TryDetectHdrSideDataAsync(outputPath, cancellationToken).ConfigureAwait(false);
-        }
+        var hdrSideDataProbe = runtimeSnapshot.RequestedHdrEnabled ?? false
+            ? await ProbeHdrSideDataAsync(outputPath, cancellationToken).ConfigureAwait(false)
+            : new HdrSideDataProbeResult(null, Array.Empty<string>());
         var expectedFrameRate = ResolveExpectedFrameRate(runtimeSnapshot);
         var cadenceMetrics = await AnalyzeCadenceMetricsAsync(
             outputPath,
@@ -179,16 +181,24 @@ public sealed class RecordingVerifier : IRecordingVerifier
         ValidateFrameRate(runtimeSnapshot, detectedFrameRate, expectedFrameRate, mismatches);
         var hdrValidation = ValidateHdrMetadata(
             runtimeSnapshot,
+            codecName,
             pixelFormatRaw,
             colorPrimariesRaw,
             colorTransferRaw,
             colorSpaceRaw,
-            hdrSideDataPresent,
+            hdrSideDataProbe.MetadataPresent,
             mismatches);
         ValidateCadence(cadenceMetrics, mismatches);
 
+        Logger.Log(
+            "HDR validator ffprobe fields: " +
+            $"codec_name={codecName ?? "unknown"}, pix_fmt={pixelFormatRaw ?? "unknown"}, " +
+            $"color_primaries={colorPrimariesRaw ?? "unknown"}, color_transfer={colorTransferRaw ?? "unknown"}, " +
+            $"color_space={colorSpaceRaw ?? "unknown"}, side_data_types={string.Join("|", hdrSideDataProbe.SideDataTypes)}");
+
         var success = mismatches.Count == 0;
         var primaryMismatch = ParsePrimaryMismatch(mismatches);
+        var hdrParity = BuildHdrParityResult(runtimeSnapshot, hdrValidation, mismatches);
         return new RecordingVerificationResult
         {
             Succeeded = success,
@@ -205,6 +215,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
             DetectedColorPrimaries = colorPrimariesRaw,
             DetectedColorTransfer = colorTransferRaw,
             DetectedColorSpace = colorSpaceRaw,
+            DetectedHdrSideDataTypes = hdrSideDataProbe.SideDataTypes,
             HdrMetadataPresent = hdrValidation.HdrMetadataPresent,
             HdrColorimetryValid = hdrValidation.ColorimetryValid,
             HdrMasteringMetadataPresent = hdrValidation.MasteringMetadataPresent,
@@ -226,7 +237,8 @@ public sealed class RecordingVerifier : IRecordingVerifier
             PrimaryMismatchCode = primaryMismatch.Code,
             PrimaryMismatchExpected = primaryMismatch.Expected,
             PrimaryMismatchActual = primaryMismatch.Actual,
-            Mismatches = mismatches
+            Mismatches = mismatches,
+            HdrParity = hdrParity
         };
     }
 
@@ -300,7 +312,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
         }
     }
 
-    private async Task<bool?> TryDetectHdrSideDataAsync(
+    private async Task<HdrSideDataProbeResult> ProbeHdrSideDataAsync(
         string outputPath,
         CancellationToken cancellationToken)
     {
@@ -321,7 +333,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
         if (!probe.Started || probe.TimedOut || probe.ExitCode != 0 || string.IsNullOrWhiteSpace(probe.StdOut))
         {
-            return null;
+            return new HdrSideDataProbeResult(null, Array.Empty<string>());
         }
 
         try
@@ -331,16 +343,17 @@ public sealed class RecordingVerifier : IRecordingVerifier
                 streams.ValueKind != JsonValueKind.Array ||
                 streams.GetArrayLength() == 0)
             {
-                return null;
+                return new HdrSideDataProbeResult(null, Array.Empty<string>());
             }
 
             var stream = streams[0];
             if (!stream.TryGetProperty("side_data_list", out var sideDataList) ||
                 sideDataList.ValueKind != JsonValueKind.Array)
             {
-                return false;
+                return new HdrSideDataProbeResult(false, Array.Empty<string>());
             }
 
+            var sideDataTypes = new List<string>();
             foreach (var sideData in sideDataList.EnumerateArray())
             {
                 if (!sideData.TryGetProperty("side_data_type", out var typeProperty))
@@ -354,18 +367,19 @@ public sealed class RecordingVerifier : IRecordingVerifier
                     continue;
                 }
 
+                sideDataTypes.Add(type);
                 if (type.Contains("Mastering", StringComparison.OrdinalIgnoreCase) ||
                     type.Contains("Content light", StringComparison.OrdinalIgnoreCase))
                 {
-                    return true;
+                    return new HdrSideDataProbeResult(true, sideDataTypes);
                 }
             }
 
-            return false;
+            return new HdrSideDataProbeResult(false, sideDataTypes);
         }
         catch
         {
-            return null;
+            return new HdrSideDataProbeResult(null, Array.Empty<string>());
         }
     }
 
@@ -542,10 +556,6 @@ public sealed class RecordingVerifier : IRecordingVerifier
         List<string> mismatches)
     {
         var expectedFormat = runtimeSnapshot.RequestedFormat ?? string.Empty;
-        if (expectedFormat.Length == 0 && Path.GetExtension(outputPath).Equals(".avi", StringComparison.OrdinalIgnoreCase))
-        {
-            expectedFormat = "UncompressedAvi";
-        }
 
         if (string.IsNullOrWhiteSpace(detectedContainer))
         {
@@ -554,16 +564,6 @@ public sealed class RecordingVerifier : IRecordingVerifier
         }
 
         var normalizedContainer = detectedContainer.ToLowerInvariant();
-        if (expectedFormat.Contains("Avi", StringComparison.OrdinalIgnoreCase))
-        {
-            if (!normalizedContainer.Contains("avi"))
-            {
-                mismatches.Add($"container-mismatch(expected=avi,actual={detectedContainer})");
-            }
-
-            return;
-        }
-
         if (!normalizedContainer.Contains("mp4") && !normalizedContainer.Contains("mov"))
         {
             mismatches.Add($"container-mismatch(expected=mp4,actual={detectedContainer})");
@@ -615,8 +615,6 @@ public sealed class RecordingVerifier : IRecordingVerifier
             var f when f.Contains("H264", StringComparison.OrdinalIgnoreCase) => codec.Contains("h264"),
             var f when f.Contains("Hevc", StringComparison.OrdinalIgnoreCase) => codec.Contains("hevc") || codec.Contains("h265"),
             var f when f.Contains("Av1", StringComparison.OrdinalIgnoreCase) => codec.Contains("av1"),
-            var f when f.Contains("Avi", StringComparison.OrdinalIgnoreCase) =>
-                codec.Contains("rawvideo") || codec.Contains("bmp") || codec.Contains("mjpeg") || codec.Contains("mpeg4"),
             _ => true
         };
 
@@ -697,6 +695,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
     private static HdrValidationResult ValidateHdrMetadata(
         CaptureRuntimeSnapshot runtimeSnapshot,
+        string? detectedCodec,
         string? detectedPixelFormat,
         string? detectedColorPrimaries,
         string? detectedColorTransfer,
@@ -715,9 +714,20 @@ public sealed class RecordingVerifier : IRecordingVerifier
                 VerificationLevel: "NotHdr");
         }
 
+        var codecLooksHdrCapable = !string.IsNullOrWhiteSpace(detectedCodec) &&
+                                   (detectedCodec.Contains("hevc", StringComparison.OrdinalIgnoreCase) ||
+                                    detectedCodec.Contains("h265", StringComparison.OrdinalIgnoreCase) ||
+                                    detectedCodec.Contains("av1", StringComparison.OrdinalIgnoreCase));
+        if (!codecLooksHdrCapable)
+        {
+            mismatches.Add($"codec-not-hdr-capable(actual={detectedCodec ?? "unknown"})");
+        }
+
         var pixelFormatLooksHdr = !string.IsNullOrWhiteSpace(detectedPixelFormat) &&
-                                  (detectedPixelFormat.Contains("p010", StringComparison.OrdinalIgnoreCase) ||
-                                   detectedPixelFormat.Contains("10", StringComparison.OrdinalIgnoreCase));
+                                  (string.Equals(detectedPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ||
+                                   string.Equals(detectedPixelFormat, "yuv420p10le", StringComparison.OrdinalIgnoreCase) ||
+                                   string.Equals(detectedPixelFormat, "yuv422p10le", StringComparison.OrdinalIgnoreCase) ||
+                                   string.Equals(detectedPixelFormat, "yuv444p10le", StringComparison.OrdinalIgnoreCase));
         if (!pixelFormatLooksHdr)
         {
             mismatches.Add($"pixfmt-not-10bit(actual={detectedPixelFormat ?? "unknown"})");
@@ -738,7 +748,8 @@ public sealed class RecordingVerifier : IRecordingVerifier
         }
 
         var spaceOk = !string.IsNullOrWhiteSpace(detectedColorSpace) &&
-                      detectedColorSpace.Contains("bt2020", StringComparison.OrdinalIgnoreCase);
+                      (string.Equals(detectedColorSpace, "bt2020nc", StringComparison.OrdinalIgnoreCase) ||
+                       string.Equals(detectedColorSpace, "bt2020c", StringComparison.OrdinalIgnoreCase));
         if (!spaceOk)
         {
             mismatches.Add($"colorimetry-mismatch(space={detectedColorSpace ?? "unknown"})");
@@ -751,7 +762,8 @@ public sealed class RecordingVerifier : IRecordingVerifier
             mismatches.Add("hdr-metadata-missing");
         }
 
-        var colorimetryValid = pixelFormatLooksHdr &&
+        var colorimetryValid = codecLooksHdrCapable &&
+                               pixelFormatLooksHdr &&
                                primariesOk &&
                                transferOk &&
                                spaceOk;
@@ -822,6 +834,82 @@ public sealed class RecordingVerifier : IRecordingVerifier
         var expected = TryGetMismatchPart(detail, "expected=");
         var actual = TryGetMismatchPart(detail, "actual=");
         return (code, expected, actual);
+    }
+
+    private static HdrParityResult BuildHdrParityResult(
+        CaptureRuntimeSnapshot runtimeSnapshot,
+        HdrValidationResult hdrValidation,
+        IReadOnlyList<string> mismatches)
+    {
+        var hdrRequested = runtimeSnapshot.HdrOutputActive || (runtimeSnapshot.RequestedHdrEnabled ?? false);
+        var taxonomy = BuildMismatchTaxonomy(mismatches);
+        var hasHdrFailure = taxonomy.Any(entry =>
+            entry.Category.Equals("HDR", StringComparison.OrdinalIgnoreCase) ||
+            entry.Category.Equals("Colorimetry", StringComparison.OrdinalIgnoreCase));
+        var verified = hdrRequested
+            ? hdrValidation.HdrMetadataPresent == true && !hasHdrFailure
+            : true;
+        var status = !hdrRequested
+            ? "NotRequested"
+            : verified
+                ? "Verified"
+                : runtimeSnapshot.HdrAutoDowngraded
+                    ? "Downgraded"
+                    : "Mismatch";
+        return new HdrParityResult
+        {
+            Requested = hdrRequested,
+            Activated = runtimeSnapshot.HdrOutputActive,
+            Verified = verified,
+            Downgraded = runtimeSnapshot.HdrAutoDowngraded,
+            VerificationLevel = hdrValidation.VerificationLevel,
+            Status = status,
+            MismatchTaxonomy = taxonomy
+        };
+    }
+
+    private static IReadOnlyList<MismatchTaxonomyEntry> BuildMismatchTaxonomy(IReadOnlyList<string> mismatches)
+    {
+        if (mismatches == null || mismatches.Count == 0)
+        {
+            return Array.Empty<MismatchTaxonomyEntry>();
+        }
+
+        var entries = new List<MismatchTaxonomyEntry>(mismatches.Count);
+        foreach (var mismatch in mismatches)
+        {
+            var (code, expected, actual) = ParsePrimaryMismatch(new[] { mismatch });
+            var normalizedCode = code ?? mismatch;
+            var category = normalizedCode.StartsWith("pixfmt", StringComparison.OrdinalIgnoreCase)
+                ? "HDR"
+                : normalizedCode.StartsWith("colorimetry", StringComparison.OrdinalIgnoreCase)
+                    ? "Colorimetry"
+                    : normalizedCode.StartsWith("hdr-metadata", StringComparison.OrdinalIgnoreCase)
+                        ? "HDR"
+                        : normalizedCode.StartsWith("cadence", StringComparison.OrdinalIgnoreCase)
+                            ? "Cadence"
+                            : normalizedCode.StartsWith("fps", StringComparison.OrdinalIgnoreCase)
+                                ? "Timing"
+                                : normalizedCode.StartsWith("resolution", StringComparison.OrdinalIgnoreCase)
+                                    ? "Geometry"
+                                    : "General";
+            var severity = category is "HDR" or "Colorimetry"
+                ? "Error"
+                : category == "Cadence"
+                    ? "Warning"
+                    : "Info";
+
+            entries.Add(new MismatchTaxonomyEntry
+            {
+                Category = category,
+                Code = normalizedCode,
+                Severity = severity,
+                Expected = expected,
+                Actual = actual
+            });
+        }
+
+        return entries;
     }
 
     private static string? TryGetMismatchPart(string detail, string keyPrefix)
