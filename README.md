@@ -13,8 +13,7 @@ This README is based on the current code in this repository and is intended to d
 - Records video to:
   - `H.264 (MP4)` (when supported by local FFmpeg encoders),
   - `HEVC (MP4)` (when supported),
-  - `AV1 (MP4)` (when supported),
-  - `Uncompressed (AVI)` (always available).
+  - `AV1 (MP4)` (when supported).
 - Supports recording quality presets (`Auto`, `Low`, `Medium`, `High`, `Very High`, `Lossless`, `Custom`) and custom bitrate (`1-300 Mbps`).
 - Supports resolution + frame rate selection from each device's discovered format list.
 - Supports HDR preference toggle when the selected device exposes HDR-capable formats.
@@ -37,7 +36,6 @@ This README is based on the current code in this repository and is intended to d
 - One active selected capture device at a time.
 - Low-latency preview with automatic fallback strategy.
 - FFmpeg-backed compressed recording pipeline with queueing/drop-policy controls.
-- Uncompressed AVI path with internal AVI writer.
 - Audio capture strategies for compressed recording:
   - Default post-mux workflow (video + RF64 WAV temp audio + final mux).
   - Experimental named-pipe live audio into FFmpeg.
@@ -70,8 +68,8 @@ This README is based on the current code in this repository and is intended to d
   - Discovers and ranks supported video formats.
   - Associates best-matching audio device with each capture device.
 - `ElgatoCapture/Services/CaptureService.cs`
-  - Owns `MediaCapture` lifecycle.
-  - Handles recording backends, frame/audio pipelines, muxing, and cleanup.
+  - Owns capture session lifecycle and recording orchestration.
+  - Handles recording backend selection, frame/audio pipelines, muxing, and cleanup.
   - Emits status/error/frame/audio-level events.
 - `ElgatoCapture/Services/CaptureSessionCoordinator.cs`
   - Serializes capture operations through a single worker queue.
@@ -84,9 +82,8 @@ This README is based on the current code in this repository and is intended to d
   - Creates temp/final output artifact set.
   - Finalizes or preserves recovery artifacts on mux failure.
 - Recording sink contracts and backends:
-  - `FfmpegRecordingSink.cs`,
-  - `AviRecordingSink.cs`,
-  - `MediaCaptureFallbackSink.cs`.
+  - `FfmpegRecordingSink.cs` (FFmpeg encode/mux),
+  - `MediaCaptureIngestSession.cs` (MediaCapture -> frames/audio -> sink).
 
 ### Models
 
@@ -107,10 +104,9 @@ This README is based on the current code in this repository and is intended to d
    - Default mode: capture to RF64 WAV temp file, then mux into final MP4 at stop.
    - Experimental mode: feed float PCM audio into FFmpeg named pipe during recording.
 
-### Uncompressed Path
+### Current Recording Backend
 
-- Preferred: custom internal AVI writer backend.
-- Fallback: `MediaCapture.StartRecordToStorageFileAsync` AVI profile.
+- Current runtime recording path is MediaCapture frame ingest -> FFmpeg encode/mux (`MediaCaptureIngestSession` + `FfmpegRecordingSink` + `FFmpegEncoderService`).
 
 ## Runtime Dependencies
 
@@ -142,17 +138,18 @@ Helper script:
 
 - Build:
   - `dotnet build ElgatoCapture\ElgatoCapture.csproj -c Debug -p:Platform=x64`
-  - Every successful build automatically refreshes `latest-build\` at repo root with the newest app output (replacing prior contents).
-  - Every successful build also overwrites a root-level executable copy at `ElgatoCapture.exe`.
+  - To stage outputs into `latest-build\` at repo root: add `-p:StageLatestBuild=true`.
 - Staging script:
   - `tools/stage-builds.ps1` builds Debug/Release and mirrors outputs to `builds/win-x64/*`.
 - Reliability gate script:
   - `tools/reliability-gates.ps1` runs a bounded build gate and fails on `MVVMTK0045` (and optionally any warnings).
+- Runtime snapshot regression tests:
+  - `dotnet run --project tests/ElgatoCapture.Tests/ElgatoCapture.Tests.csproj -c Debug -p:Platform=x64`
+- Automation smoke script:
+  - `powershell -ExecutionPolicy Bypass -File tools/automation-snapshot-smoke.ps1`
 
 ## Configuration (Environment Variables)
 
-- `ELGATOCAPTURE_PREVIEW_FPS_CAP` (default: `120`, clamp: `15-120`)
-  - Max cap used by adaptive preview presentation rate logic.
 - `ELGATOCAPTURE_PREVIEW_RESIZE_DEBOUNCE_MS` (default: `250`, clamp: `50-2000`)
   - Suppresses preview presents during resize churn.
 - `ELGATOCAPTURE_PREVIEW_USE_GPU` (default: `true`)
@@ -176,7 +173,9 @@ Helper script:
 
 ## Logging and Diagnostics
 
-- Log file: `%USERPROFILE%\Documents\ElgatoCapture_Debug.log`.
+- Log file (dev / repo run): `temp\logs\ElgatoCapture_Debug.log`.
+- Log file (non-repo fallback): `%LOCALAPPDATA%\ElgatoCapture\logs\ElgatoCapture_Debug.log`.
+- Automation diagnostics guide: `docs/automation.md`.
 - Includes:
   - system info (in verbose mode),
   - session transition events,
@@ -189,4 +188,4 @@ Helper script:
 
 - Target platform is x64 only.
 - Compressed recording quality/codec availability depends on local FFmpeg build and installed encoders.
-- No automated test project is currently present in this repository.
+- Automated tests currently cover runtime snapshot/telemetry logic; device pipeline behavior still requires manual smoke validation.
