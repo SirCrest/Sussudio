@@ -8,6 +8,7 @@ using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -27,7 +28,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private Stream? _videoStream;  // stdin stream for video
     private NamedPipeServerStream? _audioPipe;
     private Channel<VideoFramePacket>? _videoFrameQueue;
-    private Channel<byte[]>? _audioSampleQueue;
+    private Channel<AudioSamplePacket>? _audioSampleQueue;
     private CancellationTokenSource? _cts;
     private Task? _videoWriterTask;
     private Task? _audioWriterTask;
@@ -67,8 +68,23 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private long _audioDropsBacklogEviction;
     private int? _lastExitCode;
     private bool _lastStopTimedOut;
+    private bool _usesDirectShowInput;
     private string _activeInputPixelFormat = "nv12";
     private string _activeOutputPixelFormat = "yuv420p";
+    private string _activeVideoCodec = string.Empty;
+    private string _activeVideoProfile = string.Empty;
+    private bool? _activeTenBitPipelineConfirmed;
+    private bool _mfReadwriteDisableConverters;
+    private readonly object _observedFormatSync = new();
+    private string? _firstObservedFramePixelFormat;
+    private string? _latestObservedFramePixelFormat;
+    private string? _latestObservedSurfaceFormat;
+    private long _observedP010FrameCount;
+    private long _observedNv12FrameCount;
+    private long _observedOtherFrameCount;
+    private long _observedP010BitDepthSampleCount;
+    private long _observedP010Low2BitNonZeroSampleCount;
+    private long _observedP010PaddingNonZeroSampleCount;
     private const int ComInteropErrorLogIntervalMs = 2000;
     private long _lastComInteropErrorLogTick;
     private long _suppressedComInteropErrorCount;
@@ -79,10 +95,23 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private const string AudioPipePrefix = "ElgatoCaptureAudio";
     private const int WriterDrainTimeoutMs = 5000;
     private const int WriterCancelGraceMs = 3000;
+    private const int AudioPipeConnectTimeoutMs = 15000;
+    private const int AudioPipeConnectAttempts = 3;
+    private const int DirectShowHdrProbeMaxAttempts = 3;
+    private const int DirectShowHdrProbeRetryBaseDelayMs = 350;
+    private static readonly Regex VideoStreamProbeRegex = new(@"Video:", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex DropCounterRegex = new(@"drop=\s*(\d+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly ConcurrentDictionary<string, DateTimeOffset> DirectShowHdrProbeCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly TimeSpan DirectShowHdrProbeCacheTtl = TimeSpan.FromMinutes(2);
+    private bool _directShowHdrRequested;
+    private bool _directShowInputFormatVerified;
+    private bool _directShowInputSectionActive;
+    private bool _directShowIngressViolationRaised;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<string>? ErrorOccurred;
     public event EventHandler<ulong>? FrameEncoded;
+    public event EventHandler<string>? IngressViolationDetected;
 
     public bool IsEncoding => _isEncoding;
     private ulong _encodedFrameCount;
@@ -99,8 +128,78 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     public bool LastStopTimedOut => _lastStopTimedOut;
     public string ActiveInputPixelFormat => _activeInputPixelFormat;
     public string ActiveOutputPixelFormat => _activeOutputPixelFormat;
+    public string ActiveVideoCodec => _activeVideoCodec;
+    public string ActiveVideoProfile => _activeVideoProfile;
+    public bool? ActiveTenBitPipelineConfirmed => _activeTenBitPipelineConfirmed;
+    public bool MfReadwriteDisableConverters => _mfReadwriteDisableConverters;
+    public string? FirstObservedFramePixelFormat
+    {
+        get
+        {
+            lock (_observedFormatSync)
+            {
+                return _firstObservedFramePixelFormat;
+            }
+        }
+    }
+
+    public string? LatestObservedFramePixelFormat
+    {
+        get
+        {
+            lock (_observedFormatSync)
+            {
+                return _latestObservedFramePixelFormat;
+            }
+        }
+    }
+
+    public string? LatestObservedSurfaceFormat
+    {
+        get
+        {
+            lock (_observedFormatSync)
+            {
+                return _latestObservedSurfaceFormat;
+            }
+        }
+    }
+
+    public long ObservedP010FrameCount => Interlocked.Read(ref _observedP010FrameCount);
+    public long ObservedNv12FrameCount => Interlocked.Read(ref _observedNv12FrameCount);
+    public long ObservedOtherFrameCount => Interlocked.Read(ref _observedOtherFrameCount);
+    public long ObservedP010BitDepthSampleCount => Interlocked.Read(ref _observedP010BitDepthSampleCount);
+    public double ObservedP010Low2BitNonZeroPercent
+    {
+        get
+        {
+            var sampleCount = Interlocked.Read(ref _observedP010BitDepthSampleCount);
+            if (sampleCount <= 0)
+            {
+                return 0;
+            }
+
+            var low2NonZero = Interlocked.Read(ref _observedP010Low2BitNonZeroSampleCount);
+            return (double)low2NonZero / sampleCount * 100.0;
+        }
+    }
+
+    public bool? ObservedP010Likely8BitUpscaled
+    {
+        get
+        {
+            var sampleCount = Interlocked.Read(ref _observedP010BitDepthSampleCount);
+            if (sampleCount < 256)
+            {
+                return null;
+            }
+
+            return ObservedP010Low2BitNonZeroPercent < 0.50;
+        }
+    }
 
     private readonly record struct VideoFramePacket(byte[] Buffer, int Length);
+    private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);
     private readonly record struct HdrArgumentSupport(
         bool SupportsP010Input,
         bool SupportsColorPrimaries,
@@ -126,6 +225,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _ffmpegPath = FindFFmpegPath();
     }
 
+    public static string ResolveFfmpegPath()
+    {
+        return FindFFmpegPath();
+    }
+
     /// <summary>
     /// Prepares the audio queue so audio samples can be buffered before encoding starts.
     /// Call this BEFORE starting the audio capture graph, so audio samples can be queued
@@ -139,14 +243,19 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
 
         Logger.Log("Preparing audio queue for early buffering");
-        _audioSampleQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(AudioQueueCapacity)
-        {
-            SingleReader = true,
-            SingleWriter = false,
-            FullMode = BoundedChannelFullMode.DropOldest
-        });
+        _audioSampleQueue = CreateAudioSampleQueue();
         Interlocked.Exchange(ref _audioQueueDepth, 0);
         _audioQueueReady = true;
+    }
+
+    private static Channel<AudioSamplePacket> CreateAudioSampleQueue()
+    {
+        return Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
+        {
+            SingleReader = false,
+            SingleWriter = false,
+            FullMode = BoundedChannelFullMode.Wait
+        });
     }
 
     private static string FindFFmpegPath()
@@ -447,10 +556,16 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _stderrClosed = false; // Reset crash detection flag for new recording
         _lastExitCode = null;
         _lastStopTimedOut = false;
+        _usesDirectShowInput = false;
+        _directShowHdrRequested = false;
+        _directShowInputFormatVerified = false;
+        _directShowInputSectionActive = false;
+        Interlocked.Exchange(ref _droppedVideoFrames, 0);
         Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
         Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
         Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
         Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
+        ResetObservedFormatTelemetry();
         _videoFrameQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(videoQueueSize)
         {
             SingleReader = false,
@@ -473,12 +588,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             var createdAudioQueue = false;
             if (_audioSampleQueue == null)
             {
-                _audioSampleQueue = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(AudioQueueCapacity)
-                {
-                    SingleReader = true,
-                    SingleWriter = false,
-                    FullMode = BoundedChannelFullMode.DropOldest
-                });
+                _audioSampleQueue = CreateAudioSampleQueue();
                 createdAudioQueue = true;
             }
 
@@ -492,8 +602,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         else if (_audioSampleQueue != null)
         {
             _audioSampleQueue.Writer.TryComplete();
-            while (_audioSampleQueue.Reader.TryRead(out _))
+            while (_audioSampleQueue.Reader.TryRead(out var bufferedSample))
             {
+                ReturnAudioBuffer(bufferedSample.Buffer);
             }
             _audioSampleQueue = null;
             Interlocked.Exchange(ref _audioQueueDepth, 0);
@@ -577,6 +688,813 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
     }
 
+    public async Task StartDirectShowEncodingAsync(
+        CaptureSettings settings,
+        string outputPath,
+        string videoDeviceName,
+        string? audioDeviceName = null,
+        double? actualFrameRate = null,
+        string? actualFrameRateArg = null,
+        uint? actualWidth = null,
+        uint? actualHeight = null,
+        bool hdrPipelineActive = false,
+        bool requireHdrP010Ingress = true)
+    {
+        if (_isEncoding)
+        {
+            throw new InvalidOperationException("Encoding already in progress");
+        }
+
+        if (string.IsNullOrWhiteSpace(videoDeviceName))
+        {
+            throw new InvalidOperationException("DirectShow video device name is required.");
+        }
+
+        Logger.Log("=== FFmpeg Encoder Starting (DirectShow) ===");
+        Logger.Log($"FFmpeg path: {_ffmpegPath}");
+        Logger.Log($"DirectShow video device: {videoDeviceName}");
+        Logger.Log($"Output: {outputPath}");
+
+        var effectiveFrameRate = actualFrameRate ?? settings.FrameRate;
+        var frameRateArg = !string.IsNullOrWhiteSpace(actualFrameRateArg)
+            ? actualFrameRateArg
+            : FormatFrameRateArg(effectiveFrameRate);
+        var effectiveWidth = actualWidth ?? settings.Width;
+        var effectiveHeight = actualHeight ?? settings.Height;
+        Logger.Log($"Settings: {effectiveWidth}x{effectiveHeight}@{effectiveFrameRate:0.###}fps, Format={settings.Format}, Quality={settings.Quality}");
+        Logger.Log($"FFmpeg frame rate arg: {frameRateArg}");
+
+        var hdrRequested = hdrPipelineActive &&
+                           settings.HdrEnabled &&
+                           settings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
+
+        _startupStopwatch.Restart();
+        Logger.LogVerbose("Encoder probe: awaiting cached result");
+        _encoderSupport = await GetEncoderSupportAsync();
+        _hdrArgumentSupport = await GetHdrArgumentSupportAsync();
+        Logger.LogVerbose($"Encoder probe complete in {_startupStopwatch.ElapsedMilliseconds} ms");
+
+        _cts = new CancellationTokenSource();
+        _stderrClosed = false;
+        _lastExitCode = null;
+        _lastStopTimedOut = false;
+        _usesDirectShowInput = true;
+        _mfReadwriteDisableConverters = false;
+        _directShowHdrRequested = hdrRequested;
+        _directShowInputFormatVerified = false;
+        _directShowInputSectionActive = false;
+        _directShowIngressViolationRaised = false;
+        _audioQueueReady = false;
+        _useAudioPipe = false;
+        _audioPipeName = string.Empty;
+        _videoStream = null;
+        _videoFrameQueue = null;
+        _audioSampleQueue = null;
+        Interlocked.Exchange(ref _droppedVideoFrames, 0);
+        Interlocked.Exchange(ref _videoQueueDepth, 0);
+        Interlocked.Exchange(ref _audioQueueDepth, 0);
+        Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
+        Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
+        Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _encodedFrameCount, 0);
+        ResetObservedFormatTelemetry();
+
+        if (hdrRequested)
+        {
+            _activeInputPixelFormat = "p010le";
+            Logger.Log("HDR_INGEST_PIXEL_FORMAT av_pix_fmt=AV_PIX_FMT_P010LE source=DirectShow");
+            Logger.Log("HDR_CAPTURE_NEGOTIATION mf_subtype=P010(MFVideoFormat_P010) mf_readwrite_disable_converters=false source=DirectShow");
+            if (requireHdrP010Ingress)
+            {
+                var probeKey = $"{videoDeviceName}|{effectiveWidth}x{effectiveHeight}|{frameRateArg}";
+                var skipProbe = DirectShowHdrProbeCache.TryGetValue(probeKey, out var cachedAt) &&
+                                DateTimeOffset.UtcNow - cachedAt <= DirectShowHdrProbeCacheTtl;
+                if (!skipProbe)
+                {
+                    var probeResult = await ProbeDirectShowHdrIngressWithRetryAsync(
+                        videoDeviceName,
+                        frameRateArg,
+                        effectiveWidth,
+                        effectiveHeight).ConfigureAwait(false);
+                    if (!probeResult.Success)
+                    {
+                        throw new InvalidOperationException($"HDR ingress verification failed: {probeResult.Reason}");
+                    }
+
+                    DirectShowHdrProbeCache[probeKey] = DateTimeOffset.UtcNow;
+                    Logger.Log($"DirectShow HDR ingress verified: {probeResult.Reason}");
+                }
+                else
+                {
+                    Logger.Log("DirectShow HDR ingress probe reused recent successful evidence.");
+                }
+            }
+        }
+        else
+        {
+            _activeInputPixelFormat = "nv12";
+            Logger.Log("HDR_INGEST_PIXEL_FORMAT av_pix_fmt=AV_PIX_FMT_NV12 source=DirectShow");
+        }
+
+        var ffmpegArgs = BuildDirectShowFFmpegArguments(
+            settings,
+            outputPath,
+            videoDeviceName,
+            audioDeviceName,
+            frameRateArg,
+            effectiveWidth,
+            effectiveHeight,
+            hdrPipelineActive);
+        Logger.Log($"FFmpeg arguments: {ffmpegArgs}");
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = _ffmpegPath,
+            Arguments = ffmpegArgs,
+            UseShellExecute = false,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = false,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        try
+        {
+            _ffmpegProcess = Process.Start(startInfo);
+            if (_ffmpegProcess == null)
+            {
+                throw new InvalidOperationException("Failed to start FFmpeg DirectShow process.");
+            }
+
+            Logger.Log($"FFmpeg process started (PID: {_ffmpegProcess.Id})");
+            _stderrReaderTask = Task.Run(() => ReadStderrAsync(_cts.Token), _cts.Token);
+            _videoWriterTask = Task.CompletedTask;
+            _audioWriterTask = Task.CompletedTask;
+            _isEncoding = true;
+            StatusChanged?.Invoke(this, "Encoding started");
+            Logger.Log("=== FFmpeg Encoder Started (DirectShow) ===");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex);
+            ErrorOccurred?.Invoke(this, $"Failed to start FFmpeg DirectShow encoding: {ex.Message}");
+            await CleanupAsync();
+            throw;
+        }
+    }
+
+    private async Task<(bool Success, string Reason)> ProbeDirectShowHdrIngressWithRetryAsync(
+        string videoDeviceName,
+        string frameRateArg,
+        uint width,
+        uint height)
+    {
+        (bool Success, string Reason) lastResult = (false, "probe-not-run");
+        for (var attempt = 1; attempt <= DirectShowHdrProbeMaxAttempts; attempt++)
+        {
+            lastResult = await ProbeDirectShowHdrIngressAsync(
+                videoDeviceName,
+                frameRateArg,
+                width,
+                height).ConfigureAwait(false);
+
+            if (lastResult.Success)
+            {
+                return lastResult;
+            }
+
+            if (attempt >= DirectShowHdrProbeMaxAttempts)
+            {
+                break;
+            }
+
+            var retryDelayMs = DirectShowHdrProbeRetryBaseDelayMs * attempt;
+            Logger.Log(
+                $"DirectShow HDR ingress probe attempt {attempt}/{DirectShowHdrProbeMaxAttempts} failed: " +
+                $"{lastResult.Reason}. Retrying in {retryDelayMs} ms.");
+            var cancellationToken = _cts?.Token ?? CancellationToken.None;
+            await Task.Delay(retryDelayMs, cancellationToken).ConfigureAwait(false);
+        }
+
+        return lastResult;
+    }
+
+    private void EnsureHdrColorMetadataSupport()
+    {
+        var missingOptions = new List<string>(capacity: 4);
+        if (!_hdrArgumentSupport.SupportsColorPrimaries)
+        {
+            missingOptions.Add("color_primaries");
+        }
+
+        if (!_hdrArgumentSupport.SupportsColorTransfer)
+        {
+            missingOptions.Add("color_trc");
+        }
+
+        if (!_hdrArgumentSupport.SupportsColorSpace)
+        {
+            missingOptions.Add("colorspace");
+        }
+
+        if (!_hdrArgumentSupport.SupportsColorRange)
+        {
+            missingOptions.Add("color_range");
+        }
+
+        if (missingOptions.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "HDR output requires FFmpeg color metadata options that are unavailable: " +
+                string.Join(", ", missingOptions) + ".");
+        }
+    }
+
+    private void EnsureHdrMasteringMetadataSupport(bool hdrMasterRequested, bool hdrCllRequested)
+    {
+        var missingOptions = new List<string>(capacity: 2);
+        if (hdrMasterRequested && !_hdrArgumentSupport.SupportsMasterDisplay)
+        {
+            missingOptions.Add("master_display");
+        }
+
+        if (hdrCllRequested && !_hdrArgumentSupport.SupportsMaxCll)
+        {
+            missingOptions.Add("max_cll");
+        }
+
+        if (missingOptions.Count > 0)
+        {
+            throw new InvalidOperationException(
+                "HDR mastering metadata was requested but FFmpeg does not support: " +
+                string.Join(", ", missingOptions) + ".");
+        }
+    }
+
+    private string BuildDirectShowFFmpegArguments(
+        CaptureSettings settings,
+        string outputPath,
+        string videoDeviceName,
+        string? audioDeviceName,
+        string frameRateArg,
+        uint effectiveWidth,
+        uint effectiveHeight,
+        bool hdrPipelineActive)
+    {
+        var hdrRequested = hdrPipelineActive &&
+                           settings.HdrEnabled &&
+                           settings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
+        var hdrMasterRequested = !string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata);
+        var hdrCllRequested = settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0;
+
+        var (videoCodec, qualityArgs) = GetEncoderSettings(settings, hdrRequested, preferSoftwareHevc: false);
+        _activeVideoCodec = videoCodec;
+        _activeVideoProfile = "sdr";
+        _activeTenBitPipelineConfirmed = false;
+
+        if (hdrRequested &&
+            videoCodec.Equals("hevc_nvenc", StringComparison.OrdinalIgnoreCase) &&
+            (hdrMasterRequested || hdrCllRequested))
+        {
+            var missingMasterSupport = hdrMasterRequested && !_hdrArgumentSupport.SupportsMasterDisplay;
+            var missingCllSupport = hdrCllRequested && !_hdrArgumentSupport.SupportsMaxCll;
+            if (missingMasterSupport || missingCllSupport)
+            {
+                throw new InvalidOperationException(
+                    "HDR mastering metadata was requested, but the active FFmpeg/NVENC path does not support " +
+                    "master-display/max-cll metadata emission.");
+            }
+        }
+
+        var escapedVideoDevice = EscapeDshowDeviceName(videoDeviceName);
+        var inputArgs = $"-f dshow -rtbufsize 512M -thread_queue_size 2048 " +
+                        $"-video_size {effectiveWidth}x{effectiveHeight} " +
+                        $"-framerate {frameRateArg} ";
+        if (hdrRequested)
+        {
+            inputArgs += "-pixel_format p010le ";
+        }
+        inputArgs += $"-i video=\"{escapedVideoDevice}\" ";
+
+        var includeAudio = settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceName);
+        string audioInputArgs;
+        string audioCodecArgs;
+        if (includeAudio)
+        {
+            var escapedAudioDevice = EscapeDshowDeviceName(audioDeviceName!);
+            audioInputArgs = $"-f dshow -thread_queue_size 1024 -i audio=\"{escapedAudioDevice}\" ";
+            audioCodecArgs = "-c:a aac -b:a 320k ";
+        }
+        else
+        {
+            audioInputArgs = string.Empty;
+            audioCodecArgs = "-an ";
+        }
+
+        var outputPixelFormat = videoCodec.Contains("_nvenc", StringComparison.OrdinalIgnoreCase) && !hdrRequested
+            ? "nv12"
+            : "yuv420p";
+        var hdrMetadataArgs = string.Empty;
+        if (hdrRequested)
+        {
+            var isHevcNvenc = videoCodec.Equals("hevc_nvenc", StringComparison.OrdinalIgnoreCase);
+            var isLibx265 = videoCodec.Equals("libx265", StringComparison.OrdinalIgnoreCase);
+            var isAv1 = videoCodec.Contains("av1", StringComparison.OrdinalIgnoreCase);
+            if (!isHevcNvenc && !isLibx265 && !isAv1)
+            {
+                throw new InvalidOperationException(
+                    $"HDR10 output requires HEVC or AV1 10-bit encoding, but resolved codec is '{videoCodec}'.");
+            }
+
+            outputPixelFormat = isHevcNvenc ? "p010le" : "yuv420p10le";
+            _activeVideoProfile = isAv1 ? "main-10bit" : "main10";
+            _activeTenBitPipelineConfirmed = true;
+            EnsureHdrColorMetadataSupport();
+            if (_hdrArgumentSupport.SupportsColorPrimaries)
+            {
+                hdrMetadataArgs += "-color_primaries bt2020 ";
+            }
+            if (_hdrArgumentSupport.SupportsColorTransfer)
+            {
+                hdrMetadataArgs += "-color_trc smpte2084 ";
+            }
+            if (_hdrArgumentSupport.SupportsColorSpace)
+            {
+                hdrMetadataArgs += "-colorspace bt2020nc ";
+            }
+            if (_hdrArgumentSupport.SupportsColorRange)
+            {
+                hdrMetadataArgs += "-color_range tv ";
+            }
+
+            if (isLibx265)
+            {
+                var x265Params = new List<string>
+                {
+                    "hdr-opt=1",
+                    "repeat-headers=1",
+                    "colorprim=bt2020",
+                    "transfer=smpte2084",
+                    "colormatrix=bt2020nc"
+                };
+                if (!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata))
+                {
+                    x265Params.Add($"master-display={settings.HdrMasterDisplayMetadata}");
+                }
+                if (settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0)
+                {
+                    x265Params.Add($"max-cll={settings.HdrMaxCll},{settings.HdrMaxFall}");
+                }
+
+                qualityArgs = $"{qualityArgs} -x265-params \"{string.Join(":", x265Params)}\"";
+            }
+            else
+            {
+                if (hdrMasterRequested || hdrCllRequested)
+                {
+                    Logger.Log(
+                        "HDR_STATIC_METADATA " +
+                        $"requested_master_display={hdrMasterRequested} " +
+                        $"requested_max_cll={hdrCllRequested} " +
+                        $"master_display_len={(settings.HdrMasterDisplayMetadata ?? string.Empty).Length} " +
+                        $"max_cll={settings.HdrMaxCll} " +
+                        $"max_fall={settings.HdrMaxFall}");
+                }
+
+                if (hdrMasterRequested)
+                {
+                    EnsureHdrMasteringMetadataSupport(hdrMasterRequested: true, hdrCllRequested: false);
+                    hdrMetadataArgs += $"-master_display \"{settings.HdrMasterDisplayMetadata}\" ";
+                }
+                if (hdrCllRequested)
+                {
+                    EnsureHdrMasteringMetadataSupport(hdrMasterRequested: false, hdrCllRequested: true);
+                    hdrMetadataArgs += $"-max_cll {settings.HdrMaxCll},{settings.HdrMaxFall} ";
+                }
+            }
+        }
+
+        _activeOutputPixelFormat = outputPixelFormat;
+        Logger.Log(
+            $"HDR_ENCODER_CONFIG codec={_activeVideoCodec} profile={_activeVideoProfile} " +
+            $"input_pix_fmt={_activeInputPixelFormat} output_pix_fmt={_activeOutputPixelFormat} " +
+            $"ten_bit_pipeline_confirmed={_activeTenBitPipelineConfirmed}");
+
+        return $"-y -stats " +
+               $"{inputArgs}" +
+               $"{audioInputArgs}" +
+               $"-c:v {videoCodec} " +
+               $"{qualityArgs} " +
+               $"-r {frameRateArg} " +
+               $"-pix_fmt {outputPixelFormat} " +
+               $"{hdrMetadataArgs}" +
+               $"{audioCodecArgs}" +
+               $"-shortest " +
+               $"-movflags +faststart " +
+               $"\"{outputPath}\"";
+    }
+
+    private async Task<(bool Success, string Reason)> ProbeDirectShowHdrIngressAsync(
+        string videoDeviceName,
+        string frameRateArg,
+        uint width,
+        uint height)
+    {
+        var escapedVideoDevice = EscapeDshowDeviceName(videoDeviceName);
+        var probeArgs = $"-hide_banner -loglevel info " +
+                        $"-f dshow -rtbufsize 256M -video_size {width}x{height} -framerate {frameRateArg} " +
+                        $"-pixel_format p010le -i video=\"{escapedVideoDevice}\" " +
+                        "-t 2 -frames:v 12 -an -f null NUL";
+
+        var (output, exitCode) = await RunProbeCommandWithExitCodeAsync(_ffmpegPath, probeArgs).ConfigureAwait(false);
+        if (exitCode != 0)
+        {
+            var reason = output
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .TakeLast(3);
+            var baseReason = $"probe-exit={exitCode}; {string.Join(" | ", reason)}";
+            if (IsLikelyDirectShowOpenFailure(output))
+            {
+                var diagnostics = await CollectDirectShowOpenFailureDiagnosticsAsync(videoDeviceName).ConfigureAwait(false);
+                return (false, $"{baseReason} | {diagnostics}");
+            }
+
+            return (false, baseReason);
+        }
+
+        if (TryExtractDirectShowInputVideoEvidence(output, out var evidenceLine, out var inputIsP010))
+        {
+            if (inputIsP010)
+            {
+                return (true, evidenceLine);
+            }
+
+            return (false, $"DirectShow input negotiated non-P010 format: {evidenceLine}");
+        }
+
+        return (false, "No DirectShow input video stream evidence was detected in FFmpeg probe output.");
+    }
+
+    private async Task<string> CollectDirectShowOpenFailureDiagnosticsAsync(string videoDeviceName)
+    {
+        try
+        {
+            var listArgs = "-hide_banner -loglevel info -f dshow -list_devices true -i dummy";
+            var (output, exitCode) = await RunProbeCommandWithExitCodeAsync(_ffmpegPath, listArgs).ConfigureAwait(false);
+            var entry = FindDirectShowDeviceListEntry(output, videoDeviceName);
+            if (entry is not { } resolvedEntry)
+            {
+                return $"dshow-list-device='{videoDeviceName}' not-found (list-exit={exitCode})";
+            }
+
+            return $"dshow-list-device='{resolvedEntry.FriendlyName}' kind={resolvedEntry.Kind} alt='{resolvedEntry.AlternativeName ?? "n/a"}' (list-exit={exitCode})";
+        }
+        catch (Exception ex)
+        {
+            return $"dshow-list-diagnostics-failed: {ex.Message}";
+        }
+    }
+
+    private static bool IsLikelyDirectShowOpenFailure(string ffmpegOutput)
+    {
+        if (string.IsNullOrWhiteSpace(ffmpegOutput))
+        {
+            return false;
+        }
+
+        return ffmpegOutput.Contains("Error opening input file video=", StringComparison.OrdinalIgnoreCase) ||
+               ffmpegOutput.Contains("Error opening input: I/O error", StringComparison.OrdinalIgnoreCase) ||
+               ffmpegOutput.Contains("Unable to BindToObject", StringComparison.OrdinalIgnoreCase) ||
+               ffmpegOutput.Contains("Could not find video device with name", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static DirectShowDeviceListEntry? FindDirectShowDeviceListEntry(string ffmpegOutput, string videoDeviceName)
+    {
+        if (string.IsNullOrWhiteSpace(ffmpegOutput) || string.IsNullOrWhiteSpace(videoDeviceName))
+        {
+            return null;
+        }
+
+        var lines = ffmpegOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        for (var i = 0; i < lines.Length; i++)
+        {
+            var line = lines[i].Trim();
+            if (!line.Contains($"\"{videoDeviceName}\"", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var kind = "unknown";
+            if (line.Contains("(video)", StringComparison.OrdinalIgnoreCase))
+            {
+                kind = "video";
+            }
+            else if (line.Contains("(none)", StringComparison.OrdinalIgnoreCase))
+            {
+                kind = "none";
+            }
+
+            string? altName = null;
+            if (i + 1 < lines.Length && lines[i + 1].Contains("Alternative name", StringComparison.OrdinalIgnoreCase))
+            {
+                var altLine = lines[i + 1];
+                var quoteStart = altLine.IndexOf('"');
+                if (quoteStart >= 0)
+                {
+                    var quoteEnd = altLine.LastIndexOf('"');
+                    if (quoteEnd > quoteStart)
+                    {
+                        altName = altLine.Substring(quoteStart + 1, quoteEnd - quoteStart - 1);
+                    }
+                }
+            }
+
+            return new DirectShowDeviceListEntry(videoDeviceName, kind, altName);
+        }
+
+        return null;
+    }
+
+    private readonly record struct DirectShowDeviceListEntry(string FriendlyName, string Kind, string? AlternativeName);
+
+    private static bool TryExtractDirectShowInputVideoEvidence(
+        string ffmpegOutput,
+        out string evidenceLine,
+        out bool inputIsP010)
+    {
+        evidenceLine = string.Empty;
+        inputIsP010 = false;
+        var inPrimaryDshowInput = false;
+
+        foreach (var line in ffmpegOutput.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var trimmed = line.TrimStart();
+            if (trimmed.StartsWith("Input #0, dshow", StringComparison.OrdinalIgnoreCase))
+            {
+                inPrimaryDshowInput = true;
+                continue;
+            }
+
+            if (trimmed.StartsWith("Input #", StringComparison.OrdinalIgnoreCase) &&
+                !trimmed.StartsWith("Input #0, dshow", StringComparison.OrdinalIgnoreCase))
+            {
+                inPrimaryDshowInput = false;
+                continue;
+            }
+
+            if (trimmed.StartsWith("Output #", StringComparison.OrdinalIgnoreCase) ||
+                trimmed.StartsWith("Stream mapping:", StringComparison.OrdinalIgnoreCase))
+            {
+                inPrimaryDshowInput = false;
+            }
+
+            if (!inPrimaryDshowInput)
+            {
+                continue;
+            }
+
+            if (!TryParseDirectShowInputVideoLineCore(line, out var isP010))
+            {
+                continue;
+            }
+
+            evidenceLine = line.Trim();
+            inputIsP010 = isP010;
+            return true;
+        }
+
+        return false;
+    }
+
+    private void UpdateDirectShowInputSectionState(string line)
+    {
+        var trimmed = line.TrimStart();
+        if (trimmed.StartsWith("Input #0, dshow", StringComparison.OrdinalIgnoreCase))
+        {
+            _directShowInputSectionActive = true;
+            return;
+        }
+
+        if (trimmed.StartsWith("Input #", StringComparison.OrdinalIgnoreCase) &&
+            !trimmed.StartsWith("Input #0, dshow", StringComparison.OrdinalIgnoreCase))
+        {
+            _directShowInputSectionActive = false;
+            return;
+        }
+
+        if (trimmed.StartsWith("Output #", StringComparison.OrdinalIgnoreCase) ||
+            trimmed.StartsWith("Stream mapping:", StringComparison.OrdinalIgnoreCase))
+        {
+            _directShowInputSectionActive = false;
+        }
+    }
+
+    private bool TryParseDirectShowInputVideoLine(
+        string line,
+        out bool inputIsP010,
+        out string evidenceLine)
+    {
+        inputIsP010 = false;
+        evidenceLine = line.Trim();
+
+        if (!_directShowInputSectionActive)
+        {
+            return false;
+        }
+
+        if (!TryParseDirectShowInputVideoLineCore(line, out var parsedIsP010))
+        {
+            return false;
+        }
+
+        inputIsP010 = parsedIsP010;
+        return true;
+    }
+
+    private static bool TryParseDirectShowInputVideoLineCore(string line, out bool inputIsP010)
+    {
+        inputIsP010 = false;
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return false;
+        }
+
+        if (!line.Contains("Stream #0:", StringComparison.OrdinalIgnoreCase) ||
+            !VideoStreamProbeRegex.IsMatch(line) ||
+            line.Contains("->", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        inputIsP010 = line.Contains("p010", StringComparison.OrdinalIgnoreCase);
+        return true;
+    }
+
+    private static string? TryExtractObservedPixelFormatToken(string line)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return null;
+        }
+
+        if (line.Contains("p010", StringComparison.OrdinalIgnoreCase))
+        {
+            return "P010";
+        }
+
+        if (line.Contains("nv12", StringComparison.OrdinalIgnoreCase))
+        {
+            return "NV12";
+        }
+
+        var videoMarkerIndex = line.IndexOf("Video:", StringComparison.OrdinalIgnoreCase);
+        if (videoMarkerIndex < 0)
+        {
+            return null;
+        }
+
+        var payload = line[(videoMarkerIndex + "Video:".Length)..].Trim();
+        if (payload.Length == 0)
+        {
+            return null;
+        }
+
+        var commaIndex = payload.IndexOf(',');
+        if (commaIndex >= 0)
+        {
+            payload = payload[..commaIndex];
+        }
+
+        var token = payload.Trim();
+        return string.IsNullOrWhiteSpace(token) ? null : token;
+    }
+
+    private static string? NormalizeObservedPixelFormat(string? formatToken)
+    {
+        if (string.IsNullOrWhiteSpace(formatToken))
+        {
+            return null;
+        }
+
+        if (formatToken.Contains("P010", StringComparison.OrdinalIgnoreCase))
+        {
+            return "P010";
+        }
+
+        if (formatToken.Contains("NV12", StringComparison.OrdinalIgnoreCase))
+        {
+            return "NV12";
+        }
+
+        return formatToken.Trim().ToUpperInvariant();
+    }
+
+    private void RecordObservedPixelFormatSample(string? formatToken, bool incrementAsFrame)
+    {
+        var normalizedFormat = NormalizeObservedPixelFormat(formatToken);
+        if (string.IsNullOrWhiteSpace(normalizedFormat))
+        {
+            return;
+        }
+
+        var shouldIncrement = incrementAsFrame;
+        lock (_observedFormatSync)
+        {
+            if (string.IsNullOrWhiteSpace(_firstObservedFramePixelFormat))
+            {
+                _firstObservedFramePixelFormat = normalizedFormat;
+            }
+
+            if (!incrementAsFrame)
+            {
+                shouldIncrement = !string.Equals(
+                    _latestObservedFramePixelFormat,
+                    normalizedFormat,
+                    StringComparison.OrdinalIgnoreCase);
+            }
+
+            _latestObservedFramePixelFormat = normalizedFormat;
+            _latestObservedSurfaceFormat = normalizedFormat;
+        }
+
+        if (!shouldIncrement)
+        {
+            return;
+        }
+
+        if (string.Equals(normalizedFormat, "P010", StringComparison.OrdinalIgnoreCase))
+        {
+            Interlocked.Increment(ref _observedP010FrameCount);
+        }
+        else if (string.Equals(normalizedFormat, "NV12", StringComparison.OrdinalIgnoreCase))
+        {
+            Interlocked.Increment(ref _observedNv12FrameCount);
+        }
+        else
+        {
+            Interlocked.Increment(ref _observedOtherFrameCount);
+        }
+    }
+
+    private void ResetObservedFormatTelemetry()
+    {
+        lock (_observedFormatSync)
+        {
+            _firstObservedFramePixelFormat = null;
+            _latestObservedFramePixelFormat = null;
+            _latestObservedSurfaceFormat = null;
+        }
+
+        Interlocked.Exchange(ref _observedP010FrameCount, 0);
+        Interlocked.Exchange(ref _observedNv12FrameCount, 0);
+        Interlocked.Exchange(ref _observedOtherFrameCount, 0);
+        Interlocked.Exchange(ref _observedP010BitDepthSampleCount, 0);
+        Interlocked.Exchange(ref _observedP010Low2BitNonZeroSampleCount, 0);
+        Interlocked.Exchange(ref _observedP010PaddingNonZeroSampleCount, 0);
+    }
+
+    private void SampleP010BitDepthTelemetry(byte[] sourceBuffer, int sourceLength)
+    {
+        if (sourceBuffer == null || sourceLength < 2)
+        {
+            return;
+        }
+
+        const int maxWordsPerFrame = 2048;
+        var wordsAvailable = sourceLength / 2;
+        var wordsToSample = Math.Min(wordsAvailable, maxWordsPerFrame);
+        if (wordsToSample <= 0)
+        {
+            return;
+        }
+
+        long low2NonZero = 0;
+        long paddingNonZero = 0;
+        for (var sampleIndex = 0; sampleIndex < wordsToSample; sampleIndex++)
+        {
+            var offset = sampleIndex * 2;
+            ushort word = (ushort)(sourceBuffer[offset] | (sourceBuffer[offset + 1] << 8));
+            var sample10 = (word >> 6) & 0x3FF;
+            if ((sample10 & 0x3) != 0)
+            {
+                low2NonZero++;
+            }
+
+            if ((word & 0x3F) != 0)
+            {
+                paddingNonZero++;
+            }
+        }
+
+        Interlocked.Add(ref _observedP010BitDepthSampleCount, wordsToSample);
+        Interlocked.Add(ref _observedP010Low2BitNonZeroSampleCount, low2NonZero);
+        Interlocked.Add(ref _observedP010PaddingNonZeroSampleCount, paddingNonZero);
+    }
+
+    private static string EscapeDshowDeviceName(string deviceName)
+        => deviceName.Replace("\"", "\\\"");
+
     private string BuildFFmpegArguments(CaptureSettings settings, string outputPath, bool useAudioPipe, string frameRateArg, uint effectiveWidth, uint effectiveHeight, string inputPixelFormat, bool hdrPipelineActive, string? audioPipeName)
     {
         var hdrRequested = hdrPipelineActive &&
@@ -588,6 +1506,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
         // Get encoder and quality settings
         var (videoCodec, qualityArgs) = GetEncoderSettings(settings, hdrRequested, preferSoftwareHevc: false);
+        _activeVideoCodec = videoCodec;
+        _activeVideoProfile = "sdr";
+        _activeTenBitPipelineConfirmed = false;
 
         if (hdrRequested &&
             videoCodec.Equals("hevc_nvenc", StringComparison.OrdinalIgnoreCase) &&
@@ -597,20 +1518,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             var missingCllSupport = hdrCllRequested && !_hdrArgumentSupport.SupportsMaxCll;
             if (missingMasterSupport || missingCllSupport)
             {
-                var support = _encoderSupport ?? EncoderSupport.Empty;
-                if (support.HasLibX265)
-                {
-                    Logger.Log(
-                        "HDR mastering metadata flags are unsupported on the current FFmpeg/NVENC path. " +
-                        "Falling back to libx265 for HDR metadata compatibility.");
-                    (videoCodec, qualityArgs) = GetEncoderSettings(settings, hdrRequested, preferSoftwareHevc: true);
-                }
-                else
-                {
-                    Logger.Log(
-                        "HDR mastering metadata flags are unsupported and libx265 is unavailable. " +
-                        "Continuing without mastering metadata flags.");
-                }
+                throw new InvalidOperationException(
+                    "HDR mastering metadata was requested, but the active FFmpeg/NVENC path does not support " +
+                    "master-display/max-cll metadata emission.");
             }
         }
 
@@ -655,21 +1565,10 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             ? "nv12"
             : "yuv420p";
         var hdrMetadataArgs = string.Empty;
+        var av1HdrMetadataBsfArgs = string.Empty;
 
         if (hdrRequested)
         {
-            if (!_hdrArgumentSupport.SupportsP010Input)
-            {
-                throw new InvalidOperationException(
-                    "The current FFmpeg build does not advertise p010 10-bit input support required for HDR.");
-            }
-
-            if (!inputPixelFormat.Equals("p010le", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException(
-                    $"HDR output requires p010le input frames, but got '{inputPixelFormat}'.");
-            }
-
             var isHevcNvenc = videoCodec.Equals("hevc_nvenc", StringComparison.OrdinalIgnoreCase);
             var isLibx265 = videoCodec.Equals("libx265", StringComparison.OrdinalIgnoreCase);
             var isAv1 = videoCodec.Contains("av1", StringComparison.OrdinalIgnoreCase);
@@ -680,6 +1579,14 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             }
 
             outputPixelFormat = isHevcNvenc ? "p010le" : "yuv420p10le";
+            _activeVideoProfile = isAv1 ? "main-10bit" : "main10";
+            _activeTenBitPipelineConfirmed = true;
+            if (!inputPixelFormat.Equals("p010le", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"HDR output requires P010 ingress, but capture input is '{inputPixelFormat}'.");
+            }
+            EnsureHdrColorMetadataSupport();
             if (_hdrArgumentSupport.SupportsColorPrimaries)
             {
                 hdrMetadataArgs += "-color_primaries bt2020 ";
@@ -726,34 +1633,32 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             {
                 if (hdrMasterRequested)
                 {
-                    if (_hdrArgumentSupport.SupportsMasterDisplay)
-                    {
-                        hdrMetadataArgs += $"-master_display \"{settings.HdrMasterDisplayMetadata}\" ";
-                    }
-                    else
-                    {
-                        Logger.Log("Skipping unsupported FFmpeg option -master_display on current build.");
-                    }
+                    EnsureHdrMasteringMetadataSupport(hdrMasterRequested: true, hdrCllRequested: false);
+                    hdrMetadataArgs += $"-master_display \"{settings.HdrMasterDisplayMetadata}\" ";
                 }
 
                 if (hdrCllRequested)
                 {
-                    if (_hdrArgumentSupport.SupportsMaxCll)
-                    {
-                        hdrMetadataArgs += $"-max_cll {settings.HdrMaxCll},{settings.HdrMaxFall} ";
-                    }
-                    else
-                    {
-                        Logger.Log("Skipping unsupported FFmpeg option -max_cll on current build.");
-                    }
+                    EnsureHdrMasteringMetadataSupport(hdrMasterRequested: false, hdrCllRequested: true);
+                    hdrMetadataArgs += $"-max_cll {settings.HdrMaxCll},{settings.HdrMaxFall} ";
                 }
             }
 
             Logger.Log($"HDR10 output enabled: codec={videoCodec}, pix_fmt={outputPixelFormat}, maxCLL={settings.HdrMaxCll}, maxFALL={settings.HdrMaxFall}");
+            if (isAv1)
+            {
+                Logger.Log("HDR10 AV1 metadata: applying av1_metadata bitstream filter (color_primaries=9 transfer_characteristics=16 matrix_coefficients=9).");
+                // bt2020 primaries=9, smpte2084 transfer=16, bt2020nc matrix=9
+                av1HdrMetadataBsfArgs = "-bsf:v av1_metadata=color_primaries=9:transfer_characteristics=16:matrix_coefficients=9 ";
+            }
         }
 
         _activeInputPixelFormat = inputPixelFormat;
         _activeOutputPixelFormat = outputPixelFormat;
+        Logger.Log(
+            $"HDR_ENCODER_CONFIG codec={_activeVideoCodec} profile={_activeVideoProfile} " +
+            $"input_pix_fmt={_activeInputPixelFormat} output_pix_fmt={_activeOutputPixelFormat} " +
+            $"ten_bit_pipeline_confirmed={_activeTenBitPipelineConfirmed}");
 
         var args = $"-y " +
                    // Video input from stdin (pipe:0) - immediately available
@@ -773,6 +1678,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                    $"-r {frameRateArg} " + // Force output frame rate (CFR)
                    $"-pix_fmt {outputPixelFormat} " +
                    $"{hdrMetadataArgs}" +
+                   $"{av1HdrMetadataBsfArgs}" +
                    // Audio encoding (or disable audio)
                    audioArgs +
                    // Output options
@@ -819,11 +1725,6 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                 break;
             case RecordingFormat.Av1Mp4:
                 codec = support.PreferredAv1Encoder ?? "libsvtav1";
-                useNvenc = codec.EndsWith("_nvenc", StringComparison.OrdinalIgnoreCase);
-                break;
-            case RecordingFormat.UncompressedAvi:
-                // For "uncompressed", use high bitrate H.264
-                codec = support.HasH264Nvenc ? "h264_nvenc" : "libx264";
                 useNvenc = codec.EndsWith("_nvenc", StringComparison.OrdinalIgnoreCase);
                 break;
             default: // H264Mp4
@@ -991,15 +1892,19 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
             if (frame.BitmapPixelFormat == BitmapPixelFormat.Nv12)
             {
+                RecordObservedPixelFormatSample("NV12", incrementAsFrame: true);
                 CopyNv12ToBuffer(frame, buffer);
             }
             else if (frame.BitmapPixelFormat == BitmapPixelFormat.P010)
             {
+                RecordObservedPixelFormatSample("P010", incrementAsFrame: true);
                 CopyP010ToBuffer(frame, buffer);
+                SampleP010BitDepthTelemetry(buffer, bufferSize);
             }
             else
             {
                 // BGRA/YUY2 fallback
+                RecordObservedPixelFormatSample(frame.BitmapPixelFormat.ToString(), incrementAsFrame: true);
                 frame.CopyToBuffer(buffer.AsBuffer());
             }
 
@@ -1108,43 +2013,55 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
         try
         {
-            var buffer = new byte[samples.Length];
+            var buffer = GetAudioBuffer(samples.Length);
             samples.Span.CopyTo(buffer);
+            var packet = new AudioSamplePacket(buffer, samples.Length);
 
-            var priorDepth = Volatile.Read(ref _audioQueueDepth);
-            if (_audioSampleQueue.Writer.TryWrite(buffer))
+            if (TryEnqueueAudioPacket(_audioSampleQueue, packet))
             {
-                if (priorDepth >= AudioQueueCapacity)
-                {
-                    Interlocked.Exchange(ref _audioQueueDepth, AudioQueueCapacity);
-                    var backlogDrops = Interlocked.Increment(ref _audioDropsBacklogEviction);
-                    if (backlogDrops == 1 || backlogDrops % 120 == 0)
-                    {
-                        Logger.Log($"Warning: Dropped oldest audio samples to relieve queue pressure. Total evicted: {backlogDrops}");
-                    }
-                }
-                else
-                {
-                    var nextDepth = Interlocked.Increment(ref _audioQueueDepth);
-                    if (nextDepth > AudioQueueCapacity)
-                    {
-                        Interlocked.Exchange(ref _audioQueueDepth, AudioQueueCapacity);
-                    }
-                }
-
                 return;
             }
 
             var saturatedDrops = Interlocked.Increment(ref _audioDropsQueueSaturated);
             if (saturatedDrops == 1 || saturatedDrops % 120 == 0)
             {
-                Logger.Log($"Warning: Dropped audio samples (queue saturated or completed). Total saturated drops: {saturatedDrops}");
+                Logger.Log($"Warning: Dropped audio samples (queue saturated). Total dropped: {saturatedDrops}, evicted={Interlocked.Read(ref _audioDropsBacklogEviction)}");
             }
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
         }
+    }
+
+    private bool TryEnqueueAudioPacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)
+    {
+        if (_cts?.IsCancellationRequested == true)
+        {
+            ReturnAudioBuffer(packet.Buffer);
+            return false;
+        }
+
+        if (queue.Writer.TryWrite(packet))
+        {
+            Interlocked.Increment(ref _audioQueueDepth);
+            return true;
+        }
+
+        if (queue.Reader.TryRead(out var evictedPacket))
+        {
+            Interlocked.Decrement(ref _audioQueueDepth);
+            Interlocked.Increment(ref _audioDropsBacklogEviction);
+            ReturnAudioBuffer(evictedPacket.Buffer);
+            if (queue.Writer.TryWrite(packet))
+            {
+                Interlocked.Increment(ref _audioQueueDepth);
+                return true;
+            }
+        }
+
+        ReturnAudioBuffer(packet.Buffer);
+        return false;
     }
 
     private async Task WriteVideoFramesAsync(CancellationToken ct)
@@ -1264,15 +2181,14 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             var connectStartTicks = Logger.VerboseEnabled ? Stopwatch.GetTimestamp() : 0;
             try
             {
-                // Use a timeout - if FFmpeg doesn't connect within 15 seconds, skip audio
-                var connectTask = audioPipe.WaitForConnectionAsync(ct);
-                var timeoutTask = Task.Delay(15000);
-                var result = await Task.WhenAny(connectTask, timeoutTask);
-
-                if (result == timeoutTask)
+                var connected = await WaitForAudioPipeConnectionWithRetriesAsync(audioPipe, ct).ConfigureAwait(false);
+                if (!connected)
                 {
-                    Logger.Log("Audio pipe connection timed out - audio will not be recorded");
-                    ErrorOccurred?.Invoke(this, "Audio recording failed: FFmpeg did not connect to audio pipe within 15 seconds");
+                    var timeoutSeconds = AudioPipeConnectAttempts * AudioPipeConnectTimeoutMs / 1000;
+                    Logger.Log("Audio pipe connection timed out after retries - audio will not be recorded");
+                    ErrorOccurred?.Invoke(
+                        this,
+                        $"Audio recording failed: FFmpeg did not connect to audio pipe within {timeoutSeconds} seconds");
                     return;
                 }
             }
@@ -1308,9 +2224,16 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                 while (audioQueue.Reader.TryRead(out var bufferedSample))
                 {
                     Interlocked.Decrement(ref _audioQueueDepth);
-                    if (audioPipe.IsConnected)
+                    try
                     {
-                        await audioPipe.WriteAsync(bufferedSample, 0, bufferedSample.Length, ct);
+                        if (audioPipe.IsConnected)
+                        {
+                            await audioPipe.WriteAsync(bufferedSample.Buffer, 0, bufferedSample.Length, ct);
+                        }
+                    }
+                    finally
+                    {
+                        ReturnAudioBuffer(bufferedSample.Buffer);
                     }
                 }
             }
@@ -1359,11 +2282,18 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                     while (audioQueue.Reader.TryRead(out var audioData))
                     {
                         Interlocked.Decrement(ref _audioQueueDepth);
-                        await audioPipe.WriteAsync(audioData, 0, audioData.Length, ct).ConfigureAwait(false);
-                        _lastAudioWriteTick = Environment.TickCount64;
-                        if (Interlocked.Exchange(ref _loggedFirstAudioWrite, 1) == 0)
+                        try
                         {
-                            Logger.LogVerbose($"First audio bytes written after {_startupStopwatch.ElapsedMilliseconds} ms");
+                            await audioPipe.WriteAsync(audioData.Buffer, 0, audioData.Length, ct).ConfigureAwait(false);
+                            _lastAudioWriteTick = Environment.TickCount64;
+                            if (Interlocked.Exchange(ref _loggedFirstAudioWrite, 1) == 0)
+                            {
+                                Logger.LogVerbose($"First audio bytes written after {_startupStopwatch.ElapsedMilliseconds} ms");
+                            }
+                        }
+                        finally
+                        {
+                            ReturnAudioBuffer(audioData.Buffer);
                         }
                     }
                 }
@@ -1387,6 +2317,42 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         Logger.Log("Audio writer task ended");
     }
 
+    private async Task<bool> WaitForAudioPipeConnectionWithRetriesAsync(
+        NamedPipeServerStream audioPipe,
+        CancellationToken ct)
+    {
+        for (var attempt = 1; attempt <= AudioPipeConnectAttempts; attempt++)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            attemptCts.CancelAfter(AudioPipeConnectTimeoutMs);
+            try
+            {
+                await audioPipe.WaitForConnectionAsync(attemptCts.Token).ConfigureAwait(false);
+                return true;
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (OperationCanceledException) when (attemptCts.IsCancellationRequested)
+            {
+                if (attempt < AudioPipeConnectAttempts)
+                {
+                    Logger.Log(
+                        $"Audio pipe connection attempt {attempt}/{AudioPipeConnectAttempts} timed out after {AudioPipeConnectTimeoutMs} ms; retrying.");
+                }
+            }
+            catch (InvalidOperationException) when (audioPipe.IsConnected)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private async Task ReadStderrAsync(CancellationToken ct)
     {
         if (_ffmpegProcess?.StandardError == null) return;
@@ -1405,6 +2371,38 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                 }
 
                 Logger.Log($"[FFmpeg] {line}");
+
+                if (_usesDirectShowInput)
+                {
+                    UpdateDirectShowInputSectionState(line);
+
+                    if (TryParseDirectShowInputVideoLine(line, out var runtimeInputIsP010, out var runtimeEvidenceLine))
+                    {
+                        var observedToken = TryExtractObservedPixelFormatToken(runtimeEvidenceLine);
+                        RecordObservedPixelFormatSample(observedToken, incrementAsFrame: false);
+
+                        if (_directShowHdrRequested && runtimeInputIsP010)
+                        {
+                            _directShowInputFormatVerified = true;
+                        }
+                        else if (_directShowHdrRequested &&
+                                 !_directShowInputFormatVerified &&
+                                 !_directShowIngressViolationRaised)
+                        {
+                            _directShowIngressViolationRaised = true;
+                            var reason = $"DirectShow runtime input is not P010 in HDR mode: {runtimeEvidenceLine}";
+                            Logger.Log(reason);
+                            IngressViolationDetected?.Invoke(this, reason);
+                            ErrorOccurred?.Invoke(this, reason);
+                        }
+                    }
+
+                    var match = DropCounterRegex.Match(line);
+                    if (match.Success && long.TryParse(match.Groups[1].Value, out var dropped))
+                    {
+                        Interlocked.Exchange(ref _droppedVideoFrames, dropped);
+                    }
+                }
 
                 // Check for common errors
                 if (line.Contains("Error") || line.Contains("error"))
@@ -1481,6 +2479,19 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             await Task.WhenAny(_stderrReaderTask, Task.Delay(1000));
         }
 
+        if (_usesDirectShowInput && _ffmpegProcess != null && !_ffmpegProcess.HasExited)
+        {
+            try
+            {
+                await _ffmpegProcess.StandardInput.WriteLineAsync("q").ConfigureAwait(false);
+                await _ffmpegProcess.StandardInput.FlushAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"DirectShow stop signal warning: {ex.Message}");
+            }
+        }
+
         // Close pipes (signals EOF to FFmpeg)
         await CleanupPipesAsync();
 
@@ -1511,12 +2522,24 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             Logger.Log($"FFmpeg exited with code: {(_lastExitCode.HasValue ? _lastExitCode.Value : -1)}");
         }
 
+        var enqueueDeltaMs = (_lastVideoEnqueueTick > 0 && _lastAudioEnqueueTick > 0)
+            ? _lastAudioEnqueueTick - _lastVideoEnqueueTick
+            : 0;
+        var writeDeltaMs = (_lastVideoWriteTick > 0 && _lastAudioWriteTick > 0)
+            ? _lastAudioWriteTick - _lastVideoWriteTick
+            : 0;
+        Logger.Log(
+            $"CFR_DRIFT_METRICS video_master=true enqueue_delta_ms={enqueueDeltaMs} write_delta_ms={writeDeltaMs} " +
+            $"video_dropped={DroppedVideoFrames} audio_saturated={AudioDropsQueueSaturated} audio_evicted={AudioDropsBacklogEviction}");
+
         await CleanupAsync();
         StatusChanged?.Invoke(this, "Encoding stopped");
         Logger.Log(
             $"=== FFmpeg Encoder Stopped (Total frames: {EncodedFrameCount}, droppedVideo={DroppedVideoFrames}, " +
             $"videoSaturated={VideoDropsQueueSaturated}, videoEvicted={VideoDropsBacklogEviction}, " +
-            $"audioSaturated={AudioDropsQueueSaturated}, audioEvicted={AudioDropsBacklogEviction}) ===");
+            $"audioSaturated={AudioDropsQueueSaturated}, audioEvicted={AudioDropsBacklogEviction}, " +
+            $"p010Samples={ObservedP010BitDepthSampleCount}, p010Low2NonZeroPct={ObservedP010Low2BitNonZeroPercent:0.###}, " +
+            $"p010Likely8BitUpscaled={ObservedP010Likely8BitUpscaled?.ToString() ?? "unknown"}) ===");
     }
 
     private async Task CleanupPipesAsync()
@@ -1665,6 +2688,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _ffmpegProcess = null;
         _activeInputPixelFormat = "nv12";
         _activeOutputPixelFormat = "yuv420p";
+        _usesDirectShowInput = false;
+        _directShowHdrRequested = false;
+        _directShowInputFormatVerified = false;
+        _directShowInputSectionActive = false;
+        _directShowIngressViolationRaised = false;
         _hdrArgumentSupport = HdrArgumentSupport.Unknown;
 
         _cts?.Dispose();
@@ -1752,9 +2780,10 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             return;
         }
 
-        while (audioQueue.Reader.TryRead(out _))
+        while (audioQueue.Reader.TryRead(out var sample))
         {
             Interlocked.Decrement(ref _audioQueueDepth);
+            ReturnAudioBuffer(sample.Buffer);
         }
 
         if (Volatile.Read(ref _audioQueueDepth) < 0)
@@ -1768,7 +2797,17 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         return ArrayPool<byte>.Shared.Rent(size);
     }
 
+    private static byte[] GetAudioBuffer(int size)
+    {
+        return ArrayPool<byte>.Shared.Rent(size);
+    }
+
     private void ReturnFrameBuffer(byte[] buffer)
+    {
+        ArrayPool<byte>.Shared.Return(buffer);
+    }
+
+    private static void ReturnAudioBuffer(byte[] buffer)
     {
         ArrayPool<byte>.Shared.Return(buffer);
     }
@@ -1796,9 +2835,10 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
         if (audioQueue != null)
         {
-            while (audioQueue.Reader.TryRead(out _))
+            while (audioQueue.Reader.TryRead(out var sample))
             {
                 Interlocked.Decrement(ref _audioQueueDepth);
+                ReturnAudioBuffer(sample.Buffer);
                 audioDrained++;
             }
         }
