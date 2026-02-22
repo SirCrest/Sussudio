@@ -2701,15 +2701,20 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private async Task StopRecordingAsync()
     {
+        // UX: Freeze the timer immediately when the user requests stop (finalization can take seconds).
+        // Keep IsRecording true until the stop transition completes so the button remains in "Stop" state.
+        _recordingStopwatch.Stop();
+
         try
         {
             await _sessionCoordinator.StopRecordingAsync();
             IsRecording = false;
-            _recordingStopwatch.Stop();
             StatusText = $"Recording saved ({RecordingTime})";
         }
         catch (Exception ex)
         {
+            // Even if finalization fails, unblock the UI and allow subsequent attempts.
+            IsRecording = false;
             StatusText = $"Stop recording failed: {ex.Message}";
         }
     }
