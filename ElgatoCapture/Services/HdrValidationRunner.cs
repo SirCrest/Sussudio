@@ -110,18 +110,57 @@ internal static class HdrValidationRunner
 
     private static string? ResolveValidatorScriptPath()
     {
-        var repoFromBase = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "tools", "validate_hdr.ps1"));
-        if (File.Exists(repoFromBase))
+        const int maxDepth = 8;
+        var relative = Path.Combine("tools", "validate_hdr.ps1");
+
+        if (TryFindInParents(AppContext.BaseDirectory, relative, maxDepth, out var fromBase))
         {
-            return repoFromBase;
+            return fromBase;
         }
 
-        var repoFromCwd = Path.Combine(Directory.GetCurrentDirectory(), "tools", "validate_hdr.ps1");
-        if (File.Exists(repoFromCwd))
+        if (TryFindInParents(Directory.GetCurrentDirectory(), relative, maxDepth, out var fromCwd))
         {
-            return repoFromCwd;
+            return fromCwd;
         }
 
         return null;
+    }
+
+    private static bool TryFindInParents(string startPath, string relativePath, int maxDepth, out string? foundPath)
+    {
+        foundPath = null;
+        if (string.IsNullOrWhiteSpace(startPath))
+        {
+            return false;
+        }
+
+        DirectoryInfo? current;
+        try
+        {
+            current = new DirectoryInfo(Path.GetFullPath(startPath));
+        }
+        catch
+        {
+            return false;
+        }
+
+        if (current.Exists == false)
+        {
+            current = current.Parent;
+        }
+
+        for (var i = 0; i < maxDepth && current != null; i++)
+        {
+            var candidate = Path.Combine(current.FullName, relativePath);
+            if (File.Exists(candidate))
+            {
+                foundPath = candidate;
+                return true;
+            }
+
+            current = current.Parent;
+        }
+
+        return false;
     }
 }
