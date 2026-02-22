@@ -710,7 +710,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             if (settings.PreviewMode is PreviewMode.GpuFast or PreviewMode.TrueHdr)
             {
                 var hdrRequested = HdrOutputPolicy.IsEnabled(settings);
-                var requireP010 = hdrRequested;
+                var requireP010 = hdrRequested && settings.PreviewMode == PreviewMode.TrueHdr;
 
                 Logger.Log(
                     "HDR_REQUEST_STATE scope=preview " +

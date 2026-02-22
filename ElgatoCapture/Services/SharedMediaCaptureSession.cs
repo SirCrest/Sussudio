@@ -84,7 +84,7 @@ internal sealed class SharedMediaCaptureSession : IAsyncDisposable
 
         var mediaCapture = _mediaCapture ?? throw new InvalidOperationException("Shared MediaCapture is not initialized.");
 
-        var videoSource = SelectVideoSource(mediaCapture, preferRecord: true);
+        var videoSource = SelectVideoSource(mediaCapture, preferRecord: requireP010);
         if (videoSource == null)
         {
             throw new InvalidOperationException("Shared MediaCapture preview failed: no color video frame source is available.");
