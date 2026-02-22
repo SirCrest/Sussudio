@@ -1844,7 +1844,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
             if (ViewModel.IsRecording)
             {
-                var rendererActive = _previewSource != null;
+                var rendererActive =
+                    (ViewModel.PreviewGpuActive && ViewModel.PreviewPlaybackSource != null && PreviewPlayerElement.Visibility == Visibility.Visible) ||
+                    (!ViewModel.PreviewGpuActive && _previewSource != null && PreviewImage.Visibility == Visibility.Visible);
                 var placeholderVisible = NoDevicePlaceholder.Visibility == Visibility.Visible;
                 Logger.Log(
                     $"PreviewStateDuringRecording: rendererActive={rendererActive}, " +
