@@ -122,7 +122,7 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
 
         cancellationToken.ThrowIfCancellationRequested();
 
-        var videoSource = SelectVideoSource(_mediaCapture, preferRecord: true);
+        var videoSource = SelectVideoSource(_mediaCapture, preferRecord: requireP010);
         if (videoSource == null)
         {
             throw new InvalidOperationException("MediaCapture ingestion failed: no color video frame source is available.");
