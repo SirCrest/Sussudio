@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -13,9 +14,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics.Imaging;
-using Windows.Media.Capture.Frames;
-using Windows.Media.Core;
-using Windows.Media.Playback;
 using WinRT.Interop;
 
 namespace ElgatoCapture;
@@ -23,11 +21,8 @@ namespace ElgatoCapture;
 public sealed partial class MainWindow : Window, IAutomationWindowControl
 {
     public MainViewModel ViewModel { get; }
-    private MediaFrameReader? _previewFrameReader;
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
-    private MediaPlayer? _previewMediaPlayer;
-    private bool _previewUsedLegacyStart;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
@@ -35,9 +30,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _previewLastResizeLogTick;
     private long _previewLastPresentedTick;
     private long _previewResizeSuppressUntilTick;
-    private long _previewGpuStartTick;
-    private long _previewGpuLastPositionMs;
-    private long _previewGpuLastProgressTick;
     private int _previewUiInFlight;
     private long _lastDiagnosticsUiUpdateTick;
     private readonly object _previewCadenceLock = new();
@@ -47,36 +39,324 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _previewLastDisplayTick;
     private int _windowCloseRequested;
     private int _windowCloseCleanupStarted;
-    private readonly bool _previewCapOverrideProvided;
-    private readonly int _previewPresentationFpsCap;
-    private int _previewActivePresentationFpsCap;
     private long _previewMinPresentationIntervalMs;
     private readonly int _previewResizeDebounceMs;
-    private readonly bool _preferGpuPreview;
-    private readonly bool _forceFrameReaderDuringRecording;
-    private readonly int _previewShutdownTimeoutMs;
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private int _automationServicesStarted;
     private DispatcherQueueTimer? _infoBarDismissTimer;
+    private string? _lastHdrRuntimeStateNotification;
+    private int _deviceSelectionSyncQueued;
+    private int _audioSelectionSyncQueued;
+    private int _resolutionSelectionSyncQueued;
+    private int _frameRateSelectionSyncQueued;
+    private int _formatSelectionSyncQueued;
+    private int _qualitySelectionSyncQueued;
 
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
 
-    private static double GetFrameRate(MediaFrameFormat format)
+    private void EnsureDeviceSelection()
     {
-        if (format.FrameRate.Denominator == 0)
+        if (ViewModel.Devices.Count == 0)
         {
-            return 0;
+            DeviceComboBox.SelectedItem = null;
+            return;
         }
 
-        return format.FrameRate.Numerator / (double)format.FrameRate.Denominator;
+        var matchingDevice = ViewModel.SelectedDevice != null
+            ? ViewModel.Devices.FirstOrDefault(device =>
+                string.Equals(device.Id, ViewModel.SelectedDevice.Id, StringComparison.OrdinalIgnoreCase))
+            : null;
+        matchingDevice ??= ViewModel.Devices.FirstOrDefault();
+        if (matchingDevice == null)
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(ViewModel.SelectedDevice, matchingDevice))
+        {
+            ViewModel.SelectedDevice = matchingDevice;
+        }
+
+        if (!ReferenceEquals(DeviceComboBox.SelectedItem, matchingDevice))
+        {
+            DeviceComboBox.SelectedItem = matchingDevice;
+        }
     }
 
-    private static bool IsHdrSubtype(string? subtype)
-        => !string.IsNullOrWhiteSpace(subtype) &&
-           (subtype.Contains("P010", StringComparison.OrdinalIgnoreCase) ||
-            subtype.Contains("HDR", StringComparison.OrdinalIgnoreCase));
+    private void EnsureAudioInputSelection()
+    {
+        if (ViewModel.AudioInputDevices.Count == 0)
+        {
+            AudioInputComboBox.SelectedItem = null;
+            return;
+        }
+
+        var matchingDevice = ViewModel.SelectedAudioInputDevice != null
+            ? ViewModel.AudioInputDevices.FirstOrDefault(device =>
+                string.Equals(device.Id, ViewModel.SelectedAudioInputDevice.Id, StringComparison.OrdinalIgnoreCase))
+            : null;
+        matchingDevice ??= ViewModel.AudioInputDevices.FirstOrDefault();
+        if (matchingDevice == null)
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(ViewModel.SelectedAudioInputDevice, matchingDevice))
+        {
+            ViewModel.SelectedAudioInputDevice = matchingDevice;
+        }
+
+        if (!ReferenceEquals(AudioInputComboBox.SelectedItem, matchingDevice))
+        {
+            AudioInputComboBox.SelectedItem = matchingDevice;
+        }
+    }
+
+    private void EnsureResolutionSelection()
+    {
+        if (ViewModel.AvailableResolutions.Count == 0)
+        {
+            if (ViewModel.SelectedDevice == null || !ViewModel.IsPreviewing)
+            {
+                ResolutionComboBox.SelectedItem = null;
+            }
+
+            return;
+        }
+
+        var matchingResolution = ViewModel.AvailableResolutions.FirstOrDefault(option =>
+            string.Equals(option.Value, ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase))
+            ?? ViewModel.AvailableResolutions.FirstOrDefault(option => option.IsEnabled)
+            ?? ViewModel.AvailableResolutions.FirstOrDefault();
+        if (matchingResolution == null)
+        {
+            return;
+        }
+
+        if (!string.Equals(matchingResolution.Value, ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase))
+        {
+            ViewModel.SelectedResolution = matchingResolution.Value;
+        }
+
+        if (ResolutionComboBox.SelectedItem is not ResolutionOption selectedResolutionOption ||
+            !string.Equals(selectedResolutionOption.Value, matchingResolution.Value, StringComparison.OrdinalIgnoreCase))
+        {
+            ResolutionComboBox.SelectedItem = matchingResolution;
+        }
+    }
+
+    private void EnsureFrameRateSelection()
+    {
+        if (ViewModel.AvailableFrameRates.Count == 0)
+        {
+            if (ViewModel.SelectedDevice == null || !ViewModel.IsPreviewing)
+            {
+                FrameRateComboBox.SelectedItem = null;
+            }
+
+            return;
+        }
+
+        var matchingRate = ViewModel.AvailableFrameRates
+            .FirstOrDefault(option => IsFrameRateMatch(option.Value, ViewModel.SelectedFrameRate))
+            ?? ViewModel.AvailableFrameRates.FirstOrDefault(option => option.IsEnabled)
+            ?? ViewModel.AvailableFrameRates.FirstOrDefault();
+        if (matchingRate == null)
+        {
+            return;
+        }
+
+        if (!IsFrameRateMatch(matchingRate.Value, ViewModel.SelectedFrameRate))
+        {
+            ViewModel.SelectedFrameRate = matchingRate.Value;
+        }
+
+        if (FrameRateComboBox.SelectedItem is not FrameRateOption currentFps ||
+            !IsFrameRateMatch(currentFps.Value, matchingRate.Value))
+        {
+            FrameRateComboBox.SelectedItem = matchingRate;
+        }
+    }
+
+    private void EnsureFormatSelection()
+    {
+        if (ViewModel.AvailableRecordingFormats.Count == 0)
+        {
+            if (ViewModel.SelectedDevice == null || !ViewModel.IsPreviewing)
+            {
+                FormatComboBox.SelectedItem = null;
+            }
+
+            return;
+        }
+
+        var matchingFormat = ViewModel.AvailableRecordingFormats
+            .FirstOrDefault(format => string.Equals(format, ViewModel.SelectedRecordingFormat, StringComparison.OrdinalIgnoreCase))
+            ?? ViewModel.AvailableRecordingFormats.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(matchingFormat))
+        {
+            return;
+        }
+
+        if (!string.Equals(matchingFormat, ViewModel.SelectedRecordingFormat, StringComparison.OrdinalIgnoreCase))
+        {
+            ViewModel.SelectedRecordingFormat = matchingFormat;
+        }
+
+        if (!string.Equals(FormatComboBox.SelectedItem as string, matchingFormat, StringComparison.OrdinalIgnoreCase))
+        {
+            FormatComboBox.SelectedItem = matchingFormat;
+        }
+    }
+
+    private void EnsureQualitySelection()
+    {
+        if (ViewModel.AvailableQualities.Count == 0)
+        {
+            QualityComboBox.SelectedItem = null;
+            return;
+        }
+
+        var matchingQuality = ViewModel.AvailableQualities
+            .FirstOrDefault(quality => string.Equals(quality, ViewModel.SelectedQuality, StringComparison.OrdinalIgnoreCase))
+            ?? ViewModel.AvailableQualities.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(matchingQuality))
+        {
+            return;
+        }
+
+        if (!string.Equals(matchingQuality, ViewModel.SelectedQuality, StringComparison.OrdinalIgnoreCase))
+        {
+            ViewModel.SelectedQuality = matchingQuality;
+        }
+
+        if (!string.Equals(QualityComboBox.SelectedItem as string, matchingQuality, StringComparison.OrdinalIgnoreCase))
+        {
+            QualityComboBox.SelectedItem = matchingQuality;
+        }
+    }
+
+    private void QueueDeviceSelectionSync()
+    {
+        if (Interlocked.Exchange(ref _deviceSelectionSyncQueued, 1) != 0)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                EnsureDeviceSelection();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _deviceSelectionSyncQueued, 0);
+            }
+        });
+    }
+
+    private void QueueAudioSelectionSync()
+    {
+        if (Interlocked.Exchange(ref _audioSelectionSyncQueued, 1) != 0)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                EnsureAudioInputSelection();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _audioSelectionSyncQueued, 0);
+            }
+        });
+    }
+
+    private void QueueResolutionSelectionSync()
+    {
+        if (Interlocked.Exchange(ref _resolutionSelectionSyncQueued, 1) != 0)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                EnsureResolutionSelection();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _resolutionSelectionSyncQueued, 0);
+            }
+        });
+    }
+
+    private void QueueFrameRateSelectionSync()
+    {
+        if (Interlocked.Exchange(ref _frameRateSelectionSyncQueued, 1) != 0)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                EnsureFrameRateSelection();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _frameRateSelectionSyncQueued, 0);
+            }
+        });
+    }
+
+    private void QueueFormatSelectionSync()
+    {
+        if (Interlocked.Exchange(ref _formatSelectionSyncQueued, 1) != 0)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                EnsureFormatSelection();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _formatSelectionSyncQueued, 0);
+            }
+        });
+    }
+
+    private void QueueQualitySelectionSync()
+    {
+        if (Interlocked.Exchange(ref _qualitySelectionSyncQueued, 1) != 0)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                EnsureQualitySelection();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _qualitySelectionSyncQueued, 0);
+            }
+        });
+    }
 
     private static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)
     {
@@ -89,141 +369,19 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         return defaultValue;
     }
 
-    private static bool TryGetIntFromEnv(string variableName, out int parsedValue)
+    private long ResolvePreviewExpectedIntervalMs()
     {
-        parsedValue = 0;
-        var rawValue = Environment.GetEnvironmentVariable(variableName);
-        return !string.IsNullOrWhiteSpace(rawValue) && int.TryParse(rawValue, out parsedValue);
-    }
-
-    private static bool GetBoolFromEnv(string variableName, bool defaultValue)
-    {
-        var rawValue = Environment.GetEnvironmentVariable(variableName);
-        if (string.IsNullOrWhiteSpace(rawValue))
-        {
-            return defaultValue;
-        }
-
-        if (bool.TryParse(rawValue, out var boolValue))
-        {
-            return boolValue;
-        }
-
-        if (int.TryParse(rawValue, out var intValue))
-        {
-            return intValue != 0;
-        }
-
-        return defaultValue;
-    }
-
-    private int ResolvePreviewPresentationCap(MediaFrameFormat? activeFormat)
-    {
-        if (_previewCapOverrideProvided)
-        {
-            return _previewPresentationFpsCap;
-        }
-
-        return ComputeAdaptivePreviewCap(activeFormat);
-    }
-
-    private int ComputeAdaptivePreviewCap(MediaFrameFormat? activeFormat)
-    {
-        if (activeFormat == null)
-        {
-            return Math.Clamp(60, 15, _previewPresentationFpsCap);
-        }
-
-        var sourceFps = (int)Math.Round(GetFrameRate(activeFormat));
+        var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;
         if (sourceFps <= 0)
         {
             sourceFps = 60;
         }
 
-        var pixelCount = (long)activeFormat.VideoFormat.Width * activeFormat.VideoFormat.Height;
-        int adaptiveCap;
-
-        if (pixelCount >= 3840L * 2160L)
-        {
-            adaptiveCap = sourceFps >= 60 ? 45 : 30;
-        }
-        else if (pixelCount >= 2560L * 1440L)
-        {
-            adaptiveCap = sourceFps >= 60 ? 60 : 45;
-        }
-        else if (pixelCount >= 1920L * 1080L)
-        {
-            adaptiveCap = Math.Min(sourceFps, 60);
-        }
-        else
-        {
-            adaptiveCap = Math.Min(sourceFps, 90);
-        }
-
-        return Math.Clamp(adaptiveCap, 15, _previewPresentationFpsCap);
+        return Math.Max(1L, (long)Math.Round(1000.0 / sourceFps));
     }
 
-    private bool TryStartGpuPreview(MediaFrameSource colorSourceInfo)
-    {
-        if (!_preferGpuPreview)
-        {
-            Logger.Log("GPU preview path disabled via ELGATOCAPTURE_PREVIEW_USE_GPU.");
-            return false;
-        }
-
-        try
-        {
-            StopGpuPreview();
-
-            var mediaSource = MediaSource.CreateFromMediaFrameSource(colorSourceInfo);
-            _previewMediaPlayer = new MediaPlayer
-            {
-                RealTimePlayback = true,
-                IsMuted = true,
-                Source = mediaSource
-            };
-
-            PreviewPlayerElement.SetMediaPlayer(_previewMediaPlayer);
-            PreviewPlayerElement.Visibility = Visibility.Visible;
-            PreviewImage.Visibility = Visibility.Collapsed;
-            _previewMediaPlayer.Play();
-            var nowTick = Environment.TickCount64;
-            Interlocked.Exchange(ref _previewGpuStartTick, nowTick);
-            Interlocked.Exchange(ref _previewGpuLastProgressTick, nowTick);
-            Interlocked.Exchange(ref _previewGpuLastPositionMs, 0);
-            Logger.Log("Preview started on GPU path (MediaPlayerElement).");
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"GPU preview path unavailable: {ex.Message}. Falling back to frame-reader preview.");
-            StopGpuPreview();
-            return false;
-        }
-    }
-
-    private void StopGpuPreview()
-    {
-        try
-        {
-            if (_previewMediaPlayer != null)
-            {
-                _previewMediaPlayer.Pause();
-                _previewMediaPlayer.Source = null;
-                _previewMediaPlayer.Dispose();
-                _previewMediaPlayer = null;
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"GPU preview cleanup warning: {ex.Message}");
-        }
-        finally
-        {
-            PreviewPlayerElement.SetMediaPlayer(null);
-            PreviewPlayerElement.Visibility = Visibility.Collapsed;
-        }
-    }
+    private static bool IsHdrSubtype(string? subtype)
+        => MediaFormat.IsHdrPixelFormat(subtype);
 
     public MainWindow()
     {
@@ -250,14 +408,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             this,
             automationToken);
         _automationPipeServer = new NamedPipeAutomationServer(automationDispatcher, automationPipeName);
-        _previewCapOverrideProvided = TryGetIntFromEnv("ELGATOCAPTURE_PREVIEW_FPS_CAP", out var previewCapOverrideRaw);
-        _previewPresentationFpsCap = Math.Clamp(_previewCapOverrideProvided ? previewCapOverrideRaw : 120, 15, 120);
-        _previewActivePresentationFpsCap = Math.Clamp(60, 15, _previewPresentationFpsCap);
-        _previewMinPresentationIntervalMs = Math.Max(1, 1000 / _previewActivePresentationFpsCap);
+        _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
         _previewResizeDebounceMs = GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RESIZE_DEBOUNCE_MS", defaultValue: 250, minValue: 50, maxValue: 2000);
-        _preferGpuPreview = GetBoolFromEnv("ELGATOCAPTURE_PREVIEW_USE_GPU", defaultValue: true);
-        _forceFrameReaderDuringRecording = GetBoolFromEnv("ELGATOCAPTURE_FORCE_FRAME_READER_DURING_RECORDING", defaultValue: false);
-        _previewShutdownTimeoutMs = GetIntFromEnv("ELGATOCAPTURE_PREVIEW_SHUTDOWN_TIMEOUT_MS", defaultValue: 3000, minValue: 250, maxValue: 30000);
 
         // Set window handle for folder picker
         var hwnd = WindowNative.GetWindowHandle(this);
@@ -287,6 +439,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         // Subscribe to ViewModel changes
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
+        ViewModel.PreviewFrameReady += ViewModel_PreviewFrameReady;
 
         // Wire up UI controls to ViewModel
         SetupBindings();
@@ -309,57 +462,76 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         FormatComboBox.ItemsSource = ViewModel.AvailableRecordingFormats;
         QualityComboBox.ItemsSource = ViewModel.AvailableQualities;
 
+        ViewModel.Devices.CollectionChanged += (s, e) =>
+        {
+            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
+            {
+                return;
+            }
+
+            QueueDeviceSelectionSync();
+        };
+
+        ViewModel.AudioInputDevices.CollectionChanged += (s, e) =>
+        {
+            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
+            {
+                return;
+            }
+
+            QueueAudioSelectionSync();
+        };
+
+        ViewModel.AvailableResolutions.CollectionChanged += (s, e) =>
+        {
+            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
+            {
+                return;
+            }
+
+            QueueResolutionSelectionSync();
+        };
+
         // Subscribe to collection changes to sync SelectedItem after items are added
         ViewModel.AvailableFrameRates.CollectionChanged += (s, e) =>
         {
             // After items are added, sync the selected frame rate
             if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add ||
-                e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+                e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset ||
+                e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
             {
-                _dispatcherQueue.TryEnqueue(() =>
-                {
-                    if (ViewModel.SelectedFrameRate > 0 && ViewModel.AvailableFrameRates.Count > 0)
-                    {
-                        // Find matching item in the collection
-                        var matchingRate = ViewModel.AvailableFrameRates
-                            .FirstOrDefault(f => IsFrameRateMatch(f.Value, ViewModel.SelectedFrameRate));
-                        if (matchingRate != null)
-                        {
-                            FrameRateComboBox.SelectedItem = matchingRate;
-                        }
-                    }
-                });
+                QueueFrameRateSelectionSync();
             }
         };
 
         ViewModel.AvailableRecordingFormats.CollectionChanged += (s, e) =>
         {
             if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset)
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
             {
                 return;
             }
 
-            _dispatcherQueue.TryEnqueue(() =>
+            QueueFormatSelectionSync();
+        };
+
+        ViewModel.AvailableQualities.CollectionChanged += (s, e) =>
+        {
+            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
             {
-                if (ViewModel.AvailableRecordingFormats.Count == 0)
-                {
-                    return;
-                }
+                return;
+            }
 
-                var matchingFormat = ViewModel.AvailableRecordingFormats
-                    .FirstOrDefault(f => string.Equals(f, ViewModel.SelectedRecordingFormat, StringComparison.OrdinalIgnoreCase));
-
-                if (!string.IsNullOrWhiteSpace(matchingFormat))
-                {
-                    FormatComboBox.SelectedItem = matchingFormat;
-                    return;
-                }
-
-                var fallbackFormat = ViewModel.AvailableRecordingFormats[0];
-                FormatComboBox.SelectedItem = fallbackFormat;
-                ViewModel.SelectedRecordingFormat = fallbackFormat;
-            });
+            QueueQualitySelectionSync();
         };
 
         // Set initial values
@@ -381,20 +553,20 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         QualityComboBox.SelectedItem = ViewModel.SelectedQuality;
         CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
         CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
+        HdrToggle.IsOn = ViewModel.IsHdrEnabled;
+        HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
+        TrueHdrPreviewToggle.IsOn = ViewModel.IsTrueHdrPreviewEnabled;
+        TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
         UpdateAudioMeterLevel(ViewModel.AudioPeak);
         AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
-        HdrFpsHintTextBlock.Text = ViewModel.HdrResolutionSupportHint;
-        HdrFpsHintTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.HdrResolutionSupportHint)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
-        SourceTelemetryTextBlock.Text = ViewModel.SourceTelemetrySummaryText;
-        SourceTelemetryTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.SourceTelemetrySummaryText)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
-        TargetTelemetryTextBlock.Text = ViewModel.SourceTargetSummaryText;
-        TargetTelemetryTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.SourceTargetSummaryText)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        RefreshHdrHintText();
+        UpdateFpsTelemetryTooltip();
+        EnsureDeviceSelection();
+        EnsureAudioInputSelection();
+        EnsureResolutionSelection();
+        EnsureFrameRateSelection();
+        EnsureFormatSelection();
+        EnsureQualitySelection();
 
         // Wire up selection changes with loop prevention
         DeviceComboBox.SelectionChanged += (s, e) =>
@@ -460,6 +632,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         };
 
         HdrToggle.Toggled += (s, e) => ViewModel.IsHdrEnabled = HdrToggle.IsOn;
+        TrueHdrPreviewToggle.Toggled += (s, e) => ViewModel.IsTrueHdrPreviewEnabled = TrueHdrPreviewToggle.IsOn;
         AudioRecordToggle.Checked += (s, e) => ViewModel.IsAudioEnabled = true;
         AudioRecordToggle.Unchecked += (s, e) => ViewModel.IsAudioEnabled = false;
         AudioPreviewToggle.Checked += (s, e) => ViewModel.IsAudioPreviewEnabled = true;
@@ -541,6 +714,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             mainContent.SizeChanged -= MainWindow_SizeChanged;
         }
+
+        ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
+        ViewModel.PreviewFrameReady -= ViewModel_PreviewFrameReady;
 
         try
         {
@@ -730,57 +906,17 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var framesDisplayed = Interlocked.Read(ref _previewFramesDisplayed);
         var framesDropped = Interlocked.Read(ref _previewFramesDropped);
         var lastPresentedTick = Interlocked.Read(ref _previewLastPresentedTick);
-        var gpuActive = _previewMediaPlayer != null;
-        var frameReaderActive = _previewFrameReader != null;
-        var gpuStartTick = Interlocked.Read(ref _previewGpuStartTick);
-        var gpuLastProgressTick = Interlocked.Read(ref _previewGpuLastProgressTick);
-        var gpuLastPositionMs = Interlocked.Read(ref _previewGpuLastPositionMs);
-
-        if (gpuActive && _previewMediaPlayer?.PlaybackSession != null)
-        {
-            try
-            {
-                var positionMs = (long)_previewMediaPlayer.PlaybackSession.Position.TotalMilliseconds;
-                if (positionMs > gpuLastPositionMs)
-                {
-                    Interlocked.Exchange(ref _previewGpuLastPositionMs, positionMs);
-                    Interlocked.Exchange(ref _previewGpuLastProgressTick, nowTick);
-                    gpuLastPositionMs = positionMs;
-                    gpuLastProgressTick = nowTick;
-                }
-            }
-            catch
-            {
-                // Best-effort diagnostics only.
-            }
-        }
-
-        var rendererMode = gpuActive
-            ? "GpuMediaPlayer"
-            : frameReaderActive
-                ? "FrameReader"
-                : "None";
-
-        var frameReaderBlank = ViewModel.IsPreviewing &&
-                               frameReaderActive &&
-                               framesArrived > 30 &&
-                               framesDisplayed == 0;
-        var gpuBlank = ViewModel.IsPreviewing &&
-                       gpuActive &&
-                       gpuStartTick > 0 &&
-                       nowTick - gpuStartTick > 5000 &&
-                       gpuLastPositionMs <= 0;
-        var blankSuspected = frameReaderBlank || gpuBlank;
-
-        var frameReaderStall = ViewModel.IsPreviewing &&
-                               frameReaderActive &&
-                               lastPresentedTick > 0 &&
-                               nowTick - lastPresentedTick > 3000;
-        var gpuStall = ViewModel.IsPreviewing &&
-                       gpuActive &&
-                       gpuLastProgressTick > 0 &&
-                       nowTick - gpuLastProgressTick > 4000;
-        var stallSuspected = frameReaderStall || gpuStall;
+        var gpuActive = ViewModel.IsPreviewing && ViewModel.PreviewGpuActive;
+        var frameReaderActive = ViewModel.IsPreviewing && !gpuActive;
+        var rendererMode = ViewModel.IsPreviewing
+            ? (gpuActive ? (ViewModel.PreviewRendererMode.Length > 0 ? ViewModel.PreviewRendererMode : "MediaPlayerElement") : "DirectShowRawPipe")
+            : "None";
+        var blankSuspected = frameReaderActive &&
+                             framesArrived > 30 &&
+                             framesDisplayed == 0;
+        var stallSuspected = frameReaderActive &&
+                             lastPresentedTick > 0 &&
+                             nowTick - lastPresentedTick > 3000;
         var cadence = GetPreviewCadenceMetrics(_previewMinPresentationIntervalMs);
 
         return new PreviewRuntimeSnapshot
@@ -790,9 +926,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             GpuActive = gpuActive,
             FrameReaderActive = frameReaderActive,
             PlaceholderVisible = !ViewModel.IsPreviewing,
-            FramesArrived = framesArrived,
-            FramesDisplayed = framesDisplayed,
-            FramesDropped = framesDropped,
+            FramesArrived = gpuActive ? 0 : framesArrived,
+            FramesDisplayed = gpuActive ? 0 : framesDisplayed,
+            FramesDropped = gpuActive ? 0 : framesDropped,
             DisplayCadenceSampleCount = cadence.SampleCount,
             DisplayCadenceObservedFps = cadence.ObservedFps,
             DisplayCadenceExpectedIntervalMs = cadence.ExpectedIntervalMs,
@@ -865,278 +1001,98 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         static string OnOff(bool value) => value ? "On" : "Off";
         static string YesNo(bool value) => value ? "Yes" : "No";
-        static string DescribeMismatch(string mismatch)
-        {
-            if (string.IsNullOrWhiteSpace(mismatch))
-            {
-                return "Unknown verification issue.";
-            }
-
-            return mismatch switch
-            {
-                var m when m.StartsWith("codec-mismatch", StringComparison.OrdinalIgnoreCase)
-                    => "Codec did not match the selected recording format.",
-                var m when m.StartsWith("container-mismatch", StringComparison.OrdinalIgnoreCase)
-                    => "Container did not match expected output format.",
-                var m when m.StartsWith("resolution-mismatch", StringComparison.OrdinalIgnoreCase)
-                    => "Output resolution did not match requested resolution.",
-                var m when m.StartsWith("fps-mismatch", StringComparison.OrdinalIgnoreCase)
-                    => "Output frame rate did not match requested frame rate.",
-                var m when m.StartsWith("pixfmt-not-10bit", StringComparison.OrdinalIgnoreCase)
-                    => "HDR expected 10-bit output, but output pixel format was not 10-bit.",
-                var m when m.StartsWith("colorimetry-mismatch", StringComparison.OrdinalIgnoreCase)
-                    => "HDR color metadata did not match expected BT.2020/PQ values.",
-                var m when m.StartsWith("hdr-metadata-missing", StringComparison.OrdinalIgnoreCase)
-                    => "HDR mastering metadata was expected but missing.",
-                var m when m.StartsWith("cadence-drop-high", StringComparison.OrdinalIgnoreCase)
-                    => "Output cadence suggests dropped frames were too high.",
-                var m when m.StartsWith("cadence-gaps-high", StringComparison.OrdinalIgnoreCase)
-                    => "Output cadence has too many severe frame-time gaps.",
-                var m when m.StartsWith("cadence-p95-high", StringComparison.OrdinalIgnoreCase)
-                    => "Output frame pacing p95 latency is too high.",
-                var m when m.StartsWith("ffprobe-failed", StringComparison.OrdinalIgnoreCase)
-                    => "ffprobe analysis failed or timed out.",
-                var m when m.StartsWith("output-not-found", StringComparison.OrdinalIgnoreCase)
-                    => "Output file was not found for verification.",
-                var m when m.StartsWith("output-empty", StringComparison.OrdinalIgnoreCase)
-                    => "Output file is empty.",
-                _ => mismatch
-            };
-        }
-
-        DiagSessionTextBlock.Text =
-            $"State: {snapshot.SessionState}{Environment.NewLine}" +
-            $"Preview: {OnOff(snapshot.IsPreviewing)} | Recording: {OnOff(snapshot.IsRecording)}{Environment.NewLine}" +
-            $"Performance: {snapshot.PerformanceScore:0.##} ({(snapshot.PerformancePerfectionMet ? "Perfect" : "Tune")})";
-
-        DiagDeviceTextBlock.Text =
-            $"Video Device: {snapshot.SelectedDeviceName ?? "(none)"}{Environment.NewLine}" +
-            $"Audio Device: {snapshot.SelectedAudioInputDeviceName ?? "(default)"}";
-
         var requestedFrameRateText = snapshot.RequestedFrameRateArg
             ?? snapshot.RequestedFrameRate?.ToString("0.###")
             ?? "?";
-        var actualFrameRateText = snapshot.NegotiatedFrameRateArg
+        var negotiatedFrameRateText = snapshot.NegotiatedFrameRateArg
             ?? snapshot.ActualFrameRateArg
             ?? snapshot.NegotiatedFrameRate?.ToString("0.###")
             ?? snapshot.ActualFrameRate?.ToString("0.###")
             ?? "?";
-        var requestedFormatText = snapshot.RequestedReaderSubtype
-            ?? snapshot.RequestedPixelFormat
-            ?? "(unknown)";
-        var negotiatedFormatText = snapshot.ReaderSourceSubtype
-            ?? snapshot.NegotiatedPixelFormat
-            ?? "(unknown)";
-        var observedFormatText = snapshot.LatestObservedFramePixelFormat
-            ?? snapshot.FirstObservedFramePixelFormat
-            ?? "(unknown)";
-        var observedCountsText =
-            $"P010={snapshot.ObservedP010FrameCount}, NV12={snapshot.ObservedNv12FrameCount}, Other={snapshot.ObservedOtherFrameCount}";
-        var sourceFrameRateText = snapshot.DetectedSourceFrameRateArg
-            ?? snapshot.DetectedSourceFrameRate?.ToString("0.###")
-            ?? "?";
-        var sourceResolutionText = snapshot.SourceWidth.HasValue && snapshot.SourceHeight.HasValue
-            ? $"{snapshot.SourceWidth}x{snapshot.SourceHeight}"
-            : "?x?";
-        var sourceHdrText = snapshot.SourceIsHdr.HasValue
-            ? (snapshot.SourceIsHdr.Value ? "HDR" : "SDR")
-            : "HDR?";
+        var captureHealth = snapshot.PreviewBlankSuspected || snapshot.PreviewStalled
+            ? "Attention"
+            : "Healthy";
+        var hdrVerdict = snapshot.HdrTruthVerdict?.FinalClassification ?? "Inconclusive";
+        var mismatchSummary = snapshot.LastVerification?.Mismatches.Count > 0
+            ? string.Join(", ", snapshot.LastVerification.Mismatches.Take(3))
+            : "(none)";
 
-        static string NormalizeFormatToken(string? text)
-        {
-            if (string.IsNullOrWhiteSpace(text))
-            {
-                return string.Empty;
-            }
+        DiagHeaderSummaryTextBlock.Text =
+            $"State: {snapshot.SessionState} | Preview: {OnOff(snapshot.IsPreviewing)} | Recording: {OnOff(snapshot.IsRecording)} | Health: {captureHealth}";
 
-            var value = text.Trim();
-            if (value.Contains("P010", StringComparison.OrdinalIgnoreCase))
-            {
-                return "P010";
-            }
-            if (value.Contains("NV12", StringComparison.OrdinalIgnoreCase))
-            {
-                return "NV12";
-            }
-            if (value.Contains("YUY2", StringComparison.OrdinalIgnoreCase))
-            {
-                return "YUY2";
-            }
+        DiagSessionTextBlock.Text =
+            $"Performance score: {snapshot.PerformanceScore:0.##} ({(snapshot.PerformancePerfectionMet ? "Within target" : "Needs tuning")}){Environment.NewLine}" +
+            $"Telemetry: {snapshot.SourceTelemetryAvailability}/{snapshot.SourceTelemetryConfidence} ({snapshot.SourceTelemetryOriginDetail})";
 
-            return value.ToUpperInvariant();
-        }
-
-        var negotiatedToken = NormalizeFormatToken(negotiatedFormatText);
-        var observedToken = NormalizeFormatToken(observedFormatText);
-        var observedFrameCount = snapshot.ObservedP010FrameCount +
-                                 snapshot.ObservedNv12FrameCount +
-                                 snapshot.ObservedOtherFrameCount;
-        var hasObservedToken = !string.IsNullOrWhiteSpace(observedToken) &&
-                               !string.Equals(observedToken, "(UNKNOWN)", StringComparison.OrdinalIgnoreCase);
-        var hasObservedEvidence = observedFrameCount > 0 || hasObservedToken;
-        var formatMismatch = hasObservedEvidence &&
-                             !string.IsNullOrWhiteSpace(negotiatedToken) &&
-                             !string.IsNullOrWhiteSpace(observedToken) &&
-                             !string.Equals(negotiatedToken, observedToken, StringComparison.OrdinalIgnoreCase);
-        var hdrExpected = snapshot.IsHdrEnabled || snapshot.HdrOutputActive || snapshot.RequestedHdrEnabled == true;
-        var hdrObserved10Bit = string.Equals(observedToken, "P010", StringComparison.OrdinalIgnoreCase) ||
-                               snapshot.ObservedP010FrameCount > 0;
-        var hdrMismatch = hdrExpected && hasObservedEvidence && !hdrObserved10Bit;
-        var mismatchStatusText = (formatMismatch, hdrMismatch) switch
-        {
-            (true, true) => "Format mismatch and HDR mismatch",
-            (true, false) => "Format mismatch",
-            (false, true) => "HDR mismatch (expected 10-bit)",
-            _ => "Healthy"
-        };
-        string captureStatus;
-        if (!snapshot.IsPreviewing && !snapshot.IsRecording)
-        {
-            captureStatus = "Idle";
-        }
-        else if (!hasObservedEvidence)
-        {
-            captureStatus = snapshot.IsPreviewing
-                ? "Waiting for preview frames"
-                : snapshot.IsRecording
-                    ? "Waiting for capture frames"
-                    : "Idle";
-        }
-        else
-        {
-            captureStatus = mismatchStatusText;
-        }
+        DiagDeviceTextBlock.Text =
+            $"Video: {snapshot.SelectedDeviceName ?? "(none)"}{Environment.NewLine}" +
+            $"Audio input: {snapshot.SelectedAudioInputDeviceName ?? "(default)"}";
 
         DiagCaptureTextBlock.Text =
-            $"Requested: {snapshot.RequestedWidth?.ToString() ?? "?"}x{snapshot.RequestedHeight?.ToString() ?? "?"} @ {requestedFrameRateText} ({snapshot.RequestedFrameRate?.ToString("0.###") ?? "?"} fps), fmt={requestedFormatText}{Environment.NewLine}" +
-            $"Negotiated: {snapshot.NegotiatedWidth?.ToString() ?? snapshot.ActualWidth?.ToString() ?? "?"}x{snapshot.NegotiatedHeight?.ToString() ?? snapshot.ActualHeight?.ToString() ?? "?"} @ {actualFrameRateText} ({snapshot.NegotiatedFrameRate?.ToString("0.###") ?? snapshot.ActualFrameRate?.ToString("0.###") ?? "?"} fps), fmt={negotiatedFormatText}{Environment.NewLine}" +
-            $"Observed: fmt={observedFormatText} | {observedCountsText}{Environment.NewLine}" +
-            $"Source: {sourceResolutionText} @ {sourceFrameRateText} | {sourceHdrText} | {snapshot.SourceTelemetryAvailability}/{snapshot.SourceTelemetryConfidence} ({snapshot.SourceTelemetryOriginDetail}){Environment.NewLine}" +
-            $"Telemetry: backend={snapshot.SourceTelemetryBackend}, circuit={snapshot.SourceTelemetryCircuitState}, suppressed={YesNo(snapshot.SourceTelemetrySuppressed)}{(string.IsNullOrWhiteSpace(snapshot.SourceTelemetrySuppressedReason) ? string.Empty : $" ({snapshot.SourceTelemetrySuppressedReason})")}{Environment.NewLine}" +
-            $"Status: {captureStatus}";
+            $"Mode: {snapshot.NegotiatedWidth?.ToString() ?? snapshot.ActualWidth?.ToString() ?? "?"}x{snapshot.NegotiatedHeight?.ToString() ?? snapshot.ActualHeight?.ToString() ?? "?"} @ {negotiatedFrameRateText} fps{Environment.NewLine}" +
+            $"Requested: {snapshot.RequestedWidth?.ToString() ?? "?"}x{snapshot.RequestedHeight?.ToString() ?? "?"} @ {requestedFrameRateText} fps{Environment.NewLine}" +
+            $"HDR verdict: {hdrVerdict}";
+
+        DiagCaptureAdvancedTextBlock.Text =
+            $"Compact mode enabled. Advanced capture internals are hidden by default.{Environment.NewLine}" +
+            $"Observed formats: P010={snapshot.ObservedP010FrameCount}, NV12={snapshot.ObservedNv12FrameCount}, Other={snapshot.ObservedOtherFrameCount}";
 
         DiagAudioTextBlock.Text =
-            $"Capture Audio: {OnOff(snapshot.IsAudioEnabled)} | Preview Audio: {OnOff(snapshot.IsAudioPreviewEnabled)}{Environment.NewLine}" +
-            $"Signal: {YesNo(snapshot.AudioSignalPresent)} | Muted Suspected: {YesNo(snapshot.AudioMutedSuspected)} | Peak: {snapshot.AudioPeak:0.000}{Environment.NewLine}" +
-            $"Drops: Realtime={snapshot.AudioQueueDropsRealtime} | FileWriter={snapshot.AudioQueueDropsFileWriter}";
+            $"Capture audio: {OnOff(snapshot.IsAudioEnabled)} | Preview audio: {OnOff(snapshot.IsAudioPreviewEnabled)}{Environment.NewLine}" +
+            $"Signal present: {YesNo(snapshot.AudioSignalPresent)} | Peak: {snapshot.AudioPeak:0.000} | Clip: {YesNo(snapshot.AudioClipping)}";
 
         DiagPreviewTextBlock.Text =
             $"Renderer: {snapshot.PreviewRendererMode}{Environment.NewLine}" +
-            $"Frames: Arrived={snapshot.PreviewFramesArrived}, Displayed={snapshot.PreviewFramesDisplayed}, Dropped={snapshot.PreviewFramesDropped}{Environment.NewLine}" +
-            $"Health: Blank={YesNo(snapshot.PreviewBlankSuspected)} | Stall={YesNo(snapshot.PreviewStalled)} | " +
-            $"Cadence avg/p95={snapshot.PreviewCadenceAverageIntervalMs:0.##}/{snapshot.PreviewCadenceP95IntervalMs:0.##} ms | Slow={snapshot.PreviewCadenceSlowFramePercent:0.##}%";
+            $"Frames: in={snapshot.PreviewFramesArrived}, shown={snapshot.PreviewFramesDisplayed}, dropped={snapshot.PreviewFramesDropped}{Environment.NewLine}" +
+            $"Cadence: p95={snapshot.PreviewCadenceP95IntervalMs:0.##} ms, slow={snapshot.PreviewCadenceSlowFramePercent:0.##}%";
 
         DiagRecordingTextBlock.Text =
-            $"Backend: {snapshot.RecordingBackend} | Audio Path: {snapshot.AudioPathMode}{Environment.NewLine}" +
-            $"Growing: {YesNo(snapshot.RecordingFileGrowing)} | Bytes: {snapshot.RecordingTotalBytes}{Environment.NewLine}" +
-            $"Mux: {snapshot.MuxResult} | Capture Drop: {snapshot.CaptureCadenceEstimatedDropPercent:0.##}% | p95={snapshot.CaptureCadenceP95IntervalMs:0.##} ms";
+            $"Backend: {snapshot.RecordingBackend} | Audio path: {snapshot.AudioPathMode}{Environment.NewLine}" +
+            $"File growth: {YesNo(snapshot.RecordingFileGrowing)} | Bytes: {snapshot.RecordingTotalBytes}{Environment.NewLine}" +
+            $"Finalize: {snapshot.LastFinalizeStatus}";
 
         DiagOutputTextBlock.Text =
-            $"Finalize: {snapshot.LastFinalizeStatus}{Environment.NewLine}" +
             $"Output: {snapshot.LastOutputPath ?? "(none)"}{Environment.NewLine}" +
-            $"Perf Summary: {snapshot.PerformanceSummary}";
+            $"Perf summary: {snapshot.PerformanceSummary}";
 
-        if (snapshot.IsRecording)
+        if (snapshot.VerificationInProgress)
         {
-            if (snapshot.LastVerification is { } lastVerification)
-            {
-                DiagVerificationTextBlock.Text =
-                    $"Verification: waiting for recording to stop{Environment.NewLine}" +
-                    $"Last result: {(lastVerification.Succeeded ? "PASS" : "FAIL")} ({lastVerification.VerificationMode})";
-            }
-            else
-            {
-                DiagVerificationTextBlock.Text = "Verification: waiting for recording to stop";
-            }
-        }
-        else if (snapshot.VerificationInProgress)
-        {
-            DiagVerificationTextBlock.Text = "Verification: in progress (analyzing recording...)";
-        }
-        else if (snapshot.LastVerification == null)
-        {
-            var waitingForAutoVerify = !string.IsNullOrWhiteSpace(snapshot.LastOutputPath) &&
-                                       !string.Equals(snapshot.LastFinalizeStatus, "None", StringComparison.OrdinalIgnoreCase);
-            DiagVerificationTextBlock.Text = waitingForAutoVerify
-                ? "Verification: waiting to analyze recording..."
-                : "Verification: not run yet";
-        }
-        else
-        {
-            var verification = snapshot.LastVerification;
-            var cadenceSuffix = verification.CadenceSampleCount.HasValue
-                ? $"{Environment.NewLine}Cadence: drop={verification.CadenceEstimatedDropPercent.GetValueOrDefault():0.##}% | " +
-                  $"p95={verification.CadenceP95IntervalMs.GetValueOrDefault():0.##} ms"
-                : string.Empty;
-            var mediaSummary =
-                $"{verification.DetectedVideoCodec ?? "?"}, {verification.DetectedPixelFormat ?? "?"}, " +
-                $"{verification.DetectedWidth?.ToString() ?? "?"}x{verification.DetectedHeight?.ToString() ?? "?"} @ {verification.DetectedFrameRate?.ToString("0.###") ?? "?"} fps";
-            var mismatchReasons = verification.Mismatches
-                .Take(3)
-                .Select(DescribeMismatch)
-                .ToList();
-            var mismatchSuffix = verification.Mismatches.Count > mismatchReasons.Count
-                ? $" (+{verification.Mismatches.Count - mismatchReasons.Count} more)"
-                : string.Empty;
-            var reasonText = verification.Succeeded
-                ? "All strict checks passed."
-                : mismatchReasons.Count > 0
-                    ? $"{string.Join(" | ", mismatchReasons)}{mismatchSuffix}"
-                    : verification.Message;
-            var primaryMismatchText = verification.Succeeded || string.IsNullOrWhiteSpace(verification.PrimaryMismatchCode)
-                ? string.Empty
-                : $"{Environment.NewLine}Primary: {verification.PrimaryMismatchCode}" +
-                  $"{(string.IsNullOrWhiteSpace(verification.PrimaryMismatchExpected) ? string.Empty : $" | expected={verification.PrimaryMismatchExpected}")}" +
-                  $"{(string.IsNullOrWhiteSpace(verification.PrimaryMismatchActual) ? string.Empty : $" | actual={verification.PrimaryMismatchActual}")}";
-            DiagVerificationTextBlock.Text =
-                $"Verification: {(verification.Succeeded ? "PASS" : "FAIL")} ({verification.VerificationMode}){Environment.NewLine}" +
-                $"Reason: {reasonText}{primaryMismatchText}{Environment.NewLine}" +
-                $"Media: {mediaSummary}{cadenceSuffix}";
+            DiagVerificationTextBlock.Text = "Verification: running";
+            DiagVerificationAdvancedTextBlock.Text = "Waiting for ffprobe result.";
+            return;
         }
 
-        var events = _automationDiagnosticsHub.GetRecentEvents(6);
-        DiagEventsListView.ItemsSource = events
-            .Select(evt => $"{evt.TimestampUtc:HH:mm:ss} [{evt.Severity}] {evt.Category}: {evt.Message}")
-            .ToList();
+        if (snapshot.LastVerification == null)
+        {
+            DiagVerificationTextBlock.Text = "Verification: not run";
+            DiagVerificationAdvancedTextBlock.Text = "No verification result yet.";
+            return;
+        }
+
+        var verification = snapshot.LastVerification;
+        DiagVerificationTextBlock.Text =
+            $"Verification: {(verification.Succeeded ? "PASS" : "FAIL")} ({verification.VerificationMode}){Environment.NewLine}" +
+            $"{verification.Message}";
+        DiagVerificationAdvancedTextBlock.Text =
+            $"Mismatch codes: {mismatchSummary}{Environment.NewLine}" +
+            $"Primary: {verification.PrimaryMismatchCode ?? "(none)"}";
     }
 
     private void StopPreviewForShutdown()
     {
-        StopGpuPreview();
-
-        if (_previewFrameReader != null)
-        {
-            try
-            {
-                _previewFrameReader.FrameArrived -= PreviewFrameReader_FrameArrived;
-                var stopTask = _previewFrameReader.StopAsync().AsTask();
-                var completed = Task.WhenAny(stopTask, Task.Delay(_previewShutdownTimeoutMs)).GetAwaiter().GetResult();
-                if (completed != stopTask)
-                {
-                    Logger.Log($"Frame reader stop during shutdown timed out after {_previewShutdownTimeoutMs} ms.");
-                }
-                else
-                {
-                    stopTask.GetAwaiter().GetResult();
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Frame reader stop during shutdown failed: {ex.Message}");
-            }
-            finally
-            {
-                _previewFrameReader.Dispose();
-                _previewFrameReader = null;
-            }
-        }
-
         PreviewImage.Source = null;
         PreviewImage.Visibility = Visibility.Collapsed;
+        try
+        {
+            PreviewPlayerElement.MediaPlayer?.Pause();
+        }
+        catch
+        {
+            // Best effort only.
+        }
+        PreviewPlayerElement.Source = null;
+        PreviewPlayerElement.Visibility = Visibility.Collapsed;
         _previewSource = null;
-        _previewGpuStartTick = 0;
-        _previewGpuLastProgressTick = 0;
-        _previewGpuLastPositionMs = 0;
         ResetPreviewCadenceTracking();
     }
 
@@ -1156,16 +1112,29 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 {
                     FadeOutElement(NoDevicePlaceholder);
                     PreviewLoadingOverlay.Visibility = Visibility.Visible;
-                    await StartPreviewInternalAsync();
+                    await StartPreviewRendererAsync();
                     PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
                     PreviewButton.Content = "Stop Preview";
+                    TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
                 }
                 else
                 {
                     PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
-                    await StopPreviewInternalAsync();
+                    await StopPreviewRendererAsync();
                     FadeInElement(NoDevicePlaceholder);
                     PreviewButton.Content = "Start Preview";
+                    TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
+                }
+                break;
+
+            case nameof(MainViewModel.PreviewGpuActive):
+            case nameof(MainViewModel.PreviewPlaybackSource):
+            case nameof(MainViewModel.PreviewRendererMode):
+                if (ViewModel.IsPreviewing)
+                {
+                    // Preview can transition between CPU/GPU renderers once the capture backend has negotiated formats.
+                    // Re-evaluate the renderer selection without toggling preview state (no placeholder blink).
+                    await StartPreviewRendererAsync();
                 }
                 break;
 
@@ -1177,6 +1146,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 AudioRecordToggle.IsEnabled = !ViewModel.IsRecording;
                 CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+                HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
+                TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
+                RefreshHdrHintText();
                 if (ViewModel.IsRecording)
                     RecPulseStoryboard.Begin();
                 else
@@ -1231,88 +1203,80 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 Logger.Log($"  ViewModel.Devices count: {ViewModel.Devices.Count}");
                 Logger.Log($"  DeviceComboBox.Items count: {DeviceComboBox.Items.Count}");
                 Logger.Log($"  DeviceComboBox.SelectedItem: {((ElgatoCapture.Models.CaptureDevice?)DeviceComboBox.SelectedItem)?.Name ?? "NULL"}");
-
-                if (DeviceComboBox.SelectedItem != ViewModel.SelectedDevice)
-                {
-                    Logger.Log($"  Setting DeviceComboBox.SelectedItem to: {ViewModel.SelectedDevice?.Name ?? "NULL"}");
-
-                    // Dispatch to UI thread to ensure ComboBox has processed collection changes
-                    _dispatcherQueue.TryEnqueue(() =>
-                    {
-                        if (DeviceComboBox.SelectedItem != ViewModel.SelectedDevice)
-                        {
-                            DeviceComboBox.SelectedItem = ViewModel.SelectedDevice;
-                            Logger.Log($"  After dispatch - DeviceComboBox.SelectedItem: {((ElgatoCapture.Models.CaptureDevice?)DeviceComboBox.SelectedItem)?.Name ?? "NULL"}");
-                        }
-                    });
-                }
-                else
-                {
-                    Logger.Log("  Already equal, skipping update");
-                }
+                EnsureDeviceSelection();
                 break;
 
             case nameof(MainViewModel.SelectedResolution):
-                if (ResolutionComboBox.SelectedItem is not ResolutionOption selectedResolutionOption ||
-                    !string.Equals(selectedResolutionOption.Value, ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase))
-                {
-                    var matchingResolution = ViewModel.AvailableResolutions.FirstOrDefault(option =>
-                        string.Equals(option.Value, ViewModel.SelectedResolution, StringComparison.OrdinalIgnoreCase));
-                    ResolutionComboBox.SelectedItem = matchingResolution;
-                }
+                EnsureResolutionSelection();
                 break;
 
             case nameof(MainViewModel.SelectedFrameRate):
-                // Sync is handled by CollectionChanged subscription in SetupBindings
-                // This handles cases where SelectedFrameRate changes without collection changing
-                if (ViewModel.SelectedFrameRate > 0 && FrameRateComboBox.Items.Count > 0)
-                {
-                    var matchingRate = ViewModel.AvailableFrameRates
-                        .FirstOrDefault(f => IsFrameRateMatch(f.Value, ViewModel.SelectedFrameRate));
-                    if (matchingRate != null &&
-                        (FrameRateComboBox.SelectedItem is not FrameRateOption currentFps ||
-                         !IsFrameRateMatch(currentFps.Value, matchingRate.Value)))
-                    {
-                        FrameRateComboBox.SelectedItem = matchingRate;
-                    }
-                }
+                EnsureFrameRateSelection();
                 break;
 
             case nameof(MainViewModel.AvailableResolutions):
                 ResolutionComboBox.ItemsSource = ViewModel.AvailableResolutions;
+                EnsureResolutionSelection();
                 break;
 
             case nameof(MainViewModel.AvailableFrameRates):
                 FrameRateComboBox.ItemsSource = ViewModel.AvailableFrameRates;
+                EnsureFrameRateSelection();
                 break;
 
             case nameof(MainViewModel.IsHdrAvailable):
-                HdrToggle.IsEnabled = ViewModel.IsHdrAvailable;
+                HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
+                break;
+
+            case nameof(MainViewModel.IsHdrEnabled):
+                if (HdrToggle.IsOn != ViewModel.IsHdrEnabled)
+                {
+                    HdrToggle.IsOn = ViewModel.IsHdrEnabled;
+                }
+                break;
+
+            case nameof(MainViewModel.IsTrueHdrPreviewEnabled):
+                if (TrueHdrPreviewToggle.IsOn != ViewModel.IsTrueHdrPreviewEnabled)
+                {
+                    TrueHdrPreviewToggle.IsOn = ViewModel.IsTrueHdrPreviewEnabled;
+                }
                 break;
 
             case nameof(MainViewModel.HdrResolutionSupportHint):
-                HdrFpsHintTextBlock.Text = ViewModel.HdrResolutionSupportHint;
-                HdrFpsHintTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.HdrResolutionSupportHint)
-                    ? Visibility.Collapsed
-                    : Visibility.Visible;
+            case nameof(MainViewModel.HdrReadinessReason):
+            case nameof(MainViewModel.HdrRuntimeState):
+                RefreshHdrHintText();
+                if (string.Equals(ViewModel.HdrRuntimeState, "Degraded", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(ViewModel.HdrRuntimeState, "Violation", StringComparison.OrdinalIgnoreCase))
+                {
+                    var notificationKey = $"{ViewModel.HdrRuntimeState}:{ViewModel.HdrReadinessReason}";
+                    if (!string.Equals(notificationKey, _lastHdrRuntimeStateNotification, StringComparison.Ordinal))
+                    {
+                        _lastHdrRuntimeStateNotification = notificationKey;
+                        ShowStatusNotification(
+                            string.IsNullOrWhiteSpace(ViewModel.HdrReadinessReason)
+                                ? "HDR pipeline contract was violated."
+                                : $"HDR issue: {ViewModel.HdrReadinessReason}",
+                            InfoBarSeverity.Warning);
+                    }
+                }
                 break;
 
             case nameof(MainViewModel.SourceTelemetrySummaryText):
-                SourceTelemetryTextBlock.Text = ViewModel.SourceTelemetrySummaryText;
-                SourceTelemetryTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.SourceTelemetrySummaryText)
-                    ? Visibility.Collapsed
-                    : Visibility.Visible;
-                break;
-
             case nameof(MainViewModel.SourceTargetSummaryText):
-                TargetTelemetryTextBlock.Text = ViewModel.SourceTargetSummaryText;
-                TargetTelemetryTextBlock.Visibility = string.IsNullOrWhiteSpace(ViewModel.SourceTargetSummaryText)
-                    ? Visibility.Collapsed
-                    : Visibility.Visible;
+                UpdateFpsTelemetryTooltip();
                 break;
 
             case nameof(MainViewModel.IsCustomBitrateVisible):
                 CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
+                break;
+
+            case nameof(MainViewModel.CustomBitrateMbps):
+                if (double.IsNaN(CustomBitrateNumberBox.Value) ||
+                    Math.Abs(CustomBitrateNumberBox.Value - ViewModel.CustomBitrateMbps) > 0.01)
+                {
+                    CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
+                }
                 break;
 
             case nameof(MainViewModel.IsCustomAudioInputEnabled):
@@ -1327,17 +1291,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 break;
 
             case nameof(MainViewModel.SelectedAudioInputDevice):
-                if (AudioInputComboBox.SelectedItem != ViewModel.SelectedAudioInputDevice)
-                {
-                    AudioInputComboBox.SelectedItem = ViewModel.SelectedAudioInputDevice;
-                }
+                EnsureAudioInputSelection();
                 break;
 
             case nameof(MainViewModel.SelectedRecordingFormat):
-                if (FormatComboBox.SelectedItem as string != ViewModel.SelectedRecordingFormat)
-                {
-                    FormatComboBox.SelectedItem = ViewModel.SelectedRecordingFormat;
-                }
+                EnsureFormatSelection();
+                break;
+
+            case nameof(MainViewModel.SelectedQuality):
+                EnsureQualitySelection();
                 break;
 
             case nameof(MainViewModel.IsAudioEnabled):
@@ -1359,6 +1321,36 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 }
                 break;
         }
+    }
+
+    private void RefreshHdrHintText()
+    {
+        var resolutionHint = ViewModel.HdrResolutionSupportHint?.Trim();
+        var readinessHint = ViewModel.HdrReadinessReason?.Trim();
+        var combinedHint = string.IsNullOrWhiteSpace(readinessHint)
+            ? resolutionHint
+            : string.IsNullOrWhiteSpace(resolutionHint)
+                ? readinessHint
+                : $"{readinessHint}{Environment.NewLine}{resolutionHint}";
+        if (ViewModel.IsRecording)
+        {
+            combinedHint = string.IsNullOrWhiteSpace(combinedHint)
+                ? "Stop recording before switching between HDR and SDR pipelines."
+                : $"{combinedHint}{Environment.NewLine}Stop recording before switching between HDR and SDR pipelines.";
+        }
+        ToolTipService.SetToolTip(HdrToggle,
+            string.IsNullOrWhiteSpace(combinedHint) ? null : combinedHint);
+    }
+
+    private void UpdateFpsTelemetryTooltip()
+    {
+        var parts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(ViewModel.SourceTelemetrySummaryText))
+            parts.Add(ViewModel.SourceTelemetrySummaryText);
+        if (!string.IsNullOrWhiteSpace(ViewModel.SourceTargetSummaryText))
+            parts.Add(ViewModel.SourceTargetSummaryText);
+        ToolTipService.SetToolTip(FrameRateComboBox,
+            parts.Count > 0 ? string.Join(Environment.NewLine, parts) : null);
     }
 
     private Task InvokeOnUiThreadAsync(Action action, CancellationToken cancellationToken = default)
@@ -1577,257 +1569,78 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
     }
 
-    private async Task StartPreviewInternalAsync(bool forceFrameReader = false)
+    private Task StartPreviewRendererAsync()
     {
-        Logger.Log("=== START PREVIEW BEGIN ===");
+        _previewFramesArrived = 0;
+        _previewFramesDisplayed = 0;
+        _previewFramesDropped = 0;
+        _previewLastLogTick = 0;
+        _previewLastResizeLogTick = 0;
+        _previewLastPresentedTick = 0;
+        _previewResizeSuppressUntilTick = 0;
+        _previewUiInFlight = 0;
+        ResetPreviewCadenceTracking();
+        _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
 
-        if (ViewModel.MediaCapture == null)
+        if (ViewModel.PreviewGpuActive && ViewModel.PreviewPlaybackSource != null)
         {
-            Logger.Log("ERROR: MediaCapture is NULL!");
-            ViewModel.StatusText = "Preview failed: MediaCapture not initialized";
-            return;
-        }
-
-        Logger.Log($"MediaCapture state: {ViewModel.MediaCapture}");
-
-        try
-        {
-            StopGpuPreview();
-            _previewSource = null;
-            PreviewImage.Source = null;
-            PreviewImage.Visibility = Visibility.Collapsed;
-            _previewFramesArrived = 0;
-            _previewFramesDisplayed = 0;
-            _previewFramesDropped = 0;
-            _previewLastLogTick = 0;
-            _previewLastResizeLogTick = 0;
-            _previewLastPresentedTick = 0;
-            _previewResizeSuppressUntilTick = 0;
-            _previewGpuStartTick = 0;
-            _previewGpuLastProgressTick = 0;
-            _previewGpuLastPositionMs = 0;
-            _previewUiInFlight = 0;
-            ResetPreviewCadenceTracking();
-            Logger.Log($"Preview presentation cap max: {_previewPresentationFpsCap} fps (override={_previewCapOverrideProvided})");
-            Logger.Log($"Preview resize debounce: {_previewResizeDebounceMs} ms");
-            Logger.Log($"Preview mode: {(forceFrameReader ? "Frame-reader forced" : (_preferGpuPreview ? "GPU-first" : "Frame-reader only"))}");
-
-            // Find the video preview stream
-            Logger.Log("Finding frame source groups...");
-            var frameSourceGroups = await Windows.Media.Capture.Frames.MediaFrameSourceGroup.FindAllAsync();
-            Logger.Log($"Found {frameSourceGroups.Count} frame source groups");
-
-            Logger.Log($"MediaCapture.FrameSources count: {ViewModel.MediaCapture.FrameSources.Count}");
-
-            foreach (var source in ViewModel.MediaCapture.FrameSources)
-            {
-                Logger.Log($"  Source ID: {source.Key}, Type: {source.Value.Info.MediaStreamType}, Kind: {source.Value.Info.SourceKind}");
-            }
-
-            var colorSourceInfo = ViewModel.MediaCapture.FrameSources.Values
-                .FirstOrDefault(source => source.Info.MediaStreamType == Windows.Media.Capture.MediaStreamType.VideoPreview)
-                ?? ViewModel.MediaCapture.FrameSources.Values
-                    .FirstOrDefault(source => source.Info.MediaStreamType == Windows.Media.Capture.MediaStreamType.VideoRecord);
-
-            if (colorSourceInfo != null)
-            {
-                Logger.Log($"Found color source: {colorSourceInfo.Info.Id}");
-
-                // Log available formats
-                Logger.Log($"Available formats count: {colorSourceInfo.SupportedFormats.Count}");
-                foreach (var format in colorSourceInfo.SupportedFormats)
-                {
-                    Logger.Log($"  Format: {format.Subtype} {format.VideoFormat.Width}x{format.VideoFormat.Height}");
-                }
-
-                // Set the format to match the user's selected resolution/framerate
-                Windows.Media.Capture.Frames.MediaFrameFormat? desiredFormat = null;
-
-                if (ViewModel.SelectedFormat != null)
-                {
-                    // Find format matching user selection, including pixel format preference.
-                    desiredFormat = colorSourceInfo.SupportedFormats
-                        .Where(f =>
-                            f.VideoFormat.Width == ViewModel.SelectedFormat.Width &&
-                            f.VideoFormat.Height == ViewModel.SelectedFormat.Height &&
-                            Math.Abs(GetFrameRate(f) - ViewModel.SelectedFormat.FrameRate) < 1)
-                        .OrderBy(f => string.Equals(f.Subtype, ViewModel.SelectedFormat.PixelFormat, StringComparison.OrdinalIgnoreCase) ? 0 : 1)
-                        .ThenBy(f => IsHdrSubtype(f.Subtype) == ViewModel.SelectedFormat.IsHdr ? 0 : 1)
-                        .ThenBy(f => MediaFormat.GetPixelFormatPriority(f.Subtype))
-                        .FirstOrDefault();
-
-                    if (desiredFormat == null)
-                    {
-                        // Fallback: match resolution only
-                        desiredFormat = colorSourceInfo.SupportedFormats
-                            .Where(f =>
-                                f.VideoFormat.Width == ViewModel.SelectedFormat.Width &&
-                                f.VideoFormat.Height == ViewModel.SelectedFormat.Height)
-                            .OrderBy(f => MediaFormat.GetPixelFormatPriority(f.Subtype))
-                            .ThenByDescending(GetFrameRate)
-                            .FirstOrDefault();
-                    }
-                }
-
-                // Final fallback: use largest format
-                desiredFormat ??= colorSourceInfo.SupportedFormats
-                    .OrderByDescending(f => f.VideoFormat.Width * f.VideoFormat.Height)
-                    .ThenByDescending(GetFrameRate)
-                    .ThenBy(f => MediaFormat.GetPixelFormatPriority(f.Subtype))
-                    .FirstOrDefault();
-
-                if (desiredFormat != null)
-                {
-                    var fps = desiredFormat.FrameRate.Numerator / (double)desiredFormat.FrameRate.Denominator;
-                    Logger.Log($"Setting preview format to: {desiredFormat.Subtype} {desiredFormat.VideoFormat.Width}x{desiredFormat.VideoFormat.Height}@{fps:F0}fps");
-                    await colorSourceInfo.SetFormatAsync(desiredFormat);
-                }
-
-                _previewActivePresentationFpsCap = ResolvePreviewPresentationCap(desiredFormat);
-                _previewMinPresentationIntervalMs = Math.Max(1, 1000 / _previewActivePresentationFpsCap);
-                Logger.Log($"Preview presentation cap active: {_previewActivePresentationFpsCap} fps");
-
-                if (!forceFrameReader && TryStartGpuPreview(colorSourceInfo))
-                {
-                    Logger.Log("Preview started successfully");
-                    ViewModel.StatusText = "Preview active (GPU presenter)";
-                }
-                else
-                {
-                    _previewSource = new SoftwareBitmapSource();
-                    PreviewImage.Source = _previewSource;
-                    PreviewImage.Visibility = Visibility.Visible;
-                    Logger.Log("Preview image source created (frame-reader fallback)");
-                    Logger.Log("Creating frame reader...");
-
-                    // Create frame reader for fallback preview
-                    _previewFrameReader = await ViewModel.MediaCapture.CreateFrameReaderAsync(colorSourceInfo);
-                    Logger.Log("Frame reader created successfully");
-
-                    _previewFrameReader.FrameArrived += PreviewFrameReader_FrameArrived;
-                    Logger.Log("FrameArrived event handler attached");
-
-                    var startResult = await _previewFrameReader.StartAsync();
-                    Logger.Log($"Frame reader start result: {startResult}");
-
-                    if (startResult == Windows.Media.Capture.Frames.MediaFrameReaderStartStatus.Success)
-                    {
-                        Logger.Log("Preview started successfully");
-                        ViewModel.StatusText = "Preview active (frame-reader fallback)";
-                    }
-                    else
-                    {
-                        Logger.Log($"Frame reader failed to start: {startResult}");
-                        ViewModel.StatusText = $"Preview failed to start: {startResult}";
-                    }
-                }
-            }
-            else
-            {
-                Logger.Log("No suitable frame source found, trying fallback...");
-                // Fallback: try using MediaCapture.StartPreviewAsync() for older devices
-                await ViewModel.MediaCapture.StartPreviewAsync();
-                _previewUsedLegacyStart = true;
-                Logger.Log("Fallback preview started");
-                ViewModel.StatusText = "Preview active (fallback mode)";
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.LogException(ex);
-            ViewModel.StatusText = $"Preview failed: {ex.Message}";
-        }
-
-        Logger.Log("=== START PREVIEW END ===");
-    }
-
-    private async Task StopPreviewInternalAsync()
-    {
-        try
-        {
-            StopGpuPreview();
-
-            if (_previewFrameReader != null)
-            {
-                _previewFrameReader.FrameArrived -= PreviewFrameReader_FrameArrived;
-                await _previewFrameReader.StopAsync();
-                _previewFrameReader.Dispose();
-                _previewFrameReader = null;
-            }
-
-            if (_previewUsedLegacyStart && ViewModel.MediaCapture != null)
-            {
-                await ViewModel.MediaCapture.StopPreviewAsync();
-                _previewUsedLegacyStart = false;
-            }
-
             PreviewImage.Source = null;
             PreviewImage.Visibility = Visibility.Collapsed;
             _previewSource = null;
-            _previewLastPresentedTick = 0;
-            _previewResizeSuppressUntilTick = 0;
-            _previewGpuStartTick = 0;
-            _previewGpuLastProgressTick = 0;
-            _previewGpuLastPositionMs = 0;
-            _previewUiInFlight = 0;
-            ResetPreviewCadenceTracking();
-            _previewActivePresentationFpsCap = Math.Clamp(60, 15, _previewPresentationFpsCap);
-            _previewMinPresentationIntervalMs = Math.Max(1, 1000 / _previewActivePresentationFpsCap);
-            _frameCounter = 0; // Reset for next preview session
+
+            PreviewPlayerElement.Source = ViewModel.PreviewPlaybackSource;
+            PreviewPlayerElement.Visibility = Visibility.Visible;
+
+            try
+            {
+                PreviewPlayerElement.MediaPlayer?.Play();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"GPU preview play warning: {ex.Message}");
+            }
+
+            Logger.Log($"Preview renderer started (mode=MediaPlayerElement, cap=none, expectedIntervalMs={_previewMinPresentationIntervalMs}, trueHdr={ViewModel.IsTrueHdrPreviewEnabled}).");
+            return Task.CompletedTask;
         }
-        catch (Exception ex)
-        {
-            Logger.Log($"Stop preview failed: {ex.Message}");
-        }
+
+        _previewSource = new SoftwareBitmapSource();
+        PreviewImage.Source = _previewSource;
+        PreviewImage.Visibility = Visibility.Visible;
+        PreviewPlayerElement.Source = null;
+        PreviewPlayerElement.Visibility = Visibility.Collapsed;
+        Logger.Log($"Preview renderer started (mode=DirectShowRawPipe, cap=none, expectedIntervalMs={_previewMinPresentationIntervalMs}).");
+        return Task.CompletedTask;
     }
 
-    private static int _frameCounter = 0;
-
-    private async void PreviewFrameReader_FrameArrived(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
+    private Task StopPreviewRendererAsync()
     {
-        _frameCounter++;
-        if (_frameCounter % 30 == 1) // Log every 30th frame to avoid spam
-        {
-            Logger.Log($"Frame #{_frameCounter} arrived");
-        }
-
-        MediaFrameReference? frame;
+        PreviewImage.Source = null;
+        PreviewImage.Visibility = Visibility.Collapsed;
         try
         {
-            frame = sender.TryAcquireLatestFrame();
+            PreviewPlayerElement.MediaPlayer?.Pause();
         }
-        catch (ObjectDisposedException)
+        catch
         {
-            // MediaCapture was disposed (e.g., during recording mode switch)
-            // This is expected and we should just return silently
-            return;
+            // Best effort only.
         }
+        PreviewPlayerElement.Source = null;
+        PreviewPlayerElement.Visibility = Visibility.Collapsed;
+        _previewSource = null;
+        _previewLastPresentedTick = 0;
+        _previewResizeSuppressUntilTick = 0;
+        _previewUiInFlight = 0;
+        ResetPreviewCadenceTracking();
+        _previewMinPresentationIntervalMs = Math.Max(1L, (long)Math.Round(1000.0 / 60.0));
+        Logger.Log("Preview renderer stopped.");
+        return Task.CompletedTask;
+    }
 
-        if (frame == null)
-        {
-            return;
-        }
-
-        using var frameRef = frame;
-
-        if (frameRef.VideoMediaFrame == null)
-        {
-            if (_frameCounter <= 5)
-            {
-                Logger.Log("  - VideoMediaFrame is NULL");
-            }
-            return;
-        }
-
+    private async void ViewModel_PreviewFrameReady(object? sender, PreviewFrame frame)
+    {
         Interlocked.Increment(ref _previewFramesArrived);
         var nowTick = Environment.TickCount64;
-        var lastPresentedTick = Interlocked.Read(ref _previewLastPresentedTick);
-        if (lastPresentedTick > 0 && nowTick - lastPresentedTick < _previewMinPresentationIntervalMs)
-        {
-            Interlocked.Increment(ref _previewFramesDropped);
-            return;
-        }
-
         var resizeSuppressUntil = Interlocked.Read(ref _previewResizeSuppressUntilTick);
         if (nowTick < resizeSuppressUntil)
         {
@@ -1835,93 +1648,29 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             return;
         }
 
-        var inFlight = Interlocked.CompareExchange(ref _previewUiInFlight, 1, 0);
-        if (inFlight != 0)
+        if (Interlocked.CompareExchange(ref _previewUiInFlight, 1, 0) != 0)
         {
             Interlocked.Increment(ref _previewFramesDropped);
             MaybeLogPreviewStats(nowTick, queueDelayMs: -1, setMs: -1);
             return;
         }
 
-        SoftwareBitmap? softwareBitmap = null;
-
+        SoftwareBitmap? bitmap = null;
         try
         {
-            // Try to get SoftwareBitmap directly first
-            if (frameRef.VideoMediaFrame.SoftwareBitmap != null)
-            {
-                // Copy to detach lifetime from MediaFrameReference
-                softwareBitmap = SoftwareBitmap.Copy(frameRef.VideoMediaFrame.SoftwareBitmap);
-                if (_frameCounter <= 3)
-                {
-                    Logger.Log("  - Got SoftwareBitmap directly");
-                }
-            }
-            // If not available, try to get it from Direct3DSurface (hardware-accelerated formats like YUY2, NV12)
-            else if (frameRef.VideoMediaFrame.Direct3DSurface != null)
-            {
-                if (_frameCounter <= 3)
-                {
-                    Logger.Log("  - SoftwareBitmap is NULL, trying Direct3DSurface...");
-                }
-
-                softwareBitmap = await SoftwareBitmap.CreateCopyFromSurfaceAsync(frameRef.VideoMediaFrame.Direct3DSurface);
-                if (_frameCounter <= 3)
-                {
-                    Logger.Log("  - Created SoftwareBitmap from Direct3DSurface");
-                }
-            }
-            else
-            {
-                if (_frameCounter <= 5)
-                {
-                    Logger.Log("  - No SoftwareBitmap or Direct3DSurface available");
-                }
-
-                Interlocked.Increment(ref _previewFramesDropped);
-                return;
-            }
-
-            if (softwareBitmap == null)
-            {
-                Interlocked.Increment(ref _previewFramesDropped);
-                return;
-            }
-
-            if (_frameCounter <= 3)
-            {
-                Logger.Log($"  - Bitmap: {softwareBitmap.PixelWidth}x{softwareBitmap.PixelHeight}, {softwareBitmap.BitmapPixelFormat}, {softwareBitmap.BitmapAlphaMode}");
-            }
-
-            // Convert to BGRA8 premultiplied for display.
-            if (softwareBitmap.BitmapPixelFormat != BitmapPixelFormat.Bgra8 ||
-                softwareBitmap.BitmapAlphaMode != BitmapAlphaMode.Premultiplied)
-            {
-                var converted = SoftwareBitmap.Convert(softwareBitmap, BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
-                softwareBitmap.Dispose();
-                softwareBitmap = converted;
-                if (_frameCounter <= 3)
-                {
-                    Logger.Log("  - Converted bitmap format");
-                }
-            }
+            bitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, (int)frame.Width, (int)frame.Height, BitmapAlphaMode.Premultiplied);
+            bitmap.CopyFromBuffer(frame.Buffer.AsBuffer());
         }
         catch (Exception ex)
         {
-            if (ex is not TaskCanceledException && ex is not OperationCanceledException)
-            {
-                Logger.Log($"  - Error preparing frame for preview: {ex.Message}");
-            }
-
+            Logger.Log($"Preview frame conversion failed: {ex.Message}");
             Interlocked.Increment(ref _previewFramesDropped);
-            softwareBitmap?.Dispose();
+            bitmap?.Dispose();
             Interlocked.Exchange(ref _previewUiInFlight, 0);
             return;
         }
 
-        // Update the image on the UI thread.
         var enqueueTick = Environment.TickCount64;
-        var bitmap = softwareBitmap;
         var enqueued = _dispatcherQueue.TryEnqueue(async () =>
         {
             var uiStartTick = Environment.TickCount64;
@@ -1929,33 +1678,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             var setStopwatch = Stopwatch.StartNew();
             try
             {
-                var suppressUntil = Interlocked.Read(ref _previewResizeSuppressUntilTick);
-                if (uiStartTick < suppressUntil)
+                if (_previewSource != null)
                 {
-                    Interlocked.Increment(ref _previewFramesDropped);
-                    return;
+                    await _previewSource.SetBitmapAsync(bitmap);
+                    Interlocked.Increment(ref _previewFramesDisplayed);
+                    Interlocked.Exchange(ref _previewLastPresentedTick, uiStartTick);
+                    TrackPreviewDisplayCadence();
                 }
-
-                    if (_previewSource != null)
-                    {
-                        await _previewSource.SetBitmapAsync(bitmap);
-                        setStopwatch.Stop();
-                        if (_frameCounter <= 3)
-                    {
-                        Logger.Log("  - Bitmap displayed on UI");
-                    }
-
-                        Interlocked.Increment(ref _previewFramesDisplayed);
-                        Interlocked.Exchange(ref _previewLastPresentedTick, uiStartTick);
-                        TrackPreviewDisplayCadence();
-                    }
-                    else
-                    {
-                    if (_frameCounter <= 3)
-                    {
-                        Logger.Log("  - _previewSource is NULL");
-                    }
-
+                else
+                {
                     Interlocked.Increment(ref _previewFramesDropped);
                 }
             }
@@ -1963,18 +1694,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             {
                 if (ex is not TaskCanceledException && ex is not OperationCanceledException)
                 {
-                    Logger.Log($"  - Error displaying frame: {ex.Message}");
+                    Logger.Log($"Preview render failed: {ex.Message}");
                 }
 
                 Interlocked.Increment(ref _previewFramesDropped);
             }
             finally
             {
-                if (setStopwatch.IsRunning)
-                {
-                    setStopwatch.Stop();
-                }
-
+                setStopwatch.Stop();
                 Interlocked.Exchange(ref _previewUiInFlight, 0);
                 MaybeLogPreviewStats(uiStartTick, queueDelayMs, (long)setStopwatch.ElapsedMilliseconds);
                 bitmap.Dispose();
@@ -2113,29 +1840,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _ = RunUiEventHandlerAsync(async () =>
         {
-            var startingRecording = !ViewModel.IsRecording;
-
-            if (startingRecording &&
-                _forceFrameReaderDuringRecording &&
-                _previewMediaPlayer != null)
-            {
-                // Optional compatibility mode for specific drivers:
-                // switch GPU preview to frame-reader path before recording.
-                Logger.Log("Switching preview to frame-reader mode before recording (compatibility mode).");
-                await StartPreviewInternalAsync(forceFrameReader: true);
-            }
-
             await ViewModel.ToggleRecordingAsync();
 
             if (ViewModel.IsRecording)
             {
-                var gpuActive = _previewMediaPlayer != null;
-                var frameReaderActive = _previewFrameReader != null;
-                var rendererActive = gpuActive || frameReaderActive;
+                var rendererActive = _previewSource != null;
                 var placeholderVisible = NoDevicePlaceholder.Visibility == Visibility.Visible;
                 Logger.Log(
-                    $"PreviewStateDuringRecording: rendererActive={rendererActive}, gpuActive={gpuActive}, " +
-                    $"frameReaderActive={frameReaderActive}, placeholderVisible={placeholderVisible}");
+                    $"PreviewStateDuringRecording: rendererActive={rendererActive}, " +
+                    $"placeholderVisible={placeholderVisible}");
 
                 if (!rendererActive || placeholderVisible)
                 {
