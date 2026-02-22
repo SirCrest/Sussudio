@@ -97,6 +97,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         try
         {
+            if (_isRecording && _ffmpegEncoder != null)
+            {
+                var reported = _ffmpegEncoder.LastReportedOutputBytes;
+                if (reported > 0)
+                {
+                    return new RecordingStats(reported, 0);
+                }
+            }
+
             var path = _recordingContext?.VideoOutputPath ?? _lastOutputPath;
             if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
             {

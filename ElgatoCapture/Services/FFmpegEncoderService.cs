@@ -101,12 +101,16 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private const int DirectShowHdrProbeRetryBaseDelayMs = 350;
     private static readonly Regex VideoStreamProbeRegex = new(@"Video:", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly Regex DropCounterRegex = new(@"drop=\s*(\d+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex ProgressSizeRegex = new(@"size=\s*(\d+)\s*([kmg]?i?b)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex ProgressBitrateRegex = new(@"bitrate=\s*([\d\.]+)\s*([kmg]?bits/s)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
     private static readonly ConcurrentDictionary<string, DateTimeOffset> DirectShowHdrProbeCache = new(StringComparer.OrdinalIgnoreCase);
     private static readonly TimeSpan DirectShowHdrProbeCacheTtl = TimeSpan.FromMinutes(2);
     private bool _directShowHdrRequested;
     private bool _directShowInputFormatVerified;
     private bool _directShowInputSectionActive;
     private bool _directShowIngressViolationRaised;
+    private long _lastReportedOutputBytes;
+    private double _lastReportedOutputBitrateBps;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<string>? ErrorOccurred;
@@ -132,6 +136,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     public string ActiveVideoProfile => _activeVideoProfile;
     public bool? ActiveTenBitPipelineConfirmed => _activeTenBitPipelineConfirmed;
     public bool MfReadwriteDisableConverters => _mfReadwriteDisableConverters;
+    public long LastReportedOutputBytes => Interlocked.Read(ref _lastReportedOutputBytes);
+    public double LastReportedOutputBitrateBps => Volatile.Read(ref _lastReportedOutputBitrateBps);
     public string? FirstObservedFramePixelFormat
     {
         get
@@ -2372,6 +2378,19 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
                 Logger.Log($"[FFmpeg] {line}");
 
+                if (TryParseProgressLine(line, out var outputBytes, out var bitrateBps))
+                {
+                    if (outputBytes.HasValue)
+                    {
+                        Interlocked.Exchange(ref _lastReportedOutputBytes, outputBytes.Value);
+                    }
+
+                    if (bitrateBps.HasValue)
+                    {
+                        Volatile.Write(ref _lastReportedOutputBitrateBps, bitrateBps.Value);
+                    }
+                }
+
                 if (_usesDirectShowInput)
                 {
                     UpdateDirectShowInputSectionState(line);
@@ -2425,6 +2444,79 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             _stderrClosed = true;  // Always mark closed when task ends
             Logger.Log("Stderr reader task ended");
         }
+    }
+
+    private static bool TryParseProgressLine(string line, out long? outputBytes, out double? bitrateBps)
+    {
+        outputBytes = null;
+        bitrateBps = null;
+
+        if (string.IsNullOrWhiteSpace(line))
+        {
+            return false;
+        }
+
+        // FFmpeg progress lines look like:
+        // frame=   12 fps=... size=   1024KiB time=... bitrate=1234.5kbits/s ...
+        if (line.IndexOf("frame=", StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            return false;
+        }
+
+        var sizeMatch = ProgressSizeRegex.Match(line);
+        if (sizeMatch.Success &&
+            long.TryParse(sizeMatch.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var sizeValue))
+        {
+            outputBytes = ConvertSizeToBytes(sizeValue, sizeMatch.Groups[2].Value);
+        }
+
+        var bitrateMatch = ProgressBitrateRegex.Match(line);
+        if (bitrateMatch.Success &&
+            double.TryParse(bitrateMatch.Groups[1].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var brValue))
+        {
+            bitrateBps = ConvertBitrateToBps(brValue, bitrateMatch.Groups[2].Value);
+        }
+
+        return outputBytes.HasValue || bitrateBps.HasValue;
+    }
+
+    private static long ConvertSizeToBytes(long value, string unit)
+    {
+        if (value <= 0)
+        {
+            return 0;
+        }
+
+        var normalized = (unit ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "b" => value,
+            "kb" => value * 1000L,
+            "kib" => value * 1024L,
+            "mb" => value * 1000L * 1000L,
+            "mib" => value * 1024L * 1024L,
+            "gb" => value * 1000L * 1000L * 1000L,
+            "gib" => value * 1024L * 1024L * 1024L,
+            _ => value
+        };
+    }
+
+    private static double ConvertBitrateToBps(double value, string unit)
+    {
+        if (value <= 0)
+        {
+            return 0;
+        }
+
+        var normalized = (unit ?? string.Empty).Trim().ToLowerInvariant();
+        return normalized switch
+        {
+            "bits/s" => value,
+            "kbits/s" => value * 1000.0,
+            "mbits/s" => value * 1000.0 * 1000.0,
+            "gbits/s" => value * 1000.0 * 1000.0 * 1000.0,
+            _ => value
+        };
     }
 
     public async Task StopEncodingAsync()
