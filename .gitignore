@@ -6,8 +6,8 @@
 *.sln.docstates
 
 # Build results
-bin/
-obj/
+**/bin/
+**/obj/
 [Dd]ebug/
 [Rr]elease/
 x64/
@@ -40,8 +40,11 @@ builds/
 latest-build/
 /ElgatoCapture.exe
 
-# Goal runner evidence outputs
-artifacts/goal-runs/
+# Claude Code local settings
+.claude/
+
+# All experimental/diagnostic artifacts (regenerable)
+artifacts/
 
 # Local temp artifacts from ad-hoc reliability/automation work
 .tmp*
@@ -52,6 +55,3 @@ artifacts/goal-runs/
 # Repo-local temp dumping ground (keep folder, ignore contents)
 temp/*
 !temp/.gitkeep
-
-# Local session notes
-.claude/napkin.md
