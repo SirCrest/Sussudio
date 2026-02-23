@@ -96,15 +96,26 @@ public sealed class FfmpegRecordingSink : IRecordingSink
                 $"Stopped (encoder failed: exit code {exitCode})");
         }
 
-        var (validationSucceeded, validationDetail) = await HdrValidationRunner
-            .RunAsync(_context, outputPath, cancellationToken)
-            .ConfigureAwait(false);
-        if (!validationSucceeded)
+        if (_context?.HdrPipelineActive == true)
         {
-            return FinalizeResult.Failure(
-                outputPath,
-                $"Stopped (hdr validation failed: {validationDetail})",
-                new[] { outputPath });
+            var (validationSucceeded, validationDetail) = await HdrValidationRunner
+                .RunAsync(_context, outputPath, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!validationSucceeded)
+            {
+                if (validationDetail.Contains("validator-script-missing", StringComparison.Ordinal))
+                {
+                    Logger.Log($"HDR validation skipped (script not found): {validationDetail}");
+                }
+                else
+                {
+                    return FinalizeResult.Failure(
+                        outputPath,
+                        $"Stopped (hdr validation failed: {validationDetail})",
+                        new[] { outputPath });
+                }
+            }
         }
 
         return FinalizeResult.Success(outputPath, "Stopped");

@@ -1,5 +1,9 @@
 # Repository Guidelines
 
+Read `docs/project-plan.md` before proposing changes. It defines the project
+scope, HDR pipeline contract, and preview model. Do not introduce features or
+patterns that conflict with those goals.
+
 ## Project Structure & Module Organization
 - `ElgatoCapture/`: WinUI 3 app source (`MainWindow.xaml`, `ViewModels/`, `Services/`, `Models/`, `Converters/`, `Assets/`).
 - `ElgatoCapture/ViewModels/`: UI state, commands, and capture orchestration.
@@ -7,7 +11,7 @@
 - `ElgatoCapture/Models/`: settings, formats, diagnostics, and runtime state models.
 - `tools/`: automation scripts (`reliability-gates.ps1`, `stage-builds.ps1`).
 - `builds/`: staged binaries; `artifacts/`: generated outputs/diagnostics.
-- No dedicated automated test project is currently checked in.
+- `tests/ElgatoCapture.Tests/`: runtime snapshot regression harness.
 
 ## Build, Test, and Development Commands
 - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`: build local debug binary.
@@ -24,11 +28,11 @@
 - Keep UI/binding logic in XAML + `ViewModels`; keep capture/device/encoding behavior in `Services`.
 
 ## Testing Guidelines
-- Current state: no automated unit/integration test project in this repository.
 - Before opening a PR, complete all of the following checks.
 1. Build `Debug` and `Release` for `x64`.
-2. Run `powershell -File tools/reliability-gates.ps1 -Configuration Debug`.
-3. Manually smoke test device enumeration, preview start/stop, recording start/stop, and output file creation.
+2. Run `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`.
+3. Run `powershell -File tools/reliability-gates.ps1 -Configuration Debug`.
+4. Manually smoke test device enumeration, preview start/stop, recording start/stop, and output file creation.
 
 ## Commit & Pull Request Guidelines
 - Follow existing commit format: `<type>: <summary>` (examples: `chore:`, `perf:`, `refactor:`, `compat:`).

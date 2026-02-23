@@ -11,10 +11,6 @@ using CommunityToolkit.Mvvm.Input;
 using ElgatoCapture.Models;
 using ElgatoCapture.Services;
 using Microsoft.UI.Dispatching;
-using Windows.Media.Capture;
-using Windows.Media.Capture.Frames;
-using Windows.Media.Core;
-using Windows.Media.MediaProperties;
 using Windows.Media.Playback;
 using Windows.Storage.Pickers;
 
@@ -28,8 +24,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly Stopwatch _recordingStopwatch = new();
     private DispatcherQueueTimer? _timer;
-    private MediaCapture? _previewMediaCapture;
-    private MediaFrameSource? _previewMediaFrameSource;
     private IntPtr _windowHandle;
     private readonly Queue<(long Tick, long Bytes)> _bitrateSamples = new();
     private const int BitrateWindowMs = 5000;
@@ -219,15 +213,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial bool IsPreviewing { get; set; }
 
     [ObservableProperty]
-    public partial bool PreviewGpuActive { get; set; }
-
-    [ObservableProperty]
-    public partial string PreviewRendererMode { get; set; } = "None";
-
-    [ObservableProperty]
-    public partial IMediaPlaybackSource? PreviewPlaybackSource { get; set; }
-
-    [ObservableProperty]
     public partial bool IsInitialized { get; set; }
 
     [ObservableProperty]
@@ -246,6 +231,20 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private int _disposeState;
 
     public event EventHandler<PreviewFrame>? PreviewFrameReady;
+
+    private IMediaPlaybackSource? _previewPlaybackSource;
+
+    public IMediaPlaybackSource? PreviewPlaybackSource
+    {
+        get => _previewPlaybackSource;
+        private set
+        {
+            if (ReferenceEquals(_previewPlaybackSource, value)) return;
+            _previewPlaybackSource = value;
+            OnPropertyChanged();
+        }
+    }
+
     public CaptureRuntimeSnapshot GetCaptureRuntimeSnapshot() => _captureService.GetRuntimeSnapshot();
     public CaptureHealthSnapshot GetCaptureHealthSnapshot() => _captureService.GetHealthSnapshot();
     public CaptureDiagnosticsSnapshot GetCaptureDiagnosticsSnapshot() => _captureService.GetDiagnosticsSnapshot();
@@ -2353,17 +2352,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (IsInitialized)
         {
             var settings = BuildCaptureSettings();
-            try
-            {
-                await _sessionCoordinator.StartVideoPreviewAsync(settings).ConfigureAwait(true);
-            }
-            catch
-            {
-                PreviewPlaybackSource = null;
-                PreviewGpuActive = false;
-                PreviewRendererMode = "None";
-                throw;
-            }
+            await _sessionCoordinator.StartVideoPreviewAsync(settings).ConfigureAwait(true);
 
             Logger.Log("Setting IsPreviewing = true");
             System.Diagnostics.Debug.WriteLine("Setting IsPreviewing = true");
@@ -2393,6 +2382,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public async Task StopPreviewAsync()
     {
         await _sessionCoordinator.StopVideoPreviewAsync();
+        PreviewPlaybackSource = null;
         IsPreviewing = false;
 
         // Stop audio preview
@@ -2401,259 +2391,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             await _sessionCoordinator.StopAudioPreviewAsync();
         }
 
-        PreviewPlaybackSource = null;
-        PreviewGpuActive = false;
-        PreviewRendererMode = "None";
         StatusText = "Preview stopped";
-    }
-
-    private async Task StartGpuPreviewAsync(CaptureSettings settings)
-    {
-        await StopGpuPreviewAsync().ConfigureAwait(true);
-
-        if (SelectedDevice == null)
-        {
-            throw new InvalidOperationException("No capture device selected for GPU preview.");
-        }
-
-        var previewMode = settings.PreviewMode;
-        var hdrToggleEnabled = settings.HdrEnabled;
-        var trueHdrPreviewRequested = previewMode == PreviewMode.TrueHdr;
-        Logger.Log($"GPU preview requested (mode={previewMode}, deviceId={SelectedDevice.Id}, {settings.Width}x{settings.Height}@{settings.FrameRate:0.###}).");
-        Logger.Log(
-            "HDR_REQUEST_STATE scope=preview " +
-            $"hdr_toggle={hdrToggleEnabled} " +
-            $"require_p010={hdrToggleEnabled} " +
-            $"hdr_prev_render={trueHdrPreviewRequested} " +
-            $"mode={settings.Width}x{settings.Height}@{settings.FrameRate:0.###}");
-
-        var mediaCapture = new MediaCapture();
-        try
-        {
-            await mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
-            {
-                VideoDeviceId = SelectedDevice.Id,
-                StreamingCaptureMode = StreamingCaptureMode.Video,
-                MemoryPreference = MediaCaptureMemoryPreference.Auto
-            });
-        }
-        catch (Exception ex)
-        {
-            mediaCapture.Dispose();
-            throw new InvalidOperationException($"GPU preview MediaCapture initialization failed: {ex.Message}", ex);
-        }
-
-        var colorSources = mediaCapture.FrameSources.Values
-            .Where(source => source.Info.SourceKind == MediaFrameSourceKind.Color)
-            .ToList();
-
-        MediaFrameSource? frameSource;
-        if (hdrToggleEnabled)
-        {
-            // Many capture devices only expose P010 on the record stream, not the preview stream.
-            frameSource = colorSources.FirstOrDefault(source => source.Info.MediaStreamType == MediaStreamType.VideoRecord)
-                ?? colorSources.FirstOrDefault(source => source.Info.MediaStreamType == MediaStreamType.VideoPreview)
-                ?? colorSources.FirstOrDefault();
-        }
-        else
-        {
-            frameSource = colorSources.FirstOrDefault(source => source.Info.MediaStreamType == MediaStreamType.VideoPreview)
-                ?? colorSources.FirstOrDefault(source => source.Info.MediaStreamType == MediaStreamType.VideoRecord)
-                ?? colorSources.FirstOrDefault();
-        }
-
-        if (frameSource == null)
-        {
-            mediaCapture.Dispose();
-            throw new InvalidOperationException("GPU preview failed: no color video frame source is available.");
-        }
-
-        Logger.Log($"GPU preview frame source: kind={frameSource.Info.SourceKind} stream={frameSource.Info.MediaStreamType} id={frameSource.Info.Id}.");
-
-        var requireP010 = hdrToggleEnabled;
-        await ConfigurePreviewFormatAsync(frameSource, settings, requireP010).ConfigureAwait(true);
-
-        var mediaSource = MediaSource.CreateFromMediaFrameSource(frameSource);
-
-        _previewMediaCapture = mediaCapture;
-        _previewMediaFrameSource = frameSource;
-        PreviewPlaybackSource = mediaSource;
-        PreviewGpuActive = true;
-        PreviewRendererMode = trueHdrPreviewRequested ? "MediaPlayerElement-TrueHdrRender" : "MediaPlayerElement";
-    }
-
-    private static async Task ConfigurePreviewFormatAsync(
-        MediaFrameSource frameSource,
-        CaptureSettings settings,
-        bool requireP010)
-    {
-        var supported = frameSource.SupportedFormats;
-        if (supported == null || supported.Count == 0)
-        {
-            if (requireP010)
-            {
-                throw new InvalidOperationException("HDR preview requested, but the device reports no supported formats.");
-            }
-
-            return;
-        }
-
-        var requestedWidth = (int)settings.Width;
-        var requestedHeight = (int)settings.Height;
-
-        static double ToFps(MediaFrameFormat format)
-            => format.FrameRate.Denominator > 0
-                ? (double)format.FrameRate.Numerator / format.FrameRate.Denominator
-                : 0;
-
-        static bool IsP010(MediaFrameFormat format)
-            => string.Equals(format.Subtype, "P010", StringComparison.OrdinalIgnoreCase);
-
-        static int GetPreviewSubtypePriority(string? subtype)
-        {
-            if (string.IsNullOrWhiteSpace(subtype))
-            {
-                return 100;
-            }
-
-            // Prefer uncompressed formats that MediaPlayerElement reliably renders.
-            if (subtype.Equals(MediaEncodingSubtypes.Nv12, StringComparison.OrdinalIgnoreCase))
-            {
-                return 0;
-            }
-
-            if (subtype.Equals("YUY2", StringComparison.OrdinalIgnoreCase))
-            {
-                return 1;
-            }
-
-            if (subtype.Equals("UYVY", StringComparison.OrdinalIgnoreCase))
-            {
-                return 2;
-            }
-
-            if (subtype.Equals(MediaEncodingSubtypes.Bgra8, StringComparison.OrdinalIgnoreCase))
-            {
-                return 3;
-            }
-
-            if (subtype.Equals("MJPG", StringComparison.OrdinalIgnoreCase) ||
-                subtype.Equals("MJPEG", StringComparison.OrdinalIgnoreCase))
-            {
-                return 50;
-            }
-
-            return 10;
-        }
-
-        IEnumerable<MediaFrameFormat> candidates = supported;
-
-        var sizeMatches = supported.Where(fmt =>
-            fmt.VideoFormat.Width == requestedWidth &&
-            fmt.VideoFormat.Height == requestedHeight).ToList();
-
-        if (requireP010)
-        {
-            if (sizeMatches.Count > 0)
-            {
-                candidates = sizeMatches;
-            }
-
-            candidates = candidates.Where(IsP010).ToList();
-            if (!candidates.Any())
-            {
-                var distinctSubtypes = string.Join(
-                    ", ",
-                    supported.Select(fmt => fmt.Subtype).Where(s => !string.IsNullOrWhiteSpace(s)).Distinct().Take(8));
-                throw new InvalidOperationException(
-                    $"HDR preview requires P010, but no P010 formats were found for {requestedWidth}x{requestedHeight}. " +
-                    $"Reported subtypes include: {distinctSubtypes}.");
-            }
-        }
-        else
-        {
-            // Avoid MJPG when possible; it often results in a blank MediaPlayerElement with MediaFrameSource-backed playback.
-            // If the requested resolution only exists as MJPG, we must retarget to a different resolution/subtype to avoid a blank preview.
-            var renderableAtRequestedSize = sizeMatches
-                .Where(fmt => GetPreviewSubtypePriority(fmt.Subtype) < 50)
-                .ToList();
-            if (renderableAtRequestedSize.Count > 0)
-            {
-                candidates = renderableAtRequestedSize;
-            }
-            else
-            {
-                var renderableAnywhere = supported
-                    .Where(fmt => GetPreviewSubtypePriority(fmt.Subtype) < 50)
-                    .ToList();
-                if (renderableAnywhere.Count > 0)
-                {
-                    candidates = renderableAnywhere;
-                }
-                else if (sizeMatches.Count > 0)
-                {
-                    // Only MJPG (or other non-renderable) exists at the requested size; fall back to that rather than failing preview start.
-                    candidates = sizeMatches;
-                }
-            }
-        }
-
-        var requestedFps = settings.FrameRate;
-        var selected = candidates
-            .OrderBy(fmt => GetPreviewSubtypePriority(fmt.Subtype))
-            .ThenBy(fmt =>
-            {
-                var fps = ToFps(fmt);
-                return fps > 0 ? Math.Abs(fps - requestedFps) : 9999;
-            })
-            .ThenByDescending(fmt => (long)fmt.VideoFormat.Width * fmt.VideoFormat.Height)
-            .First();
-
-        var selectedFps = ToFps(selected);
-        Logger.Log(
-            $"GPU preview format select: subtype={selected.Subtype} {selected.VideoFormat.Width}x{selected.VideoFormat.Height} " +
-            $"fps={selectedFps:0.###} (requested {settings.Width}x{settings.Height}@{requestedFps:0.###}, requireP010={requireP010}).");
-
-        if (!requireP010 &&
-            (selected.VideoFormat.Width != requestedWidth || selected.VideoFormat.Height != requestedHeight))
-        {
-            Logger.Log(
-                $"GPU preview retarget: requested {requestedWidth}x{requestedHeight}@{requestedFps:0.###} but selected " +
-                $"{selected.VideoFormat.Width}x{selected.VideoFormat.Height}@{selectedFps:0.###} to avoid non-renderable subtypes (e.g., MJPG).");
-        }
-
-        await frameSource.SetFormatAsync(selected);
-
-        if (requireP010)
-        {
-            var activeSubtype = frameSource.CurrentFormat?.Subtype ?? string.Empty;
-            if (!string.Equals(activeSubtype, "P010", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new InvalidOperationException($"HDR preview requested P010, but negotiated subtype is '{activeSubtype}'.");
-            }
-        }
-    }
-
-    private Task StopGpuPreviewAsync()
-    {
-        PreviewPlaybackSource = null;
-        PreviewGpuActive = false;
-        PreviewRendererMode = "None";
-
-        var mediaCapture = _previewMediaCapture;
-        _previewMediaCapture = null;
-        _previewMediaFrameSource = null;
-
-        try
-        {
-            mediaCapture?.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"GPU preview dispose warning: {ex.Message}");
-        }
-
-        return Task.CompletedTask;
     }
 
     public async Task ToggleRecordingAsync()
@@ -2752,15 +2490,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void OnPreviewPlaybackSourceChanged(object? sender, IMediaPlaybackSource? source)
     {
-        EnqueueUiOperation(() =>
+        _dispatcherQueue.TryEnqueue(() =>
         {
             PreviewPlaybackSource = source;
-            PreviewGpuActive = source != null;
-            PreviewRendererMode = source != null
-                ? (IsTrueHdrPreviewEnabled ? "MediaPlayerElement-TrueHdrRender" : "MediaPlayerElement")
-                : "None";
-            return Task.CompletedTask;
-        }, "preview playback source update");
+        });
     }
 
     public Task SelectDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
@@ -3182,7 +2915,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         _timer?.Stop();
-        await StopGpuPreviewAsync().ConfigureAwait(false);
         _deviceService.FormatProbeCompleted -= OnDeviceFormatProbeCompleted;
         _captureService.StatusChanged -= OnCaptureStatusChanged;
         _captureService.ErrorOccurred -= OnCaptureError;
@@ -3190,6 +2922,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
         _captureService.SourceTelemetryUpdated -= OnSourceTelemetryUpdated;
         _captureService.PreviewFrameReady -= OnPreviewFrameReady;
+        _captureService.PreviewPlaybackSourceChanged -= OnPreviewPlaybackSourceChanged;
         var stepTimeoutMs = GetIntFromEnv(
             "ELGATOCAPTURE_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,

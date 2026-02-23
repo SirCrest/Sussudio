@@ -14,6 +14,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Windows.Graphics.Imaging;
+using Windows.Media.Playback;
 using WinRT.Interop;
 
 namespace ElgatoCapture;
@@ -23,6 +24,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     public MainViewModel ViewModel { get; }
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
+    private MediaPlayer? _previewMediaPlayer;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
@@ -906,15 +908,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var framesDisplayed = Interlocked.Read(ref _previewFramesDisplayed);
         var framesDropped = Interlocked.Read(ref _previewFramesDropped);
         var lastPresentedTick = Interlocked.Read(ref _previewLastPresentedTick);
-        var gpuActive = ViewModel.IsPreviewing && ViewModel.PreviewGpuActive;
-        var frameReaderActive = ViewModel.IsPreviewing && !gpuActive;
-        var rendererMode = ViewModel.IsPreviewing
-            ? (gpuActive ? (ViewModel.PreviewRendererMode.Length > 0 ? ViewModel.PreviewRendererMode : "MediaPlayerElement") : "DirectShowRawPipe")
+        var gpuActive = _previewMediaPlayer != null;
+        var frameReaderActive = ViewModel.IsPreviewing;
+        var rendererMode = gpuActive ? "GpuMediaSource"
+            : ViewModel.IsPreviewing ? "CpuSoftwareBitmap"
             : "None";
-        var blankSuspected = frameReaderActive &&
+        // GPU preview is handled entirely by MediaPlayer — no frame-level blank/stall detection
+        var blankSuspected = !gpuActive && frameReaderActive &&
                              framesArrived > 30 &&
                              framesDisplayed == 0;
-        var stallSuspected = frameReaderActive &&
+        var stallSuspected = !gpuActive && frameReaderActive &&
                              lastPresentedTick > 0 &&
                              nowTick - lastPresentedTick > 3000;
         var cadence = GetPreviewCadenceMetrics(_previewMinPresentationIntervalMs);
@@ -926,9 +929,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             GpuActive = gpuActive,
             FrameReaderActive = frameReaderActive,
             PlaceholderVisible = !ViewModel.IsPreviewing,
-            FramesArrived = gpuActive ? 0 : framesArrived,
-            FramesDisplayed = gpuActive ? 0 : framesDisplayed,
-            FramesDropped = gpuActive ? 0 : framesDropped,
+            FramesArrived = framesArrived,
+            FramesDisplayed = framesDisplayed,
+            FramesDropped = framesDropped,
             DisplayCadenceSampleCount = cadence.SampleCount,
             DisplayCadenceObservedFps = cadence.ObservedFps,
             DisplayCadenceExpectedIntervalMs = cadence.ExpectedIntervalMs,
@@ -1080,18 +1083,21 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void StopPreviewForShutdown()
     {
+        // Clean up GPU preview
+        var player = _previewMediaPlayer;
+        _previewMediaPlayer = null;
+        if (player != null)
+        {
+            player.Pause();
+            player.Source = null;
+            PreviewPlayerElement.SetMediaPlayer(null!);
+            player.Dispose();
+        }
+        PreviewPlayerElement.Visibility = Visibility.Collapsed;
+
+        // Clean up CPU preview
         PreviewImage.Source = null;
         PreviewImage.Visibility = Visibility.Collapsed;
-        try
-        {
-            PreviewPlayerElement.MediaPlayer?.Pause();
-        }
-        catch
-        {
-            // Best effort only.
-        }
-        PreviewPlayerElement.Source = null;
-        PreviewPlayerElement.Visibility = Visibility.Collapsed;
         _previewSource = null;
         ResetPreviewCadenceTracking();
     }
@@ -1127,13 +1133,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 }
                 break;
 
-            case nameof(MainViewModel.PreviewGpuActive):
             case nameof(MainViewModel.PreviewPlaybackSource):
-            case nameof(MainViewModel.PreviewRendererMode):
-                if (ViewModel.IsPreviewing)
+                // GPU preview source arrived (or cleared) — if we're already previewing, hot-swap the renderer
+                if (ViewModel.IsPreviewing && ViewModel.PreviewPlaybackSource != null && _previewMediaPlayer == null)
                 {
-                    // Preview can transition between CPU/GPU renderers once the capture backend has negotiated formats.
-                    // Re-evaluate the renderer selection without toggling preview state (no placeholder blink).
+                    await StopPreviewRendererAsync();
                     await StartPreviewRendererAsync();
                 }
                 break;
@@ -1582,52 +1586,52 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ResetPreviewCadenceTracking();
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
 
-        if (ViewModel.PreviewGpuActive && ViewModel.PreviewPlaybackSource != null)
+        var playbackSource = ViewModel.PreviewPlaybackSource;
+        if (playbackSource != null)
         {
-            PreviewImage.Source = null;
-            PreviewImage.Visibility = Visibility.Collapsed;
-            _previewSource = null;
-
-            PreviewPlayerElement.Source = ViewModel.PreviewPlaybackSource;
+            // GPU preview path: MediaPlayer -> MediaPlayerElement
+            var player = new MediaPlayer();
+            player.Source = playbackSource;
+            player.IsVideoFrameServerEnabled = false;
+            player.AutoPlay = true;
+            _previewMediaPlayer = player;
+            PreviewPlayerElement.SetMediaPlayer(player);
             PreviewPlayerElement.Visibility = Visibility.Visible;
-
-            try
-            {
-                PreviewPlayerElement.MediaPlayer?.Play();
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"GPU preview play warning: {ex.Message}");
-            }
-
-            Logger.Log($"Preview renderer started (mode=MediaPlayerElement, cap=none, expectedIntervalMs={_previewMinPresentationIntervalMs}, trueHdr={ViewModel.IsTrueHdrPreviewEnabled}).");
-            return Task.CompletedTask;
+            PreviewImage.Visibility = Visibility.Collapsed;
+            Logger.Log("Preview renderer started (mode=GpuMediaSource).");
+        }
+        else
+        {
+            // Fallback CPU preview path: SoftwareBitmapSource -> Image
+            _previewSource = new SoftwareBitmapSource();
+            PreviewImage.Source = _previewSource;
+            PreviewImage.Visibility = Visibility.Visible;
+            PreviewPlayerElement.Visibility = Visibility.Collapsed;
+            Logger.Log($"Preview renderer started (mode=CpuSoftwareBitmap, expectedIntervalMs={_previewMinPresentationIntervalMs}).");
         }
 
-        _previewSource = new SoftwareBitmapSource();
-        PreviewImage.Source = _previewSource;
-        PreviewImage.Visibility = Visibility.Visible;
-        PreviewPlayerElement.Source = null;
-        PreviewPlayerElement.Visibility = Visibility.Collapsed;
-        Logger.Log($"Preview renderer started (mode=DirectShowRawPipe, cap=none, expectedIntervalMs={_previewMinPresentationIntervalMs}).");
         return Task.CompletedTask;
     }
 
     private Task StopPreviewRendererAsync()
     {
+        // Clean up GPU preview path
+        var player = _previewMediaPlayer;
+        _previewMediaPlayer = null;
+        if (player != null)
+        {
+            player.Pause();
+            player.Source = null;
+            PreviewPlayerElement.SetMediaPlayer(null!);
+            player.Dispose();
+        }
+        PreviewPlayerElement.Visibility = Visibility.Collapsed;
+
+        // Clean up CPU preview path
         PreviewImage.Source = null;
         PreviewImage.Visibility = Visibility.Collapsed;
-        try
-        {
-            PreviewPlayerElement.MediaPlayer?.Pause();
-        }
-        catch
-        {
-            // Best effort only.
-        }
-        PreviewPlayerElement.Source = null;
-        PreviewPlayerElement.Visibility = Visibility.Collapsed;
         _previewSource = null;
+
         _previewLastPresentedTick = 0;
         _previewResizeSuppressUntilTick = 0;
         _previewUiInFlight = 0;
@@ -1844,12 +1848,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
             if (ViewModel.IsRecording)
             {
-                var rendererActive =
-                    (ViewModel.PreviewGpuActive && ViewModel.PreviewPlaybackSource != null && PreviewPlayerElement.Visibility == Visibility.Visible) ||
-                    (!ViewModel.PreviewGpuActive && _previewSource != null && PreviewImage.Visibility == Visibility.Visible);
+                var gpuActive = _previewMediaPlayer != null && PreviewPlayerElement.Visibility == Visibility.Visible;
+                var cpuActive = _previewSource != null && PreviewImage.Visibility == Visibility.Visible;
+                var rendererActive = gpuActive || cpuActive;
                 var placeholderVisible = NoDevicePlaceholder.Visibility == Visibility.Visible;
                 Logger.Log(
                     $"PreviewStateDuringRecording: rendererActive={rendererActive}, " +
+                    $"gpuActive={gpuActive}, cpuActive={cpuActive}, " +
                     $"placeholderVisible={placeholderVisible}");
 
                 if (!rendererActive || placeholderVisible)

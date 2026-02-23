@@ -17,16 +17,16 @@ internal static class HdrOutputPolicy
 
         if (TryReadEnvironmentBool("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", out var forceOff) && forceOff)
         {
-            throw new InvalidOperationException(
-                "HDR output was requested but ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF disables the HDR pipeline.");
+            Logger.Log("HDR output requested but ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF disables the HDR pipeline.");
+            return false;
         }
 
         if (TryReadEnvironmentBool("ELGATOCAPTURE_HDR_OUTPUT_ENABLED", out var legacyEnabled))
         {
             if (!legacyEnabled)
             {
-                throw new InvalidOperationException(
-                    "HDR output was requested but ELGATOCAPTURE_HDR_OUTPUT_ENABLED is set to false.");
+                Logger.Log("HDR output requested but ELGATOCAPTURE_HDR_OUTPUT_ENABLED is set to false.");
+                return false;
             }
         }
 
