@@ -27,6 +27,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private Process? _ffmpegProcess;
     private Stream? _videoStream;  // stdin stream for video
     private NamedPipeServerStream? _audioPipe;
+    private NamedPipeServerStream? _videoPipe;
+    private string _videoPipeName = string.Empty;
     private Channel<VideoFramePacket>? _videoFrameQueue;
     private Channel<AudioSamplePacket>? _audioSampleQueue;
     private CancellationTokenSource? _cts;
@@ -36,11 +38,13 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private volatile bool _isEncoding;  // volatile for thread-safe reads across threads
     private volatile bool _audioQueueReady; // Allow audio samples to be queued before encoding starts
     private volatile bool _useAudioPipe; // Whether to use named pipe for audio (vs anullsrc)
+    private volatile bool _videoOnly; // Split recording mode: video-only encoding, audio handled externally
     private volatile bool _stderrClosed; // Indicates stderr closed (FFmpeg crashed or exited)
     private readonly string _ffmpegPath;
     private readonly object _disposeLock = new();
     private bool _isDisposed;
     private long _droppedVideoFrames;
+    private long _videoFramesEnqueued;
     private EncoderSupport _encoderSupport = EncoderSupport.Empty;
     private static Task<EncoderSupport>? _encoderProbeTask;
     private static readonly object _encoderProbeLock = new();
@@ -68,6 +72,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private long _audioDropsBacklogEviction;
     private int? _lastExitCode;
     private bool _lastStopTimedOut;
+    private bool _lastWriterDrainTimedOut;
     private bool _usesDirectShowInput;
     private string _activeInputPixelFormat = "nv12";
     private string _activeOutputPixelFormat = "yuv420p";
@@ -96,6 +101,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private const int WriterDrainTimeoutMs = 1000;
     private const int WriterCancelGraceMs = 1000;
     private const int AudioPipeConnectTimeoutMs = 15000;
+    private const string VideoPipePrefix = "ElgatoCaptureVideo";
+    private const int VideoPipeBufferSize = 67_108_864; // 64MB — eliminates 4K transport bottleneck
+    private const int VideoPipeConnectTimeoutMs = 10_000;
     private const int AudioPipeConnectAttempts = 3;
     private const int DirectShowHdrProbeMaxAttempts = 3;
     private const int DirectShowHdrProbeRetryBaseDelayMs = 350;
@@ -120,6 +128,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     public bool IsEncoding => _isEncoding;
     private ulong _encodedFrameCount;
     public ulong EncodedFrameCount => Interlocked.Read(ref _encodedFrameCount);
+    public long VideoFramesEnqueuedCount => Interlocked.Read(ref _videoFramesEnqueued);
+    public long LastVideoEnqueueTick => Interlocked.Read(ref _lastVideoEnqueueTick);
+    public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
     public string FfmpegPath => _ffmpegPath;
     public int VideoQueueCount => Volatile.Read(ref _videoQueueDepth);
     public int AudioQueueCount => Volatile.Read(ref _audioQueueDepth);
@@ -130,6 +141,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     public long AudioDropsBacklogEviction => Interlocked.Read(ref _audioDropsBacklogEviction);
     public int? LastExitCode => _lastExitCode;
     public bool LastStopTimedOut => _lastStopTimedOut;
+    public bool LastWriterDrainTimedOut => _lastWriterDrainTimedOut;
     public string ActiveInputPixelFormat => _activeInputPixelFormat;
     public string ActiveOutputPixelFormat => _activeOutputPixelFormat;
     public string ActiveVideoCodec => _activeVideoCodec;
@@ -506,7 +518,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         return (output, process.ExitCode);
     }
 
-    public async Task StartEncodingAsync(CaptureSettings settings, string outputPath, string? audioDeviceName = null, double? actualFrameRate = null, string? actualFrameRateArg = null, uint? actualWidth = null, uint? actualHeight = null, string inputPixelFormat = "bgra", bool hdrPipelineActive = false, RecordingPipelineOptions? pipelineOptions = null)
+    public async Task StartEncodingAsync(CaptureSettings settings, string outputPath, string? audioDeviceName = null, double? actualFrameRate = null, string? actualFrameRateArg = null, uint? actualWidth = null, uint? actualHeight = null, string inputPixelFormat = "bgra", bool hdrPipelineActive = false, RecordingPipelineOptions? pipelineOptions = null, bool videoOnly = false)
     {
         if (_isEncoding)
         {
@@ -562,6 +574,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _stderrClosed = false; // Reset crash detection flag for new recording
         _lastExitCode = null;
         _lastStopTimedOut = false;
+        _lastWriterDrainTimedOut = false;
         _usesDirectShowInput = false;
         _directShowHdrRequested = false;
         _directShowInputFormatVerified = false;
@@ -571,6 +584,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
         Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
         Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _videoFramesEnqueued, 0);
         ResetObservedFormatTelemetry();
         _videoFrameQueue = Channel.CreateBounded<VideoFramePacket>(new BoundedChannelOptions(videoQueueSize)
         {
@@ -584,8 +598,10 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
         // Determine if we should use named pipe for audio
         // This is set to true when audioDeviceName is provided, meaning CaptureService
-        // will be capturing audio via AudioGraph and piping it to us
-        _useAudioPipe = settings.AudioEnabled && !string.IsNullOrEmpty(audioDeviceName);
+        // will be capturing audio via AudioGraph and piping it to us.
+        // In videoOnly mode, audio is handled externally (e.g., raw file + post-mux).
+        _videoOnly = videoOnly;
+        _useAudioPipe = !videoOnly && settings.AudioEnabled && !string.IsNullOrEmpty(audioDeviceName);
 
         // Only create audio queue if audio is enabled and we're using the pipe
         // This preserves any audio samples that were buffered while starting up
@@ -630,8 +646,22 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             Logger.Log("Audio named pipe created");
         }
 
-        // Build FFmpeg command (uses stdin for video, named pipe for audio)
-        var ffmpegArgs = BuildFFmpegArguments(settings, outputPath, _useAudioPipe, frameRateArg, effectiveWidth, effectiveHeight, inputPixelFormat, hdrPipelineActive, _audioPipeName);
+        // Create named pipe for video with large buffer to prevent 4K stalls
+        // Anonymous pipe (Process.StandardInput) has ~64KB kernel buffer which starves the encoder
+        // at 4K NV12 (12MB/frame). Named pipe with 64MB buffer keeps NVENC fed.
+        _videoPipeName = $"{VideoPipePrefix}_{Environment.ProcessId}_{Guid.NewGuid():N}";
+        _videoPipe = new NamedPipeServerStream(
+            _videoPipeName,
+            PipeDirection.Out,
+            1,
+            PipeTransmissionMode.Byte,
+            PipeOptions.Asynchronous,
+            0,
+            VideoPipeBufferSize);
+        Logger.Log($"Video named pipe created: {_videoPipeName} (buffer={VideoPipeBufferSize / (1024 * 1024)}MB)");
+
+        // Build FFmpeg command (uses named pipe for video, named pipe for audio)
+        var ffmpegArgs = BuildFFmpegArguments(settings, outputPath, _useAudioPipe, frameRateArg, effectiveWidth, effectiveHeight, inputPixelFormat, hdrPipelineActive, _audioPipeName, videoOnly, _videoPipeName, effectiveFrameRate);
         Logger.Log($"FFmpeg arguments: {ffmpegArgs}");
 
         // Start FFmpeg process
@@ -660,9 +690,24 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             // Start stderr reader task (for logging FFmpeg output)
             _stderrReaderTask = Task.Run(() => ReadStderrAsync(_cts.Token), _cts.Token);
 
-            // Video uses stdin - immediately available, no connection needed
-            _videoStream = _ffmpegProcess.StandardInput.BaseStream;
-            Logger.Log("Video stream ready (using stdin)");
+            // Connect video stream — named pipe (large buffer) or stdin fallback
+            if (_videoPipe != null)
+            {
+                Logger.Log("Waiting for FFmpeg to connect to video named pipe...");
+                using var connectCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+                connectCts.CancelAfter(VideoPipeConnectTimeoutMs);
+                await _videoPipe.WaitForConnectionAsync(connectCts.Token);
+                _videoStream = _videoPipe;
+                // Release unused stdin pipe — video flows through the named pipe
+                try { _ffmpegProcess.StandardInput.Close(); }
+                catch (Exception) { /* best-effort */ }
+                Logger.Log("Video stream ready (using named pipe)");
+            }
+            else
+            {
+                _videoStream = _ffmpegProcess.StandardInput.BaseStream;
+                Logger.Log("Video stream ready (using stdin)");
+            }
 
             // Set _isEncoding = true NOW so frames can be enqueued immediately
             // This must happen BEFORE returning so the recording frame reader can start feeding frames
@@ -744,6 +789,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _stderrClosed = false;
         _lastExitCode = null;
         _lastStopTimedOut = false;
+        _lastWriterDrainTimedOut = false;
         _usesDirectShowInput = true;
         _mfReadwriteDisableConverters = false;
         _directShowHdrRequested = hdrRequested;
@@ -763,6 +809,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
         Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
         Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _videoFramesEnqueued, 0);
         Interlocked.Exchange(ref _encodedFrameCount, 0);
         ResetObservedFormatTelemetry();
 
@@ -811,7 +858,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             frameRateArg,
             effectiveWidth,
             effectiveHeight,
-            hdrPipelineActive);
+            hdrPipelineActive,
+            effectiveFrameRate);
         Logger.Log($"FFmpeg arguments: {ffmpegArgs}");
 
         var startInfo = new ProcessStartInfo
@@ -946,7 +994,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         string frameRateArg,
         uint effectiveWidth,
         uint effectiveHeight,
-        bool hdrPipelineActive)
+        bool hdrPipelineActive,
+        double effectiveFrameRate = 0)
     {
         var hdrRequested = hdrPipelineActive &&
                            settings.HdrEnabled &&
@@ -954,7 +1003,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         var hdrMasterRequested = !string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata);
         var hdrCllRequested = settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0;
 
-        var (videoCodec, qualityArgs) = GetEncoderSettings(settings, hdrRequested, preferSoftwareHevc: false);
+        var (videoCodec, qualityArgs) = GetEncoderSettings(settings, hdrRequested, preferSoftwareHevc: false,
+            effectiveWidth: effectiveWidth, effectiveHeight: effectiveHeight, effectiveFrameRate: effectiveFrameRate);
         _activeVideoCodec = videoCodec;
         _activeVideoProfile = "sdr";
         _activeTenBitPipelineConfirmed = false;
@@ -1501,7 +1551,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private static string EscapeDshowDeviceName(string deviceName)
         => deviceName.Replace("\"", "\\\"");
 
-    private string BuildFFmpegArguments(CaptureSettings settings, string outputPath, bool useAudioPipe, string frameRateArg, uint effectiveWidth, uint effectiveHeight, string inputPixelFormat, bool hdrPipelineActive, string? audioPipeName)
+    private string BuildFFmpegArguments(CaptureSettings settings, string outputPath, bool useAudioPipe, string frameRateArg, uint effectiveWidth, uint effectiveHeight, string inputPixelFormat, bool hdrPipelineActive, string? audioPipeName, bool videoOnly = false, string? videoPipeName = null, double effectiveFrameRate = 0)
     {
         var hdrRequested = hdrPipelineActive &&
                            settings.HdrEnabled &&
@@ -1510,8 +1560,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         var hdrMasterRequested = !string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata);
         var hdrCllRequested = settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0;
 
-        // Get encoder and quality settings
-        var (videoCodec, qualityArgs) = GetEncoderSettings(settings, hdrRequested, preferSoftwareHevc: false);
+        // Get encoder and quality settings (resolution/framerate used for NVENC preset capping)
+        var (videoCodec, qualityArgs) = GetEncoderSettings(settings, hdrRequested, preferSoftwareHevc: false,
+            effectiveWidth: effectiveWidth, effectiveHeight: effectiveHeight, effectiveFrameRate: effectiveFrameRate);
         _activeVideoCodec = videoCodec;
         _activeVideoProfile = "sdr";
         _activeTenBitPipelineConfirmed = false;
@@ -1531,10 +1582,15 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
 
         // Build audio input string
+        // In videoOnly mode (split recording), audio is written to a raw file and muxed post-recording.
         // Using named pipe for audio gives us full timestamp control - both streams start at 0
         string audioInput = "";
         string audioArgs = "";
-        if (settings.AudioEnabled)
+        if (videoOnly)
+        {
+            audioArgs = "-an ";
+        }
+        else if (settings.AudioEnabled)
         {
             if (useAudioPipe)
             {
@@ -1666,8 +1722,12 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             $"input_pix_fmt={_activeInputPixelFormat} output_pix_fmt={_activeOutputPixelFormat} " +
             $"ten_bit_pipeline_confirmed={_activeTenBitPipelineConfirmed}");
 
+        var videoInputSource = videoPipeName != null
+            ? $"\\\\.\\pipe\\{videoPipeName}"
+            : "pipe:0";
+
         var args = $"-y " +
-                   // Video input from stdin (pipe:0) - immediately available
+                   // Video input from named pipe (large buffer) or stdin fallback
                    $"-probesize 32 " +        // Minimal probe size (bytes) - format is known
                    $"-analyzeduration 0 " +   // Don't analyze duration
                    $"-f rawvideo " +
@@ -1675,7 +1735,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                    $"-video_size {effectiveWidth}x{effectiveHeight} " +
                    $"-framerate {frameRateArg} " +
                    $"-thread_queue_size 512 " + // Buffer video frames for sync with audio
-                   $"-i pipe:0 " +            // stdin for video - no connection issues
+                   $"-i {videoInputSource} " +
                    // Audio input (named pipe or anullsrc)
                    audioInput +
                    // Video encoding with CFR
@@ -1688,7 +1748,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                    // Audio encoding (or disable audio)
                    audioArgs +
                    // Output options
-                   $"-shortest " + // End when shortest input ends
+                   (videoOnly ? "" : "-shortest ") + // End when shortest input ends (skip for single-input video-only)
                    $"-movflags +faststart " + // Enable fast start for MP4
                    $"\"{outputPath}\"";
 
@@ -1712,7 +1772,10 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private (string codec, string qualityArgs) GetEncoderSettings(
         CaptureSettings settings,
         bool hdrRequested,
-        bool preferSoftwareHevc)
+        bool preferSoftwareHevc,
+        uint effectiveWidth = 0,
+        uint effectiveHeight = 0,
+        double effectiveFrameRate = 0)
     {
         string codec;
         string qualityArgs;
@@ -1767,6 +1830,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             ? (hdrRequested ? "main10" : "main")
             : "high";
         var nvencProfileArg = useNvenc && !isAv1 ? $"-profile:v {nvencProfile} " : string.Empty;
+        var bFrames = 3;
         if (settings.Quality == VideoQuality.Custom)
         {
             // Use CBR with user-specified bitrate
@@ -1775,7 +1839,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             if (useNvenc)
             {
                 // NVENC CBR mode
-                qualityArgs = $"-preset p4 -rc cbr -b:v {bitrate}k -maxrate {bitrate}k -bufsize {bitrate * 2}k {nvencProfileArg}-bf 3";
+                qualityArgs = $"-preset p4 -rc cbr -b:v {bitrate}k -maxrate {bitrate}k -bufsize {bitrate * 2}k {nvencProfileArg}-bf {bFrames}";
             }
             else if (isSvtAv1 || isAomAv1)
             {
@@ -1809,18 +1873,36 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                 _ => useNvenc ? "p4" : "fast"
             };
 
+            // Resolution-adaptive NVENC preset capping: high presets (p5/p6/p7) may not
+            // sustain realtime at 4K@60fps on GPUs slower than a 4090. Cap to p4 for UHD+.
+            if (useNvenc && effectiveWidth > 0 && effectiveHeight > 0 && effectiveFrameRate > 0)
+            {
+                var pixelRate = (long)effectiveWidth * effectiveHeight * (long)Math.Ceiling(effectiveFrameRate);
+                const long UhdThreshold = 1920L * 1080 * 60 * 2; // ~249M pixels/sec
+
+                if (pixelRate > UhdThreshold)
+                {
+                    var maxPreset = 4;
+                    if (preset.Length >= 2 && preset[0] == 'p' && int.TryParse(preset[1..], out var currentPreset) && currentPreset > maxPreset)
+                    {
+                        Logger.Log($"NVENC preset capped: p{currentPreset}→p{maxPreset} (pixelRate={pixelRate}, threshold={UhdThreshold})");
+                        preset = $"p{maxPreset}";
+                    }
+                }
+            }
+
             if (useNvenc)
             {
                 // NVENC CQ (Constant Quality) mode
                 if (settings.Quality == VideoQuality.Lossless)
                 {
                     // Lossless mode
-                    qualityArgs = $"-preset {preset} -rc lossless {nvencProfileArg}-bf 3";
+                    qualityArgs = $"-preset {preset} -rc lossless {nvencProfileArg}-bf {bFrames}";
                 }
                 else
                 {
                     // CQ mode (equivalent to CRF)
-                    qualityArgs = $"-preset {preset} -rc vbr -cq {qualityValue} -b:v 0 {nvencProfileArg}-bf 3";
+                    qualityArgs = $"-preset {preset} -rc vbr -cq {qualityValue} -b:v 0 {nvencProfileArg}-bf {bFrames}";
                 }
             }
             else if (isSvtAv1)
@@ -1968,6 +2050,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         if (queue.Writer.TryWrite(packet))
         {
             Interlocked.Increment(ref _videoQueueDepth);
+            Interlocked.Increment(ref _videoFramesEnqueued);
             return true;
         }
 
@@ -2004,6 +2087,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
     public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)
     {
+        // In video-only mode, audio is handled externally — nothing to enqueue
+        if (_videoOnly) return;
+
         // Accept audio samples as soon as queue is ready (not just when encoding)
         // This allows audio to buffer while FFmpeg is starting up
         if (!_audioQueueReady || _audioSampleQueue == null || _cts?.IsCancellationRequested == true || samples.IsEmpty)
@@ -2538,6 +2624,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _isEncoding = false;
         _audioQueueReady = false;
         _lastStopTimedOut = false;
+        _lastWriterDrainTimedOut = false;
 
         // Phase 1: complete queues and allow writers to drain naturally.
         _videoFrameQueue?.Writer.TryComplete();
@@ -2555,6 +2642,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             if (!writersDrained)
             {
                 Logger.Log($"Writer drain exceeded {WriterDrainTimeoutMs} ms. Canceling writer tasks.");
+                _lastWriterDrainTimedOut = true;
                 _cts?.Cancel();
                 await Task.WhenAny(allWriters, Task.Delay(WriterCancelGraceMs));
             }
@@ -2638,15 +2726,24 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     {
         try
         {
+            var videoPipe = _videoPipe;
             var videoStream = _videoStream;
-            if (videoStream != null)
+            if (videoPipe != null)
             {
+                // Video uses named pipe — flush and close the pipe directly
+                if (videoPipe.IsConnected && videoPipe.CanWrite)
+                {
+                    await videoPipe.FlushAsync();
+                }
+                videoPipe.Close();
+            }
+            else if (videoStream != null)
+            {
+                // Fallback / DirectShow path — video uses stdin
                 if (videoStream.CanWrite)
                 {
                     await videoStream.FlushAsync();
                 }
-                // Don't close _videoStream directly - it's the process's stdin
-                // Closing it signals EOF to FFmpeg
                 _ffmpegProcess?.StandardInput.Close();
             }
         }
@@ -2730,25 +2827,46 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
         fixed (byte* dest = destination)
         {
-            // Copy Y plane
-            for (var row = 0; row < height; row++)
+            // Fast path: if stride matches width, copy each plane in a single operation
+            if (planeY.Stride == width)
             {
                 Buffer.MemoryCopy(
-                    dataInBytes + planeY.StartIndex + (row * planeY.Stride),
-                    dest + (row * width),
-                    width,
-                    width);
+                    dataInBytes + planeY.StartIndex,
+                    dest,
+                    ySize,
+                    ySize);
+            }
+            else
+            {
+                for (var row = 0; row < height; row++)
+                {
+                    Buffer.MemoryCopy(
+                        dataInBytes + planeY.StartIndex + (row * planeY.Stride),
+                        dest + (row * width),
+                        width,
+                        width);
+                }
             }
 
-            // Copy UV plane (interleaved)
             var uvDest = dest + ySize;
-            for (var row = 0; row < uvHeight; row++)
+            if (planeUV.Stride == width)
             {
                 Buffer.MemoryCopy(
-                    dataInBytes + planeUV.StartIndex + (row * planeUV.Stride),
-                    uvDest + (row * width),
-                    width,
-                    width);
+                    dataInBytes + planeUV.StartIndex,
+                    uvDest,
+                    uvHeight * width,
+                    uvHeight * width);
+            }
+            else
+            {
+                for (var row = 0; row < uvHeight; row++)
+                {
+                    Buffer.MemoryCopy(
+                        dataInBytes + planeUV.StartIndex + (row * planeUV.Stride),
+                        uvDest + (row * width),
+                        width,
+                        width);
+                }
             }
         }
     }
@@ -2762,7 +2880,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
         await CleanupPipesAsync();
 
-        _videoStream = null; // Stream is owned by the process
+        _videoStream = null; // Stream is owned by the pipe or process
+
+        _videoPipe?.Dispose();
+        _videoPipe = null;
+        _videoPipeName = string.Empty;
 
         _audioPipe?.Dispose();
         _audioPipe = null;
@@ -2843,23 +2965,45 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
         fixed (byte* dest = destination)
         {
-            for (var row = 0; row < height; row++)
+            if (planeY.Stride == yRowBytes)
             {
                 Buffer.MemoryCopy(
-                    dataInBytes + planeY.StartIndex + (row * planeY.Stride),
-                    dest + (row * yRowBytes),
-                    yRowBytes,
-                    yRowBytes);
+                    dataInBytes + planeY.StartIndex,
+                    dest,
+                    ySize,
+                    ySize);
+            }
+            else
+            {
+                for (var row = 0; row < height; row++)
+                {
+                    Buffer.MemoryCopy(
+                        dataInBytes + planeY.StartIndex + (row * planeY.Stride),
+                        dest + (row * yRowBytes),
+                        yRowBytes,
+                        yRowBytes);
+                }
             }
 
             var uvDest = dest + ySize;
-            for (var row = 0; row < uvHeight; row++)
+            if (planeUV.Stride == uvRowBytes)
             {
                 Buffer.MemoryCopy(
-                    dataInBytes + planeUV.StartIndex + (row * planeUV.Stride),
-                    uvDest + (row * uvRowBytes),
-                    uvRowBytes,
-                    uvRowBytes);
+                    dataInBytes + planeUV.StartIndex,
+                    uvDest,
+                    uvSize,
+                    uvSize);
+            }
+            else
+            {
+                for (var row = 0; row < uvHeight; row++)
+                {
+                    Buffer.MemoryCopy(
+                        dataInBytes + planeUV.StartIndex + (row * planeUV.Stride),
+                        uvDest + (row * uvRowBytes),
+                        uvRowBytes,
+                        uvRowBytes);
+                }
             }
         }
     }
@@ -2986,8 +3130,14 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             }
 
             // Close pipes
-            try { _ffmpegProcess?.StandardInput.Close(); }
-            catch (Exception ex) { Logger.Log($"Error closing FFmpeg stdin: {ex.Message}"); }
+            try { _videoPipe?.Close(); }
+            catch (Exception ex) { Logger.Log($"Error closing video pipe: {ex.Message}"); }
+
+            if (_videoPipe == null)
+            {
+                try { _ffmpegProcess?.StandardInput.Close(); }
+                catch (Exception ex) { Logger.Log($"Error closing FFmpeg stdin: {ex.Message}"); }
+            }
 
             try { _audioPipe?.Close(); }
             catch (Exception ex) { Logger.Log($"Error closing audio pipe: {ex.Message}"); }
@@ -3006,6 +3156,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             // Dispose resources
             DrainVideoQueueBuffers();
             DrainAudioQueueBuffers();
+            _videoPipe?.Dispose();
             _audioPipe?.Dispose();
             _ffmpegProcess?.Dispose();
             _cts?.Dispose();

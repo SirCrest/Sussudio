@@ -18,6 +18,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private readonly List<DiagnosticsEvent> _recentEvents = new();
     private readonly Dictionary<string, long> _eventThrottleTicks = new(StringComparer.Ordinal);
     private readonly HashSet<string> _activeAlerts = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim _verificationGate = new(1, 1);
 
     private AutomationSnapshot _latestSnapshot = new();
     private RecordingVerificationResult? _lastVerification;
@@ -30,6 +31,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private long _recordingNoGrowthStartTick;
     private Task? _autoVerificationTask;
     private int _verificationInProgress;
+    private int _autoVerificationScheduled;
 
     private const int MaxRecentEvents = 500;
     private const int PollIntervalMs = 500;
@@ -90,6 +92,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         _loopTask = null;
         var autoVerificationTask = _autoVerificationTask;
         _autoVerificationTask = null;
+        Interlocked.Exchange(ref _autoVerificationScheduled, 0);
 
         try
         {
@@ -133,7 +136,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
     public async Task<RecordingVerificationResult> VerifyLastRecordingAsync(CancellationToken cancellationToken = default)
     {
-        Interlocked.Exchange(ref _verificationInProgress, 1);
+        await _verificationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        Interlocked.Increment(ref _verificationInProgress);
         try
         {
             var runtimeSnapshot = await _viewModel
@@ -166,7 +170,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
         finally
         {
-            Interlocked.Exchange(ref _verificationInProgress, 0);
+            Interlocked.Decrement(ref _verificationInProgress);
+            _verificationGate.Release();
             if (!cancellationToken.IsCancellationRequested)
             {
                 try
@@ -451,6 +456,17 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             AudioClipping = viewModelSnapshot.AudioClipping,
             AudioSignalPresent = audioSignalPresent,
             AudioMutedSuspected = audioMutedSuspected,
+            AudioReaderActive = captureRuntime.AudioReaderActive,
+            AudioFramesArrived = captureRuntime.AudioFramesArrived,
+            AudioFramesWrittenToSink = captureRuntime.AudioFramesWrittenToSink,
+            VideoReaderActive = captureRuntime.VideoReaderActive,
+            IngestVideoFramesArrived = captureRuntime.IngestVideoFramesArrived,
+            IngestVideoFramesWrittenToSink = captureRuntime.IngestVideoFramesWrittenToSink,
+            IngestLastVideoFrameAgeMs = captureRuntime.IngestLastVideoFrameAgeMs,
+            EncoderVideoFramesEnqueued = health.VideoFramesEnqueued,
+            EncoderVideoFramesEncoded = (long)(health.VideoFramesArrived > 0 ? health.VideoFramesArrived - health.VideoFramesDropped : 0),
+            EncoderLastEnqueueAgeMs = health.LastVideoEnqueueAgeMs,
+            EncoderLastWriteAgeMs = health.LastVideoWriteAgeMs,
             RecordingBackend = captureRuntime.RecordingBackend,
             AudioPathMode = captureRuntime.AudioPathMode,
             MuxResult = captureRuntime.MuxSucceeded.HasValue
@@ -516,6 +532,24 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PreviewCadenceSlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent,
             PreviewGpuActive = previewRuntime.GpuActive,
             PreviewFrameReaderActive = previewRuntime.FrameReaderActive,
+            PreviewPlaceholderVisible = previewRuntime.PlaceholderVisible,
+            PreviewGpuElementVisible = previewRuntime.GpuElementVisible,
+            PreviewCpuElementVisible = previewRuntime.CpuElementVisible,
+            PreviewRendererAttached = previewRuntime.RendererAttached,
+            PreviewStartupState = previewRuntime.StartupState,
+            PreviewAttemptId = previewRuntime.StartupAttemptId,
+            PreviewStartupElapsedMs = previewRuntime.StartupElapsedMs,
+            PreviewStartupTimeoutMs = previewRuntime.StartupTimeoutMs,
+            PreviewGpuSignalMediaOpened = previewRuntime.StartupGpuSignalMediaOpened,
+            PreviewGpuSignalFirstFrame = previewRuntime.StartupGpuSignalFirstFrame,
+            PreviewGpuSignalPlaybackAdvancing = previewRuntime.StartupGpuSignalPlaybackAdvancing,
+            PreviewStartupRequiredSignals = previewRuntime.StartupRequiredSignals,
+            PreviewStartupReceivedSignals = previewRuntime.StartupReceivedSignals,
+            PreviewStartupStrategy = previewRuntime.StartupStrategy.ToString(),
+            PreviewStartupMissingSignals = previewRuntime.StartupMissingSignals,
+            PreviewRecoveryAttemptCount = previewRuntime.StartupRecoveryAttemptCount,
+            PreviewLastFailureReason = previewRuntime.StartupLastFailureReason,
+            PreviewFirstVisualConfirmed = previewRuntime.FirstVisualConfirmed,
             PreviewBlankSuspected = previewRuntime.BlankSuspected,
             PreviewStalled = previewRuntime.StallSuspected,
             PreviewRendererMode = previewRuntime.RendererMode,
@@ -563,9 +597,12 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             HdrTruthVerdict = hdrTruthVerdict
         };
 
+        var verificationIdle = Volatile.Read(ref _verificationInProgress) == 0 &&
+                               Volatile.Read(ref _autoVerificationScheduled) == 0;
         var shouldAutoVerify = !snapshot.IsRecording &&
                                _wasRecording &&
-                               !string.IsNullOrWhiteSpace(snapshot.LastOutputPath);
+                               !string.IsNullOrWhiteSpace(snapshot.LastOutputPath) &&
+                               verificationIdle;
 
         UpdateAlerts(snapshot);
 
@@ -577,7 +614,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         SnapshotUpdated?.Invoke(this, snapshot);
         _wasRecording = snapshot.IsRecording;
 
-        if (shouldAutoVerify && _cts is { IsCancellationRequested: false } cts)
+        if (shouldAutoVerify &&
+            _cts is { IsCancellationRequested: false } cts &&
+            Interlocked.CompareExchange(ref _autoVerificationScheduled, 1, 0) == 0)
         {
             AddEvent(
                 DiagnosticsSeverity.Info,
@@ -587,6 +626,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             {
                 try
                 {
+                    if (cts.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
                     await VerifyLastRecordingAsync(cts.Token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
@@ -600,7 +644,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                         DiagnosticsCategory.Verification,
                         $"Automatic recording verification failed: {ex.Message}");
                 }
-            }, cts.Token);
+                finally
+                {
+                    Interlocked.Exchange(ref _autoVerificationScheduled, 0);
+                }
+            });
         }
     }
 
@@ -621,6 +669,32 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             DiagnosticsCategory.Preview,
             "Preview frame flow appears stalled.",
             "Preview stall condition cleared.");
+
+        var startupTimeoutMs = snapshot.PreviewStartupTimeoutMs > 0 ? snapshot.PreviewStartupTimeoutMs : 2000;
+        SetAlertState(
+            "preview-startup-timeout",
+            snapshot.IsPreviewing &&
+            !snapshot.PreviewFirstVisualConfirmed &&
+            string.Equals(snapshot.PreviewStartupState, "WaitingForFirstVisual", StringComparison.OrdinalIgnoreCase) &&
+            snapshot.PreviewStartupElapsedMs.GetValueOrDefault() >= startupTimeoutMs,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Preview,
+            string.IsNullOrWhiteSpace(snapshot.PreviewStartupMissingSignals)
+                ? $"Preview startup waiting for first visual beyond {startupTimeoutMs}ms (attempt={snapshot.PreviewAttemptId ?? "none"})."
+                : $"Preview startup waiting for first visual beyond {startupTimeoutMs}ms (attempt={snapshot.PreviewAttemptId ?? "none"}, missing={snapshot.PreviewStartupMissingSignals}).",
+            "Preview startup visual confirmation recovered.");
+
+        SetAlertState(
+            "preview-startup-failed",
+            string.Equals(snapshot.PreviewStartupState, "Failed", StringComparison.OrdinalIgnoreCase),
+            DiagnosticsSeverity.Error,
+            DiagnosticsCategory.Preview,
+            string.IsNullOrWhiteSpace(snapshot.PreviewLastFailureReason)
+                ? string.IsNullOrWhiteSpace(snapshot.PreviewStartupMissingSignals)
+                    ? "Preview startup failed before first visual confirmation."
+                    : $"Preview startup failed (missing={snapshot.PreviewStartupMissingSignals})."
+                : $"Preview startup failed: {snapshot.PreviewLastFailureReason}",
+            "Preview startup failure cleared.");
 
         SetAlertState(
             "preview-cadence-slow",

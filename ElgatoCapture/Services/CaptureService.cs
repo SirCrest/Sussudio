@@ -5,6 +5,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using Windows.Media.Capture;
 using Windows.Media.Playback;
 using Windows.Storage;
 
@@ -39,6 +40,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private DateTimeOffset? _lastFinalizeUtc;
     private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();
     private bool _lastUsePostMuxAudio;
+    private MediaPlayer? _audioPlayer;
     private string? _audioDeviceId;
     private string? _audioDeviceName;
     private uint? _actualWidth;
@@ -161,6 +163,52 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         return pixelFormat.Trim().ToUpperInvariant();
+    }
+
+    private void DetachIngestSession(MediaCaptureIngestSession? session)
+    {
+        if (session != null)
+        {
+            session.CaptureFailed -= OnIngestSessionCaptureFailed;
+            session.AudioLevelUpdated -= OnIngestSessionAudioLevelUpdated;
+        }
+        StopAudioPlayback();
+    }
+
+    private void OnIngestSessionAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
+    {
+        AudioLevelUpdated?.Invoke(this, e);
+    }
+
+    private void StartAudioPlayback(IMediaPlaybackSource source)
+    {
+        StopAudioPlayback();
+        _audioPlayer = new MediaPlayer
+        {
+            Source = source,
+            AutoPlay = true
+        };
+        Logger.Log("Audio playback started via MediaPlayer.");
+    }
+
+    private void StopAudioPlayback()
+    {
+        var player = _audioPlayer;
+        _audioPlayer = null;
+        if (player != null)
+        {
+            player.Pause();
+            player.Source = null;
+            player.Dispose();
+            Logger.Log("Audio playback stopped.");
+        }
+    }
+
+    private void OnIngestSessionCaptureFailed(object? sender, MediaCaptureFailedEventArgs args)
+    {
+        Logger.Log($"CAPTURE_DEVICE_FAILED code=0x{args.Code:X8} message={args.Message} recording={_isRecording}");
+        StatusChanged?.Invoke(this, $"Capture device error: {args.Message}");
+        ErrorOccurred?.Invoke(this, new InvalidOperationException($"Capture device failed: {args.Message} (0x{args.Code:X8})"));
     }
 
     private void RecordObservedPixelFormat(string? pixelFormat, bool incrementAsFrame = true)
@@ -362,6 +410,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
             IsInitialized = _isInitialized,
             IsRecording = _isRecording,
             IsAudioPreviewActive = _isAudioPreviewActive,
+            AudioReaderActive = _ingestSession?.IsAudioReaderActive ?? false,
+            AudioFramesArrived = _ingestSession?.AudioFramesArrived ?? 0,
+            AudioFramesWrittenToSink = _ingestSession?.AudioFramesWrittenToSink ?? 0,
+            VideoReaderActive = _ingestSession?.IsVideoReaderActive ?? false,
+            IngestVideoFramesArrived = _ingestSession?.VideoFramesArrived ?? 0,
+            IngestVideoFramesWrittenToSink = _ingestSession?.VideoFramesWrittenToSink ?? 0,
+            IngestLastVideoFrameAgeMs = ComputeTickAge(_ingestSession?.LastVideoFrameArrivedTick ?? 0),
             SessionState = _sessionState.ToString(),
             CurrentDeviceId = _currentDevice?.Id,
             CurrentDeviceName = _currentDevice?.Name,
@@ -492,6 +547,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         return (int)Math.Floor(age.TotalSeconds);
+    }
+
+    private static long ComputeTickAge(long tick)
+    {
+        if (tick == 0) return -1;
+        return Math.Max(0, Environment.TickCount64 - tick);
     }
 
     private static string ResolveSourceTelemetryBackend(SourceSignalTelemetrySnapshot telemetry)
@@ -675,14 +736,17 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceTelemetryCircuitState = ResolveSourceTelemetryCircuitState(
                 _latestSourceTelemetry.Availability,
                 sourceTelemetrySuppressed),
-            VideoFramesArrived = Interlocked.Read(ref _videoFramesArrived),
+            VideoFramesArrived = (_ingestSession?.VideoFramesArrived ?? 0) + Interlocked.Read(ref _videoFramesArrived),
             VideoFramesDropped = videoFramesDropped,
             VideoDropsQueueSaturated = encoder?.VideoDropsQueueSaturated ?? 0,
             VideoDropsBacklogEviction = encoder?.VideoDropsBacklogEviction ?? 0,
             AudioDropsQueueSaturated = encoder?.AudioDropsQueueSaturated ?? 0,
             AudioDropsBacklogEviction = encoder?.AudioDropsBacklogEviction ?? 0,
             FfmpegVideoQueueDepth = encoder?.VideoQueueCount ?? 0,
-            FfmpegAudioQueueDepth = encoder?.AudioQueueCount ?? 0
+            FfmpegAudioQueueDepth = encoder?.AudioQueueCount ?? 0,
+            VideoFramesEnqueued = encoder?.VideoFramesEnqueuedCount ?? 0,
+            LastVideoEnqueueAgeMs = ComputeTickAge(encoder?.LastVideoEnqueueTick ?? 0),
+            LastVideoWriteAgeMs = ComputeTickAge(encoder?.LastVideoWriteTick ?? 0)
         };
     }
 
@@ -743,6 +807,23 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     cancellationToken: transitionToken).ConfigureAwait(false);
 
                 _ingestSession = ingestSession;
+                _ingestSession.CaptureFailed += OnIngestSessionCaptureFailed;
+                _ingestSession.AudioLevelUpdated += OnIngestSessionAudioLevelUpdated;
+
+                // Update actual resolution/fps — ingest session may have been recreated at a
+                // different mode than what InitializeAsync originally set. Recording uses these
+                // to tell FFmpeg the frame size.
+                _actualWidth = settings.Width;
+                _actualHeight = settings.Height;
+                _actualFrameRate = settings.FrameRate;
+                _actualFrameRateArg = settings.RequestedFrameRateArg ?? settings.FrameRate.ToString("0.###");
+
+                // Start audio playback if audio preview is already enabled
+                if (_isAudioPreviewActive && _ingestSession.AudioPlaybackSource != null)
+                {
+                    StartAudioPlayback(_ingestSession.AudioPlaybackSource);
+                }
+
                 Logger.Log("Preview backend active: unified MediaCaptureIngestSession (GPU).");
                 PreviewPlaybackSourceChanged?.Invoke(this, playbackSource);
             }
@@ -779,6 +860,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 // If recording is active, the ingest session stays alive for the recorder.
                 var ingest = _ingestSession;
                 _ingestSession = null;
+                DetachIngestSession(ingest);
                 if (ingest != null)
                 {
                     await ingest.DisposeAsync().ConfigureAwait(false);
@@ -856,7 +938,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 var recordingContext = await _artifactManager.CreateContextAsync(
                     outputFolder,
                     settings,
-                    usePostMuxAudio: false,
+                    usePostMuxAudio: true,
                     audioDeviceName,
                     effectiveFrameRate,
                     frameRateArg,
@@ -896,6 +978,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     if (_isVideoPreviewActive && _videoPreviewUsesFfmpegPipe)
                     {
                         await _previewService.StopAsync(transitionToken).ConfigureAwait(false);
+                        _videoPreviewUsesFfmpegPipe = false;
                     }
 
                     ownedIngestSession = new MediaCaptureIngestSession();
@@ -908,6 +991,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
                         cancellationToken: transitionToken).ConfigureAwait(false);
                     await ownedIngestSession.StartRecordingAsync(recordingSink, transitionToken).ConfigureAwait(false);
                     _ingestSession = ownedIngestSession;
+                    _ingestSession.CaptureFailed += OnIngestSessionCaptureFailed;
+                    _ingestSession.AudioLevelUpdated += OnIngestSessionAudioLevelUpdated;
+                    _videoPreviewUsesFfmpegPipe = false;
+
+                    if (_isAudioPreviewActive && _ingestSession.AudioPlaybackSource != null)
+                    {
+                        StartAudioPlayback(_ingestSession.AudioPlaybackSource);
+                    }
+
                     PreviewPlaybackSourceChanged?.Invoke(this, playbackSource);
                 }
 
@@ -964,6 +1056,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
             EnsureInitialized();
             transitionToken.ThrowIfCancellationRequested();
             _isAudioPreviewActive = true;
+
+            var audioSource = _ingestSession?.AudioPlaybackSource;
+            if (audioSource != null)
+            {
+                StartAudioPlayback(audioSource);
+            }
+
             StatusChanged?.Invoke(this, "Audio preview started");
             return Task.CompletedTask;
         }, cancellationToken);
@@ -973,6 +1072,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             transitionToken.ThrowIfCancellationRequested();
             _isAudioPreviewActive = false;
+            StopAudioPlayback();
             AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
             StatusChanged?.Invoke(this, "Audio preview stopped");
             return Task.CompletedTask;
@@ -1019,6 +1119,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 {
                     var ingest = _ingestSession;
                     _ingestSession = null;
+                    DetachIngestSession(ingest);
                     if (ingest != null)
                     {
                         await ingest.DisposeAsync().ConfigureAwait(false);
@@ -1047,7 +1148,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         var sink = _recordingSink;
         var encoder = _ffmpegEncoder;
-        var fallbackOutputPath = _recordingContext?.FinalOutputPath ?? (_lastOutputPath ?? string.Empty);
+        var recordingContext = _recordingContext;
+        var fallbackOutputPath = recordingContext?.FinalOutputPath ?? (_lastOutputPath ?? string.Empty);
 
         _recordingSink = null;
         _ffmpegEncoder = null;
@@ -1060,7 +1162,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             try
             {
-                await _ingestSession.StopRecordingAsync().ConfigureAwait(false);
+                await _ingestSession.StopRecordingAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                cancellationException = new OperationCanceledException(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -1073,6 +1179,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             var ingest = _ingestSession;
             _ingestSession = null;
+            DetachIngestSession(ingest);
             if (ingest != null)
             {
                 try
@@ -1118,6 +1225,16 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 }
             }
 
+        }
+
+        // Finalize split recording artifacts (clean up temp files on success, preserve on failure)
+        if (recordingContext is { UsePostMuxAudio: true })
+        {
+            var artifactResult = _artifactManager.FinalizeContext(recordingContext, result.Succeeded);
+            if (!artifactResult.Succeeded && result.Succeeded)
+            {
+                result = artifactResult;
+            }
         }
 
         if (encoder != null)
@@ -1260,7 +1377,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             Height = (int?)_actualHeight ?? (int?)_currentSettings?.Height,
             FrameRateExact = _actualFrameRate ?? _currentSettings?.FrameRate,
             FrameRateArg = _actualFrameRateArg ?? _currentSettings?.RequestedFrameRateArg,
-            IsHdr = _currentSettings?.HdrEnabled,
+            IsHdr = null,
             DiagnosticSummary = "Using capture-format fallback telemetry."
         };
     }

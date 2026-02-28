@@ -58,7 +58,7 @@ public sealed class RecordingArtifactManager
             CreationCollisionOption.GenerateUniqueName);
 
         var tempAudioFile = await outputFolder.CreateFileAsync(
-            $"{baseName}_audio.wav",
+            $"{baseName}_audio.raw",
             CreationCollisionOption.GenerateUniqueName);
 
         return new RecordingContext

@@ -73,6 +73,8 @@ public sealed class CaptureHealthSnapshot
     public long VideoDropsBacklogEviction { get; init; }
     public long AudioDropsQueueSaturated { get; init; }
     public long AudioDropsBacklogEviction { get; init; }
+    public long LastVideoEnqueueAgeMs { get; init; }
+    public long LastVideoWriteAgeMs { get; init; }
 
     public long AudioChunksDropped { get; init; }
 }

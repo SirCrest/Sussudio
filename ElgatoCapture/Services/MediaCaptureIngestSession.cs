@@ -3,7 +3,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
+using ElgatoCapture.Models;
 using Windows.Graphics.Imaging;
 using Windows.Media;
 using Windows.Media.Capture;
@@ -21,6 +23,8 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
     private MediaFrameReader? _videoReader;
     private MediaFrameReader? _audioReader;
     private IRecordingSink? _sink;
+    private Channel<SoftwareBitmap>? _videoIngestChannel;
+    private Task? _videoIngestDrainTask;
     private bool _requireP010;
     private bool _audioEnabled;
     private string _videoStreamLabel = "unknown";
@@ -34,11 +38,31 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
     private long _videoIngestErrorCount;
     private long _lastVideoIngestErrorLogTick;
     private long _videoFrameCount;
+    private long _audioLevelLastFireTick;
+    private long _audioFrameCount;
+    private long _audioFramesWrittenToSink;
+    private long _videoFramesWrittenToSink;
+    private long _lastVideoFrameArrivedTick;
+    private const long AudioLevelFireIntervalMs = 66; // ~15 Hz
 
     // Stored for deferred reader creation (recording-only)
     private MediaFrameSource? _videoSource;
     private MediaFrameSource? _audioSource;
     private MediaSource? _previewMediaSource;
+    private MediaSource? _audioPreviewMediaSource;
+
+    public event EventHandler<MediaCaptureFailedEventArgs>? CaptureFailed;
+    public event EventHandler<AudioLevelEventArgs>? AudioLevelUpdated;
+
+    public IMediaPlaybackSource? AudioPlaybackSource => _audioPreviewMediaSource;
+
+    public bool IsAudioReaderActive => _audioReader != null;
+    public long AudioFramesArrived => Interlocked.Read(ref _audioFrameCount);
+    public long AudioFramesWrittenToSink => Interlocked.Read(ref _audioFramesWrittenToSink);
+    public bool IsVideoReaderActive => _videoReader != null;
+    public long VideoFramesArrived => Interlocked.Read(ref _videoFrameCount);
+    public long VideoFramesWrittenToSink => Interlocked.Read(ref _videoFramesWrittenToSink);
+    public long LastVideoFrameArrivedTick => Interlocked.Read(ref _lastVideoFrameArrivedTick);
 
     public MediaCaptureIngestSession()
     {
@@ -120,6 +144,7 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
             throw new InvalidOperationException($"MediaCapture ingestion initialization failed: {ex.Message}", ex);
         }
 
+        _mediaCapture.Failed += OnMediaCaptureFailed;
         cancellationToken.ThrowIfCancellationRequested();
 
         var videoSource = SelectVideoSource(_mediaCapture, preferRecord: requireP010);
@@ -157,6 +182,34 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
             Logger.Log($"Audio ingest source selected: stream={_audioStreamLabel} id={audioSource.Info.Id}.");
             LogAudioSupportedFormats(audioSource);
             _audioSource = audioSource;
+
+            // Start audio reader immediately for metering (runs during preview + recording)
+            var supportedSubtypes = audioSource.SupportedFormats
+                .Select(format => format.AudioEncodingProperties?.Subtype)
+                .Where(subtype => !string.IsNullOrWhiteSpace(subtype))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var requestedAudioSubtype = supportedSubtypes.Any(subtype =>
+                    string.Equals(subtype, MediaEncodingSubtypes.Float, StringComparison.OrdinalIgnoreCase))
+                ? MediaEncodingSubtypes.Float
+                : MediaEncodingSubtypes.Pcm;
+            _audioRequestedSubtype = requestedAudioSubtype;
+
+            Logger.Log($"Audio ingest request: subtype={requestedAudioSubtype}");
+            _audioReader = await _mediaCapture.CreateFrameReaderAsync(audioSource, requestedAudioSubtype)
+                .AsTask(cancellationToken);
+            _audioReader.FrameArrived += OnAudioFrameArrived;
+
+            var audioStatus = await _audioReader.StartAsync().AsTask(cancellationToken);
+            if (audioStatus != MediaFrameReaderStartStatus.Success)
+            {
+                throw new InvalidOperationException(
+                    $"Audio reader start failed: {audioStatus} (requested subtype={requestedAudioSubtype}).");
+            }
+
+            // Create audio MediaSource for speaker playback (mirrors video GPU preview pattern)
+            _audioPreviewMediaSource = MediaSource.CreateFromMediaFrameSource(audioSource);
+            Logger.Log("Audio reader started for metering. Audio playback source created.");
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -169,8 +222,8 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
     }
 
     /// <summary>
-    /// Create and start frame readers for recording. Attaches the provided sink to receive frames.
-    /// The GPU preview (MediaSource) continues unaffected.
+    /// Create and start the video frame reader for recording. Attaches the provided sink so
+    /// the already-running audio reader delivers frames to it. GPU preview continues unaffected.
     /// </summary>
     public async Task StartRecordingAsync(IRecordingSink sink, CancellationToken cancellationToken)
     {
@@ -181,76 +234,95 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
             throw new InvalidOperationException("Cannot start recording: video source not initialized. Call StartAsync first.");
         }
 
-        // Attach sink before starting readers so no frames are missed
+        if (_videoReader != null)
+        {
+            throw new InvalidOperationException("Recording video reader is already active for this ingest session.");
+        }
+
+        Interlocked.Exchange(ref _stopRequested, 0);
+
+        // Attach sink before starting readers so no frames are missed.
+        // The audio reader (already running for metering) will begin delivering to the sink immediately.
         Volatile.Write(ref _sink, sink);
         Logger.Log("Recording sink attached to ingest session.");
 
-        var requestedVideoSubtype = _videoRequestedSubtype;
-        Logger.Log($"Video ingest reader request: subtype={requestedVideoSubtype}");
-        _videoReader = await _mediaCapture.CreateFrameReaderAsync(_videoSource, requestedVideoSubtype).AsTask(cancellationToken);
-        _videoReader.FrameArrived += OnVideoFrameArrived;
-
-        if (_audioEnabled && _audioSource != null)
+        _videoIngestChannel = Channel.CreateBounded<SoftwareBitmap>(new BoundedChannelOptions(3)
         {
-            var supportedSubtypes = _audioSource.SupportedFormats
-                .Select(format => format.AudioEncodingProperties?.Subtype)
-                .Where(subtype => !string.IsNullOrWhiteSpace(subtype))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            SingleWriter = true,
+            SingleReader = true,
+            FullMode = BoundedChannelFullMode.DropNewest
+        });
+        _videoIngestDrainTask = Task.Run(() => DrainVideoIngestQueueAsync());
 
-            // Prefer Float because our FFmpeg audio pipe is configured as f32le.
-            var requestedSubtype = supportedSubtypes.Any(subtype =>
-                    string.Equals(subtype, MediaEncodingSubtypes.Float, StringComparison.OrdinalIgnoreCase))
-                ? MediaEncodingSubtypes.Float
-                : MediaEncodingSubtypes.Pcm;
-            _audioRequestedSubtype = requestedSubtype;
+        try
+        {
+            var requestedVideoSubtype = _videoRequestedSubtype;
+            Logger.Log($"Video ingest reader request: subtype={requestedVideoSubtype}");
+            _videoReader = await _mediaCapture.CreateFrameReaderAsync(_videoSource, requestedVideoSubtype).AsTask(cancellationToken);
+            _videoReader.FrameArrived += OnVideoFrameArrived;
 
-            Logger.Log($"Audio ingest request: subtype={requestedSubtype}");
+            cancellationToken.ThrowIfCancellationRequested();
+
+            var videoStatus = await _videoReader.StartAsync().AsTask(cancellationToken);
+            if (videoStatus != MediaFrameReaderStartStatus.Success)
+            {
+                throw new InvalidOperationException($"Video ingestion start failed: {videoStatus}.");
+            }
+
+            Logger.Log("Recording video reader started. Audio reader already active from preview.");
+        }
+        catch
+        {
             try
             {
-                _audioReader = await _mediaCapture.CreateFrameReaderAsync(_audioSource, requestedSubtype)
-                    .AsTask(cancellationToken);
+                await StopRecordingAsync(CancellationToken.None).ConfigureAwait(false);
             }
-            catch (Exception ex)
+            catch (Exception cleanupEx)
             {
-                throw new InvalidOperationException(
-                    $"Audio reader creation failed (requested subtype={requestedSubtype}). {ex.GetType().Name}: {ex.Message} (hr=0x{ex.HResult:X8})",
-                    ex);
+                Logger.Log($"Recording reader rollback failed: {cleanupEx.Message}");
             }
-            _audioReader.FrameArrived += OnAudioFrameArrived;
+
+            throw;
         }
-
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var videoStatus = await _videoReader.StartAsync().AsTask(cancellationToken);
-        if (videoStatus != MediaFrameReaderStartStatus.Success)
-        {
-            throw new InvalidOperationException($"Video ingestion start failed: {videoStatus}.");
-        }
-
-        if (_audioReader != null)
-        {
-            var audioStatus = await _audioReader.StartAsync().AsTask(cancellationToken);
-            if (audioStatus != MediaFrameReaderStartStatus.Success)
-            {
-                throw new InvalidOperationException(
-                    $"Audio ingestion start failed: {audioStatus} (requested subtype={_audioRequestedSubtype}).");
-            }
-        }
-
-        Logger.Log("Recording readers started on existing MediaCapture session.");
     }
 
     /// <summary>
-    /// Stop and dispose recording frame readers. The MediaCapture and GPU preview remain active.
+    /// Stop and dispose the recording video reader. The audio reader, metering, GPU preview,
+    /// and audio playback all continue unaffected.
     /// </summary>
-    public async Task StopRecordingAsync()
+    public async Task StopRecordingAsync(CancellationToken cancellationToken = default)
     {
-        // Detach sink first to stop frame delivery
+        var cancellationRequested = cancellationToken.IsCancellationRequested;
+
+        // Detach sink first — audio reader continues for metering but stops recording
         var previous = Interlocked.Exchange(ref _sink, null);
         if (previous != null)
         {
             Logger.Log("Recording sink detached from ingest session.");
+        }
+
+        var channel = _videoIngestChannel;
+        _videoIngestChannel = null;
+        if (channel != null)
+        {
+            channel.Writer.TryComplete();
+        }
+        var drainTask = _videoIngestDrainTask;
+        _videoIngestDrainTask = null;
+        if (drainTask != null)
+        {
+            try
+            {
+                await drainTask.WaitAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+            }
+            catch (TimeoutException)
+            {
+                Logger.Log("Video ingest drain task timed out during stop.");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Video ingest drain task error during stop: {ex.Message}");
+            }
         }
 
         var video = _videoReader;
@@ -269,29 +341,25 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
             video.Dispose();
         }
 
-        var audio = _audioReader;
-        _audioReader = null;
-        if (audio != null)
-        {
-            audio.FrameArrived -= OnAudioFrameArrived;
-            try
-            {
-                await audio.StopAsync();
-            }
-            catch
-            {
-                // Best-effort.
-            }
-            audio.Dispose();
-        }
-
-        // Reset per-recording counters
+        // Reset per-recording counters (audio reader stays alive for metering)
         Interlocked.Exchange(ref _loggedFirstVideoFrame, 0);
-        Interlocked.Exchange(ref _loggedFirstAudioFrame, 0);
         Interlocked.Exchange(ref _videoFrameCount, 0);
+        Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
+        Interlocked.Exchange(ref _lastVideoFrameArrivedTick, 0);
         Interlocked.Exchange(ref _videoIngestErrorCount, 0);
 
-        Logger.Log("Recording readers stopped. GPU preview continues.");
+        Logger.Log("Recording video reader stopped. Audio reader and GPU preview continue.");
+
+        if (cancellationRequested || cancellationToken.IsCancellationRequested)
+        {
+            throw new OperationCanceledException(cancellationToken);
+        }
+    }
+
+    private void OnMediaCaptureFailed(MediaCapture sender, MediaCaptureFailedEventArgs args)
+    {
+        Logger.Log($"MEDIACAPTURE_FAILED code=0x{args.Code:X8} message={args.Message}");
+        CaptureFailed?.Invoke(this, args);
     }
 
     private static MediaFrameSource? SelectVideoSource(MediaCapture mediaCapture, bool preferRecord)
@@ -416,14 +484,20 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
                 throw new InvalidOperationException(
                     $"SDR ingress requires NV12, but received {bitmap.BitmapPixelFormat}.");
 
-            // Recording-only: pipe to sink
-            var sink = Volatile.Read(ref _sink);
-            if (sink != null)
-            {
-                _ = sink.WriteVideoAsync(bitmap);
-            }
-
             Interlocked.Increment(ref _videoFrameCount);
+            Interlocked.Exchange(ref _lastVideoFrameArrivedTick, Environment.TickCount64);
+
+            // Detach bitmap from reader's buffer pool so we can release the frame immediately
+            var channel = _videoIngestChannel;
+            if (channel != null)
+            {
+                var copy = SoftwareBitmap.Copy(bitmap);
+                if (!channel.Writer.TryWrite(copy))
+                {
+                    // DropOldest policy should prevent this, but if it happens, clean up
+                    copy.Dispose();
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -451,15 +525,43 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
         }
     }
 
+    private async Task DrainVideoIngestQueueAsync()
+    {
+        var channel = _videoIngestChannel;
+        if (channel == null) return;
+
+        try
+        {
+            await foreach (var bitmap in channel.Reader.ReadAllAsync())
+            {
+                try
+                {
+                    var sink = Volatile.Read(ref _sink);
+                    if (sink != null)
+                    {
+                        _ = sink.WriteVideoAsync(bitmap);
+                        Interlocked.Increment(ref _videoFramesWrittenToSink);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Video ingest drain error: {ex.Message}");
+                }
+                finally
+                {
+                    bitmap.Dispose();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Video ingest drain task failed: {ex.Message}");
+        }
+    }
+
     private void OnAudioFrameArrived(MediaFrameReader sender, MediaFrameArrivedEventArgs args)
     {
         if (Volatile.Read(ref _stopRequested) != 0)
-        {
-            return;
-        }
-
-        var sink = Volatile.Read(ref _sink);
-        if (sink == null)
         {
             return;
         }
@@ -472,6 +574,8 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
             {
                 return;
             }
+
+            Interlocked.Increment(ref _audioFrameCount);
 
             var props = audio.AudioEncodingProperties;
             var sampleRate = props?.SampleRate ?? 0;
@@ -501,35 +605,45 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
                     return;
                 }
 
+                byte[] f32leBytes;
+
                 if (string.Equals(subtype, MediaEncodingSubtypes.Float, StringComparison.OrdinalIgnoreCase) &&
                     bitsPerSample == 32)
                 {
-                    var managed = new byte[capacity];
-                    Marshal.Copy((IntPtr)data, managed, 0, managed.Length);
-                    _ = sink.WriteAudioAsync(managed);
-                    return;
+                    f32leBytes = new byte[capacity];
+                    Marshal.Copy((IntPtr)data, f32leBytes, 0, f32leBytes.Length);
                 }
-
-                if (string.Equals(subtype, MediaEncodingSubtypes.Pcm, StringComparison.OrdinalIgnoreCase) &&
+                else if (string.Equals(subtype, MediaEncodingSubtypes.Pcm, StringComparison.OrdinalIgnoreCase) &&
                     bitsPerSample == 16)
                 {
                     // Convert PCM16 to f32le to match FFmpeg audio pipe format (-f f32le)
                     var sampleCount = (int)(capacity / 2);
-                    var floatBytes = new byte[sampleCount * 4];
+                    f32leBytes = new byte[sampleCount * 4];
                     for (int i = 0; i < sampleCount; i++)
                     {
                         short pcm = (short)(data[i * 2] | (data[i * 2 + 1] << 8));
                         float normalized = pcm / 32768f;
                         BitConverter.TryWriteBytes(
-                            new Span<byte>(floatBytes, i * 4, 4), normalized);
+                            new Span<byte>(f32leBytes, i * 4, 4), normalized);
                     }
-                    _ = sink.WriteAudioAsync(floatBytes);
-                    return;
+                }
+                else
+                {
+                    throw new InvalidOperationException(
+                        $"Unsupported audio format: subtype={subtype}, bits={bitsPerSample} (requestedSubtype={_audioRequestedSubtype}).");
+                }
+
+                // Always meter — works during preview and recording
+                RaiseAudioLevelIfDue(f32leBytes);
+
+                // Only write to recording sink when actively recording
+                var sink = Volatile.Read(ref _sink);
+                if (sink != null)
+                {
+                    _ = sink.WriteAudioAsync(f32leBytes);
+                    Interlocked.Increment(ref _audioFramesWrittenToSink);
                 }
             }
-
-            throw new InvalidOperationException(
-                $"Unsupported audio format: subtype={subtype}, bits={bitsPerSample} (requestedSubtype={_audioRequestedSubtype}).");
         }
         catch (Exception ex)
         {
@@ -537,10 +651,42 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
         }
     }
 
+    private void RaiseAudioLevelIfDue(byte[] f32leBytes)
+    {
+        var handler = AudioLevelUpdated;
+        if (handler == null) return;
+
+        var nowTick = Environment.TickCount64;
+        var lastTick = Interlocked.Read(ref _audioLevelLastFireTick);
+        if (nowTick - lastTick < AudioLevelFireIntervalMs) return;
+        if (Interlocked.CompareExchange(ref _audioLevelLastFireTick, nowTick, lastTick) != lastTick) return;
+
+        var samples = MemoryMarshal.Cast<byte, float>(f32leBytes.AsSpan());
+        float peak = 0f;
+        foreach (var sample in samples)
+        {
+            var abs = MathF.Abs(sample);
+            if (abs > peak) peak = abs;
+        }
+
+        handler.Invoke(this, new AudioLevelEventArgs(peak, 0, peak >= 1.0));
+    }
+
     public async ValueTask DisposeAsync()
     {
         Interlocked.Exchange(ref _stopRequested, 1);
         _sink = null;
+        var channel = _videoIngestChannel;
+        _videoIngestChannel = null;
+        channel?.Writer.TryComplete();
+        var drainTask = _videoIngestDrainTask;
+        _videoIngestDrainTask = null;
+        if (drainTask != null)
+        {
+            try { await drainTask.WaitAsync(TimeSpan.FromSeconds(2)).ConfigureAwait(false); }
+            catch { /* best-effort */ }
+        }
+        _mediaCapture.Failed -= OnMediaCaptureFailed;
 
         var video = _videoReader;
         _videoReader = null;
@@ -580,6 +726,10 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
         var previewSource = _previewMediaSource;
         _previewMediaSource = null;
         previewSource?.Dispose();
+
+        var audioPreviewSource = _audioPreviewMediaSource;
+        _audioPreviewMediaSource = null;
+        audioPreviewSource?.Dispose();
 
         try
         {

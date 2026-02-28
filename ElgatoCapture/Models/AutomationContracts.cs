@@ -28,7 +28,8 @@ public enum AutomationCommandKind
     WindowAction,
     WaitForCondition,
     VerifyLastRecording,
-    AssertSnapshot
+    AssertSnapshot,
+    SetTrueHdrPreviewEnabled
 }
 
 public enum AutomationWindowAction
@@ -49,7 +50,28 @@ public enum AutomationWaitCondition
     VerificationReady,
     HdrModeApplied,
     PerformancePerfectionMet,
-    HdrVerificationReady
+    HdrVerificationReady,
+    AudioFramesFlowing,
+    VideoFramesFlowing
+}
+
+[Flags]
+public enum PreviewStartupSignalFlags
+{
+    None = 0,
+    MediaOpened = 1 << 0,
+    FirstCaptureFrame = 1 << 1,
+    PlaybackAdvancing = 1 << 2,
+    FirstVisual = 1 << 3
+}
+
+public enum PreviewStartupStrategy
+{
+    None,
+    GpuMediaSourceNoFrameReader,
+    GpuMediaSourceWithFrameReader,
+    CpuSoftwareBitmap,
+    DirectShow
 }
 
 public sealed class AutomationCommandRequest
@@ -140,6 +162,17 @@ public sealed class AutomationSnapshot
     public bool AudioClipping { get; init; }
     public bool AudioSignalPresent { get; init; }
     public bool AudioMutedSuspected { get; init; }
+    public bool AudioReaderActive { get; init; }
+    public long AudioFramesArrived { get; init; }
+    public long AudioFramesWrittenToSink { get; init; }
+    public bool VideoReaderActive { get; init; }
+    public long IngestVideoFramesArrived { get; init; }
+    public long IngestVideoFramesWrittenToSink { get; init; }
+    public long IngestLastVideoFrameAgeMs { get; init; }
+    public long EncoderVideoFramesEnqueued { get; init; }
+    public long EncoderVideoFramesEncoded { get; init; }
+    public long EncoderLastEnqueueAgeMs { get; init; }
+    public long EncoderLastWriteAgeMs { get; init; }
 
     public string RecordingBackend { get; init; } = "None";
     public string AudioPathMode { get; init; } = "None";
@@ -225,6 +258,24 @@ public sealed class AutomationSnapshot
     public double PreviewCadenceSlowFramePercent { get; init; }
     public bool PreviewGpuActive { get; init; }
     public bool PreviewFrameReaderActive { get; init; }
+    public bool PreviewPlaceholderVisible { get; init; }
+    public bool PreviewGpuElementVisible { get; init; }
+    public bool PreviewCpuElementVisible { get; init; }
+    public bool PreviewRendererAttached { get; init; }
+    public string PreviewStartupState { get; init; } = "Idle";
+    public string? PreviewAttemptId { get; init; }
+    public double? PreviewStartupElapsedMs { get; init; }
+    public int PreviewStartupTimeoutMs { get; init; }
+    public bool PreviewGpuSignalMediaOpened { get; init; }
+    public bool PreviewGpuSignalFirstFrame { get; init; }
+    public bool PreviewGpuSignalPlaybackAdvancing { get; init; }
+    public PreviewStartupSignalFlags PreviewStartupRequiredSignals { get; init; }
+    public PreviewStartupSignalFlags PreviewStartupReceivedSignals { get; init; }
+    public string PreviewStartupStrategy { get; init; } = "None";
+    public string? PreviewStartupMissingSignals { get; init; }
+    public int PreviewRecoveryAttemptCount { get; init; }
+    public string? PreviewLastFailureReason { get; init; }
+    public bool PreviewFirstVisualConfirmed { get; init; }
     public bool PreviewBlankSuspected { get; init; }
     public bool PreviewStalled { get; init; }
     public string PreviewRendererMode { get; init; } = "None";
@@ -381,6 +432,23 @@ public sealed class PreviewRuntimeSnapshot
     public bool GpuActive { get; init; }
     public bool FrameReaderActive { get; init; }
     public bool PlaceholderVisible { get; init; }
+    public bool GpuElementVisible { get; init; }
+    public bool CpuElementVisible { get; init; }
+    public bool RendererAttached { get; init; }
+    public string StartupState { get; init; } = "Idle";
+    public string? StartupAttemptId { get; init; }
+    public double? StartupElapsedMs { get; init; }
+    public int StartupTimeoutMs { get; init; }
+    public bool StartupGpuSignalMediaOpened { get; init; }
+    public bool StartupGpuSignalFirstFrame { get; init; }
+    public bool StartupGpuSignalPlaybackAdvancing { get; init; }
+    public PreviewStartupSignalFlags StartupRequiredSignals { get; init; }
+    public PreviewStartupSignalFlags StartupReceivedSignals { get; init; }
+    public PreviewStartupStrategy StartupStrategy { get; init; }
+    public string? StartupMissingSignals { get; init; }
+    public int StartupRecoveryAttemptCount { get; init; }
+    public string? StartupLastFailureReason { get; init; }
+    public bool FirstVisualConfirmed { get; init; }
     public long FramesArrived { get; init; }
     public long FramesDisplayed { get; init; }
     public long FramesDropped { get; init; }
@@ -405,6 +473,13 @@ public sealed class CaptureRuntimeSnapshot
     public bool IsInitialized { get; init; }
     public bool IsRecording { get; init; }
     public bool IsAudioPreviewActive { get; init; }
+    public bool AudioReaderActive { get; init; }
+    public long AudioFramesArrived { get; init; }
+    public long AudioFramesWrittenToSink { get; init; }
+    public bool VideoReaderActive { get; init; }
+    public long IngestVideoFramesArrived { get; init; }
+    public long IngestVideoFramesWrittenToSink { get; init; }
+    public long IngestLastVideoFrameAgeMs { get; init; }
     public string SessionState { get; init; } = "Unknown";
 
     public string? CurrentDeviceId { get; init; }

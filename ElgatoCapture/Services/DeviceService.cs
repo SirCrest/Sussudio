@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +16,31 @@ using Windows.Media.Capture;
 using Windows.Media.Capture.Frames;
 
 namespace ElgatoCapture.Services;
+
+internal sealed class CachedMediaFormat
+{
+    public uint Width { get; set; }
+    public uint Height { get; set; }
+    public double FrameRate { get; set; }
+    public uint FrameRateNumerator { get; set; }
+    public uint FrameRateDenominator { get; set; }
+    public string PixelFormat { get; set; } = string.Empty;
+    public bool IsHdr { get; set; }
+}
+
+internal sealed class DeviceFormatCacheFile
+{
+    public string DeviceId { get; set; } = string.Empty;
+    public string DeviceName { get; set; } = string.Empty;
+    public bool IsHdrCapable { get; set; }
+    public DateTimeOffset CachedAtUtc { get; set; }
+    public int FormatCount { get; set; }
+    public List<CachedMediaFormat> Formats { get; set; } = new();
+}
+
+[JsonSerializable(typeof(DeviceFormatCacheFile))]
+[JsonSourceGenerationOptions(WriteIndented = true)]
+internal partial class DeviceFormatCacheJsonContext : JsonSerializerContext;
 
 public class DeviceService
 {
@@ -111,8 +139,7 @@ public class DeviceService
             }
             else
             {
-                var fallbackFormats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                AddFallbackFormats(captureDevice, fallbackFormats);
+                TryLoadFormatCache(captureDevice);
             }
 
             var preferredByName = PreferredDeviceNames.Any(name =>
@@ -180,6 +207,11 @@ public class DeviceService
 
             var hasEnumeratedFormats = await QuerySupportedFormatsAsync(probeDevice).ConfigureAwait(false);
             var snapshot = CloneFormats(probeDevice.SupportedFormats);
+            if (hasEnumeratedFormats)
+            {
+                TrySaveFormatCache(probeDevice, snapshot);
+            }
+
             FormatProbeCompleted?.Invoke(
                 this,
                 new DeviceFormatProbeCompletedEventArgs(
@@ -229,6 +261,125 @@ public class DeviceService
         }
 
         return clone;
+    }
+
+    private static readonly string FormatCacheDirectory =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElgatoCapture");
+
+    private static string SanitizeDeviceIdForFilename(string deviceId)
+    {
+        var sb = new StringBuilder(deviceId.Length);
+        foreach (var ch in deviceId)
+        {
+            sb.Append(char.IsLetterOrDigit(ch) ? ch : '_');
+        }
+
+        var sanitized = sb.ToString();
+        return sanitized.Length > 200 ? sanitized[..200] : sanitized;
+    }
+
+    private static string GetCacheFilePath(string deviceId)
+    {
+        return Path.Combine(FormatCacheDirectory, $"format_cache_{SanitizeDeviceIdForFilename(deviceId)}.json");
+    }
+
+    private static void TryDeleteFormatCache(string deviceId)
+    {
+        try
+        {
+            var path = GetCacheFilePath(deviceId);
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+                Logger.Log($"FORMAT_CACHE: deleted corrupt cache for {deviceId}");
+            }
+        }
+        catch
+        {
+            // Best-effort delete
+        }
+    }
+
+    private static void TryLoadFormatCache(CaptureDevice device)
+    {
+        try
+        {
+            var path = GetCacheFilePath(device.Id);
+            if (!File.Exists(path))
+            {
+                return;
+            }
+
+            var json = File.ReadAllText(path);
+            var cache = JsonSerializer.Deserialize(json, DeviceFormatCacheJsonContext.Default.DeviceFormatCacheFile);
+            if (cache == null || cache.Formats.Count == 0)
+            {
+                TryDeleteFormatCache(device.Id);
+                return;
+            }
+
+            foreach (var cached in cache.Formats)
+            {
+                device.SupportedFormats.Add(new MediaFormat
+                {
+                    Width = cached.Width,
+                    Height = cached.Height,
+                    FrameRate = cached.FrameRate,
+                    FrameRateNumerator = cached.FrameRateNumerator,
+                    FrameRateDenominator = cached.FrameRateDenominator,
+                    PixelFormat = cached.PixelFormat,
+                    IsHdr = cached.IsHdr
+                });
+            }
+
+            device.IsHdrCapable = cache.IsHdrCapable;
+            Logger.Log($"FORMAT_CACHE: warm from cache for {device.Name}: {cache.Formats.Count} formats (cached {cache.CachedAtUtc:u})");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FORMAT_CACHE: failed to load cache for {device.Name} ({ex.GetType().Name}: {ex.Message}), deleting");
+            TryDeleteFormatCache(device.Id);
+        }
+    }
+
+    private static void TrySaveFormatCache(CaptureDevice device, IReadOnlyList<MediaFormat> formats)
+    {
+        try
+        {
+            Directory.CreateDirectory(FormatCacheDirectory);
+            var cache = new DeviceFormatCacheFile
+            {
+                DeviceId = device.Id,
+                DeviceName = device.Name,
+                IsHdrCapable = device.IsHdrCapable,
+                CachedAtUtc = DateTimeOffset.UtcNow,
+                FormatCount = formats.Count,
+                Formats = new List<CachedMediaFormat>(formats.Count)
+            };
+
+            foreach (var fmt in formats)
+            {
+                cache.Formats.Add(new CachedMediaFormat
+                {
+                    Width = fmt.Width,
+                    Height = fmt.Height,
+                    FrameRate = fmt.FrameRate,
+                    FrameRateNumerator = fmt.FrameRateNumerator,
+                    FrameRateDenominator = fmt.FrameRateDenominator,
+                    PixelFormat = fmt.PixelFormat,
+                    IsHdr = fmt.IsHdr
+                });
+            }
+
+            var json = JsonSerializer.Serialize(cache, DeviceFormatCacheJsonContext.Default.DeviceFormatCacheFile);
+            var path = GetCacheFilePath(device.Id);
+            File.WriteAllText(path, json);
+            Logger.Log($"FORMAT_CACHE: saved {formats.Count} formats for {device.Name}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FORMAT_CACHE: failed to save cache for {device.Name} ({ex.GetType().Name}: {ex.Message})");
+        }
     }
 
     private static int GetDevicePriority(DeviceCandidate candidate)
@@ -449,8 +600,8 @@ public class DeviceService
         catch (Exception ex)
         {
             Logger.Log($"Format discovery failed for {device.Name}: {ex.Message}");
-            var uniqueFormats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            AddFallbackFormats(device, uniqueFormats);
+            device.SupportedFormats.Clear();
+            device.IsHdrCapable = false;
             return false;
         }
     }
@@ -623,47 +774,6 @@ public class DeviceService
         }
 
         return escaped.ToString();
-    }
-
-    private static void AddFallbackFormats(CaptureDevice device, HashSet<string> uniqueFormats)
-    {
-        AddFallback(device, uniqueFormats, 3840, 2160, 60, "NV12");
-        AddFallback(device, uniqueFormats, 3840, 2160, 30, "NV12");
-        AddFallback(device, uniqueFormats, 2560, 1440, 60, "NV12");
-        AddFallback(device, uniqueFormats, 1920, 1080, 60, "NV12");
-        AddFallback(device, uniqueFormats, 1920, 1080, 30, "NV12");
-    }
-
-    private static void AddFallback(
-        CaptureDevice device,
-        HashSet<string> uniqueFormats,
-        uint width,
-        uint height,
-        uint fps,
-        string pixelFormat)
-    {
-        var isHdr = MediaFormat.IsHdrPixelFormat(pixelFormat) || MediaFormat.IsTrue10BitPixelFormat(pixelFormat);
-        if (isHdr)
-        {
-            device.IsHdrCapable = true;
-        }
-
-        var key = $"{width}x{height}@{fps}/1_{pixelFormat}_{(isHdr ? "HDR" : "SDR")}";
-        if (!uniqueFormats.Add(key))
-        {
-            return;
-        }
-
-        device.SupportedFormats.Add(new MediaFormat
-        {
-            Width = width,
-            Height = height,
-            FrameRate = fps,
-            FrameRateNumerator = fps,
-            FrameRateDenominator = 1,
-            PixelFormat = pixelFormat,
-            IsHdr = isHdr
-        });
     }
 
     public async Task<List<AudioInputDevice>> EnumerateAudioCaptureDevicesAsync()

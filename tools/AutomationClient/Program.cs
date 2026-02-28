@@ -34,7 +34,9 @@ internal static class Program
         ["ArmClose"] = 18,
         ["WindowAction"] = 19,
         ["WaitForCondition"] = 20,
-        ["VerifyLastRecording"] = 21
+        ["VerifyLastRecording"] = 21,
+        ["AssertSnapshot"] = 22,
+        ["SetTrueHdrPreviewEnabled"] = 23
     };
 
     public static async Task<int> Main(string[] args)

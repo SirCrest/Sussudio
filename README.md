@@ -154,6 +154,8 @@ Helper script:
   - Suppresses preview presents during resize churn.
 - `ELGATOCAPTURE_PREVIEW_USE_GPU` (default: `true`)
   - Enables/disables GPU preview path.
+- `ELGATOCAPTURE_PREVIEW_START_TIMEOUT_MS` (default: `10000`, clamp: `1000-15000`)
+  - Max wait for strict dual-signal startup readiness (`MediaOpened` + first capture frame) before watchdog marks startup as failed (no hidden auto-retry).
 - `ELGATOCAPTURE_FORCE_FRAME_READER_DURING_RECORDING` (default: `false`)
   - Forces frame-reader preview compatibility mode on recording start.
 - `ELGATOCAPTURE_PREVIEW_SHUTDOWN_TIMEOUT_MS` (default: `3000`, clamp: `250-30000`)

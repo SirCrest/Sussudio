@@ -1,0 +1,95 @@
+using System.ComponentModel;
+using System.Text.Json;
+using ModelContextProtocol.Server;
+
+namespace McpServer.Tools;
+
+[McpServerToolType]
+public static class DeviceTools
+{
+    [McpServerTool, Description("Select capture device, audio input device, refresh device list, or toggle custom audio input")]
+    public static async Task<string> configure_device(
+        PipeClient pipeClient,
+        [Description("Capture device id to select")] string? deviceId = null,
+        [Description("Capture device name to select when id is unknown")] string? deviceName = null,
+        [Description("Audio input device id to select")] string? audioDeviceId = null,
+        [Description("Audio input device name to select when id is unknown")] string? audioDeviceName = null,
+        [Description("Refresh the device list before making selections")] bool refresh = false,
+        [Description("Enable or disable custom audio input")] bool? customAudioInput = null)
+    {
+        var results = new List<string>();
+
+        if (refresh)
+        {
+            results.Add(await ExecuteAndFormatAsync(
+                pipeClient,
+                commandName: "RefreshDevices",
+                label: "RefreshDevices").ConfigureAwait(false));
+        }
+
+        if (!string.IsNullOrWhiteSpace(deviceId) || !string.IsNullOrWhiteSpace(deviceName))
+        {
+            var payload = new Dictionary<string, object?>
+            {
+                ["deviceId"] = string.IsNullOrWhiteSpace(deviceId) ? null : deviceId,
+                ["deviceName"] = string.IsNullOrWhiteSpace(deviceName) ? null : deviceName
+            };
+            results.Add(await ExecuteAndFormatAsync(
+                pipeClient,
+                commandName: "SelectDevice",
+                label: "SelectDevice",
+                payload: payload).ConfigureAwait(false));
+        }
+
+        if (!string.IsNullOrWhiteSpace(audioDeviceId) || !string.IsNullOrWhiteSpace(audioDeviceName))
+        {
+            var payload = new Dictionary<string, object?>
+            {
+                ["deviceId"] = string.IsNullOrWhiteSpace(audioDeviceId) ? null : audioDeviceId,
+                ["deviceName"] = string.IsNullOrWhiteSpace(audioDeviceName) ? null : audioDeviceName
+            };
+            results.Add(await ExecuteAndFormatAsync(
+                pipeClient,
+                commandName: "SelectAudioInputDevice",
+                label: "SelectAudioInputDevice",
+                payload: payload).ConfigureAwait(false));
+        }
+
+        if (customAudioInput.HasValue)
+        {
+            var payload = new Dictionary<string, object?>
+            {
+                ["enabled"] = customAudioInput.Value
+            };
+            results.Add(await ExecuteAndFormatAsync(
+                pipeClient,
+                commandName: "SetCustomAudioInput",
+                label: "SetCustomAudioInput",
+                payload: payload).ConfigureAwait(false));
+        }
+
+        return results.Count == 0
+            ? "No device configuration changes requested."
+            : string.Join(Environment.NewLine, results);
+    }
+
+    private static async Task<string> ExecuteAndFormatAsync(
+        PipeClient pipeClient,
+        string commandName,
+        string label,
+        Dictionary<string, object?>? payload = null,
+        int? responseTimeoutMs = null)
+    {
+        var response = await pipeClient.SendCommandAsync(commandName, payload, responseTimeoutMs).ConfigureAwait(false);
+        var status = IsSuccess(response) ? "OK" : "ERROR";
+        var message = ResponseFormatter.Get(response, "Message", "No message.");
+        return $"[{status}] {label}: {message}";
+    }
+
+    private static bool IsSuccess(JsonElement response)
+    {
+        return response.ValueKind == JsonValueKind.Object &&
+               response.TryGetProperty("Success", out var success) &&
+               success.ValueKind == JsonValueKind.True;
+    }
+}

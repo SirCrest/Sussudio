@@ -4,6 +4,31 @@ Read `docs/project-plan.md` before proposing changes. It defines the project
 scope, HDR pipeline contract, and preview model. Do not introduce features or
 patterns that conflict with those goals.
 
+## Debugging Workflow (follow this order, no shortcuts)
+
+1. **Read the log first.** The app writes to `temp/logs/ElgatoCapture_Debug.log`. Read it after every build/run.
+2. **Find the failure token, then find the code that produced it.** When you see a structured log token like `PREVIEW_START_TIMEOUT missing=MediaOpened` or `HDR_VALIDATE_RESULT FAIL`, do NOT generate a list of possible causes from the token text alone. Instead:
+   - Grep the source for the exact string that produced the log line (e.g., `PREVIEW_START_TIMEOUT`, `HDR_VALIDATE_RESULT`).
+   - Read that source location in full — the surrounding guards, the state that feeds it, and the code that sets that state.
+   - Only then propose a diagnosis.
+3. **Trace the full data path end-to-end.** A fix is only valid once you can name the exact code location where the failure originates and explain why the current code takes the wrong branch.
+4. **Do not say "I found the precise issue" unless you have read the relevant source.** Correlating log tokens is not diagnosis. Causation requires code.
+5. **One change per fix.** Make the smallest change that addresses the root cause. Do not clean up surrounding code, add logging, or refactor unrelated sections in the same commit.
+
+## HDR Pipeline Rules (non-negotiable)
+
+- When `HdrEnabled = true` and `HdrOutputMode = Hdr10Pq`, every layer must deliver P010/HDR10-PQ output or **fail loudly**. No silent fallback to SDR.
+- If P010 negotiation fails at any point, throw — do not continue with a degraded pipeline.
+- Post-recording: `tools/validate_hdr.ps1 -ExpectHdr` must pass. A recording that fails validation is a failed recording.
+- See `docs/constraints.md` for the full list of hard-fail conditions.
+
+## Experiment Log (append-only)
+
+- Every investigative change must be logged in `docs/experiment_log.md` using the template in that file.
+- **Never edit or delete prior entries.** Append only.
+- Each experiment must have: one scoped change, how to run it, and what the validator/log output showed.
+- Do not make more than one change per experiment entry.
+
 ## Project Structure & Module Organization
 - `ElgatoCapture/`: WinUI 3 app source (`MainWindow.xaml`, `ViewModels/`, `Services/`, `Models/`, `Converters/`, `Assets/`).
 - `ElgatoCapture/ViewModels/`: UI state, commands, and capture orchestration.

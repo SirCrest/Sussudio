@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,6 +24,27 @@ namespace ElgatoCapture;
 
 public sealed partial class MainWindow : Window, IAutomationWindowControl
 {
+    private enum PreviewStartupState
+    {
+        Idle,
+        StartingSession,
+        RendererAttaching,
+        WaitingForFirstVisual,
+        Rendering,
+        Failed
+    }
+
+    private const int PreviewStartupDefaultVisualTimeoutMs = 10000;
+    private const int PreviewStartupMinVisualTimeoutMs = 1000;
+    private const int PreviewStartupMaxVisualTimeoutMs = 15000;
+    private const int PreviewStartupOverlayUpdateIntervalMs = 100;
+    private static readonly TimeSpan PreviewStartupPlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);
+    private static readonly int PreviewStartupVisualTimeoutMs = ResolveStartupSetting(
+        "ELGATOCAPTURE_PREVIEW_START_TIMEOUT_MS",
+        PreviewStartupDefaultVisualTimeoutMs,
+        PreviewStartupMinVisualTimeoutMs,
+        PreviewStartupMaxVisualTimeoutMs);
+
     public MainViewModel ViewModel { get; }
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
@@ -33,7 +57,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _previewLastPresentedTick;
     private long _previewResizeSuppressUntilTick;
     private int _previewUiInFlight;
-    private long _lastDiagnosticsUiUpdateTick;
     private readonly object _previewCadenceLock = new();
     private readonly double[] _previewDisplayIntervalWindowMs = new double[300];
     private int _previewDisplayIntervalCount;
@@ -54,9 +77,698 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private int _frameRateSelectionSyncQueued;
     private int _formatSelectionSyncQueued;
     private int _qualitySelectionSyncQueued;
+    private readonly string _windowTitleBase;
+    private DispatcherQueueTimer? _previewStartupWatchdogTimer;
+    private DispatcherQueueTimer? _previewStartupOverlayTimer;
+    private DispatcherQueueTimer? _previewStartupTelemetryTimer;
+    private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;
+    private string? _previewStartupAttemptId;
+    private DateTimeOffset? _previewStartupRequestedUtc;
+    private DateTimeOffset? _previewRendererAttachedUtc;
+    private DateTimeOffset? _previewFirstVisualUtc;
+    private string? _previewLastFailureReason;
+    private string? _previewStartupMissingSignals;
+    private int _previewRecoveryAttemptCount;
+    private bool _previewFirstVisualConfirmed;
+    private bool _previewStartupExpectGpuDualSignals;
+    private bool _previewGpuSignalMediaOpened;
+    private bool _previewGpuSignalFirstFrame;
+    private bool _previewGpuSignalPlaybackAdvancing;
+    private PreviewStartupSignalFlags _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
+    private PreviewStartupSignalFlags _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
+    private PreviewStartupStrategy _previewStartupStrategy = PreviewStartupStrategy.None;
+    private TimeSpan _previewStartupLastPlaybackPosition = TimeSpan.Zero;
+    private long _previewStartupPositionEventCount;
+    private MediaPlaybackState _previewStartupLastPlaybackState = MediaPlaybackState.None;
+    private bool _previewStartupInitialPlayIssued;
+    private bool _previewStartupPausedRecoveryIssued;
+    private bool _previewStartupPlaybackPositionInitialized;
+    private int _previewStartupFailureStopScheduled;
+    private long _previewStartupLastPositionDispatchTick;
+    private bool _previewStopRequestedByUser;
+    private bool _isWindowClosing;
+    private bool _toggleLabelsVisible;
+    private const double ControlBarLabelThreshold = 900.0;
+    private const int MinWindowWidth = 780;
+    private const int MinWindowHeight = 450;
+    private WndProcDelegate? _minSizeWndProc;
+    private IntPtr _originalWndProc;
 
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
+
+    private static bool IsPreviewStartupFailedState(PreviewStartupState state)
+        => state == PreviewStartupState.Failed;
+
+    private static bool IsPreviewStartupTerminalState(PreviewStartupState state)
+        => state is PreviewStartupState.Idle or PreviewStartupState.Rendering or PreviewStartupState.Failed;
+
+    private bool IsPreviewStartupSignalWindowActive()
+        => ViewModel.IsPreviewing &&
+           !_previewFirstVisualConfirmed &&
+           _previewStartupState is PreviewStartupState.StartingSession or PreviewStartupState.RendererAttaching or PreviewStartupState.WaitingForFirstVisual;
+
+    private static int ResolveStartupSetting(string envName, int fallbackValue, int minValue, int maxValue)
+    {
+        var raw = Environment.GetEnvironmentVariable(envName);
+        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+        {
+            return fallbackValue;
+        }
+
+        return Math.Clamp(parsed, minValue, maxValue);
+    }
+
+    private void SetPreviewStartupState(PreviewStartupState state, string? reason = null)
+    {
+        if (!string.IsNullOrWhiteSpace(reason))
+        {
+            _previewLastFailureReason = reason;
+        }
+
+        if (_previewStartupState == state && string.IsNullOrWhiteSpace(reason))
+        {
+            return;
+        }
+
+        _previewStartupState = state;
+        Logger.Log(
+            $"PREVIEW_START_STATE state={state} attempt={_previewStartupAttemptId ?? "none"} " +
+            $"recovery={_previewRecoveryAttemptCount} reason={reason ?? "-"}");
+    }
+
+    private void BeginPreviewStartupAttempt()
+    {
+        _previewRecoveryAttemptCount = 0;
+        _previewStartupAttemptId = Guid.NewGuid().ToString("N");
+        _previewStartupRequestedUtc = DateTimeOffset.UtcNow;
+        _previewRendererAttachedUtc = null;
+        _previewFirstVisualUtc = null;
+        _previewLastFailureReason = null;
+        _previewStartupMissingSignals = null;
+        _previewFirstVisualConfirmed = false;
+        _previewStartupExpectGpuDualSignals = false;
+        _previewGpuSignalMediaOpened = false;
+        _previewGpuSignalFirstFrame = false;
+        _previewGpuSignalPlaybackAdvancing = false;
+        _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
+        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
+        _previewStartupStrategy = PreviewStartupStrategy.None;
+        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
+        _previewStartupPositionEventCount = 0;
+        _previewStartupLastPlaybackState = MediaPlaybackState.None;
+        _previewStartupInitialPlayIssued = false;
+        _previewStartupPausedRecoveryIssued = false;
+        _previewStartupPlaybackPositionInitialized = false;
+        Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
+        Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, 0);
+
+        SetPreviewStartupState(PreviewStartupState.StartingSession);
+        Logger.Log(
+            $"PREVIEW_START_REQUESTED attempt={_previewStartupAttemptId} " +
+            $"device={ViewModel.SelectedDevice?.Name ?? "none"}");
+    }
+
+    private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)
+    {
+        _previewStartupStrategy = strategy;
+        _previewStartupRequiredSignals = requiredSignals;
+        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
+        _previewGpuSignalMediaOpened = false;
+        _previewGpuSignalFirstFrame = false;
+        _previewGpuSignalPlaybackAdvancing = false;
+        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
+        _previewStartupPositionEventCount = 0;
+        _previewStartupLastPlaybackState = MediaPlaybackState.None;
+        _previewStartupInitialPlayIssued = false;
+        _previewStartupPausedRecoveryIssued = false;
+        _previewStartupPlaybackPositionInitialized = false;
+        _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
+        Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, 0);
+
+        Logger.Log(
+            $"PREVIEW_START_STRATEGY attempt={_previewStartupAttemptId ?? "none"} " +
+            $"strategy={_previewStartupStrategy} required={BuildPreviewStartupSignalList(_previewStartupRequiredSignals)}");
+    }
+
+    private void StartPreviewStartupWatchdog()
+    {
+        StopPreviewStartupWatchdog();
+        if (_previewStartupState != PreviewStartupState.WaitingForFirstVisual)
+        {
+            return;
+        }
+
+        _previewStartupWatchdogTimer ??= _dispatcherQueue.CreateTimer();
+        _previewStartupWatchdogTimer.Interval = TimeSpan.FromMilliseconds(PreviewStartupVisualTimeoutMs);
+        _previewStartupWatchdogTimer.IsRepeating = false;
+        _previewStartupWatchdogTimer.Tick -= PreviewStartupWatchdogTimer_Tick;
+        _previewStartupWatchdogTimer.Tick += PreviewStartupWatchdogTimer_Tick;
+        _previewStartupWatchdogTimer.Start();
+        StartPreviewStartupTelemetry();
+        Logger.Log(
+            $"PREVIEW_START_WATCHDOG_STARTED attempt={_previewStartupAttemptId ?? "none"} " +
+            $"timeoutMs={PreviewStartupVisualTimeoutMs}");
+    }
+
+    private void StartPreviewStartupOverlay()
+    {
+        PreviewLoadingOverlay.Visibility = Visibility.Visible;
+        UpdatePreviewLoadingOverlayText();
+
+        _previewStartupOverlayTimer ??= _dispatcherQueue.CreateTimer();
+        _previewStartupOverlayTimer.Interval = TimeSpan.FromMilliseconds(PreviewStartupOverlayUpdateIntervalMs);
+        _previewStartupOverlayTimer.IsRepeating = true;
+        _previewStartupOverlayTimer.Tick -= PreviewStartupOverlayTimer_Tick;
+        _previewStartupOverlayTimer.Tick += PreviewStartupOverlayTimer_Tick;
+        _previewStartupOverlayTimer.Start();
+    }
+
+    private void StopPreviewStartupOverlay()
+    {
+        _previewStartupOverlayTimer?.Stop();
+        PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
+        PreviewLoadingText.Text = "Starting preview...";
+    }
+
+    private void PreviewStartupOverlayTimer_Tick(object? sender, object e)
+    {
+        UpdatePreviewLoadingOverlayText();
+    }
+
+    private void UpdatePreviewLoadingOverlayText()
+    {
+        if (!ViewModel.IsPreviewing ||
+            _previewStartupState is PreviewStartupState.Rendering or PreviewStartupState.Failed ||
+            _previewFirstVisualConfirmed)
+        {
+            return;
+        }
+
+        double remainingMs = PreviewStartupVisualTimeoutMs;
+        if (_previewStartupRequestedUtc.HasValue)
+        {
+            remainingMs = Math.Max(0d, PreviewStartupVisualTimeoutMs - (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds);
+        }
+
+        PreviewLoadingText.Text =
+            $"Waiting for video engine...{Environment.NewLine}" +
+            $"Timeout in {remainingMs / 1000.0:0.0}s";
+    }
+
+    private string BuildPreviewStartupMissingSignals()
+    {
+        if (_previewStartupRequiredSignals == PreviewStartupSignalFlags.None)
+        {
+            return _previewFirstVisualConfirmed ? string.Empty : "FirstVisual";
+        }
+
+        var missing = _previewStartupRequiredSignals & ~_previewStartupReceivedSignals;
+        return missing == PreviewStartupSignalFlags.None
+            ? string.Empty
+            : BuildPreviewStartupSignalList(missing);
+    }
+
+    private static string BuildPreviewStartupSignalList(PreviewStartupSignalFlags signals)
+    {
+        if (signals == PreviewStartupSignalFlags.None)
+        {
+            return "None";
+        }
+
+        var labels = new List<string>(4);
+        if (signals.HasFlag(PreviewStartupSignalFlags.MediaOpened))
+        {
+            labels.Add("MediaOpened");
+        }
+
+        if (signals.HasFlag(PreviewStartupSignalFlags.FirstCaptureFrame))
+        {
+            labels.Add("FirstCaptureFrame");
+        }
+
+        if (signals.HasFlag(PreviewStartupSignalFlags.PlaybackAdvancing))
+        {
+            labels.Add("PlaybackAdvancing");
+        }
+
+        if (signals.HasFlag(PreviewStartupSignalFlags.FirstVisual))
+        {
+            labels.Add("FirstVisual");
+        }
+
+        return labels.Count == 0 ? "None" : string.Join("+", labels);
+    }
+
+    private void MarkGpuStartupSignal(PreviewStartupSignalFlags signal, string signalName)
+    {
+        if (!IsPreviewStartupSignalWindowActive() || !_previewStartupExpectGpuDualSignals)
+        {
+            return;
+        }
+
+        if ((_previewStartupReceivedSignals & signal) != 0)
+        {
+            return;
+        }
+
+        _previewStartupReceivedSignals |= signal;
+        if (signal == PreviewStartupSignalFlags.MediaOpened)
+        {
+            _previewGpuSignalMediaOpened = true;
+        }
+        else if (signal == PreviewStartupSignalFlags.FirstCaptureFrame)
+        {
+            _previewGpuSignalFirstFrame = true;
+        }
+        else if (signal == PreviewStartupSignalFlags.PlaybackAdvancing)
+        {
+            _previewGpuSignalPlaybackAdvancing = true;
+            _previewMediaPlayer?.PlaybackSession.PositionChanged -= PreviewPlaybackSession_PositionChanged;
+        }
+
+        _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
+        Logger.Log($"PREVIEW_START_SIGNAL signal={signalName} attempt={_previewStartupAttemptId ?? "none"}");
+        LogPreviewStartupPlaybackSnapshot($"signal:{signalName}");
+        TryConfirmPreviewFirstVisualFromGpuSignals();
+    }
+
+    private void MarkGpuStartupSignalMediaOpened()
+    {
+        MarkGpuStartupSignal(PreviewStartupSignalFlags.MediaOpened, "MediaOpened");
+    }
+
+    private void MarkGpuStartupSignalFirstFrame()
+    {
+        if (!IsPreviewStartupSignalWindowActive() || !_previewStartupExpectGpuDualSignals)
+        {
+            return;
+        }
+
+        MarkGpuStartupSignal(PreviewStartupSignalFlags.FirstCaptureFrame, "FirstCaptureFrame");
+    }
+
+    private void MarkGpuStartupSignalPlaybackAdvancing(TimeSpan position)
+    {
+        if (!IsPreviewStartupSignalWindowActive() || !_previewStartupExpectGpuDualSignals)
+        {
+            Logger.Log(
+                $"PREVIEW_START_POSITION_IGNORED attempt={_previewStartupAttemptId ?? "none"} " +
+                $"reason=inactive-or-not-gpu positionMs={position.TotalMilliseconds:0.###}");
+            return;
+        }
+
+        if (!_previewStartupPlaybackPositionInitialized)
+        {
+            _previewStartupPlaybackPositionInitialized = true;
+            _previewStartupLastPlaybackPosition = position;
+            Logger.Log(
+                $"PREVIEW_START_POSITION_BASELINE attempt={_previewStartupAttemptId ?? "none"} " +
+                $"positionMs={position.TotalMilliseconds:0.###} thresholdMs={PreviewStartupPlaybackAdvanceThreshold.TotalMilliseconds:0.###}");
+            if (position >= PreviewStartupPlaybackAdvanceThreshold)
+            {
+                MarkGpuStartupSignal(PreviewStartupSignalFlags.PlaybackAdvancing, "PlaybackAdvancing");
+            }
+
+            return;
+        }
+
+        var delta = position - _previewStartupLastPlaybackPosition;
+        if (position > _previewStartupLastPlaybackPosition)
+        {
+            _previewStartupLastPlaybackPosition = position;
+        }
+
+        Logger.Log(
+            $"PREVIEW_START_POSITION_CHECK attempt={_previewStartupAttemptId ?? "none"} " +
+            $"positionMs={position.TotalMilliseconds:0.###} deltaMs={delta.TotalMilliseconds:0.###} " +
+            $"thresholdMs={PreviewStartupPlaybackAdvanceThreshold.TotalMilliseconds:0.###}");
+        if (position >= PreviewStartupPlaybackAdvanceThreshold || delta >= PreviewStartupPlaybackAdvanceThreshold)
+        {
+            MarkGpuStartupSignal(PreviewStartupSignalFlags.PlaybackAdvancing, "PlaybackAdvancing");
+        }
+    }
+
+    private void TryConfirmPreviewFirstVisualFromGpuSignals()
+    {
+        if (!_previewStartupExpectGpuDualSignals)
+        {
+            return;
+        }
+
+        var missing = _previewStartupRequiredSignals & ~_previewStartupReceivedSignals;
+        if (missing != PreviewStartupSignalFlags.None)
+        {
+            Logger.Log(
+                $"PREVIEW_START_WAITING attempt={_previewStartupAttemptId ?? "none"} " +
+                $"required={BuildPreviewStartupSignalList(_previewStartupRequiredSignals)} " +
+                $"received={BuildPreviewStartupSignalList(_previewStartupReceivedSignals)} " +
+                $"missing={BuildPreviewStartupSignalList(missing)}");
+            return;
+        }
+
+        ConfirmPreviewFirstVisual($"GpuStartupSignals({BuildPreviewStartupSignalList(_previewStartupRequiredSignals)})");
+    }
+
+    private void StopPreviewStartupWatchdog()
+    {
+        _previewStartupWatchdogTimer?.Stop();
+        StopPreviewStartupTelemetry();
+    }
+
+    private void StartPreviewStartupTelemetry()
+    {
+        _previewStartupTelemetryTimer ??= _dispatcherQueue.CreateTimer();
+        _previewStartupTelemetryTimer.Interval = TimeSpan.FromSeconds(1);
+        _previewStartupTelemetryTimer.IsRepeating = true;
+        _previewStartupTelemetryTimer.Tick -= PreviewStartupTelemetryTimer_Tick;
+        _previewStartupTelemetryTimer.Tick += PreviewStartupTelemetryTimer_Tick;
+        _previewStartupTelemetryTimer.Start();
+    }
+
+    private void StopPreviewStartupTelemetry()
+    {
+        _previewStartupTelemetryTimer?.Stop();
+    }
+
+    private void PreviewStartupTelemetryTimer_Tick(object? sender, object e)
+    {
+        if (!IsPreviewStartupSignalWindowActive())
+        {
+            return;
+        }
+
+        LogPreviewStartupPlaybackSnapshot("watchdog-tick");
+    }
+
+    private void LogPreviewStartupPlaybackSnapshot(string reason)
+    {
+        var player = _previewMediaPlayer;
+        var session = player?.PlaybackSession;
+        if (session == null)
+        {
+            Logger.Log(
+                $"PREVIEW_START_PLAYBACK_SNAPSHOT attempt={_previewStartupAttemptId ?? "none"} " +
+                $"reason={reason} player=null");
+            return;
+        }
+
+        Logger.Log(
+            $"PREVIEW_START_PLAYBACK_SNAPSHOT attempt={_previewStartupAttemptId ?? "none"} " +
+            $"reason={reason} state={session.PlaybackState} " +
+            $"positionMs={session.Position.TotalMilliseconds:0.###} " +
+            $"gpuVisible={PreviewPlayerElement.Visibility} " +
+            $"required={BuildPreviewStartupSignalList(_previewStartupRequiredSignals)} " +
+            $"received={BuildPreviewStartupSignalList(_previewStartupReceivedSignals)} " +
+            $"missing={BuildPreviewStartupMissingSignals()}");
+    }
+
+    private void EnsurePreviewPlaybackStarted(string reason, bool recoveryAttempt)
+    {
+        if (!ViewModel.IsPreviewing || _previewStopRequestedByUser || _isWindowClosing)
+        {
+            Logger.Log(
+                $"PREVIEW_START_PLAY_SKIPPED attempt={_previewStartupAttemptId ?? "none"} " +
+                $"reason={reason} startupActive={ViewModel.IsPreviewing} stopRequested={_previewStopRequestedByUser} closing={_isWindowClosing}");
+            return;
+        }
+
+        var player = _previewMediaPlayer;
+        if (player == null)
+        {
+            Logger.Log(
+                $"PREVIEW_START_PLAY_SKIPPED attempt={_previewStartupAttemptId ?? "none"} " +
+                $"reason={reason} player=null");
+            return;
+        }
+
+        if (recoveryAttempt)
+        {
+            if (_previewStartupPausedRecoveryIssued)
+            {
+                Logger.Log(
+                    $"PREVIEW_START_PLAY_SKIPPED attempt={_previewStartupAttemptId ?? "none"} " +
+                    $"reason={reason} recovery=already-issued");
+                return;
+            }
+
+            _previewStartupPausedRecoveryIssued = true;
+            _previewRecoveryAttemptCount++;
+        }
+        else
+        {
+            if (_previewStartupInitialPlayIssued)
+            {
+                Logger.Log(
+                    $"PREVIEW_START_PLAY_SKIPPED attempt={_previewStartupAttemptId ?? "none"} " +
+                    $"reason={reason} initial=already-issued");
+                return;
+            }
+
+            _previewStartupInitialPlayIssued = true;
+        }
+
+        Logger.Log(
+            $"PREVIEW_START_PLAY_ISSUED attempt={_previewStartupAttemptId ?? "none"} " +
+            $"reason={reason} recovery={recoveryAttempt} state={player.PlaybackSession.PlaybackState} " +
+            $"positionMs={player.PlaybackSession.Position.TotalMilliseconds:0.###}");
+        player.Play();
+    }
+
+    private void SchedulePreviewStartupFailureStop(string reason)
+    {
+        if (_isWindowClosing)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref _previewStartupFailureStopScheduled, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _ = RunUiEventHandlerAsync(async () =>
+        {
+            try
+            {
+                if (!ViewModel.IsPreviewing)
+                {
+                    return;
+                }
+
+                Logger.Log($"PREVIEW_START_FAILURE_STOP begin reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
+                await ViewModel.StopPreviewAsync();
+                ViewModel.StatusText = $"Preview startup failed: {reason}";
+                Logger.Log($"PREVIEW_START_FAILURE_STOP completed reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
+            }
+        }, "PreviewStartupFailureStop");
+    }
+
+    private async void PreviewStartupWatchdogTimer_Tick(object? sender, object e)
+    {
+        StopPreviewStartupWatchdog();
+        await HandlePreviewStartupTimeoutAsync();
+    }
+
+    private Task HandlePreviewStartupTimeoutAsync()
+    {
+        if (_isWindowClosing || _previewStopRequestedByUser)
+        {
+            Logger.Log("PREVIEW_START_TIMEOUT_IGNORED reason=user-or-shutdown-stop-requested");
+            return Task.CompletedTask;
+        }
+
+        if (!ViewModel.IsPreviewing || _previewStartupState != PreviewStartupState.WaitingForFirstVisual)
+        {
+            return Task.CompletedTask;
+        }
+
+        var elapsedMs = _previewStartupRequestedUtc.HasValue
+            ? (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds
+            : 0;
+        _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
+        var timeoutReason = string.IsNullOrWhiteSpace(_previewStartupMissingSignals)
+            ? $"no-visual-confirmation-within-{PreviewStartupVisualTimeoutMs}ms"
+            : $"no-visual-confirmation-within-{PreviewStartupVisualTimeoutMs}ms missing:{_previewStartupMissingSignals}";
+        SetPreviewStartupState(PreviewStartupState.Failed, timeoutReason);
+        Logger.Log(
+            $"PREVIEW_START_TIMEOUT attempt={_previewStartupAttemptId ?? "none"} " +
+            $"elapsedMs={elapsedMs:0} placeholder={NoDevicePlaceholder.Visibility} " +
+            $"gpuVisible={PreviewPlayerElement.Visibility} cpuVisible={PreviewImage.Visibility} " +
+            $"strategy={_previewStartupStrategy} required={BuildPreviewStartupSignalList(_previewStartupRequiredSignals)} " +
+            $"received={BuildPreviewStartupSignalList(_previewStartupReceivedSignals)} " +
+            $"missing={_previewStartupMissingSignals ?? "-"}");
+        LogPreviewStartupPlaybackSnapshot("timeout");
+
+        StopPreviewStartupOverlay();
+        ViewModel.StatusText = string.IsNullOrWhiteSpace(_previewStartupMissingSignals)
+            ? "Preview failed to attach to UI (session started but no visual confirmation)."
+            : $"Preview failed to start (missing readiness signal: {_previewStartupMissingSignals}).";
+        SchedulePreviewStartupFailureStop(timeoutReason);
+        return Task.CompletedTask;
+    }
+
+    private void ConfirmPreviewFirstVisual(string source)
+    {
+        if (_previewFirstVisualConfirmed || !ViewModel.IsPreviewing)
+        {
+            return;
+        }
+
+        _previewFirstVisualConfirmed = true;
+        _previewStartupReceivedSignals |= PreviewStartupSignalFlags.FirstVisual;
+        _previewFirstVisualUtc = DateTimeOffset.UtcNow;
+        SetPreviewStartupState(PreviewStartupState.Rendering);
+        StopPreviewStartupWatchdog();
+        StopPreviewStartupOverlay();
+        _previewStartupMissingSignals = string.Empty;
+        var elapsedMs = _previewStartupRequestedUtc.HasValue
+            ? (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds
+            : 0;
+        Logger.Log(
+            $"PREVIEW_FIRST_VISUAL_CONFIRMED attempt={_previewStartupAttemptId ?? "none"} " +
+            $"source={source} elapsedMs={elapsedMs:0} recovery={_previewRecoveryAttemptCount}");
+    }
+
+    private void ResetPreviewStartupTracking(bool keepRecoveryCount = false)
+    {
+        StopPreviewStartupWatchdog();
+        StopPreviewStartupOverlay();
+        _previewStartupAttemptId = null;
+        _previewStartupRequestedUtc = null;
+        _previewRendererAttachedUtc = null;
+        _previewFirstVisualUtc = null;
+        _previewLastFailureReason = null;
+        _previewStartupMissingSignals = null;
+        _previewFirstVisualConfirmed = false;
+        _previewStartupExpectGpuDualSignals = false;
+        _previewGpuSignalMediaOpened = false;
+        _previewGpuSignalFirstFrame = false;
+        _previewGpuSignalPlaybackAdvancing = false;
+        _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
+        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
+        _previewStartupStrategy = PreviewStartupStrategy.None;
+        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
+        _previewStartupPositionEventCount = 0;
+        _previewStartupLastPlaybackState = MediaPlaybackState.None;
+        _previewStartupInitialPlayIssued = false;
+        _previewStartupPausedRecoveryIssued = false;
+        _previewStartupPlaybackPositionInitialized = false;
+        Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
+        Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, 0);
+
+        if (!keepRecoveryCount)
+        {
+            _previewRecoveryAttemptCount = 0;
+        }
+
+        if (!IsPreviewStartupTerminalState(_previewStartupState))
+        {
+            SetPreviewStartupState(PreviewStartupState.Idle);
+        }
+        else
+        {
+            _previewStartupState = PreviewStartupState.Idle;
+        }
+    }
+
+    private void PreviewMediaPlayer_MediaOpened(MediaPlayer sender, object args)
+    {
+        Logger.Log(
+            $"PREVIEW_MEDIA_EVENT event=MediaOpened attempt={_previewStartupAttemptId ?? "none"} " +
+            $"state={sender.PlaybackSession.PlaybackState} " +
+            $"positionMs={sender.PlaybackSession.Position.TotalMilliseconds:0.###} " +
+            $"gpuVisible={PreviewPlayerElement.Visibility}");
+        _dispatcherQueue.TryEnqueue(MarkGpuStartupSignalMediaOpened);
+    }
+
+    private void PreviewPlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
+    {
+        var state = sender.PlaybackState;
+        if (state == _previewStartupLastPlaybackState && !IsPreviewStartupSignalWindowActive())
+        {
+            return;
+        }
+
+        _previewStartupLastPlaybackState = state;
+        Logger.Log(
+            $"PREVIEW_MEDIA_EVENT event=PlaybackStateChanged attempt={_previewStartupAttemptId ?? "none"} " +
+            $"state={state} positionMs={sender.Position.TotalMilliseconds:0.###} " +
+            $"startupActive={IsPreviewStartupSignalWindowActive()}");
+
+        if (state == MediaPlaybackState.Paused &&
+            IsPreviewStartupSignalWindowActive() &&
+            !_previewStopRequestedByUser &&
+            !_isWindowClosing)
+        {
+            if (_dispatcherQueue.HasThreadAccess)
+            {
+                EnsurePreviewPlaybackStarted("PlaybackStateChanged:Paused", recoveryAttempt: true);
+            }
+            else
+            {
+                _dispatcherQueue.TryEnqueue(() =>
+                    EnsurePreviewPlaybackStarted("PlaybackStateChanged:Paused", recoveryAttempt: true));
+            }
+        }
+    }
+
+    private void PreviewPlaybackSession_PositionChanged(MediaPlaybackSession sender, object args)
+    {
+        if (_previewGpuSignalPlaybackAdvancing || !_previewStartupExpectGpuDualSignals)
+        {
+            Logger.Log(
+                $"PREVIEW_MEDIA_EVENT event=PositionChangedIgnored attempt={_previewStartupAttemptId ?? "none"} " +
+                $"reason={( _previewGpuSignalPlaybackAdvancing ? "already-signaled" : "not-gpu-startup")} " +
+                $"positionMs={sender.Position.TotalMilliseconds:0.###}");
+            return;
+        }
+
+        var position = sender.Position;
+        var eventCount = Interlocked.Increment(ref _previewStartupPositionEventCount);
+        if (eventCount <= 120 || eventCount % 60 == 0)
+        {
+            Logger.Log(
+                $"PREVIEW_MEDIA_EVENT event=PositionChanged attempt={_previewStartupAttemptId ?? "none"} " +
+                $"count={eventCount} positionMs={position.TotalMilliseconds:0.###}");
+        }
+
+        var nowTick = Environment.TickCount64;
+        var lastDispatchTick = Interlocked.Read(ref _previewStartupLastPositionDispatchTick);
+        if (nowTick - lastDispatchTick < 100)
+        {
+            return;
+        }
+
+        Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, nowTick);
+        _dispatcherQueue.TryEnqueue(() => MarkGpuStartupSignalPlaybackAdvancing(position));
+    }
+
+    private void PreviewMediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
+    {
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            if (!_previewStartupExpectGpuDualSignals || _previewFirstVisualConfirmed || !ViewModel.IsPreviewing)
+            {
+                return;
+            }
+
+            _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
+            var failureReason = string.IsNullOrWhiteSpace(args.ErrorMessage)
+                ? "media-player-failed"
+                : $"media-player-failed:{args.ErrorMessage}";
+            SetPreviewStartupState(PreviewStartupState.Failed, failureReason);
+            StopPreviewStartupWatchdog();
+            StopPreviewStartupOverlay();
+            ViewModel.StatusText = "Preview failed to start (media pipeline error).";
+            Logger.Log($"PREVIEW_START_MEDIA_FAILED attempt={_previewStartupAttemptId ?? "none"} reason={failureReason}");
+            SchedulePreviewStartupFailureStop(failureReason);
+        });
+    }
 
     private void EnsureDeviceSelection()
     {
@@ -360,17 +1072,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         });
     }
 
-    private static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)
-    {
-        var rawValue = Environment.GetEnvironmentVariable(variableName);
-        if (int.TryParse(rawValue, out var parsedValue))
-        {
-            return Math.Clamp(parsedValue, minValue, maxValue);
-        }
-
-        return defaultValue;
-    }
-
     private long ResolvePreviewExpectedIntervalMs()
     {
         var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;
@@ -385,12 +1086,42 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private static bool IsHdrSubtype(string? subtype)
         => MediaFormat.IsHdrPixelFormat(subtype);
 
+    private static string BuildWindowTitleBase()
+    {
+        var exePath = Environment.ProcessPath;
+        if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
+        {
+            return "Elgato Capture";
+        }
+
+        var buildTime = File.GetLastWriteTime(exePath);
+        if (buildTime == DateTime.MinValue)
+        {
+            return "Elgato Capture";
+        }
+
+        return $"Elgato Capture (build {buildTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)})";
+    }
+
+    private void ApplyWindowTitle()
+    {
+        if (ViewModel.IsRecording)
+        {
+            Title = $"{_windowTitleBase} - REC {ViewModel.RecordingTime}";
+            return;
+        }
+
+        Title = _windowTitleBase;
+    }
+
     public MainWindow()
     {
         InitializeComponent();
 
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         ViewModel = new MainViewModel();
+        _windowTitleBase = BuildWindowTitleBase();
+        ApplyWindowTitle();
         var automationToken = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_TOKEN");
         var automationPipeName = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_PIPE");
         if (string.IsNullOrWhiteSpace(automationPipeName))
@@ -402,8 +1133,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ViewModel,
             GetPreviewRuntimeSnapshotAsync,
             new RecordingVerifier());
-        _automationDiagnosticsHub.SnapshotUpdated += AutomationDiagnosticsHub_SnapshotUpdated;
-
         var automationDispatcher = new AutomationCommandDispatcher(
             ViewModel,
             _automationDiagnosticsHub,
@@ -411,11 +1140,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             automationToken);
         _automationPipeServer = new NamedPipeAutomationServer(automationDispatcher, automationPipeName);
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
-        _previewResizeDebounceMs = GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RESIZE_DEBOUNCE_MS", defaultValue: 250, minValue: 50, maxValue: 2000);
+        _previewResizeDebounceMs = MainViewModel.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RESIZE_DEBOUNCE_MS", defaultValue: 250, minValue: 50, maxValue: 2000);
 
         // Set window handle for folder picker
         var hwnd = WindowNative.GetWindowHandle(this);
         ViewModel.SetWindowHandle(hwnd);
+
+        // Enforce minimum window size via WM_GETMINMAXINFO
+        _minSizeWndProc = MinSizeWndProc;
+        _originalWndProc = GetWindowLongPtr(hwnd, GWLP_WNDPROC);
+        SetWindowLongPtr(hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_minSizeWndProc));
 
         // Set initial window size and constraints
         var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(
@@ -442,6 +1176,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         // Subscribe to ViewModel changes
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         ViewModel.PreviewFrameReady += ViewModel_PreviewFrameReady;
+        ViewModel.PreviewStartRequested += ViewModel_PreviewStartRequested;
+        ViewModel.PreviewStopRequested += ViewModel_PreviewStopRequested;
 
         // Wire up UI controls to ViewModel
         SetupBindings();
@@ -555,12 +1291,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         QualityComboBox.SelectedItem = ViewModel.SelectedQuality;
         CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
         CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
-        HdrToggle.IsOn = ViewModel.IsHdrEnabled;
+        HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
         HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
-        TrueHdrPreviewToggle.IsOn = ViewModel.IsTrueHdrPreviewEnabled;
+        TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
         TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
         UpdateAudioMeterLevel(ViewModel.AudioPeak);
         AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
+        FfmpegWarningInfoBar.IsOpen = ViewModel.IsFfmpegMissing;
+        RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing;
         RefreshHdrHintText();
         UpdateFpsTelemetryTooltip();
         EnsureDeviceSelection();
@@ -633,14 +1371,31 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             }
         };
 
-        HdrToggle.Toggled += (s, e) => ViewModel.IsHdrEnabled = HdrToggle.IsOn;
-        TrueHdrPreviewToggle.Toggled += (s, e) => ViewModel.IsTrueHdrPreviewEnabled = TrueHdrPreviewToggle.IsOn;
+        HdrToggle.Click += (s, e) => ViewModel.IsHdrEnabled = HdrToggle.IsChecked == true;
+        TrueHdrPreviewToggle.Click += (s, e) => ViewModel.IsTrueHdrPreviewEnabled = TrueHdrPreviewToggle.IsChecked == true;
         AudioRecordToggle.Checked += (s, e) => ViewModel.IsAudioEnabled = true;
         AudioRecordToggle.Unchecked += (s, e) => ViewModel.IsAudioEnabled = false;
         AudioPreviewToggle.Checked += (s, e) => ViewModel.IsAudioPreviewEnabled = true;
         AudioPreviewToggle.Unchecked += (s, e) => ViewModel.IsAudioPreviewEnabled = false;
         CustomAudioToggle.Toggled += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsOn;
         AudioMeterTrack.SizeChanged += (s, e) => UpdateAudioMeterLevel(ViewModel.AudioPeak);
+        ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
+    }
+
+    private void UpdateToggleLabelVisibility(double controlBarWidth)
+    {
+        var showLabels = controlBarWidth >= ControlBarLabelThreshold;
+        if (showLabels == _toggleLabelsVisible) return;
+        _toggleLabelsVisible = showLabels;
+
+        var vis = showLabels ? Visibility.Visible : Visibility.Collapsed;
+        AudioRecordToggleLabel.Visibility = vis;
+        PreviewButtonLabel.Visibility = vis;
+        HdrPreviewToggleLabel.Visibility = vis;
+        AudioPreviewToggleLabel.Visibility = vis;
+        RecordButtonLabel.Visibility = vis;
+        RecordButtonStopLabel.Visibility = vis;
+        RecordButton.MinWidth = showLabels ? 120 : 44;
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -712,6 +1467,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             return;
         }
 
+        _isWindowClosing = true;
+
         if (this.Content is FrameworkElement mainContent)
         {
             mainContent.SizeChanged -= MainWindow_SizeChanged;
@@ -719,19 +1476,45 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
         ViewModel.PreviewFrameReady -= ViewModel_PreviewFrameReady;
+        ViewModel.PreviewStartRequested -= ViewModel_PreviewStartRequested;
+        ViewModel.PreviewStopRequested -= ViewModel_PreviewStopRequested;
 
         try
         {
             StopPreviewForShutdown();
+            ResetPreviewStartupTracking();
         }
         catch (Exception ex)
         {
             Logger.Log($"Preview shutdown cleanup failed: {ex.Message}");
         }
 
+        // Graceful recording stop: if recording is active, attempt a clean stop with timeout
+        if (ViewModel.IsRecording)
+        {
+            Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording active, attempting graceful stop...");
+            try
+            {
+                var stopTask = ViewModel.ToggleRecordingAsync();
+                var completed = await Task.WhenAny(stopTask, Task.Delay(5000));
+                if (completed == stopTask)
+                {
+                    await stopTask; // propagate any exception
+                    Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording stopped cleanly.");
+                }
+                else
+                {
+                    Logger.Log("WINDOW_CLOSE_RECORDING_STOP: timed out after 5s, proceeding with dispose.");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"WINDOW_CLOSE_RECORDING_STOP: stop failed: {ex.Message}");
+            }
+        }
+
         try
         {
-            _automationDiagnosticsHub.SnapshotUpdated -= AutomationDiagnosticsHub_SnapshotUpdated;
             await _automationPipeServer.DisposeAsync();
             await _automationDiagnosticsHub.DisposeAsync();
         }
@@ -748,31 +1531,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             Logger.Log($"ViewModel dispose during window close failed: {ex.Message}");
         }
-    }
-
-    private void AutomationDiagnosticsHub_SnapshotUpdated(object? sender, AutomationSnapshot snapshot)
-    {
-        var nowTick = Environment.TickCount64;
-        var lastUpdateTick = Interlocked.Read(ref _lastDiagnosticsUiUpdateTick);
-        if (nowTick - lastUpdateTick < 1000)
-        {
-            return;
-        }
-
-        if (Interlocked.CompareExchange(ref _lastDiagnosticsUiUpdateTick, nowTick, lastUpdateTick) != lastUpdateTick)
-        {
-            return;
-        }
-
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            if (!DiagnosticsExpander.IsExpanded)
-            {
-                return;
-            }
-
-            UpdateDiagnosticsPanel(snapshot);
-        });
     }
 
     private readonly record struct PreviewCadenceMetrics(
@@ -909,14 +1667,34 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var framesDropped = Interlocked.Read(ref _previewFramesDropped);
         var lastPresentedTick = Interlocked.Read(ref _previewLastPresentedTick);
         var gpuActive = _previewMediaPlayer != null;
-        var frameReaderActive = ViewModel.IsPreviewing;
+        var gpuElementVisible = PreviewPlayerElement.Visibility == Visibility.Visible;
+        var cpuElementVisible = PreviewImage.Visibility == Visibility.Visible;
+        var rendererAttached = _previewMediaPlayer != null || _previewSource != null;
+        var placeholderVisible = NoDevicePlaceholder.Visibility == Visibility.Visible;
+        var frameReaderActive = ViewModel.IsPreviewing && (_previewSource != null || _previewGpuSignalFirstFrame);
         var rendererMode = gpuActive ? "GpuMediaSource"
             : ViewModel.IsPreviewing ? "CpuSoftwareBitmap"
             : "None";
         // GPU preview is handled entirely by MediaPlayer — no frame-level blank/stall detection
+        var startupElapsedMs = _previewStartupRequestedUtc.HasValue
+            ? Math.Max(0, (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds)
+            : (double?)null;
+        var startupMissingSignals = _previewStartupMissingSignals;
+        if (string.IsNullOrWhiteSpace(startupMissingSignals) &&
+            _previewStartupState is PreviewStartupState.WaitingForFirstVisual or PreviewStartupState.Failed)
+        {
+            startupMissingSignals = BuildPreviewStartupMissingSignals();
+        }
+        var startupTimedOut = ViewModel.IsPreviewing &&
+                              _previewStartupState == PreviewStartupState.WaitingForFirstVisual &&
+                              startupElapsedMs.GetValueOrDefault() >= PreviewStartupVisualTimeoutMs;
         var blankSuspected = !gpuActive && frameReaderActive &&
                              framesArrived > 30 &&
                              framesDisplayed == 0;
+        if (!blankSuspected && startupTimedOut)
+        {
+            blankSuspected = true;
+        }
         var stallSuspected = !gpuActive && frameReaderActive &&
                              lastPresentedTick > 0 &&
                              nowTick - lastPresentedTick > 3000;
@@ -928,7 +1706,24 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             IsPreviewing = ViewModel.IsPreviewing,
             GpuActive = gpuActive,
             FrameReaderActive = frameReaderActive,
-            PlaceholderVisible = !ViewModel.IsPreviewing,
+            PlaceholderVisible = placeholderVisible,
+            GpuElementVisible = gpuElementVisible,
+            CpuElementVisible = cpuElementVisible,
+            RendererAttached = rendererAttached,
+            StartupState = _previewStartupState.ToString(),
+            StartupAttemptId = _previewStartupAttemptId,
+            StartupElapsedMs = startupElapsedMs,
+            StartupTimeoutMs = PreviewStartupVisualTimeoutMs,
+            StartupGpuSignalMediaOpened = _previewGpuSignalMediaOpened,
+            StartupGpuSignalFirstFrame = _previewGpuSignalFirstFrame,
+            StartupGpuSignalPlaybackAdvancing = _previewGpuSignalPlaybackAdvancing,
+            StartupRequiredSignals = _previewStartupRequiredSignals,
+            StartupReceivedSignals = _previewStartupReceivedSignals,
+            StartupStrategy = _previewStartupStrategy,
+            StartupMissingSignals = startupMissingSignals,
+            StartupRecoveryAttemptCount = _previewRecoveryAttemptCount,
+            StartupLastFailureReason = _previewLastFailureReason,
+            FirstVisualConfirmed = _previewFirstVisualConfirmed,
             FramesArrived = framesArrived,
             FramesDisplayed = framesDisplayed,
             FramesDropped = framesDropped,
@@ -947,138 +1742,70 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         };
     }
 
-    private Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
+    private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
     {
         if (cancellationToken.IsCancellationRequested)
         {
-            return Task.FromCanceled<PreviewRuntimeSnapshot>(cancellationToken);
+            throw new OperationCanceledException(cancellationToken);
         }
 
         if (_dispatcherQueue.HasThreadAccess)
         {
-            return Task.FromResult(GetPreviewRuntimeSnapshot());
+            return GetPreviewRuntimeSnapshot();
         }
 
-        var completion = new TaskCompletionSource<PreviewRuntimeSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
-        CancellationTokenRegistration registration = default;
-        if (cancellationToken.CanBeCanceled)
+        const int maxAttempts = 3;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
-            registration = cancellationToken.Register(() =>
-            {
-                completion.TrySetCanceled(cancellationToken);
-            });
-        }
+            cancellationToken.ThrowIfCancellationRequested();
 
-        var enqueued = _dispatcherQueue.TryEnqueue(() =>
-        {
-            try
+            var completion = new TaskCompletionSource<PreviewRuntimeSnapshot>(TaskCreationOptions.RunContinuationsAsynchronously);
+            CancellationTokenRegistration registration = default;
+            if (cancellationToken.CanBeCanceled)
             {
-                if (cancellationToken.IsCancellationRequested)
+                registration = cancellationToken.Register(() =>
                 {
                     completion.TrySetCanceled(cancellationToken);
-                    return;
+                });
+            }
+
+            var enqueued = _dispatcherQueue.TryEnqueue(() =>
+            {
+                try
+                {
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        completion.TrySetCanceled(cancellationToken);
+                        return;
+                    }
+
+                    completion.TrySetResult(GetPreviewRuntimeSnapshot());
                 }
+                catch (Exception ex)
+                {
+                    completion.TrySetException(ex);
+                }
+                finally
+                {
+                    registration.Dispose();
+                }
+            });
 
-                completion.TrySetResult(GetPreviewRuntimeSnapshot());
-            }
-            catch (Exception ex)
+            if (enqueued)
             {
-                completion.TrySetException(ex);
+                return await completion.Task.ConfigureAwait(false);
             }
-            finally
-            {
-                registration.Dispose();
-            }
-        });
 
-        if (!enqueued)
-        {
             registration.Dispose();
-            completion.TrySetException(new InvalidOperationException("Failed to enqueue preview snapshot operation."));
+            if (attempt >= maxAttempts)
+            {
+                break;
+            }
+
+            await Task.Delay(50, cancellationToken).ConfigureAwait(false);
         }
 
-        return completion.Task;
-    }
-
-    private void UpdateDiagnosticsPanel(AutomationSnapshot snapshot)
-    {
-        static string OnOff(bool value) => value ? "On" : "Off";
-        static string YesNo(bool value) => value ? "Yes" : "No";
-        var requestedFrameRateText = snapshot.RequestedFrameRateArg
-            ?? snapshot.RequestedFrameRate?.ToString("0.###")
-            ?? "?";
-        var negotiatedFrameRateText = snapshot.NegotiatedFrameRateArg
-            ?? snapshot.ActualFrameRateArg
-            ?? snapshot.NegotiatedFrameRate?.ToString("0.###")
-            ?? snapshot.ActualFrameRate?.ToString("0.###")
-            ?? "?";
-        var captureHealth = snapshot.PreviewBlankSuspected || snapshot.PreviewStalled
-            ? "Attention"
-            : "Healthy";
-        var hdrVerdict = snapshot.HdrTruthVerdict?.FinalClassification ?? "Inconclusive";
-        var mismatchSummary = snapshot.LastVerification?.Mismatches.Count > 0
-            ? string.Join(", ", snapshot.LastVerification.Mismatches.Take(3))
-            : "(none)";
-
-        DiagHeaderSummaryTextBlock.Text =
-            $"State: {snapshot.SessionState} | Preview: {OnOff(snapshot.IsPreviewing)} | Recording: {OnOff(snapshot.IsRecording)} | Health: {captureHealth}";
-
-        DiagSessionTextBlock.Text =
-            $"Performance score: {snapshot.PerformanceScore:0.##} ({(snapshot.PerformancePerfectionMet ? "Within target" : "Needs tuning")}){Environment.NewLine}" +
-            $"Telemetry: {snapshot.SourceTelemetryAvailability}/{snapshot.SourceTelemetryConfidence} ({snapshot.SourceTelemetryOriginDetail})";
-
-        DiagDeviceTextBlock.Text =
-            $"Video: {snapshot.SelectedDeviceName ?? "(none)"}{Environment.NewLine}" +
-            $"Audio input: {snapshot.SelectedAudioInputDeviceName ?? "(default)"}";
-
-        DiagCaptureTextBlock.Text =
-            $"Mode: {snapshot.NegotiatedWidth?.ToString() ?? snapshot.ActualWidth?.ToString() ?? "?"}x{snapshot.NegotiatedHeight?.ToString() ?? snapshot.ActualHeight?.ToString() ?? "?"} @ {negotiatedFrameRateText} fps{Environment.NewLine}" +
-            $"Requested: {snapshot.RequestedWidth?.ToString() ?? "?"}x{snapshot.RequestedHeight?.ToString() ?? "?"} @ {requestedFrameRateText} fps{Environment.NewLine}" +
-            $"HDR verdict: {hdrVerdict}";
-
-        DiagCaptureAdvancedTextBlock.Text =
-            $"Compact mode enabled. Advanced capture internals are hidden by default.{Environment.NewLine}" +
-            $"Observed formats: P010={snapshot.ObservedP010FrameCount}, NV12={snapshot.ObservedNv12FrameCount}, Other={snapshot.ObservedOtherFrameCount}";
-
-        DiagAudioTextBlock.Text =
-            $"Capture audio: {OnOff(snapshot.IsAudioEnabled)} | Preview audio: {OnOff(snapshot.IsAudioPreviewEnabled)}{Environment.NewLine}" +
-            $"Signal present: {YesNo(snapshot.AudioSignalPresent)} | Peak: {snapshot.AudioPeak:0.000} | Clip: {YesNo(snapshot.AudioClipping)}";
-
-        DiagPreviewTextBlock.Text =
-            $"Renderer: {snapshot.PreviewRendererMode}{Environment.NewLine}" +
-            $"Frames: in={snapshot.PreviewFramesArrived}, shown={snapshot.PreviewFramesDisplayed}, dropped={snapshot.PreviewFramesDropped}{Environment.NewLine}" +
-            $"Cadence: p95={snapshot.PreviewCadenceP95IntervalMs:0.##} ms, slow={snapshot.PreviewCadenceSlowFramePercent:0.##}%";
-
-        DiagRecordingTextBlock.Text =
-            $"Backend: {snapshot.RecordingBackend} | Audio path: {snapshot.AudioPathMode}{Environment.NewLine}" +
-            $"File growth: {YesNo(snapshot.RecordingFileGrowing)} | Bytes: {snapshot.RecordingTotalBytes}{Environment.NewLine}" +
-            $"Finalize: {snapshot.LastFinalizeStatus}";
-
-        DiagOutputTextBlock.Text =
-            $"Output: {snapshot.LastOutputPath ?? "(none)"}{Environment.NewLine}" +
-            $"Perf summary: {snapshot.PerformanceSummary}";
-
-        if (snapshot.VerificationInProgress)
-        {
-            DiagVerificationTextBlock.Text = "Verification: running";
-            DiagVerificationAdvancedTextBlock.Text = "Waiting for ffprobe result.";
-            return;
-        }
-
-        if (snapshot.LastVerification == null)
-        {
-            DiagVerificationTextBlock.Text = "Verification: not run";
-            DiagVerificationAdvancedTextBlock.Text = "No verification result yet.";
-            return;
-        }
-
-        var verification = snapshot.LastVerification;
-        DiagVerificationTextBlock.Text =
-            $"Verification: {(verification.Succeeded ? "PASS" : "FAIL")} ({verification.VerificationMode}){Environment.NewLine}" +
-            $"{verification.Message}";
-        DiagVerificationAdvancedTextBlock.Text =
-            $"Mismatch codes: {mismatchSummary}{Environment.NewLine}" +
-            $"Primary: {verification.PrimaryMismatchCode ?? "(none)"}";
+        throw new InvalidOperationException("Failed to enqueue preview snapshot operation.");
     }
 
     private void StopPreviewForShutdown()
@@ -1088,12 +1815,27 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewMediaPlayer = null;
         if (player != null)
         {
+            player.MediaOpened -= PreviewMediaPlayer_MediaOpened;
+            player.MediaFailed -= PreviewMediaPlayer_MediaFailed;
+            player.PlaybackSession.PositionChanged -= PreviewPlaybackSession_PositionChanged;
+            player.PlaybackSession.PlaybackStateChanged -= PreviewPlaybackSession_PlaybackStateChanged;
             player.Pause();
             player.Source = null;
             PreviewPlayerElement.SetMediaPlayer(null!);
             player.Dispose();
         }
         PreviewPlayerElement.Visibility = Visibility.Collapsed;
+        _previewStartupExpectGpuDualSignals = false;
+        _previewGpuSignalMediaOpened = false;
+        _previewGpuSignalFirstFrame = false;
+        _previewGpuSignalPlaybackAdvancing = false;
+        _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
+        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
+        _previewStartupStrategy = PreviewStartupStrategy.None;
+        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
+        _previewStartupPositionEventCount = 0;
+        _previewStartupLastPlaybackState = MediaPlaybackState.None;
+        _previewStartupPlaybackPositionInitialized = false;
 
         // Clean up CPU preview
         PreviewImage.Source = null;
@@ -1109,6 +1851,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             $"ViewModel_PropertyChanged:{e.PropertyName}");
     }
 
+    private void ViewModel_PreviewStartRequested(object? sender, EventArgs e)
+    {
+        _previewStopRequestedByUser = false;
+    }
+
+    private void ViewModel_PreviewStopRequested(object? sender, EventArgs e)
+    {
+        _previewStopRequestedByUser = true;
+        StopPreviewStartupWatchdog();
+        StopPreviewStartupOverlay();
+    }
+
     private async Task HandleViewModelPropertyChangedAsync(System.ComponentModel.PropertyChangedEventArgs e)
     {
         switch (e.PropertyName)
@@ -1116,20 +1870,39 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             case nameof(MainViewModel.IsPreviewing):
                 if (ViewModel.IsPreviewing)
                 {
+                    _previewStopRequestedByUser = false;
+                    if (string.IsNullOrWhiteSpace(_previewStartupAttemptId) ||
+                        IsPreviewStartupFailedState(_previewStartupState) ||
+                        _previewStartupState == PreviewStartupState.Idle)
+                    {
+                        BeginPreviewStartupAttempt();
+                    }
+
+                    SetPreviewStartupState(PreviewStartupState.StartingSession);
+                    Logger.Log($"PREVIEW_SESSION_STARTED attempt={_previewStartupAttemptId ?? "none"}");
                     FadeOutElement(NoDevicePlaceholder);
-                    PreviewLoadingOverlay.Visibility = Visibility.Visible;
+                    StartPreviewStartupOverlay();
+                    SetPreviewStartupState(PreviewStartupState.RendererAttaching);
                     await StartPreviewRendererAsync();
-                    PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
-                    PreviewButton.Content = "Stop Preview";
+                    if (!_previewFirstVisualConfirmed)
+                    {
+                        SetPreviewStartupState(PreviewStartupState.WaitingForFirstVisual);
+                        StartPreviewStartupWatchdog();
+                    }
+                    PreviewButtonIcon.Glyph = "\uE71A";
+                    ToolTipService.SetToolTip(PreviewButton, "Stop Preview");
                     TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
                 }
                 else
                 {
-                    PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
+                    StopPreviewStartupWatchdog();
+                    StopPreviewStartupOverlay();
                     await StopPreviewRendererAsync();
                     FadeInElement(NoDevicePlaceholder);
-                    PreviewButton.Content = "Start Preview";
+                    PreviewButtonIcon.Glyph = "\uE768";
+                    ToolTipService.SetToolTip(PreviewButton, "Start Preview");
                     TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
+                    ResetPreviewStartupTracking();
                 }
                 break;
 
@@ -1152,14 +1925,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
                 HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
                 TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
+                RecordingStatsPanel.Visibility = ViewModel.IsRecording ? Visibility.Visible : Visibility.Collapsed;
                 RefreshHdrHintText();
                 if (ViewModel.IsRecording)
                     RecPulseStoryboard.Begin();
                 else
-                {
                     RecPulseStoryboard.Stop();
-                    Title = "Elgato Capture";
-                }
+                ApplyWindowTitle();
                 break;
 
             case nameof(MainViewModel.StatusText):
@@ -1176,7 +1948,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             case nameof(MainViewModel.RecordingTime):
                 RecordingTimeTextBlock.Text = ViewModel.RecordingTime;
                 if (ViewModel.IsRecording)
-                    Title = $"Elgato Capture \u2014 REC {ViewModel.RecordingTime}";
+                    ApplyWindowTitle();
                 break;
 
             case nameof(MainViewModel.DiskSpaceInfo):
@@ -1233,16 +2005,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 break;
 
             case nameof(MainViewModel.IsHdrEnabled):
-                if (HdrToggle.IsOn != ViewModel.IsHdrEnabled)
+                if (HdrToggle.IsChecked != ViewModel.IsHdrEnabled)
                 {
-                    HdrToggle.IsOn = ViewModel.IsHdrEnabled;
+                    HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
                 }
                 break;
 
             case nameof(MainViewModel.IsTrueHdrPreviewEnabled):
-                if (TrueHdrPreviewToggle.IsOn != ViewModel.IsTrueHdrPreviewEnabled)
+                if (TrueHdrPreviewToggle.IsChecked != ViewModel.IsTrueHdrPreviewEnabled)
                 {
-                    TrueHdrPreviewToggle.IsOn = ViewModel.IsTrueHdrPreviewEnabled;
+                    TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
                 }
                 break;
 
@@ -1323,6 +2095,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 {
                     AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
                 }
+                break;
+
+            case nameof(MainViewModel.IsRecordingTransitioning):
+                RecordButton.IsEnabled = !ViewModel.IsRecordingTransitioning;
+                break;
+
+            case nameof(MainViewModel.IsFfmpegMissing):
+                FfmpegWarningInfoBar.IsOpen = ViewModel.IsFfmpegMissing;
+                RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing && !ViewModel.IsRecordingTransitioning;
                 break;
         }
     }
@@ -1591,23 +2372,42 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             // GPU preview path: MediaPlayer -> MediaPlayerElement
             var player = new MediaPlayer();
-            player.Source = playbackSource;
+            player.MediaOpened += PreviewMediaPlayer_MediaOpened;
+            player.MediaFailed += PreviewMediaPlayer_MediaFailed;
+            player.PlaybackSession.PositionChanged += PreviewPlaybackSession_PositionChanged;
+            player.PlaybackSession.PlaybackStateChanged += PreviewPlaybackSession_PlaybackStateChanged;
             player.IsVideoFrameServerEnabled = false;
             player.AutoPlay = true;
+            player.Source = playbackSource;
             _previewMediaPlayer = player;
+            _previewStartupExpectGpuDualSignals = true;
+            // MediaPlayer.MediaOpened does not fire reliably for live MediaFrameSource-backed
+            // MediaSource objects (confirmed absent from logs across multiple runs). PlaybackAdvancing
+            // (position moving) is a strictly stronger signal — if position advances the media is
+            // provably open and playing. MediaOpened handler is kept for telemetry only.
+            ConfigurePreviewStartupSignals(
+                PreviewStartupStrategy.GpuMediaSourceNoFrameReader,
+                PreviewStartupSignalFlags.PlaybackAdvancing);
+            _previewRendererAttachedUtc = DateTimeOffset.UtcNow;
             PreviewPlayerElement.SetMediaPlayer(player);
             PreviewPlayerElement.Visibility = Visibility.Visible;
             PreviewImage.Visibility = Visibility.Collapsed;
             Logger.Log("Preview renderer started (mode=GpuMediaSource).");
+            Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=GpuMediaSource attempt={_previewStartupAttemptId ?? "none"}");
+            EnsurePreviewPlaybackStarted("RendererAttach", recoveryAttempt: false);
         }
         else
         {
             // Fallback CPU preview path: SoftwareBitmapSource -> Image
+            _previewStartupExpectGpuDualSignals = false;
+            ConfigurePreviewStartupSignals(PreviewStartupStrategy.CpuSoftwareBitmap, PreviewStartupSignalFlags.FirstVisual);
             _previewSource = new SoftwareBitmapSource();
+            _previewRendererAttachedUtc = DateTimeOffset.UtcNow;
             PreviewImage.Source = _previewSource;
             PreviewImage.Visibility = Visibility.Visible;
             PreviewPlayerElement.Visibility = Visibility.Collapsed;
             Logger.Log($"Preview renderer started (mode=CpuSoftwareBitmap, expectedIntervalMs={_previewMinPresentationIntervalMs}).");
+            Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=CpuSoftwareBitmap attempt={_previewStartupAttemptId ?? "none"}");
         }
 
         return Task.CompletedTask;
@@ -1620,12 +2420,25 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewMediaPlayer = null;
         if (player != null)
         {
+            player.MediaOpened -= PreviewMediaPlayer_MediaOpened;
+            player.MediaFailed -= PreviewMediaPlayer_MediaFailed;
+            player.PlaybackSession.PositionChanged -= PreviewPlaybackSession_PositionChanged;
+            player.PlaybackSession.PlaybackStateChanged -= PreviewPlaybackSession_PlaybackStateChanged;
             player.Pause();
             player.Source = null;
             PreviewPlayerElement.SetMediaPlayer(null!);
             player.Dispose();
         }
         PreviewPlayerElement.Visibility = Visibility.Collapsed;
+        _previewStartupExpectGpuDualSignals = false;
+        _previewGpuSignalMediaOpened = false;
+        _previewGpuSignalFirstFrame = false;
+        _previewGpuSignalPlaybackAdvancing = false;
+        _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
+        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
+        _previewStartupStrategy = PreviewStartupStrategy.None;
+        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
+        _previewStartupPlaybackPositionInitialized = false;
 
         // Clean up CPU preview path
         PreviewImage.Source = null;
@@ -1644,6 +2457,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private async void ViewModel_PreviewFrameReady(object? sender, PreviewFrame frame)
     {
         Interlocked.Increment(ref _previewFramesArrived);
+        if (_previewStartupExpectGpuDualSignals &&
+            !_previewGpuSignalFirstFrame &&
+            IsPreviewStartupSignalWindowActive())
+        {
+            _dispatcherQueue.TryEnqueue(MarkGpuStartupSignalFirstFrame);
+        }
+
+        if (_previewSource == null)
+        {
+            return;
+        }
+
         var nowTick = Environment.TickCount64;
         var resizeSuppressUntil = Interlocked.Read(ref _previewResizeSuppressUntilTick);
         if (nowTick < resizeSuppressUntil)
@@ -1688,6 +2513,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                     Interlocked.Increment(ref _previewFramesDisplayed);
                     Interlocked.Exchange(ref _previewLastPresentedTick, uiStartTick);
                     TrackPreviewDisplayCadence();
+                    ConfirmPreviewFirstVisual("CpuSoftwareBitmap");
                 }
                 else
                 {
@@ -1831,10 +2657,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             if (ViewModel.IsPreviewing)
             {
+                _previewStopRequestedByUser = true;
                 await ViewModel.StopPreviewAsync();
             }
             else
             {
+                _previewStopRequestedByUser = false;
                 await ViewModel.StartPreviewAsync();
             }
         }, nameof(PreviewButton_Click));
@@ -1869,4 +2697,59 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _ = RunUiEventHandlerAsync(() => ViewModel.BrowseOutputPathAsync(), nameof(BrowseButton_Click));
     }
+
+    private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)
+    {
+        SettingsOverlayPanel.Visibility = SettingsOverlayPanel.Visibility == Visibility.Visible
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+    }
+
+    #region Minimum window size (Win32 interop)
+
+    private const int GWLP_WNDPROC = -4;
+    private const uint WM_GETMINMAXINFO = 0x0024;
+
+    private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct POINT { public int X, Y; }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MINMAXINFO
+    {
+        public POINT ptReserved;
+        public POINT ptMaxSize;
+        public POINT ptMaxPosition;
+        public POINT ptMinTrackSize;
+        public POINT ptMaxTrackSize;
+    }
+
+    [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
+    private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
+
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]
+    private static extern IntPtr GetWindowLongPtr(IntPtr hWnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr CallWindowProc(IntPtr lpPrevWndFunc, IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+    private IntPtr MinSizeWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
+    {
+        if (msg == WM_GETMINMAXINFO)
+        {
+            var dpi = GetDpiForWindow(hWnd);
+            var scale = dpi / 96.0;
+            var mmi = Marshal.PtrToStructure<MINMAXINFO>(lParam);
+            mmi.ptMinTrackSize.X = (int)(MinWindowWidth * scale);
+            mmi.ptMinTrackSize.Y = (int)(MinWindowHeight * scale);
+            Marshal.StructureToPtr(mmi, lParam, false);
+        }
+        return CallWindowProc(_originalWndProc, hWnd, msg, wParam, lParam);
+    }
+
+    #endregion
 }

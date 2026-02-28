@@ -175,3 +175,16 @@ Do not rewrite or delete prior entries. Append new entries only.
 - Validator Output:
   - N/A
 - Conclusion: Improves the expected “click stop, it stops” UX without changing the capture/encode pipeline logic.
+
+## E16 - Preview startup no longer times out waiting for MediaOpened signal
+- Timestamp (UTC): 2026-02-27T03:16:14Z
+- Commit Hash: 66be7218d5e2a930ee8ebd1c0c42138da6856a53
+- What Changed (single change): Removed `MediaOpened` from the required startup signals for `GpuMediaSourceNoFrameReader` strategy in `StartPreviewRendererAsync`. `MediaPlayer.MediaOpened` does not fire reliably for live `MediaFrameSource`-backed `MediaSource` objects (confirmed absent from logs across multiple runs). `PlaybackAdvancing` (position moving) is a strictly stronger signal and is sufficient proof that the player is running.
+- How To Run:
+  1. Build and launch `latest-build/ElgatoCapture.exe`.
+  2. Confirm `temp/logs/ElgatoCapture_Debug.log` shows `PREVIEW_FIRST_VISUAL_CONFIRMED` within ~1 second of startup (not a 10-second timeout followed by failure).
+- Validator Output:
+  - N/A
+- ffprobe Evidence:
+  - N/A
+- Conclusion: Preview startup now confirms in ~350ms instead of timing out after 10s. Log shows `PREVIEW_START_STATE state=Rendering` and `PREVIEW_FIRST_VISUAL_CONFIRMED elapsedMs=350 source=GpuStartupSignals(PlaybackAdvancing)`.

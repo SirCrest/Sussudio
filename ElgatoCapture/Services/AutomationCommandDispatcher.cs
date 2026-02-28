@@ -164,6 +164,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateAcknowledgedResponse(correlationId, $"HDR {(enabled ? "enable" : "disable")} requested.");
                 }
 
+                case AutomationCommandKind.SetTrueHdrPreviewEnabled:
+                {
+                    var enabled = RequireBool(payload, "enabled");
+                    await _viewModel.SetTrueHdrPreviewEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"True HDR preview {(enabled ? "enable" : "disable")} requested.");
+                }
+
                 case AutomationCommandKind.SetAudioEnabled:
                 {
                     var enabled = RequireBool(payload, "enabled");
@@ -545,6 +552,10 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 (!snapshot.HdrOutputActive ||
                  verification.HdrParity is { Requested: true, Verified: true } ||
                  verification.HdrMetadataPresent == true),
+            AutomationWaitCondition.AudioFramesFlowing =>
+                snapshot.AudioReaderActive && snapshot.AudioFramesArrived > 0,
+            AutomationWaitCondition.VideoFramesFlowing =>
+                snapshot.VideoReaderActive && snapshot.IngestVideoFramesArrived > 0,
             _ => false
         };
     }
