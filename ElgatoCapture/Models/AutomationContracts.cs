@@ -29,7 +29,8 @@ public enum AutomationCommandKind
     WaitForCondition,
     VerifyLastRecording,
     AssertSnapshot,
-    SetTrueHdrPreviewEnabled
+    SetTrueHdrPreviewEnabled,
+    ProbeVideoSource
 }
 
 public enum AutomationWindowAction
@@ -169,6 +170,10 @@ public sealed class AutomationSnapshot
     public long IngestVideoFramesArrived { get; init; }
     public long IngestVideoFramesWrittenToSink { get; init; }
     public long IngestLastVideoFrameAgeMs { get; init; }
+    public long VideoIngestErrorCount { get; init; }
+    public string MemoryPreference { get; init; } = "Cpu";
+    public string VideoRequestedSubtype { get; init; } = "unknown";
+    public string VideoNegotiatedSubtype { get; init; } = "unknown";
     public long EncoderVideoFramesEnqueued { get; init; }
     public long EncoderVideoFramesEncoded { get; init; }
     public long EncoderLastEnqueueAgeMs { get; init; }
@@ -480,6 +485,10 @@ public sealed class CaptureRuntimeSnapshot
     public long IngestVideoFramesArrived { get; init; }
     public long IngestVideoFramesWrittenToSink { get; init; }
     public long IngestLastVideoFrameAgeMs { get; init; }
+    public long VideoIngestErrorCount { get; init; }
+    public string MemoryPreference { get; init; } = "Cpu";
+    public string VideoRequestedSubtype { get; init; } = "unknown";
+    public string VideoNegotiatedSubtype { get; init; } = "unknown";
     public string SessionState { get; init; } = "Unknown";
 
     public string? CurrentDeviceId { get; init; }
@@ -635,4 +644,29 @@ public sealed class SnapshotAssertion
     public string Field { get; init; } = string.Empty;
     public string Op { get; init; } = "eq";
     public string? Value { get; init; }
+}
+
+public sealed class VideoSourceFormatEntry
+{
+    public string Subtype { get; init; } = string.Empty;
+    public int Width { get; init; }
+    public int Height { get; init; }
+    public double FrameRate { get; init; }
+    public string Summary { get; init; } = string.Empty;
+}
+
+public sealed class VideoSourceProbeResult
+{
+    public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public bool SessionActive { get; init; }
+    public string MemoryPreference { get; init; } = "Unknown";
+    public string CurrentSubtype { get; init; } = "Unknown";
+    public int CurrentWidth { get; init; }
+    public int CurrentHeight { get; init; }
+    public double CurrentFrameRate { get; init; }
+    public bool P010Available { get; init; }
+    public bool Nv12Available { get; init; }
+    public IReadOnlyList<string> SupportedSubtypes { get; init; } = Array.Empty<string>();
+    public int TotalFormatCount { get; init; }
+    public IReadOnlyList<VideoSourceFormatEntry> Formats { get; init; } = Array.Empty<VideoSourceFormatEntry>();
 }

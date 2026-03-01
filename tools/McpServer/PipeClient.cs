@@ -39,7 +39,8 @@ public sealed class PipeClient
         ["WaitForCondition"] = 20,
         ["VerifyLastRecording"] = 21,
         ["AssertSnapshot"] = 22,
-        ["SetTrueHdrPreviewEnabled"] = 23
+        ["SetTrueHdrPreviewEnabled"] = 23,
+        ["ProbeVideoSource"] = 24
     };
 
     public async Task<JsonElement> SendCommandAsync(

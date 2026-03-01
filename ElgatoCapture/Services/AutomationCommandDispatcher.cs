@@ -338,6 +338,12 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         status: passed ? "ok" : "error");
                 }
 
+                case AutomationCommandKind.ProbeVideoSource:
+                {
+                    var result = _viewModel.ProbeVideoSource();
+                    return CreateSuccessResponse(correlationId, "Video source probe completed.", data: result);
+                }
+
                 default:
                     return CreateSuccessResponse(
                         correlationId,

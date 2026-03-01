@@ -269,6 +269,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         => InvokeOnUiThreadAsync(() => _captureService.GetHealthSnapshot(), cancellationToken);
     public Task<RecordingStats> GetRecordingStatsSnapshotAsync(CancellationToken cancellationToken = default)
         => InvokeOnUiThreadAsync(() => _captureService.GetRecordingStats(), cancellationToken);
+    public VideoSourceProbeResult ProbeVideoSource() => _captureService.ProbeVideoSource();
 
 
     public MainViewModel()
