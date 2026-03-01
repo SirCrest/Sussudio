@@ -18,6 +18,23 @@ patterns that conflict with those goals.
 - **Launch perf-review agent** after writing any non-trivial change, before
   declaring done.
 - **Never say "one-line fix" or "that's it."** Always verify the full flow.
+- **Before iterative debugging, check your instrumentation.** If you'd need 3+
+  rebuild cycles to narrow something down, build an MCP diagnostic probe first.
+  A one-time investment in a probe beats N iterations of edit-build-log.
+- **Before building, check MCP state and close the app if idle.** Don't build
+  first and discover the lock error after. If the app is previewing (not
+  recording), close it via `window_action(close, armClose=true)` and wait a
+  few seconds before running `dotnet build`.
+- **Never edit files a background Codex task is touching.** Check if a running
+  Codex task has the file in scope. If so, wait for Codex to finish or work on
+  a different file. Flag the conflict to the user rather than silently creating
+  a race condition.
+- **When uncertain about environmental state, ask the user.** If you can't
+  detect a process, can't tell if the app launched, or hit an ambiguous state —
+  stop and ask. A 10-second question beats 20 minutes of spiraling.
+- **Never escalate destructively when uncertain.** Do not stash, reset, or
+  clean the working tree as a debugging strategy. Read diffs and reason about
+  them first. Those operations are irreversible and can destroy in-progress work.
 - Use subagents aggressively for review and verification.
 
 ## Conventions

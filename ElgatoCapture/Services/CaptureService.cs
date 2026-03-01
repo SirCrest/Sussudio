@@ -417,6 +417,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
             IngestVideoFramesArrived = _ingestSession?.VideoFramesArrived ?? 0,
             IngestVideoFramesWrittenToSink = _ingestSession?.VideoFramesWrittenToSink ?? 0,
             IngestLastVideoFrameAgeMs = ComputeTickAge(_ingestSession?.LastVideoFrameArrivedTick ?? 0),
+            VideoIngestErrorCount = _ingestSession?.VideoIngestErrorCount ?? 0,
+            MemoryPreference = _ingestSession?.MemoryPreference ?? "Cpu",
+            VideoRequestedSubtype = _ingestSession?.VideoRequestedSubtype ?? "unknown",
+            VideoNegotiatedSubtype = _ingestSession?.VideoNegotiatedSubtype ?? "unknown",
             SessionState = _sessionState.ToString(),
             CurrentDeviceId = _currentDevice?.Id,
             CurrentDeviceName = _currentDevice?.Name,
@@ -518,6 +522,17 @@ public class CaptureService : IDisposable, IAsyncDisposable
             TelemetryAlignmentStatus = telemetryAlignmentStatus,
             TelemetryAlignmentReason = telemetryAlignmentReason
         };
+    }
+
+    public VideoSourceProbeResult ProbeVideoSource()
+    {
+        var session = _ingestSession;
+        if (session == null)
+        {
+            return new VideoSourceProbeResult { SessionActive = false };
+        }
+
+        return session.ProbeVideoSource();
     }
 
     private static string? ResolveRequestedFrameRateArg(CaptureSettings? settings, string? fallbackArg)
@@ -784,7 +799,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
             _videoPreviewUsesFfmpegPipe = false;
             var hdrRequested = HdrOutputPolicy.IsEnabled(settings);
-            var requireP010 = hdrRequested && settings.PreviewMode == PreviewMode.TrueHdr;
+            var requireP010 = hdrRequested;
             var audioDeviceId = settings.AudioEnabled
                 ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice.AudioDeviceId))
                 : null;

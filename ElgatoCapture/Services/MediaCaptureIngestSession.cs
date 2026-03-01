@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -63,6 +64,77 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
     public long VideoFramesArrived => Interlocked.Read(ref _videoFrameCount);
     public long VideoFramesWrittenToSink => Interlocked.Read(ref _videoFramesWrittenToSink);
     public long LastVideoFrameArrivedTick => Interlocked.Read(ref _lastVideoFrameArrivedTick);
+    public long VideoIngestErrorCount => Interlocked.Read(ref _videoIngestErrorCount);
+    public string MemoryPreference => _requireP010 ? "Auto" : "Cpu";
+    public string VideoRequestedSubtype => _videoRequestedSubtype;
+    public string VideoNegotiatedSubtype => _videoNegotiatedSubtype;
+    public bool RequireP010 => _requireP010;
+
+    public VideoSourceProbeResult ProbeVideoSource()
+    {
+        var source = _videoSource;
+        if (source == null)
+        {
+            return new VideoSourceProbeResult
+            {
+                SessionActive = false,
+                MemoryPreference = MemoryPreference
+            };
+        }
+
+        var supported = source.SupportedFormats;
+        var formats = new List<VideoSourceFormatEntry>();
+        var subtypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        if (supported != null)
+        {
+            foreach (var fmt in supported)
+            {
+                var sub = fmt.Subtype ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(sub))
+                {
+                    subtypes.Add(sub);
+                }
+
+                if (formats.Count < 50)
+                {
+                    var w = (int)(fmt.VideoFormat?.Width ?? 0);
+                    var h = (int)(fmt.VideoFormat?.Height ?? 0);
+                    var fps = fmt.FrameRate.Denominator > 0
+                        ? (double)fmt.FrameRate.Numerator / fmt.FrameRate.Denominator
+                        : 0;
+                    formats.Add(new VideoSourceFormatEntry
+                    {
+                        Subtype = sub,
+                        Width = w,
+                        Height = h,
+                        FrameRate = Math.Round(fps, 3),
+                        Summary = $"{sub} {w}x{h}@{fps:0.###}"
+                    });
+                }
+            }
+        }
+
+        var current = source.CurrentFormat;
+        var currentFps = current != null && current.FrameRate.Denominator > 0
+            ? (double)current.FrameRate.Numerator / current.FrameRate.Denominator
+            : 0;
+
+        return new VideoSourceProbeResult
+        {
+            SessionActive = true,
+            MemoryPreference = MemoryPreference,
+            CurrentSubtype = current?.Subtype ?? "Unknown",
+            CurrentWidth = (int)(current?.VideoFormat?.Width ?? 0),
+            CurrentHeight = (int)(current?.VideoFormat?.Height ?? 0),
+            CurrentFrameRate = Math.Round(currentFps, 3),
+            P010Available = subtypes.Contains("P010"),
+            Nv12Available = subtypes.Contains("NV12"),
+            SupportedSubtypes = subtypes.OrderBy(s => s, StringComparer.OrdinalIgnoreCase).ToList(),
+            TotalFormatCount = supported?.Count ?? 0,
+            Formats = formats
+        };
+    }
 
     public MediaCaptureIngestSession()
     {
@@ -136,7 +208,7 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
                 VideoDeviceId = videoDeviceId,
                 AudioDeviceId = _audioEnabled ? audioDeviceId : null,
                 StreamingCaptureMode = _audioEnabled ? StreamingCaptureMode.AudioAndVideo : StreamingCaptureMode.Video,
-                MemoryPreference = MediaCaptureMemoryPreference.Cpu
+                MemoryPreference = requireP010 ? MediaCaptureMemoryPreference.Auto : MediaCaptureMemoryPreference.Cpu
             }).AsTask(cancellationToken);
         }
         catch (Exception ex)
@@ -258,7 +330,11 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
         {
             var requestedVideoSubtype = _videoRequestedSubtype;
             Logger.Log($"Video ingest reader request: subtype={requestedVideoSubtype}");
-            _videoReader = await _mediaCapture.CreateFrameReaderAsync(_videoSource, requestedVideoSubtype).AsTask(cancellationToken);
+            // Do NOT pass subtype to CreateFrameReaderAsync — the WinRT conversion pipeline
+            // doesn't support P010 as a SoftwareBitmap output format, causing TryAcquireLatestFrame()
+            // to throw E_INVALIDARG. Instead, let the reader deliver frames in the source's native
+            // format (already set to P010 via SetFormatAsync during preview init).
+            _videoReader = await _mediaCapture.CreateFrameReaderAsync(_videoSource).AsTask(cancellationToken);
             _videoReader.FrameArrived += OnVideoFrameArrived;
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -459,30 +535,81 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
         MediaFrameReference? frame = null;
         try
         {
-            frame = sender.TryAcquireLatestFrame();
-            var video = frame?.VideoMediaFrame;
+            try { frame = sender.TryAcquireLatestFrame(); }
+            catch (Exception acqEx)
+            {
+                if (Interlocked.Exchange(ref _loggedFirstVideoFrame, 1) == 0)
+                    Logger.Log($"VIDEO_DIAG TryAcquireLatestFrame failed: {acqEx.GetType().Name} hr=0x{acqEx.HResult:X8} msg={acqEx.Message}");
+                throw;
+            }
+            VideoMediaFrame? video = null;
+            try { video = frame?.VideoMediaFrame; }
+            catch (Exception vmfEx)
+            {
+                if (Interlocked.Exchange(ref _loggedFirstVideoFrame, 1) == 0)
+                    Logger.Log($"VIDEO_DIAG VideoMediaFrame failed: {vmfEx.GetType().Name} hr=0x{vmfEx.HResult:X8} msg={vmfEx.Message}");
+                throw;
+            }
             if (video == null) return;
 
             SoftwareBitmap? bitmap = null;
+            bool bitmapFromSurface = false;
             try { bitmap = video.SoftwareBitmap; }
-            catch { /* D3D-only frame */ }
-            if (bitmap == null) return;
-
-            if (Logger.VerboseEnabled && Interlocked.Exchange(ref _loggedFirstVideoFrame, 1) == 0)
+            catch (Exception sbEx)
             {
-                Logger.LogVerbose(
-                    $"First video frame: requireP010={_requireP010} requestedSubtype={_videoRequestedSubtype} " +
-                    $"negotiatedSubtype={_videoNegotiatedSubtype} softwareBitmapFormat={bitmap.BitmapPixelFormat}");
+                if (Interlocked.Exchange(ref _loggedFirstVideoFrame, 1) == 0)
+                    Logger.Log($"VIDEO_DIAG SoftwareBitmap access failed: {sbEx.GetType().Name} hr=0x{sbEx.HResult:X8} msg={sbEx.Message}");
+                return;
             }
 
-            if (_requireP010 && bitmap.BitmapPixelFormat != BitmapPixelFormat.P010)
+            if (bitmap == null)
+            {
+                // MemoryPreference.Auto + P010 → frames arrive as D3D surface only
+                var surface = video.Direct3DSurface;
+                if (surface == null) return;
+
+                try
+                {
+                    bitmap = SoftwareBitmap.CreateCopyFromSurfaceAsync(
+                        surface, BitmapAlphaMode.Ignore).AsTask().GetAwaiter().GetResult();
+                    bitmapFromSurface = true;
+                }
+                catch (Exception surfEx)
+                {
+                    if (Interlocked.Exchange(ref _loggedFirstVideoFrame, 1) == 0)
+                        Logger.Log($"VIDEO_DIAG CreateCopyFromSurface failed: {surfEx.GetType().Name} hr=0x{surfEx.HResult:X8}");
+                    return;
+                }
+            }
+
+            BitmapPixelFormat pixFmt;
+            try { pixFmt = bitmap.BitmapPixelFormat; }
+            catch (Exception pfEx)
+            {
+                if (Interlocked.Exchange(ref _loggedFirstVideoFrame, 1) == 0)
+                    Logger.Log($"VIDEO_DIAG BitmapPixelFormat failed: {pfEx.GetType().Name} hr=0x{pfEx.HResult:X8} msg={pfEx.Message}");
+                return;
+            }
+
+            if (Interlocked.Exchange(ref _loggedFirstVideoFrame, 1) == 0)
+            {
+                var d3dSurface = video.Direct3DSurface;
+                var d3dDesc = d3dSurface != null ? d3dSurface.Description : default;
+                Logger.Log(
+                    $"VIDEO_DIAG first_frame: requireP010={_requireP010} requestedSubtype={_videoRequestedSubtype} " +
+                    $"negotiatedSubtype={_videoNegotiatedSubtype} pixelFormat={pixFmt} " +
+                    $"width={bitmap.PixelWidth} height={bitmap.PixelHeight} " +
+                    $"d3dSurface={d3dSurface != null} d3dFormat={d3dDesc.Format} d3dW={d3dDesc.Width} d3dH={d3dDesc.Height}");
+            }
+
+            if (_requireP010 && pixFmt != BitmapPixelFormat.P010)
                 throw new InvalidOperationException(
-                    $"HDR ingress requires P010, but received {bitmap.BitmapPixelFormat} " +
+                    $"HDR ingress requires P010, but received {pixFmt} " +
                     $"(requestedSubtype={_videoRequestedSubtype}, negotiatedSubtype={_videoNegotiatedSubtype}).");
 
-            if (!_requireP010 && bitmap.BitmapPixelFormat != BitmapPixelFormat.Nv12)
+            if (!_requireP010 && pixFmt != BitmapPixelFormat.Nv12)
                 throw new InvalidOperationException(
-                    $"SDR ingress requires NV12, but received {bitmap.BitmapPixelFormat}.");
+                    $"SDR ingress requires NV12, but received {pixFmt}.");
 
             Interlocked.Increment(ref _videoFrameCount);
             Interlocked.Exchange(ref _lastVideoFrameArrivedTick, Environment.TickCount64);
@@ -491,12 +618,26 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
             var channel = _videoIngestChannel;
             if (channel != null)
             {
-                var copy = SoftwareBitmap.Copy(bitmap);
+                SoftwareBitmap? copy = null;
+                try
+                {
+                    // Surface-copied bitmaps are already detached from reader pool — skip Copy()
+                    copy = bitmapFromSurface ? bitmap : SoftwareBitmap.Copy(bitmap);
+                }
+                catch (Exception copyEx)
+                {
+                    Logger.Log($"VIDEO_DIAG SoftwareBitmap.Copy failed: {copyEx.GetType().Name} hr=0x{copyEx.HResult:X8} pixFmt={pixFmt}");
+                    return;
+                }
                 if (!channel.Writer.TryWrite(copy))
                 {
-                    // DropOldest policy should prevent this, but if it happens, clean up
                     copy.Dispose();
                 }
+            }
+            else if (bitmapFromSurface)
+            {
+                // No channel — surface-copied bitmap is independent of frame, must dispose
+                bitmap.Dispose();
             }
         }
         catch (Exception ex)
