@@ -50,6 +50,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     private static readonly object _encoderProbeLock = new();
     private static Task<HdrArgumentSupport>? _hdrArgumentProbeTask;
     private static readonly object _hdrArgumentProbeLock = new();
+    private static Task<SplitEncodeSupport>? _splitEncodeSupportTask;
+    private static readonly object _splitEncodeSupportLock = new();
     private HdrArgumentSupport _hdrArgumentSupport = HdrArgumentSupport.Unknown;
     private readonly Stopwatch _startupStopwatch = new();
     private int _loggedFirstVideoWrite;
@@ -241,6 +243,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
     {
         // Look for FFmpeg in multiple locations
         _ffmpegPath = FindFFmpegPath();
+    }
+
+    public void SetMfReadwriteDisableConverters(bool enabled)
+    {
+        _mfReadwriteDisableConverters = enabled;
     }
 
     public static string ResolveFfmpegPath()
@@ -450,6 +457,46 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         }
     }
 
+    public static Task<SplitEncodeSupport> GetSplitEncodeSupportAsync()
+    {
+        lock (_splitEncodeSupportLock)
+        {
+            _splitEncodeSupportTask ??= ProbeSplitEncodeSupportAsync();
+            return _splitEncodeSupportTask;
+        }
+    }
+
+    private static async Task<SplitEncodeSupport> ProbeSplitEncodeSupportAsync()
+    {
+        var ffmpegPath = FindFFmpegPath();
+        try
+        {
+            var twoWayTask = TestSplitEncodeModeAsync(ffmpegPath, 2);
+            var threeWayTask = TestSplitEncodeModeAsync(ffmpegPath, 3);
+            await Task.WhenAll(twoWayTask, threeWayTask).ConfigureAwait(false);
+            var support = new SplitEncodeSupport(twoWayTask.Result, threeWayTask.Result);
+            Logger.Log($"Split encode support: 2-way={support.Supports2Way}, 3-way={support.Supports3Way}");
+            return support;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Split encode probe failed: {ex.Message}");
+            return SplitEncodeSupport.NvencUnavailable;
+        }
+    }
+
+    private static async Task<bool> TestSplitEncodeModeAsync(string ffmpegPath, int mode)
+    {
+        var probeArgs =
+            "-hide_banner -loglevel error " +
+            "-f lavfi -i color=size=16x16:rate=1:color=black:duration=1 " +
+            "-c:v hevc_nvenc " +
+            $"-split_encode_mode {mode} " +
+            "-frames:v 1 -an -f null NUL";
+        var result = await RunProbeCommandWithExitCodeAsync(ffmpegPath, probeArgs).ConfigureAwait(false);
+        return result.ExitCode == 0;
+    }
+
     private static async Task<bool> SupportsFfmpegOptionAsync(string ffmpegPath, string optionName, string optionArguments)
     {
         var probeArgs =
@@ -576,6 +623,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _lastStopTimedOut = false;
         _lastWriterDrainTimedOut = false;
         _usesDirectShowInput = false;
+        _mfReadwriteDisableConverters = false;
         _directShowHdrRequested = false;
         _directShowInputFormatVerified = false;
         _directShowInputSectionActive = false;
@@ -1627,7 +1675,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             ? "nv12"
             : "yuv420p";
         var hdrMetadataArgs = string.Empty;
-        var av1HdrMetadataBsfArgs = string.Empty;
+        var hdrBsfArgs = string.Empty;
 
         if (hdrRequested)
         {
@@ -1711,7 +1759,13 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             {
                 Logger.Log("HDR10 AV1 metadata: applying av1_metadata bitstream filter (color_primaries=9 transfer_characteristics=16 matrix_coefficients=9).");
                 // bt2020 primaries=9, smpte2084 transfer=16, bt2020nc matrix=9
-                av1HdrMetadataBsfArgs = "-bsf:v av1_metadata=color_primaries=9:transfer_characteristics=16:matrix_coefficients=9 ";
+                hdrBsfArgs = "-bsf:v av1_metadata=color_primaries=9:transfer_characteristics=16:matrix_coefficients=9 ";
+            }
+            else if (isHevcNvenc)
+            {
+                Logger.Log("HDR10 HEVC metadata: applying hevc_metadata bitstream filter (colour_primaries=9 transfer_characteristics=16 matrix_coefficients=9).");
+                // bt2020 primaries=9, smpte2084 transfer=16, bt2020nc matrix=9 — NVENC ignores encoder-level VUI flags
+                hdrBsfArgs = "-bsf:v hevc_metadata=colour_primaries=9:transfer_characteristics=16:matrix_coefficients=9 ";
             }
         }
 
@@ -1744,7 +1798,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                    $"-r {frameRateArg} " + // Force output frame rate (CFR)
                    $"-pix_fmt {outputPixelFormat} " +
                    $"{hdrMetadataArgs}" +
-                   $"{av1HdrMetadataBsfArgs}" +
+                   $"{hdrBsfArgs}" +
                    // Audio encoding (or disable audio)
                    audioArgs +
                    // Output options
@@ -1831,6 +1885,36 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             : "high";
         var nvencProfileArg = useNvenc && !isAv1 ? $"-profile:v {nvencProfile} " : string.Empty;
         var bFrames = 3;
+        var requestedNvencPreset = string.IsNullOrWhiteSpace(settings.NvencPreset) ? "Auto" : settings.NvencPreset;
+        var isAutoNvencPreset = string.Equals(requestedNvencPreset, "Auto", StringComparison.OrdinalIgnoreCase);
+        var preset = useNvenc
+            ? (isAutoNvencPreset ? "p4" : requestedNvencPreset.ToLowerInvariant())
+            : "fast";
+
+        static string AppendNvencSplitEncodeModeArg(string args, string? splitEncodeMode)
+        {
+            if (string.IsNullOrWhiteSpace(splitEncodeMode) ||
+                string.Equals(splitEncodeMode, "Auto", StringComparison.OrdinalIgnoreCase))
+            {
+                return args;
+            }
+
+            var splitEncodeValue = splitEncodeMode switch
+            {
+                "Disabled" => "disabled",
+                "2-way" => "2",
+                "3-way" => "3",
+                _ => null
+            };
+
+            if (string.IsNullOrWhiteSpace(splitEncodeValue))
+            {
+                return args;
+            }
+
+            return $"{args} -split_encode_mode {splitEncodeValue}";
+        }
+
         if (settings.Quality == VideoQuality.Custom)
         {
             // Use CBR with user-specified bitrate
@@ -1839,7 +1923,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             if (useNvenc)
             {
                 // NVENC CBR mode
-                qualityArgs = $"-preset p4 -rc cbr -b:v {bitrate}k -maxrate {bitrate}k -bufsize {bitrate * 2}k {nvencProfileArg}-bf {bFrames}";
+                qualityArgs = $"-preset {preset} -rc cbr -b:v {bitrate}k -maxrate {bitrate}k -bufsize {bitrate * 2}k {nvencProfileArg}-bf {bFrames}";
+                qualityArgs = AppendNvencSplitEncodeModeArg(qualityArgs, settings.SplitEncodeMode);
             }
             else if (isSvtAv1 || isAomAv1)
             {
@@ -1859,23 +1944,13 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                 VideoQuality.Low => isAv1 ? 40 : 28,
                 VideoQuality.Medium => isAv1 ? 32 : 23,
                 VideoQuality.High => isAv1 ? 28 : 18,
-                VideoQuality.VeryHigh => isAv1 ? 24 : 15,
-                VideoQuality.Lossless => 0,
+                VideoQuality.SuperHigh => isAv1 ? 24 : 15,
                 _ => isAv1 ? 28 : 23 // Auto
-            };
-
-            // Map preset based on quality level
-            string preset = settings.Quality switch
-            {
-                VideoQuality.Lossless => useNvenc ? "p7" : "ultrafast",
-                VideoQuality.VeryHigh => useNvenc ? "p6" : "fast",
-                VideoQuality.High => useNvenc ? "p5" : "fast",
-                _ => useNvenc ? "p4" : "fast"
             };
 
             // Resolution-adaptive NVENC preset capping: high presets (p5/p6/p7) may not
             // sustain realtime at 4K@60fps on GPUs slower than a 4090. Cap to p4 for UHD+.
-            if (useNvenc && effectiveWidth > 0 && effectiveHeight > 0 && effectiveFrameRate > 0)
+            if (useNvenc && isAutoNvencPreset && effectiveWidth > 0 && effectiveHeight > 0 && effectiveFrameRate > 0)
             {
                 var pixelRate = (long)effectiveWidth * effectiveHeight * (long)Math.Ceiling(effectiveFrameRate);
                 const long UhdThreshold = 1920L * 1080 * 60 * 2; // ~249M pixels/sec
@@ -1885,7 +1960,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                     var maxPreset = 4;
                     if (preset.Length >= 2 && preset[0] == 'p' && int.TryParse(preset[1..], out var currentPreset) && currentPreset > maxPreset)
                     {
-                        Logger.Log($"NVENC preset capped: p{currentPreset}→p{maxPreset} (pixelRate={pixelRate}, threshold={UhdThreshold})");
+                        Logger.Log($"NVENC preset capped: p{currentPreset}->p{maxPreset} (pixelRate={pixelRate}, threshold={UhdThreshold})");
                         preset = $"p{maxPreset}";
                     }
                 }
@@ -1893,17 +1968,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
 
             if (useNvenc)
             {
-                // NVENC CQ (Constant Quality) mode
-                if (settings.Quality == VideoQuality.Lossless)
-                {
-                    // Lossless mode
-                    qualityArgs = $"-preset {preset} -rc lossless {nvencProfileArg}-bf {bFrames}";
-                }
-                else
-                {
-                    // CQ mode (equivalent to CRF)
-                    qualityArgs = $"-preset {preset} -rc vbr -cq {qualityValue} -b:v 0 {nvencProfileArg}-bf {bFrames}";
-                }
+                // CQ mode (equivalent to CRF)
+                qualityArgs = $"-preset {preset} -rc vbr -cq {qualityValue} -b:v 0 {nvencProfileArg}-bf {bFrames}";
+                qualityArgs = AppendNvencSplitEncodeModeArg(qualityArgs, settings.SplitEncodeMode);
             }
             else if (isSvtAv1)
             {
@@ -1912,8 +1979,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                     VideoQuality.Low => 11,
                     VideoQuality.Medium => 10,
                     VideoQuality.High => 9,
-                    VideoQuality.VeryHigh => 8,
-                    VideoQuality.Lossless => 8,
+                    VideoQuality.SuperHigh => 8,
                     _ => 9
                 };
                 qualityArgs = $"-preset {svtPreset} -crf {qualityValue}";
@@ -1925,24 +1991,15 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
                     VideoQuality.Low => 8,
                     VideoQuality.Medium => 6,
                     VideoQuality.High => 6,
-                    VideoQuality.VeryHigh => 4,
-                    VideoQuality.Lossless => 4,
+                    VideoQuality.SuperHigh => 4,
                     _ => 6
                 };
                 qualityArgs = $"-cpu-used {cpuUsed} -crf {qualityValue} -b:v 0";
             }
             else
             {
-                // CPU encoding (existing logic)
-                if (settings.Quality == VideoQuality.Lossless)
-                {
-                    qualityArgs = $"-preset {preset} -crf 0";
-                }
-                else
-                {
-                    var cfr_opt = codec == "libx264" ? "-x264opts force-cfr=1" : "";
-                    qualityArgs = $"-preset {preset} -crf {qualityValue} {cfr_opt}";
-                }
+                var cfr_opt = codec == "libx264" ? "-x264opts force-cfr=1" : "";
+                qualityArgs = $"-preset {preset} -crf {qualityValue} {cfr_opt}";
             }
         }
 
@@ -2010,6 +2067,55 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             LogComInteropAwareException(ex);
+        }
+    }
+
+    public void EnqueueRawVideoFrame(ReadOnlySpan<byte> rawP010Frame, int expectedSize)
+    {
+        var queue = _videoFrameQueue;
+        if (!_isEncoding || queue == null || _cts?.IsCancellationRequested == true)
+        {
+            return;
+        }
+
+        _lastVideoEnqueueTick = Environment.TickCount64;
+        if (Logger.VerboseEnabled && Interlocked.Exchange(ref _loggedFirstVideoEnqueue, 1) == 0)
+        {
+            Logger.LogVerbose($"First video frame enqueued after {_startupStopwatch.ElapsedMilliseconds} ms (queueCount={Volatile.Read(ref _videoQueueDepth)})");
+        }
+
+        if (expectedSize <= 0)
+        {
+            return;
+        }
+
+        if (rawP010Frame.Length < expectedSize)
+        {
+            Logger.Log($"Raw P010 frame too small: expected={expectedSize} actual={rawP010Frame.Length}.");
+            return;
+        }
+
+        try
+        {
+            var buffer = GetFrameBuffer(expectedSize);
+            rawP010Frame[..expectedSize].CopyTo(buffer.AsSpan(0, expectedSize));
+            RecordObservedPixelFormatSample("P010", incrementAsFrame: true);
+            SampleP010BitDepthTelemetry(buffer, expectedSize);
+
+            var packet = new VideoFramePacket(buffer, expectedSize);
+            if (!TryEnqueueVideoPacket(queue, packet))
+            {
+                var dropped = Interlocked.Increment(ref _droppedVideoFrames);
+                Interlocked.Increment(ref _videoDropsQueueSaturated);
+                if (dropped == 1 || dropped % 30 == 0)
+                {
+                    Logger.Log($"Warning: Dropped video frame (queue saturated). Total dropped: {dropped}, saturated={Interlocked.Read(ref _videoDropsQueueSaturated)}, evicted={Interlocked.Read(ref _videoDropsBacklogEviction)}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex);
         }
     }
 
@@ -2801,6 +2907,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         };
     }
 
+    public static int GetP010FrameSizeBytes(int width, int height) => width * height * 3;
+
     private static unsafe void CopyNv12ToBuffer(SoftwareBitmap frame, byte[] destination)
     {
         using var bitmapBuffer = frame.LockBuffer(BitmapBufferAccessMode.Read);
@@ -2902,6 +3010,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
         _ffmpegProcess = null;
         _activeInputPixelFormat = "nv12";
         _activeOutputPixelFormat = "yuv420p";
+        _mfReadwriteDisableConverters = false;
         _usesDirectShowInput = false;
         _directShowHdrRequested = false;
         _directShowInputFormatVerified = false;

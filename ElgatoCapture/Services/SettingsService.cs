@@ -11,6 +11,8 @@ public class UserSettings
     public string? OutputPath { get; set; }
     public string? SelectedRecordingFormat { get; set; }
     public string? SelectedQuality { get; set; }
+    public string? SelectedPreset { get; set; }
+    public string? SelectedSplitEncodeMode { get; set; }
     public double? CustomBitrateMbps { get; set; }
     public bool? IsHdrEnabled { get; set; }
     public bool? IsAudioEnabled { get; set; }

@@ -36,6 +36,14 @@ patterns that conflict with those goals.
   clean the working tree as a debugging strategy. Read diffs and reason about
   them first. Those operations are irreversible and can destroy in-progress work.
 - Use subagents aggressively for review and verification.
+- **Never commit to the first root-cause hypothesis.** When you analyze a bug
+  and arrive at a plausible explanation, treat it as *one candidate*, not the
+  answer. Before writing any fix, spawn 2-3 competing analysis agents (Codex or
+  Claude subagents) with the same evidence but an explicit instruction to find
+  *alternative* explanations. Only proceed when hypotheses converge, or when a
+  diagnostic probe confirms one and rules out others. This applies especially
+  when the fix would touch multiple files or change architecture — the cost of
+  validating is small compared to the cost of reverting a wrong refactor.
 
 ## Conventions
 

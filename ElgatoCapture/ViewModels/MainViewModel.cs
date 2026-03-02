@@ -32,6 +32,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private const string Av1RecordingFormat = "AV1 (MP4)";
     private const int DefaultDisposeTimeoutMs = 30000;
     private const string HdrToggleBlockedWhileRecordingMessage = "Stop recording before switching between HDR and SDR pipelines.";
+    private const string LiveInfoUnavailable = "\u2014";
 
     [ObservableProperty]
     public partial ObservableCollection<CaptureDevice> Devices { get; set; } = new();
@@ -114,10 +115,28 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial string SelectedRecordingFormat { get; set; } = DefaultRecordingFormat;
 
     [ObservableProperty]
-    public partial ObservableCollection<string> AvailableQualities { get; set; } = new() { "Auto", "Low", "Medium", "High", "Very High", "Lossless", "Custom" };
+    public partial ObservableCollection<string> AvailableQualities { get; set; } = new() { "Auto", "Low", "Medium", "High", "Super High", "Custom" };
 
     [ObservableProperty]
-    public partial string SelectedQuality { get; set; } = "High";
+    public partial string SelectedQuality { get; set; } = "Medium";
+
+    [ObservableProperty]
+    public partial ObservableCollection<string> AvailablePresets { get; set; } = new()
+    {
+        "Auto", "P1", "P2", "P3", "P4", "P5", "P6", "P7"
+    };
+
+    [ObservableProperty]
+    public partial string SelectedPreset { get; set; } = "Auto";
+
+    [ObservableProperty]
+    public partial ObservableCollection<string> AvailableSplitEncodeModes { get; set; } = new()
+    {
+        "Auto", "Disabled", "2-way", "3-way"
+    };
+
+    [ObservableProperty]
+    public partial string SelectedSplitEncodeMode { get; set; } = "Auto";
 
     [ObservableProperty]
     public partial double CustomBitrateMbps { get; set; } = 50;
@@ -219,6 +238,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial string RecordingBitrateInfo { get; set; } = "--";
 
     [ObservableProperty]
+    public partial string LiveResolution { get; set; } = LiveInfoUnavailable;
+
+    [ObservableProperty]
+    public partial string LiveFrameRate { get; set; } = LiveInfoUnavailable;
+
+    [ObservableProperty]
+    public partial string LivePixelFormat { get; set; } = LiveInfoUnavailable;
+
+    [ObservableProperty]
     public partial bool IsRecording { get; set; }
 
     [ObservableProperty]
@@ -258,6 +286,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             OnPropertyChanged();
         }
     }
+
+    public SourceReaderPreviewAdapter? ActiveSourceReaderPreviewAdapter => _captureService.ActiveSourceReaderPreviewAdapter;
 
     public CaptureRuntimeSnapshot GetCaptureRuntimeSnapshot() => _captureService.GetRuntimeSnapshot();
     public CaptureHealthSnapshot GetCaptureHealthSnapshot() => _captureService.GetHealthSnapshot();
@@ -473,11 +503,16 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             SourceTargetSummaryText = SourceTargetSummaryText,
             SelectedRecordingFormat = SelectedRecordingFormat,
             SelectedQuality = SelectedQuality,
+            SelectedPreset = SelectedPreset,
+            SelectedSplitEncodeMode = SelectedSplitEncodeMode,
             CustomBitrateMbps = CustomBitrateMbps,
             IsHdrAvailable = IsHdrAvailable,
             IsHdrEnabled = IsHdrEnabled,
             HdrRuntimeState = HdrRuntimeState,
             HdrReadinessReason = HdrReadinessReason,
+            LiveResolution = LiveResolution,
+            LiveFrameRate = LiveFrameRate,
+            LivePixelFormat = LivePixelFormat,
             OutputPath = OutputPath,
             RecordingTime = RecordingTime,
             RecordingSizeInfo = RecordingSizeInfo,
@@ -511,7 +546,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public async Task InitializeAsync()
     {
-        await RefreshRecordingFormatsAsync();
+        var formatsTask = RefreshRecordingFormatsAsync();
+        var splitTask = RefreshSplitEncodeModesAsync();
+        await Task.WhenAll(formatsTask, splitTask);
         LoadSettings();
     }
 
@@ -556,6 +593,18 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 AvailableQualities.Contains(settings.SelectedQuality))
             {
                 SelectedQuality = settings.SelectedQuality;
+            }
+
+            if (!string.IsNullOrWhiteSpace(settings.SelectedPreset) &&
+                AvailablePresets.Contains(settings.SelectedPreset))
+            {
+                SelectedPreset = settings.SelectedPreset;
+            }
+
+            if (!string.IsNullOrWhiteSpace(settings.SelectedSplitEncodeMode) &&
+                AvailableSplitEncodeModes.Contains(settings.SelectedSplitEncodeMode))
+            {
+                SelectedSplitEncodeMode = settings.SelectedSplitEncodeMode;
             }
 
             if (settings.CustomBitrateMbps.HasValue)
@@ -612,6 +661,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 OutputPath = OutputPath,
                 SelectedRecordingFormat = SelectedRecordingFormat,
                 SelectedQuality = SelectedQuality,
+                SelectedPreset = SelectedPreset,
+                SelectedSplitEncodeMode = SelectedSplitEncodeMode,
                 CustomBitrateMbps = CustomBitrateMbps,
                 IsHdrEnabled = IsHdrEnabled,
                 IsAudioEnabled = IsAudioEnabled,
@@ -672,6 +723,39 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
+    private async Task RefreshSplitEncodeModesAsync()
+    {
+        var support = await FFmpegEncoderService.GetSplitEncodeSupportAsync();
+        var modes = new List<string> { "Auto", "Disabled" };
+        if (support.Supports2Way)
+        {
+            modes.Add("2-way");
+        }
+
+        if (support.Supports3Way)
+        {
+            modes.Add("3-way");
+        }
+
+        void ApplyModes()
+        {
+            AvailableSplitEncodeModes.Clear();
+            foreach (var mode in modes)
+            {
+                AvailableSplitEncodeModes.Add(mode);
+            }
+        }
+
+        if (_dispatcherQueue.HasThreadAccess)
+        {
+            ApplyModes();
+        }
+        else
+        {
+            _dispatcherQueue.TryEnqueue(ApplyModes);
+        }
+    }
+
 
     public void SetWindowHandle(IntPtr handle)
     {
@@ -684,24 +768,76 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _timer.Interval = TimeSpan.FromSeconds(1);
         _timer.Tick += (s, e) =>
         {
+            var runtimeSnapshot = _captureService.GetRuntimeSnapshot();
+
             if (IsRecording)
             {
                 RecordingTime = _recordingStopwatch.Elapsed.ToString(@"hh\:mm\:ss");
                 UpdateRecordingStats();
             }
+
+            if (IsPreviewing || IsRecording)
+            {
+                UpdateLiveCaptureInfo(runtimeSnapshot);
+            }
+            else
+            {
+                ResetLiveCaptureInfo();
+            }
+
             UpdateDiskSpace();
             RefreshSourceTelemetrySummaryAge();
-            UpdateHdrRuntimeStatusFromCapture();
+            UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
         };
         _timer.Start();
     }
 
-    private void UpdateHdrRuntimeStatusFromCapture()
+    private void UpdateHdrRuntimeStatusFromCapture(CaptureRuntimeSnapshot? runtimeSnapshot = null)
     {
-        var runtime = _captureService.GetRuntimeSnapshot();
+        var runtime = runtimeSnapshot ?? _captureService.GetRuntimeSnapshot();
         HdrRuntimeState = runtime.HdrRuntimeState;
         HdrReadinessReason = runtime.HdrReadinessReason;
         UpdateTargetSummary();
+    }
+
+    private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)
+    {
+        var runtime = runtimeSnapshot ?? _captureService.GetRuntimeSnapshot();
+
+        var width = runtime.ActualWidth ?? runtime.NegotiatedWidth ?? runtime.RequestedWidth;
+        var height = runtime.ActualHeight ?? runtime.NegotiatedHeight ?? runtime.RequestedHeight;
+        LiveResolution = width.HasValue && height.HasValue
+            ? $"{width.Value}x{height.Value}"
+            : LiveInfoUnavailable;
+
+        var frameRateValue = runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate ?? runtime.RequestedFrameRate;
+        var frameRateArg = runtime.ActualFrameRateArg ?? runtime.NegotiatedFrameRateArg ?? runtime.RequestedFrameRateArg;
+        if (!string.IsNullOrWhiteSpace(frameRateArg))
+        {
+            LiveFrameRate = frameRateArg!;
+        }
+        else if (frameRateValue.HasValue && frameRateValue.Value > 0)
+        {
+            LiveFrameRate = frameRateValue.Value.ToString("0.00");
+        }
+        else
+        {
+            LiveFrameRate = LiveInfoUnavailable;
+        }
+
+        var pixelFormat =
+            runtime.LatestObservedFramePixelFormat ??
+            runtime.NegotiatedPixelFormat ??
+            runtime.VideoNegotiatedSubtype ??
+            runtime.RequestedPixelFormat;
+        LivePixelFormat = string.IsNullOrWhiteSpace(pixelFormat) ? LiveInfoUnavailable : pixelFormat;
+    }
+
+    private void ResetLiveCaptureInfo()
+    {
+        LiveResolution = LiveInfoUnavailable;
+        LiveFrameRate = LiveInfoUnavailable;
+        LivePixelFormat = LiveInfoUnavailable;
     }
 
     private void RefreshSourceTelemetrySummaryAge()
@@ -2410,6 +2546,16 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         SaveSettings();
     }
 
+    partial void OnSelectedPresetChanged(string value)
+    {
+        SaveSettings();
+    }
+
+    partial void OnSelectedSplitEncodeModeChanged(string value)
+    {
+        SaveSettings();
+    }
+
     partial void OnIsCustomAudioInputEnabledChanged(bool value)
     {
         if (IsRecording)
@@ -2542,6 +2688,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             RecordingSizeInfo = "--";
             RecordingBitrateInfo = "--";
             _bitrateSamples.Clear();
+        }
+    }
+
+    partial void OnIsPreviewingChanged(bool value)
+    {
+        if (!value && !IsRecording)
+        {
+            ResetLiveCaptureInfo();
         }
     }
 
@@ -3188,8 +3342,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             "Low" => VideoQuality.Low,
             "Medium" => VideoQuality.Medium,
             "High" => VideoQuality.High,
-            "Very High" => VideoQuality.VeryHigh,
-            "Lossless" => VideoQuality.Lossless,
+            "Super High" => VideoQuality.SuperHigh,
             "Custom" => VideoQuality.Custom,
             _ => VideoQuality.High
         };
@@ -3290,6 +3443,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             RequestedPixelFormat = SelectedFormat?.PixelFormat,
             Format = format,
             Quality = quality,
+            NvencPreset = SelectedPreset,
+            SplitEncodeMode = SelectedSplitEncodeMode,
             CustomBitrateMbps = CustomBitrateMbps,
             HdrEnabled = IsHdrEnabled,
             HdrOutputMode = IsHdrEnabled ? HdrOutputMode.Hdr10Pq : HdrOutputMode.Off,

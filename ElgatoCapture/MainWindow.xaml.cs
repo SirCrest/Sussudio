@@ -69,14 +69,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private int _automationServicesStarted;
-    private DispatcherQueueTimer? _infoBarDismissTimer;
-    private string? _lastHdrRuntimeStateNotification;
     private int _deviceSelectionSyncQueued;
     private int _audioSelectionSyncQueued;
     private int _resolutionSelectionSyncQueued;
     private int _frameRateSelectionSyncQueued;
     private int _formatSelectionSyncQueued;
     private int _qualitySelectionSyncQueued;
+    private int _presetSelectionSyncQueued;
+    private int _splitEncodeSelectionSyncQueued;
     private readonly string _windowTitleBase;
     private DispatcherQueueTimer? _previewStartupWatchdogTimer;
     private DispatcherQueueTimer? _previewStartupOverlayTimer;
@@ -108,6 +108,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private bool _previewStopRequestedByUser;
     private bool _isWindowClosing;
     private bool _toggleLabelsVisible;
+    private bool _isSettingsShelfAnimating;
+    private bool _captureSettingsNarrow;
     private const double ControlBarLabelThreshold = 900.0;
     private const int MinWindowWidth = 780;
     private const int MinWindowHeight = 450;
@@ -952,6 +954,60 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
     }
 
+    private void EnsurePresetSelection()
+    {
+        if (ViewModel.AvailablePresets.Count == 0)
+        {
+            PresetComboBox.SelectedItem = null;
+            return;
+        }
+
+        var matchingPreset = ViewModel.AvailablePresets
+            .FirstOrDefault(preset => string.Equals(preset, ViewModel.SelectedPreset, StringComparison.OrdinalIgnoreCase))
+            ?? ViewModel.AvailablePresets.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(matchingPreset))
+        {
+            return;
+        }
+
+        if (!string.Equals(matchingPreset, ViewModel.SelectedPreset, StringComparison.OrdinalIgnoreCase))
+        {
+            ViewModel.SelectedPreset = matchingPreset;
+        }
+
+        if (!string.Equals(PresetComboBox.SelectedItem as string, matchingPreset, StringComparison.OrdinalIgnoreCase))
+        {
+            PresetComboBox.SelectedItem = matchingPreset;
+        }
+    }
+
+    private void EnsureSplitEncodeModeSelection()
+    {
+        if (ViewModel.AvailableSplitEncodeModes.Count == 0)
+        {
+            SplitEncodeComboBox.SelectedItem = null;
+            return;
+        }
+
+        var matchingMode = ViewModel.AvailableSplitEncodeModes
+            .FirstOrDefault(mode => string.Equals(mode, ViewModel.SelectedSplitEncodeMode, StringComparison.OrdinalIgnoreCase))
+            ?? ViewModel.AvailableSplitEncodeModes.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(matchingMode))
+        {
+            return;
+        }
+
+        if (!string.Equals(matchingMode, ViewModel.SelectedSplitEncodeMode, StringComparison.OrdinalIgnoreCase))
+        {
+            ViewModel.SelectedSplitEncodeMode = matchingMode;
+        }
+
+        if (!string.Equals(SplitEncodeComboBox.SelectedItem as string, matchingMode, StringComparison.OrdinalIgnoreCase))
+        {
+            SplitEncodeComboBox.SelectedItem = matchingMode;
+        }
+    }
+
     private void QueueDeviceSelectionSync()
     {
         if (Interlocked.Exchange(ref _deviceSelectionSyncQueued, 1) != 0)
@@ -1068,6 +1124,46 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             finally
             {
                 Interlocked.Exchange(ref _qualitySelectionSyncQueued, 0);
+            }
+        });
+    }
+
+    private void QueuePresetSelectionSync()
+    {
+        if (Interlocked.Exchange(ref _presetSelectionSyncQueued, 1) != 0)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                EnsurePresetSelection();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _presetSelectionSyncQueued, 0);
+            }
+        });
+    }
+
+    private void QueueSplitEncodeModeSelectionSync()
+    {
+        if (Interlocked.Exchange(ref _splitEncodeSelectionSyncQueued, 1) != 0)
+        {
+            return;
+        }
+
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                EnsureSplitEncodeModeSelection();
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _splitEncodeSelectionSyncQueued, 0);
             }
         });
     }
@@ -1199,6 +1295,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         FrameRateComboBox.ItemsSource = ViewModel.AvailableFrameRates;
         FormatComboBox.ItemsSource = ViewModel.AvailableRecordingFormats;
         QualityComboBox.ItemsSource = ViewModel.AvailableQualities;
+        PresetComboBox.ItemsSource = ViewModel.AvailablePresets;
+        SplitEncodeComboBox.ItemsSource = ViewModel.AvailableSplitEncodeModes;
 
         ViewModel.Devices.CollectionChanged += (s, e) =>
         {
@@ -1272,11 +1370,38 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             QueueQualitySelectionSync();
         };
 
+        ViewModel.AvailablePresets.CollectionChanged += (s, e) =>
+        {
+            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
+            {
+                return;
+            }
+
+            QueuePresetSelectionSync();
+        };
+
+        ViewModel.AvailableSplitEncodeModes.CollectionChanged += (s, e) =>
+        {
+            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
+                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
+            {
+                return;
+            }
+
+            QueueSplitEncodeModeSelectionSync();
+        };
+
         // Set initial values
         OutputPathTextBox.Text = ViewModel.OutputPath;
         DiskSpaceTextBlock.Text = ViewModel.DiskSpaceInfo;
         RecordingSizeTextBlock.Text = ViewModel.RecordingSizeInfo;
         RecordingBitrateTextBlock.Text = ViewModel.RecordingBitrateInfo;
+        LiveResolutionTextBlock.Text = ViewModel.LiveResolution;
+        LiveFrameRateTextBlock.Text = ViewModel.LiveFrameRate;
+        LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;
         AudioRecordToggle.IsChecked = ViewModel.IsAudioEnabled;
         AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
         AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled;
@@ -1289,6 +1414,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
         FormatComboBox.SelectedItem = ViewModel.SelectedRecordingFormat;
         QualityComboBox.SelectedItem = ViewModel.SelectedQuality;
+        PresetComboBox.SelectedItem = ViewModel.SelectedPreset;
+        SplitEncodeComboBox.SelectedItem = ViewModel.SelectedSplitEncodeMode;
         CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
         CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
         HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
@@ -1297,7 +1424,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
         UpdateAudioMeterLevel(ViewModel.AudioPeak);
         AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
-        FfmpegWarningInfoBar.IsOpen = ViewModel.IsFfmpegMissing;
         RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing;
         RefreshHdrHintText();
         UpdateFpsTelemetryTooltip();
@@ -1307,6 +1433,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         EnsureFrameRateSelection();
         EnsureFormatSelection();
         EnsureQualitySelection();
+        EnsurePresetSelection();
+        EnsureSplitEncodeModeSelection();
 
         // Wire up selection changes with loop prevention
         DeviceComboBox.SelectionChanged += (s, e) =>
@@ -1363,6 +1491,22 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             }
         };
 
+        PresetComboBox.SelectionChanged += (s, e) =>
+        {
+            if (PresetComboBox.SelectedItem is string preset)
+            {
+                ViewModel.SelectedPreset = preset;
+            }
+        };
+
+        SplitEncodeComboBox.SelectionChanged += (s, e) =>
+        {
+            if (SplitEncodeComboBox.SelectedItem is string splitMode)
+            {
+                ViewModel.SelectedSplitEncodeMode = splitMode;
+            }
+        };
+
         CustomBitrateNumberBox.ValueChanged += (s, e) =>
         {
             if (!double.IsNaN(CustomBitrateNumberBox.Value))
@@ -1380,6 +1524,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         CustomAudioToggle.Toggled += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsOn;
         AudioMeterTrack.SizeChanged += (s, e) => UpdateAudioMeterLevel(ViewModel.AudioPeak);
         ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
+        CaptureSettingsGrid.SizeChanged += CaptureSettingsGrid_SizeChanged;
     }
 
     private void UpdateToggleLabelVisibility(double controlBarWidth)
@@ -1389,6 +1534,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _toggleLabelsVisible = showLabels;
 
         var vis = showLabels ? Visibility.Visible : Visibility.Collapsed;
+        HdrToggleLabel.Visibility = vis;
         AudioRecordToggleLabel.Visibility = vis;
         PreviewButtonLabel.Visibility = vis;
         HdrPreviewToggleLabel.Visibility = vis;
@@ -1396,6 +1542,39 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         RecordButtonLabel.Visibility = vis;
         RecordButtonStopLabel.Visibility = vis;
         RecordButton.MinWidth = showLabels ? 120 : 44;
+    }
+
+    private void CaptureSettingsGrid_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        var narrow = e.NewSize.Width < 700;
+        if (narrow == _captureSettingsNarrow)
+        {
+            return;
+        }
+
+        _captureSettingsNarrow = narrow;
+        if (narrow)
+        {
+            Grid.SetRow(PresetPanel, 1);
+            Grid.SetColumn(PresetPanel, 0);
+            Grid.SetRow(SplitPanel, 1);
+            Grid.SetColumn(SplitPanel, 1);
+            Grid.SetRow(CustomBitratePanel, 1);
+            Grid.SetColumn(CustomBitratePanel, 2);
+            PresetColumn.Width = new GridLength(0);
+            SplitColumn.Width = new GridLength(0);
+        }
+        else
+        {
+            Grid.SetRow(PresetPanel, 0);
+            Grid.SetColumn(PresetPanel, 4);
+            Grid.SetRow(SplitPanel, 0);
+            Grid.SetColumn(SplitPanel, 5);
+            Grid.SetRow(CustomBitratePanel, 0);
+            Grid.SetColumn(CustomBitratePanel, 4);
+            PresetColumn.Width = new GridLength(1, GridUnitType.Star);
+            SplitColumn.Width = new GridLength(1, GridUnitType.Star);
+        }
     }
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -1665,6 +1844,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var framesArrived = Interlocked.Read(ref _previewFramesArrived);
         var framesDisplayed = Interlocked.Read(ref _previewFramesDisplayed);
         var framesDropped = Interlocked.Read(ref _previewFramesDropped);
+        var sourceReaderPreviewAdapter = ViewModel.ActiveSourceReaderPreviewAdapter;
         var lastPresentedTick = Interlocked.Read(ref _previewLastPresentedTick);
         var gpuActive = _previewMediaPlayer != null;
         var gpuElementVisible = PreviewPlayerElement.Visibility == Visibility.Visible;
@@ -1727,6 +1907,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             FramesArrived = framesArrived,
             FramesDisplayed = framesDisplayed,
             FramesDropped = framesDropped,
+            SourceReaderAdapterFramesEnqueued = sourceReaderPreviewAdapter?.FramesEnqueued ?? 0,
+            SourceReaderAdapterSamplesDelivered = sourceReaderPreviewAdapter?.SamplesDelivered ?? 0,
+            SourceReaderAdapterSamplesTimedOut = sourceReaderPreviewAdapter?.SamplesTimedOut ?? 0,
             DisplayCadenceSampleCount = cadence.SampleCount,
             DisplayCadenceObservedFps = cadence.ObservedFps,
             DisplayCadenceExpectedIntervalMs = cadence.ExpectedIntervalMs,
@@ -1907,11 +2090,22 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 break;
 
             case nameof(MainViewModel.PreviewPlaybackSource):
-                // GPU preview source arrived (or cleared) — if we're already previewing, hot-swap the renderer
-                if (ViewModel.IsPreviewing && ViewModel.PreviewPlaybackSource != null && _previewMediaPlayer == null)
+                // GPU preview source hot-swap - reset startup tracking so the state machine monitors the new source
+                if (ViewModel.IsPreviewing && ViewModel.PreviewPlaybackSource != null)
                 {
                     await StopPreviewRendererAsync();
+                    BeginPreviewStartupAttempt();
+                    SetPreviewStartupState(PreviewStartupState.RendererAttaching);
                     await StartPreviewRendererAsync();
+                    if (!_previewFirstVisualConfirmed)
+                    {
+                        SetPreviewStartupState(PreviewStartupState.WaitingForFirstVisual);
+                        StartPreviewStartupWatchdog();
+                    }
+                }
+                else if (ViewModel.PreviewPlaybackSource == null && !ViewModel.IsPreviewing)
+                {
+                    await StopPreviewRendererAsync();
                 }
                 break;
 
@@ -1936,13 +2130,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
             case nameof(MainViewModel.StatusText):
                 StatusTextBlock.Text = ViewModel.StatusText;
-                var statusText = ViewModel.StatusText;
-                if (statusText.Contains("error", StringComparison.OrdinalIgnoreCase) ||
-                    statusText.Contains("failed", StringComparison.OrdinalIgnoreCase))
-                    ShowStatusNotification(statusText, InfoBarSeverity.Error);
-                else if (statusText.Contains("saved", StringComparison.OrdinalIgnoreCase) ||
-                         statusText.Contains("Found", StringComparison.OrdinalIgnoreCase))
-                    ShowStatusNotification(statusText, InfoBarSeverity.Success);
                 break;
 
             case nameof(MainViewModel.RecordingTime):
@@ -2022,20 +2209,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             case nameof(MainViewModel.HdrReadinessReason):
             case nameof(MainViewModel.HdrRuntimeState):
                 RefreshHdrHintText();
-                if (string.Equals(ViewModel.HdrRuntimeState, "Degraded", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(ViewModel.HdrRuntimeState, "Violation", StringComparison.OrdinalIgnoreCase))
-                {
-                    var notificationKey = $"{ViewModel.HdrRuntimeState}:{ViewModel.HdrReadinessReason}";
-                    if (!string.Equals(notificationKey, _lastHdrRuntimeStateNotification, StringComparison.Ordinal))
-                    {
-                        _lastHdrRuntimeStateNotification = notificationKey;
-                        ShowStatusNotification(
-                            string.IsNullOrWhiteSpace(ViewModel.HdrReadinessReason)
-                                ? "HDR pipeline contract was violated."
-                                : $"HDR issue: {ViewModel.HdrReadinessReason}",
-                            InfoBarSeverity.Warning);
-                    }
-                }
                 break;
 
             case nameof(MainViewModel.SourceTelemetrySummaryText):
@@ -2078,6 +2251,36 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 EnsureQualitySelection();
                 break;
 
+            case nameof(MainViewModel.AvailablePresets):
+                PresetComboBox.ItemsSource = ViewModel.AvailablePresets;
+                EnsurePresetSelection();
+                break;
+
+            case nameof(MainViewModel.SelectedPreset):
+                EnsurePresetSelection();
+                break;
+
+            case nameof(MainViewModel.AvailableSplitEncodeModes):
+                SplitEncodeComboBox.ItemsSource = ViewModel.AvailableSplitEncodeModes;
+                EnsureSplitEncodeModeSelection();
+                break;
+
+            case nameof(MainViewModel.SelectedSplitEncodeMode):
+                EnsureSplitEncodeModeSelection();
+                break;
+
+            case nameof(MainViewModel.LiveResolution):
+                LiveResolutionTextBlock.Text = ViewModel.LiveResolution;
+                break;
+
+            case nameof(MainViewModel.LiveFrameRate):
+                LiveFrameRateTextBlock.Text = ViewModel.LiveFrameRate;
+                break;
+
+            case nameof(MainViewModel.LivePixelFormat):
+                LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;
+                break;
+
             case nameof(MainViewModel.IsAudioEnabled):
                 if (AudioRecordToggle.IsChecked != ViewModel.IsAudioEnabled)
                 {
@@ -2102,7 +2305,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 break;
 
             case nameof(MainViewModel.IsFfmpegMissing):
-                FfmpegWarningInfoBar.IsOpen = ViewModel.IsFfmpegMissing;
                 RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing && !ViewModel.IsRecordingTransitioning;
                 break;
         }
@@ -2582,19 +2784,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * clamped, 8);
     }
 
-    private void ShowStatusNotification(string message, InfoBarSeverity severity, int autoCloseMs = 5000)
-    {
-        StatusInfoBar.Message = message;
-        StatusInfoBar.Severity = severity;
-        StatusInfoBar.IsOpen = true;
-
-        _infoBarDismissTimer?.Stop();
-        _infoBarDismissTimer = _dispatcherQueue.CreateTimer();
-        _infoBarDismissTimer.Interval = TimeSpan.FromMilliseconds(autoCloseMs);
-        _infoBarDismissTimer.IsRepeating = false;
-        _infoBarDismissTimer.Tick += (_, _) => StatusInfoBar.IsOpen = false;
-        _infoBarDismissTimer.Start();
-    }
 
     private static void FadeOutElement(UIElement element)
     {
@@ -2700,9 +2889,84 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)
     {
-        SettingsOverlayPanel.Visibility = SettingsOverlayPanel.Visibility == Visibility.Visible
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        if (_isSettingsShelfAnimating)
+        {
+            return;
+        }
+
+        if (SettingsOverlayPanel.Visibility == Visibility.Visible)
+        {
+            HideSettingsShelf();
+        }
+        else
+        {
+            ShowSettingsShelf();
+        }
+    }
+
+    private void ShowSettingsShelf()
+    {
+        _isSettingsShelfAnimating = true;
+        SettingsOverlayPanel.Opacity = 0;
+        SettingsOverlayPanel.Visibility = Visibility.Visible;
+        SettingsShelfTranslate.Y = 40;
+        var storyboard = new Storyboard();
+        var fade = new DoubleAnimation
+        {
+            From = 0,
+            To = 1,
+            Duration = TimeSpan.FromMilliseconds(250),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(fade, SettingsOverlayPanel);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+        var slide = new DoubleAnimation
+        {
+            From = 40,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(250),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(slide, SettingsShelfTranslate);
+        Storyboard.SetTargetProperty(slide, "Y");
+        storyboard.Children.Add(fade);
+        storyboard.Children.Add(slide);
+        storyboard.Completed += (_, _) => _isSettingsShelfAnimating = false;
+        storyboard.Begin();
+    }
+
+    private void HideSettingsShelf()
+    {
+        _isSettingsShelfAnimating = true;
+        var storyboard = new Storyboard();
+        var fade = new DoubleAnimation
+        {
+            From = 1,
+            To = 0,
+            Duration = TimeSpan.FromMilliseconds(200),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(fade, SettingsOverlayPanel);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+        var slide = new DoubleAnimation
+        {
+            From = 0,
+            To = 40,
+            Duration = TimeSpan.FromMilliseconds(200),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(slide, SettingsShelfTranslate);
+        Storyboard.SetTargetProperty(slide, "Y");
+        storyboard.Children.Add(fade);
+        storyboard.Children.Add(slide);
+        storyboard.Completed += (_, _) =>
+        {
+            SettingsOverlayPanel.Visibility = Visibility.Collapsed;
+            SettingsOverlayPanel.Opacity = 1;
+            SettingsShelfTranslate.Y = 0;
+            _isSettingsShelfAnimating = false;
+        };
+        storyboard.Begin();
     }
 
     #region Minimum window size (Win32 interop)

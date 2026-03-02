@@ -16,8 +16,7 @@ public enum VideoQuality
     Low,        // ~8 Mbps for 1080p, scales with resolution
     Medium,     // ~15 Mbps for 1080p
     High,       // ~25 Mbps for 1080p
-    VeryHigh,   // ~40 Mbps for 1080p
-    Lossless,   // ~80+ Mbps, highest quality
+    SuperHigh,  // ~40 Mbps for 1080p
     Custom      // User-specified bitrate
 }
 
@@ -44,6 +43,8 @@ public class CaptureSettings
     public string? RequestedPixelFormat { get; set; }
     public RecordingFormat Format { get; set; } = RecordingFormat.H264Mp4;
     public VideoQuality Quality { get; set; } = VideoQuality.High;
+    public string NvencPreset { get; set; } = "Auto";
+    public string SplitEncodeMode { get; set; } = "Auto";
     public double CustomBitrateMbps { get; set; } = 50; // Used when Quality is Custom
     public bool HdrEnabled { get; set; }
     public HdrOutputMode HdrOutputMode { get; set; } = HdrOutputMode.Hdr10Pq;
@@ -80,8 +81,7 @@ public class CaptureSettings
             VideoQuality.Low => 8,
             VideoQuality.Medium => 15,
             VideoQuality.High => 25,
-            VideoQuality.VeryHigh => 40,
-            VideoQuality.Lossless => 80,
+            VideoQuality.SuperHigh => 40,
             VideoQuality.Auto => 20, // Default for Auto
             _ => 20
         };
@@ -126,4 +126,9 @@ public class CaptureSettings
     }
 
     public string GetFullOutputPath() => Path.Combine(OutputPath, GetOutputFileName());
+}
+
+public sealed record SplitEncodeSupport(bool Supports2Way, bool Supports3Way)
+{
+    public static SplitEncodeSupport NvencUnavailable { get; } = new(false, false);
 }

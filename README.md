@@ -14,7 +14,7 @@ This README is based on the current code in this repository and is intended to d
   - `H.264 (MP4)` (when supported by local FFmpeg encoders),
   - `HEVC (MP4)` (when supported),
   - `AV1 (MP4)` (when supported).
-- Supports recording quality presets (`Auto`, `Low`, `Medium`, `High`, `Very High`, `Lossless`, `Custom`) and custom bitrate (`1-300 Mbps`).
+- Supports recording quality presets (`Auto`, `Low`, `Medium`, `High`, `Super High`, `Custom`) and custom bitrate (`1-300 Mbps`).
 - Supports resolution + frame rate selection from each device's discovered format list.
 - Supports HDR preference toggle when the selected device exposes HDR-capable formats.
 - Supports audio controls:

@@ -60,6 +60,7 @@ public static class ResponseFormatter
         builder.AppendLine();
         builder.AppendLine("== Preview ==");
         builder.AppendLine($"GPU: {Get(snapshot, "PreviewGpuActive")} | Frames: {Get(snapshot, "PreviewFramesArrived")} arrived, {Get(snapshot, "PreviewFramesDisplayed")} displayed, {Get(snapshot, "PreviewFramesDropped")} dropped");
+        builder.AppendLine($"SourceReader Adapter: {Get(snapshot, "PreviewSourceReaderAdapterFramesEnqueued")} enqueued, {Get(snapshot, "PreviewSourceReaderAdapterSamplesDelivered")} delivered, {Get(snapshot, "PreviewSourceReaderAdapterSamplesTimedOut")} timed out");
         builder.AppendLine($"Cadence: {Get(snapshot, "PreviewCadenceObservedFps")} fps | Renderer: {Get(snapshot, "PreviewRendererMode")}");
         builder.AppendLine($"Startup: {Get(snapshot, "PreviewStartupState")} | First Visual: {Get(snapshot, "PreviewFirstVisualConfirmed")}");
         builder.AppendLine();

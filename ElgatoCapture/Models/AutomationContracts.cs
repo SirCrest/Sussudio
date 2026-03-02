@@ -134,6 +134,8 @@ public sealed class AutomationSnapshot
     public string? DisabledFrameRateReason { get; init; }
     public string SelectedRecordingFormat { get; init; } = string.Empty;
     public string SelectedQuality { get; init; } = string.Empty;
+    public string SelectedPreset { get; init; } = string.Empty;
+    public string SelectedSplitEncodeMode { get; init; } = string.Empty;
     public double CustomBitrateMbps { get; init; }
     public bool IsHdrAvailable { get; init; }
     public bool IsHdrEnabled { get; init; }
@@ -171,6 +173,9 @@ public sealed class AutomationSnapshot
     public long IngestVideoFramesWrittenToSink { get; init; }
     public long IngestLastVideoFrameAgeMs { get; init; }
     public long VideoIngestErrorCount { get; init; }
+    public long MfSourceReaderFramesDelivered { get; init; }
+    public long MfSourceReaderFramesDropped { get; init; }
+    public string? MfSourceReaderNegotiatedFormat { get; init; }
     public string MemoryPreference { get; init; } = "Cpu";
     public string VideoRequestedSubtype { get; init; } = "unknown";
     public string VideoNegotiatedSubtype { get; init; } = "unknown";
@@ -252,6 +257,9 @@ public sealed class AutomationSnapshot
     public long PreviewFramesArrived { get; init; }
     public long PreviewFramesDisplayed { get; init; }
     public long PreviewFramesDropped { get; init; }
+    public long PreviewSourceReaderAdapterFramesEnqueued { get; init; }
+    public long PreviewSourceReaderAdapterSamplesDelivered { get; init; }
+    public long PreviewSourceReaderAdapterSamplesTimedOut { get; init; }
     public int PreviewCadenceSampleCount { get; init; }
     public double PreviewCadenceObservedFps { get; init; }
     public double PreviewCadenceExpectedIntervalMs { get; init; }
@@ -457,6 +465,9 @@ public sealed class PreviewRuntimeSnapshot
     public long FramesArrived { get; init; }
     public long FramesDisplayed { get; init; }
     public long FramesDropped { get; init; }
+    public long SourceReaderAdapterFramesEnqueued { get; init; }
+    public long SourceReaderAdapterSamplesDelivered { get; init; }
+    public long SourceReaderAdapterSamplesTimedOut { get; init; }
     public int DisplayCadenceSampleCount { get; init; }
     public double DisplayCadenceObservedFps { get; init; }
     public double DisplayCadenceExpectedIntervalMs { get; init; }
@@ -486,6 +497,9 @@ public sealed class CaptureRuntimeSnapshot
     public long IngestVideoFramesWrittenToSink { get; init; }
     public long IngestLastVideoFrameAgeMs { get; init; }
     public long VideoIngestErrorCount { get; init; }
+    public long MfSourceReaderFramesDelivered { get; init; }
+    public long MfSourceReaderFramesDropped { get; init; }
+    public string? MfSourceReaderNegotiatedFormat { get; init; }
     public string MemoryPreference { get; init; } = "Cpu";
     public string VideoRequestedSubtype { get; init; } = "unknown";
     public string VideoNegotiatedSubtype { get; init; } = "unknown";
@@ -626,11 +640,16 @@ public sealed class ViewModelRuntimeSnapshot
     public string SourceTargetSummaryText { get; init; } = string.Empty;
     public string SelectedRecordingFormat { get; init; } = string.Empty;
     public string SelectedQuality { get; init; } = string.Empty;
+    public string SelectedPreset { get; init; } = string.Empty;
+    public string SelectedSplitEncodeMode { get; init; } = string.Empty;
     public double CustomBitrateMbps { get; init; }
     public bool IsHdrAvailable { get; init; }
     public bool IsHdrEnabled { get; init; }
     public string HdrRuntimeState { get; init; } = "Inactive";
     public string HdrReadinessReason { get; init; } = string.Empty;
+    public string LiveResolution { get; init; } = "\u2014";
+    public string LiveFrameRate { get; init; } = "\u2014";
+    public string LivePixelFormat { get; init; } = "\u2014";
     public string OutputPath { get; init; } = string.Empty;
     public string RecordingTime { get; init; } = string.Empty;
     public string RecordingSizeInfo { get; init; } = string.Empty;

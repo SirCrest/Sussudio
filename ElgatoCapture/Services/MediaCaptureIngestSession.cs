@@ -243,45 +243,7 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
 
         if (_audioEnabled)
         {
-            var audioSource = _mediaCapture.FrameSources.Values.FirstOrDefault(source =>
-                source.Info.SourceKind == MediaFrameSourceKind.Audio);
-            if (audioSource == null)
-            {
-                throw new InvalidOperationException("Audio capture enabled but no audio frame source was found.");
-            }
-
-            _audioStreamLabel = $"{audioSource.Info.MediaStreamType}";
-            Logger.Log($"Audio ingest source selected: stream={_audioStreamLabel} id={audioSource.Info.Id}.");
-            LogAudioSupportedFormats(audioSource);
-            _audioSource = audioSource;
-
-            // Start audio reader immediately for metering (runs during preview + recording)
-            var supportedSubtypes = audioSource.SupportedFormats
-                .Select(format => format.AudioEncodingProperties?.Subtype)
-                .Where(subtype => !string.IsNullOrWhiteSpace(subtype))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-            var requestedAudioSubtype = supportedSubtypes.Any(subtype =>
-                    string.Equals(subtype, MediaEncodingSubtypes.Float, StringComparison.OrdinalIgnoreCase))
-                ? MediaEncodingSubtypes.Float
-                : MediaEncodingSubtypes.Pcm;
-            _audioRequestedSubtype = requestedAudioSubtype;
-
-            Logger.Log($"Audio ingest request: subtype={requestedAudioSubtype}");
-            _audioReader = await _mediaCapture.CreateFrameReaderAsync(audioSource, requestedAudioSubtype)
-                .AsTask(cancellationToken);
-            _audioReader.FrameArrived += OnAudioFrameArrived;
-
-            var audioStatus = await _audioReader.StartAsync().AsTask(cancellationToken);
-            if (audioStatus != MediaFrameReaderStartStatus.Success)
-            {
-                throw new InvalidOperationException(
-                    $"Audio reader start failed: {audioStatus} (requested subtype={requestedAudioSubtype}).");
-            }
-
-            // Create audio MediaSource for speaker playback (mirrors video GPU preview pattern)
-            _audioPreviewMediaSource = MediaSource.CreateFromMediaFrameSource(audioSource);
-            Logger.Log("Audio reader started for metering. Audio playback source created.");
+            await StartAudioReaderForMeteringAsync(cancellationToken).ConfigureAwait(false);
         }
 
         cancellationToken.ThrowIfCancellationRequested();
@@ -291,6 +253,52 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
         _previewMediaSource = mediaSource;
         Logger.Log($"GPU preview MediaSource created from {_videoStreamLabel} (subtype={_videoNegotiatedSubtype}).");
         return mediaSource;
+    }
+
+    public async Task StartAudioOnlyAsync(string audioDeviceId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(audioDeviceId))
+        {
+            throw new ArgumentException("Audio device id is required.", nameof(audioDeviceId));
+        }
+
+        _requireP010 = false;
+        _audioEnabled = true;
+
+        try
+        {
+            await _mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
+            {
+                AudioDeviceId = audioDeviceId,
+                StreamingCaptureMode = StreamingCaptureMode.Audio,
+                MemoryPreference = MediaCaptureMemoryPreference.Cpu
+            }).AsTask(cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException($"MediaCapture audio-only initialization failed: {ex.Message}", ex);
+        }
+
+        _mediaCapture.Failed += OnMediaCaptureFailed;
+        cancellationToken.ThrowIfCancellationRequested();
+
+        await StartAudioReaderForMeteringAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Attach only the recording sink (for audio-only recording mode while video comes from external source reader).
+    /// </summary>
+    public void AttachRecordingSink(IRecordingSink sink)
+    {
+        ArgumentNullException.ThrowIfNull(sink);
+        Volatile.Write(ref _sink, sink);
+        Logger.Log("Recording sink attached (audio-only mode, video via external source reader).");
+    }
+
+    public void DetachRecordingSink()
+    {
+        Volatile.Write(ref _sink, null);
+        Logger.Log("Recording sink detached.");
     }
 
     /// <summary>
@@ -526,6 +534,47 @@ internal sealed class MediaCaptureIngestSession : IAsyncDisposable
         {
             throw new InvalidOperationException($"Capture requested {desiredSubtype}, but negotiated subtype is '{activeSubtype}'.");
         }
+    }
+
+    private async Task StartAudioReaderForMeteringAsync(CancellationToken cancellationToken)
+    {
+        var audioSource = _mediaCapture.FrameSources.Values.FirstOrDefault(source =>
+            source.Info.SourceKind == MediaFrameSourceKind.Audio);
+        if (audioSource == null)
+        {
+            throw new InvalidOperationException("Audio capture enabled but no audio frame source was found.");
+        }
+
+        _audioStreamLabel = $"{audioSource.Info.MediaStreamType}";
+        Logger.Log($"Audio ingest source selected: stream={_audioStreamLabel} id={audioSource.Info.Id}.");
+        LogAudioSupportedFormats(audioSource);
+        _audioSource = audioSource;
+
+        var supportedSubtypes = audioSource.SupportedFormats
+            .Select(format => format.AudioEncodingProperties?.Subtype)
+            .Where(subtype => !string.IsNullOrWhiteSpace(subtype))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        var requestedAudioSubtype = supportedSubtypes.Any(subtype =>
+                string.Equals(subtype, MediaEncodingSubtypes.Float, StringComparison.OrdinalIgnoreCase))
+            ? MediaEncodingSubtypes.Float
+            : MediaEncodingSubtypes.Pcm;
+        _audioRequestedSubtype = requestedAudioSubtype;
+
+        Logger.Log($"Audio ingest request: subtype={requestedAudioSubtype}");
+        _audioReader = await _mediaCapture.CreateFrameReaderAsync(audioSource, requestedAudioSubtype)
+            .AsTask(cancellationToken);
+        _audioReader.FrameArrived += OnAudioFrameArrived;
+
+        var audioStatus = await _audioReader.StartAsync().AsTask(cancellationToken);
+        if (audioStatus != MediaFrameReaderStartStatus.Success)
+        {
+            throw new InvalidOperationException(
+                $"Audio reader start failed: {audioStatus} (requested subtype={requestedAudioSubtype}).");
+        }
+
+        _audioPreviewMediaSource = MediaSource.CreateFromMediaFrameSource(audioSource);
+        Logger.Log("Audio reader started for metering. Audio playback source created.");
     }
 
     private void OnVideoFrameArrived(MediaFrameReader sender, MediaFrameArrivedEventArgs args)

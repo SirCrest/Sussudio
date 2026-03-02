@@ -188,3 +188,90 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A
 - Conclusion: Preview startup now confirms in ~350ms instead of timing out after 10s. Log shows `PREVIEW_START_STATE state=Rendering` and `PREVIEW_FIRST_VISUAL_CONFIRMED elapsedMs=350 source=GpuStartupSignals(PlaybackAdvancing)`.
+
+## E17 - HDR recording uses IMFSourceReader P010 path with converters disabled
+- Timestamp (UTC): 2026-03-01T13:03:06Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added IMFSourceReader-based HDR video ingest (`MfSourceReaderVideoCapture`) with strict P010 media-type selection and `MF_READWRITE_DISABLE_CONVERTERS=TRUE`, then routed HDR recording video frames to `FFmpegEncoderService.EnqueueRawVideoFrame` while keeping MediaCapture audio ingest active.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for `MF_SOURCE_READER_*` and `VIDEO_DIAG mf_source_reader` lines during HDR record/stop flows.
+- Validator Output:
+  - `Build succeeded.` (with environment warning: `NU1900 ... api.nuget.org:443`)
+  - `All runtime snapshot regression checks passed.`
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this CI-style verification pass)
+- Conclusion: Build and regression tests pass with the new HDR source-reader path wired in; runtime capture validation should now verify that negotiated ingest remains true P010 end-to-end.
+
+## E18 - HEVC NVENC HDR metadata via hevc_metadata bitstream filter
+- Timestamp (UTC): 2026-03-01T20:00:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added `hevc_metadata` bitstream filter for HEVC NVENC HDR path in `BuildFFmpegArguments()`, matching the existing AV1 `av1_metadata` BSF. NVENC ignores encoder-level VUI flags (`-color_primaries bt2020 -color_trc smpte2084`), so the BSF injects correct colour_primaries=9, transfer_characteristics=16, matrix_coefficients=9 post-encode. Also renamed `av1HdrMetadataBsfArgs` to `hdrBsfArgs` since it now serves both codecs.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. Record a short HEVC HDR clip, then verify: `ffprobe -show_streams <output.mp4> | grep -E "color_primaries|color_transfer|color_space"`
+- Validator Output:
+  - Build succeeded with 0 errors.
+- ffprobe Evidence:
+  - Expected: `color_primaries=bt2020`, `color_transfer=smpte2084`, `color_space=bt2020nc`
+  - Pending runtime verification with actual recording.
+- Conclusion: The hevc_metadata BSF should inject correct HDR signaling into NVENC output, matching how av1_metadata already works for AV1. Needs runtime verification.
+
+## E19 - SourceReaderPreviewAdapter for zero-blink HDR preview
+- Timestamp (UTC): 2026-03-01T20:00:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): Created SourceReaderPreviewAdapter (MediaStreamSource-based P010-to-NV12 preview), added StartAudioOnlyAsync to MediaCaptureIngestSession, modified CaptureService to dispose GPU preview before HDR recording and restore it after. During HDR recording, source reader is sole device consumer; frames fork to encoder + preview adapter.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. Start preview, then start HDR recording. Preview should continue (brief transition). Stop recording. Preview should restore to GPU mode.
+- Validator Output:
+  - Pending build verification.
+- ffprobe Evidence:
+  - N/A (preview change, not encoding change)
+- Conclusion: Pending implementation by Codex. Should eliminate device sharing conflict (0xC00D3EA3) by ensuring only one API opens the video device at a time.
+
+## E20 - PreviewPlaybackSource hot-swap now resets startup state machine
+- Timestamp (UTC): 2026-03-02T02:12:21Z
+- Commit Hash: uncommitted
+- What Changed (single change): Updated `MainWindow.HandleViewModelPropertyChangedAsync` (`PreviewPlaybackSource` case) to run full startup-attempt reset (`BeginPreviewStartupAttempt` + `RendererAttaching`/`WaitingForFirstVisual` state transitions + watchdog) during GPU source hot-swap, with explicit null-source stop handling.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Start preview, then start HDR recording to trigger `PreviewPlaybackSource` hot-swap and inspect `temp/logs/ElgatoCapture_Debug.log` for refreshed `PREVIEW_START_REQUESTED`/startup state transitions for the new source.
+- Validator Output:
+  - `Build succeeded.` (warnings: `NU1900` vulnerability feed unavailable in offline environment)
+  - `All runtime snapshot regression checks passed.`
+- ffprobe Evidence:
+  - N/A (preview startup state-machine fix)
+- Conclusion: Preview source hot-swap now re-enters active startup-monitoring states instead of inheriting `Rendering` from the prior session.
+
+## E21 - SourceReaderPreviewAdapter timeout waits no longer emit EOS
+- Timestamp (UTC): 2026-03-02T02:12:21Z
+- Commit Hash: uncommitted
+- What Changed (single change): Reworked `SourceReaderPreviewAdapter.OnSampleRequested` so 200ms waits loop on timeout instead of returning `Sample=null` (EOS), and only return null when disposed.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Start HDR recording and verify preview continues requesting samples past initial source-reader startup delay.
+- Validator Output:
+  - `Build succeeded.` (warnings: `NU1900` vulnerability feed unavailable in offline environment)
+  - `All runtime snapshot regression checks passed.`
+- ffprobe Evidence:
+  - N/A (preview sample-delivery control-flow fix)
+- Conclusion: Startup-time sample-request timeouts no longer terminate `MediaStreamSource` by signaling false end-of-stream.
+
+## E22 - Source-reader adapter counters surfaced in automation + MCP preview state
+- Timestamp (UTC): 2026-03-02T02:12:21Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added source-reader adapter counters (`frames enqueued`, `samples delivered`, `samples timed out`) to `PreviewRuntimeSnapshot`, propagated them through `AutomationDiagnosticsHub`/`AutomationSnapshot`, and formatted them in MCP `get_app_state` Preview output.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Call MCP `get_app_state` during HDR recording and confirm the Preview section includes `SourceReader Adapter: ... enqueued, ... delivered, ... timed out`.
+- Validator Output:
+  - `Build succeeded.` (warnings: `NU1900` vulnerability feed unavailable in offline environment)
+  - `All runtime snapshot regression checks passed.`
+- ffprobe Evidence:
+  - N/A (automation observability change)
+- Conclusion: Automation consumers now get direct visibility into source-reader preview adapter flow and timeout behavior.
