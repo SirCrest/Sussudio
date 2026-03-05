@@ -67,6 +67,11 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         """;
 
     private const string HdrTonemapPixelShaderSource = """
+        cbuffer ViewportInfo : register(b0) {
+            float2 vpOrigin;
+            float2 vpSize;
+        };
+
         Texture2D<float> yPlane : register(t0);
         Texture2D<float2> uvPlane : register(t1);
         SamplerState bilinearSampler : register(s0);
@@ -102,7 +107,9 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             );
         }
 
-        float4 main(float2 uv : TEXCOORD0) : SV_Target {
+        float4 main(float4 pos : SV_Position) : SV_Target {
+            float2 uv = (pos.xy - vpOrigin) / vpSize;
+
             float y_raw = yPlane.Sample(bilinearSampler, uv);
             float2 uv_raw = uvPlane.Sample(bilinearSampler, uv);
 
@@ -205,6 +212,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
     private ID3D11Device? _device;
     private ID3D11DeviceContext? _deviceContext;
+    private ID3D11Device3? _device3;
     private ID3D11Multithread? _multithread;
     private ID3D11VideoDevice? _videoDevice;
     private ID3D11VideoContext? _videoContext;
@@ -226,6 +234,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private ID3D11VertexShader? _fullscreenVS;
     private ID3D11PixelShader? _hdrTonemapPS;
     private ID3D11SamplerState? _linearSampler;
+    private ID3D11Buffer? _viewportCB;
     private int _hdrInputConfiguredWidth;
     private int _hdrInputConfiguredHeight;
     private ID3D11Device? _sharedDevice;
@@ -736,6 +745,22 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _deviceContext.PSSetShader(_hdrTonemapPS, Array.Empty<ID3D11ClassInstance>(), 0);
         _deviceContext.PSSetSamplers(0, 1, new[] { _linearSampler });
         _deviceContext.PSSetShaderResources(0, 2, new[] { _hdrYPlaneSRV!, _hdrUVPlaneSRV! });
+
+        if (_viewportCB != null)
+        {
+            var mapped = _deviceContext.Map(_viewportCB, 0, MapMode.WriteDiscard);
+            unsafe
+            {
+                var data = (float*)mapped.DataPointer;
+                data[0] = viewport.X;
+                data[1] = viewport.Y;
+                data[2] = viewport.Width;
+                data[3] = viewport.Height;
+            }
+            _deviceContext.Unmap(_viewportCB, 0);
+            _deviceContext.PSSetConstantBuffers(0, 1, new[] { _viewportCB });
+        }
+
         _deviceContext.Draw(3, 0);
         _deviceContext.PSSetShaderResources(0, 2, new ID3D11ShaderResourceView[] { null!, null! });
 
@@ -1221,6 +1246,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
         var device = _device;
         var deviceContext = _deviceContext;
+        _device3?.Dispose();
+        _device3 = device.QueryInterfaceOrNull<ID3D11Device3>();
         Interlocked.Exchange(ref _sharedDeviceActive, sharedDeviceActive ? 1 : 0);
 
         _multithread = device.QueryInterfaceOrNull<ID3D11Multithread>();
@@ -1349,6 +1376,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _hdrTonemapPS = null;
         _linearSampler?.Dispose();
         _linearSampler = null;
+        _viewportCB?.Dispose();
+        _viewportCB = null;
 
         if (_device == null)
         {
@@ -1385,6 +1414,11 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             };
 
             _linearSampler = _device.CreateSamplerState(samplerDescription);
+
+            _viewportCB?.Dispose();
+            _viewportCB = _device.CreateBuffer(new BufferDescription(
+                16, BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
+
             Logger.Log($"D3D11 HDR tonemapping shaders compiled (VS={vertexShaderBytecode.Length}b PS={pixelShaderBytecode.Length}b).");
         }
         catch (Exception ex)
@@ -1395,6 +1429,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             _hdrTonemapPS = null;
             _linearSampler?.Dispose();
             _linearSampler = null;
+            _viewportCB?.Dispose();
+            _viewportCB = null;
             Logger.Log($"D3D11 HDR tonemap shader compile failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
         }
     }
@@ -1729,27 +1765,44 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _hdrInputTexture = _device.CreateTexture2D(inputDescription);
         _hdrStagingTexture = _device.CreateTexture2D(stagingDescription);
 
-        var yPlaneDescription = new ShaderResourceViewDescription(
+        _hdrYPlaneSRV = CreateHdrPlaneView(Format.R16_UNorm, planeSlice: 0);
+        _hdrUVPlaneSRV = CreateHdrPlaneView(Format.R16G16_UNorm, planeSlice: 1);
+        _hdrInputConfiguredWidth = width;
+        _hdrInputConfiguredHeight = height;
+    }
+
+    private ID3D11ShaderResourceView CreateHdrPlaneView(Format format, uint planeSlice)
+    {
+        if (_device == null || _hdrInputTexture == null)
+        {
+            throw new InvalidOperationException("HDR shader input texture has not been created.");
+        }
+
+        if (_device3 != null)
+        {
+            var srvDesc = new ShaderResourceViewDescription1(
+                _hdrInputTexture,
+                ShaderResourceViewDimension.Texture2D,
+                format,
+                0,
+                1,
+                0,
+                1,
+                planeSlice);
+
+            return _device3.CreateShaderResourceView1(_hdrInputTexture, srvDesc);
+        }
+
+        var fallbackDesc = new ShaderResourceViewDescription(
             _hdrInputTexture,
             ShaderResourceViewDimension.Texture2D,
-            Format.R16_UNorm,
-            0,
-            1,
-            0,
-            1);
-        var uvPlaneDescription = new ShaderResourceViewDescription(
-            _hdrInputTexture,
-            ShaderResourceViewDimension.Texture2D,
-            Format.R16G16_UNorm,
+            format,
             0,
             1,
             0,
             1);
 
-        _hdrYPlaneSRV = _device.CreateShaderResourceView(_hdrInputTexture, yPlaneDescription);
-        _hdrUVPlaneSRV = _device.CreateShaderResourceView(_hdrInputTexture, uvPlaneDescription);
-        _hdrInputConfiguredWidth = width;
-        _hdrInputConfiguredHeight = height;
+        return _device.CreateShaderResourceView(_hdrInputTexture, fallbackDesc);
     }
 
     private unsafe bool UploadRawFrameToHdrTexture(byte[] data, int dataLength, int width, int height)
@@ -1988,12 +2041,16 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _videoDevice = null;
         _linearSampler?.Dispose();
         _linearSampler = null;
+        _viewportCB?.Dispose();
+        _viewportCB = null;
         _hdrTonemapPS?.Dispose();
         _hdrTonemapPS = null;
         _fullscreenVS?.Dispose();
         _fullscreenVS = null;
         _multithread?.Dispose();
         _multithread = null;
+        _device3?.Dispose();
+        _device3 = null;
         _deviceContext?.Dispose();
         _deviceContext = null;
         _device?.Dispose();
