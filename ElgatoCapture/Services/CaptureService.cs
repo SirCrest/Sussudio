@@ -846,6 +846,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var videoFramesDropped = encoder?.DroppedVideoFrames ?? Interlocked.Read(ref _videoFramesDropped);
         var sourceTelemetrySuppressedReason = ResolveSourceTelemetrySuppressedReason(_latestSourceTelemetry);
         var sourceTelemetrySuppressed = !string.IsNullOrWhiteSpace(sourceTelemetrySuppressedReason);
+        var sourceCadence = unifiedVideoCapture?.GetSourceCadenceMetrics()
+            ?? default(MfSourceReaderVideoCapture.SourceCadenceMetrics);
 
         return new CaptureHealthSnapshot
         {
@@ -899,7 +901,17 @@ public class CaptureService : IDisposable, IAsyncDisposable
             FfmpegAudioQueueDepth = encoder?.AudioQueueCount ?? 0,
             VideoFramesEnqueued = encoder?.VideoFramesEnqueuedCount ?? 0,
             LastVideoEnqueueAgeMs = ComputeTickAge(encoder?.LastVideoEnqueueTick ?? 0),
-            LastVideoWriteAgeMs = ComputeTickAge(encoder?.LastVideoWriteTick ?? 0)
+            LastVideoWriteAgeMs = ComputeTickAge(encoder?.LastVideoWriteTick ?? 0),
+            CaptureCadenceSampleCount = sourceCadence.SampleCount,
+            CaptureCadenceObservedFps = sourceCadence.ObservedFps,
+            CaptureCadenceExpectedIntervalMs = sourceCadence.ExpectedIntervalMs,
+            CaptureCadenceAverageIntervalMs = sourceCadence.AverageIntervalMs,
+            CaptureCadenceP95IntervalMs = sourceCadence.P95IntervalMs,
+            CaptureCadenceMaxIntervalMs = sourceCadence.MaxIntervalMs,
+            CaptureCadenceJitterStdDevMs = sourceCadence.JitterStdDevMs,
+            CaptureCadenceSevereGapCount = sourceCadence.SevereGapCount,
+            CaptureCadenceEstimatedDroppedFrames = sourceCadence.EstimatedDroppedFrames,
+            CaptureCadenceEstimatedDropPercent = sourceCadence.EstimatedDropPercent
         };
     }
 

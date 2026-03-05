@@ -46,17 +46,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
     private D3D11PreviewRenderer? _d3dRenderer;
+    private StatsWindow? _statsWindow;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
     private long _previewLastResizeLogTick;
     private long _previewLastPresentedTick;
     private long _previewResizeSuppressUntilTick;
-    private readonly object _previewCadenceLock = new();
-    private readonly double[] _previewDisplayIntervalWindowMs = new double[300];
-    private int _previewDisplayIntervalCount;
-    private int _previewDisplayIntervalIndex;
-    private long _previewLastDisplayTick;
     private int _windowCloseRequested;
     private int _windowCloseCleanupStarted;
     private long _previewMinPresentationIntervalMs;
@@ -1380,6 +1376,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioRecordToggle.Unchecked += (s, e) => ViewModel.IsAudioEnabled = false;
         AudioPreviewToggle.Checked += (s, e) => ViewModel.IsAudioPreviewEnabled = true;
         AudioPreviewToggle.Unchecked += (s, e) => ViewModel.IsAudioPreviewEnabled = false;
+        StatsToggle.Checked += StatsToggle_Checked;
+        StatsToggle.Unchecked += StatsToggle_Unchecked;
         CustomAudioToggle.Toggled += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsOn;
         AudioMeterTrack.SizeChanged += (s, e) => UpdateAudioMeterLevel(ViewModel.AudioPeak);
         ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
@@ -1398,9 +1396,69 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         PreviewButtonLabel.Visibility = vis;
         HdrPreviewToggleLabel.Visibility = vis;
         AudioPreviewToggleLabel.Visibility = vis;
+        StatsToggleLabel.Visibility = vis;
         RecordButtonLabel.Visibility = vis;
         RecordButtonStopLabel.Visibility = vis;
         RecordButton.MinWidth = showLabels ? 120 : 44;
+    }
+
+    private void StatsToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (_isWindowClosing)
+        {
+            return;
+        }
+
+        if (_statsWindow != null)
+        {
+            _statsWindow.Activate();
+            return;
+        }
+
+        var statsWindow = new StatsWindow(GetStatsSnapshot, OnStatsWindowClosed);
+        _statsWindow = statsWindow;
+        statsWindow.Activate();
+    }
+
+    private void StatsToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        CloseStatsWindow();
+    }
+
+    private void OnStatsWindowClosed()
+    {
+        _statsWindow = null;
+        if (_isWindowClosing)
+        {
+            return;
+        }
+
+        if (StatsToggle.IsChecked == true)
+        {
+            StatsToggle.IsChecked = false;
+        }
+    }
+
+    private void CloseStatsWindow()
+    {
+        var statsWindow = _statsWindow;
+        _statsWindow = null;
+        if (statsWindow == null)
+        {
+            return;
+        }
+
+        try
+        {
+            statsWindow.Close();
+        }
+        catch (Exception ex)
+        {
+            if (!IsCloseAlreadyInProgressException(ex))
+            {
+                Logger.Log($"Stats window close failed: {ex.Message}");
+            }
+        }
     }
 
     private void CaptureSettingsGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -1506,6 +1564,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
 
         _isWindowClosing = true;
+        CloseStatsWindow();
 
         if (this.Content is FrameworkElement mainContent)
         {
@@ -1570,132 +1629,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
     }
 
-    private readonly record struct PreviewCadenceMetrics(
-        int SampleCount,
-        double ObservedFps,
-        double ExpectedIntervalMs,
-        double AverageIntervalMs,
-        double P95IntervalMs,
-        double MaxIntervalMs,
-        double JitterStdDevMs,
-        long SlowFrameCount,
-        double SlowFramePercent);
-
-    private void TrackPreviewDisplayCadence()
-    {
-        var nowTick = Stopwatch.GetTimestamp();
-        var previousTick = Interlocked.Exchange(ref _previewLastDisplayTick, nowTick);
-        if (previousTick <= 0)
-        {
-            return;
-        }
-
-        var intervalMs = (nowTick - previousTick) * 1000.0 / Stopwatch.Frequency;
-        if (intervalMs <= 0 || intervalMs > 5000)
-        {
-            return;
-        }
-
-        lock (_previewCadenceLock)
-        {
-            _previewDisplayIntervalWindowMs[_previewDisplayIntervalIndex] = intervalMs;
-            _previewDisplayIntervalIndex = (_previewDisplayIntervalIndex + 1) % _previewDisplayIntervalWindowMs.Length;
-            if (_previewDisplayIntervalCount < _previewDisplayIntervalWindowMs.Length)
-            {
-                _previewDisplayIntervalCount++;
-            }
-        }
-    }
-
-    private void ResetPreviewCadenceTracking()
-    {
-        Interlocked.Exchange(ref _previewLastDisplayTick, 0);
-        lock (_previewCadenceLock)
-        {
-            Array.Clear(_previewDisplayIntervalWindowMs, 0, _previewDisplayIntervalWindowMs.Length);
-            _previewDisplayIntervalCount = 0;
-            _previewDisplayIntervalIndex = 0;
-        }
-    }
-
-    private PreviewCadenceMetrics GetPreviewCadenceMetrics(double expectedIntervalMs)
-    {
-        double[] samples;
-        lock (_previewCadenceLock)
-        {
-            if (_previewDisplayIntervalCount <= 0)
-            {
-                return new PreviewCadenceMetrics(
-                    SampleCount: 0,
-                    ObservedFps: 0,
-                    ExpectedIntervalMs: expectedIntervalMs,
-                    AverageIntervalMs: 0,
-                    P95IntervalMs: 0,
-                    MaxIntervalMs: 0,
-                    JitterStdDevMs: 0,
-                    SlowFrameCount: 0,
-                    SlowFramePercent: 0);
-            }
-
-            samples = new double[_previewDisplayIntervalCount];
-            for (var i = 0; i < _previewDisplayIntervalCount; i++)
-            {
-                var ringIndex = (_previewDisplayIntervalIndex - _previewDisplayIntervalCount + i + _previewDisplayIntervalWindowMs.Length)
-                    % _previewDisplayIntervalWindowMs.Length;
-                samples[i] = _previewDisplayIntervalWindowMs[ringIndex];
-            }
-        }
-
-        var sampleCount = samples.Length;
-        var sum = 0.0;
-        var max = 0.0;
-        for (var i = 0; i < sampleCount; i++)
-        {
-            sum += samples[i];
-            if (samples[i] > max)
-            {
-                max = samples[i];
-            }
-        }
-
-        var average = sum / sampleCount;
-        var observedFps = average > double.Epsilon ? 1000.0 / average : 0;
-        var targetIntervalMs = expectedIntervalMs > 0 ? expectedIntervalMs : average;
-        var slowThresholdMs = targetIntervalMs * 1.6;
-
-        long slowFrameCount = 0;
-        var varianceSum = 0.0;
-        for (var i = 0; i < sampleCount; i++)
-        {
-            var delta = samples[i] - average;
-            varianceSum += delta * delta;
-            if (samples[i] >= slowThresholdMs)
-            {
-                slowFrameCount++;
-            }
-        }
-
-        var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
-        var sorted = (double[])samples.Clone();
-        Array.Sort(sorted);
-        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
-        var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
-        var slowPercent = slowFrameCount <= 0
-            ? 0
-            : (double)slowFrameCount / Math.Max(1, sampleCount) * 100.0;
-
-        return new PreviewCadenceMetrics(
-            SampleCount: sampleCount,
-            ObservedFps: observedFps,
-            ExpectedIntervalMs: targetIntervalMs,
-            AverageIntervalMs: average,
-            P95IntervalMs: p95IntervalMs,
-            MaxIntervalMs: max,
-            JitterStdDevMs: jitterStdDevMs,
-            SlowFrameCount: slowFrameCount,
-            SlowFramePercent: slowPercent);
-    }
-
     private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()
     {
         var d3d = _d3dRenderer;
@@ -1756,7 +1689,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var stallSuspected = !gpuActive && previewPipelineActive &&
                              lastPresentedTick > 0 &&
                              nowTick - lastPresentedTick > 3000;
-        var cadence = GetPreviewCadenceMetrics(_previewMinPresentationIntervalMs);
+        var rendererCadence = d3d?.GetPresentCadenceMetrics(_previewMinPresentationIntervalMs);
 
         return new PreviewRuntimeSnapshot
         {
@@ -1784,15 +1717,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             FramesArrived = framesArrived,
             FramesDisplayed = framesDisplayed,
             FramesDropped = framesDropped,
-            DisplayCadenceSampleCount = cadence.SampleCount,
-            DisplayCadenceObservedFps = cadence.ObservedFps,
-            DisplayCadenceExpectedIntervalMs = cadence.ExpectedIntervalMs,
-            DisplayCadenceAverageIntervalMs = cadence.AverageIntervalMs,
-            DisplayCadenceP95IntervalMs = cadence.P95IntervalMs,
-            DisplayCadenceMaxIntervalMs = cadence.MaxIntervalMs,
-            DisplayCadenceJitterStdDevMs = cadence.JitterStdDevMs,
-            DisplayCadenceSlowFrameCount = cadence.SlowFrameCount,
-            DisplayCadenceSlowFramePercent = cadence.SlowFramePercent,
+            DisplayCadenceSampleCount = rendererCadence?.SampleCount ?? 0,
+            DisplayCadenceObservedFps = rendererCadence?.ObservedFps ?? 0,
+            DisplayCadenceExpectedIntervalMs = rendererCadence?.ExpectedIntervalMs ?? 0,
+            DisplayCadenceAverageIntervalMs = rendererCadence?.AverageIntervalMs ?? 0,
+            DisplayCadenceP95IntervalMs = rendererCadence?.P95IntervalMs ?? 0,
+            DisplayCadenceMaxIntervalMs = rendererCadence?.MaxIntervalMs ?? 0,
+            DisplayCadenceJitterStdDevMs = rendererCadence?.JitterStdDevMs ?? 0,
+            DisplayCadenceSlowFrameCount = rendererCadence?.SlowFrameCount ?? 0,
+            DisplayCadenceSlowFramePercent = rendererCadence?.SlowFramePercent ?? 0,
             BlankSuspected = blankSuspected,
             StallSuspected = stallSuspected,
             RendererMode = rendererMode,
@@ -1801,12 +1734,56 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             D3DFramesDropped = d3dFramesDropped,
             D3DInputColorSpace = _d3dRenderer?.InputColorSpaceLabel ?? "None",
             D3DOutputColorSpace = _d3dRenderer?.OutputColorSpaceLabel ?? "None",
+            EstimatedPipelineLatencyMs = d3d?.GetEstimatedPipelineLatencyMs() ?? 0,
             GpuPlaybackState = gpuPlaybackState,
             GpuNaturalVideoWidth = gpuNaturalVideoWidth,
             GpuNaturalVideoHeight = gpuNaturalVideoHeight,
             GpuPositionMs = gpuPositionMs,
             GpuPositionEventCount = gpuPositionEventCount
         };
+    }
+
+    private StatsSnapshot GetStatsSnapshot()
+    {
+        var health = ViewModel.GetCaptureHealthSnapshot();
+        var d3d = _d3dRenderer;
+        var presentCadence = d3d?.GetPresentCadenceMetrics(_previewMinPresentationIntervalMs);
+        var pipelineLatency = d3d?.GetEstimatedPipelineLatencyMs() ?? 0;
+        var sourceDropPercent = SanitizeMetric(health.CaptureCadenceEstimatedDropPercent);
+        var previewSlowPercent = SanitizeMetric(presentCadence?.SlowFramePercent ?? 0);
+        var performanceScore = Math.Clamp(100.0 - sourceDropPercent - previewSlowPercent, 0.0, 100.0);
+
+        return new StatsSnapshot(
+            SourceCadenceSamples: health.CaptureCadenceSampleCount,
+            SourceObservedFps: SanitizeMetric(health.CaptureCadenceObservedFps),
+            SourceExpectedFps: SanitizeMetric(health.ExpectedFrameRate),
+            SourceAvgIntervalMs: SanitizeMetric(health.CaptureCadenceAverageIntervalMs),
+            SourceP95IntervalMs: SanitizeMetric(health.CaptureCadenceP95IntervalMs),
+            SourceMaxIntervalMs: SanitizeMetric(health.CaptureCadenceMaxIntervalMs),
+            SourceJitterMs: SanitizeMetric(health.CaptureCadenceJitterStdDevMs),
+            SourceSevereGaps: health.CaptureCadenceSevereGapCount,
+            SourceEstDrops: health.CaptureCadenceEstimatedDroppedFrames,
+            SourceEstDropPct: sourceDropPercent,
+            PreviewCadenceSamples: presentCadence?.SampleCount ?? 0,
+            PreviewObservedFps: SanitizeMetric(presentCadence?.ObservedFps ?? 0),
+            PreviewAvgIntervalMs: SanitizeMetric(presentCadence?.AverageIntervalMs ?? 0),
+            PreviewP95IntervalMs: SanitizeMetric(presentCadence?.P95IntervalMs ?? 0),
+            PreviewSlowFrames: presentCadence?.SlowFrameCount ?? 0,
+            PreviewSlowPct: previewSlowPercent,
+            PipelineLatencyMs: SanitizeMetric(pipelineLatency),
+            SourceFramesDelivered: health.VideoFramesArrived,
+            SourceFramesDropped: health.VideoFramesDropped,
+            RendererFramesSubmitted: d3d?.FramesSubmitted ?? 0,
+            RendererFramesRendered: d3d?.FramesRendered ?? 0,
+            RendererFramesDropped: d3d?.FramesDropped ?? 0,
+            PerformanceScore: performanceScore,
+            Previewing: ViewModel.IsPreviewing,
+            Recording: ViewModel.IsRecording);
+    }
+
+    private static double SanitizeMetric(double value)
+    {
+        return double.IsFinite(value) ? value : 0;
     }
 
     private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
@@ -1904,7 +1881,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         PreviewImage.Source = null;
         PreviewImage.Visibility = Visibility.Collapsed;
         _previewSource = null;
-        ResetPreviewCadenceTracking();
     }
 
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -2424,7 +2400,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewLastResizeLogTick = 0;
         _previewLastPresentedTick = 0;
         _previewResizeSuppressUntilTick = 0;
-        ResetPreviewCadenceTracking();
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
 
         var useD3dRenderer = ViewModel.IsPreviewing;
@@ -2518,7 +2493,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         _previewLastPresentedTick = 0;
         _previewResizeSuppressUntilTick = 0;
-        ResetPreviewCadenceTracking();
         _previewMinPresentationIntervalMs = Math.Max(1L, (long)Math.Round(1000.0 / 60.0));
         Logger.Log("Preview renderer stopped.");
         return Task.CompletedTask;

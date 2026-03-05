@@ -591,7 +591,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             AudioChunksDropped = health.AudioChunksDropped,
             AudioQueueDropsRealtime = health.AudioDropsQueueSaturated + health.AudioDropsBacklogEviction,
             AudioQueueDropsFileWriter = health.AudioChunksDropped,
-            EstimatedPipelineLatencyMs = health.EstimatedPipelineLatencyMs,
+            EstimatedPipelineLatencyMs = (long)previewRuntime.EstimatedPipelineLatencyMs,
             ExpectedCaptureFrameRate = health.ExpectedFrameRate,
             CaptureCadenceSampleCount = health.CaptureCadenceSampleCount,
             CaptureCadenceObservedFps = health.CaptureCadenceObservedFps,

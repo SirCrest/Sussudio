@@ -555,6 +555,21 @@
                                        Visibility="Collapsed"/>
                         </StackPanel>
                     </ToggleButton>
+                    <Border Width="1" Height="20" Background="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                    <ToggleButton x:Name="StatsToggle"
+                                  AutomationProperties.AutomationId="StatsToggle"
+                                  Height="32"
+                                  Padding="8,0"
+                                  ToolTipService.ToolTip="Frame statistics">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE9D9;" FontSize="14"/>
+                            <TextBlock x:Name="StatsToggleLabel"
+                                       Text="Stats"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
+                        </StackPanel>
+                    </ToggleButton>
                 </StackPanel>
 
                 <!-- StatusTextBlock: hidden but kept for code-behind compatibility -->

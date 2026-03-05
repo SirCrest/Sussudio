@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -147,7 +148,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             int rawDataLength,
             int width,
             int height,
-            bool isHdr)
+            bool isHdr,
+            long arrivalTick)
         {
             D3DTexture = d3dTexture;
             D3DSubresourceIndex = Math.Max(0, d3dSubresourceIndex);
@@ -156,6 +158,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             Width = width;
             Height = height;
             IsHdr = isHdr;
+            ArrivalTick = arrivalTick;
         }
 
         public ID3D11Texture2D? D3DTexture { get; private set; }
@@ -165,6 +168,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         public int Width { get; }
         public int Height { get; }
         public bool IsHdr { get; }
+        public long ArrivalTick { get; }
 
         public void Dispose()
         {
@@ -178,6 +182,17 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             }
         }
     }
+
+    public readonly record struct PresentCadenceMetrics(
+        int SampleCount,
+        double ObservedFps,
+        double ExpectedIntervalMs,
+        double AverageIntervalMs,
+        double P95IntervalMs,
+        double MaxIntervalMs,
+        double JitterStdDevMs,
+        long SlowFrameCount,
+        double SlowFramePercent);
 
     private readonly SwapChainPanel _panel;
     private readonly DispatcherQueue _dispatcherQueue;
@@ -206,6 +221,15 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private long _framesSubmitted;
     private long _framesRendered;
     private long _framesDropped;
+    private readonly object _presentCadenceLock = new();
+    private readonly double[] _presentIntervalWindowMs = new double[300];
+    private int _presentIntervalCount;
+    private int _presentIntervalIndex;
+    private long _lastPresentTick;
+    private readonly object _pipelineLatencyLock = new();
+    private readonly double[] _pipelineLatencyWindowMs = new double[300];
+    private int _pipelineLatencyCount;
+    private int _pipelineLatencyIndex;
 
     private TaskCompletionSource<PreviewFrameCaptureResult>? _frameCaptureRequest;
     private string? _frameCaptureOutputPath;
@@ -398,6 +422,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             {
                 FailPendingFrameCapture("Preview renderer is not running.");
                 Volatile.Write(ref _rendererMode, RendererModeNone);
+                ResetPresentCadence();
                 return;
             }
             Interlocked.Exchange(ref _stopRequested, 1);
@@ -417,6 +442,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         pending?.Dispose();
         FailPendingFrameCapture("Preview renderer stopped before frame capture completed.");
         Volatile.Write(ref _rendererMode, RendererModeNone);
+        ResetPresentCadence();
         Logger.Log("D3D11 preview renderer stop completed.");
     }
 
@@ -435,7 +461,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         Logger.Log($"D3D11 preview resize requested width={pixelWidth} height={pixelHeight} scale={rasterizationScale}.");
     }
 
-    public void SubmitRawFrame(IntPtr data, int dataLength, int width, int height, bool isHdr)
+    public void SubmitRawFrame(IntPtr data, int dataLength, int width, int height, bool isHdr, long arrivalTick = 0)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -458,11 +484,11 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             throw;
         }
 
-        var frame = new PendingFrame(null, 0, copied, dataLength, width, height, isHdr);
+        var frame = new PendingFrame(null, 0, copied, dataLength, width, height, isHdr, arrivalTick);
         EnqueuePendingFrame(frame);
     }
 
-    public void SubmitTexture(IntPtr d3dTexture, int subresourceIndex, int width, int height, bool isHdr)
+    public void SubmitTexture(IntPtr d3dTexture, int subresourceIndex, int width, int height, bool isHdr, long arrivalTick = 0)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -498,7 +524,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             throw;
         }
 
-        var frame = new PendingFrame(texture, subresourceIndex, null, 0, width, height, isHdr);
+        var frame = new PendingFrame(texture, subresourceIndex, null, 0, width, height, isHdr, arrivalTick);
         EnqueuePendingFrame(frame);
     }
 
@@ -524,6 +550,173 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _sharedDevice?.Dispose();
         _sharedDevice = null;
         _frameReadyEvent.Dispose();
+    }
+
+    public PresentCadenceMetrics GetPresentCadenceMetrics(double expectedIntervalMs)
+    {
+        double[] samples;
+        lock (_presentCadenceLock)
+        {
+            if (_presentIntervalCount <= 0)
+            {
+                return new PresentCadenceMetrics(
+                    SampleCount: 0,
+                    ObservedFps: 0,
+                    ExpectedIntervalMs: expectedIntervalMs,
+                    AverageIntervalMs: 0,
+                    P95IntervalMs: 0,
+                    MaxIntervalMs: 0,
+                    JitterStdDevMs: 0,
+                    SlowFrameCount: 0,
+                    SlowFramePercent: 0);
+            }
+
+            samples = new double[_presentIntervalCount];
+            for (var i = 0; i < _presentIntervalCount; i++)
+            {
+                var ringIndex = (_presentIntervalIndex - _presentIntervalCount + i + _presentIntervalWindowMs.Length)
+                    % _presentIntervalWindowMs.Length;
+                samples[i] = _presentIntervalWindowMs[ringIndex];
+            }
+        }
+
+        var sampleCount = samples.Length;
+        var sum = 0.0;
+        var max = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            sum += samples[i];
+            if (samples[i] > max)
+            {
+                max = samples[i];
+            }
+        }
+
+        var average = sum / sampleCount;
+        var observedFps = average > double.Epsilon ? 1000.0 / average : 0;
+        var targetIntervalMs = expectedIntervalMs > 0 ? expectedIntervalMs : average;
+        var slowThresholdMs = targetIntervalMs * 1.6;
+
+        long slowFrameCount = 0;
+        var varianceSum = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            var delta = samples[i] - average;
+            varianceSum += delta * delta;
+            if (samples[i] >= slowThresholdMs)
+            {
+                slowFrameCount++;
+            }
+        }
+
+        var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
+        var sorted = (double[])samples.Clone();
+        Array.Sort(sorted);
+        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
+        var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
+        var slowPercent = slowFrameCount <= 0
+            ? 0
+            : (double)slowFrameCount / Math.Max(1, sampleCount) * 100.0;
+
+        return new PresentCadenceMetrics(
+            SampleCount: sampleCount,
+            ObservedFps: observedFps,
+            ExpectedIntervalMs: targetIntervalMs,
+            AverageIntervalMs: average,
+            P95IntervalMs: p95IntervalMs,
+            MaxIntervalMs: max,
+            JitterStdDevMs: jitterStdDevMs,
+            SlowFrameCount: slowFrameCount,
+            SlowFramePercent: slowPercent);
+    }
+
+    public double GetEstimatedPipelineLatencyMs()
+    {
+        lock (_pipelineLatencyLock)
+        {
+            if (_pipelineLatencyCount <= 0)
+            {
+                return 0;
+            }
+
+            var sum = 0.0;
+            for (var i = 0; i < _pipelineLatencyCount; i++)
+            {
+                var idx = (_pipelineLatencyIndex - _pipelineLatencyCount + i + _pipelineLatencyWindowMs.Length)
+                    % _pipelineLatencyWindowMs.Length;
+                sum += _pipelineLatencyWindowMs[idx];
+            }
+
+            return sum / _pipelineLatencyCount;
+        }
+    }
+
+    private void TrackPresentCadence()
+    {
+        var nowTick = Stopwatch.GetTimestamp();
+        var previousTick = Interlocked.Exchange(ref _lastPresentTick, nowTick);
+        if (previousTick <= 0)
+        {
+            return;
+        }
+
+        var intervalMs = (nowTick - previousTick) * 1000.0 / Stopwatch.Frequency;
+        if (intervalMs <= 0 || intervalMs > 5000)
+        {
+            return;
+        }
+
+        lock (_presentCadenceLock)
+        {
+            _presentIntervalWindowMs[_presentIntervalIndex] = intervalMs;
+            _presentIntervalIndex = (_presentIntervalIndex + 1) % _presentIntervalWindowMs.Length;
+            if (_presentIntervalCount < _presentIntervalWindowMs.Length)
+            {
+                _presentIntervalCount++;
+            }
+        }
+    }
+
+    private void TrackPipelineLatency(long arrivalTick)
+    {
+        if (arrivalTick <= 0)
+        {
+            return;
+        }
+
+        var latencyMs = (Stopwatch.GetTimestamp() - arrivalTick) * 1000.0 / Stopwatch.Frequency;
+        if (latencyMs < 0 || latencyMs > 10000)
+        {
+            return;
+        }
+
+        lock (_pipelineLatencyLock)
+        {
+            _pipelineLatencyWindowMs[_pipelineLatencyIndex] = latencyMs;
+            _pipelineLatencyIndex = (_pipelineLatencyIndex + 1) % _pipelineLatencyWindowMs.Length;
+            if (_pipelineLatencyCount < _pipelineLatencyWindowMs.Length)
+            {
+                _pipelineLatencyCount++;
+            }
+        }
+    }
+
+    private void ResetPresentCadence()
+    {
+        Interlocked.Exchange(ref _lastPresentTick, 0);
+        lock (_presentCadenceLock)
+        {
+            Array.Clear(_presentIntervalWindowMs, 0, _presentIntervalWindowMs.Length);
+            _presentIntervalCount = 0;
+            _presentIntervalIndex = 0;
+        }
+
+        lock (_pipelineLatencyLock)
+        {
+            Array.Clear(_pipelineLatencyWindowMs, 0, _pipelineLatencyWindowMs.Length);
+            _pipelineLatencyCount = 0;
+            _pipelineLatencyIndex = 0;
+        }
     }
 
     private void RenderThreadMain()
@@ -667,6 +860,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             }
 
             Interlocked.Increment(ref _framesRendered);
+            TrackPresentCadence();
+            TrackPipelineLatency(frame.ArrivalTick);
         }
         finally
         {
@@ -789,6 +984,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
 
         Interlocked.Increment(ref _framesRendered);
+        TrackPresentCadence();
+        TrackPipelineLatency(frame.ArrivalTick);
     }
 
     private void TryCaptureFrameBeforePresent(string rendererMode)

@@ -44,6 +44,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     public long VideoFramesWrittenToSink => Interlocked.Read(ref _videoFramesWrittenToSink);
     public long LastVideoFrameArrivedTick => Interlocked.Read(ref _lastVideoFrameArrivedTick);
     public SharedD3DDeviceManager? D3DManager => Volatile.Read(ref _d3dManager);
+    public MfSourceReaderVideoCapture.SourceCadenceMetrics GetSourceCadenceMetrics()
+    {
+        var capture = _capture;
+        return capture?.GetSourceCadenceMetrics() ?? default;
+    }
 
     public async Task InitializeAsync(
         string deviceSymbolicLink,
@@ -254,7 +259,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         d3dManager?.Dispose();
     }
 
-    private unsafe void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height)
+    private unsafe void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)
     {
         Interlocked.Increment(ref _videoFramesArrived);
         Interlocked.Exchange(ref _lastVideoFrameArrivedTick, Environment.TickCount64);
@@ -264,7 +269,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         var previewSink = Volatile.Read(ref _previewSink);
         if (previewSink != null && !frameData.IsEmpty)
         {
-            SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010);
+            SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick);
         }
 
         EnqueueRecordingFrame(frameData, width, height, isP010);
@@ -275,7 +280,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         int gpuSubresource,
         ReadOnlySpan<byte> frameData,
         int width,
-        int height)
+        int height,
+        long arrivalTick)
     {
         Interlocked.Increment(ref _videoFramesArrived);
         Interlocked.Exchange(ref _lastVideoFrameArrivedTick, Environment.TickCount64);
@@ -290,7 +296,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             {
                 try
                 {
-                    previewSink.SubmitTexture(gpuTexture, gpuSubresource, width, height, isP010);
+                    previewSink.SubmitTexture(gpuTexture, gpuSubresource, width, height, isP010, arrivalTick);
                     textureSubmitted = true;
                 }
                 catch (Exception ex)
@@ -301,7 +307,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
             if (!textureSubmitted && !frameData.IsEmpty)
             {
-                SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010);
+                SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick);
             }
         }
 
@@ -313,13 +319,14 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         ReadOnlySpan<byte> frameData,
         int width,
         int height,
-        bool isP010)
+        bool isP010,
+        long arrivalTick)
     {
         try
         {
             fixed (byte* pointer = frameData)
             {
-                previewSink.SubmitRawFrame((IntPtr)pointer, frameData.Length, width, height, isP010);
+                previewSink.SubmitRawFrame((IntPtr)pointer, frameData.Length, width, height, isP010, arrivalTick);
             }
         }
         catch (Exception ex)

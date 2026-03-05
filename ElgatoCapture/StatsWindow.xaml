@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Window
+    x:Class="ElgatoCapture.StatsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Stats">
+
+    <Window.SystemBackdrop>
+        <MicaBackdrop />
+    </Window.SystemBackdrop>
+
+    <Grid Padding="12">
+        <Grid.Resources>
+            <Style x:Key="StatsLabelStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="StatsValueStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="12" />
+                <Setter Property="FontFamily" Value="Consolas" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+                <Setter Property="VerticalAlignment" Value="Center" />
+            </Style>
+            <Style x:Key="StatsSectionHeaderStyle" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="FontWeight" Value="SemiBold" />
+                <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+            </Style>
+        </Grid.Resources>
+
+        <Border
+            Padding="12"
+            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+            BorderThickness="1"
+            CornerRadius="8">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,14,0">
+                <StackPanel Spacing="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock
+                            Text="Frame Timing"
+                            Style="{ThemeResource SubtitleTextBlockStyle}"
+                            VerticalAlignment="Center" />
+                        <ToggleSwitch
+                            x:Name="AlwaysOnTopToggle"
+                            Grid.Column="1"
+                            Header="Always on top"
+                            Toggled="AlwaysOnTopToggle_Toggled"
+                            OffContent="Off"
+                            OnContent="On" />
+                    </Grid>
+
+                    <TextBlock
+                        x:Name="SessionStateValue"
+                        Text="Idle"
+                        Style="{StaticResource StatsLabelStyle}" />
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Source Cadence" Style="{StaticResource StatsSectionHeaderStyle}" />
+                        <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="FPS" Style="{StaticResource StatsLabelStyle}" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+                                <TextBlock x:Name="SourceFpsValue" Text="0.00" Style="{StaticResource StatsValueStyle}" />
+                                <TextBlock Text="/" Style="{StaticResource StatsLabelStyle}" />
+                                <TextBlock x:Name="SourceExpectedFpsValue" Text="0.00" Style="{StaticResource StatsValueStyle}" />
+                                <TextBlock Text="expected" Style="{StaticResource StatsLabelStyle}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Interval" Style="{StaticResource StatsLabelStyle}" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <TextBlock x:Name="SourceAvgValue" Text="0.00ms avg" Style="{StaticResource StatsValueStyle}" />
+                                <TextBlock x:Name="SourceP95Value" Text="0.00ms P95" Style="{StaticResource StatsValueStyle}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Jitter" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock x:Name="SourceJitterValue" Grid.Column="1" Text="0.00ms" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Gaps" Style="{StaticResource StatsLabelStyle}" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <TextBlock x:Name="SourceGapsValue" Text="0 severe" Style="{StaticResource StatsValueStyle}" />
+                                <TextBlock x:Name="SourceDropsValue" Text="0 drops (0.0%)" Style="{StaticResource StatsValueStyle}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Preview Cadence" Style="{StaticResource StatsSectionHeaderStyle}" />
+                        <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="FPS" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock x:Name="PreviewFpsValue" Grid.Column="1" Text="0.00" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Interval" Style="{StaticResource StatsLabelStyle}" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <TextBlock x:Name="PreviewAvgValue" Text="0.00ms avg" Style="{StaticResource StatsValueStyle}" />
+                                <TextBlock x:Name="PreviewP95Value" Text="0.00ms P95" Style="{StaticResource StatsValueStyle}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Slow" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock x:Name="PreviewSlowValue" Grid.Column="1" Text="0 frames (0.0%)" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Pipeline" Style="{StaticResource StatsSectionHeaderStyle}" />
+                        <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Latency" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock x:Name="PipelineLatencyValue" Grid.Column="1" Text="0ms avg" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Frames" Style="{StaticResource StatsSectionHeaderStyle}" />
+                        <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Source" Style="{StaticResource StatsLabelStyle}" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <TextBlock x:Name="SourceDeliveredValue" Text="0 delivered" Style="{StaticResource StatsValueStyle}" />
+                                <TextBlock x:Name="SourceDroppedValue" Text="0 dropped" Style="{StaticResource StatsValueStyle}" />
+                            </StackPanel>
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Renderer" Style="{StaticResource StatsLabelStyle}" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                <TextBlock x:Name="RendererRenderedValue" Text="0 rendered" Style="{StaticResource StatsValueStyle}" />
+                                <TextBlock x:Name="RendererDroppedValue" Text="0 dropped" Style="{StaticResource StatsValueStyle}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Performance" Style="{StaticResource StatsSectionHeaderStyle}" />
+                        <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Score" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock x:Name="PerfScoreValue" Grid.Column="1" Text="0.0 / 100" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+    </Grid>
+</Window>

@@ -492,6 +492,7 @@ public sealed class PreviewRuntimeSnapshot
     public long D3DFramesDropped { get; init; }
     public string D3DInputColorSpace { get; init; } = "None";
     public string D3DOutputColorSpace { get; init; } = "None";
+    public double EstimatedPipelineLatencyMs { get; init; }
 
     // GPU MediaPlayer metrics (only meaningful when GpuActive == true)
     public string GpuPlaybackState { get; init; } = "None";

@@ -12,8 +12,8 @@ namespace ElgatoCapture.Services;
 
 public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 {
-    public delegate void RawFrameCallback(ReadOnlySpan<byte> frameData, int width, int height);
-    public delegate void DualFrameCallback(IntPtr gpuTexture, int gpuSubresource, ReadOnlySpan<byte> cpuData, int width, int height);
+    public delegate void RawFrameCallback(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick);
+    public delegate void DualFrameCallback(IntPtr gpuTexture, int gpuSubresource, ReadOnlySpan<byte> cpuData, int width, int height, long arrivalTick);
 
     private readonly object _sync = new();
     private static readonly Guid ID3D11Texture2DIid = new(
@@ -37,6 +37,12 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private int _vtableDiagDone;
     private int _dxgiBufferProbeDone;
     private int _dxgiResourceFailureCount;
+    private readonly object _cadenceLock = new();
+    private readonly double[] _sourceIntervalWindowMs = new double[300];
+    private int _sourceIntervalCount;
+    private int _sourceIntervalIndex;
+    private long _prevMfTimestamp100ns = -1;
+    private double _expectedIntervalMs;
 
     public long FramesDelivered => Interlocked.Read(ref _framesDelivered);
     public long FramesDropped => Interlocked.Read(ref _framesDropped);
@@ -46,6 +52,17 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     public int Width => Volatile.Read(ref _width);
     public int Height => Volatile.Read(ref _height);
     public double Fps => Volatile.Read(ref _fps);
+    public readonly record struct SourceCadenceMetrics(
+        int SampleCount,
+        double ObservedFps,
+        double ExpectedIntervalMs,
+        double AverageIntervalMs,
+        double P95IntervalMs,
+        double MaxIntervalMs,
+        double JitterStdDevMs,
+        long SevereGapCount,
+        long EstimatedDroppedFrames,
+        double EstimatedDropPercent);
 
     public Task InitializeAsync(
         string deviceSymbolicLink,
@@ -156,6 +173,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             _width = negotiatedWidth;
             _height = negotiatedHeight;
             _fps = negotiatedFps;
+            SetExpectedFrameRate(_fps);
             _isP010 = negotiatedSubtype == MfGuids.MFVideoFormat_P010;
             Volatile.Write(ref _negotiatedFormat, negotiatedDescription);
             Interlocked.Exchange(ref _framesDelivered, 0);
@@ -251,6 +269,14 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             $"device='{_deviceSymbolicLink}' negotiated='{_negotiatedFormat}' d3d_manager_enabled={_sourceReaderD3DEnabled}");
     }
 
+    public void SetExpectedFrameRate(double fps)
+    {
+        if (fps > 0)
+        {
+            _expectedIntervalMs = 1000.0 / fps;
+        }
+    }
+
     public async Task StopAsync()
     {
         CancellationTokenSource? readCts;
@@ -265,6 +291,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
 
         readCts?.Cancel();
+        Interlocked.Exchange(ref _prevMfTimestamp100ns, -1);
+        lock (_cadenceLock)
+        {
+            Array.Clear(_sourceIntervalWindowMs, 0, _sourceIntervalWindowMs.Length);
+            _sourceIntervalCount = 0;
+            _sourceIntervalIndex = 0;
+        }
 
         if (readTask != null)
         {
@@ -331,7 +364,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     0,
                     out _,
                     out var flags,
-                    out _,
+                    out var mfTimestamp100ns,
                     out sample);
 
                 if (ct.IsCancellationRequested)
@@ -365,7 +398,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     continue;
                 }
 
-                DeliverFrame(sample, onFrame, onDualFrame);
+                var arrivalTick = Stopwatch.GetTimestamp();
+                if (mfTimestamp100ns > 0)
+                {
+                    TrackSourceCadence(mfTimestamp100ns);
+                }
+
+                DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);
                 Interlocked.Increment(ref _framesDelivered);
             }
             catch (OperationCanceledException)
@@ -384,6 +423,120 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             finally
             {
                 ReleaseComObject(ref sample);
+            }
+        }
+    }
+
+    public SourceCadenceMetrics GetSourceCadenceMetrics()
+    {
+        double[] samples;
+        double expectedIntervalMs;
+        lock (_cadenceLock)
+        {
+            expectedIntervalMs = _expectedIntervalMs;
+            if (_sourceIntervalCount <= 0)
+            {
+                return new SourceCadenceMetrics(
+                    SampleCount: 0,
+                    ObservedFps: 0,
+                    ExpectedIntervalMs: expectedIntervalMs,
+                    AverageIntervalMs: 0,
+                    P95IntervalMs: 0,
+                    MaxIntervalMs: 0,
+                    JitterStdDevMs: 0,
+                    SevereGapCount: 0,
+                    EstimatedDroppedFrames: 0,
+                    EstimatedDropPercent: 0);
+            }
+
+            samples = new double[_sourceIntervalCount];
+            for (var i = 0; i < _sourceIntervalCount; i++)
+            {
+                var ringIndex = (_sourceIntervalIndex - _sourceIntervalCount + i + _sourceIntervalWindowMs.Length)
+                    % _sourceIntervalWindowMs.Length;
+                samples[i] = _sourceIntervalWindowMs[ringIndex];
+            }
+        }
+
+        var sampleCount = samples.Length;
+        var sum = 0.0;
+        var max = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            sum += samples[i];
+            if (samples[i] > max)
+            {
+                max = samples[i];
+            }
+        }
+
+        var average = sum / sampleCount;
+        var observedFps = average > double.Epsilon ? 1000.0 / average : 0;
+        var targetIntervalMs = expectedIntervalMs > 0 ? expectedIntervalMs : average;
+        var severeGapThresholdMs = targetIntervalMs * 1.6;
+
+        long severeGapCount = 0;
+        long estimatedDroppedFrames = 0;
+        var varianceSum = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            var interval = samples[i];
+            var delta = interval - average;
+            varianceSum += delta * delta;
+            if (interval >= severeGapThresholdMs)
+            {
+                severeGapCount++;
+            }
+
+            if (targetIntervalMs > double.Epsilon)
+            {
+                estimatedDroppedFrames += Math.Max(0, (int)Math.Round(interval / targetIntervalMs) - 1);
+            }
+        }
+
+        var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
+        var sorted = (double[])samples.Clone();
+        Array.Sort(sorted);
+        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
+        var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
+        var estimatedDropPercent = estimatedDroppedFrames * 100.0 / Math.Max(1, sampleCount + estimatedDroppedFrames);
+
+        return new SourceCadenceMetrics(
+            SampleCount: sampleCount,
+            ObservedFps: observedFps,
+            ExpectedIntervalMs: targetIntervalMs,
+            AverageIntervalMs: average,
+            P95IntervalMs: p95IntervalMs,
+            MaxIntervalMs: max,
+            JitterStdDevMs: jitterStdDevMs,
+            SevereGapCount: severeGapCount,
+            EstimatedDroppedFrames: estimatedDroppedFrames,
+            EstimatedDropPercent: estimatedDropPercent);
+    }
+
+    private void TrackSourceCadence(long mfTimestamp100ns)
+    {
+        var previousTimestamp = Interlocked.Read(ref _prevMfTimestamp100ns);
+        if (previousTimestamp < 0)
+        {
+            Interlocked.Exchange(ref _prevMfTimestamp100ns, mfTimestamp100ns);
+            return;
+        }
+
+        var intervalMs = (mfTimestamp100ns - previousTimestamp) / 10_000.0;
+        Interlocked.Exchange(ref _prevMfTimestamp100ns, mfTimestamp100ns);
+        if (intervalMs <= 0 || intervalMs > 5000)
+        {
+            return;
+        }
+
+        lock (_cadenceLock)
+        {
+            _sourceIntervalWindowMs[_sourceIntervalIndex] = intervalMs;
+            _sourceIntervalIndex = (_sourceIntervalIndex + 1) % _sourceIntervalWindowMs.Length;
+            if (_sourceIntervalCount < _sourceIntervalWindowMs.Length)
+            {
+                _sourceIntervalCount++;
             }
         }
     }
@@ -496,7 +649,11 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
     }
 
-    private unsafe void DeliverFrame(IMFSample sample, RawFrameCallback? onFrame, DualFrameCallback? onDualFrame)
+    private unsafe void DeliverFrame(
+        IMFSample sample,
+        RawFrameCallback? onFrame,
+        DualFrameCallback? onDualFrame,
+        long arrivalTick)
     {
         // One-shot vtable diagnostic — runs on the very first sample to compare
         // raw vtable dispatch vs managed COM interop dispatch. This definitively
@@ -528,13 +685,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
             if (onDualFrame != null)
             {
-                DeliverDualFrameFromBuffer(buffer, onDualFrame, onFrame);
+                DeliverDualFrameFromBuffer(buffer, onDualFrame, onFrame, arrivalTick);
                 return;
             }
 
             if (onFrame != null)
             {
-                DeliverRawFrameFromBuffer(buffer, onFrame);
+                DeliverRawFrameFromBuffer(buffer, onFrame, arrivalTick);
             }
         }
         finally
@@ -543,9 +700,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
     }
 
-    private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame)
+    private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)
     {
-        if (TryDeliverFrameFrom2DBuffer(buffer, onFrame))
+        if (TryDeliverFrameFrom2DBuffer(buffer, onFrame, arrivalTick))
         {
             return;
         }
@@ -590,7 +747,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         CopyNV12WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
                     }
 
-                    onFrame(packedSpan, _width, _height);
+                    onFrame(packedSpan, _width, _height, arrivalTick);
                 }
                 finally
                 {
@@ -599,7 +756,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
             else
             {
-                onFrame(new ReadOnlySpan<byte>((void*)dataPtr, packedFrameBytes), _width, _height);
+                onFrame(new ReadOnlySpan<byte>((void*)dataPtr, packedFrameBytes), _width, _height, arrivalTick);
             }
         }
         finally
@@ -611,18 +768,19 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private unsafe void DeliverDualFrameFromBuffer(
         IMFMediaBuffer buffer,
         DualFrameCallback onDualFrame,
-        RawFrameCallback? fallbackRawFrame)
+        RawFrameCallback? fallbackRawFrame,
+        long arrivalTick)
     {
         var hasTexture = TryGetDxgiTexture(buffer, out var gpuTexture, out var gpuSubresource);
         if (!hasTexture && fallbackRawFrame != null)
         {
-            DeliverRawFrameFromBuffer(buffer, fallbackRawFrame);
+            DeliverRawFrameFromBuffer(buffer, fallbackRawFrame, arrivalTick);
             return;
         }
 
         try
         {
-            if (TryDeliverDualFrameFrom2DBuffer(buffer, gpuTexture, gpuSubresource, onDualFrame))
+            if (TryDeliverDualFrameFrom2DBuffer(buffer, gpuTexture, gpuSubresource, onDualFrame, arrivalTick))
             {
                 return;
             }
@@ -667,7 +825,14 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                             CopyNV12WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
                         }
 
-                        InvokeDualFrameCallback(onDualFrame, gpuTexture, gpuSubresource, packedSpan, _width, _height);
+                        InvokeDualFrameCallback(
+                            onDualFrame,
+                            gpuTexture,
+                            gpuSubresource,
+                            packedSpan,
+                            _width,
+                            _height,
+                            arrivalTick);
                     }
                     finally
                     {
@@ -682,7 +847,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         gpuSubresource,
                         new ReadOnlySpan<byte>((void*)dataPtr, packedFrameBytes),
                         _width,
-                        _height);
+                        _height,
+                        arrivalTick);
                 }
             }
             finally
@@ -699,7 +865,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
     }
 
-    private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame)
+    private unsafe bool TryDeliverFrameFrom2DBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)
     {
         if (buffer is not IMF2DBuffer buffer2D)
         {
@@ -726,7 +892,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             var expectedStride = GetRowBytes(_width, _isP010);
             if (pitch == expectedStride)
             {
-                onFrame(new ReadOnlySpan<byte>((void*)scanlinePtr, packedFrameBytes), _width, _height);
+                onFrame(new ReadOnlySpan<byte>((void*)scanlinePtr, packedFrameBytes), _width, _height, arrivalTick);
                 return true;
             }
 
@@ -743,7 +909,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     CopyNV12WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
                 }
 
-                onFrame(packedSpan, _width, _height);
+                onFrame(packedSpan, _width, _height, arrivalTick);
             }
             finally
             {
@@ -762,7 +928,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         IMFMediaBuffer buffer,
         IntPtr gpuTexture,
         int gpuSubresource,
-        DualFrameCallback onFrame)
+        DualFrameCallback onFrame,
+        long arrivalTick)
     {
         if (buffer is not IMF2DBuffer buffer2D)
         {
@@ -795,7 +962,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     gpuSubresource,
                     new ReadOnlySpan<byte>((void*)scanlinePtr, packedFrameBytes),
                     _width,
-                    _height);
+                    _height,
+                    arrivalTick);
                 return true;
             }
 
@@ -812,7 +980,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     CopyNV12WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
                 }
 
-                InvokeDualFrameCallback(onFrame, gpuTexture, gpuSubresource, packedSpan, _width, _height);
+                InvokeDualFrameCallback(onFrame, gpuTexture, gpuSubresource, packedSpan, _width, _height, arrivalTick);
             }
             finally
             {
@@ -890,9 +1058,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         int gpuSubresource,
         ReadOnlySpan<byte> cpuData,
         int width,
-        int height)
+        int height,
+        long arrivalTick)
     {
-        callback(gpuTexture, gpuSubresource, cpuData, width, height);
+        callback(gpuTexture, gpuSubresource, cpuData, width, height, arrivalTick);
     }
 
     private bool TrySetSourceReaderD3DManager(IMFAttributes attributes, IntPtr dxgiDeviceManager)
