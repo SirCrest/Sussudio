@@ -11,9 +11,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using Windows.Devices.Enumeration;
-using Windows.Media.Capture;
-using Windows.Media.Capture.Frames;
 
 namespace ElgatoCapture.Services;
 
@@ -78,14 +75,6 @@ public class DeviceService
         "pro"
     };
 
-    private static readonly string[] AdditionalDeviceProperties =
-    {
-        "System.Devices.ContainerId",
-        "System.Devices.DeviceInstanceId",
-        "System.Devices.InterfaceClassGuid",
-        "System.ItemNameDisplay"
-    };
-
     private static readonly Regex DshowMinMaxRegex = new(
         @"(?:pixel_format|vcodec)=(?<pix>[^\s,]+).*?min s=(?<minw>\d+)x(?<minh>\d+) fps=(?<minfps>[\d\.]+).*?max s=(?<maxw>\d+)x(?<maxh>\d+) fps=(?<maxfps>[\d\.]+)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -102,25 +91,23 @@ public class DeviceService
         var discoveryStopwatch = Stopwatch.StartNew();
         var discovered = new ObservableCollection<CaptureDevice>();
 
-        DeviceInformationCollection videoDevices;
-        DeviceInformationCollection audioDevices;
+        List<MfDeviceEnumerator.MfVideoDeviceInfo> videoDevices;
+        List<AudioInputDevice> audioDevices;
         try
         {
-            var videoFilter = DeviceInformation.GetAqsFilterFromDeviceClass(DeviceClass.VideoCapture);
-            var audioFilter = DeviceInformation.GetAqsFilterFromDeviceClass(DeviceClass.AudioCapture);
-            videoDevices = await DeviceInformation.FindAllAsync(videoFilter, AdditionalDeviceProperties);
-            audioDevices = await DeviceInformation.FindAllAsync(audioFilter, AdditionalDeviceProperties);
+            videoDevices = await MfDeviceEnumerator.EnumerateVideoDevicesAsync().ConfigureAwait(false);
+            audioDevices = await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             LastDiscoverySummary = $"Video devices: enumeration failed ({ex.GetType().Name}: {ex.Message})";
-            Logger.Log($"Device discovery failed while querying DeviceInformation: {ex}");
+            Logger.Log($"Device discovery failed while querying MF/WASAPI enumerators: {ex}");
             return discovered;
         }
 
         if (videoDevices.Count == 0)
         {
-            Logger.Log("Device discovery returned zero video devices. Check camera privacy permissions and elevated/runtime context.");
+            Logger.Log("Device discovery returned zero video devices from MFEnumDeviceSources.");
         }
 
         var evaluated = new List<DeviceCandidate>();
@@ -128,7 +115,7 @@ public class DeviceService
         {
             var captureDevice = new CaptureDevice
             {
-                Id = videoDevice.Id,
+                Id = videoDevice.SymbolicLink,
                 Name = videoDevice.Name
             };
 
@@ -143,15 +130,15 @@ public class DeviceService
             }
 
             var preferredByName = PreferredDeviceNames.Any(name =>
-                videoDevice.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+                captureDevice.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
             var likelyByName = CaptureKeywords.Any(keyword =>
-                videoDevice.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+                captureDevice.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase));
             var likelyByCapability = LooksLikeHighBandwidthCapture(captureDevice);
 
             var include = !waitForFormatProbes || preferredByName || likelyByName || likelyByCapability || !hasEnumeratedFormats;
 
             evaluated.Add(new DeviceCandidate(
-                videoDevice,
+                captureDevice.Name,
                 captureDevice,
                 hasEnumeratedFormats,
                 include,
@@ -169,7 +156,7 @@ public class DeviceService
 
         foreach (var candidate in selected.OrderByDescending(GetDevicePriority))
         {
-            AttachBestAudioDevice(candidate.Source, candidate.Device, audioDevices);
+            AttachBestAudioDevice(candidate.SourceName, candidate.Device, audioDevices);
             discovered.Add(candidate.Device);
         }
 
@@ -419,15 +406,15 @@ public class DeviceService
     }
 
     private static void AttachBestAudioDevice(
-        DeviceInformation videoDevice,
+        string videoDeviceName,
         CaptureDevice captureDevice,
-        IReadOnlyList<DeviceInformation> audioDevices)
+        IReadOnlyList<AudioInputDevice> audioDevices)
     {
         var bestMatch = audioDevices
             .Select(audioDevice => new
             {
                 Device = audioDevice,
-                Score = ScoreAudioAssociation(videoDevice, audioDevice)
+                Score = ScoreAudioAssociation(videoDeviceName, audioDevice.Name)
             })
             .OrderByDescending(x => x.Score)
             .FirstOrDefault();
@@ -443,31 +430,23 @@ public class DeviceService
         Logger.Log($"Associated audio device for {captureDevice.Name}: {bestMatch.Device.Name} (score={bestMatch.Score})");
     }
 
-    private static int ScoreAudioAssociation(DeviceInformation videoDevice, DeviceInformation audioDevice)
+    private static int ScoreAudioAssociation(string videoDeviceName, string audioDeviceName)
     {
         var score = 0;
 
-        var videoContainer = GetContainerId(videoDevice);
-        var audioContainer = GetContainerId(audioDevice);
-        if (!string.IsNullOrWhiteSpace(videoContainer) &&
-            string.Equals(videoContainer, audioContainer, StringComparison.OrdinalIgnoreCase))
-        {
-            score += 200;
-        }
-
-        var videoTokens = Tokenize(videoDevice.Name);
-        var audioTokens = Tokenize(audioDevice.Name);
+        var videoTokens = Tokenize(videoDeviceName);
+        var audioTokens = Tokenize(audioDeviceName);
         var overlap = videoTokens.Intersect(audioTokens).Count();
         score += overlap * 20;
 
-        if (videoDevice.Name.Contains("Elgato", StringComparison.OrdinalIgnoreCase) &&
-            audioDevice.Name.Contains("Elgato", StringComparison.OrdinalIgnoreCase))
+        if (videoDeviceName.Contains("Elgato", StringComparison.OrdinalIgnoreCase) &&
+            audioDeviceName.Contains("Elgato", StringComparison.OrdinalIgnoreCase))
         {
             score += 40;
         }
 
-        var videoModel = GetModelHint(videoDevice.Name);
-        var audioModel = GetModelHint(audioDevice.Name);
+        var videoModel = GetModelHint(videoDeviceName);
+        var audioModel = GetModelHint(audioDeviceName);
         if (!string.IsNullOrEmpty(videoModel) &&
             string.Equals(videoModel, audioModel, StringComparison.OrdinalIgnoreCase))
         {
@@ -505,77 +484,61 @@ public class DeviceService
         return tokens;
     }
 
-    private static string? GetContainerId(DeviceInformation device)
-    {
-        if (!device.Properties.TryGetValue("System.Devices.ContainerId", out var value) || value == null)
-        {
-            return null;
-        }
-
-        return value.ToString();
-    }
-
     private async Task<bool> QuerySupportedFormatsAsync(CaptureDevice device)
     {
         try
         {
             var uniqueFormats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            using var mediaCapture = new MediaCapture();
-            await mediaCapture.InitializeAsync(new MediaCaptureInitializationSettings
-            {
-                VideoDeviceId = device.Id,
-                StreamingCaptureMode = StreamingCaptureMode.Video,
-                MemoryPreference = MediaCaptureMemoryPreference.Cpu
-            });
+            device.IsHdrCapable = false;
+            device.SupportedFormats.Clear();
 
-            var sources = mediaCapture.FrameSources.Values
-                .Where(source => source.Info.SourceKind == MediaFrameSourceKind.Color)
-                .ToList();
-
-            foreach (var source in sources)
+            var nativeFormats = await MfDeviceEnumerator.ProbeVideoFormatsAsync(device.Id).ConfigureAwait(false);
+            foreach (var nativeFormat in nativeFormats)
             {
-                foreach (var fmt in source.SupportedFormats)
+                var width = nativeFormat.Width;
+                var height = nativeFormat.Height;
+                if (width == 0 || height == 0)
                 {
-                    var width = (uint)Math.Max(0, fmt.VideoFormat.Width);
-                    var height = (uint)Math.Max(0, fmt.VideoFormat.Height);
-                    if (width == 0 || height == 0)
-                    {
-                        continue;
-                    }
-
-                    var fps = fmt.FrameRate.Denominator > 0
-                        ? (double)fmt.FrameRate.Numerator / fmt.FrameRate.Denominator
-                        : 0;
-                    if (fps <= 0)
-                    {
-                        continue;
-                    }
-
-                    var pixelFormat = NormalizePixelFormat(fmt.Subtype);
-                    var (numerator, denominator, normalizedFps) = NormalizeFrameRate(fps);
-                    var isHdr = MediaFormat.IsHdrPixelFormat(pixelFormat) || MediaFormat.IsTrue10BitPixelFormat(pixelFormat);
-                    if (isHdr)
-                    {
-                        device.IsHdrCapable = true;
-                    }
-
-                    var key = $"{width}x{height}@{numerator}/{denominator}_{pixelFormat}_{(isHdr ? "HDR" : "SDR")}";
-                    if (!uniqueFormats.Add(key))
-                    {
-                        continue;
-                    }
-
-                    device.SupportedFormats.Add(new MediaFormat
-                    {
-                        Width = width,
-                        Height = height,
-                        FrameRate = normalizedFps,
-                        FrameRateNumerator = numerator,
-                        FrameRateDenominator = denominator,
-                        PixelFormat = pixelFormat,
-                        IsHdr = isHdr
-                    });
+                    continue;
                 }
+
+                var rawFps = nativeFormat.FrameRate;
+                if (rawFps <= 0 &&
+                    nativeFormat.FrameRateNumerator > 0 &&
+                    nativeFormat.FrameRateDenominator > 0)
+                {
+                    rawFps = (double)nativeFormat.FrameRateNumerator / nativeFormat.FrameRateDenominator;
+                }
+
+                if (rawFps <= 0)
+                {
+                    continue;
+                }
+
+                var pixelFormat = NormalizePixelFormat(nativeFormat.PixelFormat);
+                var (numerator, denominator, normalizedFps) = NormalizeFrameRate(rawFps);
+                var isHdr = MediaFormat.IsHdrPixelFormat(pixelFormat) || MediaFormat.IsTrue10BitPixelFormat(pixelFormat);
+                if (isHdr)
+                {
+                    device.IsHdrCapable = true;
+                }
+
+                var key = $"{width}x{height}@{numerator}/{denominator}_{pixelFormat}_{(isHdr ? "HDR" : "SDR")}";
+                if (!uniqueFormats.Add(key))
+                {
+                    continue;
+                }
+
+                device.SupportedFormats.Add(new MediaFormat
+                {
+                    Width = width,
+                    Height = height,
+                    FrameRate = normalizedFps,
+                    FrameRateNumerator = numerator,
+                    FrameRateDenominator = denominator,
+                    PixelFormat = pixelFormat,
+                    IsHdr = isHdr
+                });
             }
 
             var sortedFormats = device.SupportedFormats
@@ -586,7 +549,7 @@ public class DeviceService
 
             if (sortedFormats.Count == 0)
             {
-                Logger.Log($"MediaCapture format discovery produced no rows for {device.Name}.");
+                Logger.Log($"MF source-reader format discovery produced no rows for {device.Name}.");
             }
 
             device.SupportedFormats.Clear();
@@ -778,17 +741,11 @@ public class DeviceService
 
     public async Task<List<AudioInputDevice>> EnumerateAudioCaptureDevicesAsync()
     {
-        var audioFilter = DeviceInformation.GetAqsFilterFromDeviceClass(DeviceClass.AudioCapture);
-        var audioDevices = await DeviceInformation.FindAllAsync(audioFilter, AdditionalDeviceProperties);
-        return audioDevices.Select(d => new AudioInputDevice
-        {
-            Id = d.Id,
-            Name = d.Name
-        }).ToList();
+        return await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync().ConfigureAwait(false);
     }
 
     private sealed record DeviceCandidate(
-        DeviceInformation Source,
+        string SourceName,
         CaptureDevice Device,
         bool HasEnumeratedFormats,
         bool Include,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading;
@@ -344,6 +345,26 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateSuccessResponse(correlationId, "Video source probe completed.", data: result);
                 }
 
+                case AutomationCommandKind.ProbePreviewColor:
+                {
+                    var result = _viewModel.ProbePreviewColor();
+                    return CreateSuccessResponse(correlationId, "Preview color probe completed.", data: result);
+                }
+
+                case AutomationCommandKind.CapturePreviewFrame:
+                {
+                    var outputPath = GetString(payload, "outputPath")
+                        ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp");
+                    var result = await _viewModel.CapturePreviewFrameAsync(outputPath).ConfigureAwait(false);
+                    return CreateSuccessResponse(
+                        correlationId,
+                        result.Message,
+                        data: result,
+                        success: result.Succeeded,
+                        status: result.Succeeded ? "ok" : "error",
+                        errorCode: result.Succeeded ? null : "capture-failed");
+                }
+
                 default:
                     return CreateSuccessResponse(
                         correlationId,
@@ -538,7 +559,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 snapshot.IsPreviewing &&
                 !snapshot.PreviewBlankSuspected &&
                 !snapshot.PreviewStalled &&
-                (snapshot.PreviewGpuActive || snapshot.PreviewFrameReaderActive),
+                (snapshot.PreviewGpuActive || snapshot.PreviewRendererAttached),
             AutomationWaitCondition.AudioSignalPresent =>
                 snapshot.AudioSignalPresent,
             AutomationWaitCondition.RecordingFileGrowing =>

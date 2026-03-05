@@ -5,7 +5,6 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
@@ -16,8 +15,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
-using Windows.Graphics.Imaging;
-using Windows.Media.Playback;
 using WinRT.Interop;
 
 namespace ElgatoCapture;
@@ -48,15 +45,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     public MainViewModel ViewModel { get; }
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
-    private MediaPlayer? _previewMediaPlayer;
+    private D3D11PreviewRenderer? _d3dRenderer;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
-    private long _previewLastLogTick;
     private long _previewLastResizeLogTick;
     private long _previewLastPresentedTick;
     private long _previewResizeSuppressUntilTick;
-    private int _previewUiInFlight;
     private readonly object _previewCadenceLock = new();
     private readonly double[] _previewDisplayIntervalWindowMs = new double[300];
     private int _previewDisplayIntervalCount;
@@ -99,9 +94,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private PreviewStartupStrategy _previewStartupStrategy = PreviewStartupStrategy.None;
     private TimeSpan _previewStartupLastPlaybackPosition = TimeSpan.Zero;
     private long _previewStartupPositionEventCount;
-    private MediaPlaybackState _previewStartupLastPlaybackState = MediaPlaybackState.None;
-    private bool _previewStartupInitialPlayIssued;
-    private bool _previewStartupPausedRecoveryIssued;
     private bool _previewStartupPlaybackPositionInitialized;
     private int _previewStartupFailureStopScheduled;
     private long _previewStartupLastPositionDispatchTick;
@@ -178,9 +170,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewStartupStrategy = PreviewStartupStrategy.None;
         _previewStartupLastPlaybackPosition = TimeSpan.Zero;
         _previewStartupPositionEventCount = 0;
-        _previewStartupLastPlaybackState = MediaPlaybackState.None;
-        _previewStartupInitialPlayIssued = false;
-        _previewStartupPausedRecoveryIssued = false;
         _previewStartupPlaybackPositionInitialized = false;
         Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
         Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, 0);
@@ -201,9 +190,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewGpuSignalPlaybackAdvancing = false;
         _previewStartupLastPlaybackPosition = TimeSpan.Zero;
         _previewStartupPositionEventCount = 0;
-        _previewStartupLastPlaybackState = MediaPlaybackState.None;
-        _previewStartupInitialPlayIssued = false;
-        _previewStartupPausedRecoveryIssued = false;
         _previewStartupPlaybackPositionInitialized = false;
         _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
         Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, 0);
@@ -346,7 +332,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         else if (signal == PreviewStartupSignalFlags.PlaybackAdvancing)
         {
             _previewGpuSignalPlaybackAdvancing = true;
-            _previewMediaPlayer?.PlaybackSession.PositionChanged -= PreviewPlaybackSession_PositionChanged;
         }
 
         _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
@@ -465,21 +450,20 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void LogPreviewStartupPlaybackSnapshot(string reason)
     {
-        var player = _previewMediaPlayer;
-        var session = player?.PlaybackSession;
-        if (session == null)
+        var renderer = _d3dRenderer;
+        if (renderer == null)
         {
             Logger.Log(
                 $"PREVIEW_START_PLAYBACK_SNAPSHOT attempt={_previewStartupAttemptId ?? "none"} " +
-                $"reason={reason} player=null");
+                $"reason={reason} renderer=null");
             return;
         }
 
         Logger.Log(
             $"PREVIEW_START_PLAYBACK_SNAPSHOT attempt={_previewStartupAttemptId ?? "none"} " +
-            $"reason={reason} state={session.PlaybackState} " +
-            $"positionMs={session.Position.TotalMilliseconds:0.###} " +
-            $"gpuVisible={PreviewPlayerElement.Visibility} " +
+            $"reason={reason} state={(renderer.IsRendering ? "Rendering" : "Idle")} " +
+            $"positionMs=0 " +
+            $"gpuVisible={PreviewSwapChainPanel.Visibility} " +
             $"required={BuildPreviewStartupSignalList(_previewStartupRequiredSignals)} " +
             $"received={BuildPreviewStartupSignalList(_previewStartupReceivedSignals)} " +
             $"missing={BuildPreviewStartupMissingSignals()}");
@@ -487,54 +471,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void EnsurePreviewPlaybackStarted(string reason, bool recoveryAttempt)
     {
-        if (!ViewModel.IsPreviewing || _previewStopRequestedByUser || _isWindowClosing)
-        {
-            Logger.Log(
-                $"PREVIEW_START_PLAY_SKIPPED attempt={_previewStartupAttemptId ?? "none"} " +
-                $"reason={reason} startupActive={ViewModel.IsPreviewing} stopRequested={_previewStopRequestedByUser} closing={_isWindowClosing}");
-            return;
-        }
-
-        var player = _previewMediaPlayer;
-        if (player == null)
-        {
-            Logger.Log(
-                $"PREVIEW_START_PLAY_SKIPPED attempt={_previewStartupAttemptId ?? "none"} " +
-                $"reason={reason} player=null");
-            return;
-        }
-
-        if (recoveryAttempt)
-        {
-            if (_previewStartupPausedRecoveryIssued)
-            {
-                Logger.Log(
-                    $"PREVIEW_START_PLAY_SKIPPED attempt={_previewStartupAttemptId ?? "none"} " +
-                    $"reason={reason} recovery=already-issued");
-                return;
-            }
-
-            _previewStartupPausedRecoveryIssued = true;
-            _previewRecoveryAttemptCount++;
-        }
-        else
-        {
-            if (_previewStartupInitialPlayIssued)
-            {
-                Logger.Log(
-                    $"PREVIEW_START_PLAY_SKIPPED attempt={_previewStartupAttemptId ?? "none"} " +
-                    $"reason={reason} initial=already-issued");
-                return;
-            }
-
-            _previewStartupInitialPlayIssued = true;
-        }
-
         Logger.Log(
-            $"PREVIEW_START_PLAY_ISSUED attempt={_previewStartupAttemptId ?? "none"} " +
-            $"reason={reason} recovery={recoveryAttempt} state={player.PlaybackSession.PlaybackState} " +
-            $"positionMs={player.PlaybackSession.Position.TotalMilliseconds:0.###}");
-        player.Play();
+            $"PREVIEW_START_PLAY_SKIPPED attempt={_previewStartupAttemptId ?? "none"} " +
+            $"reason={reason} mode=D3D11");
     }
 
     private void SchedulePreviewStartupFailureStop(string reason)
@@ -600,7 +539,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         Logger.Log(
             $"PREVIEW_START_TIMEOUT attempt={_previewStartupAttemptId ?? "none"} " +
             $"elapsedMs={elapsedMs:0} placeholder={NoDevicePlaceholder.Visibility} " +
-            $"gpuVisible={PreviewPlayerElement.Visibility} cpuVisible={PreviewImage.Visibility} " +
+            $"gpuVisible={PreviewSwapChainPanel.Visibility} cpuVisible={PreviewImage.Visibility} " +
             $"strategy={_previewStartupStrategy} required={BuildPreviewStartupSignalList(_previewStartupRequiredSignals)} " +
             $"received={BuildPreviewStartupSignalList(_previewStartupReceivedSignals)} " +
             $"missing={_previewStartupMissingSignals ?? "-"}");
@@ -656,9 +595,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewStartupStrategy = PreviewStartupStrategy.None;
         _previewStartupLastPlaybackPosition = TimeSpan.Zero;
         _previewStartupPositionEventCount = 0;
-        _previewStartupLastPlaybackState = MediaPlaybackState.None;
-        _previewStartupInitialPlayIssued = false;
-        _previewStartupPausedRecoveryIssued = false;
         _previewStartupPlaybackPositionInitialized = false;
         Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
         Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, 0);
@@ -678,98 +614,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
     }
 
-    private void PreviewMediaPlayer_MediaOpened(MediaPlayer sender, object args)
+    private void OnD3DRendererFirstFrameRendered()
     {
-        Logger.Log(
-            $"PREVIEW_MEDIA_EVENT event=MediaOpened attempt={_previewStartupAttemptId ?? "none"} " +
-            $"state={sender.PlaybackSession.PlaybackState} " +
-            $"positionMs={sender.PlaybackSession.Position.TotalMilliseconds:0.###} " +
-            $"gpuVisible={PreviewPlayerElement.Visibility}");
-        _dispatcherQueue.TryEnqueue(MarkGpuStartupSignalMediaOpened);
+        Logger.Log($"PREVIEW_D3D_FIRST_FRAME attempt={_previewStartupAttemptId ?? "none"}");
+        ConfirmPreviewFirstVisual("D3D11FirstFrame");
     }
 
-    private void PreviewPlaybackSession_PlaybackStateChanged(MediaPlaybackSession sender, object args)
+    private void OnPreviewSwapChainPanelSizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
     {
-        var state = sender.PlaybackState;
-        if (state == _previewStartupLastPlaybackState && !IsPreviewStartupSignalWindowActive())
-        {
-            return;
-        }
-
-        _previewStartupLastPlaybackState = state;
-        Logger.Log(
-            $"PREVIEW_MEDIA_EVENT event=PlaybackStateChanged attempt={_previewStartupAttemptId ?? "none"} " +
-            $"state={state} positionMs={sender.Position.TotalMilliseconds:0.###} " +
-            $"startupActive={IsPreviewStartupSignalWindowActive()}");
-
-        if (state == MediaPlaybackState.Paused &&
-            IsPreviewStartupSignalWindowActive() &&
-            !_previewStopRequestedByUser &&
-            !_isWindowClosing)
-        {
-            if (_dispatcherQueue.HasThreadAccess)
-            {
-                EnsurePreviewPlaybackStarted("PlaybackStateChanged:Paused", recoveryAttempt: true);
-            }
-            else
-            {
-                _dispatcherQueue.TryEnqueue(() =>
-                    EnsurePreviewPlaybackStarted("PlaybackStateChanged:Paused", recoveryAttempt: true));
-            }
-        }
-    }
-
-    private void PreviewPlaybackSession_PositionChanged(MediaPlaybackSession sender, object args)
-    {
-        if (_previewGpuSignalPlaybackAdvancing || !_previewStartupExpectGpuDualSignals)
-        {
-            Logger.Log(
-                $"PREVIEW_MEDIA_EVENT event=PositionChangedIgnored attempt={_previewStartupAttemptId ?? "none"} " +
-                $"reason={( _previewGpuSignalPlaybackAdvancing ? "already-signaled" : "not-gpu-startup")} " +
-                $"positionMs={sender.Position.TotalMilliseconds:0.###}");
-            return;
-        }
-
-        var position = sender.Position;
-        var eventCount = Interlocked.Increment(ref _previewStartupPositionEventCount);
-        if (eventCount <= 120 || eventCount % 60 == 0)
-        {
-            Logger.Log(
-                $"PREVIEW_MEDIA_EVENT event=PositionChanged attempt={_previewStartupAttemptId ?? "none"} " +
-                $"count={eventCount} positionMs={position.TotalMilliseconds:0.###}");
-        }
-
-        var nowTick = Environment.TickCount64;
-        var lastDispatchTick = Interlocked.Read(ref _previewStartupLastPositionDispatchTick);
-        if (nowTick - lastDispatchTick < 100)
-        {
-            return;
-        }
-
-        Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, nowTick);
-        _dispatcherQueue.TryEnqueue(() => MarkGpuStartupSignalPlaybackAdvancing(position));
-    }
-
-    private void PreviewMediaPlayer_MediaFailed(MediaPlayer sender, MediaPlayerFailedEventArgs args)
-    {
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            if (!_previewStartupExpectGpuDualSignals || _previewFirstVisualConfirmed || !ViewModel.IsPreviewing)
-            {
-                return;
-            }
-
-            _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
-            var failureReason = string.IsNullOrWhiteSpace(args.ErrorMessage)
-                ? "media-player-failed"
-                : $"media-player-failed:{args.ErrorMessage}";
-            SetPreviewStartupState(PreviewStartupState.Failed, failureReason);
-            StopPreviewStartupWatchdog();
-            StopPreviewStartupOverlay();
-            ViewModel.StatusText = "Preview failed to start (media pipeline error).";
-            Logger.Log($"PREVIEW_START_MEDIA_FAILED attempt={_previewStartupAttemptId ?? "none"} reason={failureReason}");
-            SchedulePreviewStartupFailureStop(failureReason);
-        });
+        var scale = PreviewSwapChainPanel.XamlRoot?.RasterizationScale ?? 1.0;
+        _d3dRenderer?.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);
     }
 
     private void EnsureDeviceSelection()
@@ -1271,12 +1125,17 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         // Subscribe to ViewModel changes
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
-        ViewModel.PreviewFrameReady += ViewModel_PreviewFrameReady;
         ViewModel.PreviewStartRequested += ViewModel_PreviewStartRequested;
         ViewModel.PreviewStopRequested += ViewModel_PreviewStopRequested;
 
         // Wire up UI controls to ViewModel
         SetupBindings();
+
+        // Shadow for control bar depth effect
+        var shadow = new Microsoft.UI.Xaml.Media.ThemeShadow();
+        shadow.Receivers.Add(SettingsOverlayPanel);
+        ControlBarBorder.Shadow = shadow;
+        ControlBarBorder.Translation = new System.Numerics.Vector3(0, 0, 32);
 
         // Refresh devices on load - use Loaded event to ensure XAML is fully parsed
         var mainContent = (FrameworkElement)this.Content;
@@ -1654,7 +1513,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
 
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
-        ViewModel.PreviewFrameReady -= ViewModel_PreviewFrameReady;
         ViewModel.PreviewStartRequested -= ViewModel_PreviewStartRequested;
         ViewModel.PreviewStopRequested -= ViewModel_PreviewStopRequested;
 
@@ -1844,18 +1702,38 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var framesArrived = Interlocked.Read(ref _previewFramesArrived);
         var framesDisplayed = Interlocked.Read(ref _previewFramesDisplayed);
         var framesDropped = Interlocked.Read(ref _previewFramesDropped);
-        var sourceReaderPreviewAdapter = ViewModel.ActiveSourceReaderPreviewAdapter;
         var lastPresentedTick = Interlocked.Read(ref _previewLastPresentedTick);
-        var gpuActive = _previewMediaPlayer != null;
-        var gpuElementVisible = PreviewPlayerElement.Visibility == Visibility.Visible;
+        var gpuActive = _d3dRenderer != null;
+        var gpuElementVisible = PreviewSwapChainPanel.Visibility == Visibility.Visible;
         var cpuElementVisible = PreviewImage.Visibility == Visibility.Visible;
-        var rendererAttached = _previewMediaPlayer != null || _previewSource != null;
+        var rendererAttached = _d3dRenderer != null || _previewSource != null;
         var placeholderVisible = NoDevicePlaceholder.Visibility == Visibility.Visible;
-        var frameReaderActive = ViewModel.IsPreviewing && (_previewSource != null || _previewGpuSignalFirstFrame);
-        var rendererMode = gpuActive ? "GpuMediaSource"
+        var previewPipelineActive = ViewModel.IsPreviewing && rendererAttached;
+        var d3dFramesSubmitted = _d3dRenderer?.FramesSubmitted ?? 0;
+        var d3dFramesRendered = _d3dRenderer?.FramesRendered ?? 0;
+        var d3dFramesDropped = _d3dRenderer?.FramesDropped ?? 0;
+        if (gpuActive)
+        {
+            framesArrived = d3dFramesSubmitted;
+            framesDisplayed = d3dFramesRendered;
+            framesDropped = d3dFramesDropped;
+        }
+
+        var rendererMode = gpuActive ? "D3D11VideoProcessor"
             : ViewModel.IsPreviewing ? "CpuSoftwareBitmap"
             : "None";
-        // GPU preview is handled entirely by MediaPlayer — no frame-level blank/stall detection
+        var gpuPlaybackState = "None";
+        int gpuNaturalVideoWidth = 0, gpuNaturalVideoHeight = 0;
+        double gpuPositionMs = 0;
+        if (_d3dRenderer is { } d3d)
+        {
+            gpuPlaybackState = d3d.IsRendering ? "Rendering" : "Idle";
+            gpuNaturalVideoWidth = d3d.NaturalWidth;
+            gpuNaturalVideoHeight = d3d.NaturalHeight;
+            gpuPositionMs = 0;
+        }
+        var gpuPositionEventCount = Interlocked.Read(ref _previewStartupPositionEventCount);
+
         var startupElapsedMs = _previewStartupRequestedUtc.HasValue
             ? Math.Max(0, (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds)
             : (double?)null;
@@ -1868,14 +1746,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var startupTimedOut = ViewModel.IsPreviewing &&
                               _previewStartupState == PreviewStartupState.WaitingForFirstVisual &&
                               startupElapsedMs.GetValueOrDefault() >= PreviewStartupVisualTimeoutMs;
-        var blankSuspected = !gpuActive && frameReaderActive &&
+        var blankSuspected = !gpuActive && previewPipelineActive &&
                              framesArrived > 30 &&
                              framesDisplayed == 0;
         if (!blankSuspected && startupTimedOut)
         {
             blankSuspected = true;
         }
-        var stallSuspected = !gpuActive && frameReaderActive &&
+        var stallSuspected = !gpuActive && previewPipelineActive &&
                              lastPresentedTick > 0 &&
                              nowTick - lastPresentedTick > 3000;
         var cadence = GetPreviewCadenceMetrics(_previewMinPresentationIntervalMs);
@@ -1885,7 +1763,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             TimestampUtc = DateTimeOffset.UtcNow,
             IsPreviewing = ViewModel.IsPreviewing,
             GpuActive = gpuActive,
-            FrameReaderActive = frameReaderActive,
             PlaceholderVisible = placeholderVisible,
             GpuElementVisible = gpuElementVisible,
             CpuElementVisible = cpuElementVisible,
@@ -1907,9 +1784,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             FramesArrived = framesArrived,
             FramesDisplayed = framesDisplayed,
             FramesDropped = framesDropped,
-            SourceReaderAdapterFramesEnqueued = sourceReaderPreviewAdapter?.FramesEnqueued ?? 0,
-            SourceReaderAdapterSamplesDelivered = sourceReaderPreviewAdapter?.SamplesDelivered ?? 0,
-            SourceReaderAdapterSamplesTimedOut = sourceReaderPreviewAdapter?.SamplesTimedOut ?? 0,
             DisplayCadenceSampleCount = cadence.SampleCount,
             DisplayCadenceObservedFps = cadence.ObservedFps,
             DisplayCadenceExpectedIntervalMs = cadence.ExpectedIntervalMs,
@@ -1921,7 +1795,17 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             DisplayCadenceSlowFramePercent = cadence.SlowFramePercent,
             BlankSuspected = blankSuspected,
             StallSuspected = stallSuspected,
-            RendererMode = rendererMode
+            RendererMode = rendererMode,
+            D3DFramesSubmitted = d3dFramesSubmitted,
+            D3DFramesRendered = d3dFramesRendered,
+            D3DFramesDropped = d3dFramesDropped,
+            D3DInputColorSpace = _d3dRenderer?.InputColorSpaceLabel ?? "None",
+            D3DOutputColorSpace = _d3dRenderer?.OutputColorSpaceLabel ?? "None",
+            GpuPlaybackState = gpuPlaybackState,
+            GpuNaturalVideoWidth = gpuNaturalVideoWidth,
+            GpuNaturalVideoHeight = gpuNaturalVideoHeight,
+            GpuPositionMs = gpuPositionMs,
+            GpuPositionEventCount = gpuPositionEventCount
         };
     }
 
@@ -1993,21 +1877,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void StopPreviewForShutdown()
     {
-        // Clean up GPU preview
-        var player = _previewMediaPlayer;
-        _previewMediaPlayer = null;
-        if (player != null)
+        // Clean up D3D11 preview
+        var renderer = _d3dRenderer;
+        _d3dRenderer = null;
+        if (renderer != null)
         {
-            player.MediaOpened -= PreviewMediaPlayer_MediaOpened;
-            player.MediaFailed -= PreviewMediaPlayer_MediaFailed;
-            player.PlaybackSession.PositionChanged -= PreviewPlaybackSession_PositionChanged;
-            player.PlaybackSession.PlaybackStateChanged -= PreviewPlaybackSession_PlaybackStateChanged;
-            player.Pause();
-            player.Source = null;
-            PreviewPlayerElement.SetMediaPlayer(null!);
-            player.Dispose();
+            PreviewSwapChainPanel.SizeChanged -= OnPreviewSwapChainPanelSizeChanged;
+            renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;
+            renderer.Stop();
+            renderer.Dispose();
         }
-        PreviewPlayerElement.Visibility = Visibility.Collapsed;
+        ViewModel.SetPreviewFrameSink(null);
+        PreviewSwapChainPanel.Visibility = Visibility.Collapsed;
         _previewStartupExpectGpuDualSignals = false;
         _previewGpuSignalMediaOpened = false;
         _previewGpuSignalFirstFrame = false;
@@ -2017,7 +1898,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewStartupStrategy = PreviewStartupStrategy.None;
         _previewStartupLastPlaybackPosition = TimeSpan.Zero;
         _previewStartupPositionEventCount = 0;
-        _previewStartupLastPlaybackState = MediaPlaybackState.None;
         _previewStartupPlaybackPositionInitialized = false;
 
         // Clean up CPU preview
@@ -2089,26 +1969,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 }
                 break;
 
-            case nameof(MainViewModel.PreviewPlaybackSource):
-                // GPU preview source hot-swap - reset startup tracking so the state machine monitors the new source
-                if (ViewModel.IsPreviewing && ViewModel.PreviewPlaybackSource != null)
-                {
-                    await StopPreviewRendererAsync();
-                    BeginPreviewStartupAttempt();
-                    SetPreviewStartupState(PreviewStartupState.RendererAttaching);
-                    await StartPreviewRendererAsync();
-                    if (!_previewFirstVisualConfirmed)
-                    {
-                        SetPreviewStartupState(PreviewStartupState.WaitingForFirstVisual);
-                        StartPreviewStartupWatchdog();
-                    }
-                }
-                else if (ViewModel.PreviewPlaybackSource == null && !ViewModel.IsPreviewing)
-                {
-                    await StopPreviewRendererAsync();
-                }
-                break;
-
             case nameof(MainViewModel.IsRecording):
                 RecordingIndicator.Visibility = ViewModel.IsRecording ? Visibility.Visible : Visibility.Collapsed;
                 // Toggle record button content between normal and recording states
@@ -2119,7 +1979,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
                 HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
                 TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
-                RecordingStatsPanel.Visibility = ViewModel.IsRecording ? Visibility.Visible : Visibility.Collapsed;
+                // Stats panel always visible — shows "--" when not recording
                 RefreshHdrHintText();
                 if (ViewModel.IsRecording)
                     RecPulseStoryboard.Begin();
@@ -2561,53 +2421,65 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewFramesArrived = 0;
         _previewFramesDisplayed = 0;
         _previewFramesDropped = 0;
-        _previewLastLogTick = 0;
         _previewLastResizeLogTick = 0;
         _previewLastPresentedTick = 0;
         _previewResizeSuppressUntilTick = 0;
-        _previewUiInFlight = 0;
         ResetPreviewCadenceTracking();
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
 
-        var playbackSource = ViewModel.PreviewPlaybackSource;
-        if (playbackSource != null)
+        var useD3dRenderer = ViewModel.IsPreviewing;
+        if (useD3dRenderer)
         {
-            // GPU preview path: MediaPlayer -> MediaPlayerElement
-            var player = new MediaPlayer();
-            player.MediaOpened += PreviewMediaPlayer_MediaOpened;
-            player.MediaFailed += PreviewMediaPlayer_MediaFailed;
-            player.PlaybackSession.PositionChanged += PreviewPlaybackSession_PositionChanged;
-            player.PlaybackSession.PlaybackStateChanged += PreviewPlaybackSession_PlaybackStateChanged;
-            player.IsVideoFrameServerEnabled = false;
-            player.AutoPlay = true;
-            player.Source = playbackSource;
-            _previewMediaPlayer = player;
-            _previewStartupExpectGpuDualSignals = true;
-            // MediaPlayer.MediaOpened does not fire reliably for live MediaFrameSource-backed
-            // MediaSource objects (confirmed absent from logs across multiple runs). PlaybackAdvancing
-            // (position moving) is a strictly stronger signal — if position advances the media is
-            // provably open and playing. MediaOpened handler is kept for telemetry only.
-            ConfigurePreviewStartupSignals(
-                PreviewStartupStrategy.GpuMediaSourceNoFrameReader,
-                PreviewStartupSignalFlags.PlaybackAdvancing);
-            _previewRendererAttachedUtc = DateTimeOffset.UtcNow;
-            PreviewPlayerElement.SetMediaPlayer(player);
-            PreviewPlayerElement.Visibility = Visibility.Visible;
+            // D3D11 Video Processor preview path
+            var renderer = new D3D11PreviewRenderer(PreviewSwapChainPanel, _dispatcherQueue);
+            renderer.FirstFrameRendered += OnD3DRendererFirstFrameRendered;
+            var settings = ViewModel.GetCurrentSettings();
+            var isHdr = settings != null && HdrOutputPolicy.IsEnabled(settings);
+            var width = (int)(settings?.Width ?? 1920);
+            var height = (int)(settings?.Height ?? 1080);
+            var fps = settings?.FrameRate ?? 60.0;
+
+            // Wire SizeChanged and make panel visible BEFORE starting the render
+            // thread so the renderer has the panel's pixel dimensions from the start.
+            _d3dRenderer = renderer;
+            PreviewSwapChainPanel.SizeChanged += OnPreviewSwapChainPanelSizeChanged;
+            PreviewSwapChainPanel.Visibility = Visibility.Visible;
             PreviewImage.Visibility = Visibility.Collapsed;
-            Logger.Log("Preview renderer started (mode=GpuMediaSource).");
-            Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=GpuMediaSource attempt={_previewStartupAttemptId ?? "none"}");
-            EnsurePreviewPlaybackStarted("RendererAttach", recoveryAttempt: false);
+
+            // Pre-seed the renderer with the panel's current pixel dimensions.
+            // Visibility=Visible triggers a deferred layout pass, so force it now
+            // to get ActualWidth/Height before the render thread starts.
+            PreviewSwapChainPanel.UpdateLayout();
+            var panelW = PreviewSwapChainPanel.ActualWidth;
+            var panelH = PreviewSwapChainPanel.ActualHeight;
+            if (panelW > 0 && panelH > 0)
+            {
+                var scale = PreviewSwapChainPanel.XamlRoot?.RasterizationScale ?? 1.0;
+                renderer.OnPanelSizeChanged(panelW, panelH, scale);
+            }
+
+            renderer.Start(width, height, fps, isHdr);
+            ViewModel.SetPreviewFrameSink(_d3dRenderer);
+            _previewStartupExpectGpuDualSignals = false; // D3D renderer uses FirstFrameRendered, not MediaPlayer signals
+            ConfigurePreviewStartupSignals(
+                PreviewStartupStrategy.D3D11VideoProcessor,
+                PreviewStartupSignalFlags.FirstVisual);
+            _previewRendererAttachedUtc = DateTimeOffset.UtcNow;
+
+            Logger.Log("Preview renderer started (mode=D3D11VideoProcessor).");
+            Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=D3D11VideoProcessor attempt={_previewStartupAttemptId ?? "none"}");
         }
         else
         {
-            // Fallback CPU preview path: SoftwareBitmapSource -> Image
+            // Fallback CPU preview path: SoftwareBitmapSource -> Image (unchanged)
+            ViewModel.SetPreviewFrameSink(null);
             _previewStartupExpectGpuDualSignals = false;
             ConfigurePreviewStartupSignals(PreviewStartupStrategy.CpuSoftwareBitmap, PreviewStartupSignalFlags.FirstVisual);
             _previewSource = new SoftwareBitmapSource();
             _previewRendererAttachedUtc = DateTimeOffset.UtcNow;
             PreviewImage.Source = _previewSource;
             PreviewImage.Visibility = Visibility.Visible;
-            PreviewPlayerElement.Visibility = Visibility.Collapsed;
+            PreviewSwapChainPanel.Visibility = Visibility.Collapsed;
             Logger.Log($"Preview renderer started (mode=CpuSoftwareBitmap, expectedIntervalMs={_previewMinPresentationIntervalMs}).");
             Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=CpuSoftwareBitmap attempt={_previewStartupAttemptId ?? "none"}");
         }
@@ -2617,21 +2489,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private Task StopPreviewRendererAsync()
     {
-        // Clean up GPU preview path
-        var player = _previewMediaPlayer;
-        _previewMediaPlayer = null;
-        if (player != null)
+        // Clean up D3D11 preview path
+        var renderer = _d3dRenderer;
+        _d3dRenderer = null;
+        if (renderer != null)
         {
-            player.MediaOpened -= PreviewMediaPlayer_MediaOpened;
-            player.MediaFailed -= PreviewMediaPlayer_MediaFailed;
-            player.PlaybackSession.PositionChanged -= PreviewPlaybackSession_PositionChanged;
-            player.PlaybackSession.PlaybackStateChanged -= PreviewPlaybackSession_PlaybackStateChanged;
-            player.Pause();
-            player.Source = null;
-            PreviewPlayerElement.SetMediaPlayer(null!);
-            player.Dispose();
+            PreviewSwapChainPanel.SizeChanged -= OnPreviewSwapChainPanelSizeChanged;
+            renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;
+            renderer.Stop();
+            renderer.Dispose();
         }
-        PreviewPlayerElement.Visibility = Visibility.Collapsed;
+        ViewModel.SetPreviewFrameSink(null);
+        PreviewSwapChainPanel.Visibility = Visibility.Collapsed;
         _previewStartupExpectGpuDualSignals = false;
         _previewGpuSignalMediaOpened = false;
         _previewGpuSignalFirstFrame = false;
@@ -2649,131 +2518,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         _previewLastPresentedTick = 0;
         _previewResizeSuppressUntilTick = 0;
-        _previewUiInFlight = 0;
         ResetPreviewCadenceTracking();
         _previewMinPresentationIntervalMs = Math.Max(1L, (long)Math.Round(1000.0 / 60.0));
         Logger.Log("Preview renderer stopped.");
         return Task.CompletedTask;
-    }
-
-    private async void ViewModel_PreviewFrameReady(object? sender, PreviewFrame frame)
-    {
-        Interlocked.Increment(ref _previewFramesArrived);
-        if (_previewStartupExpectGpuDualSignals &&
-            !_previewGpuSignalFirstFrame &&
-            IsPreviewStartupSignalWindowActive())
-        {
-            _dispatcherQueue.TryEnqueue(MarkGpuStartupSignalFirstFrame);
-        }
-
-        if (_previewSource == null)
-        {
-            return;
-        }
-
-        var nowTick = Environment.TickCount64;
-        var resizeSuppressUntil = Interlocked.Read(ref _previewResizeSuppressUntilTick);
-        if (nowTick < resizeSuppressUntil)
-        {
-            Interlocked.Increment(ref _previewFramesDropped);
-            return;
-        }
-
-        if (Interlocked.CompareExchange(ref _previewUiInFlight, 1, 0) != 0)
-        {
-            Interlocked.Increment(ref _previewFramesDropped);
-            MaybeLogPreviewStats(nowTick, queueDelayMs: -1, setMs: -1);
-            return;
-        }
-
-        SoftwareBitmap? bitmap = null;
-        try
-        {
-            bitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, (int)frame.Width, (int)frame.Height, BitmapAlphaMode.Premultiplied);
-            bitmap.CopyFromBuffer(frame.Buffer.AsBuffer());
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Preview frame conversion failed: {ex.Message}");
-            Interlocked.Increment(ref _previewFramesDropped);
-            bitmap?.Dispose();
-            Interlocked.Exchange(ref _previewUiInFlight, 0);
-            return;
-        }
-
-        var enqueueTick = Environment.TickCount64;
-        var enqueued = _dispatcherQueue.TryEnqueue(async () =>
-        {
-            var uiStartTick = Environment.TickCount64;
-            var queueDelayMs = uiStartTick - enqueueTick;
-            var setStopwatch = Stopwatch.StartNew();
-            try
-            {
-                if (_previewSource != null)
-                {
-                    await _previewSource.SetBitmapAsync(bitmap);
-                    Interlocked.Increment(ref _previewFramesDisplayed);
-                    Interlocked.Exchange(ref _previewLastPresentedTick, uiStartTick);
-                    TrackPreviewDisplayCadence();
-                    ConfirmPreviewFirstVisual("CpuSoftwareBitmap");
-                }
-                else
-                {
-                    Interlocked.Increment(ref _previewFramesDropped);
-                }
-            }
-            catch (Exception ex)
-            {
-                if (ex is not TaskCanceledException && ex is not OperationCanceledException)
-                {
-                    Logger.Log($"Preview render failed: {ex.Message}");
-                }
-
-                Interlocked.Increment(ref _previewFramesDropped);
-            }
-            finally
-            {
-                setStopwatch.Stop();
-                Interlocked.Exchange(ref _previewUiInFlight, 0);
-                MaybeLogPreviewStats(uiStartTick, queueDelayMs, (long)setStopwatch.ElapsedMilliseconds);
-                bitmap.Dispose();
-            }
-        });
-
-        if (!enqueued)
-        {
-            Interlocked.Increment(ref _previewFramesDropped);
-            Interlocked.Exchange(ref _previewUiInFlight, 0);
-            bitmap.Dispose();
-        }
-    }
-
-    private void MaybeLogPreviewStats(long nowTick, long queueDelayMs, long setMs)
-    {
-        var inFlightNow = Volatile.Read(ref _previewUiInFlight);
-        var issue = inFlightNow > 1 || queueDelayMs >= 50 || setMs >= 50;
-        if (!issue)
-        {
-            return;
-        }
-
-        var last = Interlocked.Read(ref _previewLastLogTick);
-        if (nowTick - last < 1000)
-        {
-            return;
-        }
-
-        if (Interlocked.CompareExchange(ref _previewLastLogTick, nowTick, last) != last)
-        {
-            return;
-        }
-
-        var arrived = Interlocked.Read(ref _previewFramesArrived);
-        var displayed = Interlocked.Read(ref _previewFramesDisplayed);
-        var dropped = Interlocked.Read(ref _previewFramesDropped);
-        var queueDelayText = queueDelayMs >= 0 ? $"{queueDelayMs}ms" : "n/a";
-        var setText = setMs >= 0 ? $"{setMs}ms" : "n/a";
-        Logger.Log($"Preview UI stall: inFlight={inFlightNow} queueDelay={queueDelayText} setMs={setText} arrived={arrived} displayed={displayed} dropped={dropped}");
     }
 
     private void UpdateAudioMeterLevel(double level)
@@ -2865,7 +2613,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
             if (ViewModel.IsRecording)
             {
-                var gpuActive = _previewMediaPlayer != null && PreviewPlayerElement.Visibility == Visibility.Visible;
+                var gpuActive = _d3dRenderer != null && PreviewSwapChainPanel.Visibility == Visibility.Visible;
                 var cpuActive = _previewSource != null && PreviewImage.Visibility == Visibility.Visible;
                 var rendererActive = gpuActive || cpuActive;
                 var placeholderVisible = NoDevicePlaceholder.Visibility == Visibility.Visible;

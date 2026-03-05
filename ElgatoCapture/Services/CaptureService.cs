@@ -5,8 +5,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using Windows.Media.Capture;
-using Windows.Media.Playback;
 using Windows.Storage;
 
 namespace ElgatoCapture.Services;
@@ -14,7 +12,6 @@ namespace ElgatoCapture.Services;
 public class CaptureService : IDisposable, IAsyncDisposable
 {
     private readonly SemaphoreSlim _sessionTransitionLock = new(1, 1);
-    private readonly DirectShowPreviewService _previewService = new();
     private readonly ISourceSignalTelemetryProvider _sourceTelemetryProvider;
     private readonly IProcessSupervisor _processSupervisor;
     private readonly RecordingArtifactManager _artifactManager = new();
@@ -23,7 +20,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private bool _isInitialized;
     private bool _isRecording;
     private bool _isVideoPreviewActive;
-    private bool _videoPreviewUsesFfmpegPipe;
     private bool _isAudioPreviewActive;
     private CaptureSessionState _sessionState = CaptureSessionState.Uninitialized;
     private CaptureDevice? _currentDevice;
@@ -32,12 +28,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private FFmpegEncoderService? _ffmpegEncoder;
     private IRecordingSink? _recordingSink;
-    private MediaCaptureIngestSession? _ingestSession;
-    private MfSourceReaderVideoCapture? _mfVideoCapture;
-    private CancellationTokenSource? _mfVideoCaptureCts;
-    private bool _recordingUsesMfSourceReader;
-    private SourceReaderPreviewAdapter? _sourceReaderPreviewAdapter;
-    private bool _hdrRecordingReplacedPreview;
+    private WasapiAudioCapture? _wasapiAudioCapture;
+    private WasapiAudioPlayback? _wasapiAudioPlayback;
+    private bool _wasapiAudioCaptureFaulted;
+    private string? _wasapiAudioCaptureFaultMessage;
+    private UnifiedVideoCapture? _unifiedVideoCapture;
+    private IPreviewFrameSink? _previewFrameSink;
     private RecordingContext? _recordingContext;
     private readonly Stopwatch _recordingStopwatch = new();
     private string? _lastOutputPath;
@@ -45,7 +41,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private DateTimeOffset? _lastFinalizeUtc;
     private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();
     private bool _lastUsePostMuxAudio;
-    private MediaPlayer? _audioPlayer;
     private string? _audioDeviceId;
     private string? _audioDeviceName;
     private uint? _actualWidth;
@@ -56,7 +51,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private uint? _actualFrameRateDenominator;
     private string? _actualPixelFormat;
     private string _activeVideoInputPixelFormat = "nv12";
+#pragma warning disable CS0649 // Field is never assigned â€” kept for telemetry reflection compatibility
     private long _videoFramesArrived;
+#pragma warning restore CS0649
     private long _videoFramesDropped;
     private string? _firstObservedFramePixelFormat;
     private string? _latestObservedFramePixelFormat;
@@ -76,15 +73,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public event EventHandler<ulong>? FrameCaptured;
     public event EventHandler<AudioLevelEventArgs>? AudioLevelUpdated;
     public event EventHandler<SourceSignalTelemetrySnapshot>? SourceTelemetryUpdated;
-    public event EventHandler<PreviewFrame>? PreviewFrameReady;
-    public event EventHandler<IMediaPlaybackSource?>? PreviewPlaybackSourceChanged;
 
     public bool IsRecording => _isRecording;
     public bool IsInitialized => _isInitialized;
     public bool IsVideoPreviewActive => _isVideoPreviewActive;
     public bool IsAudioPreviewActive => _isAudioPreviewActive;
     public CaptureSessionState SessionState => _sessionState;
-    public SourceReaderPreviewAdapter? ActiveSourceReaderPreviewAdapter => _sourceReaderPreviewAdapter;
 
     public CaptureService() : this(new ProcessSupervisor(), null)
     {
@@ -94,13 +88,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         _processSupervisor = processSupervisor;
         _sourceTelemetryProvider = sourceSignalTelemetryProvider ?? new EgavSourceSignalTelemetryProvider();
-        _previewService.FrameReady += (_, frame) =>
-        {
-            Interlocked.Increment(ref _videoFramesArrived);
-            RecordObservedPixelFormat(frame.PixelFormat);
-            PreviewFrameReady?.Invoke(this, frame);
-        };
-        _previewService.ErrorOccurred += (_, message) => ErrorOccurred?.Invoke(this, new InvalidOperationException(message));
+    }
+
+    internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
+    {
+        _previewFrameSink = sink;
+        _unifiedVideoCapture?.SetPreviewSink(sink);
+        TryApplySharedPreviewDevice(_unifiedVideoCapture, sink);
     }
 
     public RecordingStats GetRecordingStats()
@@ -174,50 +168,78 @@ public class CaptureService : IDisposable, IAsyncDisposable
         return pixelFormat.Trim().ToUpperInvariant();
     }
 
-    private void DetachIngestSession(MediaCaptureIngestSession? session)
-    {
-        if (session != null)
-        {
-            session.CaptureFailed -= OnIngestSessionCaptureFailed;
-            session.AudioLevelUpdated -= OnIngestSessionAudioLevelUpdated;
-        }
-        StopAudioPlayback();
-    }
-
-    private void OnIngestSessionAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
+    private void OnWasapiAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
     {
         AudioLevelUpdated?.Invoke(this, e);
     }
 
-    private void StartAudioPlayback(IMediaPlaybackSource source)
+    private void OnWasapiCaptureFailed(object? sender, Exception ex)
     {
-        StopAudioPlayback();
-        _audioPlayer = new MediaPlayer
+        if (_isRecording)
         {
-            Source = source,
-            AutoPlay = true
-        };
-        Logger.Log("Audio playback started via MediaPlayer.");
+            Volatile.Write(ref _wasapiAudioCaptureFaulted, true);
+            Volatile.Write(ref _wasapiAudioCaptureFaultMessage, ex.Message);
+        }
+
+        Logger.Log($"WASAPI_CAPTURE_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} message={ex.Message} recording={_isRecording}");
+        StatusChanged?.Invoke(this, $"Audio capture error: {ex.Message}");
+        ErrorOccurred?.Invoke(this, ex);
     }
 
-    private void StopAudioPlayback()
+    private async Task StartWasapiPlaybackAsync(CancellationToken cancellationToken)
     {
-        var player = _audioPlayer;
-        _audioPlayer = null;
-        if (player != null)
+        var capture = _wasapiAudioCapture;
+        if (capture == null)
         {
-            player.Pause();
-            player.Source = null;
-            player.Dispose();
-            Logger.Log("Audio playback stopped.");
+            return;
+        }
+
+        var playback = _wasapiAudioPlayback;
+        if (playback == null)
+        {
+            playback = new WasapiAudioPlayback();
+            await playback.InitializeAsync(cancellationToken).ConfigureAwait(false);
+            playback.Start();
+            _wasapiAudioPlayback = playback;
+            Logger.Log("WASAPI audio playback started.");
+        }
+
+        capture.SetPlayback(playback);
+    }
+
+    private void StopWasapiPlayback()
+    {
+        var playback = _wasapiAudioPlayback;
+        _wasapiAudioPlayback = null;
+        _wasapiAudioCapture?.SetPlayback(null);
+        if (playback != null)
+        {
+            try
+            {
+                playback.Stop();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"WASAPI audio playback stop warning: {ex.Message}");
+            }
+
+            playback.Dispose();
+            Logger.Log("WASAPI audio playback disposed.");
         }
     }
 
-    private void OnIngestSessionCaptureFailed(object? sender, MediaCaptureFailedEventArgs args)
+    private void DetachWasapiAudioCapture(WasapiAudioCapture? capture)
     {
-        Logger.Log($"CAPTURE_DEVICE_FAILED code=0x{args.Code:X8} message={args.Message} recording={_isRecording}");
-        StatusChanged?.Invoke(this, $"Capture device error: {args.Message}");
-        ErrorOccurred?.Invoke(this, new InvalidOperationException($"Capture device failed: {args.Message} (0x{args.Code:X8})"));
+        if (capture == null)
+        {
+            StopWasapiPlayback();
+            return;
+        }
+
+        capture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
+        capture.CaptureFailed -= OnWasapiCaptureFailed;
+        capture.SetPlayback(null);
+        StopWasapiPlayback();
     }
 
     private void RecordObservedPixelFormat(string? pixelFormat, bool incrementAsFrame = true)
@@ -301,6 +323,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public CaptureRuntimeSnapshot GetRuntimeSnapshot()
     {
         var encoder = _ffmpegEncoder;
+        var unifiedVideoCapture = _unifiedVideoCapture;
         var requestedSettings = _activeRecordingSettings ?? _currentSettings;
         var hdrRequested = requestedSettings?.HdrEnabled == true &&
                            requestedSettings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
@@ -396,13 +419,28 @@ public class CaptureService : IDisposable, IAsyncDisposable
             : hdrRequested
                 ? "P010"
                 : "NV12";
-        var mfSourceReaderFramesDelivered = _mfVideoCapture?.FramesDelivered ?? _lastMfSourceReaderFramesDelivered;
-        var mfSourceReaderFramesDropped = _mfVideoCapture?.FramesDropped ?? _lastMfSourceReaderFramesDropped;
-        var mfSourceReaderNegotiatedFormat = _mfVideoCapture?.NegotiatedFormat ?? _lastMfSourceReaderNegotiatedFormat;
-        var readerSourceStreamType = _isRecording
-            ? (_recordingUsesMfSourceReader ? "MfSourceReader" : "MediaFrameReader")
-            : _isVideoPreviewActive ? (_videoPreviewUsesFfmpegPipe ? "DirectShow" : "MediaCapture")
+        var mfSourceReaderFramesDelivered = unifiedVideoCapture?.VideoFramesArrived ?? _lastMfSourceReaderFramesDelivered;
+        var mfSourceReaderFramesDropped = unifiedVideoCapture?.VideoFramesDropped ?? _lastMfSourceReaderFramesDropped;
+        var mfSourceReaderNegotiatedFormat = unifiedVideoCapture?.NegotiatedFormat ?? _lastMfSourceReaderNegotiatedFormat;
+        var negotiatedSubtypeFromSourceReader =
+            !string.IsNullOrWhiteSpace(mfSourceReaderNegotiatedFormat) &&
+            mfSourceReaderNegotiatedFormat.Contains("P010", StringComparison.OrdinalIgnoreCase)
+                ? "P010"
+                : !string.IsNullOrWhiteSpace(mfSourceReaderNegotiatedFormat) &&
+                  mfSourceReaderNegotiatedFormat.Contains("NV12", StringComparison.OrdinalIgnoreCase)
+                    ? "NV12"
+                    : "unknown";
+        var videoNegotiatedSubtype = unifiedVideoCapture != null
+            ? (unifiedVideoCapture.IsP010 ? "P010" : "NV12")
+            : negotiatedSubtypeFromSourceReader;
+        var hasD3DManager = unifiedVideoCapture?.D3DManager != null;
+        var memoryPreference = hasD3DManager ? "Gpu" : "Cpu";
+        var readerSourceStreamType = (_isRecording || _isVideoPreviewActive) && unifiedVideoCapture != null
+            ? "MfSourceReader"
             : null;
+        var previewColorMetadata = _previewFrameSink is D3D11PreviewRenderer
+            ? "D3D11VideoProcessor"
+            : "None";
         var muxAttempted = !_isRecording && _lastFinalizeUtc.HasValue && _lastUsePostMuxAudio;
         bool? muxSucceeded = null;
         if (muxAttempted)
@@ -423,17 +461,18 @@ public class CaptureService : IDisposable, IAsyncDisposable
             IsInitialized = _isInitialized,
             IsRecording = _isRecording,
             IsAudioPreviewActive = _isAudioPreviewActive,
-            AudioReaderActive = _ingestSession?.IsAudioReaderActive ?? false,
-            AudioFramesArrived = _ingestSession?.AudioFramesArrived ?? 0,
-            AudioFramesWrittenToSink = _ingestSession?.AudioFramesWrittenToSink ?? 0,
-            VideoReaderActive = _ingestSession?.IsVideoReaderActive ?? false,
-            IngestVideoFramesArrived = _ingestSession?.VideoFramesArrived ?? 0,
-            IngestVideoFramesWrittenToSink = _ingestSession?.VideoFramesWrittenToSink ?? 0,
-            IngestLastVideoFrameAgeMs = ComputeTickAge(_ingestSession?.LastVideoFrameArrivedTick ?? 0),
-            VideoIngestErrorCount = _ingestSession?.VideoIngestErrorCount ?? 0,
-            MemoryPreference = _ingestSession?.MemoryPreference ?? "Cpu",
-            VideoRequestedSubtype = _ingestSession?.VideoRequestedSubtype ?? "unknown",
-            VideoNegotiatedSubtype = _ingestSession?.VideoNegotiatedSubtype ?? "unknown",
+            AudioReaderActive = _wasapiAudioCapture?.IsCapturing ?? false,
+            AudioFramesArrived = _wasapiAudioCapture?.AudioFramesArrived ?? 0,
+            AudioFramesWrittenToSink = _wasapiAudioCapture?.AudioFramesWrittenToSink ?? 0,
+            VideoReaderActive = unifiedVideoCapture != null && (_isVideoPreviewActive || _isRecording),
+            IngestVideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? 0,
+            IngestVideoFramesWrittenToSink = unifiedVideoCapture?.VideoFramesWrittenToSink ?? 0,
+            IngestLastVideoFrameAgeMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),
+            VideoIngestErrorCount = unifiedVideoCapture?.VideoFramesDropped ?? 0,
+            MemoryPreference = memoryPreference,
+            VideoRequestedSubtype = requestedReaderSubtype ?? "unknown",
+            VideoNegotiatedSubtype = videoNegotiatedSubtype,
+            PreviewColorMetadata = previewColorMetadata,
             MfSourceReaderFramesDelivered = mfSourceReaderFramesDelivered,
             MfSourceReaderFramesDropped = mfSourceReaderFramesDropped,
             MfSourceReaderNegotiatedFormat = mfSourceReaderNegotiatedFormat,
@@ -542,13 +581,87 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
     public VideoSourceProbeResult ProbeVideoSource()
     {
-        var session = _ingestSession;
-        if (session == null)
+        var unifiedVideoCapture = _unifiedVideoCapture;
+        if (unifiedVideoCapture == null)
         {
-            return new VideoSourceProbeResult { SessionActive = false };
+            return new VideoSourceProbeResult
+            {
+                SessionActive = false,
+                MemoryPreference = "Unknown"
+            };
         }
 
-        return session.ProbeVideoSource();
+        var subtype = unifiedVideoCapture.IsP010 ? "P010" : "NV12";
+        var fps = Math.Round(unifiedVideoCapture.Fps, 3);
+        return new VideoSourceProbeResult
+        {
+            SessionActive = true,
+            MemoryPreference = unifiedVideoCapture.IsP010 ? "Auto" : "Cpu",
+            CurrentSubtype = subtype,
+            CurrentWidth = unifiedVideoCapture.Width,
+            CurrentHeight = unifiedVideoCapture.Height,
+            CurrentFrameRate = fps,
+            P010Available = unifiedVideoCapture.IsP010,
+            Nv12Available = !unifiedVideoCapture.IsP010,
+            SupportedSubtypes = new[] { subtype },
+            TotalFormatCount = 1,
+            Formats = new[]
+            {
+                new VideoSourceFormatEntry
+                {
+                    Subtype = subtype,
+                    Width = unifiedVideoCapture.Width,
+                    Height = unifiedVideoCapture.Height,
+                    FrameRate = fps,
+                    Summary = $"{subtype} {unifiedVideoCapture.Width}x{unifiedVideoCapture.Height}@{fps:0.###}"
+                }
+            }
+        };
+    }
+
+    public PreviewColorProbeResult ProbePreviewColor()
+    {
+        var unifiedVideoCapture = _unifiedVideoCapture;
+        var d3dSink = _previewFrameSink as D3D11PreviewRenderer;
+        var d3dInputColor = d3dSink?.InputColorSpaceLabel ?? "None";
+        var d3dOutputColor = d3dSink?.OutputColorSpaceLabel ?? "None";
+        if (unifiedVideoCapture == null)
+        {
+            return new PreviewColorProbeResult
+            {
+                SessionActive = false,
+                D3DInputColorSpace = d3dInputColor,
+                D3DOutputColorSpace = d3dOutputColor
+            };
+        }
+
+        var subtype = unifiedVideoCapture.IsP010 ? "P010" : "NV12";
+        return new PreviewColorProbeResult
+        {
+            SessionActive = true,
+            RendererMode = d3dSink != null ? "D3D11VideoProcessor" : "None",
+            NegotiatedSubtype = subtype,
+            SourceWidth = unifiedVideoCapture.Width,
+            SourceHeight = unifiedVideoCapture.Height,
+            SourceFrameRate = Math.Round(unifiedVideoCapture.Fps, 3),
+            D3DInputColorSpace = d3dInputColor,
+            D3DOutputColorSpace = d3dOutputColor
+        };
+    }
+
+    public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath)
+    {
+        var d3dSink = _previewFrameSink as D3D11PreviewRenderer;
+        if (d3dSink == null || !d3dSink.IsRendering)
+        {
+            return Task.FromResult(new PreviewFrameCaptureResult
+            {
+                Succeeded = false,
+                Message = "No active preview renderer."
+            });
+        }
+
+        return d3dSink.CaptureNextFrameAsync(outputPath);
     }
 
     private static string? ResolveRequestedFrameRateArg(CaptureSettings? settings, string? fallbackArg)
@@ -720,6 +833,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public CaptureHealthSnapshot GetHealthSnapshot()
     {
         var encoder = _ffmpegEncoder;
+        var unifiedVideoCapture = _unifiedVideoCapture;
         var observedTelemetry = ResolveObservedFrameTelemetry(encoder);
         var videoFramesDropped = encoder?.DroppedVideoFrames ?? Interlocked.Read(ref _videoFramesDropped);
         var sourceTelemetrySuppressedReason = ResolveSourceTelemetrySuppressedReason(_latestSourceTelemetry);
@@ -741,9 +855,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
             NegotiatedFrameRateDenominator = _actualFrameRateDenominator,
             NegotiatedPixelFormat = _actualPixelFormat,
             RequestedReaderSubtype = _currentSettings?.RequestedPixelFormat,
-            ReaderSourceStreamType = _isRecording
-                ? (_recordingUsesMfSourceReader ? "MfSourceReader" : "MediaFrameReader")
-                : _isVideoPreviewActive ? (_videoPreviewUsesFfmpegPipe ? "DirectShow" : "MediaCapture")
+            ReaderSourceStreamType = (_isRecording || _isVideoPreviewActive) && unifiedVideoCapture != null
+                ? "MfSourceReader"
                 : null,
             ReaderSourceSubtype = observedTelemetry.LatestObservedFramePixelFormat ?? _actualPixelFormat,
             FirstObservedFramePixelFormat = observedTelemetry.FirstObservedFramePixelFormat,
@@ -768,7 +881,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceTelemetryCircuitState = ResolveSourceTelemetryCircuitState(
                 _latestSourceTelemetry.Availability,
                 sourceTelemetrySuppressed),
-            VideoFramesArrived = (_ingestSession?.VideoFramesArrived ?? 0) + Interlocked.Read(ref _videoFramesArrived),
+            VideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? Interlocked.Read(ref _videoFramesArrived),
             VideoFramesDropped = videoFramesDropped,
             VideoDropsQueueSaturated = encoder?.VideoDropsQueueSaturated ?? 0,
             VideoDropsBacklogEviction = encoder?.VideoDropsBacklogEviction ?? 0,
@@ -813,8 +926,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
             if (_currentDevice == null) throw new InvalidOperationException("No selected video device is available for preview.");
             if (_isVideoPreviewActive) return;
             transitionToken.ThrowIfCancellationRequested();
+            if (_isRecording && _unifiedVideoCapture != null)
+            {
+                _unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
+                TryApplySharedPreviewDevice(_unifiedVideoCapture, _previewFrameSink);
+                _isVideoPreviewActive = true;
+                StatusChanged?.Invoke(this, "Preview started");
+                return;
+            }
 
-            _videoPreviewUsesFfmpegPipe = false;
             var hdrRequested = HdrOutputPolicy.IsEnabled(settings);
             var requireP010 = hdrRequested;
             var audioDeviceId = settings.AudioEnabled
@@ -827,50 +947,89 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 $"require_p010={requireP010} " +
                 $"mode={settings.Width}x{settings.Height}@{settings.FrameRate:0.###}");
 
+            UnifiedVideoCapture? unifiedVideoCapture = null;
+            WasapiAudioCapture? wasapiCapture = null;
             try
             {
-                var ingestSession = new MediaCaptureIngestSession();
-                var playbackSource = await ingestSession.StartAsync(
-                    _currentDevice.Id, audioDeviceId,
-                    audioEnabled: settings.AudioEnabled,
-                    requireP010: requireP010,
-                    requestedWidth: settings.Width, requestedHeight: settings.Height,
-                    requestedFps: settings.FrameRate,
-                    cancellationToken: transitionToken).ConfigureAwait(false);
+                unifiedVideoCapture = new UnifiedVideoCapture();
+                await unifiedVideoCapture.InitializeAsync(
+                    _currentDevice.Id,
+                    (int)settings.Width,
+                    (int)settings.Height,
+                    settings.FrameRate,
+                    requireP010).ConfigureAwait(false);
+                unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
+                TryApplySharedPreviewDevice(unifiedVideoCapture, _previewFrameSink);
+                unifiedVideoCapture.Start();
+                _unifiedVideoCapture = unifiedVideoCapture;
+                _lastMfSourceReaderFramesDelivered = 0;
+                _lastMfSourceReaderFramesDropped = 0;
+                _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
 
-                _ingestSession = ingestSession;
-                _ingestSession.CaptureFailed += OnIngestSessionCaptureFailed;
-                _ingestSession.AudioLevelUpdated += OnIngestSessionAudioLevelUpdated;
+                _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
+                _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
+                _actualFrameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
+                _actualFrameRateArg = settings.RequestedFrameRateArg ?? _actualFrameRate.Value.ToString("0.###");
+                _actualPixelFormat = unifiedVideoCapture.IsP010 ? "P010" : "NV12";
+                _activeVideoInputPixelFormat = unifiedVideoCapture.IsP010 ? "p010le" : "nv12";
 
-                // Update actual resolution/fps — ingest session may have been recreated at a
-                // different mode than what InitializeAsync originally set. Recording uses these
-                // to tell FFmpeg the frame size.
-                _actualWidth = settings.Width;
-                _actualHeight = settings.Height;
-                _actualFrameRate = settings.FrameRate;
-                _actualFrameRateArg = settings.RequestedFrameRateArg ?? settings.FrameRate.ToString("0.###");
-
-                // Start audio playback if audio preview is already enabled
-                if (_isAudioPreviewActive && _ingestSession.AudioPlaybackSource != null)
+                if (settings.AudioEnabled)
                 {
-                    StartAudioPlayback(_ingestSession.AudioPlaybackSource);
+                    var resolvedAudioDeviceId = audioDeviceId
+                        ?? throw new InvalidOperationException("Audio preview is enabled but no audio capture device is available.");
+                    wasapiCapture = new WasapiAudioCapture();
+                    await wasapiCapture.InitializeAsync(resolvedAudioDeviceId, transitionToken).ConfigureAwait(false);
+                    wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
+                    wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    wasapiCapture.Start();
+                    _wasapiAudioCapture = wasapiCapture;
                 }
 
-                Logger.Log("Preview backend active: unified MediaCaptureIngestSession (GPU).");
-                PreviewPlaybackSourceChanged?.Invoke(this, playbackSource);
+                if (_isAudioPreviewActive && _wasapiAudioCapture != null)
+                {
+                    await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
+                }
+
+                Logger.Log("Preview backend active: IMFSourceReader video + WASAPI audio ingest.");
             }
             catch (Exception ex)
             {
-                Logger.Log($"Unified preview failed ({ex.Message}), falling back to DirectShow.");
-                var frameRateArg = settings.RequestedFrameRateArg ?? settings.FrameRate.ToString("0.###");
-                await _previewService.StartAsync(
-                    FFmpegEncoderService.ResolveFfmpegPath(),
-                    _currentDevice.Name,
-                    settings.Width,
-                    settings.Height,
-                    frameRateArg,
-                    hdrRequested).ConfigureAwait(false);
-                _videoPreviewUsesFfmpegPipe = true;
+                Logger.Log($"Unified preview start failed: {ex.Message}");
+                _unifiedVideoCapture = null;
+                if (unifiedVideoCapture != null)
+                {
+                    try
+                    {
+                        await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception disposeEx)
+                    {
+                        Logger.Log($"Unified preview rollback dispose warning: {disposeEx.Message}");
+                    }
+                }
+
+                if (wasapiCapture != null)
+                {
+                    wasapiCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
+                    wasapiCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                }
+
+                var capture = _wasapiAudioCapture ?? wasapiCapture;
+                _wasapiAudioCapture = null;
+                if (capture != null)
+                {
+                    DetachWasapiAudioCapture(capture);
+                    try
+                    {
+                        await capture.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception disposeEx)
+                    {
+                        Logger.Log($"WASAPI capture rollback dispose warning: {disposeEx.Message}");
+                    }
+                }
+
+                throw;
             }
 
             _isVideoPreviewActive = true;
@@ -882,28 +1041,33 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             if (!_isVideoPreviewActive) return;
             transitionToken.ThrowIfCancellationRequested();
-            if (_videoPreviewUsesFfmpegPipe)
+
+            if (_isRecording)
             {
-                await _previewService.StopAsync(transitionToken).ConfigureAwait(false);
-            }
-            else if (!_isRecording)
-            {
-                // Only tear down the ingest session if recording is not active.
-                // If recording is active, the ingest session stays alive for the recorder.
-                var ingest = _ingestSession;
-                _ingestSession = null;
-                DetachIngestSession(ingest);
-                if (ingest != null)
-                {
-                    await ingest.DisposeAsync().ConfigureAwait(false);
-                }
+                _unifiedVideoCapture?.SetPreviewSink(null);
             }
             else
             {
-                // Recording is active — preview session stays alive, just hide the UI.
+                var unifiedVideoCapture = _unifiedVideoCapture;
+                _unifiedVideoCapture = null;
+                if (unifiedVideoCapture != null)
+                {
+                    _lastMfSourceReaderFramesDelivered = unifiedVideoCapture.VideoFramesArrived;
+                    _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
+                    _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
+                    await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
+                    await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
+                }
+
+                var capture = _wasapiAudioCapture;
+                _wasapiAudioCapture = null;
+                DetachWasapiAudioCapture(capture);
+                if (capture != null)
+                {
+                    await capture.DisposeAsync().ConfigureAwait(false);
+                }
             }
 
-            _videoPreviewUsesFfmpegPipe = false;
             _isVideoPreviewActive = false;
             StatusChanged?.Invoke(this, "Preview stopped");
         }, cancellationToken);
@@ -923,21 +1087,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             transitionToken.ThrowIfCancellationRequested();
-            CancelAndDisposeMfVideoCaptureCts();
-            _mfVideoCapture = null;
-            _recordingUsesMfSourceReader = false;
-            _sourceReaderPreviewAdapter?.Dispose();
-            _sourceReaderPreviewAdapter = null;
-            _hdrRecordingReplacedPreview = false;
 
             FFmpegEncoderService? encoder = null;
             IRecordingSink? recordingSink = null;
-            MediaCaptureIngestSession? ownedIngestSession = null;
-            MfSourceReaderVideoCapture? ownedMfVideoCapture = null;
-            CancellationTokenSource? ownedMfVideoCaptureCts = null;
-            SourceReaderPreviewAdapter? ownedPreviewAdapter = null;
+            WasapiAudioCapture? ownedWasapiAudioCapture = null;
+            UnifiedVideoCapture? ownedUnifiedVideoCapture = null;
             var sinkAttachedForAudioOnly = false;
-            var previewTornDownForRecordingStart = false;
+            Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
+            Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
             try
             {
                 encoder = new FFmpegEncoderService();
@@ -1008,161 +1165,62 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 recordingSink = new FfmpegRecordingSink(encoder);
                 await recordingSink.StartAsync(recordingContext, transitionToken).ConfigureAwait(false);
                 transitionToken.ThrowIfCancellationRequested();
-                var encoderForRawFrames = encoder ?? throw new InvalidOperationException("Encoder was not initialized.");
-
-                // If the unified ingest session is already running (from preview), start recording readers on it.
-                // Otherwise create a new ingest session for recording.
-                if (_ingestSession != null && !_videoPreviewUsesFfmpegPipe)
+                var unifiedVideoCapture = _unifiedVideoCapture;
+                if (unifiedVideoCapture == null)
                 {
-                    if (requireP010)
-                    {
-                        var previewWasActive = _isVideoPreviewActive;
-                        var existingIngest = _ingestSession;
-                        _ingestSession = null;
-                        DetachIngestSession(existingIngest);
-                        if (existingIngest != null)
-                        {
-                            await existingIngest.DisposeAsync().ConfigureAwait(false);
-                        }
-                        previewTornDownForRecordingStart = previewWasActive;
-
-                        ownedMfVideoCapture = new MfSourceReaderVideoCapture();
-                        await ownedMfVideoCapture.InitializeAsync(
-                            _currentDevice.Id,
-                            (int)effectiveWidth,
-                            (int)effectiveHeight,
-                            effectiveFrameRate).ConfigureAwait(false);
-
-                        var previewAdapter = new SourceReaderPreviewAdapter(
-                            (int)effectiveWidth,
-                            (int)effectiveHeight,
-                            effectiveFrameRate);
-                        ownedPreviewAdapter = previewAdapter;
-                        var frameSize = FFmpegEncoderService.GetP010FrameSizeBytes((int)effectiveWidth, (int)effectiveHeight);
-                        ownedMfVideoCaptureCts = CancellationTokenSource.CreateLinkedTokenSource(transitionToken);
-                        ownedMfVideoCapture.StartReading(
-                            (data, width, height) =>
-                            {
-                                encoderForRawFrames.EnqueueRawVideoFrame(data, frameSize);
-                                previewAdapter.EnqueueFrame(data, width, height);
-                            },
-                            ownedMfVideoCaptureCts.Token);
-
-                        var hdrAudioDeviceId = audioDeviceId
-                            ?? throw new InvalidOperationException("HDR recording requires an audio capture device.");
-                        ownedIngestSession = new MediaCaptureIngestSession();
-                        await ownedIngestSession.StartAudioOnlyAsync(hdrAudioDeviceId, transitionToken).ConfigureAwait(false);
-                        ownedIngestSession.AttachRecordingSink(recordingSink);
-                        sinkAttachedForAudioOnly = true;
-
-                        _ingestSession = ownedIngestSession;
-                        _ingestSession.CaptureFailed += OnIngestSessionCaptureFailed;
-                        _ingestSession.AudioLevelUpdated += OnIngestSessionAudioLevelUpdated;
-                        _sourceReaderPreviewAdapter = previewAdapter;
-                        _hdrRecordingReplacedPreview = previewWasActive;
-
-                        if (_isAudioPreviewActive && _ingestSession.AudioPlaybackSource != null)
-                        {
-                            StartAudioPlayback(_ingestSession.AudioPlaybackSource);
-                        }
-
-                        PreviewPlaybackSourceChanged?.Invoke(this, previewAdapter.PlaybackSource);
-                        Logger.Log("Recording started on HDR transition path (preview via source-reader adapter, audio via audio-only ingest session).");
-                    }
-                    else
-                    {
-                        await _ingestSession.StartRecordingAsync(recordingSink, transitionToken).ConfigureAwait(false);
-                        Logger.Log("Recording readers started on existing preview ingest session (no blink).");
-                    }
+                    ownedUnifiedVideoCapture = new UnifiedVideoCapture();
+                    await ownedUnifiedVideoCapture.InitializeAsync(
+                        _currentDevice.Id,
+                        (int)effectiveWidth,
+                        (int)effectiveHeight,
+                        effectiveFrameRate,
+                        requireP010).ConfigureAwait(false);
+                    ownedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _previewFrameSink : null);
+                    TryApplySharedPreviewDevice(ownedUnifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
+                    ownedUnifiedVideoCapture.Start();
+                    unifiedVideoCapture = ownedUnifiedVideoCapture;
+                    _unifiedVideoCapture = ownedUnifiedVideoCapture;
                 }
-                else
+                else if (unifiedVideoCapture.IsP010 != requireP010)
                 {
-                    // No unified session running — need a dedicated ingest session for recording.
-                    // If DirectShow preview is active, stop it to free the USB device.
-                    if (_isVideoPreviewActive && _videoPreviewUsesFfmpegPipe)
-                    {
-                        await _previewService.StopAsync(transitionToken).ConfigureAwait(false);
-                        _videoPreviewUsesFfmpegPipe = false;
-                        previewTornDownForRecordingStart = true;
-                    }
-
-                    if (requireP010)
-                    {
-                        ownedMfVideoCapture = new MfSourceReaderVideoCapture();
-                        await ownedMfVideoCapture.InitializeAsync(
-                            _currentDevice.Id,
-                            (int)effectiveWidth,
-                            (int)effectiveHeight,
-                            effectiveFrameRate).ConfigureAwait(false);
-
-                        var previewAdapter = new SourceReaderPreviewAdapter(
-                            (int)effectiveWidth,
-                            (int)effectiveHeight,
-                            effectiveFrameRate);
-                        ownedPreviewAdapter = previewAdapter;
-                        var frameSize = FFmpegEncoderService.GetP010FrameSizeBytes((int)effectiveWidth, (int)effectiveHeight);
-                        ownedMfVideoCaptureCts = CancellationTokenSource.CreateLinkedTokenSource(transitionToken);
-                        ownedMfVideoCapture.StartReading(
-                            (data, width, height) =>
-                            {
-                                encoderForRawFrames.EnqueueRawVideoFrame(data, frameSize);
-                                previewAdapter.EnqueueFrame(data, width, height);
-                            },
-                            ownedMfVideoCaptureCts.Token);
-
-                        var hdrAudioDeviceId = audioDeviceId
-                            ?? throw new InvalidOperationException("HDR recording requires an audio capture device.");
-                        ownedIngestSession = new MediaCaptureIngestSession();
-                        await ownedIngestSession.StartAudioOnlyAsync(hdrAudioDeviceId, transitionToken).ConfigureAwait(false);
-                        ownedIngestSession.AttachRecordingSink(recordingSink);
-                        sinkAttachedForAudioOnly = true;
-
-                        _ingestSession = ownedIngestSession;
-                        _ingestSession.CaptureFailed += OnIngestSessionCaptureFailed;
-                        _ingestSession.AudioLevelUpdated += OnIngestSessionAudioLevelUpdated;
-                        _sourceReaderPreviewAdapter = previewAdapter;
-                        _hdrRecordingReplacedPreview = false;
-                        _videoPreviewUsesFfmpegPipe = false;
-
-                        if (_isAudioPreviewActive && _ingestSession.AudioPlaybackSource != null)
-                        {
-                            StartAudioPlayback(_ingestSession.AudioPlaybackSource);
-                        }
-
-                        PreviewPlaybackSourceChanged?.Invoke(this, previewAdapter.PlaybackSource);
-                        Logger.Log("Recording started on dedicated HDR path (preview via source-reader adapter, audio via audio-only ingest session).");
-                    }
-                    else
-                    {
-                        ownedIngestSession = new MediaCaptureIngestSession();
-                        var playbackSource = await ownedIngestSession.StartAsync(
-                            _currentDevice.Id, audioDeviceId,
-                            audioEnabled: settings.AudioEnabled,
-                            requireP010: recordingContext.HdrPipelineActive,
-                            requestedWidth: effectiveWidth, requestedHeight: effectiveHeight,
-                            requestedFps: effectiveFrameRate,
-                            cancellationToken: transitionToken).ConfigureAwait(false);
-                        await ownedIngestSession.StartRecordingAsync(recordingSink, transitionToken).ConfigureAwait(false);
-                        _ingestSession = ownedIngestSession;
-                        _ingestSession.CaptureFailed += OnIngestSessionCaptureFailed;
-                        _ingestSession.AudioLevelUpdated += OnIngestSessionAudioLevelUpdated;
-                        _videoPreviewUsesFfmpegPipe = false;
-
-                        if (_isAudioPreviewActive && _ingestSession.AudioPlaybackSource != null)
-                        {
-                            StartAudioPlayback(_ingestSession.AudioPlaybackSource);
-                        }
-
-                        PreviewPlaybackSourceChanged?.Invoke(this, playbackSource);
-                    }
+                    throw new InvalidOperationException(
+                        $"Recording requires {(requireP010 ? "P010" : "NV12")}, but the active source-reader session negotiated {(unifiedVideoCapture.IsP010 ? "P010" : "NV12")}.");
                 }
 
-                _mfVideoCapture = ownedMfVideoCapture;
-                _mfVideoCaptureCts = ownedMfVideoCaptureCts;
-                _recordingUsesMfSourceReader = requireP010;
+                TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
+
                 _lastMfSourceReaderFramesDelivered = 0;
                 _lastMfSourceReaderFramesDropped = 0;
-                _lastMfSourceReaderNegotiatedFormat = ownedMfVideoCapture?.NegotiatedFormat;
+                _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
+                _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
+                _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
+                _actualFrameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate;
+                _actualFrameRateArg = settings.RequestedFrameRateArg ?? _actualFrameRate.Value.ToString("0.###");
+                _actualPixelFormat = unifiedVideoCapture.IsP010 ? "P010" : "NV12";
+
+                if (_wasapiAudioCapture == null && settings.AudioEnabled)
+                {
+                    var resolvedAudioDeviceId = audioDeviceId
+                        ?? throw new InvalidOperationException("Recording requires an audio capture device.");
+                    ownedWasapiAudioCapture = new WasapiAudioCapture();
+                    await ownedWasapiAudioCapture.InitializeAsync(resolvedAudioDeviceId, transitionToken).ConfigureAwait(false);
+                    ownedWasapiAudioCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
+                    ownedWasapiAudioCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    ownedWasapiAudioCapture.Start();
+                    _wasapiAudioCapture = ownedWasapiAudioCapture;
+                }
+
+                if (_wasapiAudioCapture != null && settings.AudioEnabled)
+                {
+                    _wasapiAudioCapture.AttachRecordingSink(recordingSink);
+                    sinkAttachedForAudioOnly = true;
+                    if (_isAudioPreviewActive)
+                    {
+                        await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
+                    }
+                }
+
+                await unifiedVideoCapture.StartRecordingAsync(recordingSink, encoder).ConfigureAwait(false);
 
                 _ffmpegEncoder = encoder;
                 _recordingSink = recordingSink;
@@ -1181,42 +1239,40 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 StatusChanged?.Invoke(this, "Recording");
                 encoder = null;
                 recordingSink = null;
-                ownedIngestSession = null;
-                ownedMfVideoCapture = null;
-                ownedMfVideoCaptureCts = null;
+                ownedWasapiAudioCapture = null;
+                ownedUnifiedVideoCapture = null;
             }
             catch
             {
-                if (sinkAttachedForAudioOnly && _ingestSession != null)
+                if (sinkAttachedForAudioOnly && _wasapiAudioCapture != null)
                 {
-                    _ingestSession.DetachRecordingSink();
+                    _wasapiAudioCapture.DetachRecordingSink();
                 }
 
-                _sourceReaderPreviewAdapter?.Dispose();
-                _sourceReaderPreviewAdapter = null;
-                ownedPreviewAdapter?.Dispose();
-                ownedPreviewAdapter = null;
-                _hdrRecordingReplacedPreview = false;
-                await DisposeTransientRecordingBackendAsync(recordingSink, encoder, ownedIngestSession, ownedMfVideoCapture, ownedMfVideoCaptureCts).ConfigureAwait(false);
-                if (ownedIngestSession != null && ReferenceEquals(_ingestSession, ownedIngestSession))
+                await DisposeTransientRecordingBackendAsync(
+                    recordingSink,
+                    encoder,
+                    ownedWasapiAudioCapture,
+                    ownedUnifiedVideoCapture).ConfigureAwait(false);
+
+                if (ownedWasapiAudioCapture != null && ReferenceEquals(_wasapiAudioCapture, ownedWasapiAudioCapture))
                 {
-                    DetachIngestSession(ownedIngestSession);
-                    _ingestSession = null;
+                    DetachWasapiAudioCapture(ownedWasapiAudioCapture);
+                    _wasapiAudioCapture = null;
                 }
-                if (previewTornDownForRecordingStart && _ingestSession == null)
+
+                if (ownedUnifiedVideoCapture != null && ReferenceEquals(_unifiedVideoCapture, ownedUnifiedVideoCapture))
                 {
-                    _isVideoPreviewActive = false;
-                    _videoPreviewUsesFfmpegPipe = false;
-                    PreviewPlaybackSourceChanged?.Invoke(this, null);
-                    Logger.Log("Recording startup rollback reset preview state after failed backend handoff.");
+                    _lastMfSourceReaderFramesDelivered = ownedUnifiedVideoCapture.VideoFramesArrived;
+                    _lastMfSourceReaderFramesDropped = ownedUnifiedVideoCapture.VideoFramesDropped;
+                    _lastMfSourceReaderNegotiatedFormat = ownedUnifiedVideoCapture.NegotiatedFormat;
+                    _unifiedVideoCapture = null;
                 }
+
                 _recordingContext = null;
                 _activeRecordingSettings = null;
                 _isRecording = false;
                 _recordingStopwatch.Reset();
-                _recordingUsesMfSourceReader = false;
-                _mfVideoCapture = null;
-                CancelAndDisposeMfVideoCaptureCts();
                 throw;
             }
         }, cancellationToken);
@@ -1230,7 +1286,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             var result = await StopAndDisposeRecordingBackendAsync("Stopped", transitionToken).ConfigureAwait(false);
-            // Preview continues running on the same ingest session — no resume needed.
+            // Preview continues running on the active source-reader/WASAPI sessions - no resume needed.
             StatusChanged?.Invoke(this, result.StatusMessage);
             if (!result.Succeeded)
             {
@@ -1239,20 +1295,18 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }, cancellationToken);
 
     public Task StartAudioPreviewAsync(CancellationToken cancellationToken = default)
-        => RunTransitionAsync(CaptureSessionState.Previewing, transitionToken =>
+        => RunTransitionAsync(CaptureSessionState.Previewing, async transitionToken =>
         {
             EnsureInitialized();
             transitionToken.ThrowIfCancellationRequested();
             _isAudioPreviewActive = true;
 
-            var audioSource = _ingestSession?.AudioPlaybackSource;
-            if (audioSource != null)
+            if (_wasapiAudioCapture != null)
             {
-                StartAudioPlayback(audioSource);
+                await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
             }
 
             StatusChanged?.Invoke(this, "Audio preview started");
-            return Task.CompletedTask;
         }, cancellationToken);
 
     public Task StopAudioPreviewAsync(CancellationToken cancellationToken = default)
@@ -1260,7 +1314,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             transitionToken.ThrowIfCancellationRequested();
             _isAudioPreviewActive = false;
-            StopAudioPlayback();
+            StopWasapiPlayback();
             AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
             StatusChanged?.Invoke(this, "Audio preview stopped");
             return Task.CompletedTask;
@@ -1297,52 +1351,40 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 }
             }
 
-            _sourceReaderPreviewAdapter?.Dispose();
-            _sourceReaderPreviewAdapter = null;
-            _hdrRecordingReplacedPreview = false;
-            CancelAndDisposeMfVideoCaptureCts();
-            if (_mfVideoCapture != null)
+            var unifiedVideoCapture = _unifiedVideoCapture;
+            _unifiedVideoCapture = null;
+            if (unifiedVideoCapture != null)
             {
                 try
                 {
-                    await _mfVideoCapture.StopAsync().ConfigureAwait(false);
-                    await _mfVideoCapture.DisposeAsync().ConfigureAwait(false);
+                    _lastMfSourceReaderFramesDelivered = unifiedVideoCapture.VideoFramesArrived;
+                    _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
+                    _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
+                    await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
+                    await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log($"Cleanup MF source reader stop/dispose warning: {ex.Message}");
-                }
-                finally
-                {
-                    _lastMfSourceReaderFramesDelivered = _mfVideoCapture.FramesDelivered;
-                    _lastMfSourceReaderFramesDropped = _mfVideoCapture.FramesDropped;
-                    _lastMfSourceReaderNegotiatedFormat = _mfVideoCapture.NegotiatedFormat;
-                    _mfVideoCapture = null;
-                    _recordingUsesMfSourceReader = false;
+                    Logger.Log($"Cleanup unified video stop/dispose warning: {ex.Message}");
                 }
             }
 
-            if (_isVideoPreviewActive)
+            var wasapiCapture = _wasapiAudioCapture;
+            _wasapiAudioCapture = null;
+            DetachWasapiAudioCapture(wasapiCapture);
+            if (wasapiCapture != null)
             {
-                if (_videoPreviewUsesFfmpegPipe)
+                try
                 {
-                    await _previewService.StopAsync(transitionToken).ConfigureAwait(false);
+                    await wasapiCapture.DisposeAsync().ConfigureAwait(false);
                 }
-                else
+                catch (Exception ex)
                 {
-                    var ingest = _ingestSession;
-                    _ingestSession = null;
-                    DetachIngestSession(ingest);
-                    if (ingest != null)
-                    {
-                        await ingest.DisposeAsync().ConfigureAwait(false);
-                    }
+                    Logger.Log($"Cleanup WASAPI capture dispose warning: {ex.Message}");
                 }
-
-                _isVideoPreviewActive = false;
-                _videoPreviewUsesFfmpegPipe = false;
             }
 
+            _isVideoPreviewActive = false;
             _isAudioPreviewActive = false;
             _isInitialized = false;
             _currentDevice = null;
@@ -1370,14 +1412,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var result = FinalizeResult.Success(fallbackOutputPath, fallbackStatusMessage);
         OperationCanceledException? cancellationException = null;
 
-        CancelAndDisposeMfVideoCaptureCts();
-        var mfVideoCapture = _mfVideoCapture;
-        _mfVideoCapture = null;
-        if (mfVideoCapture != null)
+        var unifiedVideoCapture = _unifiedVideoCapture;
+        if (unifiedVideoCapture != null)
         {
             try
             {
-                await mfVideoCapture.StopAsync().ConfigureAwait(false);
+                await unifiedVideoCapture.StopRecordingAsync().ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -1385,137 +1425,61 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log($"MF source reader stop failed: {ex.Message}");
+                Logger.Log($"Unified video recording stop failed: {ex.Message}");
             }
 
-            _lastMfSourceReaderFramesDelivered = mfVideoCapture.FramesDelivered;
-            _lastMfSourceReaderFramesDropped = mfVideoCapture.FramesDropped;
-            _lastMfSourceReaderNegotiatedFormat = mfVideoCapture.NegotiatedFormat;
+            _lastMfSourceReaderFramesDelivered = unifiedVideoCapture.VideoFramesArrived;
+            _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
+            _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
             Logger.Log(
                 "VIDEO_DIAG mf_source_reader " +
                 $"frames_delivered={_lastMfSourceReaderFramesDelivered} " +
                 $"frames_dropped={_lastMfSourceReaderFramesDropped} " +
                 $"negotiated_format='{_lastMfSourceReaderNegotiatedFormat ?? "unknown"}'");
-
-            try
-            {
-                await mfVideoCapture.DisposeAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"MF source reader dispose failed: {ex.Message}");
-            }
         }
 
-        var previewAdapter = _sourceReaderPreviewAdapter;
-        _sourceReaderPreviewAdapter = null;
-        previewAdapter?.Dispose();
-
-        // Stop recording readers on the ingest session (preview continues via MediaSource).
-        if (_ingestSession != null)
+        if (_wasapiAudioCapture != null)
         {
             try
             {
-                if (_recordingUsesMfSourceReader)
-                {
-                    _ingestSession.DetachRecordingSink();
-                }
-                else
-                {
-                    await _ingestSession.StopRecordingAsync(cancellationToken).ConfigureAwait(false);
-                }
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                cancellationException = new OperationCanceledException(cancellationToken);
+                _wasapiAudioCapture.DetachRecordingSink();
             }
             catch (Exception ex)
             {
-                Logger.Log($"Recording reader stop failed: {ex.Message}");
+                Logger.Log($"Audio recording sink detach failed: {ex.Message}");
             }
         }
 
-        // If preview is not active, the ingest session was created solely for recording — dispose it.
-        if (_hdrRecordingReplacedPreview)
+        if (!_isVideoPreviewActive)
         {
-            _hdrRecordingReplacedPreview = false;
-            var audioOnlyIngest = _ingestSession;
-            _ingestSession = null;
-            DetachIngestSession(audioOnlyIngest);
-            if (audioOnlyIngest != null)
+            _unifiedVideoCapture = null;
+            if (unifiedVideoCapture != null)
             {
                 try
                 {
-                    await audioOnlyIngest.DisposeAsync().ConfigureAwait(false);
+                    await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
+                    await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log($"Audio-only ingest dispose failed: {ex.Message}");
+                    Logger.Log($"Unified video capture dispose failed: {ex.Message}");
+                    result = FinalizeResult.Failure(fallbackOutputPath, $"Unified video capture dispose failed: {ex.Message}");
                 }
             }
 
-            if (_isVideoPreviewActive && _currentDevice != null && _currentSettings != null)
+            var capture = _wasapiAudioCapture;
+            _wasapiAudioCapture = null;
+            DetachWasapiAudioCapture(capture);
+            if (capture != null)
             {
                 try
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    var restoreSettings = _currentSettings;
-                    var hdrRequested = HdrOutputPolicy.IsEnabled(restoreSettings);
-                    var audioId = restoreSettings.AudioEnabled
-                        ? (restoreSettings.UseCustomAudioInput ? restoreSettings.AudioDeviceId : (_audioDeviceId ?? _currentDevice.AudioDeviceId))
-                        : null;
-                    var ingest = new MediaCaptureIngestSession();
-                    var gpuPreview = await ingest.StartAsync(
-                        _currentDevice.Id, audioId,
-                        audioEnabled: restoreSettings.AudioEnabled,
-                        requireP010: hdrRequested,
-                        requestedWidth: restoreSettings.Width,
-                        requestedHeight: restoreSettings.Height,
-                        requestedFps: restoreSettings.FrameRate,
-                        cancellationToken: cancellationToken).ConfigureAwait(false);
-                    _ingestSession = ingest;
-                    _ingestSession.CaptureFailed += OnIngestSessionCaptureFailed;
-                    _ingestSession.AudioLevelUpdated += OnIngestSessionAudioLevelUpdated;
-                    _videoPreviewUsesFfmpegPipe = false;
-                    if (_isAudioPreviewActive && _ingestSession.AudioPlaybackSource != null)
-                    {
-                        StartAudioPlayback(_ingestSession.AudioPlaybackSource);
-                    }
-
-                    PreviewPlaybackSourceChanged?.Invoke(this, gpuPreview);
-                    Logger.Log("GPU preview restored after HDR recording stopped.");
-                }
-                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-                {
-                    cancellationException = new OperationCanceledException(cancellationToken);
+                    await capture.DisposeAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log($"Failed to restore GPU preview after HDR recording: {ex.Message}");
-                    if (_ingestSession == null)
-                    {
-                        _isVideoPreviewActive = false;
-                        _videoPreviewUsesFfmpegPipe = false;
-                        PreviewPlaybackSourceChanged?.Invoke(this, null);
-                    }
-                }
-            }
-        }
-        else if (!_isVideoPreviewActive)
-        {
-            var ingest = _ingestSession;
-            _ingestSession = null;
-            DetachIngestSession(ingest);
-            if (ingest != null)
-            {
-                try
-                {
-                    await ingest.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"Recording ingest dispose failed: {ex.Message}");
-                    result = FinalizeResult.Failure(fallbackOutputPath, $"Recording ingest dispose failed: {ex.Message}");
+                    Logger.Log($"Recording WASAPI capture dispose failed: {ex.Message}");
+                    result = FinalizeResult.Failure(fallbackOutputPath, $"Recording WASAPI capture dispose failed: {ex.Message}");
                 }
             }
         }
@@ -1553,6 +1517,19 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         }
 
+        var wasapiAudioCaptureFaulted = Volatile.Read(ref _wasapiAudioCaptureFaulted);
+        var wasapiAudioCaptureFaultMessage = Volatile.Read(ref _wasapiAudioCaptureFaultMessage);
+        Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
+        Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
+        if (wasapiAudioCaptureFaulted && cancellationException == null && result.Succeeded)
+        {
+            var statusMessage = string.IsNullOrWhiteSpace(wasapiAudioCaptureFaultMessage)
+                ? "Recording failed (WASAPI audio capture faulted)."
+                : $"Recording failed (WASAPI audio capture faulted: {wasapiAudioCaptureFaultMessage})";
+            Logger.Log($"RECORDING_AUDIO_FAULT status='{statusMessage}'");
+            result = FinalizeResult.Failure(result.OutputPath, statusMessage);
+        }
+
         // Finalize split recording artifacts (clean up temp files on success, preserve on failure)
         if (recordingContext is { UsePostMuxAudio: true })
         {
@@ -1588,7 +1565,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
         _lastFinalizeStatus = result.StatusMessage;
         _lastFinalizeUtc = DateTimeOffset.UtcNow;
         _lastPreservedArtifacts = result.PreservedArtifacts;
-        _recordingUsesMfSourceReader = false;
 
         if (cancellationException != null)
         {
@@ -1598,81 +1574,65 @@ public class CaptureService : IDisposable, IAsyncDisposable
         return result;
     }
 
-    private void CancelAndDisposeMfVideoCaptureCts()
+    private void TryApplySharedPreviewDevice(UnifiedVideoCapture? capture, IPreviewFrameSink? sink)
     {
-        var cts = Interlocked.Exchange(ref _mfVideoCaptureCts, null);
-        if (cts == null)
+        if (capture == null || sink is not D3D11PreviewRenderer renderer)
+        {
+            return;
+        }
+
+        var sharedDevice = capture.D3DManager?.Device;
+        if (sharedDevice == null)
         {
             return;
         }
 
         try
         {
-            cts.Cancel();
+            renderer.SetSharedDevice(sharedDevice);
         }
-        catch (ObjectDisposedException)
+        catch (Exception ex)
         {
-            // Best effort.
-        }
-        finally
-        {
-            cts.Dispose();
+            Logger.Log($"UNIFIED_VIDEO_SHARED_DEVICE_APPLY_WARN type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
         }
     }
 
     private static async Task DisposeTransientRecordingBackendAsync(
         IRecordingSink? sink,
         FFmpegEncoderService? encoder,
-        MediaCaptureIngestSession? ingestSession,
-        MfSourceReaderVideoCapture? mfVideoCapture,
-        CancellationTokenSource? mfVideoCaptureCts)
+        WasapiAudioCapture? wasapiCapture,
+        UnifiedVideoCapture? unifiedVideoCapture)
     {
-        if (mfVideoCaptureCts != null)
+        if (unifiedVideoCapture != null)
         {
             try
             {
-                mfVideoCaptureCts.Cancel();
+                await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
             }
-            catch (ObjectDisposedException)
+            catch (Exception ex)
             {
-                // Best effort.
+                Logger.Log($"Transient unified video stop failed during rollback: {ex.Message}");
             }
-            finally
+
+            try
             {
-                mfVideoCaptureCts.Dispose();
+                await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Transient unified video dispose failed during rollback: {ex.Message}");
             }
         }
 
-        if (mfVideoCapture != null)
+        if (wasapiCapture != null)
         {
             try
             {
-                await mfVideoCapture.StopAsync().ConfigureAwait(false);
+                await wasapiCapture.DisposeAsync().ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                Logger.Log($"Transient MF source reader stop failed during rollback: {ex.Message}");
-            }
-
-            try
-            {
-                await mfVideoCapture.DisposeAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Transient MF source reader dispose failed during rollback: {ex.Message}");
-            }
-        }
-
-        if (ingestSession != null)
-        {
-            try
-            {
-                await ingestSession.DisposeAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Transient recording ingest dispose failed during rollback: {ex.Message}");
+                Logger.Log($"Transient WASAPI capture dispose failed during rollback: {ex.Message}");
             }
         }
 
@@ -1872,7 +1832,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         _isDisposed = true;
-        _previewService.Dispose();
         _sessionTransitionLock.Dispose();
         _sessionState = CaptureSessionState.Disposed;
     }
@@ -1890,8 +1849,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         _isDisposed = true;
-        await _previewService.DisposeAsync().ConfigureAwait(false);
         _sessionTransitionLock.Dispose();
         _sessionState = CaptureSessionState.Disposed;
     }
 }
+
+

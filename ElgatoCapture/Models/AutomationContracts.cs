@@ -30,7 +30,9 @@ public enum AutomationCommandKind
     VerifyLastRecording,
     AssertSnapshot,
     SetTrueHdrPreviewEnabled,
-    ProbeVideoSource
+    ProbeVideoSource,
+    ProbePreviewColor,
+    CapturePreviewFrame
 }
 
 public enum AutomationWindowAction
@@ -72,7 +74,8 @@ public enum PreviewStartupStrategy
     GpuMediaSourceNoFrameReader,
     GpuMediaSourceWithFrameReader,
     CpuSoftwareBitmap,
-    DirectShow
+    DirectShow,
+    D3D11VideoProcessor
 }
 
 public sealed class AutomationCommandRequest
@@ -257,9 +260,6 @@ public sealed class AutomationSnapshot
     public long PreviewFramesArrived { get; init; }
     public long PreviewFramesDisplayed { get; init; }
     public long PreviewFramesDropped { get; init; }
-    public long PreviewSourceReaderAdapterFramesEnqueued { get; init; }
-    public long PreviewSourceReaderAdapterSamplesDelivered { get; init; }
-    public long PreviewSourceReaderAdapterSamplesTimedOut { get; init; }
     public int PreviewCadenceSampleCount { get; init; }
     public double PreviewCadenceObservedFps { get; init; }
     public double PreviewCadenceExpectedIntervalMs { get; init; }
@@ -270,7 +270,6 @@ public sealed class AutomationSnapshot
     public long PreviewCadenceSlowFrameCount { get; init; }
     public double PreviewCadenceSlowFramePercent { get; init; }
     public bool PreviewGpuActive { get; init; }
-    public bool PreviewFrameReaderActive { get; init; }
     public bool PreviewPlaceholderVisible { get; init; }
     public bool PreviewGpuElementVisible { get; init; }
     public bool PreviewCpuElementVisible { get; init; }
@@ -292,9 +291,20 @@ public sealed class AutomationSnapshot
     public bool PreviewBlankSuspected { get; init; }
     public bool PreviewStalled { get; init; }
     public string PreviewRendererMode { get; init; } = "None";
+    public long PreviewD3DFramesSubmitted { get; init; }
+    public long PreviewD3DFramesRendered { get; init; }
+    public long PreviewD3DFramesDropped { get; init; }
+    public string PreviewD3DInputColorSpace { get; init; } = "None";
+    public string PreviewD3DOutputColorSpace { get; init; } = "None";
+    public string PreviewGpuPlaybackState { get; init; } = "None";
+    public int PreviewGpuNaturalVideoWidth { get; init; }
+    public int PreviewGpuNaturalVideoHeight { get; init; }
+    public double PreviewGpuPositionMs { get; init; }
+    public long PreviewGpuPositionEventCount { get; init; }
     public bool PreviewHdrInputDetected { get; init; }
     public string PreviewToneMapMode { get; init; } = "Unknown";
     public string? PreviewColorContext { get; init; }
+    public string PreviewAdapterColorMetadata { get; init; } = "None";
 
     public int ConversionQueueDepth { get; init; }
     public int FfmpegVideoQueueDepth { get; init; }
@@ -443,7 +453,6 @@ public sealed class PreviewRuntimeSnapshot
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
     public bool IsPreviewing { get; init; }
     public bool GpuActive { get; init; }
-    public bool FrameReaderActive { get; init; }
     public bool PlaceholderVisible { get; init; }
     public bool GpuElementVisible { get; init; }
     public bool CpuElementVisible { get; init; }
@@ -465,9 +474,6 @@ public sealed class PreviewRuntimeSnapshot
     public long FramesArrived { get; init; }
     public long FramesDisplayed { get; init; }
     public long FramesDropped { get; init; }
-    public long SourceReaderAdapterFramesEnqueued { get; init; }
-    public long SourceReaderAdapterSamplesDelivered { get; init; }
-    public long SourceReaderAdapterSamplesTimedOut { get; init; }
     public int DisplayCadenceSampleCount { get; init; }
     public double DisplayCadenceObservedFps { get; init; }
     public double DisplayCadenceExpectedIntervalMs { get; init; }
@@ -480,6 +486,19 @@ public sealed class PreviewRuntimeSnapshot
     public bool BlankSuspected { get; init; }
     public bool StallSuspected { get; init; }
     public string RendererMode { get; init; } = "None";
+    public string PreviewColorMetadata { get; init; } = "None";
+    public long D3DFramesSubmitted { get; init; }
+    public long D3DFramesRendered { get; init; }
+    public long D3DFramesDropped { get; init; }
+    public string D3DInputColorSpace { get; init; } = "None";
+    public string D3DOutputColorSpace { get; init; } = "None";
+
+    // GPU MediaPlayer metrics (only meaningful when GpuActive == true)
+    public string GpuPlaybackState { get; init; } = "None";
+    public int GpuNaturalVideoWidth { get; init; }
+    public int GpuNaturalVideoHeight { get; init; }
+    public double GpuPositionMs { get; init; }
+    public long GpuPositionEventCount { get; init; }
 }
 
 public sealed class CaptureRuntimeSnapshot
@@ -503,6 +522,7 @@ public sealed class CaptureRuntimeSnapshot
     public string MemoryPreference { get; init; } = "Cpu";
     public string VideoRequestedSubtype { get; init; } = "unknown";
     public string VideoNegotiatedSubtype { get; init; } = "unknown";
+    public string PreviewColorMetadata { get; init; } = "None";
     public string SessionState { get; init; } = "Unknown";
 
     public string? CurrentDeviceId { get; init; }
@@ -688,4 +708,75 @@ public sealed class VideoSourceProbeResult
     public IReadOnlyList<string> SupportedSubtypes { get; init; } = Array.Empty<string>();
     public int TotalFormatCount { get; init; }
     public IReadOnlyList<VideoSourceFormatEntry> Formats { get; init; } = Array.Empty<VideoSourceFormatEntry>();
+}
+
+public sealed class PreviewColorProbeResult
+{
+    public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public bool SessionActive { get; init; }
+    public string RendererMode { get; init; } = "None";
+    public string NegotiatedSubtype { get; init; } = "Unknown";
+    public int SourceWidth { get; init; }
+    public int SourceHeight { get; init; }
+    public double SourceFrameRate { get; init; }
+
+    // MF_MT_VIDEO_NOMINAL_RANGE: 0=Unknown, 1=Normal(0-255), 2=Wide(16-235)
+    public int NominalRange { get; init; }
+    public string NominalRangeLabel { get; init; } = "Unknown";
+
+    // MF_MT_TRANSFER_FUNCTION: 1=Unknown, 6=BT709, 8=sRGB, 12=SMPTE2084(PQ), 16=HLG
+    public int TransferFunction { get; init; }
+    public string TransferFunctionLabel { get; init; } = "Unknown";
+
+    // MF_MT_VIDEO_PRIMARIES: 1=Unknown, 2=BT709, 9=BT2020
+    public int VideoPrimaries { get; init; }
+    public string VideoPrimariesLabel { get; init; } = "Unknown";
+
+    // MF_MT_YUV_MATRIX: 0=Unknown, 1=BT709, 2=BT601, 4=BT2020_non_const
+    public int YuvMatrix { get; init; }
+    public string YuvMatrixLabel { get; init; } = "Unknown";
+
+    // Luma (Y plane) analysis from the preview adapter
+    public int? LumaMin { get; init; }
+    public int? LumaMax { get; init; }
+    public double? LumaMean { get; init; }
+    public int? LumaBelow16Count { get; init; }
+    public int? LumaAbove235Count { get; init; }
+    public int? LumaSampleCount { get; init; }
+
+    // Raw MF properties dump (Guid → value)
+    public IReadOnlyDictionary<string, string> FormatProperties { get; init; } = new Dictionary<string, string>();
+
+    // D3D11 Video Processor color spaces (set when renderer is active)
+    public string D3DInputColorSpace { get; init; } = "None";
+    public string D3DOutputColorSpace { get; init; } = "None";
+}
+
+public sealed class PreviewFrameCaptureResult
+{
+    public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public bool Succeeded { get; init; }
+    public string Message { get; init; } = string.Empty;
+    public string? FilePath { get; init; }
+    public int CapturedWidth { get; init; }
+    public int CapturedHeight { get; init; }
+    public string RendererMode { get; init; } = "Unknown";
+    public double AverageR { get; init; }
+    public double AverageG { get; init; }
+    public double AverageB { get; init; }
+    public double AverageLuminance { get; init; }
+    public double MinLuminance { get; init; }
+    public double MaxLuminance { get; init; }
+    public double NearBlackPercent { get; init; }
+    public double NearWhitePercent { get; init; }
+    public double PureBlackPercent { get; init; }
+    public int LetterboxTopRows { get; init; }
+    public int LetterboxBottomRows { get; init; }
+    public int PillarboxLeftCols { get; init; }
+    public int PillarboxRightCols { get; init; }
+    public int ContentWidth { get; init; }
+    public int ContentHeight { get; init; }
+    public double ContentAspectRatio { get; init; }
+    public int[] LuminanceHistogram { get; init; } = Array.Empty<int>();
+    public long TotalPixels { get; init; }
 }

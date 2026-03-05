@@ -218,6 +218,21 @@ Do not rewrite or delete prior entries. Append new entries only.
   - Pending runtime verification with actual recording.
 - Conclusion: The hevc_metadata BSF should inject correct HDR signaling into NVENC output, matching how av1_metadata already works for AV1. Needs runtime verification.
 
+## E19 - CaptureService audio path migrated to WASAPI capture/playback
+- Timestamp (UTC): 2026-03-05T04:45:21Z
+- Commit Hash: uncommitted
+- What Changed (single change): Replaced `CaptureService` audio orchestration from `MediaCaptureIngestSession` to new WASAPI services (`WasapiAudioCapture`, `WasapiAudioPlayback`, `WasapiComInterop`) while preserving the f32le 48kHz stereo sink contract and audio-level telemetry wiring.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for startup/runtime warnings after the build/test pass.
+- Validator Output:
+  - `Build succeeded.`
+  - `All runtime snapshot regression checks passed.`
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass).
+- Conclusion: The WASAPI audio pipeline compiles and passes regression checks with CaptureService now using WASAPI capture/playback for preview + recording audio flow.
+
 ## E19 - SourceReaderPreviewAdapter for zero-blink HDR preview
 - Timestamp (UTC): 2026-03-01T20:00:00Z
 - Commit Hash: uncommitted
@@ -275,3 +290,66 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (automation observability change)
 - Conclusion: Automation consumers now get direct visibility into source-reader preview adapter flow and timeout behavior.
+
+## E23 - DeviceService WinRT enumeration replaced with MF + WASAPI endpoint enumeration
+- Timestamp (UTC): 2026-03-05T04:29:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): Replaced `DeviceService` WinRT device discovery/format probing with `MfDeviceEnumerator` (`MFEnumDeviceSources` + `IMFSourceReader.GetNativeMediaType`) and WASAPI endpoint enumeration (`IMMDeviceEnumerator.EnumAudioEndpoints` + `IMMDevice.GetId`). Extended `WasapiComInterop.IPropertyStore` with `PROPERTYKEY`/`PropVariant` support so audio device names resolve from `PKEY_Device_FriendlyName`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for `Device discovery summary` and unexpected MF/WASAPI failures.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)` on final pass)
+  - `All runtime snapshot regression checks passed.`
+- ffprobe Evidence:
+  - N/A (enumeration/probing and ID-compatibility refactor only)
+- Conclusion: `DeviceService` now emits MF symbolic links for video and WASAPI endpoint IDs for audio, removing WinRT `DeviceInformation`/`MediaCapture` dependencies while preserving caller contracts and background format-probe behavior.
+
+## E24 - Recording finalize now fails when WASAPI capture faulted mid-record
+- Timestamp (UTC): 2026-03-05T05:15:34Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added explicit recording-finalize fault propagation in `CaptureService.StopAndDisposeRecordingBackendAsync` so any `WasapiAudioCapture.CaptureFailed` during recording forces a failed `FinalizeResult` instead of reporting a clean stop.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for `WASAPI_CAPTURE_FAILED` and `RECORDING_AUDIO_FAULT` during an induced audio-failure recording stop path.
+- Validator Output:
+  - `Build succeeded.` (`2 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+- ffprobe Evidence:
+  - N/A (capture-control/finalize status fix)
+- Conclusion: Recording status can no longer report success when WASAPI audio ingestion failed during the recording window.
+
+## E25 - WASAPI resample frame debt switched to integer numerator accounting
+- Timestamp (UTC): 2026-03-05T05:15:34Z
+- Commit Hash: uncommitted
+- What Changed (single change): Replaced floating-point `_resampleRemainderFrames` with integer `_resampleRemainderNumerator` in `WasapiAudioCapture.ComputeResampledFrameCount` to preserve sub-frame debt exactly across packets and eliminate float rounding drift.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Run preview/record on a non-48k endpoint and verify continuous metering/audio delivery without frame debt loss across packet boundaries.
+- Validator Output:
+  - `Build succeeded.` (`2 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+- ffprobe Evidence:
+  - N/A (runtime audio conversion correctness fix; no new artifact generated in this run)
+- Conclusion: Output frame count derivation now uses exact integer carry, improving cadence correctness for non-48k capture formats.
+
+## E26 - WinRT MediaCapture cleanup removed dead preview/event/automation contract paths
+- Timestamp (UTC): 2026-03-05T05:48:08Z
+- Commit Hash: uncommitted
+- What Changed (single change): Removed dead WinRT migration leftovers by deleting `MediaCaptureIngestSession`, `SourceReaderPreviewAdapter`, `DirectShowPreviewService`, and `PreviewFrame`, removing the unused `PreviewFrameReady`/`ActiveSourceReaderPreviewAdapter` chains, shrinking `IPreviewFrameSink` to raw/texture methods only, and removing obsolete preview-reader automation fields/wiring from app + MCP formatting.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `dotnet restore tools/McpServer/McpServer.csproj --ignore-failed-sources`
+  4. `dotnet build tools/McpServer/McpServer.csproj --no-restore`
+  5. `rg -n --glob '*.cs' 'MediaCaptureIngestSession|SourceReaderPreviewAdapter|DirectShowPreviewService' ElgatoCapture tools tests`
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)` on app build)
+  - `All runtime snapshot regression checks passed.`
+  - `McpServer -> ...\\McpServer.dll` then `Build succeeded.` (`0 Warning(s)`, `0 Error(s)` after stopping locked `McpServer.exe`)
+- ffprobe Evidence:
+  - N/A (dead-code/contract cleanup only)
+- Conclusion: Dead WinRT MediaCapture-era components and related preview/automation references are removed from live C# code, and app + MCP builds remain green.

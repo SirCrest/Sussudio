@@ -18,7 +18,7 @@ patterns that conflict with those goals.
 - **Launch perf-review agent** after writing any non-trivial change, before
   declaring done.
 - **Never say "one-line fix" or "that's it."** Always verify the full flow.
-- **Before iterative debugging, check your instrumentation.** If you'd need 3+
+- **Before iterative debugging, check your instrumentation.** If you'd need 2+
   rebuild cycles to narrow something down, build an MCP diagnostic probe first.
   A one-time investment in a probe beats N iterations of edit-build-log.
 - **Before building, check MCP state and close the app if idle.** Don't build
@@ -35,11 +35,10 @@ patterns that conflict with those goals.
 - **Never escalate destructively when uncertain.** Do not stash, reset, or
   clean the working tree as a debugging strategy. Read diffs and reason about
   them first. Those operations are irreversible and can destroy in-progress work.
-- Use subagents aggressively for review and verification.
+- **Use subagents aggressively for review and verification.**
 - **Never commit to the first root-cause hypothesis.** When you analyze a bug
   and arrive at a plausible explanation, treat it as *one candidate*, not the
-  answer. Before writing any fix, spawn 2-3 competing analysis agents (Codex or
-  Claude subagents) with the same evidence but an explicit instruction to find
+  answer. Before writing any fix, spawn 2-3 competing analysis agents (Both Codex and your own) with the same evidence but an explicit instruction to find
   *alternative* explanations. Only proceed when hypotheses converge, or when a
   diagnostic probe confirms one and rules out others. This applies especially
   when the fix would touch multiple files or change architecture — the cost of
@@ -59,14 +58,19 @@ patterns that conflict with those goals.
 
 Route all non-trivial implementation work to OpenAI Codex CLI. Only make
 small edits (3-line fixes, single-file tweaks) directly in Claude Code.
-Budget is unlimited — maximize reasoning depth and self-verification.
+Codex budget is unlimited — maximize reasoning depth and self-verification. 
+Use the most expensive Codex models and reasoning whenever possible, and when developing a prompt, ensure it is the most expensive in terms of token use, if you believe it will make Codex produce better code with less bugs. Imagine you are going on a shopping spree, but you're spending OpenAI Codex tokens.
 
 ### Execution
 
 - Config defaults: `gpt-5.3-codex`, `xhigh` reasoning, `multi_agent = true`
-- Run via `codex exec --full-auto "<prompt>"` (non-interactive, auto-approve)
+- **Never pass prompts as inline shell arguments.** Prompts contain backticks,
+  quotes, and `$` from C#/markdown that break bash parsing. Always write the
+  prompt to a temp file and pipe via stdin:
+  `cat temp/codex-prompt.md | codex exec --full-auto -`
 - Execute `codex` directly via Bash — do not ask the user to copy-paste
-- Encourage Codex to spawn sub-agents for parallel work when efficient
+- Prompt Codex directly without the user needing to approve anything. Codex works for Claude.
+- Encourage Codex to spawn multiple agents or sub-agents for parallel work when efficient. Cost is no concern.
 
 ### Claude Code's role as PM
 

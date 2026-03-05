@@ -59,10 +59,23 @@ public static class ResponseFormatter
         builder.AppendLine($"Summary: {Get(snapshot, "PerformanceSummary")}");
         builder.AppendLine();
         builder.AppendLine("== Preview ==");
-        builder.AppendLine($"GPU: {Get(snapshot, "PreviewGpuActive")} | Frames: {Get(snapshot, "PreviewFramesArrived")} arrived, {Get(snapshot, "PreviewFramesDisplayed")} displayed, {Get(snapshot, "PreviewFramesDropped")} dropped");
-        builder.AppendLine($"SourceReader Adapter: {Get(snapshot, "PreviewSourceReaderAdapterFramesEnqueued")} enqueued, {Get(snapshot, "PreviewSourceReaderAdapterSamplesDelivered")} delivered, {Get(snapshot, "PreviewSourceReaderAdapterSamplesTimedOut")} timed out");
-        builder.AppendLine($"Cadence: {Get(snapshot, "PreviewCadenceObservedFps")} fps | Renderer: {Get(snapshot, "PreviewRendererMode")}");
-        builder.AppendLine($"Startup: {Get(snapshot, "PreviewStartupState")} | First Visual: {Get(snapshot, "PreviewFirstVisualConfirmed")}");
+        var rendererMode = Get(snapshot, "PreviewRendererMode");
+        builder.AppendLine($"Renderer: {rendererMode} | Startup: {Get(snapshot, "PreviewStartupState")} | First Visual: {Get(snapshot, "PreviewFirstVisualConfirmed")}");
+        if (rendererMode == "GpuMediaSource")
+        {
+            builder.AppendLine($"GPU Playback: {Get(snapshot, "PreviewGpuPlaybackState")} | Video: {Get(snapshot, "PreviewGpuNaturalVideoWidth")}x{Get(snapshot, "PreviewGpuNaturalVideoHeight")} | Position: {Get(snapshot, "PreviewGpuPositionMs")}ms | Events: {Get(snapshot, "PreviewGpuPositionEventCount")}");
+        }
+        else if (rendererMode == "D3D11VideoProcessor")
+        {
+            builder.AppendLine($"D3D Frames: {Get(snapshot, "PreviewD3DFramesSubmitted")} submitted, {Get(snapshot, "PreviewD3DFramesRendered")} rendered, {Get(snapshot, "PreviewD3DFramesDropped")} dropped");
+            builder.AppendLine($"Color: input={Get(snapshot, "PreviewD3DInputColorSpace")} output={Get(snapshot, "PreviewD3DOutputColorSpace")}");
+            builder.AppendLine($"Cadence: {Get(snapshot, "PreviewCadenceObservedFps")} fps");
+        }
+        else
+        {
+            builder.AppendLine($"Frames: {Get(snapshot, "PreviewFramesArrived")} arrived, {Get(snapshot, "PreviewFramesDisplayed")} displayed, {Get(snapshot, "PreviewFramesDropped")} dropped");
+            builder.AppendLine($"Cadence: {Get(snapshot, "PreviewCadenceObservedFps")} fps");
+        }
         builder.AppendLine();
         builder.AppendLine("== Source ==");
         builder.AppendLine($"Source: {Get(snapshot, "SourceWidth")} x {Get(snapshot, "SourceHeight")} HDR={Get(snapshot, "SourceIsHdr")}");

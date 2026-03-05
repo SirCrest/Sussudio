@@ -11,7 +11,6 @@ using CommunityToolkit.Mvvm.Input;
 using ElgatoCapture.Models;
 using ElgatoCapture.Services;
 using Microsoft.UI.Dispatching;
-using Windows.Media.Playback;
 using Windows.Storage.Pickers;
 
 namespace ElgatoCapture.ViewModels;
@@ -270,24 +269,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private long _audioMeterLastTick;
     private int _disposeState;
 
-    public event EventHandler<PreviewFrame>? PreviewFrameReady;
     public event EventHandler? PreviewStartRequested;
     public event EventHandler? PreviewStopRequested;
-
-    private IMediaPlaybackSource? _previewPlaybackSource;
-
-    public IMediaPlaybackSource? PreviewPlaybackSource
-    {
-        get => _previewPlaybackSource;
-        private set
-        {
-            if (ReferenceEquals(_previewPlaybackSource, value)) return;
-            _previewPlaybackSource = value;
-            OnPropertyChanged();
-        }
-    }
-
-    public SourceReaderPreviewAdapter? ActiveSourceReaderPreviewAdapter => _captureService.ActiveSourceReaderPreviewAdapter;
 
     public CaptureRuntimeSnapshot GetCaptureRuntimeSnapshot() => _captureService.GetRuntimeSnapshot();
     public CaptureHealthSnapshot GetCaptureHealthSnapshot() => _captureService.GetHealthSnapshot();
@@ -300,6 +283,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public Task<RecordingStats> GetRecordingStatsSnapshotAsync(CancellationToken cancellationToken = default)
         => InvokeOnUiThreadAsync(() => _captureService.GetRecordingStats(), cancellationToken);
     public VideoSourceProbeResult ProbeVideoSource() => _captureService.ProbeVideoSource();
+    public PreviewColorProbeResult ProbePreviewColor() => _captureService.ProbePreviewColor();
+    public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath) => _captureService.CapturePreviewFrameAsync(outputPath);
+    public CaptureSettings GetCurrentSettings() => BuildCaptureSettings();
+
+    internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
+    {
+        _captureService.SetPreviewFrameSink(sink);
+    }
 
 
     public MainViewModel()
@@ -315,8 +306,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.FrameCaptured += OnFrameCaptured;
         _captureService.AudioLevelUpdated += OnAudioLevelUpdated;
         _captureService.SourceTelemetryUpdated += OnSourceTelemetryUpdated;
-        _captureService.PreviewFrameReady += OnPreviewFrameReady;
-        _captureService.PreviewPlaybackSourceChanged += OnPreviewPlaybackSourceChanged;
         _latestSourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();
         ApplySourceTelemetrySnapshot(_latestSourceTelemetry, allowAutoRetarget: false);
         UpdateHdrRuntimeStatusFromCapture();
@@ -726,16 +715,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private async Task RefreshSplitEncodeModesAsync()
     {
         var support = await FFmpegEncoderService.GetSplitEncodeSupportAsync();
-        var modes = new List<string> { "Auto", "Disabled" };
-        if (support.Supports2Way)
-        {
-            modes.Add("2-way");
-        }
-
-        if (support.Supports3Way)
-        {
-            modes.Add("3-way");
-        }
+        var modes = new List<string> { "Auto", "Disabled", "2-way", "3-way" };
 
         void ApplyModes()
         {
@@ -811,12 +791,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             : LiveInfoUnavailable;
 
         var frameRateValue = runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate ?? runtime.RequestedFrameRate;
-        var frameRateArg = runtime.ActualFrameRateArg ?? runtime.NegotiatedFrameRateArg ?? runtime.RequestedFrameRateArg;
-        if (!string.IsNullOrWhiteSpace(frameRateArg))
-        {
-            LiveFrameRate = frameRateArg!;
-        }
-        else if (frameRateValue.HasValue && frameRateValue.Value > 0)
+        if (frameRateValue.HasValue && frameRateValue.Value > 0)
         {
             LiveFrameRate = frameRateValue.Value.ToString("0.00");
         }
@@ -2763,7 +2738,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
         else
         {
-            RecordingBitrateInfo = "Bitrate: --";
+            RecordingBitrateInfo = "--";
         }
     }
 
@@ -2895,7 +2870,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         PreviewStopRequested?.Invoke(this, EventArgs.Empty);
         await _sessionCoordinator.StopVideoPreviewAsync();
-        PreviewPlaybackSource = null;
         IsPreviewing = false;
 
         // Stop audio preview
@@ -3013,19 +2987,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public Task RefreshDevicesForAutomationAsync(CancellationToken cancellationToken = default)
         => InvokeOnUiThreadAsync(() => RefreshDevicesAsync(), cancellationToken);
-
-    private void OnPreviewFrameReady(object? sender, PreviewFrame frame)
-    {
-        PreviewFrameReady?.Invoke(this, frame);
-    }
-
-    private void OnPreviewPlaybackSourceChanged(object? sender, IMediaPlaybackSource? source)
-    {
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            PreviewPlaybackSource = source;
-        });
-    }
 
     public Task SelectDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
     {
@@ -3477,8 +3438,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.FrameCaptured -= OnFrameCaptured;
         _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
         _captureService.SourceTelemetryUpdated -= OnSourceTelemetryUpdated;
-        _captureService.PreviewFrameReady -= OnPreviewFrameReady;
-        _captureService.PreviewPlaybackSourceChanged -= OnPreviewPlaybackSourceChanged;
         var stepTimeoutMs = GetIntFromEnv(
             "ELGATOCAPTURE_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,

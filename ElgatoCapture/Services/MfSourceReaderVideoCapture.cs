@@ -13,28 +13,47 @@ namespace ElgatoCapture.Services;
 public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 {
     public delegate void RawFrameCallback(ReadOnlySpan<byte> frameData, int width, int height);
+    public delegate void DualFrameCallback(IntPtr gpuTexture, int gpuSubresource, ReadOnlySpan<byte> cpuData, int width, int height);
 
     private readonly object _sync = new();
+    private static readonly Guid ID3D11Texture2DIid = new(
+        0x6F15AAF2, 0xD208, 0x4E89, 0x9A, 0xB4, 0x48, 0x95, 0x35, 0xD3, 0x4F, 0x9C);
     private IMFSourceReader? _sourceReader;
     private IMFMediaSource? _mediaSource;
     private CancellationTokenSource? _readCts;
     private Task? _readTask;
     private bool _isInitialized;
     private bool _startupHeld;
+    private bool _sourceReaderD3DEnabled;
+    private IntPtr _dxgiDeviceManagerPtr;
     private int _width;
     private int _height;
     private double _fps;
+    private bool _isP010;
     private string _deviceSymbolicLink = string.Empty;
     private string _negotiatedFormat = "unknown";
     private long _framesDelivered;
     private long _framesDropped;
     private int _vtableDiagDone;
+    private int _dxgiBufferProbeDone;
+    private int _dxgiResourceFailureCount;
 
     public long FramesDelivered => Interlocked.Read(ref _framesDelivered);
     public long FramesDropped => Interlocked.Read(ref _framesDropped);
     public string NegotiatedFormat => Volatile.Read(ref _negotiatedFormat);
+    public bool IsP010 => Volatile.Read(ref _isP010);
+    public bool IsD3DOutputEnabled => Volatile.Read(ref _sourceReaderD3DEnabled);
+    public int Width => Volatile.Read(ref _width);
+    public int Height => Volatile.Read(ref _height);
+    public double Fps => Volatile.Read(ref _fps);
 
-    public Task InitializeAsync(string deviceSymbolicLink, int width, int height, double fps)
+    public Task InitializeAsync(
+        string deviceSymbolicLink,
+        int width,
+        int height,
+        double fps,
+        bool requireP010,
+        IntPtr dxgiDeviceManager = default)
     {
         if (string.IsNullOrWhiteSpace(deviceSymbolicLink))
         {
@@ -64,6 +83,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         IMFAttributes? readerAttributes = null;
         IMFMediaType? selectedMediaType = null;
         var startupHeld = false;
+        var sourceReaderD3DEnabled = false;
 
         try
         {
@@ -73,21 +93,53 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             mediaSource = CreateMediaSource(deviceSymbolicLink);
 
             ThrowIfFailed(
-                MfInterop.MFCreateAttributes(out readerAttributes, 1),
+                MfInterop.MFCreateAttributes(out readerAttributes, 2),
                 "MFCreateAttributes(reader)");
             ThrowIfFailed(
                 readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_DISABLE_CONVERTERS, 1),
                 "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
 
-            ThrowIfFailed(
-                MfInterop.MFCreateSourceReaderFromMediaSource(mediaSource, readerAttributes, out sourceReader),
-                "MFCreateSourceReaderFromMediaSource");
+            if (dxgiDeviceManager != IntPtr.Zero &&
+                TrySetSourceReaderD3DManager(readerAttributes, dxgiDeviceManager))
+            {
+                sourceReaderD3DEnabled = true;
+            }
 
-            selectedMediaType = SelectP010MediaType(
+            var createSourceReaderHr = MfInterop.MFCreateSourceReaderFromMediaSource(mediaSource, readerAttributes, out sourceReader);
+            if (createSourceReaderHr < 0 && sourceReaderD3DEnabled)
+            {
+                Log(
+                    "MF_SOURCE_READER_D3D_INIT_WARN " +
+                    $"stage=CreateSourceReader hr=0x{createSourceReaderHr:X8} " +
+                    "fallback=cpu_only");
+
+                ReleaseComObject(ref sourceReader);
+                ReleaseComObject(ref readerAttributes);
+
+                ThrowIfFailed(
+                    MfInterop.MFCreateAttributes(out readerAttributes, 1),
+                    "MFCreateAttributes(reader_cpu_fallback)");
+                ThrowIfFailed(
+                    readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_DISABLE_CONVERTERS, 1),
+                    "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
+
+                sourceReaderD3DEnabled = false;
+                createSourceReaderHr = MfInterop.MFCreateSourceReaderFromMediaSource(mediaSource, readerAttributes, out sourceReader);
+            }
+
+            ThrowIfFailed(createSourceReaderHr, "MFCreateSourceReaderFromMediaSource");
+
+            var requestedSubtype = requireP010
+                ? MfGuids.MFVideoFormat_P010
+                : MfGuids.MFVideoFormat_NV12;
+
+            selectedMediaType = SelectMediaType(
                 sourceReader,
                 width,
                 height,
                 fps,
+                requestedSubtype,
+                out var negotiatedSubtype,
                 out var negotiatedWidth,
                 out var negotiatedHeight,
                 out var negotiatedFps,
@@ -98,21 +150,26 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     MfConstants.MF_SOURCE_READER_FIRST_VIDEO_STREAM,
                     IntPtr.Zero,
                     selectedMediaType),
-                "IMFSourceReader.SetCurrentMediaType(P010)");
+                $"IMFSourceReader.SetCurrentMediaType({SubtypeGuidToName(negotiatedSubtype)})");
 
             _deviceSymbolicLink = deviceSymbolicLink;
             _width = negotiatedWidth;
             _height = negotiatedHeight;
             _fps = negotiatedFps;
+            _isP010 = negotiatedSubtype == MfGuids.MFVideoFormat_P010;
             Volatile.Write(ref _negotiatedFormat, negotiatedDescription);
             Interlocked.Exchange(ref _framesDelivered, 0);
             Interlocked.Exchange(ref _framesDropped, 0);
+            Interlocked.Exchange(ref _dxgiBufferProbeDone, 0);
+            Interlocked.Exchange(ref _dxgiResourceFailureCount, 0);
 
             lock (_sync)
             {
                 _mediaSource = mediaSource;
                 _sourceReader = sourceReader;
                 _startupHeld = startupHeld;
+                _sourceReaderD3DEnabled = sourceReaderD3DEnabled;
+                _dxgiDeviceManagerPtr = sourceReaderD3DEnabled ? dxgiDeviceManager : IntPtr.Zero;
                 _isInitialized = true;
                 mediaSource = null;
                 sourceReader = null;
@@ -124,6 +181,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 $"device='{deviceSymbolicLink}' " +
                 $"requested={width}x{height}@{fps:0.###} " +
                 $"negotiated='{_negotiatedFormat}' " +
+                $"d3d_manager_enabled={sourceReaderD3DEnabled} " +
                 "mf_readwrite_disable_converters=true");
         }
         catch (Exception ex)
@@ -132,6 +190,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 "MF_SOURCE_READER_INIT_FAIL " +
                 $"device='{deviceSymbolicLink}' " +
                 $"requested={width}x{height}@{fps:0.###} " +
+                $"d3d_manager_requested={(dxgiDeviceManager != IntPtr.Zero)} " +
                 $"type={ex.GetType().Name} msg={ex.Message}");
             throw;
         }
@@ -154,6 +213,21 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     public void StartReading(RawFrameCallback onFrame, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(onFrame);
+        StartReading(onFrame, null, ct);
+    }
+
+    public void StartReading(DualFrameCallback onFrame, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(onFrame);
+        StartReading(null, onFrame, ct);
+    }
+
+    public void StartReading(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)
+    {
+        if (onFrame == null && onDualFrame == null)
+        {
+            throw new ArgumentNullException(nameof(onFrame), "At least one frame callback must be provided.");
+        }
 
         lock (_sync)
         {
@@ -169,12 +243,12 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
             _readCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             var readToken = _readCts.Token;
-            _readTask = Task.Run(() => ReadLoop(onFrame, readToken), CancellationToken.None);
+            _readTask = Task.Run(() => ReadLoop(onFrame, onDualFrame, readToken), CancellationToken.None);
         }
 
         Log(
             "MF_SOURCE_READER_START " +
-            $"device='{_deviceSymbolicLink}' negotiated='{_negotiatedFormat}'");
+            $"device='{_deviceSymbolicLink}' negotiated='{_negotiatedFormat}' d3d_manager_enabled={_sourceReaderD3DEnabled}");
     }
 
     public async Task StopAsync()
@@ -220,6 +294,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         {
             _isInitialized = false;
             _deviceSymbolicLink = string.Empty;
+            _isP010 = false;
+            _sourceReaderD3DEnabled = false;
+            _dxgiDeviceManagerPtr = IntPtr.Zero;
         }
 
         if (_startupHeld)
@@ -229,7 +306,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
     }
 
-    private void ReadLoop(RawFrameCallback onFrame, CancellationToken ct)
+    private void ReadLoop(RawFrameCallback? onFrame, DualFrameCallback? onDualFrame, CancellationToken ct)
     {
         Thread.CurrentThread.Priority = ThreadPriority.AboveNormal;
 
@@ -288,7 +365,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     continue;
                 }
 
-                DeliverFrame(sample, onFrame);
+                DeliverFrame(sample, onFrame, onDualFrame);
                 Interlocked.Increment(ref _framesDelivered);
             }
             catch (OperationCanceledException)
@@ -419,7 +496,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
     }
 
-    private unsafe void DeliverFrame(IMFSample sample, RawFrameCallback onFrame)
+    private unsafe void DeliverFrame(IMFSample sample, RawFrameCallback? onFrame, DualFrameCallback? onDualFrame)
     {
         // One-shot vtable diagnostic — runs on the very first sample to compare
         // raw vtable dispatch vs managed COM interop dispatch. This definitively
@@ -449,7 +526,103 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 return;
             }
 
-            if (TryDeliverFrameFrom2DBuffer(buffer, onFrame))
+            if (onDualFrame != null)
+            {
+                DeliverDualFrameFromBuffer(buffer, onDualFrame, onFrame);
+                return;
+            }
+
+            if (onFrame != null)
+            {
+                DeliverRawFrameFromBuffer(buffer, onFrame);
+            }
+        }
+        finally
+        {
+            ReleaseComObject(ref buffer);
+        }
+    }
+
+    private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame)
+    {
+        if (TryDeliverFrameFrom2DBuffer(buffer, onFrame))
+        {
+            return;
+        }
+
+        ThrowIfFailed(
+            buffer.Lock(out var dataPtr, out _, out var curLen),
+            "IMFMediaBuffer.Lock");
+        try
+        {
+            if (dataPtr == IntPtr.Zero || curLen <= 0)
+            {
+                Interlocked.Increment(ref _framesDropped);
+                return;
+            }
+
+            var packedFrameBytes = GetFrameSizeBytes(_width, _height, _isP010);
+            if (packedFrameBytes <= 0)
+            {
+                throw new InvalidOperationException("Invalid frame dimensions.");
+            }
+
+            if (curLen < packedFrameBytes)
+            {
+                throw new InvalidOperationException(
+                    $"Media buffer length ({curLen}) is smaller than expected frame size ({packedFrameBytes}).");
+            }
+
+            var expectedStride = GetRowBytes(_width, _isP010);
+            var inferredStride = InferPackedStride(curLen, _height);
+            if (inferredStride > expectedStride)
+            {
+                var packed = ArrayPool<byte>.Shared.Rent(packedFrameBytes);
+                try
+                {
+                    var packedSpan = packed.AsSpan(0, packedFrameBytes);
+                    if (_isP010)
+                    {
+                        CopyP010WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
+                    }
+                    else
+                    {
+                        CopyNV12WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
+                    }
+
+                    onFrame(packedSpan, _width, _height);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(packed);
+                }
+            }
+            else
+            {
+                onFrame(new ReadOnlySpan<byte>((void*)dataPtr, packedFrameBytes), _width, _height);
+            }
+        }
+        finally
+        {
+            _ = buffer.Unlock();
+        }
+    }
+
+    private unsafe void DeliverDualFrameFromBuffer(
+        IMFMediaBuffer buffer,
+        DualFrameCallback onDualFrame,
+        RawFrameCallback? fallbackRawFrame)
+    {
+        var hasTexture = TryGetDxgiTexture(buffer, out var gpuTexture, out var gpuSubresource);
+        if (!hasTexture && fallbackRawFrame != null)
+        {
+            DeliverRawFrameFromBuffer(buffer, fallbackRawFrame);
+            return;
+        }
+
+        try
+        {
+            if (TryDeliverDualFrameFrom2DBuffer(buffer, gpuTexture, gpuSubresource, onDualFrame))
             {
                 return;
             }
@@ -465,19 +638,19 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     return;
                 }
 
-                var packedFrameBytes = FFmpegEncoderService.GetP010FrameSizeBytes(_width, _height);
+                var packedFrameBytes = GetFrameSizeBytes(_width, _height, _isP010);
                 if (packedFrameBytes <= 0)
                 {
-                    throw new InvalidOperationException("Invalid P010 frame dimensions.");
+                    throw new InvalidOperationException("Invalid frame dimensions.");
                 }
 
                 if (curLen < packedFrameBytes)
                 {
                     throw new InvalidOperationException(
-                        $"Media buffer length ({curLen}) is smaller than expected P010 frame size ({packedFrameBytes}).");
+                        $"Media buffer length ({curLen}) is smaller than expected frame size ({packedFrameBytes}).");
                 }
 
-                var expectedStride = _width * 2;
+                var expectedStride = GetRowBytes(_width, _isP010);
                 var inferredStride = InferPackedStride(curLen, _height);
                 if (inferredStride > expectedStride)
                 {
@@ -485,8 +658,16 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     try
                     {
                         var packedSpan = packed.AsSpan(0, packedFrameBytes);
-                        CopyP010WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
-                        onFrame(packedSpan, _width, _height);
+                        if (_isP010)
+                        {
+                            CopyP010WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
+                        }
+                        else
+                        {
+                            CopyNV12WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
+                        }
+
+                        InvokeDualFrameCallback(onDualFrame, gpuTexture, gpuSubresource, packedSpan, _width, _height);
                     }
                     finally
                     {
@@ -495,7 +676,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 }
                 else
                 {
-                    onFrame(new ReadOnlySpan<byte>((void*)dataPtr, packedFrameBytes), _width, _height);
+                    InvokeDualFrameCallback(
+                        onDualFrame,
+                        gpuTexture,
+                        gpuSubresource,
+                        new ReadOnlySpan<byte>((void*)dataPtr, packedFrameBytes),
+                        _width,
+                        _height);
                 }
             }
             finally
@@ -505,7 +692,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            ReleaseComObject(ref buffer);
+            if (gpuTexture != IntPtr.Zero)
+            {
+                Marshal.Release(gpuTexture);
+            }
         }
     }
 
@@ -527,13 +717,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 return true;
             }
 
-            var packedFrameBytes = FFmpegEncoderService.GetP010FrameSizeBytes(_width, _height);
+            var packedFrameBytes = GetFrameSizeBytes(_width, _height, _isP010);
             if (packedFrameBytes <= 0)
             {
-                throw new InvalidOperationException("Invalid P010 frame dimensions.");
+                throw new InvalidOperationException("Invalid frame dimensions.");
             }
 
-            var expectedStride = _width * 2;
+            var expectedStride = GetRowBytes(_width, _isP010);
             if (pitch == expectedStride)
             {
                 onFrame(new ReadOnlySpan<byte>((void*)scanlinePtr, packedFrameBytes), _width, _height);
@@ -544,7 +734,15 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             try
             {
                 var packedSpan = packed.AsSpan(0, packedFrameBytes);
-                CopyP010WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
+                if (_isP010)
+                {
+                    CopyP010WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
+                }
+                else
+                {
+                    CopyNV12WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
+                }
+
                 onFrame(packedSpan, _width, _height);
             }
             finally
@@ -557,6 +755,171 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         finally
         {
             _ = buffer2D.Unlock2D();
+        }
+    }
+
+    private unsafe bool TryDeliverDualFrameFrom2DBuffer(
+        IMFMediaBuffer buffer,
+        IntPtr gpuTexture,
+        int gpuSubresource,
+        DualFrameCallback onFrame)
+    {
+        if (buffer is not IMF2DBuffer buffer2D)
+        {
+            return false;
+        }
+
+        ThrowIfFailed(
+            buffer2D.Lock2D(out var scanlinePtr, out var pitch),
+            "IMF2DBuffer.Lock2D");
+        try
+        {
+            if (scanlinePtr == IntPtr.Zero)
+            {
+                Interlocked.Increment(ref _framesDropped);
+                return true;
+            }
+
+            var packedFrameBytes = GetFrameSizeBytes(_width, _height, _isP010);
+            if (packedFrameBytes <= 0)
+            {
+                throw new InvalidOperationException("Invalid frame dimensions.");
+            }
+
+            var expectedStride = GetRowBytes(_width, _isP010);
+            if (pitch == expectedStride)
+            {
+                InvokeDualFrameCallback(
+                    onFrame,
+                    gpuTexture,
+                    gpuSubresource,
+                    new ReadOnlySpan<byte>((void*)scanlinePtr, packedFrameBytes),
+                    _width,
+                    _height);
+                return true;
+            }
+
+            var packed = ArrayPool<byte>.Shared.Rent(packedFrameBytes);
+            try
+            {
+                var packedSpan = packed.AsSpan(0, packedFrameBytes);
+                if (_isP010)
+                {
+                    CopyP010WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
+                }
+                else
+                {
+                    CopyNV12WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
+                }
+
+                InvokeDualFrameCallback(onFrame, gpuTexture, gpuSubresource, packedSpan, _width, _height);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(packed);
+            }
+
+            return true;
+        }
+        finally
+        {
+            _ = buffer2D.Unlock2D();
+        }
+    }
+
+    private bool TryGetDxgiTexture(IMFMediaBuffer buffer, out IntPtr gpuTexture, out int gpuSubresource)
+    {
+        gpuTexture = IntPtr.Zero;
+        gpuSubresource = 0;
+        if (!Volatile.Read(ref _sourceReaderD3DEnabled) || _dxgiDeviceManagerPtr == IntPtr.Zero)
+        {
+            return false;
+        }
+
+        if (buffer is not IMFDXGIBuffer dxgiBuffer)
+        {
+            if (Interlocked.CompareExchange(ref _dxgiBufferProbeDone, 1, 0) == 0)
+            {
+                Log(
+                    "MF_SOURCE_READER_D3D_BUFFER_MISS " +
+                    $"buffer_type={buffer.GetType().Name} fallback=cpu");
+            }
+
+            return false;
+        }
+
+        var textureIid = ID3D11Texture2DIid;
+        var getResourceHr = dxgiBuffer.GetResource(ref textureIid, out gpuTexture);
+        if (getResourceHr < 0 || gpuTexture == IntPtr.Zero)
+        {
+            var failureCount = Interlocked.Increment(ref _dxgiResourceFailureCount);
+            if (failureCount <= 3)
+            {
+                Log(
+                    "MF_SOURCE_READER_D3D_RESOURCE_FAIL " +
+                    $"stage=GetResource hr=0x{getResourceHr:X8} fallback=cpu");
+            }
+
+            gpuTexture = IntPtr.Zero;
+            return false;
+        }
+
+        var subresourceHr = dxgiBuffer.GetSubresourceIndex(out var subresource);
+        if (subresourceHr < 0)
+        {
+            var failureCount = Interlocked.Increment(ref _dxgiResourceFailureCount);
+            if (failureCount <= 3)
+            {
+                Log(
+                    "MF_SOURCE_READER_D3D_RESOURCE_FAIL " +
+                    $"stage=GetSubresourceIndex hr=0x{subresourceHr:X8} fallback=cpu");
+            }
+
+            Marshal.Release(gpuTexture);
+            gpuTexture = IntPtr.Zero;
+            return false;
+        }
+
+        gpuSubresource = unchecked((int)subresource);
+        return true;
+    }
+
+    private static void InvokeDualFrameCallback(
+        DualFrameCallback callback,
+        IntPtr gpuTexture,
+        int gpuSubresource,
+        ReadOnlySpan<byte> cpuData,
+        int width,
+        int height)
+    {
+        callback(gpuTexture, gpuSubresource, cpuData, width, height);
+    }
+
+    private bool TrySetSourceReaderD3DManager(IMFAttributes attributes, IntPtr dxgiDeviceManager)
+    {
+        object? managerAsUnknown = null;
+        try
+        {
+            managerAsUnknown = Marshal.GetObjectForIUnknown(dxgiDeviceManager);
+            ThrowIfFailed(
+                attributes.SetUnknown(ref MfGuids.MF_SOURCE_READER_D3D_MANAGER, managerAsUnknown),
+                "IMFAttributes.SetUnknown(MF_SOURCE_READER_D3D_MANAGER)");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Log(
+                "MF_SOURCE_READER_D3D_INIT_WARN " +
+                $"stage=SetUnknown type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message} " +
+                "fallback=cpu_only");
+            return false;
+        }
+        finally
+        {
+            if (managerAsUnknown != null && Marshal.IsComObject(managerAsUnknown))
+            {
+                _ = Marshal.ReleaseComObject(managerAsUnknown);
+            }
         }
     }
 
@@ -684,11 +1047,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
     }
 
-    private IMFMediaType SelectP010MediaType(
+    private IMFMediaType SelectMediaType(
         IMFSourceReader reader,
         int requestedWidth,
         int requestedHeight,
         double requestedFps,
+        Guid requestedSubtype,
+        out Guid selectedSubtype,
         out int selectedWidth,
         out int selectedHeight,
         out double selectedFps,
@@ -696,14 +1061,16 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     {
         IMFMediaType? bestType = null;
         var bestFpsDelta = double.MaxValue;
+        selectedSubtype = requestedSubtype;
         selectedWidth = requestedWidth;
         selectedHeight = requestedHeight;
         selectedFps = requestedFps;
         negotiatedDescription = "unknown";
 
         var totalNativeTypes = 0;
-        var p010Count = 0;
+        var requestedSubtypeCount = 0;
         var subtypeSummary = new Dictionary<string, int>();
+        var requestedSubtypeName = SubtypeGuidToName(requestedSubtype);
 
         for (var index = 0; ; index++)
         {
@@ -737,13 +1104,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 var nFps = TryGetFrameRate(nativeType, out var nNum, out var nDen) && nDen > 0
                     ? (double)nNum / nDen : 0;
 
-                if (hasSubtype && subtype == MfGuids.MFVideoFormat_P010)
+                if (hasSubtype && subtype == requestedSubtype)
                 {
-                    p010Count++;
-                    Log($"MF_SOURCE_READER_NATIVE_P010 index={index} {nWidth}x{nHeight}@{nFps:0.###}");
+                    requestedSubtypeCount++;
+                    Log($"MF_SOURCE_READER_NATIVE_{requestedSubtypeName} index={index} {nWidth}x{nHeight}@{nFps:0.###}");
                 }
 
-                if (!hasSubtype || subtype != MfGuids.MFVideoFormat_P010)
+                if (!hasSubtype || subtype != requestedSubtype)
                 {
                     continue;
                 }
@@ -769,9 +1136,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     selectedWidth = width;
                     selectedHeight = height;
                     selectedFps = frameRate > 0 ? frameRate : requestedFps;
+                    selectedSubtype = subtype;
                     negotiatedDescription = frameRate > 0
-                        ? $"P010 {width}x{height}@{frameRate:0.###}"
-                        : $"P010 {width}x{height}";
+                        ? $"{requestedSubtypeName} {width}x{height}@{frameRate:0.###}"
+                        : $"{requestedSubtypeName} {width}x{height}";
                 }
             }
             finally
@@ -781,20 +1149,23 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
 
         var subtypeList = string.Join(", ", subtypeSummary.Select(kv => $"{kv.Key}={kv.Value}"));
-        Log($"MF_SOURCE_READER_NATIVE_TYPES total={totalNativeTypes} p010={p010Count} subtypes=[{subtypeList}]");
+        Log(
+            "MF_SOURCE_READER_NATIVE_TYPES " +
+            $"total={totalNativeTypes} requested_subtype={requestedSubtypeName} " +
+            $"requested_count={requestedSubtypeCount} subtypes=[{subtypeList}]");
 
         if (bestType == null)
         {
             throw new InvalidOperationException(
-                $"No P010 media type was found for {requestedWidth}x{requestedHeight}@{requestedFps:0.###}. " +
-                $"Source reader has {totalNativeTypes} native types ({p010Count} P010). Subtypes: [{subtypeList}]");
+                $"No {requestedSubtypeName} media type was found for {requestedWidth}x{requestedHeight}@{requestedFps:0.###}. " +
+                $"Source reader has {totalNativeTypes} native types ({requestedSubtypeCount} {requestedSubtypeName}). Subtypes: [{subtypeList}]");
         }
 
         if (bestFpsDelta > 0.5)
         {
             ReleaseComObject(ref bestType);
             throw new InvalidOperationException(
-                $"No P010 media type matched requested frame rate {requestedFps:0.###}fps " +
+                $"No {requestedSubtypeName} media type matched requested frame rate {requestedFps:0.###}fps " +
                 $"for {requestedWidth}x{requestedHeight}.");
         }
 
@@ -895,6 +1266,12 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                target.Contains(candidate, StringComparison.OrdinalIgnoreCase);
     }
 
+    public static int GetFrameSizeBytes(int width, int height, bool isP010)
+        => isP010 ? width * height * 3 : (width * height * 3) / 2;
+
+    private static int GetRowBytes(int width, bool isP010)
+        => isP010 ? width * 2 : width;
+
     private unsafe static void CopyP010WithStride(
         byte* sourceStart,
         int stride,
@@ -909,6 +1286,59 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         if (destination.Length < yBytes + uvBytes)
         {
             throw new ArgumentException("Destination span is too small for packed P010 frame.");
+        }
+
+        var strideAbs = Math.Abs(stride);
+        if (strideAbs < rowBytes)
+        {
+            throw new InvalidOperationException(
+                $"Source stride ({stride}) is smaller than packed row width ({rowBytes}).");
+        }
+
+        var yDest = destination[..yBytes];
+        var uvDest = destination.Slice(yBytes, uvBytes);
+        var yStart = sourceStart;
+        var uvStart = sourceStart + (stride * height);
+
+        if (stride < 0)
+        {
+            yStart = sourceStart + (stride * (height - 1));
+            uvStart = sourceStart + (stride * (height + uvHeight - 1));
+        }
+
+        for (var row = 0; row < height; row++)
+        {
+            var src = stride >= 0
+                ? yStart + (row * stride)
+                : yStart - (row * strideAbs);
+            var dst = yDest.Slice(row * rowBytes, rowBytes);
+            new ReadOnlySpan<byte>(src, rowBytes).CopyTo(dst);
+        }
+
+        for (var row = 0; row < uvHeight; row++)
+        {
+            var src = stride >= 0
+                ? uvStart + (row * stride)
+                : uvStart - (row * strideAbs);
+            var dst = uvDest.Slice(row * rowBytes, rowBytes);
+            new ReadOnlySpan<byte>(src, rowBytes).CopyTo(dst);
+        }
+    }
+
+    private unsafe static void CopyNV12WithStride(
+        byte* sourceStart,
+        int stride,
+        Span<byte> destination,
+        int width,
+        int height)
+    {
+        var rowBytes = width;
+        var uvHeight = height / 2;
+        var yBytes = rowBytes * height;
+        var uvBytes = rowBytes * uvHeight;
+        if (destination.Length < yBytes + uvBytes)
+        {
+            throw new ArgumentException("Destination span is too small for packed NV12 frame.");
         }
 
         var strideAbs = Math.Abs(stride);
@@ -971,6 +1401,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             _sourceReader = null;
             _mediaSource = null;
             _isInitialized = false;
+            _sourceReaderD3DEnabled = false;
+            _dxgiDeviceManagerPtr = IntPtr.Zero;
         }
 
         ReleaseComObject(ref sourceReader);
@@ -980,7 +1412,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private static string SubtypeGuidToName(Guid subtype)
     {
         if (subtype == MfGuids.MFVideoFormat_P010) return "P010";
-        if (subtype == new Guid(0x3231564E, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71)) return "NV12";
+        if (subtype == MfGuids.MFVideoFormat_NV12) return "NV12";
         if (subtype == new Guid(0x32595559, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71)) return "YUY2";
         if (subtype == new Guid(0x47504A4D, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71)) return "MJPG";
         if (subtype == new Guid(0x00000014, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71)) return "RGB24";
@@ -1070,6 +1502,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             [MarshalAs(UnmanagedType.Interface)] IMFAttributes? pAttributes,
             [MarshalAs(UnmanagedType.Interface)] out IMFSourceReader ppSourceReader);
 
+        [DllImport("mfplat.dll", ExactSpelling = true)]
+        internal static extern int MFCreateDXGIDeviceManager(out uint pResetToken, out IntPtr ppDeviceManager);
+
         internal static void AddStartupReference()
         {
             lock (StartupSync)
@@ -1126,6 +1561,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             0x58F0AAD8, 0x22BF, 0x4F8A, 0xBB, 0x3D, 0xD2, 0xC4, 0x97, 0x8C, 0x6E, 0x2F);
         internal static Guid MF_READWRITE_DISABLE_CONVERTERS = new(
             0x98D5B065, 0x1374, 0x4847, 0x8D, 0x5D, 0x31, 0x52, 0x0F, 0xEE, 0x71, 0x56);
+        internal static Guid MF_SOURCE_READER_D3D_MANAGER = new(
+            0xEC822DA2, 0xE1E9, 0x4B29, 0xA0, 0xD8, 0x56, 0x3C, 0x71, 0x9F, 0x52, 0x69);
         internal static Guid MF_MT_SUBTYPE = new(
             0xF7E34C9A, 0x42E8, 0x4714, 0xB7, 0x4B, 0xCB, 0x29, 0xD7, 0x2C, 0x35, 0xE5);
         internal static Guid MF_MT_FRAME_SIZE = new(
@@ -1134,6 +1571,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             0xC459A2E8, 0x3D2C, 0x4E44, 0xB1, 0x32, 0xFE, 0xE5, 0x15, 0x6C, 0x7B, 0xB0);
         internal static Guid MFVideoFormat_P010 = new(
             0x30313050, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+        internal static Guid MFVideoFormat_NV12 = new(
+            0x3231564E, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
     }
 }
 
@@ -1455,4 +1894,19 @@ internal interface IMF2DBuffer
 
     [PreserveSig]
     int ContiguousCopyFrom(IntPtr pbSrcBuffer, int cbSrcBuffer);
+}
+
+[ComImport]
+[Guid("e7174cfa-1c9e-48b1-8866-626226bfc258")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IMFDXGIBuffer
+{
+    [PreserveSig]
+    int GetResource(ref Guid riid, out IntPtr ppvObject);
+
+    [PreserveSig]
+    int GetSubresourceIndex(out uint puSubresource);
+
+    [PreserveSig]
+    int GetUnknown(ref Guid guid, ref Guid riid, out IntPtr ppvObject);
 }
