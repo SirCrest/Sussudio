@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,6 +24,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private const string RendererModeNone = "None";
     private const string RendererModeVideoProcessor = "D3D11VideoProcessor";
     private const string RendererModeHdrShader = "HdrShader";
+    private const string RendererModeHdrPassthrough = "HdrPassthrough";
+    private static readonly uint[] PngCrc32Table = InitPngCrc32Table();
 
     [ComImport]
     [Guid("63aad0b8-7c24-40ff-85a8-640d944cc325")]
@@ -139,6 +143,36 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
         """;
 
+    private const string HdrPassthroughPixelShaderSource = """
+        cbuffer ViewportInfo : register(b0) {
+            float2 vpOrigin;
+            float2 vpSize;
+        };
+
+        Texture2D<float> yPlane : register(t0);
+        Texture2D<float2> uvPlane : register(t1);
+        SamplerState bilinearSampler : register(s0);
+
+        float4 main(float4 pos : SV_Position) : SV_Target {
+            float2 uv = (pos.xy - vpOrigin) / vpSize;
+
+            float y_raw = yPlane.Sample(bilinearSampler, uv);
+            float2 uv_raw = uvPlane.Sample(bilinearSampler, uv);
+
+            // Narrow-range P010 to normalized YCbCr (same as tonemap shader)
+            float Y = saturate((y_raw - 64.0 / 1023.0) * 1023.0 / (940.0 - 64.0));
+            float Cb = (uv_raw.x - 512.0 / 1023.0) * 1023.0 / (960.0 - 64.0);
+            float Cr = (uv_raw.y - 512.0 / 1023.0) * 1023.0 / (960.0 - 64.0);
+
+            // BT.2020 YCbCr to RGB (preserve PQ encoding, no EOTF/tonemap/OETF)
+            float3 rgb;
+            rgb.r = Y + 1.4746 * Cr;
+            rgb.g = Y - 0.16455 * Cb - 0.57135 * Cr;
+            rgb.b = Y + 1.8814 * Cb;
+            return float4(saturate(rgb), 1.0);
+        }
+        """;
+
     private sealed class PendingFrame : IDisposable
     {
         public PendingFrame(
@@ -232,6 +266,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private int _pipelineLatencyIndex;
 
     private TaskCompletionSource<PreviewFrameCaptureResult>? _frameCaptureRequest;
+    private int _frameCaptureEncodeInProgress;
     private string? _frameCaptureOutputPath;
 
     private string _inputColorSpaceLabel = "Unknown";
@@ -247,6 +282,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private ID3D11VideoContext1? _videoContext1;
     private IDXGIFactory2? _factory;
     private IDXGISwapChain1? _swapChain;
+    private IDXGISwapChain3? _swapChain3;
     private ID3D11Texture2D? _swapChainBackBuffer;
     private ID3D11RenderTargetView? _swapChainRTV;
     private ID3D11Texture2D? _inputTexture;
@@ -261,6 +297,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private ID3D11ShaderResourceView? _hdrUVPlaneSRV;
     private ID3D11VertexShader? _fullscreenVS;
     private ID3D11PixelShader? _hdrTonemapPS;
+    private ID3D11PixelShader? _hdrPassthroughPS;
     private ID3D11SamplerState? _linearSampler;
     private ID3D11Buffer? _viewportCB;
     private int _hdrInputConfiguredWidth;
@@ -273,7 +310,11 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private int _configuredOutputHeight;
     private Format _configuredInputFormat = Format.Unknown;
     private bool _configuredHdr;
+    private bool _hdrCapableSwapChain;
+    private bool _swapChainIsHdr10;
     private uint _outputFrameIndex;
+    private int _hdrPassthroughEnabled;
+    private int _swapChainColorSpaceDirty;
     private int _sharedDeviceResetPending;
     private int _sharedDeviceActive;
 
@@ -291,17 +332,30 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     public long FramesRendered => Interlocked.Read(ref _framesRendered);
     public long FramesDropped => Interlocked.Read(ref _framesDropped);
     public bool IsRendering => Volatile.Read(ref _isRendering) != 0;
+    public bool IsHdrCapableSwapChain => _hdrCapableSwapChain;
     public string RendererMode => Volatile.Read(ref _rendererMode);
     public string InputColorSpaceLabel => _inputColorSpaceLabel;
     public string OutputColorSpaceLabel => _outputColorSpaceLabel;
     public int NaturalWidth => Volatile.Read(ref _naturalWidth);
     public int NaturalHeight => Volatile.Read(ref _naturalHeight);
 
+    public void SetHdrPassthroughEnabled(bool enabled)
+    {
+        Interlocked.Exchange(ref _hdrPassthroughEnabled, enabled ? 1 : 0);
+        Interlocked.Exchange(ref _swapChainColorSpaceDirty, 1);
+        _frameReadyEvent.Set();
+    }
+
     public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath)
     {
         if (!IsRendering || _device == null || _swapChain == null || Volatile.Read(ref _stopRequested) != 0)
         {
             return Task.FromResult(CreateFrameCaptureError("No active preview renderer."));
+        }
+
+        if (Volatile.Read(ref _frameCaptureEncodeInProgress) != 0)
+        {
+            return Task.FromResult(CreateFrameCaptureError("A preview frame capture is already pending."));
         }
 
         var resolvedOutputPath = string.IsNullOrWhiteSpace(outputPath)
@@ -811,15 +865,56 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
     private void RenderFrame(PendingFrame frame)
     {
-        if (frame.IsHdr && _hdrTonemapPS != null && _fullscreenVS != null)
+        ApplySwapChainColorSpaceIfDirty();
+
+        if (frame.IsHdr && _fullscreenVS != null)
         {
-            Volatile.Write(ref _rendererMode, RendererModeHdrShader);
-            RenderHdrFrameWithShader(frame);
-            return;
+            var usePassthrough = Volatile.Read(ref _hdrPassthroughEnabled) != 0 &&
+                                 _hdrCapableSwapChain &&
+                                 _hdrPassthroughPS != null;
+
+            if (usePassthrough)
+            {
+                Volatile.Write(ref _rendererMode, RendererModeHdrPassthrough);
+                RenderHdrFrameWithShader(frame, _hdrPassthroughPS!);
+                return;
+            }
+
+            if (_hdrTonemapPS != null)
+            {
+                Volatile.Write(ref _rendererMode, RendererModeHdrShader);
+                RenderHdrFrameWithShader(frame, _hdrTonemapPS);
+                return;
+            }
         }
 
         Volatile.Write(ref _rendererMode, RendererModeVideoProcessor);
         RenderFrameWithVideoProcessor(frame);
+    }
+
+    private void ApplySwapChainColorSpaceIfDirty()
+    {
+        if (Interlocked.CompareExchange(ref _swapChainColorSpaceDirty, 0, 1) != 1)
+        {
+            return;
+        }
+
+        if (_swapChain3 == null || !_hdrCapableSwapChain)
+        {
+            return;
+        }
+
+        var wantHdr = Volatile.Read(ref _hdrPassthroughEnabled) != 0;
+        var targetColorSpace = wantHdr
+            ? ColorSpaceType.RgbFullG2084NoneP2020
+            : ColorSpaceType.RgbFullG22NoneP709;
+
+        _swapChain3.SetColorSpace1(targetColorSpace);
+        _swapChainIsHdr10 = wantHdr;
+
+        var label = wantHdr ? "HDR10-PQ (BT.2020)" : "sRGB (BT.709)";
+        _outputColorSpaceLabel = label;
+        Logger.Log($"D3D11 preview swap chain color space set to {targetColorSpace} ({label}).");
     }
 
     private void RenderFrameWithVideoProcessor(PendingFrame frame)
@@ -872,14 +967,14 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
     }
 
-    private void RenderHdrFrameWithShader(PendingFrame frame)
+    private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)
     {
         if (_device == null || _deviceContext == null || _swapChain == null)
         {
             return;
         }
 
-        if (_fullscreenVS == null || _hdrTonemapPS == null || _linearSampler == null)
+        if (_fullscreenVS == null || pixelShader == null || _linearSampler == null)
         {
             return;
         }
@@ -948,7 +1043,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _deviceContext.IASetInputLayout(null);
         _deviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         _deviceContext.VSSetShader(_fullscreenVS, Array.Empty<ID3D11ClassInstance>(), 0);
-        _deviceContext.PSSetShader(_hdrTonemapPS, Array.Empty<ID3D11ClassInstance>(), 0);
+        _deviceContext.PSSetShader(pixelShader, Array.Empty<ID3D11ClassInstance>(), 0);
         _deviceContext.PSSetSamplers(0, 1, new[] { _linearSampler });
         _deviceContext.PSSetShaderResources(0, 2, new[] { _hdrYPlaneSRV!, _hdrUVPlaneSRV! });
 
@@ -970,7 +1065,10 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _deviceContext.Draw(3, 0);
         _deviceContext.PSSetShaderResources(0, 2, new ID3D11ShaderResourceView[] { null!, null! });
 
-        TryCaptureFrameBeforePresent("HdrShader");
+        var rendererMode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
+            ? RendererModeHdrPassthrough
+            : RendererModeHdrShader;
+        TryCaptureFrameBeforePresent(rendererMode);
         var presentResult = _swapChain.Present(1, PresentFlags.None);
         if (presentResult.Failure)
         {
@@ -979,7 +1077,10 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
         if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
         {
-            Logger.Log("D3D11 preview first HDR frame rendered via tonemapping shader.");
+            Logger.Log(
+                rendererMode == RendererModeHdrPassthrough
+                    ? "D3D11 preview first HDR frame rendered via passthrough shader."
+                    : "D3D11 preview first HDR frame rendered via tonemapping shader.");
             _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
         }
 
@@ -1011,6 +1112,13 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             }
 
             var fullOutputPath = Path.GetFullPath(outputPath);
+            var isPng = fullOutputPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
+            if (isPng && Interlocked.CompareExchange(ref _frameCaptureEncodeInProgress, 1, 0) != 0)
+            {
+                request.TrySetResult(CreateFrameCaptureError("A preview frame capture is already pending.", rendererMode));
+                return;
+            }
+
             ID3D11Texture2D? backBuffer = _swapChainBackBuffer;
             var disposeBackBuffer = false;
             if (backBuffer == null)
@@ -1035,7 +1143,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
                 }
 
                 var stagingDescription = new Texture2DDescription(
-                    Format.B8G8R8A8_UNorm,
+                    backBufferDescription.Format,
                     (uint)width,
                     (uint)height,
                     1,
@@ -1052,13 +1160,62 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
                 _deviceContext.Map(stagingTexture, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None, out var mapped);
                 PreviewFrameCaptureResult captureResult;
+                byte[]? pngFrameBuffer = null;
+                var pngSourceRowBytes = checked(width * 4);
                 try
                 {
-                    captureResult = CaptureMappedFrameToBmp(mapped, width, height, fullOutputPath, rendererMode);
+                    if (isPng)
+                    {
+                        pngFrameBuffer = CopyMappedFrameToBuffer(mapped, height, pngSourceRowBytes);
+                        captureResult = default!;
+                    }
+                    else
+                    {
+                        captureResult = CaptureMappedFrameToBmp(
+                            mapped,
+                            width,
+                            height,
+                            fullOutputPath,
+                            rendererMode,
+                            backBufferDescription.Format);
+                    }
                 }
                 finally
                 {
                     _deviceContext.Unmap(stagingTexture, 0);
+                }
+
+                if (isPng)
+                {
+                    var pngBuffer = pngFrameBuffer!;
+                    _ = Task.Run(
+                        () =>
+                        {
+                            try
+                            {
+                                var pngCaptureResult = CaptureFrameBufferTo16BitPng(
+                                    pngBuffer,
+                                    pngSourceRowBytes,
+                                    width,
+                                    height,
+                                    fullOutputPath,
+                                    rendererMode,
+                                    backBufferDescription.Format);
+                                request.TrySetResult(pngCaptureResult);
+                                Logger.Log(
+                                    $"PREVIEW_FRAME_CAPTURE_RESULT ok={pngCaptureResult.Succeeded} renderer={pngCaptureResult.RendererMode} path={pngCaptureResult.FilePath ?? "n/a"} width={pngCaptureResult.CapturedWidth} height={pngCaptureResult.CapturedHeight} avgLum={pngCaptureResult.AverageLuminance:0.00} pureBlackPct={pngCaptureResult.PureBlackPercent:0.00}");
+                            }
+                            catch (Exception ex)
+                            {
+                                request.TrySetResult(CreateFrameCaptureError($"Preview frame capture failed: {ex.Message}", rendererMode));
+                                Logger.Log($"PREVIEW_FRAME_CAPTURE_RESULT ok=false renderer={rendererMode} type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                            }
+                            finally
+                            {
+                                Interlocked.Exchange(ref _frameCaptureEncodeInProgress, 0);
+                            }
+                        });
+                    return;
                 }
 
                 request.TrySetResult(captureResult);
@@ -1075,6 +1232,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
         catch (Exception ex)
         {
+            Interlocked.Exchange(ref _frameCaptureEncodeInProgress, 0);
             request.TrySetResult(CreateFrameCaptureError($"Preview frame capture failed: {ex.Message}", rendererMode));
             Logger.Log($"PREVIEW_FRAME_CAPTURE_RESULT ok=false renderer={rendererMode} type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
         }
@@ -1085,7 +1243,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         int width,
         int height,
         string outputPath,
-        string rendererMode)
+        string rendererMode,
+        Format backBufferFormat = Format.B8G8R8A8_UNorm)
     {
         const int bitmapFileHeaderSize = 14;
         const int bitmapInfoHeaderSize = 40;
@@ -1131,6 +1290,23 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             {
                 var sourceRow = IntPtr.Add(mapped.DataPointer, checked(y * (int)mapped.RowPitch));
                 Marshal.Copy(sourceRow, rowBuffer, 0, rowBytes);
+
+                if (backBufferFormat == Format.R10G10B10A2_UNorm)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        var offset = x * bytesPerPixel;
+                        var pixel = (uint)(rowBuffer[offset] |
+                                           (rowBuffer[offset + 1] << 8) |
+                                           (rowBuffer[offset + 2] << 16) |
+                                           (rowBuffer[offset + 3] << 24));
+                        rowBuffer[offset] = (byte)(((pixel >> 20) & 0x3FFu) >> 2);
+                        rowBuffer[offset + 1] = (byte)(((pixel >> 10) & 0x3FFu) >> 2);
+                        rowBuffer[offset + 2] = (byte)((pixel & 0x3FFu) >> 2);
+                        rowBuffer[offset + 3] = 255;
+                    }
+                }
+
                 writer.Write(rowBuffer, 0, rowBytes);
 
                 var isRowPureBlack = true;
@@ -1240,6 +1416,254 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         };
     }
 
+    private static byte[] CopyMappedFrameToBuffer(MappedSubresource mapped, int height, int sourceRowBytes)
+    {
+        var sourceBuffer = new byte[checked(sourceRowBytes * height)];
+        for (var y = 0; y < height; y++)
+        {
+            var sourceRow = IntPtr.Add(mapped.DataPointer, checked(y * (int)mapped.RowPitch));
+            Marshal.Copy(sourceRow, sourceBuffer, checked(y * sourceRowBytes), sourceRowBytes);
+        }
+
+        return sourceBuffer;
+    }
+
+    private static PreviewFrameCaptureResult CaptureFrameBufferTo16BitPng(
+        byte[] sourceBuffer,
+        int sourceRowBytes,
+        int width,
+        int height,
+        string outputPath,
+        string rendererMode,
+        Format backBufferFormat)
+    {
+        const int sourceBytesPerPixel = 4;
+        const int pngBytesPerPixel = 6;
+        var pngRowBytes = checked(1 + (width * pngBytesPerPixel));
+
+        var histogram = new int[16];
+        var rowAllBlack = new bool[height];
+        var columnAllBlack = new bool[width];
+        Array.Fill(rowAllBlack, true);
+        Array.Fill(columnAllBlack, true);
+
+        long sumR = 0;
+        long sumG = 0;
+        long sumB = 0;
+        double sumLuminance = 0;
+        double minLuminance = 255;
+        double maxLuminance = 0;
+        long nearBlackCount = 0;
+        long nearWhiteCount = 0;
+        long pureBlackCount = 0;
+        var totalPixels = (long)width * height;
+
+        var directory = Path.GetDirectoryName(outputPath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        var sourceRowBuffer = ArrayPool<byte>.Shared.Rent(sourceRowBytes);
+        var pngRowBuffer = ArrayPool<byte>.Shared.Rent(pngRowBytes);
+        try
+        {
+            using (var compressedDataStream = new MemoryStream())
+            {
+                using (var zlibStream = new ZLibStream(compressedDataStream, CompressionLevel.Fastest, leaveOpen: true))
+                {
+                    for (var y = 0; y < height; y++)
+                    {
+                        var sourceRowOffset = checked(y * sourceRowBytes);
+                        Buffer.BlockCopy(sourceBuffer, sourceRowOffset, sourceRowBuffer, 0, sourceRowBytes);
+
+                        pngRowBuffer[0] = 0;
+                        var pngOffset = 1;
+                        var isRowPureBlack = true;
+
+                        for (var x = 0; x < width; x++)
+                        {
+                            var offset = x * sourceBytesPerPixel;
+                            byte r8;
+                            byte g8;
+                            byte b8;
+                            ushort r16;
+                            ushort g16;
+                            ushort b16;
+
+                            if (backBufferFormat == Format.R10G10B10A2_UNorm)
+                            {
+                                var pixel = (uint)(sourceRowBuffer[offset] |
+                                                   (sourceRowBuffer[offset + 1] << 8) |
+                                                   (sourceRowBuffer[offset + 2] << 16) |
+                                                   (sourceRowBuffer[offset + 3] << 24));
+                                var r10 = pixel & 0x3FFu;
+                                var g10 = (pixel >> 10) & 0x3FFu;
+                                var b10 = (pixel >> 20) & 0x3FFu;
+
+                                r8 = (byte)(r10 >> 2);
+                                g8 = (byte)(g10 >> 2);
+                                b8 = (byte)(b10 >> 2);
+                                r16 = (ushort)((r10 << 6) | (r10 >> 4));
+                                g16 = (ushort)((g10 << 6) | (g10 >> 4));
+                                b16 = (ushort)((b10 << 6) | (b10 >> 4));
+                            }
+                            else if (backBufferFormat == Format.B8G8R8A8_UNorm)
+                            {
+                                b8 = sourceRowBuffer[offset];
+                                g8 = sourceRowBuffer[offset + 1];
+                                r8 = sourceRowBuffer[offset + 2];
+                                b16 = (ushort)((b8 << 8) | b8);
+                                g16 = (ushort)((g8 << 8) | g8);
+                                r16 = (ushort)((r8 << 8) | r8);
+                            }
+                            else
+                            {
+                                throw new InvalidOperationException($"Preview PNG capture does not support back buffer format {backBufferFormat}.");
+                            }
+
+                            pngRowBuffer[pngOffset++] = (byte)(r16 >> 8);
+                            pngRowBuffer[pngOffset++] = (byte)r16;
+                            pngRowBuffer[pngOffset++] = (byte)(g16 >> 8);
+                            pngRowBuffer[pngOffset++] = (byte)g16;
+                            pngRowBuffer[pngOffset++] = (byte)(b16 >> 8);
+                            pngRowBuffer[pngOffset++] = (byte)b16;
+
+                            sumR += r8;
+                            sumG += g8;
+                            sumB += b8;
+
+                            var luminance = (0.299 * r8) + (0.587 * g8) + (0.114 * b8);
+                            sumLuminance += luminance;
+                            if (luminance < minLuminance)
+                            {
+                                minLuminance = luminance;
+                            }
+                            if (luminance > maxLuminance)
+                            {
+                                maxLuminance = luminance;
+                            }
+
+                            if (luminance < 16.0)
+                            {
+                                nearBlackCount++;
+                            }
+                            if (luminance > 240.0)
+                            {
+                                nearWhiteCount++;
+                            }
+
+                            var isPureBlack = r8 == 0 && g8 == 0 && b8 == 0;
+                            if (isPureBlack)
+                            {
+                                pureBlackCount++;
+                            }
+                            else
+                            {
+                                isRowPureBlack = false;
+                                columnAllBlack[x] = false;
+                            }
+
+                            var histogramIndex = (int)(luminance / 16.0);
+                            if (histogramIndex > 15)
+                            {
+                                histogramIndex = 15;
+                            }
+
+                            histogram[histogramIndex]++;
+                        }
+
+                        rowAllBlack[y] = isRowPureBlack;
+                        zlibStream.Write(pngRowBuffer, 0, pngRowBytes);
+                    }
+                }
+
+                using var fileStream = new FileStream(outputPath, FileMode.Create, FileAccess.Write, FileShare.Read);
+                using var writer = new BinaryWriter(fileStream, System.Text.Encoding.ASCII, leaveOpen: false);
+
+                writer.Write(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A });
+
+                var ihdrData = new byte[13];
+                BinaryPrimitives.WriteUInt32BigEndian(ihdrData.AsSpan(0, 4), checked((uint)width));
+                BinaryPrimitives.WriteUInt32BigEndian(ihdrData.AsSpan(4, 4), checked((uint)height));
+                ihdrData[8] = 16;
+                ihdrData[9] = 2;
+                ihdrData[10] = 0;
+                ihdrData[11] = 0;
+                ihdrData[12] = 0;
+
+                WritePngChunk(writer, new byte[] { (byte)'I', (byte)'H', (byte)'D', (byte)'R' }, ihdrData);
+                if (compressedDataStream.TryGetBuffer(out var compressedData))
+                {
+                    WritePngChunk(
+                        writer,
+                        new byte[] { (byte)'I', (byte)'D', (byte)'A', (byte)'T' },
+                        compressedData.Array!,
+                        compressedData.Offset,
+                        checked((int)compressedDataStream.Length));
+                }
+                else
+                {
+                    WritePngChunk(writer, new byte[] { (byte)'I', (byte)'D', (byte)'A', (byte)'T' }, compressedDataStream.ToArray());
+                }
+
+                WritePngChunk(writer, new byte[] { (byte)'I', (byte)'E', (byte)'N', (byte)'D' }, Array.Empty<byte>());
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(pngRowBuffer);
+            ArrayPool<byte>.Shared.Return(sourceRowBuffer);
+        }
+
+        var letterboxTopRows = CountLeadingBlackEdges(rowAllBlack);
+        var letterboxBottomRows = letterboxTopRows == height ? 0 : CountTrailingBlackEdges(rowAllBlack);
+        var pillarboxLeftCols = CountLeadingBlackEdges(columnAllBlack);
+        var pillarboxRightCols = pillarboxLeftCols == width ? 0 : CountTrailingBlackEdges(columnAllBlack);
+
+        var contentWidth = Math.Max(0, width - pillarboxLeftCols - pillarboxRightCols);
+        var contentHeight = Math.Max(0, height - letterboxTopRows - letterboxBottomRows);
+        var contentAspectRatio = contentHeight > 0
+            ? (double)contentWidth / contentHeight
+            : 0.0;
+
+        var averageR = totalPixels > 0 ? (double)sumR / totalPixels : 0.0;
+        var averageG = totalPixels > 0 ? (double)sumG / totalPixels : 0.0;
+        var averageB = totalPixels > 0 ? (double)sumB / totalPixels : 0.0;
+        var averageLuminance = totalPixels > 0 ? sumLuminance / totalPixels : 0.0;
+        var nearBlackPercent = totalPixels > 0 ? (nearBlackCount * 100.0) / totalPixels : 0.0;
+        var nearWhitePercent = totalPixels > 0 ? (nearWhiteCount * 100.0) / totalPixels : 0.0;
+        var pureBlackPercent = totalPixels > 0 ? (pureBlackCount * 100.0) / totalPixels : 0.0;
+
+        return new PreviewFrameCaptureResult
+        {
+            Succeeded = true,
+            Message = "Preview frame captured.",
+            FilePath = outputPath,
+            CapturedWidth = width,
+            CapturedHeight = height,
+            RendererMode = rendererMode,
+            AverageR = averageR,
+            AverageG = averageG,
+            AverageB = averageB,
+            AverageLuminance = averageLuminance,
+            MinLuminance = minLuminance,
+            MaxLuminance = maxLuminance,
+            NearBlackPercent = nearBlackPercent,
+            NearWhitePercent = nearWhitePercent,
+            PureBlackPercent = pureBlackPercent,
+            LetterboxTopRows = letterboxTopRows,
+            LetterboxBottomRows = letterboxBottomRows,
+            PillarboxLeftCols = pillarboxLeftCols,
+            PillarboxRightCols = pillarboxRightCols,
+            ContentWidth = contentWidth,
+            ContentHeight = contentHeight,
+            ContentAspectRatio = contentAspectRatio,
+            LuminanceHistogram = histogram,
+            TotalPixels = totalPixels
+        };
+    }
+
     private static void WriteBitmapHeaders(
         BinaryWriter writer,
         int fileSize,
@@ -1270,6 +1694,62 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         writer.Write(unchecked((int)0x00FF0000));
         writer.Write(unchecked((int)0x0000FF00));
         writer.Write(unchecked((int)0x000000FF));
+    }
+
+    private static uint[] InitPngCrc32Table()
+    {
+        var table = new uint[256];
+        for (uint n = 0; n < 256; n++)
+        {
+            var c = n;
+            for (var k = 0; k < 8; k++)
+            {
+                c = (c & 1) != 0 ? 0xEDB88320u ^ (c >> 1) : c >> 1;
+            }
+
+            table[n] = c;
+        }
+
+        return table;
+    }
+
+    private static uint ComputePngCrc32(byte[] buffer, int offset, int length)
+    {
+        return UpdatePngCrc32(0xFFFFFFFFu, buffer, offset, length) ^ 0xFFFFFFFFu;
+    }
+
+    private static uint UpdatePngCrc32(uint crc, byte[] buffer, int offset, int length)
+    {
+        for (var i = offset; i < offset + length; i++)
+        {
+            crc = PngCrc32Table[(crc ^ buffer[i]) & 0xFF] ^ (crc >> 8);
+        }
+
+        return crc;
+    }
+
+    private static void WritePngChunk(BinaryWriter writer, byte[] chunkType, byte[] data)
+    {
+        WritePngChunk(writer, chunkType, data, 0, data.Length);
+    }
+
+    private static void WritePngChunk(BinaryWriter writer, byte[] chunkType, byte[] data, int dataOffset, int dataLength)
+    {
+        writer.Write(BinaryPrimitives.ReverseEndianness(checked((uint)dataLength)));
+        writer.Write(chunkType);
+        if (dataLength > 0)
+        {
+            writer.Write(data, dataOffset, dataLength);
+        }
+
+        var crc = 0xFFFFFFFFu;
+        crc = UpdatePngCrc32(crc, chunkType, 0, chunkType.Length);
+        if (dataLength > 0)
+        {
+            crc = UpdatePngCrc32(crc, data, dataOffset, dataLength);
+        }
+
+        writer.Write(BinaryPrimitives.ReverseEndianness(crc ^ 0xFFFFFFFFu));
     }
 
     private static int CountLeadingBlackEdges(bool[] values)
@@ -1478,10 +1958,21 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         var pixelWidth = Math.Max(1, Volatile.Read(ref _panelPixelWidth));
         var pixelHeight = Math.Max(1, Volatile.Read(ref _panelPixelHeight));
 
+        var swapChainFormat = Format.B8G8R8A8_UNorm;
+        _hdrCapableSwapChain = false;
+        _swapChainIsHdr10 = false;
+        _swapChain3?.Dispose();
+        _swapChain3 = null;
+
+        if (_configuredHdr)
+        {
+            swapChainFormat = Format.R10G10B10A2_UNorm;
+        }
+
         var swapChainDescription = new SwapChainDescription1(
             (uint)pixelWidth,
             (uint)pixelHeight,
-            Format.B8G8R8A8_UNorm,
+            swapChainFormat,
             false,
             Usage.RenderTargetOutput,
             2,
@@ -1491,6 +1982,69 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             SwapChainFlags.None);
 
         _swapChain = _factory.CreateSwapChainForComposition(device, swapChainDescription, null);
+        if (_configuredHdr)
+        {
+            _swapChain3 = _swapChain.QueryInterfaceOrNull<IDXGISwapChain3>();
+            if (_swapChain3 != null)
+            {
+                var srgbSupport = _swapChain3.CheckColorSpaceSupport(ColorSpaceType.RgbFullG22NoneP709);
+                var hdr10Support = _swapChain3.CheckColorSpaceSupport(ColorSpaceType.RgbFullG2084NoneP2020);
+
+                var srgbOk = (srgbSupport & SwapChainColorSpaceSupportFlags.Present) != 0;
+                var hdr10Ok = (hdr10Support & SwapChainColorSpaceSupportFlags.Present) != 0;
+
+                if (srgbOk && hdr10Ok)
+                {
+                    _hdrCapableSwapChain = true;
+                    var wantHdr = Volatile.Read(ref _hdrPassthroughEnabled) != 0;
+                    var initialColorSpace = wantHdr
+                        ? ColorSpaceType.RgbFullG2084NoneP2020
+                        : ColorSpaceType.RgbFullG22NoneP709;
+                    _swapChain3.SetColorSpace1(initialColorSpace);
+                    _swapChainIsHdr10 = wantHdr;
+                    _outputColorSpaceLabel = wantHdr ? "HDR10-PQ (BT.2020)" : "sRGB (BT.709)";
+                    Interlocked.Exchange(ref _swapChainColorSpaceDirty, 0);
+                    Logger.Log($"D3D11 preview HDR-capable swap chain: srgb={srgbOk} hdr10={hdr10Ok} initial={initialColorSpace}.");
+                }
+                else
+                {
+                    Logger.Log($"D3D11 preview HDR color space check: srgb={srgbOk}({srgbSupport}) hdr10={hdr10Ok}({hdr10Support}). Falling back to B8G8R8A8.");
+                    _swapChain3.Dispose();
+                    _swapChain3 = null;
+                    _swapChain.Dispose();
+                    swapChainDescription = new SwapChainDescription1(
+                        (uint)pixelWidth,
+                        (uint)pixelHeight,
+                        Format.B8G8R8A8_UNorm,
+                        false,
+                        Usage.RenderTargetOutput,
+                        2,
+                        Scaling.Stretch,
+                        SwapEffect.FlipSequential,
+                        AlphaMode.Ignore,
+                        SwapChainFlags.None);
+                    _swapChain = _factory.CreateSwapChainForComposition(device, swapChainDescription, null);
+                }
+            }
+            else
+            {
+                Logger.Log("D3D11 preview IDXGISwapChain3 unavailable — HDR passthrough not supported.");
+                _swapChain.Dispose();
+                swapChainDescription = new SwapChainDescription1(
+                    (uint)pixelWidth,
+                    (uint)pixelHeight,
+                    Format.B8G8R8A8_UNorm,
+                    false,
+                    Usage.RenderTargetOutput,
+                    2,
+                    Scaling.Stretch,
+                    SwapEffect.FlipSequential,
+                    AlphaMode.Ignore,
+                    SwapChainFlags.None);
+                _swapChain = _factory.CreateSwapChainForComposition(device, swapChainDescription, null);
+            }
+        }
+
         ApplyCompositionScaleTransform(_swapChain);
         BindSwapChainToPanel(_swapChain);
 
@@ -1582,6 +2136,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _fullscreenVS = null;
         _hdrTonemapPS?.Dispose();
         _hdrTonemapPS = null;
+        _hdrPassthroughPS?.Dispose();
+        _hdrPassthroughPS = null;
         _linearSampler?.Dispose();
         _linearSampler = null;
         _viewportCB?.Dispose();
@@ -1596,6 +2152,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         {
             var vertexShaderBytecode = CompileShader(FullscreenVertexShaderSource, "main", "vs_5_0");
             var pixelShaderBytecode = CompileShader(HdrTonemapPixelShaderSource, "main", "ps_5_0");
+            var passthroughBytecode = CompileShader(HdrPassthroughPixelShaderSource, "main", "ps_5_0");
 
             fixed (byte* vertexShaderPtr = vertexShaderBytecode)
             {
@@ -1605,6 +2162,11 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             fixed (byte* pixelShaderPtr = pixelShaderBytecode)
             {
                 _hdrTonemapPS = _device.CreatePixelShader(pixelShaderPtr, (nuint)pixelShaderBytecode.Length, null);
+            }
+
+            fixed (byte* passthroughPtr = passthroughBytecode)
+            {
+                _hdrPassthroughPS = _device.CreatePixelShader(passthroughPtr, (nuint)passthroughBytecode.Length, null);
             }
 
             var samplerDescription = new SamplerDescription
@@ -1627,7 +2189,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             _viewportCB = _device.CreateBuffer(new BufferDescription(
                 16, BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
 
-            Logger.Log($"D3D11 HDR tonemapping shaders compiled (VS={vertexShaderBytecode.Length}b PS={pixelShaderBytecode.Length}b).");
+            Logger.Log($"D3D11 HDR shaders compiled (VS={vertexShaderBytecode.Length}b TonemapPS={pixelShaderBytecode.Length}b PassthroughPS={passthroughBytecode.Length}b).");
         }
         catch (Exception ex)
         {
@@ -1635,6 +2197,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             _fullscreenVS = null;
             _hdrTonemapPS?.Dispose();
             _hdrTonemapPS = null;
+            _hdrPassthroughPS?.Dispose();
+            _hdrPassthroughPS = null;
             _linearSampler?.Dispose();
             _linearSampler = null;
             _viewportCB?.Dispose();
@@ -1766,13 +2330,22 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _swapChainBackBuffer?.Dispose();
         _swapChainBackBuffer = null;
 
-        var resizeResult = _swapChain.ResizeBuffers(2, (uint)newWidth, (uint)newHeight, Format.B8G8R8A8_UNorm, SwapChainFlags.None);
+        var resizeFormat = _hdrCapableSwapChain ? Format.R10G10B10A2_UNorm : Format.B8G8R8A8_UNorm;
+        var resizeResult = _swapChain.ResizeBuffers(2, (uint)newWidth, (uint)newHeight, resizeFormat, SwapChainFlags.None);
         if (resizeResult.Failure)
         {
             throw new InvalidOperationException($"ResizeBuffers failed: 0x{resizeResult.Code:X8}.");
         }
 
         ApplyCompositionScaleTransform(_swapChain);
+        if (_swapChain3 != null && _hdrCapableSwapChain)
+        {
+            var currentColorSpace = _swapChainIsHdr10
+                ? ColorSpaceType.RgbFullG2084NoneP2020
+                : ColorSpaceType.RgbFullG22NoneP709;
+            _swapChain3.SetColorSpace1(currentColorSpace);
+        }
+
         DisposeProcessorResources();
         _configuredOutputWidth = newWidth;
         _configuredOutputHeight = newHeight;
@@ -2237,6 +2810,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _swapChainRTV = null;
         _swapChainBackBuffer?.Dispose();
         _swapChainBackBuffer = null;
+        _swapChain3?.Dispose();
+        _swapChain3 = null;
         _swapChain?.Dispose();
         _swapChain = null;
         _factory?.Dispose();
@@ -2253,6 +2828,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _viewportCB = null;
         _hdrTonemapPS?.Dispose();
         _hdrTonemapPS = null;
+        _hdrPassthroughPS?.Dispose();
+        _hdrPassthroughPS = null;
         _fullscreenVS?.Dispose();
         _fullscreenVS = null;
         _multithread?.Dispose();
@@ -2269,6 +2846,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _configuredOutputWidth = 0;
         _configuredOutputHeight = 0;
         _configuredInputFormat = Format.Unknown;
+        _hdrCapableSwapChain = false;
+        _swapChainIsHdr10 = false;
         Interlocked.Exchange(ref _sharedDeviceActive, 0);
     }
 

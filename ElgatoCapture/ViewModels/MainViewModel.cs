@@ -3167,11 +3167,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 throw new InvalidOperationException("True HDR preview cannot be changed while recording.");
             }
 
-            if (IsPreviewing)
-            {
-                throw new InvalidOperationException("True HDR preview cannot be changed while previewing. Stop preview first.");
-            }
-
             IsTrueHdrPreviewEnabled = enabled;
             return Task.CompletedTask;
         }, cancellationToken);

@@ -367,3 +367,18 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A
 - Conclusion: Plane-aware SRVs guarantee the HDR shader sees both planes, so tonemapping uses real Y/CbCr data instead of repeating luma, eliminating the solid-color preview.
+
+## E28 - D3D11 preview toggles HDR passthrough instantly via swap-chain color space
+- Timestamp (UTC): 2026-03-05T22:34:58.0948359Z
+- Commit Hash: 394d632d84271b0b0748836c529498eb889466cc
+- What Changed (single change): Added a renderer-local HDR preview toggle path that keeps P010 ingestion unchanged, compiles a second HDR passthrough pixel shader, negotiates an HDR-capable `R10G10B10A2_UNorm` swap chain when available, and switches pixel shader plus DXGI color space at runtime without restarting preview.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ --no-build --no-restore -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for D3D11 preview startup/render lines and unexpected warnings after the run.
+- Validator Output:
+  - `Build blocked in offline sandbox: NU1301/NU1101 while restoring https://api.nuget.org/v3/index.json (missing Vortice.Direct3D11/Vortice.DXGI restore resolution despite local cache inspection).`
+  - `All runtime snapshot regression checks passed.`
+- ffprobe Evidence:
+  - N/A (preview-only change; no new recording artifact generated in this verification pass)
+- Conclusion: The renderer/UI/viewmodel paths are updated for instant HDR preview switching and the regression harness still passes against the existing staged app binary, but a full compile of the new source awaits a network-capable restore environment.

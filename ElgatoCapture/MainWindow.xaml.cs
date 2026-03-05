@@ -1276,7 +1276,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
         HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
         TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
-        TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
+        TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
         UpdateAudioMeterLevel(ViewModel.AudioPeak);
         AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
         RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing;
@@ -1371,7 +1371,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         };
 
         HdrToggle.Click += (s, e) => ViewModel.IsHdrEnabled = HdrToggle.IsChecked == true;
-        TrueHdrPreviewToggle.Click += (s, e) => ViewModel.IsTrueHdrPreviewEnabled = TrueHdrPreviewToggle.IsChecked == true;
+        TrueHdrPreviewToggle.Click += (s, e) =>
+            ViewModel.IsTrueHdrPreviewEnabled = TrueHdrPreviewToggle.IsChecked == true;
         AudioRecordToggle.Checked += (s, e) => ViewModel.IsAudioEnabled = true;
         AudioRecordToggle.Unchecked += (s, e) => ViewModel.IsAudioEnabled = false;
         AudioPreviewToggle.Checked += (s, e) => ViewModel.IsAudioPreviewEnabled = true;
@@ -1930,7 +1931,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                     }
                     PreviewButtonIcon.Glyph = "\uE71A";
                     ToolTipService.SetToolTip(PreviewButton, "Stop Preview");
-                    TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
+                    TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
                 }
                 else
                 {
@@ -1940,7 +1941,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                     FadeInElement(NoDevicePlaceholder);
                     PreviewButtonIcon.Glyph = "\uE768";
                     ToolTipService.SetToolTip(PreviewButton, "Start Preview");
-                    TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
+                    TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
                     ResetPreviewStartupTracking();
                 }
                 break;
@@ -1954,7 +1955,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
                 HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
-                TrueHdrPreviewToggle.IsEnabled = !ViewModel.IsRecording && !ViewModel.IsPreviewing;
+                TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
                 // Stats panel always visible — shows "--" when not recording
                 RefreshHdrHintText();
                 if (ViewModel.IsRecording)
@@ -2032,6 +2033,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 {
                     HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
                 }
+
+                TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
                 break;
 
             case nameof(MainViewModel.IsTrueHdrPreviewEnabled):
@@ -2039,6 +2042,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 {
                     TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
                 }
+
+                _d3dRenderer?.SetHdrPassthroughEnabled(ViewModel.IsTrueHdrPreviewEnabled);
                 break;
 
             case nameof(MainViewModel.HdrResolutionSupportHint):
@@ -2434,6 +2439,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             }
 
             renderer.Start(width, height, fps, isHdr);
+            if (isHdr && ViewModel.IsTrueHdrPreviewEnabled)
+            {
+                renderer.SetHdrPassthroughEnabled(true);
+            }
+
             ViewModel.SetPreviewFrameSink(_d3dRenderer);
             _previewStartupExpectGpuDualSignals = false; // D3D renderer uses FirstFrameRendered, not MediaPlayer signals
             ConfigurePreviewStartupSignals(

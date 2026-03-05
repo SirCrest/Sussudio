@@ -11,10 +11,10 @@ namespace McpServer.Tools;
 [McpServerToolType]
 public static class PreviewFrameCaptureTool
 {
-    [McpServerTool, Description("Capture the next rendered preview frame from the D3D11 swap chain back buffer, save it as BMP, and report frame statistics with diagnosis hints.")]
+    [McpServerTool, Description("Capture the next rendered preview frame from the D3D11 swap chain back buffer, save it as BMP or 16-bit RGB PNG, and report frame statistics with diagnosis hints.")]
     public static async Task<string> capture_preview_frame(
         PipeClient pipeClient,
-        [Description("Optional output BMP path. Defaults to ./temp/preview_capture.bmp")] string? outputPath = null)
+        [Description("Optional output path. Use .png for 16-bit RGB capture; other paths use BMP. Defaults to ./temp/preview_capture.bmp")] string? outputPath = null)
     {
         var effectiveOutputPath = string.IsNullOrWhiteSpace(outputPath)
             ? Path.Combine(Environment.CurrentDirectory, "temp", "preview_capture.bmp")
