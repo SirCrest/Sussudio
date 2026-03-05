@@ -97,6 +97,16 @@ public class CaptureService : IDisposable, IAsyncDisposable
         TryApplySharedPreviewDevice(_unifiedVideoCapture, sink);
     }
 
+    private void ConfigureObservedPixelTelemetry(UnifiedVideoCapture unifiedVideoCapture)
+    {
+        unifiedVideoCapture.SetObservedPixelFormatObserver(OnUnifiedVideoFrameObserved);
+    }
+
+    private void OnUnifiedVideoFrameObserved(bool isP010)
+    {
+        RecordObservedPixelFormat(isP010 ? "P010" : "NV12");
+    }
+
     public RecordingStats GetRecordingStats()
     {
         try
@@ -438,9 +448,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var readerSourceStreamType = (_isRecording || _isVideoPreviewActive) && unifiedVideoCapture != null
             ? "MfSourceReader"
             : null;
-        var previewColorMetadata = _previewFrameSink is D3D11PreviewRenderer
-            ? "D3D11VideoProcessor"
-            : "None";
+        var previewColorMetadata = (_previewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? "None";
         var muxAttempted = !_isRecording && _lastFinalizeUtc.HasValue && _lastUsePostMuxAudio;
         bool? muxSucceeded = null;
         if (muxAttempted)
@@ -639,7 +647,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         return new PreviewColorProbeResult
         {
             SessionActive = true,
-            RendererMode = d3dSink != null ? "D3D11VideoProcessor" : "None",
+            RendererMode = d3dSink?.RendererMode ?? "None",
             NegotiatedSubtype = subtype,
             SourceWidth = unifiedVideoCapture.Width,
             SourceHeight = unifiedVideoCapture.Height,
@@ -952,6 +960,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             try
             {
                 unifiedVideoCapture = new UnifiedVideoCapture();
+                ConfigureObservedPixelTelemetry(unifiedVideoCapture);
                 await unifiedVideoCapture.InitializeAsync(
                     _currentDevice.Id,
                     (int)settings.Width,
@@ -1169,6 +1178,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 if (unifiedVideoCapture == null)
                 {
                     ownedUnifiedVideoCapture = new UnifiedVideoCapture();
+                    ConfigureObservedPixelTelemetry(ownedUnifiedVideoCapture);
                     await ownedUnifiedVideoCapture.InitializeAsync(
                         _currentDevice.Id,
                         (int)effectiveWidth,

@@ -18,6 +18,9 @@ namespace ElgatoCapture.Services;
 internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 {
     private const int FrameCaptureTimeoutMs = 5000;
+    private const string RendererModeNone = "None";
+    private const string RendererModeVideoProcessor = "D3D11VideoProcessor";
+    private const string RendererModeHdrShader = "HdrShader";
 
     [ComImport]
     [Guid("63aad0b8-7c24-40ff-85a8-640d944cc325")]
@@ -209,6 +212,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
     private string _inputColorSpaceLabel = "Unknown";
     private string _outputColorSpaceLabel = "Unknown";
+    private string _rendererMode = RendererModeNone;
 
     private ID3D11Device? _device;
     private ID3D11DeviceContext? _deviceContext;
@@ -263,6 +267,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     public long FramesRendered => Interlocked.Read(ref _framesRendered);
     public long FramesDropped => Interlocked.Read(ref _framesDropped);
     public bool IsRendering => Volatile.Read(ref _isRendering) != 0;
+    public string RendererMode => Volatile.Read(ref _rendererMode);
     public string InputColorSpaceLabel => _inputColorSpaceLabel;
     public string OutputColorSpaceLabel => _outputColorSpaceLabel;
     public int NaturalWidth => Volatile.Read(ref _naturalWidth);
@@ -362,6 +367,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             _configuredInputFormat = Format.Unknown;
             _configuredHdr = isHdr;
             _outputFrameIndex = 0;
+            Volatile.Write(ref _rendererMode, RendererModeNone);
 
             Interlocked.Exchange(ref _stopRequested, 0);
             Interlocked.Exchange(ref _resizePending, 1);
@@ -391,6 +397,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             if (renderThread == null)
             {
                 FailPendingFrameCapture("Preview renderer is not running.");
+                Volatile.Write(ref _rendererMode, RendererModeNone);
                 return;
             }
             Interlocked.Exchange(ref _stopRequested, 1);
@@ -409,6 +416,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         var pending = Interlocked.Exchange(ref _pendingFrame, null);
         pending?.Dispose();
         FailPendingFrameCapture("Preview renderer stopped before frame capture completed.");
+        Volatile.Write(ref _rendererMode, RendererModeNone);
         Logger.Log("D3D11 preview renderer stop completed.");
     }
 
@@ -604,6 +612,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             FailPendingFrameCapture("Render thread exited before frame capture completed.");
             CleanupD3DResources();
             Interlocked.Exchange(ref _isRendering, 0);
+            Volatile.Write(ref _rendererMode, RendererModeNone);
         }
     }
 
@@ -611,10 +620,12 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     {
         if (frame.IsHdr && _hdrTonemapPS != null && _fullscreenVS != null)
         {
+            Volatile.Write(ref _rendererMode, RendererModeHdrShader);
             RenderHdrFrameWithShader(frame);
             return;
         }
 
+        Volatile.Write(ref _rendererMode, RendererModeVideoProcessor);
         RenderFrameWithVideoProcessor(frame);
     }
 

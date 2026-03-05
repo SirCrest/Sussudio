@@ -25,6 +25,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private long _videoFramesDropped;
     private long _videoFramesWrittenToSink;
     private long _lastVideoFrameArrivedTick;
+    private Action<bool>? _observedPixelFormatObserver;
 
     public bool IsP010 => Volatile.Read(ref _isP010);
     public int Width => Volatile.Read(ref _width);
@@ -152,6 +153,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         Volatile.Write(ref _previewSink, sink);
     }
 
+    public void SetObservedPixelFormatObserver(Action<bool>? observer)
+    {
+        Volatile.Write(ref _observedPixelFormatObserver, observer);
+    }
+
     public Task StartRecordingAsync(IRecordingSink sink, FFmpegEncoderService encoder)
     {
         ThrowIfDisposed();
@@ -237,6 +243,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             d3dManager = _d3dManager;
             _d3dManager = null;
             _previewSink = null;
+            _observedPixelFormatObserver = null;
         }
 
         if (capture != null)
@@ -253,6 +260,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         Interlocked.Exchange(ref _lastVideoFrameArrivedTick, Environment.TickCount64);
 
         var isP010 = Volatile.Read(ref _isP010);
+        Volatile.Read(ref _observedPixelFormatObserver)?.Invoke(isP010);
         var previewSink = Volatile.Read(ref _previewSink);
         if (previewSink != null && !frameData.IsEmpty)
         {
@@ -273,6 +281,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         Interlocked.Exchange(ref _lastVideoFrameArrivedTick, Environment.TickCount64);
 
         var isP010 = Volatile.Read(ref _isP010);
+        Volatile.Read(ref _observedPixelFormatObserver)?.Invoke(isP010);
         var previewSink = Volatile.Read(ref _previewSink);
         if (previewSink != null)
         {

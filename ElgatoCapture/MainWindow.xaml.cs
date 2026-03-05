@@ -1698,20 +1698,21 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private PreviewRuntimeSnapshot GetPreviewRuntimeSnapshot()
     {
+        var d3d = _d3dRenderer;
         var nowTick = Environment.TickCount64;
         var framesArrived = Interlocked.Read(ref _previewFramesArrived);
         var framesDisplayed = Interlocked.Read(ref _previewFramesDisplayed);
         var framesDropped = Interlocked.Read(ref _previewFramesDropped);
         var lastPresentedTick = Interlocked.Read(ref _previewLastPresentedTick);
-        var gpuActive = _d3dRenderer != null;
+        var gpuActive = d3d != null;
         var gpuElementVisible = PreviewSwapChainPanel.Visibility == Visibility.Visible;
         var cpuElementVisible = PreviewImage.Visibility == Visibility.Visible;
-        var rendererAttached = _d3dRenderer != null || _previewSource != null;
+        var rendererAttached = d3d != null || _previewSource != null;
         var placeholderVisible = NoDevicePlaceholder.Visibility == Visibility.Visible;
         var previewPipelineActive = ViewModel.IsPreviewing && rendererAttached;
-        var d3dFramesSubmitted = _d3dRenderer?.FramesSubmitted ?? 0;
-        var d3dFramesRendered = _d3dRenderer?.FramesRendered ?? 0;
-        var d3dFramesDropped = _d3dRenderer?.FramesDropped ?? 0;
+        var d3dFramesSubmitted = d3d?.FramesSubmitted ?? 0;
+        var d3dFramesRendered = d3d?.FramesRendered ?? 0;
+        var d3dFramesDropped = d3d?.FramesDropped ?? 0;
         if (gpuActive)
         {
             framesArrived = d3dFramesSubmitted;
@@ -1719,13 +1720,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             framesDropped = d3dFramesDropped;
         }
 
-        var rendererMode = gpuActive ? "D3D11VideoProcessor"
-            : ViewModel.IsPreviewing ? "CpuSoftwareBitmap"
-            : "None";
+        var rendererMode = d3d?.RendererMode
+            ?? (ViewModel.IsPreviewing ? "CpuSoftwareBitmap" : "None");
         var gpuPlaybackState = "None";
         int gpuNaturalVideoWidth = 0, gpuNaturalVideoHeight = 0;
         double gpuPositionMs = 0;
-        if (_d3dRenderer is { } d3d)
+        if (d3d != null)
         {
             gpuPlaybackState = d3d.IsRendering ? "Rendering" : "Idle";
             gpuNaturalVideoWidth = d3d.NaturalWidth;
