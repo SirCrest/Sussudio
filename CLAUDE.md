@@ -63,7 +63,7 @@ Use the most expensive Codex models and reasoning whenever possible, and when de
 
 ### Execution
 
-- Config defaults: `gpt-5.3-codex`, `xhigh` reasoning, `multi_agent = true`
+- Config defaults: `gpt-5.4`, `xhigh` reasoning, `multi_agent = true`
 - **Never pass prompts as inline shell arguments.** Prompts contain backticks,
   quotes, and `$` from C#/markdown that break bash parsing. Always write the
   prompt to a temp file and pipe via stdin:
