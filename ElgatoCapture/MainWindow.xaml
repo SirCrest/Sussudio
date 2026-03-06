@@ -29,9 +29,14 @@
         </Grid.RowDefinitions>
 
         <!-- Row 0: Preview Area + Settings Overlay -->
-        <Grid Grid.Row="0">
+        <Grid Grid.Row="0" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition x:Name="StatsDockColumn" Width="Auto"/>
+            </Grid.ColumnDefinitions>
             <!-- Preview Border -->
-            <Border Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+            <Border Grid.Column="0"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                     BorderThickness="1"
                     CornerRadius="8">
@@ -101,11 +106,226 @@
                 </Grid>
             </Border>
 
+            <!-- Stats Dock Panel (keep layout/names in sync with StatsWindow.xaml while StatsSnapshot remains there) -->
+            <Border x:Name="StatsDockPanel"
+                    Grid.Column="1"
+                    Visibility="Collapsed"
+                    Width="0"
+                    MaxWidth="300"
+                    Padding="12"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8">
+                <Border.Resources>
+                    <Style x:Key="DockStatsLabelStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="12" />
+                        <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <Setter Property="VerticalAlignment" Value="Center" />
+                    </Style>
+                    <Style x:Key="DockStatsValueStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="12" />
+                        <Setter Property="FontFamily" Value="Consolas" />
+                        <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+                        <Setter Property="VerticalAlignment" Value="Center" />
+                    </Style>
+                    <Style x:Key="DockStatsSectionHeaderStyle" TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="13" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Foreground" Value="{ThemeResource TextFillColorPrimaryBrush}" />
+                    </Style>
+                    <Style x:Key="DockStatsRowStyle" TargetType="Border">
+                        <Setter Property="Padding" Value="6,4" />
+                        <Setter Property="CornerRadius" Value="4" />
+                    </Style>
+                    <Style x:Key="DockStatsRowAltStyle" TargetType="Border">
+                        <Setter Property="Padding" Value="6,4" />
+                        <Setter Property="CornerRadius" Value="4" />
+                        <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorSecondaryBrush}" />
+                    </Style>
+                </Border.Resources>
+                <Border.RenderTransform>
+                    <TranslateTransform x:Name="StatsDockTranslate" X="0"/>
+                </Border.RenderTransform>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="0,0,14,0">
+                    <StackPanel Spacing="12">
+                        <TextBlock Text="Stats"
+                                   Style="{ThemeResource SubtitleTextBlockStyle}" />
+
+                        <TextBlock x:Name="Stats_SessionStateValue"
+                                   Text="Idle"
+                                   Style="{StaticResource DockStatsLabelStyle}" />
+
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Source Cadence" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="FPS" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
+                                        <TextBlock x:Name="Stats_SourceFpsValue" Text="0.00" Style="{StaticResource DockStatsValueStyle}" />
+                                        <TextBlock Text="/" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_SourceExpectedFpsValue" Text="0.00" Style="{StaticResource DockStatsValueStyle}" />
+                                        <TextBlock Text="expected" Style="{StaticResource DockStatsLabelStyle}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Interval" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                        <TextBlock x:Name="Stats_SourceAvgValue" Text="0.00ms avg" Style="{StaticResource DockStatsValueStyle}" />
+                                        <TextBlock x:Name="Stats_SourceP95Value" Text="0.00ms P95" Style="{StaticResource DockStatsValueStyle}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Jitter" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SourceJitterValue" Grid.Column="1" Text="0.00ms" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Gaps" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                        <TextBlock x:Name="Stats_SourceGapsValue" Text="0 severe" Style="{StaticResource DockStatsValueStyle}" />
+                                        <TextBlock x:Name="Stats_SourceDropsValue" Text="0 drops (0.0%)" Style="{StaticResource DockStatsValueStyle}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Preview Cadence" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="FPS" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_PreviewFpsValue" Grid.Column="1" Text="0.00" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Interval" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                        <TextBlock x:Name="Stats_PreviewAvgValue" Text="0.00ms avg" Style="{StaticResource DockStatsValueStyle}" />
+                                        <TextBlock x:Name="Stats_PreviewP95Value" Text="0.00ms P95" Style="{StaticResource DockStatsValueStyle}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Slow" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_PreviewSlowValue" Grid.Column="1" Text="0 frames (0.0%)" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Pipeline" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Latency" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_PipelineLatencyValue" Grid.Column="1" Text="0ms avg" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Frames" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Source" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                        <TextBlock x:Name="Stats_SourceDeliveredValue" Text="0 delivered" Style="{StaticResource DockStatsValueStyle}" />
+                                        <TextBlock x:Name="Stats_SourceDroppedValue" Text="0 dropped" Style="{StaticResource DockStatsValueStyle}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Renderer" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                        <TextBlock x:Name="Stats_RendererRenderedValue" Text="0 rendered" Style="{StaticResource DockStatsValueStyle}" />
+                                        <TextBlock x:Name="Stats_RendererDroppedValue" Text="0 dropped" Style="{StaticResource DockStatsValueStyle}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Performance" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Score" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_PerfScoreValue" Grid.Column="1" Text="0.0 / 100" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
         </Grid>
 
         <!-- Settings Overlay Panel (anchored above control bar) -->
         <Border x:Name="SettingsOverlayPanel"
                 Grid.Row="0"
+                Grid.ColumnSpan="2"
                 Visibility="Collapsed"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Bottom"

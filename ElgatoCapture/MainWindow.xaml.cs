@@ -46,7 +46,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
     private D3D11PreviewRenderer? _d3dRenderer;
-    private StatsWindow? _statsWindow;
+    private DispatcherQueueTimer? _statsPollTimer;
+    private Storyboard? _statsDockStoryboard;
+    private Storyboard? _showStatsDockStoryboard;
+    private Storyboard? _hideStatsDockStoryboard;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
@@ -1410,56 +1413,135 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             return;
         }
 
-        if (_statsWindow != null)
-        {
-            _statsWindow.Activate();
-            return;
-        }
-
-        var statsWindow = new StatsWindow(GetStatsSnapshot, OnStatsWindowClosed);
-        _statsWindow = statsWindow;
-        statsWindow.Activate();
+        ShowStatsDockPanel();
+        UpdateStatsDock();
+        StartStatsDockPolling();
     }
 
     private void StatsToggle_Unchecked(object sender, RoutedEventArgs e)
     {
-        CloseStatsWindow();
+        StopStatsDockPolling();
+        HideStatsDockPanel();
     }
 
-    private void OnStatsWindowClosed()
+    private void StartStatsDockPolling()
     {
-        _statsWindow = null;
-        if (_isWindowClosing)
+        _statsPollTimer ??= _dispatcherQueue.CreateTimer();
+        _statsPollTimer.Interval = TimeSpan.FromMilliseconds(500);
+        _statsPollTimer.IsRepeating = true;
+        _statsPollTimer.Tick -= StatsPollTimer_Tick;
+        _statsPollTimer.Tick += StatsPollTimer_Tick;
+        _statsPollTimer.Start();
+    }
+
+    private void StopStatsDockPolling()
+    {
+        if (_statsPollTimer == null)
         {
             return;
         }
 
-        if (StatsToggle.IsChecked == true)
-        {
-            StatsToggle.IsChecked = false;
-        }
+        _statsPollTimer.Stop();
+        _statsPollTimer.Tick -= StatsPollTimer_Tick;
+        _statsPollTimer = null;
     }
 
-    private void CloseStatsWindow()
+    private void StatsPollTimer_Tick(DispatcherQueueTimer sender, object args)
     {
-        var statsWindow = _statsWindow;
-        _statsWindow = null;
-        if (statsWindow == null)
+        UpdateStatsDock();
+    }
+
+    private void ShowStatsDockPanel()
+    {
+        EnsureStatsDockAnimations();
+        StopStatsDockAnimation();
+        StatsDockPanel.Width = 0;
+        StatsDockPanel.Opacity = 0;
+        StatsDockPanel.Visibility = Visibility.Visible;
+        _statsDockStoryboard = _showStatsDockStoryboard;
+        _showStatsDockStoryboard?.Begin();
+    }
+
+    private void HideStatsDockPanel(bool immediate = false)
+    {
+        EnsureStatsDockAnimations();
+        StopStatsDockAnimation();
+        if (immediate || StatsDockPanel.Visibility != Visibility.Visible)
         {
+            StatsDockPanel.Width = 0;
+            StatsDockPanel.Visibility = Visibility.Collapsed;
+            StatsDockPanel.Opacity = 1;
             return;
         }
 
-        try
+        _statsDockStoryboard = _hideStatsDockStoryboard;
+        _hideStatsDockStoryboard?.Begin();
+    }
+
+    private void StopStatsDockAnimation()
+    {
+        _statsDockStoryboard?.Stop();
+        _statsDockStoryboard = null;
+    }
+
+    private void EnsureStatsDockAnimations()
+    {
+        _showStatsDockStoryboard ??= CreateStatsDockStoryboard(showing: true);
+        _hideStatsDockStoryboard ??= CreateStatsDockStoryboard(showing: false);
+    }
+
+    private const double StatsDockPanelWidth = 300;
+
+    private Storyboard CreateStatsDockStoryboard(bool showing)
+    {
+        var durationMs = showing ? 250 : 200;
+        var easing = new CubicEase { EasingMode = showing ? EasingMode.EaseOut : EasingMode.EaseIn };
+        var duration = TimeSpan.FromMilliseconds(durationMs);
+
+        var storyboard = new Storyboard();
+
+        var widthAnim = new DoubleAnimation
         {
-            statsWindow.Close();
-        }
-        catch (Exception ex)
+            To = showing ? StatsDockPanelWidth : 0,
+            Duration = duration,
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(widthAnim, StatsDockPanel);
+        Storyboard.SetTargetProperty(widthAnim, "Width");
+
+        var fade = new DoubleAnimation
         {
-            if (!IsCloseAlreadyInProgressException(ex))
+            To = showing ? 1 : 0,
+            Duration = duration,
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(fade, StatsDockPanel);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+
+        storyboard.Children.Add(widthAnim);
+        storyboard.Children.Add(fade);
+        storyboard.Completed += (_, _) =>
+        {
+            if (!ReferenceEquals(_statsDockStoryboard, storyboard))
             {
-                Logger.Log($"Stats window close failed: {ex.Message}");
+                return;
             }
-        }
+
+            _statsDockStoryboard = null;
+            if (showing)
+            {
+                StatsDockPanel.Width = StatsDockPanelWidth;
+                StatsDockPanel.Opacity = 1;
+                return;
+            }
+
+            StatsDockPanel.Width = 0;
+            StatsDockPanel.Visibility = Visibility.Collapsed;
+            StatsDockPanel.Opacity = 1;
+        };
+
+        return storyboard;
     }
 
     private void CaptureSettingsGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -1565,7 +1647,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
 
         _isWindowClosing = true;
-        CloseStatsWindow();
+        StopStatsDockPolling();
+        HideStatsDockPanel(immediate: true);
 
         if (this.Content is FrameworkElement mainContent)
         {
@@ -1744,34 +1827,85 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         };
     }
 
+    private void UpdateStatsDock()
+    {
+        if (_isWindowClosing || StatsDockPanel.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        var snapshot = GetStatsSnapshot();
+        var sessionState = snapshot.Recording
+            ? "Recording"
+            : snapshot.Previewing
+                ? "Previewing"
+                : "Idle";
+        var sourceFps = FormatFps(snapshot.SourceObservedFps);
+        var sourceExpectedFps = FormatFps(snapshot.SourceExpectedFps);
+        var sourceAvg = $"{FormatMs(snapshot.SourceAvgIntervalMs)} avg";
+        var sourceP95 = $"{FormatMs(snapshot.SourceP95IntervalMs)} P95";
+        var sourceJitter = FormatMs(snapshot.SourceJitterMs);
+        var sourceGaps = $"{FormatCount(snapshot.SourceSevereGaps)} severe";
+        var sourceDrops = $"{FormatCount(snapshot.SourceEstDrops)} drops ({FormatPercent(snapshot.SourceEstDropPct)})";
+        var previewFps = FormatFps(snapshot.PreviewObservedFps);
+        var previewAvg = $"{FormatMs(snapshot.PreviewAvgIntervalMs)} avg";
+        var previewP95 = $"{FormatMs(snapshot.PreviewP95IntervalMs)} P95";
+        var previewSlow = $"{FormatCount(snapshot.PreviewSlowFrames)} frames ({FormatPercent(snapshot.PreviewSlowPct)})";
+        var pipelineLatency = $"{FormatMs(snapshot.PipelineLatencyMs)} avg";
+        var sourceDelivered = $"{FormatCount(snapshot.SourceFramesDelivered)} delivered";
+        var sourceDropped = $"{FormatCount(snapshot.SourceFramesDropped)} dropped";
+        var rendererRendered = $"{FormatCount(snapshot.RendererFramesRendered)} rendered";
+        var rendererDropped = $"{FormatCount(snapshot.RendererFramesDropped)} dropped";
+        var perfScore = $"{FormatScore(snapshot.PerformanceScore)} / 100";
+
+        SetTextIfChanged(Stats_SessionStateValue, sessionState);
+        SetTextIfChanged(Stats_SourceFpsValue, sourceFps);
+        SetTextIfChanged(Stats_SourceExpectedFpsValue, sourceExpectedFps);
+        SetTextIfChanged(Stats_SourceAvgValue, sourceAvg);
+        SetTextIfChanged(Stats_SourceP95Value, sourceP95);
+        SetTextIfChanged(Stats_SourceJitterValue, sourceJitter);
+        SetTextIfChanged(Stats_SourceGapsValue, sourceGaps);
+        SetTextIfChanged(Stats_SourceDropsValue, sourceDrops);
+        SetTextIfChanged(Stats_PreviewFpsValue, previewFps);
+        SetTextIfChanged(Stats_PreviewAvgValue, previewAvg);
+        SetTextIfChanged(Stats_PreviewP95Value, previewP95);
+        SetTextIfChanged(Stats_PreviewSlowValue, previewSlow);
+        SetTextIfChanged(Stats_PipelineLatencyValue, pipelineLatency);
+        SetTextIfChanged(Stats_SourceDeliveredValue, sourceDelivered);
+        SetTextIfChanged(Stats_SourceDroppedValue, sourceDropped);
+        SetTextIfChanged(Stats_RendererRenderedValue, rendererRendered);
+        SetTextIfChanged(Stats_RendererDroppedValue, rendererDropped);
+        SetTextIfChanged(Stats_PerfScoreValue, perfScore);
+    }
+
     private StatsSnapshot GetStatsSnapshot()
     {
         var health = ViewModel.GetCaptureHealthSnapshot();
         var d3d = _d3dRenderer;
         var presentCadence = d3d?.GetPresentCadenceMetrics(_previewMinPresentationIntervalMs);
         var pipelineLatency = d3d?.GetEstimatedPipelineLatencyMs() ?? 0;
-        var sourceDropPercent = SanitizeMetric(health.CaptureCadenceEstimatedDropPercent);
-        var previewSlowPercent = SanitizeMetric(presentCadence?.SlowFramePercent ?? 0);
+        var sourceDropPercent = Sanitize(health.CaptureCadenceEstimatedDropPercent);
+        var previewSlowPercent = Sanitize(presentCadence?.SlowFramePercent ?? 0);
         var performanceScore = Math.Clamp(100.0 - sourceDropPercent - previewSlowPercent, 0.0, 100.0);
 
         return new StatsSnapshot(
             SourceCadenceSamples: health.CaptureCadenceSampleCount,
-            SourceObservedFps: SanitizeMetric(health.CaptureCadenceObservedFps),
-            SourceExpectedFps: SanitizeMetric(health.ExpectedFrameRate),
-            SourceAvgIntervalMs: SanitizeMetric(health.CaptureCadenceAverageIntervalMs),
-            SourceP95IntervalMs: SanitizeMetric(health.CaptureCadenceP95IntervalMs),
-            SourceMaxIntervalMs: SanitizeMetric(health.CaptureCadenceMaxIntervalMs),
-            SourceJitterMs: SanitizeMetric(health.CaptureCadenceJitterStdDevMs),
+            SourceObservedFps: Sanitize(health.CaptureCadenceObservedFps),
+            SourceExpectedFps: Sanitize(health.ExpectedFrameRate),
+            SourceAvgIntervalMs: Sanitize(health.CaptureCadenceAverageIntervalMs),
+            SourceP95IntervalMs: Sanitize(health.CaptureCadenceP95IntervalMs),
+            SourceMaxIntervalMs: Sanitize(health.CaptureCadenceMaxIntervalMs),
+            SourceJitterMs: Sanitize(health.CaptureCadenceJitterStdDevMs),
             SourceSevereGaps: health.CaptureCadenceSevereGapCount,
             SourceEstDrops: health.CaptureCadenceEstimatedDroppedFrames,
             SourceEstDropPct: sourceDropPercent,
             PreviewCadenceSamples: presentCadence?.SampleCount ?? 0,
-            PreviewObservedFps: SanitizeMetric(presentCadence?.ObservedFps ?? 0),
-            PreviewAvgIntervalMs: SanitizeMetric(presentCadence?.AverageIntervalMs ?? 0),
-            PreviewP95IntervalMs: SanitizeMetric(presentCadence?.P95IntervalMs ?? 0),
+            PreviewObservedFps: Sanitize(presentCadence?.ObservedFps ?? 0),
+            PreviewAvgIntervalMs: Sanitize(presentCadence?.AverageIntervalMs ?? 0),
+            PreviewP95IntervalMs: Sanitize(presentCadence?.P95IntervalMs ?? 0),
             PreviewSlowFrames: presentCadence?.SlowFrameCount ?? 0,
             PreviewSlowPct: previewSlowPercent,
-            PipelineLatencyMs: SanitizeMetric(pipelineLatency),
+            PipelineLatencyMs: Sanitize(pipelineLatency),
             SourceFramesDelivered: health.VideoFramesArrived,
             SourceFramesDropped: health.VideoFramesDropped,
             RendererFramesSubmitted: d3d?.FramesSubmitted ?? 0,
@@ -1782,9 +1916,47 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             Recording: ViewModel.IsRecording);
     }
 
-    private static double SanitizeMetric(double value)
+    private static string FormatFps(double value)
     {
-        return double.IsFinite(value) ? value : 0;
+        return Sanitize(value).ToString("0.00");
+    }
+
+    private static string FormatMs(double value)
+    {
+        return $"{Sanitize(value):0.00}ms";
+    }
+
+    private static string FormatPercent(double value)
+    {
+        return $"{Sanitize(value):0.0}%";
+    }
+
+    private static string FormatScore(double value)
+    {
+        return Sanitize(value).ToString("0.0");
+    }
+
+    private static string FormatCount(long value)
+    {
+        return Math.Max(0, value).ToString("N0");
+    }
+
+    private static void SetTextIfChanged(TextBlock target, string value)
+    {
+        if (!string.Equals(target.Text, value, StringComparison.Ordinal))
+        {
+            target.Text = value;
+        }
+    }
+
+    private static double Sanitize(double value)
+    {
+        if (!double.IsFinite(value) || value < 0)
+        {
+            return 0;
+        }
+
+        return value;
     }
 
     private async Task<PreviewRuntimeSnapshot> GetPreviewRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
