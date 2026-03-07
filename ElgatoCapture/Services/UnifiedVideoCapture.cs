@@ -25,6 +25,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private long _videoFramesDropped;
     private long _videoFramesWrittenToSink;
     private long _recordingFramesDelivered;
+    private long _recordingFramesEnqueued;
     private long _lastVideoFrameArrivedTick;
     private Action<bool>? _observedPixelFormatObserver;
 
@@ -44,6 +45,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     }
     public long VideoFramesWrittenToSink => Interlocked.Read(ref _videoFramesWrittenToSink);
     public long RecordingFramesDelivered => Interlocked.Read(ref _recordingFramesDelivered);
+    public long RecordingFramesEnqueued => Interlocked.Read(ref _recordingFramesEnqueued);
     public long LastVideoFrameArrivedTick => Interlocked.Read(ref _lastVideoFrameArrivedTick);
     public SharedD3DDeviceManager? D3DManager => Volatile.Read(ref _d3dManager);
     public MfSourceReaderVideoCapture.SourceCadenceMetrics GetSourceCadenceMetrics()
@@ -181,6 +183,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             _recordingSink = sink;
             _recordingEncoder = encoder;
             Interlocked.Exchange(ref _recordingFramesDelivered, 0);
+            Interlocked.Exchange(ref _recordingFramesEnqueued, 0);
             _recordingActive = true;
         }
 
@@ -377,6 +380,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
             encoder.EnqueueRawVideoFrame(frameData, expectedSize);
             Interlocked.Increment(ref _videoFramesWrittenToSink);
+            Interlocked.Increment(ref _recordingFramesEnqueued);
         }
         catch (Exception ex)
         {

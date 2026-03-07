@@ -1458,7 +1458,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
             _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
             var recordingFramesDelivered = unifiedVideoCapture.RecordingFramesDelivered;
-            var recordingFramesWrittenToSink = unifiedVideoCapture.VideoFramesWrittenToSink;
+            var recordingFramesEnqueued = unifiedVideoCapture.RecordingFramesEnqueued;
             Logger.Log(
                 "VIDEO_DIAG mf_source_reader " +
                 $"frames_delivered={_lastMfSourceReaderFramesDelivered} " +
@@ -1467,8 +1467,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
             Logger.Log(
                 "VIDEO_DIAG recording_pipeline " +
                 $"source_frames_during_recording={recordingFramesDelivered} " +
-                $"frames_written_to_encoder={recordingFramesWrittenToSink} " +
-                $"pipeline_drops={recordingFramesDelivered - recordingFramesWrittenToSink}");
+                $"frames_enqueued_to_encoder={recordingFramesEnqueued} " +
+                $"pipeline_drops={recordingFramesDelivered - recordingFramesEnqueued}");
         }
 
         if (_wasapiAudioCapture != null)
