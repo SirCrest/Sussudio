@@ -41,6 +41,10 @@
                     BorderThickness="1"
                     CornerRadius="8">
                 <Grid>
+                    <Border x:Name="PreviewLetterboxBackground"
+                            Background="Black"
+                            Visibility="Collapsed" />
+
                     <!-- Primary GPU preview path -->
                     <SwapChainPanel x:Name="PreviewSwapChainPanel"
                                     AutomationProperties.AutomationId="PreviewPlayerElement"

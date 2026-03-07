@@ -266,13 +266,15 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
         var isP010 = Volatile.Read(ref _isP010);
         Volatile.Read(ref _observedPixelFormatObserver)?.Invoke(isP010);
+
+        // Recording first keeps encoder delivery ahead of any preview-side lock contention.
+        EnqueueRecordingFrame(frameData, width, height, isP010);
+
         var previewSink = Volatile.Read(ref _previewSink);
         if (previewSink != null && !frameData.IsEmpty)
         {
             SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick);
         }
-
-        EnqueueRecordingFrame(frameData, width, height, isP010);
     }
 
     private unsafe void OnDualFrameArrived(
@@ -288,6 +290,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
         var isP010 = Volatile.Read(ref _isP010);
         Volatile.Read(ref _observedPixelFormatObserver)?.Invoke(isP010);
+
+        // Recording first keeps encoder delivery ahead of any preview-side lock contention.
+        EnqueueRecordingFrame(frameData, width, height, isP010);
+
         var previewSink = Volatile.Read(ref _previewSink);
         if (previewSink != null)
         {
@@ -310,8 +316,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
                 SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick);
             }
         }
-
-        EnqueueRecordingFrame(frameData, width, height, isP010);
     }
 
     private unsafe void SubmitPreviewRawFrame(

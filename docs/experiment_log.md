@@ -397,3 +397,99 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (UI-only change; no new recording artifact generated in this verification pass)
 - Conclusion: The docked-stats implementation is in source and the cached regression harness still passes, but a fresh app compile of the modified code is blocked in this sandbox until NuGet restore can reach the required Vortice packages.
+
+## E30 - D3D11 preview resize path debounced on the render thread
+- Timestamp (UTC): 2026-03-06T17:47:30.3125171Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added `_lastResizeAppliedTick` gating in `D3D11PreviewRenderer.RenderThreadMain` so `_resizePending` is only consumed once every 150 ms, leaving the final resize pending instead of calling `_swapChain.ResizeBuffers()` on every `SizeChanged`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. Start preview or recording, drag-resize the main window continuously, and then stop resizing.
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for fewer `D3D11 preview swap chain resized` lines than `D3D11 preview resize requested` lines and confirm the final size still lands after the drag stops.
+- Validator Output:
+  - `dotnet build ...` was blocked in this offline sandbox after three attempts: `NU1301` on `https://api.nuget.org/v3/index.json`, then `NU1101` for `Vortice.Direct3D11` and `Vortice.DXGI` when retrying with failed-source tolerance.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ --no-build --no-restore -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` tail still showed the previous real app run's resize spam and historical `CreateNamedPipe failed with Win32 error 1314`; the no-build regression harness did not emit new runtime warnings.
+- ffprobe Evidence:
+  - N/A (preview-resize behavior change only)
+- Conclusion: The renderer now throttles swap-chain resizes at the render-thread choke point while keeping the last resize pending for application after the drag settles.
+
+## E31 - Unified video capture now delivers recording frames before preview work
+- Timestamp (UTC): 2026-03-06T17:47:30.3125171Z
+- Commit Hash: uncommitted
+- What Changed (single change): Reordered `UnifiedVideoCapture.OnFrameArrived` and `OnDualFrameArrived` so `EnqueueRecordingFrame(...)` runs before any preview `SubmitTexture` or raw preview submission.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. Start recording and drag-resize the preview window to force preview-side contention.
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for `UNIFIED_VIDEO_PREVIEW_*` warnings and confirm recording ingest counters continue advancing even if preview submission slows.
+- Validator Output:
+  - `dotnet build ...` was blocked in this offline sandbox after three attempts: `NU1301` on `https://api.nuget.org/v3/index.json`, then `NU1101` for `Vortice.Direct3D11` and `Vortice.DXGI` when retrying with failed-source tolerance.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ --no-build --no-restore -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` tail contained no new `UNIFIED_VIDEO_*` warnings from the no-build regression harness.
+- ffprobe Evidence:
+  - N/A (frame-ordering change only)
+- Conclusion: Recording ingestion is now first in both source-reader callback paths, so preview-side locks no longer get first chance to delay encoder enqueue.
+
+## E32 - FFmpeg writer duplicates short stalled gaps and reports duplicated-frame telemetry
+- Timestamp (UTC): 2026-03-06T17:47:30.3125171Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added a writer-local last-frame cache plus gap detection in `FFmpegEncoderService.WriteVideoFramesAsync`, capped duplicate insertion for gaps larger than 1.5 frame periods, and persisted the duplicated-frame counter through `CaptureService`, `CaptureHealthSnapshot`, and `AutomationSnapshot`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. Start a recording, force a short stall (for example by drag-resizing the preview window), then stop the recording.
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for `RECORDING_FRAME_DUP` and the updated `CFR_DRIFT_METRICS` / `FFmpeg Encoder Stopped` duplicated-frame counters, and check automation health snapshots for `VideoFramesDuplicated` / `EncoderVideoFramesDuplicated`.
+- Validator Output:
+  - `dotnet build ...` was blocked in this offline sandbox after three attempts: `NU1301` on `https://api.nuget.org/v3/index.json`, then `NU1101` for `Vortice.Direct3D11` and `Vortice.DXGI` when retrying with failed-source tolerance.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ --no-build --no-restore -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` tail showed no new `RECORDING_FRAME_DUP` lines because the regression harness exercised the cached binary rather than a rebuilt app image.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this offline verification pass)
+- Conclusion: The video writer now fills bounded wall-clock stalls with duplicated frames and surfaces duplication counts through the existing recording-health telemetry path.
+
+## E33 - Device-loss recovery now clears the preview resize debounce gate
+- Timestamp (UTC): 2026-03-06T17:47:30.3125171Z
+- Commit Hash: uncommitted
+- What Changed (single change): Updated `D3D11PreviewRenderer.HandleDeviceLost` to clear `_lastResizeAppliedTick` before re-arming `_resizePending`, so the first resize after swap-chain/device recreation is not delayed by the previous debounce window.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. Start preview, trigger a `D3D11 preview device lost ... recreating device.` path, and resize the preview immediately after recovery.
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm the first post-recovery resize is applied immediately rather than waiting another 150 ms.
+- Validator Output:
+  - `dotnet build ...` remained blocked in this offline sandbox with `NU1301` while restoring `https://api.nuget.org/v3/index.json`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ --no-build --no-restore -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` tail still reflected the older live resize session and historical `CreateNamedPipe failed with Win32 error 1314`; the cached regression harness did not produce new runtime warnings.
+- ffprobe Evidence:
+  - N/A (preview recovery edge-case only)
+- Conclusion: Preview device-loss recovery no longer inherits a stale resize debounce timestamp, so the re-created swap chain can resize immediately on the next loop.
+
+## E34 - Shared-device reset now clears the preview resize debounce gate
+- Timestamp (UTC): 2026-03-06T17:47:30.3125171Z
+- Commit Hash: uncommitted
+- What Changed (single change): Updated the `_sharedDeviceResetPending` rebind path in `D3D11PreviewRenderer.RenderThreadMain` to clear `_lastResizeAppliedTick` before re-arming `_resizePending`, matching the device-loss recovery path so the first resize after shared-device recreation is immediate.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. Trigger a shared-device reset while preview is active, then resize the preview immediately afterward.
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm the first resize after the reset is applied without waiting out the prior 150 ms debounce window.
+- Validator Output:
+  - `dotnet build ...` remained blocked in this offline sandbox with `NU1301` on `https://api.nuget.org/v3/index.json`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ --no-build --no-restore -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` tail still reflected the older live resize session and historical `CreateNamedPipe failed with Win32 error 1314`; the cached regression harness did not produce new runtime warnings.
+- ffprobe Evidence:
+  - N/A (preview recovery edge-case only)
+- Conclusion: Shared-device resets now bypass the stale debounce timestamp just like device-loss recovery, so the re-created preview device can resize immediately on the next render-loop iteration.
+
+## E35 - Preview swap chain now stays at negotiated source resolution during window resize
+- Timestamp (UTC): 2026-03-06T23:06:53.2807747Z
+- Commit Hash: cb05443669aafd63b6bc420c423a7ec527b5b9d5
+- What Changed (single change): Reworked the D3D11 preview path so `D3D11PreviewRenderer` creates its composition swap chain at the negotiated source resolution, updates letterbox/fit through `IDXGISwapChain2.MatrixTransform` in logical panel space instead of `ResizeBuffers`, drops stale pending frames on device reset/rebind, and starts the renderer from the live negotiated capture dimensions exposed through `CaptureService`/`ProbeVideoSource`.
+- How To Run:
+  1. `$env:DOTNET_CLI_HOME='C:\\Users\\crest\\source\\repos\\ElgatoCapture\\temp\\dotnet_cli_home'; dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `$env:DOTNET_CLI_HOME='C:\\Users\\crest\\source\\repos\\ElgatoCapture\\temp\\dotnet_cli_home'; dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for preview warnings after a live preview run; the current tail can still contain older `ApplyResize` lines until the app is launched again with this build.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded and staged the latest build; MSBuild logged two transient `MSB3026` retries because `ElgatoCapture.Tests (437332)` briefly held `ElgatoCapture.dll`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` still shows the previous pre-change live preview session, including historical `ApplyResize` entries and `CreateNamedPipe failed with Win32 error 1314`; the regression harness itself did not launch a new preview session.
+- ffprobe Evidence:
+  - N/A (preview architecture / resize behavior change only)
+- Conclusion: The preview back buffer now stays pinned to negotiated source size while resize is expressed as compositor transform updates, and the project still builds/tests cleanly in this environment.

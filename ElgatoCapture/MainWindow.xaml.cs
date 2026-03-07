@@ -55,11 +55,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _previewFramesDropped;
     private long _previewLastResizeLogTick;
     private long _previewLastPresentedTick;
-    private long _previewResizeSuppressUntilTick;
     private int _windowCloseRequested;
     private int _windowCloseCleanupStarted;
     private long _previewMinPresentationIntervalMs;
-    private readonly int _previewResizeDebounceMs;
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private int _automationServicesStarted;
@@ -625,6 +623,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _d3dRenderer?.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);
     }
 
+    private void SetGpuPreviewVisibility(Visibility visibility)
+    {
+        PreviewLetterboxBackground.Visibility = visibility;
+        PreviewSwapChainPanel.Visibility = visibility;
+    }
+
     private void EnsureDeviceSelection()
     {
         if (ViewModel.Devices.Count == 0)
@@ -1089,7 +1093,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             automationToken);
         _automationPipeServer = new NamedPipeAutomationServer(automationDispatcher, automationPipeName);
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
-        _previewResizeDebounceMs = MainViewModel.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RESIZE_DEBOUNCE_MS", defaultValue: 250, minValue: 50, maxValue: 2000);
 
         // Set window handle for folder picker
         var hwnd = WindowNative.GetWindowHandle(this);
@@ -1620,9 +1623,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
     {
         var nowTick = Environment.TickCount64;
-        Interlocked.Exchange(ref _previewResizeSuppressUntilTick, nowTick + _previewResizeDebounceMs);
-
-        if (!ViewModel.IsPreviewing)
+        if (!ViewModel.IsPreviewing ||
+            _d3dRenderer == null ||
+            PreviewSwapChainPanel.Visibility != Visibility.Visible)
         {
             return;
         }
@@ -1635,7 +1638,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         if (Interlocked.CompareExchange(ref _previewLastResizeLogTick, nowTick, lastLogTick) == lastLogTick)
         {
-            Logger.Log($"Preview resize active. Suppressing frame presents for {_previewResizeDebounceMs}ms.");
+            Logger.Log("Preview resize active. Updating compositor transform without resizing swap-chain buffers.");
         }
     }
 
@@ -2038,7 +2041,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             renderer.Dispose();
         }
         ViewModel.SetPreviewFrameSink(null);
-        PreviewSwapChainPanel.Visibility = Visibility.Collapsed;
+        SetGpuPreviewVisibility(Visibility.Collapsed);
         _previewStartupExpectGpuDualSignals = false;
         _previewGpuSignalMediaOpened = false;
         _previewGpuSignalFirstFrame = false;
@@ -2576,7 +2579,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewFramesDropped = 0;
         _previewLastResizeLogTick = 0;
         _previewLastPresentedTick = 0;
-        _previewResizeSuppressUntilTick = 0;
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
 
         var useD3dRenderer = ViewModel.IsPreviewing;
@@ -2586,16 +2588,24 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             var renderer = new D3D11PreviewRenderer(PreviewSwapChainPanel, _dispatcherQueue);
             renderer.FirstFrameRendered += OnD3DRendererFirstFrameRendered;
             var settings = ViewModel.GetCurrentSettings();
+            var sourceProbe = ViewModel.ProbeVideoSource();
             var isHdr = settings != null && HdrOutputPolicy.IsEnabled(settings);
             var width = (int)(settings?.Width ?? 1920);
             var height = (int)(settings?.Height ?? 1080);
             var fps = settings?.FrameRate ?? 60.0;
+            var negotiatedWidth = sourceProbe.SessionActive ? sourceProbe.CurrentWidth : 0;
+            var negotiatedHeight = sourceProbe.SessionActive ? sourceProbe.CurrentHeight : 0;
+            var negotiatedFps = sourceProbe.SessionActive ? sourceProbe.CurrentFrameRate : 0.0;
+            var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : width;
+            var rendererHeight = negotiatedHeight > 0 ? negotiatedHeight : height;
+            var rendererFps = negotiatedFps > 0 ? negotiatedFps : fps;
+            _previewMinPresentationIntervalMs = Math.Max(1L, (long)Math.Round(1000.0 / rendererFps));
 
             // Wire SizeChanged and make panel visible BEFORE starting the render
             // thread so the renderer has the panel's pixel dimensions from the start.
             _d3dRenderer = renderer;
             PreviewSwapChainPanel.SizeChanged += OnPreviewSwapChainPanelSizeChanged;
-            PreviewSwapChainPanel.Visibility = Visibility.Visible;
+            SetGpuPreviewVisibility(Visibility.Visible);
             PreviewImage.Visibility = Visibility.Collapsed;
 
             // Pre-seed the renderer with the panel's current pixel dimensions.
@@ -2610,7 +2620,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 renderer.OnPanelSizeChanged(panelW, panelH, scale);
             }
 
-            renderer.Start(width, height, fps, isHdr);
+            renderer.Start(rendererWidth, rendererHeight, rendererFps, isHdr);
             if (isHdr && ViewModel.IsTrueHdrPreviewEnabled)
             {
                 renderer.SetHdrPassthroughEnabled(true);
@@ -2636,7 +2646,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             _previewRendererAttachedUtc = DateTimeOffset.UtcNow;
             PreviewImage.Source = _previewSource;
             PreviewImage.Visibility = Visibility.Visible;
-            PreviewSwapChainPanel.Visibility = Visibility.Collapsed;
+            SetGpuPreviewVisibility(Visibility.Collapsed);
             Logger.Log($"Preview renderer started (mode=CpuSoftwareBitmap, expectedIntervalMs={_previewMinPresentationIntervalMs}).");
             Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=CpuSoftwareBitmap attempt={_previewStartupAttemptId ?? "none"}");
         }
@@ -2657,7 +2667,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             renderer.Dispose();
         }
         ViewModel.SetPreviewFrameSink(null);
-        PreviewSwapChainPanel.Visibility = Visibility.Collapsed;
+        SetGpuPreviewVisibility(Visibility.Collapsed);
         _previewStartupExpectGpuDualSignals = false;
         _previewGpuSignalMediaOpened = false;
         _previewGpuSignalFirstFrame = false;
@@ -2674,7 +2684,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewSource = null;
 
         _previewLastPresentedTick = 0;
-        _previewResizeSuppressUntilTick = 0;
         _previewMinPresentationIntervalMs = Math.Max(1L, (long)Math.Round(1000.0 / 60.0));
         Logger.Log("Preview renderer stopped.");
         return Task.CompletedTask;

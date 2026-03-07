@@ -239,11 +239,13 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private int _disposed;
     private int _stopRequested;
     private int _isRendering;
-    private int _resizePending;
+    private int _compositionTransformDirty;
     private int _firstFrameRaised;
 
     private int _panelPixelWidth;
     private int _panelPixelHeight;
+    private double _panelLogicalWidth = 1.0;
+    private double _panelLogicalHeight = 1.0;
     private double _rasterizationScale = 1.0;
     private int _startupWidth;
     private int _startupHeight;
@@ -448,7 +450,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             Volatile.Write(ref _rendererMode, RendererModeNone);
 
             Interlocked.Exchange(ref _stopRequested, 0);
-            Interlocked.Exchange(ref _resizePending, 1);
+            Interlocked.Exchange(ref _compositionTransformDirty, 1);
             Interlocked.Exchange(ref _firstFrameRaised, 0);
             Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
             _frameReadyEvent.Reset();
@@ -504,13 +506,15 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     {
         if (logicalWidth <= 0 || logicalHeight <= 0 || rasterizationScale <= 0) return;
 
+        Volatile.Write(ref _panelLogicalWidth, logicalWidth);
+        Volatile.Write(ref _panelLogicalHeight, logicalHeight);
         var pixelWidth = Math.Max(1, (int)(logicalWidth * rasterizationScale));
         var pixelHeight = Math.Max(1, (int)(logicalHeight * rasterizationScale));
 
         Volatile.Write(ref _panelPixelWidth, pixelWidth);
         Volatile.Write(ref _panelPixelHeight, pixelHeight);
         Volatile.Write(ref _rasterizationScale, rasterizationScale);
-        Interlocked.Exchange(ref _resizePending, 1);
+        Interlocked.Exchange(ref _compositionTransformDirty, 1);
         _frameReadyEvent.Set();
         Logger.Log($"D3D11 preview resize requested width={pixelWidth} height={pixelHeight} scale={rasterizationScale}.");
     }
@@ -786,10 +790,12 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
                 if (Interlocked.CompareExchange(ref _sharedDeviceResetPending, 0, 1) == 1)
                 {
+                    var stalePending = Interlocked.Exchange(ref _pendingFrame, null);
+                    stalePending?.Dispose();
                     try
                     {
                         InitializeD3D();
-                        Interlocked.Exchange(ref _resizePending, 1);
+                        Interlocked.Exchange(ref _compositionTransformDirty, 1);
                     }
                     catch (Exception ex)
                     {
@@ -797,11 +803,14 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
                     }
                 }
 
-                if (Interlocked.CompareExchange(ref _resizePending, 0, 1) == 1)
+                if (Interlocked.CompareExchange(ref _compositionTransformDirty, 0, 1) == 1)
                 {
                     try
                     {
-                        ApplyResize();
+                        if (_swapChain != null)
+                        {
+                            ApplyCompositionScaleTransform(_swapChain);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -811,7 +820,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
                             continue;
                         }
 
-                        Logger.Log($"D3D11 preview resize failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                        Logger.Log($"D3D11 preview composition transform update failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
                     }
                 }
 
@@ -819,6 +828,12 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
                 if (frame == null)
                 {
                     _frameReadyEvent.Reset();
+                    if (Volatile.Read(ref _pendingFrame) != null ||
+                        Volatile.Read(ref _compositionTransformDirty) != 0 ||
+                        Volatile.Read(ref _sharedDeviceResetPending) != 0)
+                    {
+                        _frameReadyEvent.Set();
+                    }
                     continue;
                 }
 
@@ -842,7 +857,9 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
                     frame.Dispose();
                 }
 
-                if (Volatile.Read(ref _pendingFrame) == null)
+                if (Volatile.Read(ref _pendingFrame) == null &&
+                    Volatile.Read(ref _compositionTransformDirty) == 0 &&
+                    Volatile.Read(ref _sharedDeviceResetPending) == 0)
                 {
                     _frameReadyEvent.Reset();
                 }
@@ -1024,10 +1041,10 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
         var outputWidth = _configuredOutputWidth > 0
             ? _configuredOutputWidth
-            : Math.Max(1, Volatile.Read(ref _panelPixelWidth));
+            : Math.Max(1, Volatile.Read(ref _startupWidth));
         var outputHeight = _configuredOutputHeight > 0
             ? _configuredOutputHeight
-            : Math.Max(1, Volatile.Read(ref _panelPixelHeight));
+            : Math.Max(1, Volatile.Read(ref _startupHeight));
         var destinationRect = ComputeLetterboxRect(frame.Width, frame.Height, outputWidth, outputHeight);
         var viewport = new Viewport(
             destinationRect.Left,
@@ -1955,8 +1972,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             throw new InvalidOperationException($"CreateDXGIFactory2 failed: 0x{factoryResult.Code:X8}.");
         }
 
-        var pixelWidth = Math.Max(1, Volatile.Read(ref _panelPixelWidth));
-        var pixelHeight = Math.Max(1, Volatile.Read(ref _panelPixelHeight));
+        var pixelWidth = Math.Max(1, Volatile.Read(ref _startupWidth));
+        var pixelHeight = Math.Max(1, Volatile.Read(ref _startupHeight));
 
         var swapChainFormat = Format.B8G8R8A8_UNorm;
         _hdrCapableSwapChain = false;
@@ -2045,11 +2062,10 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             }
         }
 
-        ApplyCompositionScaleTransform(_swapChain);
-        BindSwapChainToPanel(_swapChain);
-
         _configuredOutputWidth = pixelWidth;
         _configuredOutputHeight = pixelHeight;
+        ApplyCompositionScaleTransform(_swapChain);
+        BindSwapChainToPanel(_swapChain);
         CompileTonemapShaders();
 
         Logger.Log($"D3D11 preview device created featureLevel={featureLevel} shared={sharedDeviceActive}.");
@@ -2315,43 +2331,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
     }
 
-    private void ApplyResize()
-    {
-        if (_swapChain == null) return;
-
-        var newWidth = Math.Max(1, Volatile.Read(ref _panelPixelWidth));
-        var newHeight = Math.Max(1, Volatile.Read(ref _panelPixelHeight));
-        if (newWidth == _configuredOutputWidth && newHeight == _configuredOutputHeight) return;
-
-        _outputView?.Dispose();
-        _outputView = null;
-        _swapChainRTV?.Dispose();
-        _swapChainRTV = null;
-        _swapChainBackBuffer?.Dispose();
-        _swapChainBackBuffer = null;
-
-        var resizeFormat = _hdrCapableSwapChain ? Format.R10G10B10A2_UNorm : Format.B8G8R8A8_UNorm;
-        var resizeResult = _swapChain.ResizeBuffers(2, (uint)newWidth, (uint)newHeight, resizeFormat, SwapChainFlags.None);
-        if (resizeResult.Failure)
-        {
-            throw new InvalidOperationException($"ResizeBuffers failed: 0x{resizeResult.Code:X8}.");
-        }
-
-        ApplyCompositionScaleTransform(_swapChain);
-        if (_swapChain3 != null && _hdrCapableSwapChain)
-        {
-            var currentColorSpace = _swapChainIsHdr10
-                ? ColorSpaceType.RgbFullG2084NoneP2020
-                : ColorSpaceType.RgbFullG22NoneP709;
-            _swapChain3.SetColorSpace1(currentColorSpace);
-        }
-
-        DisposeProcessorResources();
-        _configuredOutputWidth = newWidth;
-        _configuredOutputHeight = newHeight;
-        Logger.Log($"D3D11 preview swap chain resized width={newWidth} height={newHeight}.");
-    }
-
     private void EnsurePipeline(int width, int height, bool isHdr, bool useExternalTexture)
     {
         if (_swapChain == null || _videoDevice == null || _videoContext == null || _videoContext1 == null)
@@ -2359,23 +2338,17 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             throw new InvalidOperationException("D3D11 preview pipeline is not initialized.");
         }
 
-        // Use the configured output dimensions (matching the actual swap chain buffer)
-        // rather than reading fresh panel dimensions. A new resize event will trigger
-        // ApplyResize on the next iteration. Reading _panelPixelWidth here would race
-        // with rapid resize events and create a mismatch between the swap chain buffer
-        // size and the video processor output rect, causing E_INVALIDARG from VideoProcessorBlt.
+        // Keep the internal render target aligned with the source-sized swap chain.
         var outputWidth = _configuredOutputWidth > 0
             ? _configuredOutputWidth
-            : Math.Max(1, Volatile.Read(ref _panelPixelWidth));
+            : Math.Max(1, Volatile.Read(ref _startupWidth));
         var outputHeight = _configuredOutputHeight > 0
             ? _configuredOutputHeight
-            : Math.Max(1, Volatile.Read(ref _panelPixelHeight));
+            : Math.Max(1, Volatile.Read(ref _startupHeight));
         var needRecreate = _videoProcessor == null ||
                            _videoProcessorEnumerator == null ||
                            _configuredInputWidth != width ||
                            _configuredInputHeight != height ||
-                           _configuredOutputWidth != outputWidth ||
-                           _configuredOutputHeight != outputHeight ||
                            _configuredHdr != isHdr;
 
         if (needRecreate)
@@ -2414,8 +2387,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
             _configuredInputWidth = width;
             _configuredInputHeight = height;
-            _configuredOutputWidth = outputWidth;
-            _configuredOutputHeight = outputHeight;
             _configuredHdr = isHdr;
 
             Logger.Log($"D3D11 video processor created input={width}x{height} output={outputWidth}x{outputHeight} hdr={isHdr}.");
@@ -2741,35 +2712,43 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
     private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)
     {
-        // High-DPI fix: SwapChainPanel is sized in logical pixels but our back buffer
-        // is at physical pixel resolution (logical * rasterizationScale). Without an
-        // inverse-DPI transform, DXGI maps 1 back buffer pixel = 1 logical pixel,
-        // causing the content to appear zoomed/cropped on high-DPI displays.
-        var scale = Volatile.Read(ref _rasterizationScale);
-        if (scale <= 0) scale = 1.0;
-
         using var swapChain2 = swapChain.QueryInterfaceOrNull<IDXGISwapChain2>();
-        if (swapChain2 != null)
+        if (swapChain2 == null)
         {
-            var inverseScale = (float)(1.0 / scale);
-            swapChain2.MatrixTransform = new System.Numerics.Matrix3x2(
-                inverseScale, 0,
-                0, inverseScale,
-                0, 0);
-            Logger.Log($"D3D11 preview composition scale transform set inverseScale={inverseScale:F4} dpiScale={scale}.");
+            return;
         }
-        else
+
+        var panelLogicalW = Volatile.Read(ref _panelLogicalWidth);
+        var panelLogicalH = Volatile.Read(ref _panelLogicalHeight);
+        var swapW = (double)Math.Max(1, _configuredOutputWidth);
+        var swapH = (double)Math.Max(1, _configuredOutputHeight);
+
+        if (panelLogicalW <= 0 || panelLogicalH <= 0)
         {
-            Logger.Log($"D3D11 preview IDXGISwapChain2 unavailable — cannot set composition scale transform.");
+            swapChain2.MatrixTransform = System.Numerics.Matrix3x2.Identity;
+            return;
         }
+
+        var uniformScale = (float)Math.Min(panelLogicalW / swapW, panelLogicalH / swapH);
+        var offsetX = (float)((panelLogicalW - swapW * uniformScale) * 0.5);
+        var offsetY = (float)((panelLogicalH - swapH * uniformScale) * 0.5);
+
+        swapChain2.MatrixTransform = new System.Numerics.Matrix3x2(
+            uniformScale, 0,
+            0, uniformScale,
+            offsetX, offsetY);
+
+        Logger.Log($"D3D11 preview composition transform set scale={uniformScale:F4} offset=({offsetX:F1},{offsetY:F1}) panel={panelLogicalW:F0}x{panelLogicalH:F0} swap={swapW}x{swapH}.");
     }
 
     private void HandleDeviceLost(Exception ex)
     {
         Logger.Log($"D3D11 preview device lost ({ex.GetType().Name}); recreating device.");
         CleanupD3DResources();
+        var stalePending = Interlocked.Exchange(ref _pendingFrame, null);
+        stalePending?.Dispose();
         InitializeD3D();
-        Interlocked.Exchange(ref _resizePending, 1);
+        Interlocked.Exchange(ref _compositionTransformDirty, 1);
     }
 
     private void DisposeProcessorResources()

@@ -80,6 +80,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public bool IsAudioPreviewActive => _isAudioPreviewActive;
     public CaptureSessionState SessionState => _sessionState;
 
+    public int GetNegotiatedVideoWidth() => _unifiedVideoCapture?.Width ?? 0;
+    public int GetNegotiatedVideoHeight() => _unifiedVideoCapture?.Height ?? 0;
+    public double GetNegotiatedVideoFps() => _unifiedVideoCapture?.Fps ?? 0;
+
     public CaptureService() : this(new ProcessSupervisor(), null)
     {
     }

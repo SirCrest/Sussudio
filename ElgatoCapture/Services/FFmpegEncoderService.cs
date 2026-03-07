@@ -2816,7 +2816,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable
             : 0;
         Logger.Log(
             $"CFR_DRIFT_METRICS video_master=true enqueue_delta_ms={enqueueDeltaMs} write_delta_ms={writeDeltaMs} " +
-            $"video_dropped={DroppedVideoFrames} audio_saturated={AudioDropsQueueSaturated} audio_evicted={AudioDropsBacklogEviction}");
+            $"video_dropped={DroppedVideoFrames} " +
+            $"audio_saturated={AudioDropsQueueSaturated} audio_evicted={AudioDropsBacklogEviction}");
 
         await CleanupAsync();
         StatusChanged?.Invoke(this, "Encoding stopped");
