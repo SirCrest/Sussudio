@@ -16,7 +16,9 @@ public enum SourceTelemetryOrigin
 {
     Unknown,
     Egav,
-    DeviceFormatFallback
+    DeviceFormatFallback,
+    KsXu,
+    Rtice
 }
 
 public enum SourceTelemetryConfidence

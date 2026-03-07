@@ -67,6 +67,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private long _lastMfSourceReaderFramesDelivered;
     private long _lastMfSourceReaderFramesDropped;
     private string? _lastMfSourceReaderNegotiatedFormat;
+    private CancellationTokenSource? _telemetryPollCts;
+    private Task? _telemetryPollTask;
+    private const int TelemetryPollIntervalMs = 2000;
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<Exception>? ErrorOccurred;
@@ -91,7 +94,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
     internal CaptureService(IProcessSupervisor processSupervisor, ISourceSignalTelemetryProvider? sourceSignalTelemetryProvider = null)
     {
         _processSupervisor = processSupervisor;
-        _sourceTelemetryProvider = sourceSignalTelemetryProvider ?? new EgavSourceSignalTelemetryProvider();
+        _sourceTelemetryProvider = sourceSignalTelemetryProvider ?? CreateDefaultTelemetryProvider();
+    }
+
+    private static ISourceSignalTelemetryProvider CreateDefaultTelemetryProvider()
+    {
+        return new CompositeSourceSignalTelemetryProvider(
+            new RticeSourceSignalTelemetryProvider(),
+            new KsXuSourceSignalTelemetryProvider(),
+            new EgavSourceSignalTelemetryProvider());
     }
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
@@ -716,6 +727,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             SourceTelemetryOrigin.Egav => "Egav",
             SourceTelemetryOrigin.DeviceFormatFallback => "DeviceFormatFallback",
+            SourceTelemetryOrigin.KsXu => "KsXu",
+            SourceTelemetryOrigin.Rtice => "Rtice",
             _ => "Unknown"
         };
 
@@ -730,6 +743,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             SourceTelemetryOrigin.Egav => "SourceTelemetry(Egav)",
             SourceTelemetryOrigin.DeviceFormatFallback => "SourceTelemetry(DeviceFormatFallback)",
+            SourceTelemetryOrigin.KsXu => "SourceTelemetry(KsXu)",
+            SourceTelemetryOrigin.Rtice => "SourceTelemetry(Rtice)",
             _ => "SourceTelemetry"
         };
     }
@@ -1058,6 +1073,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             _isVideoPreviewActive = true;
+            StartTelemetryPoll();
             StatusChanged?.Invoke(this, "Preview started");
         }, cancellationToken);
 
@@ -1094,6 +1110,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             _isVideoPreviewActive = false;
+            if (!_isRecording) StopTelemetryPoll();
             StatusChanged?.Invoke(this, "Preview stopped");
         }, cancellationToken);
 
@@ -1410,6 +1427,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 }
             }
 
+            StopTelemetryPoll();
             _isVideoPreviewActive = false;
             _isAudioPreviewActive = false;
             _isInitialized = false;
@@ -1592,6 +1610,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         _recordingStopwatch.Stop();
         _isRecording = false;
+        if (!_isVideoPreviewActive) StopTelemetryPoll();
         _recordingContext = null;
         _activeRecordingSettings = null;
         _lastOutputPath = result.OutputPath;
@@ -1787,6 +1806,44 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         _latestSourceTelemetry = MergeTelemetryWithFallback(telemetry, fallback);
         SourceTelemetryUpdated?.Invoke(this, _latestSourceTelemetry);
+    }
+
+    private void StartTelemetryPoll()
+    {
+        StopTelemetryPoll();
+        var cts = new CancellationTokenSource();
+        _telemetryPollCts = cts;
+        _telemetryPollTask = Task.Run(async () =>
+        {
+            while (!cts.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    await Task.Delay(TelemetryPollIntervalMs, cts.Token).ConfigureAwait(false);
+                    await RefreshSourceTelemetryAsync(cts.Token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Telemetry poll cycle failed: {ex.Message}");
+                }
+            }
+        }, cts.Token);
+    }
+
+    private void StopTelemetryPoll()
+    {
+        var cts = _telemetryPollCts;
+        _telemetryPollCts = null;
+        if (cts != null)
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+        _telemetryPollTask = null;
     }
 
     private static SourceSignalTelemetrySnapshot MergeTelemetryWithFallback(

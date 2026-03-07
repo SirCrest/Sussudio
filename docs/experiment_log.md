@@ -493,3 +493,36 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (preview architecture / resize behavior change only)
 - Conclusion: The preview back buffer now stays pinned to negotiated source size while resize is expressed as compositor transform updates, and the project still builds/tests cleanly in this environment.
+
+## E36 - 4K X KS/XU source telemetry with composite EGAV fallback
+- Timestamp (UTC): 2026-03-07T00:57:40.8462157Z
+- Commit Hash: 8d6b5471db44ba2c9d3d36da1a1a409a6fbec76c
+- What Changed (single change): Added `KsXuSourceSignalTelemetryProvider` for direct 4K X KS/XU HDR-state reads (selector 3 fingerprint), added `CompositeSourceSignalTelemetryProvider`, switched `CaptureService` to the composite default, and surfaced the new `KsXu` origin through runtime snapshot mapping.
+- How To Run:
+  1. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed no new `KSXU_` or source-telemetry failures during this verification pass; the tail still contains historical `CreateNamedPipe failed with Win32 error 1314` entries from an earlier interactive app run.
+- ffprobe Evidence:
+  - `codec_name=N/A`
+  - `pix_fmt=N/A`
+  - `color_primaries=N/A`
+  - `color_transfer=N/A`
+  - `color_space=N/A`
+  - `side_data_list=N/A`
+- Conclusion: The direct KS/XU provider now compiles and is the default first-hop telemetry path for 4K X, the EGAV fallback remains wired behind it, and the regression/build checks stayed green. Live device validation of the new KS/XU payload fingerprint still needs a future hardware-backed run.
+
+## E37 - Fix KSMULTIPLE_ITEM header skip in KsXu topology parsing
+- Timestamp (UTC): 2026-03-07T01:13:00Z
+- What Changed (single change): Fixed `TryReadTopologyNodes` to skip the 8-byte `KSMULTIPLE_ITEM` header (uint Size + uint Count) before parsing node type GUIDs. Without this, all GUIDs were offset by 8 bytes and no dev-specific node was ever matched. Also added fallback: if no dev-specific nodes found, try XU reads on ALL nodes.
+- Root Cause: `KSPROPERTY_TOPOLOGY_NODES` returns `KSMULTIPLE_ITEM { Size, Count }` followed by `GUID[Count]`. The original code parsed GUIDs starting at offset 0, reading the header bytes as part of the first GUID. This shifted all subsequent GUIDs by 8 bytes. The same bug exists in ElgatoSignalProbe but is masked there because the guided probe uses hardcoded node IDs rather than topology-based discovery.
+- Diagnostic Evidence: First "GUID" at offset 0 was `00000048-0004-0000-...` which decodes as Size=72 (0x48), Count=4 — the KSMULTIPLE_ITEM header.
+- Validator Output:
+  - Build succeeded (0 warnings, 0 errors)
+  - All runtime snapshot regression checks passed
+  - Live app: `Source: 3840 x 2160 HDR=true`, `Telemetry: Available (Medium)`
+  - Log: `KSXU_TOPOLOGY nodeCount=4 devSpecificNodes=[3]`, `KSXU_READ_RESULT node=3 selector=3 succeeded=True bytes=150`
+- Conclusion: KsXu HDR detection now works end-to-end on the Elgato 4K X. Node 3 is correctly identified as KSNODETYPE_DEV_SPECIFIC, selector 3 returns 150 bytes, and the all-zeros-prefix fingerprint correctly detects HDR ON.

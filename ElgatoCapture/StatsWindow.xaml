@@ -64,6 +64,56 @@
                         Style="{StaticResource StatsLabelStyle}" />
 
                     <StackPanel Spacing="6">
+                        <TextBlock Text="Source Signal" Style="{StaticResource StatsSectionHeaderStyle}" />
+                        <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Resolution" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock x:Name="SourceResolutionValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Frame Rate" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock x:Name="SourceFrameRateValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="HDR" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock x:Name="SourceHdrValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Format" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock x:Name="SourceFormatValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Telemetry" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock x:Name="TelemetryOriginValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
+                        </Grid>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
                         <TextBlock Text="Source Cadence" Style="{StaticResource StatsSectionHeaderStyle}" />
                         <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
 

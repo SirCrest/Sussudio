@@ -161,6 +161,65 @@
                                    Style="{StaticResource DockStatsLabelStyle}" />
 
                         <StackPanel Spacing="2">
+                            <TextBlock Text="Source Signal" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Resolution" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SourceResolutionValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Frame Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SourceFrameRateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="HDR" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SourceHdrValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Format" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SourceFormatValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Telemetry" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_TelemetryOriginValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <StackPanel Spacing="2">
                             <TextBlock Text="Source Cadence" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
 
                             <Border Style="{StaticResource DockStatsRowAltStyle}">

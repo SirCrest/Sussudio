@@ -143,6 +143,23 @@ public sealed partial class StatsWindow : Window
                 ? "Previewing"
                 : "Idle";
 
+        SourceResolutionValue.Text = snapshot.SourceWidth.HasValue && snapshot.SourceHeight.HasValue
+            ? $"{snapshot.SourceWidth} x {snapshot.SourceHeight}"
+            : "\u2014";
+        SourceFrameRateValue.Text = snapshot.SourceFrameRateExact.HasValue
+            ? $"{snapshot.SourceFrameRateExact.Value:0.##} fps"
+            : "\u2014";
+        SourceHdrValue.Text = snapshot.SourceIsHdr switch
+        {
+            true => "On",
+            false => "Off",
+            _ => "\u2014"
+        };
+        SourceFormatValue.Text = snapshot.NegotiatedPixelFormat ?? "\u2014";
+        TelemetryOriginValue.Text = snapshot.TelemetryOrigin is not null and not "Unknown"
+            ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
+            : "\u2014";
+
         SourceFpsValue.Text = FormatFps(snapshot.SourceObservedFps);
         SourceExpectedFpsValue.Text = FormatFps(snapshot.SourceExpectedFps);
         SourceAvgValue.Text = $"{FormatMs(snapshot.SourceAvgIntervalMs)} avg";
@@ -227,4 +244,11 @@ public sealed record StatsSnapshot(
     long RendererFramesDropped,
     double PerformanceScore,
     bool Previewing,
-    bool Recording);
+    bool Recording,
+    int? SourceWidth = null,
+    int? SourceHeight = null,
+    double? SourceFrameRateExact = null,
+    bool? SourceIsHdr = null,
+    string? NegotiatedPixelFormat = null,
+    string? TelemetryOrigin = null,
+    string? TelemetryConfidence = null);

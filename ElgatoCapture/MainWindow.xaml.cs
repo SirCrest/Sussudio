@@ -1861,7 +1861,29 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var rendererDropped = $"{FormatCount(snapshot.RendererFramesDropped)} dropped";
         var perfScore = $"{FormatScore(snapshot.PerformanceScore)} / 100";
 
+        var sourceResolution = snapshot.SourceWidth.HasValue && snapshot.SourceHeight.HasValue
+            ? $"{snapshot.SourceWidth} x {snapshot.SourceHeight}"
+            : "\u2014";
+        var sourceFrameRate = snapshot.SourceFrameRateExact.HasValue
+            ? $"{snapshot.SourceFrameRateExact.Value:0.##} fps"
+            : "\u2014";
+        var sourceHdr = snapshot.SourceIsHdr switch
+        {
+            true => "On",
+            false => "Off",
+            _ => "\u2014"
+        };
+        var sourceFormat = snapshot.NegotiatedPixelFormat ?? "\u2014";
+        var telemetryOrigin = snapshot.TelemetryOrigin is not null and not "Unknown"
+            ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
+            : "\u2014";
+
         SetTextIfChanged(Stats_SessionStateValue, sessionState);
+        SetTextIfChanged(Stats_SourceResolutionValue, sourceResolution);
+        SetTextIfChanged(Stats_SourceFrameRateValue, sourceFrameRate);
+        SetTextIfChanged(Stats_SourceHdrValue, sourceHdr);
+        SetTextIfChanged(Stats_SourceFormatValue, sourceFormat);
+        SetTextIfChanged(Stats_TelemetryOriginValue, telemetryOrigin);
         SetTextIfChanged(Stats_SourceFpsValue, sourceFps);
         SetTextIfChanged(Stats_SourceExpectedFpsValue, sourceExpectedFps);
         SetTextIfChanged(Stats_SourceAvgValue, sourceAvg);
@@ -1916,7 +1938,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             RendererFramesDropped: d3d?.FramesDropped ?? 0,
             PerformanceScore: performanceScore,
             Previewing: ViewModel.IsPreviewing,
-            Recording: ViewModel.IsRecording);
+            Recording: ViewModel.IsRecording,
+            SourceWidth: health.SourceWidth,
+            SourceHeight: health.SourceHeight,
+            SourceFrameRateExact: health.SourceFrameRateExact,
+            SourceIsHdr: health.SourceIsHdr,
+            NegotiatedPixelFormat: health.NegotiatedPixelFormat,
+            TelemetryOrigin: health.SourceTelemetryOrigin.ToString(),
+            TelemetryConfidence: health.SourceTelemetryConfidence.ToString());
     }
 
     private static string FormatFps(double value)
