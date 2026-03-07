@@ -894,6 +894,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         SourceWidth = snapshot.Width;
         SourceHeight = snapshot.Height;
         SourceIsHdr = snapshot.IsHdr;
+        if (!IsRecording && IsHdrEnabled && snapshot.IsHdr == false)
+        {
+            IsHdrEnabled = false;
+        }
         SourceTelemetryAvailability = snapshot.Availability.ToString();
         SourceTelemetryOriginDetail = snapshot.OriginDetail;
         SourceTelemetryConfidence = snapshot.Confidence.ToString();
@@ -911,9 +915,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (!string.IsNullOrWhiteSpace(modeKey) &&
             !string.Equals(modeKey, _lastSourceModeKey, StringComparison.Ordinal))
         {
-            _lastSourceModeKey = modeKey;
-            if (allowAutoRetarget && IsHdrEnabled)
+            if (allowAutoRetarget)
             {
+                _lastSourceModeKey = modeKey;
                 _forceSourceAutoRetarget = true;
                 _hasUserOverriddenResolutionForCurrentMode = false;
                 _hasUserOverriddenFrameRateForCurrentMode = false;
@@ -921,7 +925,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         var shouldRebuildModeOptions = allowAutoRetarget &&
-                                       IsHdrEnabled &&
                                        (_forceSourceAutoRetarget ||
                                         (snapshot.HasSignalData && AvailableResolutions.Count == 0));
         if (shouldRebuildModeOptions)
@@ -1848,7 +1851,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
 
             if (selected == null &&
-                IsHdrEnabled &&
                 (_forceSourceAutoRetarget || !_hasUserOverriddenFrameRateForCurrentMode) &&
                 sourceRate.Rate.HasValue)
             {
