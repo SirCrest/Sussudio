@@ -108,6 +108,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
 
+    private static bool IsAutoFrameRateOption(FrameRateOption option)
+        => option.Value <= 0 || option.FriendlyValue <= 0;
+
     private static bool IsPreviewStartupFailedState(PreviewStartupState state)
         => state == PreviewStartupState.Failed;
 
@@ -732,6 +735,21 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             return;
         }
 
+        if (ViewModel.IsAutoFrameRateSelected)
+        {
+            var autoOption = ViewModel.AvailableFrameRates
+                .FirstOrDefault(IsAutoFrameRateOption);
+            if (autoOption != null)
+            {
+                if (!ReferenceEquals(FrameRateComboBox.SelectedItem, autoOption))
+                {
+                    FrameRateComboBox.SelectedItem = autoOption;
+                }
+
+                return;
+            }
+        }
+
         var matchingRate = ViewModel.AvailableFrameRates
             .FirstOrDefault(option => IsFrameRateMatch(option.Value, ViewModel.SelectedFrameRate))
             ?? ViewModel.AvailableFrameRates.FirstOrDefault(option => option.IsEnabled)
@@ -1268,6 +1286,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled;
         CustomAudioToggle.IsOn = ViewModel.IsCustomAudioInputEnabled;
         CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
+        ShowAllCaptureOptionsToggle.IsOn = ViewModel.ShowAllCaptureOptions;
         var customAudioVisible = ViewModel.IsCustomAudioInputEnabled ? Visibility.Visible : Visibility.Collapsed;
         AudioInputLabel.Visibility = customAudioVisible;
         AudioInputComboBox.Visibility = customAudioVisible;
@@ -1331,10 +1350,19 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         FrameRateComboBox.SelectionChanged += (s, e) =>
         {
             if (FrameRateComboBox.SelectedItem is FrameRateOption frameRate &&
-                frameRate.IsEnabled &&
-                !IsFrameRateMatch(frameRate.Value, ViewModel.SelectedFrameRate))
+                frameRate.IsEnabled)
             {
-                ViewModel.SelectedFrameRate = frameRate.Value;
+                if (IsAutoFrameRateOption(frameRate))
+                {
+                    if (!ViewModel.IsAutoFrameRateSelected)
+                    {
+                        ViewModel.SelectedFrameRate = frameRate.Value;
+                    }
+                }
+                else if (!IsFrameRateMatch(frameRate.Value, ViewModel.SelectedFrameRate))
+                {
+                    ViewModel.SelectedFrameRate = frameRate.Value;
+                }
             }
         };
 
@@ -1388,6 +1416,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         StatsToggle.Checked += StatsToggle_Checked;
         StatsToggle.Unchecked += StatsToggle_Unchecked;
         CustomAudioToggle.Toggled += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsOn;
+        ShowAllCaptureOptionsToggle.Toggled += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsOn;
         AudioMeterTrack.SizeChanged += (s, e) => UpdateAudioMeterLevel(ViewModel.AudioPeak);
         ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
         CaptureSettingsGrid.SizeChanged += CaptureSettingsGrid_SizeChanged;
@@ -2222,6 +2251,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 EnsureFrameRateSelection();
                 break;
 
+            case nameof(MainViewModel.IsAutoFrameRateSelected):
+                EnsureFrameRateSelection();
+                break;
+
             case nameof(MainViewModel.AvailableResolutions):
                 ResolutionComboBox.ItemsSource = ViewModel.AvailableResolutions;
                 EnsureResolutionSelection();
@@ -2289,6 +2322,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 AudioInputLabel.Visibility = isVisible;
                 AudioInputComboBox.Visibility = isVisible;
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+                break;
+
+            case nameof(MainViewModel.ShowAllCaptureOptions):
+                if (ShowAllCaptureOptionsToggle.IsOn != ViewModel.ShowAllCaptureOptions)
+                {
+                    ShowAllCaptureOptionsToggle.IsOn = ViewModel.ShowAllCaptureOptions;
+                }
                 break;
 
             case nameof(MainViewModel.SelectedAudioInputDevice):
@@ -2895,6 +2935,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
     {
         _ = RunUiEventHandlerAsync(() => ViewModel.BrowseOutputPathAsync(), nameof(BrowseButton_Click));
+    }
+
+    private void OpenRecordingsButton_Click(object sender, RoutedEventArgs e)
+    {
+        var path = ViewModel.OutputPath;
+        if (!string.IsNullOrWhiteSpace(path) && System.IO.Directory.Exists(path))
+        {
+            System.Diagnostics.Process.Start("explorer.exe", path);
+        }
     }
 
     private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)

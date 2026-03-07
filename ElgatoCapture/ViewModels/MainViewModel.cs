@@ -32,6 +32,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private const int DefaultDisposeTimeoutMs = 30000;
     private const string HdrToggleBlockedWhileRecordingMessage = "Stop recording before switching between HDR and SDR pipelines.";
     private const string LiveInfoUnavailable = "\u2014";
+    private const string AutoResolutionValue = "Auto";
+    private const double AutoFrameRateValue = 0;
 
     [ObservableProperty]
     public partial ObservableCollection<CaptureDevice> Devices { get; set; } = new();
@@ -62,10 +64,28 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial string? SelectedResolution { get; set; }
 
     [ObservableProperty]
+    public partial uint? AutoResolvedWidth { get; set; }
+
+    [ObservableProperty]
+    public partial uint? AutoResolvedHeight { get; set; }
+
+    [ObservableProperty]
+    public partial double? AutoResolvedFrameRate { get; set; }
+
+    [ObservableProperty]
     public partial ObservableCollection<FrameRateOption> AvailableFrameRates { get; set; } = new();
 
     [ObservableProperty]
     public partial double SelectedFrameRate { get; set; } = 60;
+
+    [ObservableProperty]
+    public partial bool ShowAllCaptureOptions { get; set; }
+
+    public bool IsAutoFrameRateSelected
+    {
+        get => _isAutoFrameRateSelected;
+        private set => SetProperty(ref _isAutoFrameRateSelected, value);
+    }
 
     // Resolution capability matrix keyed by "{width}x{height}".
     private readonly Dictionary<string, List<MediaFormat>> _resolutionToFormats =
@@ -79,6 +99,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _isRebuildingModeOptions;
     private bool _isApplyingAutomaticFrameRateSelection;
     private bool _isApplyingAutomaticResolutionSelection;
+    private bool _isAutoFrameRateSelected = true;
     private bool _hasUserOverriddenFrameRateForCurrentMode;
     private bool _hasUserOverriddenResolutionForCurrentMode;
     private bool _forceSourceAutoRetarget;
@@ -86,6 +107,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private string? _lastKnownResolutionKey;
     private bool _pendingSdrAutoSelectionForDeviceChange;
     private int? _pendingSdrAutoFriendlyFrameRateBucket;
+    private bool _pendingModeOptionsRefresh;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
     private int? _lastTelemetryAgeBucket;
     private List<string> _detectedRecordingFormats = new();
@@ -917,10 +939,23 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             if (allowAutoRetarget)
             {
+                var shouldAutoRetargetResolution =
+                    IsAutoResolutionValue(SelectedResolution) ||
+                    !_hasUserOverriddenResolutionForCurrentMode;
+                var shouldAutoRetargetFrameRate =
+                    IsAutoFrameRateSelected ||
+                    !_hasUserOverriddenFrameRateForCurrentMode;
                 _lastSourceModeKey = modeKey;
-                _forceSourceAutoRetarget = true;
-                _hasUserOverriddenResolutionForCurrentMode = false;
-                _hasUserOverriddenFrameRateForCurrentMode = false;
+                _forceSourceAutoRetarget = shouldAutoRetargetResolution || shouldAutoRetargetFrameRate;
+                if (shouldAutoRetargetResolution)
+                {
+                    _hasUserOverriddenResolutionForCurrentMode = false;
+                }
+
+                if (shouldAutoRetargetFrameRate)
+                {
+                    _hasUserOverriddenFrameRateForCurrentMode = false;
+                }
             }
         }
 
@@ -929,7 +964,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                                         (snapshot.HasSignalData && AvailableResolutions.Count == 0));
         if (shouldRebuildModeOptions)
         {
-            RebuildResolutionOptions();
+            if (IsRecording)
+            {
+                _pendingModeOptionsRefresh = true;
+            }
+            else
+            {
+                RebuildResolutionOptions();
+            }
         }
         else
         {
@@ -996,7 +1038,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 ? exact.ToString("0.###")
                 : "?";
         var hdrStateText = string.IsNullOrWhiteSpace(HdrRuntimeState) ? "Unknown" : HdrRuntimeState;
-        SourceTargetSummaryText = $"Target: {(SelectedResolution ?? "?")} @ {friendly:0} (exact {exactText}) | HDR={hdrStateText}";
+        SourceTargetSummaryText = $"Target: {GetSelectedResolutionDisplayText()} @ {friendly:0} (exact {exactText}) | HDR={hdrStateText}";
     }
 
     public async Task RefreshDevicesAsync()
@@ -1134,7 +1176,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 }
             }
 
-            RebuildResolutionOptions();
+            if (IsRecording)
+            {
+                _pendingModeOptionsRefresh = true;
+            }
+            else
+            {
+                RebuildResolutionOptions();
+            }
         }
         finally
         {
@@ -1329,14 +1378,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     partial void OnSelectedResolutionChanged(string? value)
     {
-        if (!string.IsNullOrWhiteSpace(value))
+        if (TryResolveResolutionKey(value, out var resolvedResolutionKey))
         {
-            _lastKnownResolutionKey = value;
+            _lastKnownResolutionKey = resolvedResolutionKey;
         }
 
         if (!_isRebuildingModeOptions && !_isApplyingAutomaticResolutionSelection)
         {
-            _hasUserOverriddenResolutionForCurrentMode = true;
+            _hasUserOverriddenResolutionForCurrentMode = !IsAutoResolutionValue(value);
             _pendingSdrAutoSelectionForDeviceChange = false;
             _pendingSdrAutoFriendlyFrameRateBucket = null;
         }
@@ -1354,8 +1403,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     partial void OnSelectedFrameRateChanged(double value)
     {
+        if (IsAutoFrameRateValue(value))
+        {
+            SelectAutoFrameRate(rebuildOptions: !IsRecording && !_isRebuildingModeOptions && !_isApplyingAutomaticFrameRateSelection);
+            return;
+        }
+
         if (!_isRebuildingModeOptions && !_isApplyingAutomaticFrameRateSelection)
         {
+            IsAutoFrameRateSelected = false;
             _hasUserOverriddenFrameRateForCurrentMode = true;
             _pendingSdrAutoSelectionForDeviceChange = false;
             _pendingSdrAutoFriendlyFrameRateBucket = null;
@@ -1367,6 +1423,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(value, MidpointRounding.AwayFromZero);
         SelectedExactFrameRate = selected?.Value ?? value;
         SelectedExactFrameRateArg = selected?.Rational;
+        if (IsAutoResolutionValue(SelectedResolution))
+        {
+            AutoResolvedFrameRate = selected?.Value ?? value;
+        }
 
         UpdateSelectedFormat();
         UpdateTargetSummary();
@@ -1374,7 +1434,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void UpdateSelectedFormat()
     {
-        if (!TryParseResolutionKey(SelectedResolution, out var width, out var height))
+        if (!TryGetEffectiveResolutionSelection(out var resolutionKey, out var width, out var height))
         {
             SelectedFormat = null;
             return;
@@ -1401,7 +1461,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             ? (int)Math.Round(selectedRateOption.FriendlyValue, MidpointRounding.AwayFromZero)
             : GetFriendlyFrameRateBucket(SelectedFrameRate);
 
-        var timingFamily = ResolvePreferredTimingFamily(SelectedResolution, SelectedFrameRate);
+        var timingFamily = ResolvePreferredTimingFamily(resolutionKey, SelectedFrameRate);
         if (selectedRateOption != null &&
             TryInferFrameRateTimingFamily(selectedRateOption.Rational, selectedRateOption.Value, out var optionFamily))
         {
@@ -1546,6 +1606,18 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         SaveSettings();
     }
 
+    partial void OnShowAllCaptureOptionsChanged(bool value)
+    {
+        if (IsRecording)
+        {
+            _pendingModeOptionsRefresh = true;
+            return;
+        }
+
+        _pendingModeOptionsRefresh = false;
+        RebuildResolutionOptions();
+    }
+
     private void RebuildResolutionOptions()
     {
         var previousSelection = SelectedResolution;
@@ -1574,6 +1646,19 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             .OrderByDescending(option => (long)option.Width * option.Height)
             .ToList();
 
+        if (!ShowAllCaptureOptions &&
+            _latestSourceTelemetry.HasDimensions)
+        {
+            options = options
+                .Where(DoesResolutionMatchSourceAspectRatio)
+                .ToList();
+        }
+
+        var autoSelection = ResolveAutoCaptureSelection(options);
+        var autoOption = options.Count > 0
+            ? CreateAutoResolutionOption()
+            : null;
+
         if (options.Count == 0)
         {
             if (SelectedDevice != null && IsPreviewing && AvailableResolutions.Count > 0)
@@ -1595,7 +1680,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                             OnPropertyChanged(nameof(SelectedResolution));
                         }
 
-                        _lastKnownResolutionKey = retainedSelection.Value;
+                        if (TryResolveResolutionKey(retainedSelection.Value, out var retainedResolutionKey))
+                        {
+                            _lastKnownResolutionKey = retainedResolutionKey;
+                        }
                     }
                     finally
                     {
@@ -1616,6 +1704,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 _isApplyingAutomaticResolutionSelection = true;
                 SelectedResolution = null;
                 _isApplyingAutomaticResolutionSelection = false;
+                ClearAutoResolutionState();
                 HdrResolutionSupportHint = string.Empty;
                 DisabledResolutionReason = string.Empty;
             }
@@ -1683,30 +1772,39 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
         }
 
+        var selectAutoOption = autoOption != null && ShouldSelectAutoResolutionOption(previousSelection);
+        var selectedDropdownOption = selectAutoOption
+            ? autoOption
+            : selected;
+        var availableOptions = autoOption == null
+            ? options
+            : new[] { autoOption }.Concat(options).ToList();
+
         _isRebuildingModeOptions = true;
         try
         {
+            UpdateAutoResolutionState(autoSelection);
             AvailableResolutions.Clear();
-            foreach (var option in options)
+            foreach (var option in availableOptions)
             {
                 AvailableResolutions.Add(option);
             }
 
             _isApplyingAutomaticResolutionSelection = true;
-            if (selected != null)
+            if (selectedDropdownOption != null)
             {
                 var previousSelectedResolution = SelectedResolution;
-                SelectedResolution = selected.Value;
-                if (string.Equals(previousSelectedResolution, selected.Value, StringComparison.OrdinalIgnoreCase))
+                SelectedResolution = selectedDropdownOption.Value;
+                if (string.Equals(previousSelectedResolution, selectedDropdownOption.Value, StringComparison.OrdinalIgnoreCase))
                 {
                     OnPropertyChanged(nameof(SelectedResolution));
                 }
             }
 
             _isApplyingAutomaticResolutionSelection = false;
-            if (!string.IsNullOrWhiteSpace(SelectedResolution))
+            if (selected != null)
             {
-                _lastKnownResolutionKey = SelectedResolution;
+                _lastKnownResolutionKey = selected.Value;
             }
 
             if (IsHdrEnabled)
@@ -1726,7 +1824,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             DisabledResolutionReason = selected is { IsEnabled: false }
                 ? selected.DisableReason
                 : string.Empty;
-
         }
         finally
         {
@@ -1737,19 +1834,74 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         RebuildFrameRateOptions();
     }
 
+    public void SelectAutoFrameRate()
+        => SelectAutoFrameRate(rebuildOptions: !IsRecording && !_isRebuildingModeOptions && !_isApplyingAutomaticFrameRateSelection);
+
+    private void SelectAutoFrameRate(bool rebuildOptions)
+    {
+        IsAutoFrameRateSelected = true;
+        _hasUserOverriddenFrameRateForCurrentMode = false;
+        _pendingSdrAutoSelectionForDeviceChange = false;
+        _pendingSdrAutoFriendlyFrameRateBucket = null;
+
+        if (rebuildOptions)
+        {
+            RebuildFrameRateOptions();
+            return;
+        }
+
+        var currentOptions = AvailableFrameRates
+            .Where(option => !IsAutoFrameRateValue(option.FriendlyValue))
+            .ToList();
+        var selectedResolutionKey = GetEffectiveResolutionKey(SelectedResolution);
+        var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, currentOptions, SelectedFrameRate);
+        var sourceTimingFamilyKnown = TryInferFrameRateTimingFamily(sourceRate.Arg, sourceRate.Rate, out var sourceTimingFamily);
+        FrameRateOption? selected = null;
+        if (!IsHdrEnabled &&
+            _pendingSdrAutoSelectionForDeviceChange &&
+            _pendingSdrAutoFriendlyFrameRateBucket.HasValue)
+        {
+            selected = currentOptions.FirstOrDefault(option =>
+                option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, _pendingSdrAutoFriendlyFrameRateBucket.Value));
+        }
+
+        if (selected == null &&
+            sourceRate.Rate.HasValue)
+        {
+            selected = currentOptions
+                .Where(option => option.IsEnabled)
+                .OrderBy(option => Math.Abs(option.Value - sourceRate.Rate.Value))
+                .ThenBy(option =>
+                    sourceTimingFamilyKnown &&
+                    TryInferFrameRateTimingFamily(option.Rational, option.Value, out var optionFamily) &&
+                    optionFamily == sourceTimingFamily
+                        ? 0
+                        : 1)
+                .FirstOrDefault();
+        }
+
+        selected ??= currentOptions.FirstOrDefault(option => option.IsEnabled)
+            ?? currentOptions.FirstOrDefault();
+
+        ApplyResolvedFrameRateSelection(selected, SelectedFrameRate > 0 ? SelectedFrameRate : 60);
+        UpdateSelectedFormat();
+        UpdateTargetSummary();
+    }
+
     private void RebuildFrameRateOptions()
     {
         var previousRate = SelectedFrameRate;
         var options = new List<FrameRateOption>();
-        var timingFamily = ResolvePreferredTimingFamily(SelectedResolution, previousRate);
+        var selectedResolutionKey = GetEffectiveResolutionKey(SelectedResolution);
+        var timingFamily = ResolvePreferredTimingFamily(selectedResolutionKey, previousRate);
         if (_latestSourceTelemetry.HasFrameRate &&
             TryInferFrameRateTimingFamily(_latestSourceTelemetry.FrameRateArg, _latestSourceTelemetry.FrameRateExact, out var sourceFamilyHint))
         {
             timingFamily = sourceFamilyHint;
         }
 
-        if (!string.IsNullOrWhiteSpace(SelectedResolution) &&
-            _resolutionToFormats.TryGetValue(SelectedResolution, out var formats))
+        if (!string.IsNullOrWhiteSpace(selectedResolutionKey) &&
+            _resolutionToFormats.TryGetValue(selectedResolutionKey, out var formats))
         {
             options = formats
                 .GroupBy(format => GetFriendlyFrameRateBucket(format.FrameRateExact))
@@ -1781,7 +1933,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 .ToList();
         }
 
-        var sourceRate = ResolveDetectedSourceFrameRate(SelectedResolution, options, previousRate);
+        var sourceRate = ResolveDetectedSourceFrameRate(selectedResolutionKey, options, previousRate);
         var sourceTimingFamilyKnown = TryInferFrameRateTimingFamily(sourceRate.Arg, sourceRate.Rate, out var sourceTimingFamily);
         var sourceFriendlyRate = sourceRate.Rate.HasValue
             ? Math.Round(sourceRate.Rate.Value, MidpointRounding.AwayFromZero)
@@ -1805,12 +1957,24 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                              optionFamily != FrameRateTimingFamily.Unknown &&
                              sourceTimingFamily != FrameRateTimingFamily.Unknown &&
                              optionFamily != sourceTimingFamily &&
-                             ResolutionHasTimingFamilyVariant(SelectedResolution, option.FriendlyValue, sourceTimingFamily) &&
+                             ResolutionHasTimingFamilyVariant(selectedResolutionKey, option.FriendlyValue, sourceTimingFamily) &&
                              IsFriendlyFrameRateMatch(option.FriendlyValue, sourceFriendlyRate.Value) &&
                              option.Value > sourceRate.Rate.Value + 0.03)
                     {
                         enabled = false;
                         disableReason = $"Source timing is {sourceRate.Arg ?? sourceRate.Rate.Value.ToString("0.###")} so this duplicate variant is hidden.";
+                    }
+                    else
+                    {
+                        var roundedSourceFriendlyRate = (int)Math.Round(sourceFriendlyRate.Value, MidpointRounding.AwayFromZero);
+                        var roundedOptionFriendlyRate = (int)Math.Round(option.FriendlyValue, MidpointRounding.AwayFromZero);
+                        if (roundedOptionFriendlyRate > 0 &&
+                            roundedOptionFriendlyRate <= roundedSourceFriendlyRate &&
+                            roundedSourceFriendlyRate % roundedOptionFriendlyRate != 0)
+                        {
+                            enabled = false;
+                            disableReason = $"{roundedOptionFriendlyRate:0} fps is not a clean divisor of source {roundedSourceFriendlyRate:0} fps.";
+                        }
                     }
                 }
 
@@ -1822,12 +1986,29 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     Numerator = option.Numerator,
                     Denominator = option.Denominator,
                     IsEnabled = enabled,
-                    DisableReason = enabled ? string.Empty : disableReason
+                    DisableReason = enabled ? string.Empty : disableReason,
+                    DisplayTextOverride = option.DisplayTextOverride
                 };
             })
             .ToList();
 
-        options = cappedOptions;
+        options = ShowAllCaptureOptions
+            ? cappedOptions
+            : cappedOptions
+                .Where(option => option.IsEnabled || !IsSourceFilteredFrameRateDisableReason(option.DisableReason))
+                .ToList();
+        var autoFrameRateOption = options.Count > 0
+            ? new FrameRateOption
+            {
+                FriendlyValue = AutoFrameRateValue,
+                Value = AutoFrameRateValue,
+                IsEnabled = true,
+                DisplayTextOverride = "Auto"
+            }
+            : null;
+        var availableOptions = autoFrameRateOption == null
+            ? options
+            : new[] { autoFrameRateOption }.Concat(options).ToList();
         DetectedSourceFrameRate = sourceRate.Rate;
         DetectedSourceFrameRateArg = sourceRate.Arg;
         SourceFrameRateOrigin = sourceRate.Origin;
@@ -1836,13 +2017,16 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         try
         {
             AvailableFrameRates.Clear();
-            foreach (var option in options)
+            foreach (var option in availableOptions)
             {
                 AvailableFrameRates.Add(option);
             }
 
             FrameRateOption? selected = null;
-            if (!IsHdrEnabled &&
+            var selectAutoOption = autoFrameRateOption != null &&
+                                   (IsAutoFrameRateSelected || !_hasUserOverriddenFrameRateForCurrentMode);
+            if (selectAutoOption &&
+                !IsHdrEnabled &&
                 _pendingSdrAutoSelectionForDeviceChange &&
                 _pendingSdrAutoFriendlyFrameRateBucket.HasValue)
             {
@@ -1851,7 +2035,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
 
             if (selected == null &&
-                (_forceSourceAutoRetarget || !_hasUserOverriddenFrameRateForCurrentMode) &&
+                selectAutoOption &&
                 sourceRate.Rate.HasValue)
             {
                 selected = options
@@ -1866,32 +2050,34 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     .FirstOrDefault();
             }
 
-            selected ??= options.FirstOrDefault(option =>
-                option.IsEnabled && IsFrameRateMatch(option.Value, previousRate))
-                ?? options.FirstOrDefault(option =>
-                    option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, previousRate))
-                ?? options.FirstOrDefault(option =>
-                    option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, 60))
-                ?? options.FirstOrDefault(option =>
-                    option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, 30))
-                ?? options.FirstOrDefault(option => option.IsEnabled)
-                ?? options.FirstOrDefault();
+            if (selected == null)
+            {
+                selected = selectAutoOption
+                    ? options.FirstOrDefault(option => option.IsEnabled)
+                        ?? options.FirstOrDefault()
+                    : options.FirstOrDefault(option =>
+                        option.IsEnabled && IsFrameRateMatch(option.Value, previousRate))
+                        ?? options.FirstOrDefault(option =>
+                            option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, previousRate))
+                        ?? options.FirstOrDefault(option =>
+                            option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, 60))
+                        ?? options.FirstOrDefault(option =>
+                            option.IsEnabled && IsFriendlyFrameRateMatch(option.FriendlyValue, 30))
+                        ?? options.FirstOrDefault(option => option.IsEnabled)
+                        ?? options.FirstOrDefault();
+            }
 
-            _isApplyingAutomaticFrameRateSelection = true;
+            if (autoFrameRateOption != null)
+            {
+                IsAutoFrameRateSelected = selectAutoOption;
+            }
             var fallbackRate = previousRate > 0
                 ? previousRate
                 : 60;
-            SelectedFrameRate = selected?.Value ?? fallbackRate;
-            _isApplyingAutomaticFrameRateSelection = false;
-            SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(SelectedFrameRate);
-            SelectedExactFrameRate = selected?.Value ?? SelectedFrameRate;
-            SelectedExactFrameRateArg = selected?.Rational;
-            DisabledFrameRateReason = selected is { IsEnabled: false }
-                ? selected.DisableReason
-                : string.Empty;
+            ApplyResolvedFrameRateSelection(selected, fallbackRate);
             if (IsHdrEnabled && selected is { IsEnabled: false })
             {
-                StatusText = $"No HDR-capable frame rate is available for {SelectedResolution}.";
+                StatusText = $"No HDR-capable frame rate is available for {GetSelectedResolutionDisplayText()}.";
             }
 
             if (!IsHdrEnabled && _pendingSdrAutoSelectionForDeviceChange && selected != null)
@@ -1911,14 +2097,380 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _forceSourceAutoRetarget = false;
     }
 
+    private sealed record AutoCaptureSelection(
+        ResolutionOption Resolution,
+        int FriendlyFrameRate,
+        double ExactFrameRate);
+
+    private bool ShouldSelectAutoResolutionOption(string? previousSelection)
+        => IsAutoResolutionValue(previousSelection) ||
+           string.IsNullOrWhiteSpace(previousSelection) ||
+           !_hasUserOverriddenResolutionForCurrentMode;
+
+    private ResolutionOption CreateAutoResolutionOption()
+        => new()
+        {
+            Value = AutoResolutionValue,
+            Width = 0,
+            Height = 0,
+            IsEnabled = true,
+            DisplayTextOverride = BuildAutoResolutionDisplayText()
+        };
+
+    private AutoCaptureSelection? ResolveAutoCaptureSelection(IReadOnlyList<ResolutionOption> options)
+    {
+        if (options.Count == 0)
+        {
+            return null;
+        }
+
+        var rankedOptions = options
+            .OrderByDescending(option => (long)option.Width * option.Height)
+            .ThenByDescending(option => option.Width)
+            .ToList();
+        var eligibleOptions = rankedOptions.Where(option => option.IsEnabled).ToList();
+        if (eligibleOptions.Count == 0)
+        {
+            eligibleOptions = rankedOptions;
+        }
+
+        var sourceFriendlyCap = _latestSourceTelemetry.HasFrameRate
+            ? (int?)Math.Round(_latestSourceTelemetry.FrameRateExact!.Value, MidpointRounding.AwayFromZero)
+            : null;
+        var friendlyBuckets = eligibleOptions
+            .SelectMany(GetAutoEligibleFormats)
+            .Select(format => GetFriendlyFrameRateBucket(format.FrameRateExact))
+            .Distinct()
+            .OrderByDescending(bucket => bucket)
+            .ToList();
+        if (friendlyBuckets.Count == 0)
+        {
+            return BuildAutoCaptureSelectionFallback(eligibleOptions);
+        }
+
+        var bestFriendlyBucket = friendlyBuckets
+            .FirstOrDefault(bucket => !sourceFriendlyCap.HasValue || bucket <= sourceFriendlyCap.Value);
+        if (bestFriendlyBucket == 0)
+        {
+            bestFriendlyBucket = friendlyBuckets[0];
+        }
+
+        var matchingResolutions = eligibleOptions
+            .Where(option => ResolutionSupportsFriendlyFrameRate(
+                option.Value,
+                bestFriendlyBucket,
+                hdrOnly: IsHdrEnabled,
+                sdrOnly: !IsHdrEnabled))
+            .ToList();
+        if (matchingResolutions.Count == 0)
+        {
+            matchingResolutions = eligibleOptions;
+        }
+
+        var chosenResolution = SelectBestAutoResolutionCandidate(matchingResolutions) ?? eligibleOptions[0];
+        var preferredFormat = SelectPreferredAutoFrameRateFormat(chosenResolution.Value, bestFriendlyBucket);
+        return new AutoCaptureSelection(
+            chosenResolution,
+            GetFriendlyFrameRateBucket(preferredFormat.FrameRateExact),
+            preferredFormat.FrameRateExact);
+    }
+
+    private AutoCaptureSelection? BuildAutoCaptureSelectionFallback(IReadOnlyList<ResolutionOption> options)
+    {
+        var fallback = options.FirstOrDefault();
+        if (fallback == null)
+        {
+            return null;
+        }
+
+        var preferredBucket = GetMaxFrameRateFriendlyBucket(fallback.Value);
+        var preferredFormat = SelectPreferredAutoFrameRateFormat(fallback.Value, preferredBucket);
+        return new AutoCaptureSelection(
+            fallback,
+            GetFriendlyFrameRateBucket(preferredFormat.FrameRateExact),
+            preferredFormat.FrameRateExact);
+    }
+
+    private IEnumerable<MediaFormat> GetAutoEligibleFormats(ResolutionOption option)
+    {
+        if (!_resolutionToFormats.TryGetValue(option.Value, out var formats))
+        {
+            return Enumerable.Empty<MediaFormat>();
+        }
+
+        var filtered = formats
+            .Where(format => !IsHdrEnabled || IsHdrModeCandidate(format))
+            .ToList();
+        return filtered.Count > 0 ? filtered : formats;
+    }
+
+    private ResolutionOption? SelectBestAutoResolutionCandidate(IReadOnlyList<ResolutionOption> candidates)
+    {
+        if (candidates.Count == 0)
+        {
+            return null;
+        }
+
+        var ranked = candidates
+            .OrderByDescending(option => (long)option.Width * option.Height)
+            .ThenByDescending(option => option.Width)
+            .ToList();
+        if (!_latestSourceTelemetry.HasDimensions)
+        {
+            return ranked[0];
+        }
+
+        var sourceWidth = (uint)Math.Max(0, _latestSourceTelemetry.Width ?? 0);
+        var sourceHeight = (uint)Math.Max(0, _latestSourceTelemetry.Height ?? 0);
+        if (sourceWidth == 0 || sourceHeight == 0)
+        {
+            return ranked[0];
+        }
+
+        return ranked.FirstOrDefault(option => option.Width <= sourceWidth && option.Height <= sourceHeight)
+            ?? ranked[0];
+    }
+
+    private MediaFormat SelectPreferredAutoFrameRateFormat(string resolutionKey, int preferredFriendlyBucket)
+    {
+        if (!_resolutionToFormats.TryGetValue(resolutionKey, out var formats) || formats.Count == 0)
+        {
+            throw new InvalidOperationException($"No formats are available for resolution '{resolutionKey}'.");
+        }
+
+        var timingFamily = FrameRateTimingFamily.Unknown;
+        if (_latestSourceTelemetry.HasFrameRate &&
+            TryInferFrameRateTimingFamily(_latestSourceTelemetry.FrameRateArg, _latestSourceTelemetry.FrameRateExact, out var sourceFamily))
+        {
+            timingFamily = sourceFamily;
+        }
+
+        var selectionPool = formats
+            .Where(format =>
+                (!IsHdrEnabled || IsHdrModeCandidate(format)) &&
+                GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredFriendlyBucket)
+            .ToList();
+        if (selectionPool.Count == 0)
+        {
+            selectionPool = formats
+                .Where(format => GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredFriendlyBucket)
+                .ToList();
+        }
+        if (selectionPool.Count == 0)
+        {
+            selectionPool = formats.ToList();
+            preferredFriendlyBucket = GetFriendlyFrameRateBucket(selectionPool.Max(format => format.FrameRateExact));
+        }
+
+        return SelectPreferredFrameRateFormat(selectionPool, preferredFriendlyBucket, timingFamily);
+    }
+
+    private int GetMaxFrameRateFriendlyBucket(string resolutionKey)
+    {
+        if (!_resolutionToFormats.TryGetValue(resolutionKey, out var formats) || formats.Count == 0)
+        {
+            return 0;
+        }
+
+        var filtered = formats
+            .Where(format => !IsHdrEnabled || IsHdrModeCandidate(format))
+            .ToList();
+        if (filtered.Count == 0)
+        {
+            filtered = formats.ToList();
+        }
+
+        return filtered
+            .Select(format => GetFriendlyFrameRateBucket(format.FrameRateExact))
+            .DefaultIfEmpty()
+            .Max();
+    }
+
+    private bool DoesResolutionMatchSourceAspectRatio(ResolutionOption option)
+    {
+        if (!_latestSourceTelemetry.HasDimensions)
+        {
+            return true;
+        }
+
+        var sourceWidth = (uint)Math.Max(0, _latestSourceTelemetry.Width ?? 0);
+        var sourceHeight = (uint)Math.Max(0, _latestSourceTelemetry.Height ?? 0);
+        if (sourceWidth == 0 || sourceHeight == 0 || option.Width == 0 || option.Height == 0)
+        {
+            return true;
+        }
+
+        var reducedSource = ReduceAspectRatio(sourceWidth, sourceHeight);
+        var reducedOption = ReduceAspectRatio(option.Width, option.Height);
+        return reducedSource.Width == reducedOption.Width &&
+               reducedSource.Height == reducedOption.Height;
+    }
+
+    private static (uint Width, uint Height) ReduceAspectRatio(uint width, uint height)
+    {
+        if (width == 0 || height == 0)
+        {
+            return (width, height);
+        }
+
+        var divisor = GreatestCommonDivisor(width, height);
+        return divisor == 0
+            ? (width, height)
+            : (width / divisor, height / divisor);
+    }
+
+    private static uint GreatestCommonDivisor(uint a, uint b)
+    {
+        while (b != 0)
+        {
+            var next = a % b;
+            a = b;
+            b = next;
+        }
+
+        return a;
+    }
+
+    private static bool IsSourceFilteredFrameRateDisableReason(string? disableReason)
+        => !string.IsNullOrWhiteSpace(disableReason) &&
+           (disableReason.IndexOf("higher capture fps", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            disableReason.IndexOf("duplicate variant", StringComparison.OrdinalIgnoreCase) >= 0 ||
+            disableReason.IndexOf("not a clean divisor", StringComparison.OrdinalIgnoreCase) >= 0);
+
+    private string BuildAutoResolutionDisplayText()
+        => AutoResolutionValue;
+
+    private void UpdateAutoResolutionState(AutoCaptureSelection? selection)
+    {
+        AutoResolvedWidth = selection?.Resolution.Width;
+        AutoResolvedHeight = selection?.Resolution.Height;
+        AutoResolvedFrameRate = selection?.ExactFrameRate;
+    }
+
+    private void ClearAutoResolutionState()
+    {
+        AutoResolvedWidth = null;
+        AutoResolvedHeight = null;
+        AutoResolvedFrameRate = null;
+    }
+
+    private string GetSelectedResolutionDisplayText()
+    {
+        if (string.IsNullOrWhiteSpace(SelectedResolution))
+        {
+            return "?";
+        }
+
+        if (!IsAutoResolutionValue(SelectedResolution))
+        {
+            return SelectedResolution;
+        }
+
+        var friendlyRate = SelectedFriendlyFrameRate
+            ?? (AutoResolvedFrameRate.HasValue
+                ? Math.Round(AutoResolvedFrameRate.Value, MidpointRounding.AwayFromZero)
+                : (double?)null);
+        if (AutoResolvedWidth.HasValue &&
+            AutoResolvedHeight.HasValue &&
+            friendlyRate.HasValue)
+        {
+            return $"{AutoResolutionValue} ({GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value)} @ {friendlyRate.Value:0} fps)";
+        }
+
+        return AutoResolutionValue;
+    }
+
+    private static bool IsAutoResolutionValue(string? resolutionValue)
+        => string.Equals(resolutionValue, AutoResolutionValue, StringComparison.OrdinalIgnoreCase);
+
+    private bool TryResolveResolutionKey(string? resolutionValue, out string resolutionKey)
+    {
+        resolutionKey = string.Empty;
+        if (string.IsNullOrWhiteSpace(resolutionValue))
+        {
+            return false;
+        }
+
+        if (IsAutoResolutionValue(resolutionValue))
+        {
+            if (AutoResolvedWidth.HasValue &&
+                AutoResolvedHeight.HasValue &&
+                AutoResolvedWidth.Value > 0 &&
+                AutoResolvedHeight.Value > 0)
+            {
+                resolutionKey = GetResolutionKey(AutoResolvedWidth.Value, AutoResolvedHeight.Value);
+                return true;
+            }
+
+            return false;
+        }
+
+        if (!TryParseResolutionKey(resolutionValue, out var width, out var height))
+        {
+            return false;
+        }
+
+        resolutionKey = GetResolutionKey(width, height);
+        return true;
+    }
+
+    private string? GetEffectiveResolutionKey(string? resolutionValue)
+        => TryResolveResolutionKey(resolutionValue, out var resolutionKey)
+            ? resolutionKey
+            : null;
+
+    private bool TryGetEffectiveResolutionSelection(out string resolutionKey, out uint width, out uint height)
+    {
+        resolutionKey = string.Empty;
+        width = 0;
+        height = 0;
+
+        if (!TryResolveResolutionKey(SelectedResolution, out resolutionKey) ||
+            !TryParseResolutionKey(resolutionKey, out width, out height))
+        {
+            resolutionKey = string.Empty;
+            width = 0;
+            height = 0;
+            return false;
+        }
+
+        return true;
+    }
+
     private void ResetFrameRateSelectionState()
     {
         _hasUserOverriddenFrameRateForCurrentMode = false;
+        IsAutoFrameRateSelected = true;
+    }
+
+    private void ApplyResolvedFrameRateSelection(FrameRateOption? selected, double fallbackRate)
+    {
+        _isApplyingAutomaticFrameRateSelection = true;
+        try
+        {
+            SelectedFrameRate = selected?.Value ?? fallbackRate;
+        }
+        finally
+        {
+            _isApplyingAutomaticFrameRateSelection = false;
+        }
+
+        SelectedFriendlyFrameRate = selected?.FriendlyValue ?? Math.Round(SelectedFrameRate);
+        SelectedExactFrameRate = selected?.Value ?? SelectedFrameRate;
+        SelectedExactFrameRateArg = selected?.Rational;
+        if (IsAutoResolutionValue(SelectedResolution))
+        {
+            AutoResolvedFrameRate = selected?.Value ?? SelectedFrameRate;
+        }
+
+        DisabledFrameRateReason = selected is { IsEnabled: false }
+            ? selected.DisableReason
+            : string.Empty;
     }
 
     private void ResetModeSelectionState()
     {
-        _hasUserOverriddenFrameRateForCurrentMode = false;
+        ResetFrameRateSelectionState();
         _hasUserOverriddenResolutionForCurrentMode = false;
         _forceSourceAutoRetarget = false;
         _lastSourceModeKey = null;
@@ -2110,7 +2662,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         width = 0;
         height = 0;
-        if (string.IsNullOrWhiteSpace(resolutionKey))
+        if (string.IsNullOrWhiteSpace(resolutionKey) || IsAutoResolutionValue(resolutionKey))
         {
             return false;
         }
@@ -2451,6 +3003,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private static bool IsFriendlyFrameRateMatch(double optionFriendlyRate, double requestedRate)
         => Math.Round(optionFriendlyRate) == Math.Round(requestedRate);
 
+    private static bool IsAutoFrameRateValue(double value)
+        => value == AutoFrameRateValue || value < 0;
+
     private static string GetResolutionKey(uint width, uint height)
         => $"{width}x{height}";
 
@@ -2665,6 +3220,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             RecordingSizeInfo = "--";
             RecordingBitrateInfo = "--";
             _bitrateSamples.Clear();
+
+            if (_pendingModeOptionsRefresh)
+            {
+                _pendingModeOptionsRefresh = false;
+                RebuildResolutionOptions();
+            }
         }
     }
 
@@ -3074,6 +3635,18 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 throw new InvalidOperationException("No enabled frame rates are available for the current selection.");
             }
 
+            if (IsAutoFrameRateValue(frameRate))
+            {
+                var autoRate = enabledRates.FirstOrDefault(rate => IsAutoFrameRateValue(rate.Value));
+                if (autoRate == null)
+                {
+                    throw new InvalidOperationException("Auto frame rate is not available for the current selection.");
+                }
+
+                SelectAutoFrameRate();
+                return Task.CompletedTask;
+            }
+
             var requestedFriendly = Math.Round(frameRate);
             var friendlyMatches = enabledRates
                 .Where(rate => Math.Round(rate.FriendlyValue) == requestedFriendly)
@@ -3312,22 +3885,25 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         var requestedFrameRateArg = selectedFrameRateOption?.Rational;
         var requestedFrameRateNumerator = selectedFrameRateOption?.Numerator;
         var requestedFrameRateDenominator = selectedFrameRateOption?.Denominator;
-        var effectiveFrameRate = SelectedFrameRate > 0
+        var effectiveFrameRate = IsAutoResolutionValue(SelectedResolution) && AutoResolvedFrameRate.HasValue && AutoResolvedFrameRate.Value > 0
+            ? AutoResolvedFrameRate.Value
+            : SelectedFrameRate > 0
             ? SelectedFrameRate
             : selectedFrameRateOption?.Value
                 ?? SelectedFormat?.FrameRateExact
                 ?? 60;
+        var effectiveResolutionKnown = TryGetEffectiveResolutionSelection(out _, out var effectiveWidth, out var effectiveHeight);
         var runtime = _captureService.GetRuntimeSnapshot();
         var sourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();
         var selectedFriendlyRate = selectedFrameRateOption?.FriendlyValue ?? effectiveFrameRate;
         var runtimeRate = runtime.ActualFrameRate ?? runtime.NegotiatedFrameRate;
         var runtimeRateArg = runtime.ActualFrameRateArg ?? runtime.NegotiatedFrameRateArg;
         var runtimeMatchesResolution = false;
-        if (TryParseResolutionKey(SelectedResolution, out var selectedWidth, out var selectedHeight))
+        if (effectiveResolutionKnown)
         {
             runtimeMatchesResolution =
-                (runtime.ActualWidth == selectedWidth && runtime.ActualHeight == selectedHeight) ||
-                (runtime.NegotiatedWidth == selectedWidth && runtime.NegotiatedHeight == selectedHeight);
+                (runtime.ActualWidth == effectiveWidth && runtime.ActualHeight == effectiveHeight) ||
+                (runtime.NegotiatedWidth == effectiveWidth && runtime.NegotiatedHeight == effectiveHeight);
         }
 
         if (runtimeMatchesResolution &&
@@ -3392,8 +3968,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         var settings = new CaptureSettings
         {
-            Width = SelectedFormat?.Width ?? 1920,
-            Height = SelectedFormat?.Height ?? 1080,
+            Width = effectiveResolutionKnown ? effectiveWidth : (SelectedFormat?.Width ?? 1920),
+            Height = effectiveResolutionKnown ? effectiveHeight : (SelectedFormat?.Height ?? 1080),
             FrameRate = effectiveFrameRate,
             RequestedFrameRateArg = requestedFrameRateArg,
             RequestedFrameRateNumerator = requestedFrameRateNumerator,

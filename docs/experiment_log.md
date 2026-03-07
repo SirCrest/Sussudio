@@ -634,3 +634,67 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (UI state / source-telemetry gating change only)
 - Conclusion: The final implementation keeps the source-aware HDR toggle UX while preserving the existing recording-time pipeline guard, so the UI no longer advertises HDR for confirmed SDR input without creating a false non-HDR state during active recording.
+
+## E41 - Source-matched capture options with Auto resolution mode
+- Timestamp (UTC): 2026-03-07T14:25:36.4248521Z
+- Commit Hash: 65cded776cc514e1e9189c5a55e2c5a198c304f3
+- What Changed (single change): Added source-aware capture-option filtering plus a user-visible `Auto` resolution mode in `MainViewModel`/`MainWindow`, including aspect-ratio pruning, hidden source-exceeding frame rates, deferred rebuilds while recording, and a `Show all resolutions and frame rates` settings toggle.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+  4. On a live source run, verify the resolution list hides aspect-mismatched modes by default, frame rates above the source disappear by default, `Auto` resolves to the best source-matched mode, and turning on `Show all resolutions and frame rates` restores the full device capability list.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` was not present in this workspace after the verification run, so there was no new log tail to inspect in this environment.
+- ffprobe Evidence:
+  - N/A (UI option-selection behavior change only)
+- Conclusion: The app now defaults to an `Auto` source-matched resolution mode, hides source-irrelevant resolutions/frame rates unless the new toggle is enabled, and keeps option-list rebuilds deferred until recording stops. Live hardware/UI validation is still needed for the exact dropdown contents and `Auto` choice on real PS5/4K X source modes.
+
+## E42 - Auto frame rate mode and clean-divisor filtering
+- Timestamp (UTC): 2026-03-07T15:16:15.3215999Z
+- Commit Hash: 65cded776cc514e1e9189c5a55e2c5a198c304f3
+- What Changed (single change): Added an `Auto` frame rate dropdown mode that keeps `SelectedFrameRate` resolved to a real fps while the UI shows `Auto`, simplified the Auto-resolution dropdown label to plain `Auto`, and filtered non-clean-divisor source frame rates from the default list.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. In the app, verify the resolution dropdown shows `Auto`, the frame-rate dropdown inserts `Auto` at index 0, choosing `Auto` keeps the combobox on `Auto` while `SelectedFrameRate` resolves to the real capture fps, and non-clean-divisor frame rates disappear unless `Show all resolutions and frame rates` is enabled.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` tail showed normal `RTICE_DECODE ... fps=59.94 hdr=true` polling and cleanup, with no new warnings or errors tied to the option-selection changes.
+- ffprobe Evidence:
+  - N/A (UI option-selection behavior change only)
+- Conclusion: Auto resolution now renders as plain `Auto`, frame rate has a matching Auto mode with resolved real-fps capture settings, manual frame-rate overrides survive source telemetry changes, and default filtering now removes uneven-cadence capture rates like `50 fps` on a `60 fps` source.
+
+## E42 - Auto frame-rate mode with clean-divisor filtering
+- Timestamp (UTC): 2026-03-07T15:12:18.2520617Z
+- Commit Hash: 65cded776cc514e1e9189c5a55e2c5a198c304f3
+- What Changed (single change): Added an explicit `Auto` frame-rate dropdown option that resolves to a real fps value while keeping the combobox on `Auto`, simplified the resolution `Auto` label to plain `Auto`, and filtered non-clean-divisor capture frame rates out of the default list.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. In the app, verify the resolution dropdown shows `Auto`, the frame-rate dropdown shows `Auto` at index 0, selecting `Auto` leaves the combobox on `Auto` while `SelectedFrameRate` resolves to a positive fps, and default filtering hides rates such as `50` on a `60` fps source unless `Show all resolutions and frame rates` is enabled.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` tailed successfully after the run; the tail contained RTICE polling/teardown lines plus `Automation pipe explicit security fallback: CreateNamedPipe failed with Win32 error 1314`, with no new structured capture-option warning/error token introduced by this change.
+- ffprobe Evidence:
+  - N/A (recording-options UI/state change only)
+- Conclusion: The frame-rate dropdown now has an explicit Auto mode that keeps `SelectedFrameRate` resolved to a real positive fps after rebuilds, the resolution Auto label is simplified to `Auto`, and default filtering now removes uneven-cadence frame-rate choices unless the user opts into the full capability list.
+
+## E43 - Experiment log id correction for duplicate E42 heading
+- Timestamp (UTC): 2026-03-07T15:25:00Z
+- Commit Hash: uncommitted (base 71f6b6de3eb3daa140da00bd1dabfb9d6bcc09e3)
+- What Changed (single change): Appended a log-only correction that declares the first `E42` entry above as the canonical record for the Auto frame-rate / clean-divisor change and treats the later duplicate `E42` heading as superseded for future references, preserving append-only history without rewriting prior entries.
+- How To Run:
+  1. `rg -n "^## E42\\b|^## E43\\b" docs/experiment_log.md`
+  2. Confirm there is one canonical `E42` reference entry plus this `E43` correction note explaining the duplicate heading.
+- Validator Output:
+  - `rg -n "^## E42\\b|^## E43\\b" docs/experiment_log.md` should show two historical `E42` headings and this appended `E43` correction entry.
+- ffprobe Evidence:
+  - N/A (experiment-log correction only)
+- Conclusion: The append-only log now explicitly identifies which `E42` entry is canonical and prevents future ambiguity without editing or deleting prior experiment records.

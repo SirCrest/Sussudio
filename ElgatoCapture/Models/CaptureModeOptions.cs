@@ -9,7 +9,8 @@ public sealed class ResolutionOption
     public required uint Height { get; init; }
     public bool IsEnabled { get; init; }
     public string DisableReason { get; init; } = string.Empty;
-    public string DisplayText => Value;
+    public string? DisplayTextOverride { get; init; }
+    public string DisplayText => string.IsNullOrWhiteSpace(DisplayTextOverride) ? Value : DisplayTextOverride;
 }
 
 public sealed class FrameRateOption
@@ -21,5 +22,8 @@ public sealed class FrameRateOption
     public uint? Denominator { get; init; }
     public bool IsEnabled { get; init; }
     public string DisableReason { get; init; } = string.Empty;
-    public string DisplayText => $"{Math.Round(FriendlyValue):0}";
+    public string? DisplayTextOverride { get; init; }
+    public string DisplayText => string.IsNullOrWhiteSpace(DisplayTextOverride)
+        ? $"{Math.Round(FriendlyValue):0}"
+        : DisplayTextOverride;
 }
