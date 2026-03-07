@@ -100,7 +100,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private static ISourceSignalTelemetryProvider CreateDefaultTelemetryProvider()
     {
         return new CompositeSourceSignalTelemetryProvider(
-            new RticeSourceSignalTelemetryProvider(),
+            new NativeXuAtCommandProvider(),
             new KsXuSourceSignalTelemetryProvider(),
             new EgavSourceSignalTelemetryProvider());
     }
@@ -729,6 +729,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceTelemetryOrigin.DeviceFormatFallback => "DeviceFormatFallback",
             SourceTelemetryOrigin.KsXu => "KsXu",
             SourceTelemetryOrigin.Rtice => "Rtice",
+            SourceTelemetryOrigin.NativeXu => "NativeXu",
             _ => "Unknown"
         };
 
@@ -745,6 +746,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceTelemetryOrigin.DeviceFormatFallback => "SourceTelemetry(DeviceFormatFallback)",
             SourceTelemetryOrigin.KsXu => "SourceTelemetry(KsXu)",
             SourceTelemetryOrigin.Rtice => "SourceTelemetry(Rtice)",
+            SourceTelemetryOrigin.NativeXu => "SourceTelemetry(NativeXu)",
             _ => "SourceTelemetry"
         };
     }
