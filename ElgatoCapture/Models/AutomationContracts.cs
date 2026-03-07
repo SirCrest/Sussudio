@@ -40,7 +40,16 @@ public enum AutomationWindowAction
     Minimize,
     Maximize,
     Restore,
-    Close
+    Close,
+    SnapLeft,
+    SnapRight,
+    SnapTopLeft,
+    SnapTopRight,
+    SnapBottomLeft,
+    SnapBottomRight,
+    Center,
+    Move,
+    Resize
 }
 
 public enum AutomationWaitCondition

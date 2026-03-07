@@ -2456,6 +2456,67 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }, cancellationToken);
     }
 
+    public Task MoveToAsync(int x, int y, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var appWindow = GetAppWindow();
+            appWindow.Move(new Windows.Graphics.PointInt32(x, y));
+        }, cancellationToken);
+    }
+
+    public Task ResizeToAsync(int width, int height, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var appWindow = GetAppWindow();
+            appWindow.Resize(new Windows.Graphics.SizeInt32(Math.Max(1, width), Math.Max(1, height)));
+        }, cancellationToken);
+    }
+
+    public Task SnapToRegionAsync(AutomationWindowAction region, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var appWindow = GetAppWindow();
+            var hwnd = WindowNative.GetWindowHandle(this);
+            var windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
+            var displayArea = Microsoft.UI.Windowing.DisplayArea.GetFromWindowId(windowId, Microsoft.UI.Windowing.DisplayAreaFallback.Primary);
+            var work = displayArea.WorkArea;
+
+            if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter &&
+                presenter.State == Microsoft.UI.Windowing.OverlappedPresenterState.Maximized)
+            {
+                presenter.Restore();
+            }
+
+            int x, y, w, h;
+            switch (region)
+            {
+                case AutomationWindowAction.SnapLeft:
+                    x = work.X; y = work.Y; w = work.Width / 2; h = work.Height; break;
+                case AutomationWindowAction.SnapRight:
+                    x = work.X + work.Width / 2; y = work.Y; w = work.Width - work.Width / 2; h = work.Height; break;
+                case AutomationWindowAction.SnapTopLeft:
+                    x = work.X; y = work.Y; w = work.Width / 2; h = work.Height / 2; break;
+                case AutomationWindowAction.SnapTopRight:
+                    x = work.X + work.Width / 2; y = work.Y; w = work.Width - work.Width / 2; h = work.Height / 2; break;
+                case AutomationWindowAction.SnapBottomLeft:
+                    x = work.X; y = work.Y + work.Height / 2; w = work.Width / 2; h = work.Height - work.Height / 2; break;
+                case AutomationWindowAction.SnapBottomRight:
+                    x = work.X + work.Width / 2; y = work.Y + work.Height / 2; w = work.Width - work.Width / 2; h = work.Height - work.Height / 2; break;
+                case AutomationWindowAction.Center:
+                    var curSize = appWindow.Size;
+                    w = curSize.Width; h = curSize.Height;
+                    x = work.X + (work.Width - w) / 2; y = work.Y + (work.Height - h) / 2; break;
+                default:
+                    return;
+            }
+
+            appWindow.MoveAndResize(new Windows.Graphics.RectInt32(x, y, w, h));
+        }, cancellationToken);
+    }
+
     public Task CloseAsync(CancellationToken cancellationToken = default)
     {
         if (Volatile.Read(ref _windowCloseCleanupStarted) != 0)

@@ -12,6 +12,9 @@ public interface IAutomationWindowControl
     Task MaximizeAsync(CancellationToken cancellationToken = default);
     Task RestoreAsync(CancellationToken cancellationToken = default);
     Task CloseAsync(CancellationToken cancellationToken = default);
+    Task MoveToAsync(int x, int y, CancellationToken cancellationToken = default);
+    Task ResizeToAsync(int width, int height, CancellationToken cancellationToken = default);
+    Task SnapToRegionAsync(AutomationWindowAction region, CancellationToken cancellationToken = default);
 }
 
 public interface IRecordingVerifier

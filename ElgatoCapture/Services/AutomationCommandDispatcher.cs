@@ -262,7 +262,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         return CreateAcknowledgedResponse(correlationId, "Window close requested.");
                     }
 
-                    await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);
+                    await ExecuteWindowActionAsync(action, cancellationToken, payload).ConfigureAwait(false);
                     return CreateAcknowledgedResponse(correlationId, $"Window action requested: {action}.");
                 }
 
@@ -505,7 +505,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         throw new InvalidOperationException($"Invalid wait condition: '{raw}'.");
     }
 
-    private async Task ExecuteWindowActionAsync(AutomationWindowAction action, CancellationToken cancellationToken)
+    private async Task ExecuteWindowActionAsync(AutomationWindowAction action, CancellationToken cancellationToken, JsonElement payload = default)
     {
         switch (action)
         {
@@ -519,8 +519,26 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 await _windowControl.RestoreAsync(cancellationToken).ConfigureAwait(false);
                 break;
             case AutomationWindowAction.Close:
-                // Closing should be best-effort even if the request token is canceled during shutdown.
                 await _windowControl.CloseAsync(CancellationToken.None).ConfigureAwait(false);
+                break;
+            case AutomationWindowAction.Move:
+                var mx = GetInt(payload, "x") ?? throw new InvalidOperationException("Move requires 'x' parameter.");
+                var my = GetInt(payload, "y") ?? throw new InvalidOperationException("Move requires 'y' parameter.");
+                await _windowControl.MoveToAsync(mx, my, cancellationToken).ConfigureAwait(false);
+                break;
+            case AutomationWindowAction.Resize:
+                var rw = GetInt(payload, "width") ?? throw new InvalidOperationException("Resize requires 'width' parameter.");
+                var rh = GetInt(payload, "height") ?? throw new InvalidOperationException("Resize requires 'height' parameter.");
+                await _windowControl.ResizeToAsync(rw, rh, cancellationToken).ConfigureAwait(false);
+                break;
+            case AutomationWindowAction.SnapLeft:
+            case AutomationWindowAction.SnapRight:
+            case AutomationWindowAction.SnapTopLeft:
+            case AutomationWindowAction.SnapTopRight:
+            case AutomationWindowAction.SnapBottomLeft:
+            case AutomationWindowAction.SnapBottomRight:
+            case AutomationWindowAction.Center:
+                await _windowControl.SnapToRegionAsync(action, cancellationToken).ConfigureAwait(false);
                 break;
             default:
                 throw new InvalidOperationException($"Unknown window action: {action}");
