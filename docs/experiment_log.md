@@ -526,3 +526,111 @@ Do not rewrite or delete prior entries. Append new entries only.
   - Live app: `Source: 3840 x 2160 HDR=true`, `Telemetry: Available (Medium)`
   - Log: `KSXU_TOPOLOGY nodeCount=4 devSpecificNodes=[3]`, `KSXU_READ_RESULT node=3 selector=3 succeeded=True bytes=150`
 - Conclusion: KsXu HDR detection now works end-to-end on the Elgato 4K X. Node 3 is correctly identified as KSNODETYPE_DEV_SPECIFIC, selector 3 returns 150 bytes, and the all-zeros-prefix fingerprint correctly detects HDR ON.
+
+## E39 - SDR frame-rate auto-selection now follows source telemetry timing family
+- Timestamp (UTC): 2026-03-07T12:06:39.1914449Z
+- Commit Hash: uncommitted (base 71f6b6de3eb3daa140da00bd1dabfb9d6bcc09e3)
+- What Changed (single change): Removed the HDR-only gating around telemetry-driven mode rebuilds and source-aware frame-rate auto-selection so SDR rebuilds can retarget to the exact source cadence using the existing timing-family selection path.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. On a live device run, start preview with an SDR 59.94 source and confirm the frame-rate dropdown/runtime snapshot selects the 59.94 variant instead of 60.00.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded; MSBuild emitted stage-copy warnings because a running `ElgatoCapture (203576)` process held files under `latest-build\`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` tail after the run showed ongoing `RTICE_DECODE ... fps=59.94 ...` telemetry and no new warning/error lines tied to this change; the only matched warning-like lines were older `Automation pipe explicit security fallback: CreateNamedPipe failed with Win32 error 1314.`
+- ffprobe Evidence:
+  - `codec_name=N/A`
+  - `pix_fmt=N/A`
+  - `color_primaries=N/A`
+  - `color_transfer=N/A`
+  - `color_space=N/A`
+  - `side_data_list=N/A`
+- Conclusion: SDR now shares the existing telemetry-driven frame-rate retarget path that HDR was already using, so the ViewModel can select the exact source timing-family variant when telemetry is available. Hardware/UI confirmation of the 59.94 dropdown and preview request remains pending.
+
+## E39 - HDR toggle now disables itself for confirmed SDR sources
+- Timestamp (UTC): 2026-03-07T12:06:39.1914449Z
+- Commit Hash: uncommitted (base 71f6b6de3eb3daa140da00bd1dabfb9d6bcc09e3)
+- What Changed (single change): Updated the `MainWindow` HDR-toggle enablement bridge to require `SourceIsHdr != false`, added `SourceIsHdr` property-change handling, and auto-cleared `IsHdrEnabled` when telemetry positively reported an SDR source.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. On a live device run, switch the source from HDR to SDR while the app is open and confirm the HDR toggle greys out and, if it was enabled, flips off automatically.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded; MSBuild emitted stage-copy warnings because a running `ElgatoCapture (203576)` process held files under `latest-build\`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` tail after the run showed ongoing RTICE telemetry polling with no new warning/error lines tied to the HDR-toggle bridge; the only matched warning-like lines were older `Automation pipe explicit security fallback: CreateNamedPipe failed with Win32 error 1314.`
+- ffprobe Evidence:
+  - `codec_name=N/A`
+  - `pix_fmt=N/A`
+  - `color_primaries=N/A`
+  - `color_transfer=N/A`
+  - `color_space=N/A`
+  - `side_data_list=N/A`
+- Conclusion: The window bridge now disables HDR only when the source is known to be SDR, leaves the toggle usable while source HDR state is unknown, and forces HDR off when telemetry reports an SDR source. Hardware/UI confirmation of the greyed-out toggle still needs a live app run.
+
+## E38 - Source telemetry now drives SDR frame-rate retargeting and HDR toggle availability
+- Timestamp (UTC): 2026-03-07T12:07:05.2534156Z
+- Commit Hash: 71f6b6de3eb3daa140da00bd1dabfb9d6bcc09e3
+- What Changed (single change): Aligned source-driven mode handling so SDR reuses the existing timing-family frame-rate auto-selection path, telemetry-triggered mode rebuilds run regardless of HDR state, the HDR toggle is disabled when the source is known SDR, and NTSC frame-rate options keep their exact dropdown label instead of rounding back to the friendly bucket.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+  4. With a live 59.94 SDR source, confirm the frame-rate dropdown selects `59.94` instead of `60`, and with a live SDR source confirm the HDR toggle is disabled unless source HDR state is still unknown.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Error(s)`; the only warnings were `MSB3231/MSB3026/MSB3027/MSB3021` staging-copy retries because a running `ElgatoCapture (203576)` process held files open under `latest-build`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed no new `ERROR`, `WARNING`, `WARN`, `EXCEPTION`, or `FAIL` tokens during verification; the tail contained repeated `RTICE_DECODE vic=97 size=3840x2160 fps=59.94 hdr=true` telemetry samples.
+- ffprobe Evidence:
+  - N/A (UI / source-telemetry selection change only)
+- Conclusion: SDR now follows the same source-timing retarget path as HDR, the HDR toggle no longer stays enabled when telemetry positively identifies an SDR source, and the dropdown label can represent exact NTSC variants instead of collapsing them back to whole-number text.
+
+## E38 - SDR frame-rate auto-selection now follows source telemetry timing family
+- Timestamp (UTC): 2026-03-07T12:06:38.3985521Z
+- Commit Hash: uncommitted
+- What Changed (single change): Removed the HDR-only gates around telemetry-driven mode rebuilds and the existing source-aware frame-rate picker in `MainViewModel`, so SDR now uses the same timing-family-aware auto-selection path as HDR while preserving the no-telemetry fallback.
+- How To Run:
+  1. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. With a live 59.94 fps SDR source, inspect the frame-rate dropdown and confirm the requested preview mode tracks the 60000/1001 variant instead of the 60/1 variant.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded and rebuilt `ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll`; staging `latest-build` emitted `MSB3231`/`MSB3026`/`MSB3027`/`MSB3021` warnings because `ElgatoCapture (203576)` held files open under `latest-build`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` had no matches for `FAIL|ERROR|WARN|WARNING|EXCEPTION|HDR_VALIDATE_RESULT|PREVIEW_START_TIMEOUT`; the latest live tail continued to report `RTICE_DECODE ... fps=59.94 hdr=true`.
+- ffprobe Evidence:
+  - N/A (UI selection / preview request change only)
+- Conclusion: Source telemetry now rebuilds and auto-selects SDR frame-rate variants with the same timing-family preference used by HDR, so the 59.94 path can stay on the precise source cadence instead of rounding up to the 60.00 variant.
+
+## E40 - HDR toggle now disables itself when source telemetry reports SDR
+- Timestamp (UTC): 2026-03-07T12:06:39.3985521Z
+- Commit Hash: uncommitted
+- What Changed (single change): Updated `MainWindow` HDR-toggle enablement to require `SourceIsHdr != false`, added `SourceIsHdr` to the window property-change bridge, and made `MainViewModel` clear `IsHdrEnabled` from source telemetry only when the app is not recording so the toggle follows confirmed SDR input without desynchronizing the active recording pipeline.
+- How To Run:
+  1. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `$env:DOTNET_CLI_HOME='C:\Users\crest\source\repos\ElgatoCapture\temp\dotnet_cli_home'; dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. With a live source that transitions HDR -> SDR while idle or previewing, confirm the HDR toggle becomes unchecked/disabled when telemetry reports `SourceIsHdr = false`, stays enabled when the source HDR state is still unknown, and retains the existing `AutomationProperties.AutomationId="HdrToggle"` contract.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded and rebuilt `ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll`; staging `latest-build` emitted `MSB3231`/`MSB3026`/`MSB3027`/`MSB3021` warnings because `ElgatoCapture (203576)` held files open under `latest-build`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` had no matches for `FAIL|ERROR|WARN|WARNING|EXCEPTION|HDR_VALIDATE_RESULT|PREVIEW_START_TIMEOUT`; the latest tail showed continued RTICE polling with `RTICE_DECODE ... fps=59.94 hdr=true` and clean shutdown/cleanup lines, with no new warning tokens.
+- ffprobe Evidence:
+  - N/A (UI state / source-telemetry gating change only)
+- Conclusion: The HDR toggle now greys out only when the app positively knows the source is SDR, remains available for HDR or unknown telemetry states, and source-driven HDR shutdown is limited to non-recording states so the active recording pipeline and the requested mode do not drift apart.
+
+## E40 - Finalize source-aware HDR toggle gating without recording-time pipeline drift
+- Timestamp (UTC): 2026-03-07T12:07:05.2534156Z
+- Commit Hash: uncommitted (base 71f6b6de3eb3daa140da00bd1dabfb9d6bcc09e3)
+- What Changed (single change): Removed the recording-time HDR-toggle bypass from the in-progress source-aware toggle experiment, keeping the final implementation limited to source-aware toggle enablement plus automatic HDR shutdown only when the app is not actively recording so `IsHdrEnabled` cannot drift away from the live pipeline state.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+  4. On a live device run, confirm the HDR toggle is disabled for confirmed SDR sources, remains available when source HDR state is unknown, and does not try to flip `IsHdrEnabled` while recording is active.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Error(s)`; MSBuild emitted `MSB3231/MSB3026/MSB3027/MSB3021` staging-copy warnings because `latest-build` was locked by a running `ElgatoCapture (203576)` process.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed no new `ERROR`, `WARNING`, `WARN`, `EXCEPTION`, or `FAIL` tokens during the final verification grep; the tail contained RTICE telemetry polling plus clean preview/automation shutdown lines.
+- ffprobe Evidence:
+  - N/A (UI state / source-telemetry gating change only)
+- Conclusion: The final implementation keeps the source-aware HDR toggle UX while preserving the existing recording-time pipeline guard, so the UI no longer advertises HDR for confirmed SDR input without creating a false non-HDR state during active recording.

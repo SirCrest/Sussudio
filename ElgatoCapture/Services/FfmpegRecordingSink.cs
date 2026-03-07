@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +13,8 @@ public sealed class FfmpegRecordingSink : IRecordingSink
     private RecordingContext? _context;
     private bool _started;
     private bool _disposed;
-    private FileStream? _audioFileStream;
+    private Process? _audioEncoderProcess;
+    private Stream? _audioStdinStream;
     private bool _splitMode;
 
     public FFmpegEncoderService Encoder => _encoder;
@@ -42,22 +44,43 @@ public sealed class FfmpegRecordingSink : IRecordingSink
 
         if (_splitMode)
         {
-            // Open raw audio file for writing (f32le, 48kHz, stereo)
             if (string.IsNullOrWhiteSpace(context.AudioTempPath))
             {
                 throw new InvalidOperationException("Split recording mode requires AudioTempPath.");
             }
 
-            Logger.Log($"Split recording: opening audio file {context.AudioTempPath}");
-            _audioFileStream = new FileStream(
-                context.AudioTempPath,
-                FileMode.Create,
-                FileAccess.Write,
-                FileShare.None,
-                bufferSize: 65536,
-                useAsync: true);
+            // Start a lightweight FFmpeg process that encodes f32le stdin → AAC M4A in real-time.
+            // This replaces the old raw f32le FileStream approach — audio is encoded during
+            // recording so post-mux only needs -c:a copy (near-instant regardless of duration).
+            var ffmpegPath = _encoder.FfmpegPath;
+            var audioArgs = $"-y -f f32le -ar 48000 -ac 2 -i pipe:0 " +
+                            $"-c:a aac -b:a 320k " +
+                            $"\"{context.AudioTempPath}\"";
 
-            // Start encoder in video-only mode
+            Logger.Log($"Split recording: starting audio encoder → {context.AudioTempPath}");
+            Logger.Log($"Audio encoder args: {audioArgs}");
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = ffmpegPath,
+                Arguments = audioArgs,
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+                CreateNoWindow = true
+            };
+
+            _audioEncoderProcess = Process.Start(startInfo);
+            if (_audioEncoderProcess == null)
+            {
+                throw new InvalidOperationException("Failed to start audio encoder FFmpeg process.");
+            }
+
+            _audioStdinStream = _audioEncoderProcess.StandardInput.BaseStream;
+            Logger.Log($"Audio encoder started (PID: {_audioEncoderProcess.Id})");
+
+            // Start video encoder in video-only mode
             await _encoder.StartEncodingAsync(
                 context.Settings,
                 context.VideoOutputPath,
@@ -107,7 +130,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
             return;
         }
 
-        var stream = _audioFileStream;
+        var stream = _audioStdinStream;
         if (_splitMode && stream != null)
         {
             await stream.WriteAsync(samples, cancellationToken).ConfigureAwait(false);
@@ -134,11 +157,48 @@ public sealed class FfmpegRecordingSink : IRecordingSink
             _started = false;
         }
 
-        // Close the raw audio file (DisposeAsync flushes the internal buffer)
-        if (_audioFileStream != null)
+        // Close audio encoder stdin to signal EOF, then wait for it to finish
+        if (_audioEncoderProcess != null)
         {
-            await _audioFileStream.DisposeAsync().ConfigureAwait(false);
-            _audioFileStream = null;
+            var sw = Stopwatch.StartNew();
+            try
+            {
+                if (_audioStdinStream != null)
+                {
+                    await _audioStdinStream.FlushAsync(cancellationToken).ConfigureAwait(false);
+                    _audioStdinStream.Close();
+                    _audioStdinStream = null;
+                }
+
+                using var exitCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                exitCts.CancelAfter(30_000); // 30s should be ample for AAC flush
+                await _audioEncoderProcess.WaitForExitAsync(exitCts.Token).ConfigureAwait(false);
+
+                var exitCode = _audioEncoderProcess.ExitCode;
+                Logger.Log($"Audio encoder exited (code={exitCode}, elapsed={sw.ElapsedMilliseconds}ms)");
+
+                if (exitCode != 0)
+                {
+                    FinalizeResult = Services.FinalizeResult.Failure(
+                        outputPath,
+                        $"Stopped (audio encoder failed: exit code {exitCode})");
+                    return FinalizeResult;
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Log($"Audio encoder wait timed out after {sw.ElapsedMilliseconds}ms — killing");
+                try { _audioEncoderProcess.Kill(); } catch { /* best-effort */ }
+                FinalizeResult = Services.FinalizeResult.Failure(
+                    outputPath,
+                    "Stopped (audio encoder timed out)");
+                return FinalizeResult;
+            }
+            finally
+            {
+                _audioEncoderProcess.Dispose();
+                _audioEncoderProcess = null;
+            }
         }
 
         if (_encoder.LastStopTimedOut)
@@ -157,15 +217,15 @@ public sealed class FfmpegRecordingSink : IRecordingSink
             return FinalizeResult;
         }
 
-        if (_encoder.LastExitCode is int exitCode && exitCode != 0)
+        if (_encoder.LastExitCode is int exitCode2 && exitCode2 != 0)
         {
             FinalizeResult = Services.FinalizeResult.Failure(
                 outputPath,
-                $"Stopped (encoder failed: exit code {exitCode})");
+                $"Stopped (encoder failed: exit code {exitCode2})");
             return FinalizeResult;
         }
 
-        // Post-mux: combine video + raw audio into final output
+        // Post-mux: combine video + audio into final output (copy-only, near-instant)
         if (_splitMode && _context != null)
         {
             var muxResult = await RunPostMuxAsync(_context, cancellationToken).ConfigureAwait(false);
@@ -216,8 +276,8 @@ public sealed class FfmpegRecordingSink : IRecordingSink
         var ffmpegPath = _encoder.FfmpegPath;
         var args = $"-y " +
                    $"-i \"{videoPath}\" " +
-                   $"-f f32le -ar 48000 -ac 2 -i \"{audioPath}\" " +
-                   $"-c:v copy -c:a aac -b:a 320k " +
+                   $"-i \"{audioPath}\" " +
+                   $"-c:v copy -c:a copy " +
                    $"-movflags +faststart " +
                    $"\"{finalPath}\"";
 
@@ -278,8 +338,10 @@ public sealed class FfmpegRecordingSink : IRecordingSink
 
         _disposed = true;
         _started = false;
-        _audioFileStream?.Dispose();
-        _audioFileStream = null;
+        _audioStdinStream?.Dispose();
+        _audioStdinStream = null;
+        _audioEncoderProcess?.Dispose();
+        _audioEncoderProcess = null;
         _encoder.Dispose();
     }
 
@@ -292,11 +354,13 @@ public sealed class FfmpegRecordingSink : IRecordingSink
 
         _disposed = true;
         _started = false;
-        if (_audioFileStream != null)
+        if (_audioStdinStream != null)
         {
-            await _audioFileStream.DisposeAsync().ConfigureAwait(false);
-            _audioFileStream = null;
+            await _audioStdinStream.DisposeAsync().ConfigureAwait(false);
+            _audioStdinStream = null;
         }
+        _audioEncoderProcess?.Dispose();
+        _audioEncoderProcess = null;
         await _encoder.DisposeAsync();
     }
 }

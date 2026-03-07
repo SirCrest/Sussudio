@@ -1280,7 +1280,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
         CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
         HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
-        HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
+        HdrToggle.IsEnabled = ViewModel.IsHdrAvailable &&
+                              !ViewModel.IsRecording &&
+                              ViewModel.SourceIsHdr != false;
         TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
         TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
         UpdateAudioMeterLevel(ViewModel.AudioPeak);
@@ -2158,7 +2160,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 AudioRecordToggle.IsEnabled = !ViewModel.IsRecording;
                 CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
-                HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
+                HdrToggle.IsEnabled = ViewModel.IsHdrAvailable &&
+                                      !ViewModel.IsRecording &&
+                                      ViewModel.SourceIsHdr != false;
                 TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
                 // Stats panel always visible — shows "--" when not recording
                 RefreshHdrHintText();
@@ -2229,7 +2233,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 break;
 
             case nameof(MainViewModel.IsHdrAvailable):
-                HdrToggle.IsEnabled = ViewModel.IsHdrAvailable && !ViewModel.IsRecording;
+            case nameof(MainViewModel.SourceIsHdr):
+                HdrToggle.IsEnabled = ViewModel.IsHdrAvailable &&
+                                      !ViewModel.IsRecording &&
+                                      ViewModel.SourceIsHdr != false;
                 break;
 
             case nameof(MainViewModel.IsHdrEnabled):

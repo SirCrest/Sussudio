@@ -20,10 +20,19 @@ public static class ResponseFormatter
         }
 
         var selectedFriendlyFrameRate = Get(snapshot, "SelectedFriendlyFrameRate", string.Empty);
-        var selectedFrameRate = Get(snapshot, "SelectedFrameRate");
-        var frameRateSummary = string.IsNullOrWhiteSpace(selectedFriendlyFrameRate)
-            ? $"{selectedFrameRate} fps"
-            : $"{selectedFriendlyFrameRate} fps";
+        var selectedExactFrameRate = Get(snapshot, "SelectedExactFrameRate", string.Empty);
+        var selectedExactFrameRateArg = Get(snapshot, "SelectedExactFrameRateArg", string.Empty);
+        var frameRateBucket = string.IsNullOrWhiteSpace(selectedFriendlyFrameRate)
+            ? Get(snapshot, "SelectedFrameRate")
+            : selectedFriendlyFrameRate;
+        var frameRateExactDetail = !string.IsNullOrWhiteSpace(selectedExactFrameRateArg)
+            ? $"{selectedExactFrameRate} fps, {selectedExactFrameRateArg}"
+            : !string.IsNullOrWhiteSpace(selectedExactFrameRate)
+                ? $"{selectedExactFrameRate} fps"
+                : string.Empty;
+        var frameRateSummary = string.IsNullOrWhiteSpace(frameRateExactDetail)
+            ? $"{frameRateBucket} fps"
+            : $"{frameRateBucket} fps ({frameRateExactDetail})";
 
         var builder = new StringBuilder();
         builder.AppendLine("== ElgatoCapture State ==");
@@ -84,7 +93,14 @@ public static class ResponseFormatter
         }
         builder.AppendLine();
         builder.AppendLine("== Source ==");
-        builder.AppendLine($"Source: {Get(snapshot, "SourceWidth")} x {Get(snapshot, "SourceHeight")} HDR={Get(snapshot, "SourceIsHdr")}");
+        var sourceFrameRate = Get(snapshot, "DetectedSourceFrameRate", string.Empty);
+        var sourceFrameRateArg = Get(snapshot, "DetectedSourceFrameRateArg", string.Empty);
+        var sourceFpsSummary = !string.IsNullOrWhiteSpace(sourceFrameRateArg)
+            ? $"{sourceFrameRate}fps ({sourceFrameRateArg})"
+            : !string.IsNullOrWhiteSpace(sourceFrameRate)
+                ? $"{sourceFrameRate}fps"
+                : "N/A";
+        builder.AppendLine($"Source: {Get(snapshot, "SourceWidth")} x {Get(snapshot, "SourceHeight")} @ {sourceFpsSummary} HDR={Get(snapshot, "SourceIsHdr")}");
         builder.AppendLine($"Telemetry: {Get(snapshot, "SourceTelemetryAvailability")} ({Get(snapshot, "SourceTelemetryConfidence")})");
 
         return builder.ToString().TrimEnd();
