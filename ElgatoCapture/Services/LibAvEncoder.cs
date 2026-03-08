@@ -38,6 +38,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     private long _audioSamplesReceived;
     private byte* _resampleBuffer;
     private int _audioFrameSize;
+    private int _accumulatorCapacity;
     private int _audioAccumulatorBytes;
     private bool _isOpen;
     private bool _headerWritten;
@@ -316,14 +317,21 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         {
             if (_isOpen && !_flushSent)
             {
-                var flushResult = ffmpeg.avcodec_send_frame(_videoCodecCtx, null);
-                if (flushResult != ffmpeg.AVERROR_EOF)
+                try
                 {
-                    ThrowIfError(flushResult, "avcodec_send_frame(flush)");
-                    _flushSent = true;
-                }
+                    var flushResult = ffmpeg.avcodec_send_frame(_videoCodecCtx, null);
+                    if (flushResult != ffmpeg.AVERROR_EOF)
+                    {
+                        ThrowIfError(flushResult, "avcodec_send_frame(flush)");
+                        _flushSent = true;
+                    }
 
-                DrainEncoderPackets();
+                    DrainEncoderPackets();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"LIBAV_ENCODER_WARNING video_flush_error msg='{ex.Message}'");
+                }
             }
 
             if (_audioCodecCtx != null)
@@ -534,15 +542,13 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     {
         AVChannelLayout inputLayout = default;
         ffmpeg.av_channel_layout_default(&inputLayout, options.AudioChannels);
-        var outputLayout = _audioCodecCtx->ch_layout;
         var swrCtx = _swrCtx;
 
         try
         {
-            _swrCtx = swrCtx;
             var result = ffmpeg.swr_alloc_set_opts2(
                 &swrCtx,
-                &outputLayout,
+                &_audioCodecCtx->ch_layout,
                 _audioCodecCtx->sample_fmt,
                 _audioCodecCtx->sample_rate,
                 &inputLayout,
@@ -587,12 +593,12 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
     private void AllocateAudioAccumulator(LibAvEncoderOptions options)
     {
-        var accumulatorBytes = checked(_audioFrameSize * options.AudioChannels * sizeof(float));
-        _resampleBuffer = (byte*)ffmpeg.av_malloc((ulong)accumulatorBytes);
+        _accumulatorCapacity = checked(_audioFrameSize * options.AudioChannels * sizeof(float));
+        _resampleBuffer = (byte*)ffmpeg.av_malloc((ulong)_accumulatorCapacity);
         if (_resampleBuffer == null)
         {
             throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=av_malloc(audio_accumulator) msg=Allocation returned null size={accumulatorBytes}.");
+                $"LIBAV_ENCODER_ERROR operation=av_malloc(audio_accumulator) msg=Allocation returned null size={_accumulatorCapacity}.");
         }
     }
 
@@ -867,7 +873,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             Buffer.MemoryCopy(
                 sourcePtr,
                 _resampleBuffer + destinationOffset,
-                (_audioFrameSize * ((_options?.AudioChannels ?? 0) * sizeof(float))) - destinationOffset,
+                _accumulatorCapacity - destinationOffset,
                 source.Length);
         }
     }
