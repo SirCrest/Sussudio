@@ -798,3 +798,20 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (record-button UI state fix only)
 - Conclusion: The record button no longer relies on an `IsRecording` change to exit the spinner state after a failed transition. Live failure-path validation is still needed.
+
+## E50 - Control bar polish: recording glow pulse, hover scale, and audio meter peak visuals
+- Timestamp (UTC): 2026-03-08T04:12:59.7627978Z
+- Commit Hash: 5ff85c70eed7b1780eaf6e66683785e5c8db6a0c
+- What Changed (single change): Added a breathing `RecordingGlowBorder` storyboard, render-transform hover/press scale animations for the control-bar buttons/toggles, and smoothed audio-meter peak/range visuals in `MainWindow` without changing the HDR or preview pipeline contracts.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log`
+  4. Run the app and verify: recording starts/stops the glow pulse cleanly, control-bar buttons scale on hover/press without layout shift, and the audio meter shows fill smoothing plus peak/range markers that reset when audio monitoring/recording resets.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log` returned no matches after the verification run.
+- ffprobe Evidence:
+  - N/A (UI-only polish change)
+- Conclusion: The control bar now adds the requested motion/feedback without changing capture contracts, and the regression harness/log scan stayed clean. Manual UI smoke validation is still needed for the new visual states.

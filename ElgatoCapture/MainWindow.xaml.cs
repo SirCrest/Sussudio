@@ -13,6 +13,7 @@ using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
 using WinRT.Interop;
@@ -105,6 +106,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const int MinWindowHeight = 450;
     private WndProcDelegate? _minSizeWndProc;
     private IntPtr _originalWndProc;
+    private double _audioPeakHoldLevel;
+    private long _audioPeakHoldTimestamp;
+    private double _audioRangeMin = 1.0;
+    private double _audioRangeMax;
+    private long _audioRangeResetTimestamp;
+    private double _audioMeterDisplayLevel;
+
+    private const long AudioPeakHoldDurationMs = 1500;
+    private const double AudioPeakHoldDecayPerSecond = 0.8;
+    private const long AudioRangeWindowMs = 3000;
 
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
@@ -1242,6 +1253,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         // Wire up UI controls to ViewModel
         SetupBindings();
+        SetupButtonHoverAnimations();
 
         // Shadow for control bar depth effect
         var shadow = new Microsoft.UI.Xaml.Media.ThemeShadow();
@@ -1401,6 +1413,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                               ViewModel.SourceIsHdr != false;
         TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
         TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
+        ResetAudioMeterVisuals();
         UpdateAudioMeterLevel(ViewModel.AudioPeak);
         AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
         RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing;
@@ -1517,6 +1530,64 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioMeterTrack.SizeChanged += (s, e) => UpdateAudioMeterLevel(ViewModel.AudioPeak);
         ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
         CaptureSettingsGrid.SizeChanged += CaptureSettingsGrid_SizeChanged;
+    }
+
+    private void SetupButtonHoverAnimations()
+    {
+        var buttons = new FrameworkElement[]
+        {
+            SettingsToggleButton,
+            OpenRecordingsButton,
+            ScreenshotButton,
+            RecordButton,
+            PreviewButton,
+            HdrToggle,
+            AudioRecordToggle,
+            TrueHdrPreviewToggle,
+            AudioPreviewToggle,
+            StatsToggle
+        };
+
+        foreach (var button in buttons)
+        {
+            var isHovered = false;
+            button.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
+            button.RenderTransform = new ScaleTransform { ScaleX = 1, ScaleY = 1 };
+
+            button.PointerEntered += (_, _) =>
+            {
+                isHovered = true;
+                if (button.RenderTransform is ScaleTransform transform)
+                {
+                    AnimateScale(transform, 1.08, TimeSpan.FromMilliseconds(100));
+                }
+            };
+
+            button.PointerExited += (_, _) =>
+            {
+                isHovered = false;
+                if (button.RenderTransform is ScaleTransform transform)
+                {
+                    AnimateScale(transform, 1.0, TimeSpan.FromMilliseconds(100));
+                }
+            };
+
+            button.PointerPressed += (_, _) =>
+            {
+                if (button.RenderTransform is ScaleTransform transform)
+                {
+                    AnimateScale(transform, 0.95, TimeSpan.FromMilliseconds(60));
+                }
+            };
+
+            button.PointerReleased += (_, _) =>
+            {
+                if (button.RenderTransform is ScaleTransform transform)
+                {
+                    AnimateScale(transform, isHovered ? 1.08 : 1.0, TimeSpan.FromMilliseconds(60));
+                }
+            };
+        }
     }
 
     private void UpdateToggleLabelVisibility(double controlBarWidth)
@@ -1778,6 +1849,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _isWindowClosing = true;
         StopStatsDockPolling();
         HideStatsDockPanel(immediate: true);
+        RecordingGlowPulseStoryboard.Stop();
+        RecordingGlowBorder.Opacity = 0;
+        RecPulseStoryboard.Stop();
 
         if (this.Content is FrameworkElement mainContent)
         {
@@ -2352,24 +2426,45 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 break;
 
             case nameof(MainViewModel.IsRecording):
-                RecordingGlowBorder.Opacity = ViewModel.IsRecording ? 1.0 : 0.0;
-                UpdateRecordingGlowBorderMargin();
-                // Three-state button: hide spinner, show correct content, morph shape
-                RecordButtonStartingContent.IsActive = false;
-                RecordButtonStartingContent.Visibility = Visibility.Collapsed;
-                RecordButtonNormalContent.Visibility = ViewModel.IsRecording ? Visibility.Collapsed : Visibility.Visible;
-                RecordButtonRecordingContent.Visibility = ViewModel.IsRecording ? Visibility.Visible : Visibility.Collapsed;
                 if (ViewModel.IsRecording)
                 {
-                    // Morph to pill shape for stop + time
-                    RecordButton.Width = double.NaN;
-                    RecordButton.Padding = new Thickness(12, 0, 12, 0);
+                    RecordingGlowBorder.Opacity = 1.0;
+                    RecordingGlowPulseStoryboard.Begin();
                 }
                 else
                 {
-                    // Morph back to circle
+                    RecordingGlowPulseStoryboard.Stop();
+                    RecordingGlowBorder.Opacity = 0;
+                    ResetAudioMeterVisuals();
+                }
+
+                UpdateRecordingGlowBorderMargin();
+                // Three-state button: hide spinner, show correct content, animated morph
+                RecordButtonStartingContent.IsActive = false;
+                RecordButtonStartingContent.Visibility = Visibility.Collapsed;
+                if (ViewModel.IsRecording)
+                {
+                    // Circle → pill: show recording content, measure target, animate
+                    RecordButtonNormalContent.Visibility = Visibility.Collapsed;
+                    RecordButtonRecordingContent.Visibility = Visibility.Visible;
+                    RecordButton.Padding = new Thickness(12, 0, 12, 0);
+                    RecordButton.Width = double.NaN;
+                    RecordButton.UpdateLayout();
+                    var targetWidth = RecordButton.ActualWidth;
                     RecordButton.Width = 36;
-                    RecordButton.Padding = new Thickness(0);
+                    AnimateRecordButtonWidth(36, targetWidth);
+                }
+                else
+                {
+                    // Pill → circle: capture current width, animate to 36, swap content on completion
+                    var currentWidth = RecordButton.ActualWidth;
+                    RecordButton.Width = currentWidth;
+                    AnimateRecordButtonWidth(currentWidth, 36, () =>
+                    {
+                        RecordButtonRecordingContent.Visibility = Visibility.Collapsed;
+                        RecordButtonNormalContent.Visibility = Visibility.Visible;
+                        RecordButton.Padding = new Thickness(0);
+                    });
                 }
                 AudioRecordToggle.IsEnabled = !ViewModel.IsRecording;
                 CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
@@ -2573,6 +2668,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 {
                     AudioPreviewToggle.IsChecked = false;
                 }
+                if (!ViewModel.IsAudioEnabled)
+                {
+                    ResetAudioMeterVisuals();
+                }
                 break;
 
             case nameof(MainViewModel.IsAudioPreviewEnabled):
@@ -2580,15 +2679,27 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 {
                     AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
                 }
+                if (!ViewModel.IsAudioPreviewEnabled && !ViewModel.IsRecording)
+                {
+                    ResetAudioMeterVisuals();
+                }
                 break;
 
             case nameof(MainViewModel.IsRecordingTransitioning):
                 RecordButton.IsEnabled = !ViewModel.IsRecordingTransitioning;
-                // Show spinner during both start and stop transitions
                 if (ViewModel.IsRecordingTransitioning)
                 {
-                    RecordButtonNormalContent.Visibility = Visibility.Collapsed;
-                    RecordButtonRecordingContent.Visibility = Visibility.Collapsed;
+                    if (ViewModel.IsRecording)
+                    {
+                        // Stopping: freeze pill width so it doesn't collapse when content hides
+                        RecordButton.Width = RecordButton.ActualWidth;
+                        RecordButtonRecordingContent.Visibility = Visibility.Collapsed;
+                    }
+                    else
+                    {
+                        // Starting: hide idle dot, show spinner in circle
+                        RecordButtonNormalContent.Visibility = Visibility.Collapsed;
+                    }
                     RecordButtonStartingContent.IsActive = true;
                     RecordButtonStartingContent.Visibility = Visibility.Visible;
                 }
@@ -3034,9 +3145,134 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void UpdateAudioMeterLevel(double level)
     {
         var clamped = Math.Clamp(level, 0.0, 1.0);
+        var nowMs = Environment.TickCount64;
+
+        if (clamped >= _audioMeterDisplayLevel)
+        {
+            _audioMeterDisplayLevel = clamped;
+        }
+        else
+        {
+            _audioMeterDisplayLevel += (clamped - _audioMeterDisplayLevel) * 0.3;
+        }
+
+        if (clamped >= _audioPeakHoldLevel)
+        {
+            _audioPeakHoldLevel = clamped;
+            _audioPeakHoldTimestamp = nowMs;
+        }
+        else if (nowMs - _audioPeakHoldTimestamp > AudioPeakHoldDurationMs)
+        {
+            var dt = (nowMs - _audioPeakHoldTimestamp - AudioPeakHoldDurationMs) / 1000.0;
+            _audioPeakHoldLevel = Math.Max(0, _audioPeakHoldLevel - (AudioPeakHoldDecayPerSecond * dt));
+            _audioPeakHoldTimestamp = nowMs - AudioPeakHoldDurationMs;
+        }
+
+        if (nowMs - _audioRangeResetTimestamp > AudioRangeWindowMs)
+        {
+            _audioRangeMin = clamped;
+            _audioRangeMax = clamped;
+            _audioRangeResetTimestamp = nowMs;
+        }
+        else
+        {
+            if (clamped < _audioRangeMin)
+            {
+                _audioRangeMin = clamped;
+            }
+
+            if (clamped > _audioRangeMax)
+            {
+                _audioRangeMax = clamped;
+            }
+        }
+
         var trackWidth = AudioMeterTrack.ActualWidth;
-        if (trackWidth <= 0) return;
-        AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * clamped, 12);
+        if (trackWidth <= 0)
+        {
+            return;
+        }
+
+        var trackHeight = AudioMeterTrack.ActualHeight > 0 ? AudioMeterTrack.ActualHeight : 12;
+        AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * _audioMeterDisplayLevel, trackHeight);
+        AudioPeakHoldTranslate.X = TranslateMarker(trackWidth, _audioPeakHoldLevel, AudioPeakHoldIndicator.Width);
+        AudioRangeMinTranslate.X = TranslateMarker(trackWidth, _audioRangeMin, AudioRangeMinMarker.Width);
+        AudioRangeMaxTranslate.X = TranslateMarker(trackWidth, _audioRangeMax, AudioRangeMaxMarker.Width);
+    }
+
+    private void ResetAudioMeterVisuals()
+    {
+        _audioPeakHoldLevel = 0;
+        _audioPeakHoldTimestamp = 0;
+        _audioRangeMin = 1.0;
+        _audioRangeMax = 0;
+        _audioRangeResetTimestamp = 0;
+        _audioMeterDisplayLevel = 0;
+        AudioPeakHoldTranslate.X = 0;
+        AudioRangeMinTranslate.X = 0;
+        AudioRangeMaxTranslate.X = 0;
+        UpdateAudioMeterLevel(0);
+    }
+
+    private static double TranslateMarker(double trackWidth, double level, double markerWidth)
+    {
+        var clamped = Math.Clamp(level, 0.0, 1.0);
+        var availableWidth = Math.Max(0, trackWidth - markerWidth);
+        return availableWidth * clamped;
+    }
+
+    private void AnimateRecordButtonWidth(double from, double to, Action? onCompleted = null)
+    {
+        var anim = new DoubleAnimation
+        {
+            From = from,
+            To = to,
+            Duration = new Duration(TimeSpan.FromMilliseconds(200)),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut },
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(anim, RecordButton);
+        Storyboard.SetTargetProperty(anim, "Width");
+
+        var sb = new Storyboard();
+        sb.Children.Add(anim);
+        sb.Completed += (_, _) =>
+        {
+            // Set final width explicitly (NaN for pill, 36 for circle)
+            RecordButton.Width = to == 36 ? 36 : double.NaN;
+            onCompleted?.Invoke();
+        };
+        sb.Begin();
+    }
+
+    private static void AnimateScale(ScaleTransform target, double to, TimeSpan duration)
+    {
+        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+
+        var scaleX = new DoubleAnimation
+        {
+            To = to,
+            Duration = new Duration(duration),
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(scaleX, target);
+        Storyboard.SetTargetProperty(scaleX, "ScaleX");
+
+        var scaleY = new DoubleAnimation
+        {
+            To = to,
+            Duration = new Duration(duration),
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(scaleY, target);
+        Storyboard.SetTargetProperty(scaleY, "ScaleY");
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(scaleX);
+        storyboard.Children.Add(scaleY);
+        storyboard.Begin();
     }
 
     private void ResetPreviewContentTransform()

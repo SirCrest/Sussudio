@@ -22,6 +22,17 @@
                                  Duration="0:0:0.8"
                                  AutoReverse="True"/>
             </Storyboard>
+            <Storyboard x:Name="RecordingGlowPulseStoryboard" RepeatBehavior="Forever">
+                <DoubleAnimation Storyboard.TargetName="RecordingGlowBorder"
+                                 Storyboard.TargetProperty="Opacity"
+                                 From="1.0" To="0.5"
+                                 Duration="0:0:0.75"
+                                 AutoReverse="True">
+                    <DoubleAnimation.EasingFunction>
+                        <SineEase EasingMode="EaseInOut"/>
+                    </DoubleAnimation.EasingFunction>
+                </DoubleAnimation>
+            </Storyboard>
         </Grid.Resources>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -722,6 +733,45 @@
                                     <RectangleGeometry x:Name="AudioMeterClip" Rect="0,0,0,12"/>
                                 </Border.Clip>
                             </Border>
+
+                            <Border x:Name="AudioPeakHoldIndicator"
+                                    Width="2"
+                                    Height="12"
+                                    Background="#FFFFFF"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Opacity="0.9"
+                                    IsHitTestVisible="False">
+                                <Border.RenderTransform>
+                                    <TranslateTransform x:Name="AudioPeakHoldTranslate" X="0"/>
+                                </Border.RenderTransform>
+                            </Border>
+
+                            <Border x:Name="AudioRangeMinMarker"
+                                    Width="1"
+                                    Height="8"
+                                    Background="#50FFFFFF"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Opacity="0.5"
+                                    IsHitTestVisible="False">
+                                <Border.RenderTransform>
+                                    <TranslateTransform x:Name="AudioRangeMinTranslate" X="0"/>
+                                </Border.RenderTransform>
+                            </Border>
+
+                            <Border x:Name="AudioRangeMaxMarker"
+                                    Width="1"
+                                    Height="8"
+                                    Background="#80FFFFFF"
+                                    HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+                                    Opacity="0.7"
+                                    IsHitTestVisible="False">
+                                <Border.RenderTransform>
+                                    <TranslateTransform x:Name="AudioRangeMaxTranslate" X="0"/>
+                                </Border.RenderTransform>
+                            </Border>
                         </Grid>
                     </Border>
                     <TextBlock x:Name="AudioClipText"
@@ -829,9 +879,12 @@
                             <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent"/>
                             <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
                             <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="#CC0E1B"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="Transparent"/>
                             <SolidColorBrush x:Key="ButtonForeground" Color="White"/>
                             <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
                             <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#E0E0E0"/>
+                            <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="White"/>
                         </Button.Resources>
                         <Grid>
                             <!-- Idle state: white dot -->
