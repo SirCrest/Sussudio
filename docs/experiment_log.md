@@ -815,3 +815,20 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (UI-only polish change)
 - Conclusion: The control bar now adds the requested motion/feedback without changing capture contracts, and the regression harness/log scan stayed clean. Manual UI smoke validation is still needed for the new visual states.
+
+## E51 - Startup entrance animation for control bar, stats row, and preview host
+- Timestamp (UTC): 2026-03-08T04:50:25.6342000Z
+- Commit Hash: cb2ea8ff2502fa1ec6bfd0bad135c6f53a6d7a45
+- What Changed (single change): Added a staged startup entrance animation in `MainWindow` that reveals the control bar, control buttons, stats row, and preview host in sequence while device initialization continues in parallel behind the scenes.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `rg -n "WARNING|ERROR|FAIL|Exception|exception" temp/logs/ElgatoCapture_Debug.log`
+  4. Launch the app and verify the startup sequence: `ControlBarBorder` fades/slides in first, control buttons/toggles stagger left-to-right, `StatsRow` drops in next, and `PreviewBorder` fades/scales in last while preview/device startup continues normally.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `rg -n "WARNING|ERROR|FAIL|Exception|exception" temp/logs/ElgatoCapture_Debug.log` returned no matches after the verification run.
+- ffprobe Evidence:
+  - N/A (UI-only startup animation change)
+- Conclusion: The window now presents the requested premium entrance choreography without delaying device initialization or changing preview/HDR startup logic. Manual app launch is still required to visually confirm the exact motion timing.

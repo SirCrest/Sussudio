@@ -244,6 +244,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial bool IsAudioPreviewEnabled { get; set; } = true;
 
     [ObservableProperty]
+    public partial double PreviewVolume { get; set; } = 1.0;
+
+    [ObservableProperty]
     public partial string OutputPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
 
     [ObservableProperty]
@@ -671,6 +674,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 IsCustomAudioInputEnabled = settings.IsCustomAudioInputEnabled.Value;
             }
 
+            if (settings.PreviewVolume.HasValue)
+            {
+                PreviewVolume = Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0);
+            }
+
             // Defer device selection until RefreshDevicesAsync populates the device list
             _pendingSavedDeviceId = settings.SelectedDeviceId;
             _pendingSavedAudioDeviceId = settings.SelectedAudioInputDeviceId;
@@ -708,6 +716,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 IsAudioPreviewEnabled = IsAudioPreviewEnabled,
                 IsCustomAudioInputEnabled = IsCustomAudioInputEnabled,
                 SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,
+                PreviewVolume = PreviewVolume,
             };
 
             SettingsService.Save(settings);
@@ -3177,6 +3186,17 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         SaveSettings();
     }
 
+    internal bool SuppressVolumeSave { get; set; }
+
+    partial void OnPreviewVolumeChanged(double value)
+    {
+        _captureService.SetPreviewVolume((float)Math.Clamp(value, 0.0, 1.0));
+        if (!SuppressVolumeSave)
+        {
+            SaveSettings();
+        }
+    }
+
     partial void OnIsAudioPreviewEnabledChanged(bool value)
     {
         if (value && !IsAudioEnabled)
@@ -3190,20 +3210,23 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             ResetAudioMeter();
         }
 
-        // Toggle audio preview if preview is already running
+        // Toggle audio monitoring: mute/unmute WASAPI playback without stopping it
         if (IsPreviewing && IsInitialized)
         {
-            EnqueueUiOperation(async () =>
+            if (value)
             {
-                if (value)
+                // Ensure playback exists (no-op if already running), then unmute
+                EnqueueUiOperation(async () =>
                 {
                     await _sessionCoordinator.StartAudioPreviewAsync();
-                }
-                else
-                {
-                    await _sessionCoordinator.StopAudioPreviewAsync();
-                }
-            }, "audio preview toggle");
+                    _captureService.SetMonitoringMuted(false);
+                }, "audio monitoring unmute");
+            }
+            else
+            {
+                // Just mute — keep WASAPI playback alive for instant re-enable
+                _captureService.SetMonitoringMuted(true);
+            }
         }
 
         SaveSettings();
@@ -3256,7 +3279,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 IsAudioPreviewEnabled = false;
             }
 
-            EnqueueUiOperation(() => _sessionCoordinator.StopAudioPreviewAsync(teardownCapture: true), "audio capture teardown");
+            // Delay teardown so the 300ms WASAPI volume ramp to silence completes first
+            EnqueueUiOperation(async () =>
+            {
+                await Task.Delay(350);
+                await _sessionCoordinator.StopAudioPreviewAsync(teardownCapture: true);
+            }, "audio capture teardown");
 
             ResetAudioMeter();
         }

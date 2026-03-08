@@ -99,6 +99,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const int PreviewFadeInFrameThreshold = 3;
     private bool _isWindowClosing;
     private bool _toggleLabelsVisible;
+    private bool _entranceAnimationPlayed;
+    private double _savedPreviewVolume;
+    private bool _isVolumeFadingIn;
     private bool _isSettingsShelfAnimating;
     private bool _captureSettingsNarrow;
     private const double ControlBarLabelThreshold = 900.0;
@@ -106,12 +109,17 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const int MinWindowHeight = 450;
     private WndProcDelegate? _minSizeWndProc;
     private IntPtr _originalWndProc;
+    private IntPtr _hwnd;
     private double _audioPeakHoldLevel;
     private long _audioPeakHoldTimestamp;
     private double _audioRangeMin = 1.0;
     private double _audioRangeMax;
     private long _audioRangeResetTimestamp;
     private double _audioMeterDisplayLevel;
+    private double _audioMeterTargetLevel;
+    private LinearGradientBrush? _audioMeterColorBrush;
+    private LinearGradientBrush? _audioMeterGreyBrush;
+    private DispatcherTimer? _audioMeterAnimationTimer;
 
     private const long AudioPeakHoldDurationMs = 1500;
     private const double AudioPeakHoldDecayPerSecond = 0.8;
@@ -1215,17 +1223,23 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
 
         // Set window handle for folder picker
-        var hwnd = WindowNative.GetWindowHandle(this);
-        ViewModel.SetWindowHandle(hwnd);
+        _hwnd = WindowNative.GetWindowHandle(this);
+        ViewModel.SetWindowHandle(_hwnd);
+
+        // Cloak the window to prevent white flash before XAML renders
+        int cloakTrue = 1;
+        DwmSetWindowAttribute(_hwnd, DWMWA_CLOAK, ref cloakTrue, sizeof(int));
+        int darkMode = 1;
+        DwmSetWindowAttribute(_hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ref darkMode, sizeof(int));
 
         // Enforce minimum window size via WM_GETMINMAXINFO
         _minSizeWndProc = MinSizeWndProc;
-        _originalWndProc = GetWindowLongPtr(hwnd, GWLP_WNDPROC);
-        SetWindowLongPtr(hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_minSizeWndProc));
+        _originalWndProc = GetWindowLongPtr(_hwnd, GWLP_WNDPROC);
+        SetWindowLongPtr(_hwnd, GWLP_WNDPROC, Marshal.GetFunctionPointerForDelegate(_minSizeWndProc));
 
         // Set initial window size and constraints
         var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(
-            Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd));
+            Microsoft.UI.Win32Interop.GetWindowIdFromWindow(_hwnd));
 
         // Ensure window is not maximized
         if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
@@ -1255,6 +1269,28 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         SetupBindings();
         SetupButtonHoverAnimations();
 
+        // Entrance animation: hide everything initially
+        ControlBarBorder.Opacity = 0;
+        ControlBarBorder.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 1.0);
+        ControlBarBorder.RenderTransform = new TranslateTransform { Y = 16 };
+        StatsRow.Opacity = 0;
+        StatsRow.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0);
+        StatsRow.RenderTransform = new TranslateTransform { Y = -8 };
+        PreviewBorder.Opacity = 0;
+        PreviewBorderScale.ScaleX = 0.97;
+        PreviewBorderScale.ScaleY = 0.97;
+
+        var entranceButtons = GetEntranceButtons();
+        foreach (var button in entranceButtons)
+        {
+            button.Opacity = 0;
+            if (button.RenderTransform is ScaleTransform transform)
+            {
+                transform.ScaleX = 0.85;
+                transform.ScaleY = 0.85;
+            }
+        }
+
         // Shadow for control bar depth effect
         var shadow = new Microsoft.UI.Xaml.Media.ThemeShadow();
         shadow.Receivers.Add(SettingsOverlayPanel);
@@ -1276,6 +1312,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void SetupBindings()
     {
+        InitializeAudioMeterBrushes();
+
         // Bind all collections to ComboBoxes
         DeviceComboBox.ItemsSource = ViewModel.Devices;
         AudioInputComboBox.ItemsSource = ViewModel.AudioInputDevices;
@@ -1393,6 +1431,19 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioRecordToggle.IsChecked = ViewModel.IsAudioEnabled;
         AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
         AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled;
+        // Save the user's preferred volume, start at 0 for fade-in
+        _savedPreviewVolume = ViewModel.PreviewVolume;
+        _isVolumeFadingIn = true;
+        ViewModel.SuppressVolumeSave = true;
+        ViewModel.PreviewVolume = 0;
+        ViewModel.SuppressVolumeSave = false;
+        PreviewVolumeSlider.Value = 0;
+        PreviewVolumeLabel.Text = "0%";
+        PreviewVolumeSlider.ValueChanged += (s, e) =>
+        {
+            ViewModel.PreviewVolume = e.NewValue / 100.0;
+            PreviewVolumeLabel.Text = $"{(int)e.NewValue}%";
+        };
         CustomAudioToggle.IsOn = ViewModel.IsCustomAudioInputEnabled;
         CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
         ShowAllCaptureOptionsToggle.IsOn = ViewModel.ShowAllCaptureOptions;
@@ -1414,7 +1465,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
         TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
         ResetAudioMeterVisuals();
-        UpdateAudioMeterLevel(ViewModel.AudioPeak);
+        _audioMeterTargetLevel = Math.Clamp(ViewModel.AudioPeak, 0.0, 1.0);
         AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
         RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing;
         RefreshHdrHintText();
@@ -1527,7 +1578,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         StatsToggle.Unchecked += StatsToggle_Unchecked;
         CustomAudioToggle.Toggled += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsOn;
         ShowAllCaptureOptionsToggle.Toggled += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsOn;
-        AudioMeterTrack.SizeChanged += (s, e) => UpdateAudioMeterLevel(ViewModel.AudioPeak);
+        AudioMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
         ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
         CaptureSettingsGrid.SizeChanged += CaptureSettingsGrid_SizeChanged;
     }
@@ -1588,6 +1639,23 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 }
             };
         }
+    }
+
+    private FrameworkElement[] GetEntranceButtons()
+    {
+        return new FrameworkElement[]
+        {
+            SettingsToggleButton,
+            OpenRecordingsButton,
+            ScreenshotButton,
+            RecordButton,
+            PreviewButton,
+            HdrToggle,
+            AudioRecordToggle,
+            TrueHdrPreviewToggle,
+            AudioPreviewToggle,
+            StatsToggle
+        };
     }
 
     private void UpdateToggleLabelVisibility(double controlBarWidth)
@@ -1779,15 +1847,28 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void MainWindow_Loaded(object sender, RoutedEventArgs e)
     {
-        // Unsubscribe immediately - we only want this to run once
         ((FrameworkElement)this.Content).Loaded -= MainWindow_Loaded;
 
+        // Uncloak the window — XAML content is now rendered (splash overlay covers everything)
+        int cloakFalse = 0;
+        DwmSetWindowAttribute(_hwnd, DWMWA_CLOAK, ref cloakFalse, sizeof(int));
+
+        // Start device init immediately — runs behind the splash
         _ = RunUiEventHandlerAsync(async () =>
         {
             Logger.Log("=== MainWindow_Loaded - Starting device enumeration ===");
             try
             {
                 await ViewModel.InitializeAsync();
+                // LoadSettings just pushed saved volume to CaptureService — capture it, reset to 0
+                // so WASAPI playback starts silent. The entrance animation will ramp the slider.
+                if (_isVolumeFadingIn)
+                {
+                    _savedPreviewVolume = ViewModel.PreviewVolume;
+                    ViewModel.SuppressVolumeSave = true;
+                    ViewModel.PreviewVolume = 0;
+                    ViewModel.SuppressVolumeSave = false;
+                }
                 await ViewModel.RefreshDevicesAsync();
             }
             finally
@@ -1795,6 +1876,221 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 StartAutomationServices();
             }
         }, nameof(MainWindow_Loaded));
+
+        // Start the splash → entrance sequence
+        PlaySplashAndEntrance();
+    }
+
+    private void PlaySplashAndEntrance()
+    {
+        if (_entranceAnimationPlayed) return;
+        _entranceAnimationPlayed = true;
+
+        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var easingIn = new CubicEase { EasingMode = EasingMode.EaseIn };
+
+        // Phase 1: Splash holds for 600ms, then scales down + fades out over 400ms
+        var splashFade = new DoubleAnimation
+        {
+            From = 1, To = 0,
+            BeginTime = TimeSpan.FromMilliseconds(600),
+            Duration = TimeSpan.FromMilliseconds(400),
+            EasingFunction = easingIn
+        };
+        Storyboard.SetTarget(splashFade, SplashOverlay);
+        Storyboard.SetTargetProperty(splashFade, "Opacity");
+
+        var splashScaleX = new DoubleAnimation
+        {
+            From = 1.0, To = 0.95,
+            BeginTime = TimeSpan.FromMilliseconds(600),
+            Duration = TimeSpan.FromMilliseconds(400),
+            EasingFunction = easingIn,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(splashScaleX, SplashScale);
+        Storyboard.SetTargetProperty(splashScaleX, "ScaleX");
+
+        var splashScaleY = new DoubleAnimation
+        {
+            From = 1.0, To = 0.95,
+            BeginTime = TimeSpan.FromMilliseconds(600),
+            Duration = TimeSpan.FromMilliseconds(400),
+            EasingFunction = easingIn,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(splashScaleY, SplashScale);
+        Storyboard.SetTargetProperty(splashScaleY, "ScaleY");
+
+        var splashSb = new Storyboard();
+        splashSb.Children.Add(splashFade);
+        splashSb.Children.Add(splashScaleX);
+        splashSb.Children.Add(splashScaleY);
+        splashSb.Completed += (_, _) =>
+        {
+            SplashOverlay.Visibility = Visibility.Collapsed;
+            PlayEntranceAnimation();
+        };
+        splashSb.Begin();
+    }
+
+    private void PlayEntranceAnimation()
+    {
+        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var storyboard = new Storyboard();
+
+        // 1. Control bar: slide up 20px + fade in (0ms, 350ms)
+        var barFade = new DoubleAnimation
+        {
+            From = 0, To = 1,
+            Duration = TimeSpan.FromMilliseconds(350),
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(barFade, ControlBarBorder);
+        Storyboard.SetTargetProperty(barFade, "Opacity");
+        storyboard.Children.Add(barFade);
+
+        var barSlide = new DoubleAnimation
+        {
+            From = 20, To = 0,
+            Duration = TimeSpan.FromMilliseconds(350),
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(barSlide, (TranslateTransform)ControlBarBorder.RenderTransform);
+        Storyboard.SetTargetProperty(barSlide, "Y");
+        storyboard.Children.Add(barSlide);
+
+        // 2. Buttons stagger: 50ms offset, 200ms each (starting at 150ms)
+        var buttons = GetEntranceButtons();
+        for (var i = 0; i < buttons.Length; i++)
+        {
+            var button = buttons[i];
+            var beginTime = TimeSpan.FromMilliseconds(150 + (i * 50));
+            var duration = TimeSpan.FromMilliseconds(200);
+
+            var buttonFade = new DoubleAnimation
+            {
+                From = 0, To = 1,
+                BeginTime = beginTime, Duration = duration,
+                EasingFunction = easing
+            };
+            Storyboard.SetTarget(buttonFade, button);
+            Storyboard.SetTargetProperty(buttonFade, "Opacity");
+            storyboard.Children.Add(buttonFade);
+
+            if (button.RenderTransform is ScaleTransform transform)
+            {
+                var scaleX = new DoubleAnimation
+                {
+                    From = 0.85, To = 1.0,
+                    BeginTime = beginTime, Duration = duration,
+                    EasingFunction = easing, EnableDependentAnimation = true
+                };
+                Storyboard.SetTarget(scaleX, transform);
+                Storyboard.SetTargetProperty(scaleX, "ScaleX");
+                storyboard.Children.Add(scaleX);
+
+                var scaleY = new DoubleAnimation
+                {
+                    From = 0.85, To = 1.0,
+                    BeginTime = beginTime, Duration = duration,
+                    EasingFunction = easing, EnableDependentAnimation = true
+                };
+                Storyboard.SetTarget(scaleY, transform);
+                Storyboard.SetTargetProperty(scaleY, "ScaleY");
+                storyboard.Children.Add(scaleY);
+            }
+        }
+
+        // 3. Stats row: slide down 10px + fade in (600ms begin, 300ms duration)
+        var statsFade = new DoubleAnimation
+        {
+            From = 0, To = 1,
+            BeginTime = TimeSpan.FromMilliseconds(600),
+            Duration = TimeSpan.FromMilliseconds(300),
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(statsFade, StatsRow);
+        Storyboard.SetTargetProperty(statsFade, "Opacity");
+        storyboard.Children.Add(statsFade);
+
+        var statsSlide = new DoubleAnimation
+        {
+            From = -10, To = 0,
+            BeginTime = TimeSpan.FromMilliseconds(600),
+            Duration = TimeSpan.FromMilliseconds(300),
+            EasingFunction = easing, EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(statsSlide, (TranslateTransform)StatsRow.RenderTransform);
+        Storyboard.SetTargetProperty(statsSlide, "Y");
+        storyboard.Children.Add(statsSlide);
+
+        // 4. Preview area: scale 0.97→1.0 + fade in (900ms begin, 400ms duration)
+        var previewFade = new DoubleAnimation
+        {
+            From = 0, To = 1,
+            BeginTime = TimeSpan.FromMilliseconds(900),
+            Duration = TimeSpan.FromMilliseconds(400),
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(previewFade, PreviewBorder);
+        Storyboard.SetTargetProperty(previewFade, "Opacity");
+        storyboard.Children.Add(previewFade);
+
+        var previewScaleX = new DoubleAnimation
+        {
+            From = 0.97, To = 1.0,
+            BeginTime = TimeSpan.FromMilliseconds(900),
+            Duration = TimeSpan.FromMilliseconds(400),
+            EasingFunction = easing, EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(previewScaleX, PreviewBorderScale);
+        Storyboard.SetTargetProperty(previewScaleX, "ScaleX");
+        storyboard.Children.Add(previewScaleX);
+
+        var previewScaleY = new DoubleAnimation
+        {
+            From = 0.97, To = 1.0,
+            BeginTime = TimeSpan.FromMilliseconds(900),
+            Duration = TimeSpan.FromMilliseconds(400),
+            EasingFunction = easing, EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(previewScaleY, PreviewBorderScale);
+        Storyboard.SetTargetProperty(previewScaleY, "ScaleY");
+        storyboard.Children.Add(previewScaleY);
+
+        // 5. Volume slider: fade in audio after everything else has settled (1500ms begin, 800ms ramp)
+        if (_savedPreviewVolume > 0 || ViewModel.PreviewVolume > 0)
+        {
+            var volumeTarget = ViewModel.PreviewVolume > 0 ? ViewModel.PreviewVolume : _savedPreviewVolume;
+            _savedPreviewVolume = volumeTarget;
+            var volumeAnim = new DoubleAnimation
+            {
+                From = 0,
+                To = volumeTarget * 100,
+                BeginTime = TimeSpan.FromMilliseconds(1500),
+                Duration = TimeSpan.FromMilliseconds(800),
+                EasingFunction = easing,
+                EnableDependentAnimation = true
+            };
+            Storyboard.SetTarget(volumeAnim, PreviewVolumeSlider);
+            Storyboard.SetTargetProperty(volumeAnim, "Value");
+            storyboard.Children.Add(volumeAnim);
+            ViewModel.SuppressVolumeSave = true;
+        }
+
+        storyboard.Completed += (_, _) =>
+        {
+            _isVolumeFadingIn = false;
+            ViewModel.SuppressVolumeSave = false;
+            if (_savedPreviewVolume > 0)
+            {
+                ViewModel.PreviewVolume = _savedPreviewVolume;
+            }
+        };
+
+        storyboard.Begin();
     }
 
     private void StartAutomationServices()
@@ -2507,7 +2803,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 break;
 
             case nameof(MainViewModel.AudioPeak):
-                UpdateAudioMeterLevel(ViewModel.AudioPeak);
+                _audioMeterTargetLevel = Math.Clamp(ViewModel.AudioPeak, 0.0, 1.0);
                 break;
 
             case nameof(MainViewModel.AudioClipping):
@@ -2668,10 +2964,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 {
                     AudioPreviewToggle.IsChecked = false;
                 }
-                if (!ViewModel.IsAudioEnabled)
-                {
-                    ResetAudioMeterVisuals();
-                }
+                AnimateAudioMeterDisabled(!ViewModel.IsAudioEnabled);
                 break;
 
             case nameof(MainViewModel.IsAudioPreviewEnabled):
@@ -2679,9 +2972,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 {
                     AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
                 }
-                if (!ViewModel.IsAudioPreviewEnabled && !ViewModel.IsRecording)
+                SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewEnabled);
+                break;
+
+            case nameof(MainViewModel.PreviewVolume):
+                if (!_isVolumeFadingIn)
                 {
-                    ResetAudioMeterVisuals();
+                    var volumePct = ViewModel.PreviewVolume * 100;
+                    if (PreviewVolumeSlider.Value != volumePct)
+                    {
+                        PreviewVolumeSlider.Value = volumePct;
+                        PreviewVolumeLabel.Text = $"{(int)volumePct}%";
+                    }
                 }
                 break;
 
@@ -3142,23 +3444,33 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         return Task.CompletedTask;
     }
 
-    private void UpdateAudioMeterLevel(double level)
+    private void AnimateAudioMeterTick()
     {
-        var clamped = Math.Clamp(level, 0.0, 1.0);
+        var target = _audioMeterTargetLevel;
         var nowMs = Environment.TickCount64;
 
-        if (clamped >= _audioMeterDisplayLevel)
+        // Smoothly interpolate display level toward target
+        if (target >= _audioMeterDisplayLevel)
         {
-            _audioMeterDisplayLevel = clamped;
+            // Attack: fast snap toward peaks
+            _audioMeterDisplayLevel += (target - _audioMeterDisplayLevel) * 0.4;
         }
         else
         {
-            _audioMeterDisplayLevel += (clamped - _audioMeterDisplayLevel) * 0.3;
+            // Decay: smooth falloff
+            _audioMeterDisplayLevel += (target - _audioMeterDisplayLevel) * 0.06;
         }
 
-        if (clamped >= _audioPeakHoldLevel)
+        // Snap to zero when very close to avoid lingering
+        if (_audioMeterDisplayLevel < 0.001)
         {
-            _audioPeakHoldLevel = clamped;
+            _audioMeterDisplayLevel = 0;
+        }
+
+        // Peak hold
+        if (target >= _audioPeakHoldLevel)
+        {
+            _audioPeakHoldLevel = target;
             _audioPeakHoldTimestamp = nowMs;
         }
         else if (nowMs - _audioPeakHoldTimestamp > AudioPeakHoldDurationMs)
@@ -3168,30 +3480,22 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             _audioPeakHoldTimestamp = nowMs - AudioPeakHoldDurationMs;
         }
 
+        // Range tracking
         if (nowMs - _audioRangeResetTimestamp > AudioRangeWindowMs)
         {
-            _audioRangeMin = clamped;
-            _audioRangeMax = clamped;
+            _audioRangeMin = target;
+            _audioRangeMax = target;
             _audioRangeResetTimestamp = nowMs;
         }
         else
         {
-            if (clamped < _audioRangeMin)
-            {
-                _audioRangeMin = clamped;
-            }
-
-            if (clamped > _audioRangeMax)
-            {
-                _audioRangeMax = clamped;
-            }
+            if (target < _audioRangeMin) _audioRangeMin = target;
+            if (target > _audioRangeMax) _audioRangeMax = target;
         }
 
+        // Update visuals
         var trackWidth = AudioMeterTrack.ActualWidth;
-        if (trackWidth <= 0)
-        {
-            return;
-        }
+        if (trackWidth <= 0) return;
 
         var trackHeight = AudioMeterTrack.ActualHeight > 0 ? AudioMeterTrack.ActualHeight : 12;
         AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * _audioMeterDisplayLevel, trackHeight);
@@ -3211,7 +3515,74 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioPeakHoldTranslate.X = 0;
         AudioRangeMinTranslate.X = 0;
         AudioRangeMaxTranslate.X = 0;
-        UpdateAudioMeterLevel(0);
+        _audioMeterTargetLevel = 0;
+        _audioMeterDisplayLevel = 0;
+    }
+
+    private void InitializeAudioMeterBrushes()
+    {
+        _audioMeterAnimationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _audioMeterAnimationTimer.Tick += (_, _) => AnimateAudioMeterTick();
+        _audioMeterAnimationTimer.Start();
+
+        _audioMeterColorBrush = (LinearGradientBrush)AudioMeterFill.Background;
+
+        _audioMeterGreyBrush = new LinearGradientBrush
+        {
+            StartPoint = new Windows.Foundation.Point(0, 0.5),
+            EndPoint = new Windows.Foundation.Point(1, 0.5)
+        };
+        _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 96, 96, 96), Offset = 0 });
+        _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 120, 120, 120), Offset = 0.55 });
+        _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 140, 140, 140), Offset = 0.75 });
+        _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 110, 110, 110), Offset = 0.90 });
+        _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 90, 90, 90), Offset = 1 });
+    }
+
+    private void SetAudioMeterMonitoringState(bool isMonitoring)
+    {
+        if (_audioMeterColorBrush == null) return;
+
+        AudioMeterFill.Background = isMonitoring ? _audioMeterColorBrush : _audioMeterGreyBrush;
+        AudioPeakHoldIndicator.Background = isMonitoring
+            ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255))
+            : new SolidColorBrush(Windows.UI.Color.FromArgb(255, 160, 160, 160));
+        AudioPeakHoldIndicator.Opacity = isMonitoring ? 0.9 : 0.4;
+        AudioRangeMinMarker.Opacity = isMonitoring ? 0.5 : 0.2;
+        AudioRangeMaxMarker.Opacity = isMonitoring ? 0.7 : 0.3;
+    }
+
+    private void AnimateAudioMeterDisabled(bool isDisabled)
+    {
+        var targetOpacity = isDisabled ? 0.0 : 1.0;
+        var duration = TimeSpan.FromMilliseconds(300);
+        var easing = new CubicEase { EasingMode = isDisabled ? EasingMode.EaseIn : EasingMode.EaseOut };
+
+        var storyboard = new Storyboard();
+
+        foreach (var element in new UIElement[] { AudioMeterFill, AudioPeakHoldIndicator, AudioRangeMinMarker, AudioRangeMaxMarker })
+        {
+            var anim = new DoubleAnimation
+            {
+                To = targetOpacity,
+                Duration = new Duration(duration),
+                EasingFunction = easing,
+                EnableDependentAnimation = true
+            };
+            Storyboard.SetTarget(anim, element);
+            Storyboard.SetTargetProperty(anim, "Opacity");
+            storyboard.Children.Add(anim);
+        }
+
+        if (!isDisabled)
+        {
+            storyboard.Completed += (_, _) =>
+            {
+                SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewEnabled);
+            };
+        }
+
+        storyboard.Begin();
     }
 
     private static double TranslateMarker(double trackWidth, double level, double markerWidth)
@@ -3649,6 +4020,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     [DllImport("user32.dll")]
     private static extern uint GetDpiForWindow(IntPtr hwnd);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(IntPtr hwnd, int dwAttribute, ref int pvAttribute, int cbAttribute);
+
+    private const int DWMWA_USE_IMMERSIVE_DARK_MODE = 20;
+    private const int DWMWA_CLOAK = 13;
 
     private IntPtr MinSizeWndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {

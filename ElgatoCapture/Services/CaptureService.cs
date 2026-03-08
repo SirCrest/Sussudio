@@ -30,6 +30,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private IRecordingSink? _recordingSink;
     private WasapiAudioCapture? _wasapiAudioCapture;
     private WasapiAudioPlayback? _wasapiAudioPlayback;
+    private float _previewVolume = 1.0f;
+    private bool _isMonitoringMuted;
     private bool _wasapiAudioCaptureFaulted;
     private string? _wasapiAudioCaptureFaultMessage;
     private UnifiedVideoCapture? _unifiedVideoCapture;
@@ -82,6 +84,21 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public bool IsVideoPreviewActive => _isVideoPreviewActive;
     public bool IsAudioPreviewActive => _isAudioPreviewActive;
     public CaptureSessionState SessionState => _sessionState;
+
+    public void SetPreviewVolume(float volume)
+    {
+        _previewVolume = Math.Clamp(volume, 0f, 1f);
+        if (!_isMonitoringMuted)
+        {
+            _wasapiAudioPlayback?.SetVolume(_previewVolume);
+        }
+    }
+
+    public void SetMonitoringMuted(bool muted)
+    {
+        _isMonitoringMuted = muted;
+        _wasapiAudioPlayback?.SetVolume(muted ? 0f : _previewVolume);
+    }
 
     public int GetNegotiatedVideoWidth() => _unifiedVideoCapture?.Width ?? 0;
     public int GetNegotiatedVideoHeight() => _unifiedVideoCapture?.Height ?? 0;
@@ -224,9 +241,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             playback = new WasapiAudioPlayback();
             await playback.InitializeAsync(cancellationToken).ConfigureAwait(false);
+            playback.SetVolume(0);
             playback.Start();
             _wasapiAudioPlayback = playback;
             Logger.Log("WASAPI audio playback started.");
+            playback.SetVolume(_isMonitoringMuted ? 0f : _previewVolume);
         }
 
         capture.SetPlayback(playback);

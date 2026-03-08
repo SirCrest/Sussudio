@@ -19,6 +19,7 @@ public class UserSettings
     public bool? IsAudioPreviewEnabled { get; set; }
     public bool? IsCustomAudioInputEnabled { get; set; }
     public string? SelectedAudioInputDeviceId { get; set; }
+    public double? PreviewVolume { get; set; }
 }
 
 [JsonSerializable(typeof(UserSettings))]
