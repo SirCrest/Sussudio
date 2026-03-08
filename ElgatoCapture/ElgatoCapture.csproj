@@ -50,6 +50,11 @@
     <Content Include="Assets\AppIcon.ico" />
   </ItemGroup>
 
+  <!-- FFmpeg shared libraries (downloaded separately, gitignored) -->
+  <ItemGroup>
+    <Content Include="ffmpeg\*.dll" Condition="Exists('ffmpeg')" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+  </ItemGroup>
+
   <ItemGroup>
     <Manifest Include="$(ApplicationManifest)" />
   </ItemGroup>
@@ -64,6 +69,7 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <PackageReference Include="FFmpeg.AutoGen" Version="8.0.0" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.7463" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.260101001" />
     <PackageReference Include="System.Management" Version="8.0.0" />

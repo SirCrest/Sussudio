@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices.WindowsRuntime;
+using ElgatoCapture.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -43,6 +44,7 @@ namespace ElgatoCapture
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
 
             Logger.LogSystemInfo();
+            LibAvEncoder.InitializeFFmpeg();
         }
 
         private static bool IsRecoverableUnhandled(Exception ex)

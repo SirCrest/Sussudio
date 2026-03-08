@@ -55,3 +55,4 @@ artifacts/
 # Repo-local temp dumping ground (keep folder, ignore contents)
 temp/*
 !temp/.gitkeep
+ElgatoCapture/ffmpeg/*.dll
