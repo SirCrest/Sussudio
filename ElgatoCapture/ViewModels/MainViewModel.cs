@@ -3240,17 +3240,23 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         Logger.Log($"Audio capture enabled: {value}");
 
-        if (!value)
+        if (value)
+        {
+            // Re-enable audio preview and start it if we're already previewing
+            IsAudioPreviewEnabled = true;
+            if (IsPreviewing && IsInitialized)
+            {
+                EnqueueUiOperation(() => _sessionCoordinator.StartAudioPreviewAsync(), "audio preview restart");
+            }
+        }
+        else
         {
             if (IsAudioPreviewEnabled)
             {
                 IsAudioPreviewEnabled = false;
             }
 
-            if (_captureService.IsAudioPreviewActive)
-            {
-                EnqueueUiOperation(() => _sessionCoordinator.StopAudioPreviewAsync(), "audio preview stop");
-            }
+            EnqueueUiOperation(() => _sessionCoordinator.StopAudioPreviewAsync(teardownCapture: true), "audio capture teardown");
 
             ResetAudioMeter();
         }

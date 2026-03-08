@@ -1344,6 +1344,24 @@ public class CaptureService : IDisposable, IAsyncDisposable
             transitionToken.ThrowIfCancellationRequested();
             _isAudioPreviewActive = true;
 
+            // Create WASAPI capture if it wasn't started with the preview (audio was disabled at start)
+            if (_wasapiAudioCapture == null && _currentDevice != null)
+            {
+                var audioId = _audioDeviceId ?? _currentDevice.AudioDeviceId;
+                if (!string.IsNullOrEmpty(audioId))
+                {
+                    Logger.Log($"Late-starting WASAPI audio capture for device {audioId}");
+                    var wasapiCapture = new WasapiAudioCapture();
+                    await wasapiCapture.InitializeAsync(audioId, transitionToken).ConfigureAwait(false);
+                    wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
+                    wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    wasapiCapture.Start();
+                    _wasapiAudioCapture = wasapiCapture;
+                    Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
+                    Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
+                }
+            }
+
             if (_wasapiAudioCapture != null)
             {
                 await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
@@ -1352,15 +1370,27 @@ public class CaptureService : IDisposable, IAsyncDisposable
             StatusChanged?.Invoke(this, "Audio preview started");
         }, cancellationToken);
 
-    public Task StopAudioPreviewAsync(CancellationToken cancellationToken = default)
-        => RunTransitionAsync(CaptureSessionState.Ready, transitionToken =>
+    public Task StopAudioPreviewAsync(bool teardownCapture = false, CancellationToken cancellationToken = default)
+        => RunTransitionAsync(CaptureSessionState.Ready, async transitionToken =>
         {
             transitionToken.ThrowIfCancellationRequested();
             _isAudioPreviewActive = false;
             StopWasapiPlayback();
+
+            if (teardownCapture && !_isRecording)
+            {
+                var capture = _wasapiAudioCapture;
+                _wasapiAudioCapture = null;
+                DetachWasapiAudioCapture(capture);
+                if (capture != null)
+                {
+                    Logger.Log("Tearing down WASAPI audio capture (audio disabled)");
+                    await capture.DisposeAsync().ConfigureAwait(false);
+                }
+            }
+
             AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
             StatusChanged?.Invoke(this, "Audio preview stopped");
-            return Task.CompletedTask;
         }, cancellationToken);
 
     public Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default)

@@ -49,7 +49,7 @@ public interface ICaptureSessionCoordinator : IDisposable, IAsyncDisposable
     Task StartRecordingAsync(CaptureSettings settings, CancellationToken cancellationToken = default);
     Task StopRecordingAsync(CancellationToken cancellationToken = default);
     Task StartAudioPreviewAsync(CancellationToken cancellationToken = default);
-    Task StopAudioPreviewAsync(CancellationToken cancellationToken = default);
+    Task StopAudioPreviewAsync(bool teardownCapture = false, CancellationToken cancellationToken = default);
     Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default);
     Task CleanupAsync(CancellationToken cancellationToken = default);
 }
@@ -131,8 +131,8 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
     public Task StartAudioPreviewAsync(CancellationToken cancellationToken = default)
         => EnqueueAsync(CaptureCommandKind.StartAudioPreview, ct => _captureService.StartAudioPreviewAsync(ct), cancellationToken);
 
-    public Task StopAudioPreviewAsync(CancellationToken cancellationToken = default)
-        => EnqueueAsync(CaptureCommandKind.StopAudioPreview, ct => _captureService.StopAudioPreviewAsync(ct), cancellationToken);
+    public Task StopAudioPreviewAsync(bool teardownCapture = false, CancellationToken cancellationToken = default)
+        => EnqueueAsync(CaptureCommandKind.StopAudioPreview, ct => _captureService.StopAudioPreviewAsync(teardownCapture, ct), cancellationToken);
 
     public Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default)
         => EnqueueAsync(
