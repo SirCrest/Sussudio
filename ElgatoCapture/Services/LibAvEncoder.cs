@@ -8,6 +8,10 @@ using FFmpeg.AutoGen;
 
 namespace ElgatoCapture.Services;
 
+/// <summary>
+/// In-process libav encoder for MP4 recording.
+/// This type is not thread-safe; all libav calls must be serialized onto one thread.
+/// </summary>
 internal sealed unsafe class LibAvEncoder : IDisposable
 {
     private static readonly Regex MasterDisplayMetadataRegex = new(
@@ -18,21 +22,32 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
     private AVFormatContext* _formatCtx;
     private AVCodecContext* _videoCodecCtx;
+    private AVCodecContext* _audioCodecCtx;
     private AVStream* _videoStream;
+    private AVStream* _audioStream;
     private AVFrame* _videoFrame;
+    private AVFrame* _audioFrame;
     private AVPacket* _packet;
     private AVBSFContext* _bsfCtx;
+    private SwrContext* _swrCtx;
     private LibAvEncoderOptions? _options;
     private long _nextVideoPts;
+    private long _nextAudioPts;
     private long _encodedFrameCount;
     private long _droppedFrameCount;
+    private long _audioSamplesReceived;
+    private byte* _resampleBuffer;
+    private int _audioFrameSize;
+    private int _audioAccumulatorBytes;
     private bool _isOpen;
     private bool _headerWritten;
     private bool _flushSent;
 
     public long EncodedFrameCount => _encodedFrameCount;
     public long DroppedFrameCount => _droppedFrameCount;
+    public long AudioSamplesReceived => _audioSamplesReceived;
     public bool IsEncoding => _isOpen;
+    public bool AudioEnabled => _options?.AudioEnabled == true && _audioCodecCtx != null && _audioStream != null;
     public string VideoCodecName => _options?.CodecName ?? string.Empty;
     public string OutputPath => _options?.OutputPath ?? string.Empty;
 
@@ -121,6 +136,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 "avcodec_parameters_from_context");
 
             InitializeHdrBitstreamFilterIfNeeded(options);
+            InitializeAudioIfNeeded(options);
 
             ThrowIfError(ffmpeg.avio_open2(&_formatCtx->pb, options.OutputPath, ffmpeg.AVIO_FLAG_WRITE, null, null), "avio_open2");
 
@@ -154,15 +170,19 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             }
 
             _nextVideoPts = 0;
+            _nextAudioPts = 0;
             _encodedFrameCount = 0;
             _droppedFrameCount = 0;
+            _audioSamplesReceived = 0;
+            _audioAccumulatorBytes = 0;
             _flushSent = false;
             _isOpen = true;
 
             Logger.Log(
                 $"LIBAV_ENCODER_OPEN codec='{options.CodecName}' output='{options.OutputPath}' " +
                 $"width={options.Width} height={options.Height} fps={options.FrameRate.ToString("0.###", CultureInfo.InvariantCulture)} " +
-                $"bitrate={options.BitRate} pix_fmt='{(options.IsP010 ? "p010le" : "nv12")}' hdr={options.HdrEnabled}");
+                $"bitrate={options.BitRate} pix_fmt='{(options.IsP010 ? "p010le" : "nv12")}' hdr={options.HdrEnabled} " +
+                $"audio={options.AudioEnabled} audio_rate={options.AudioSampleRate} audio_channels={options.AudioChannels} audio_bitrate={options.AudioBitRate}");
         }
         catch
         {
@@ -230,9 +250,64 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
     }
 
+    public void SendAudioSamples(ReadOnlySpan<byte> f32leSamples)
+    {
+        EnsureOpen();
+
+        if (_audioCodecCtx == null || _audioStream == null || _audioFrame == null || _swrCtx == null || f32leSamples.IsEmpty)
+        {
+            return;
+        }
+
+        var options = _options ?? throw new InvalidOperationException("Encoder options are not initialized.");
+        var inputBlockAlign = checked(options.AudioChannels * sizeof(float));
+        if (f32leSamples.Length % inputBlockAlign != 0)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=SendAudioSamples msg=Audio payload length is not aligned actual={f32leSamples.Length} block_align={inputBlockAlign}");
+        }
+
+        _audioSamplesReceived += f32leSamples.Length / inputBlockAlign;
+
+        var remaining = f32leSamples;
+        var frameBytes = checked(_audioFrameSize * inputBlockAlign);
+
+        if (_audioAccumulatorBytes > 0)
+        {
+            var bytesNeeded = frameBytes - _audioAccumulatorBytes;
+            var copyBytes = Math.Min(bytesNeeded, remaining.Length);
+            CopyToAudioAccumulator(remaining[..copyBytes], _audioAccumulatorBytes);
+            _audioAccumulatorBytes += copyBytes;
+            remaining = remaining[copyBytes..];
+
+            if (_audioAccumulatorBytes == frameBytes)
+            {
+                EncodeAudioChunk(_resampleBuffer, _audioFrameSize);
+                _audioAccumulatorBytes = 0;
+            }
+        }
+
+        while (remaining.Length >= frameBytes)
+        {
+            var frameSlice = remaining[..frameBytes];
+            fixed (byte* inputPtr = frameSlice)
+            {
+                EncodeAudioChunk(inputPtr, _audioFrameSize);
+            }
+
+            remaining = remaining[frameBytes..];
+        }
+
+        if (!remaining.IsEmpty)
+        {
+            CopyToAudioAccumulator(remaining, 0);
+            _audioAccumulatorBytes = remaining.Length;
+        }
+    }
+
     public void FlushAndClose()
     {
-        if (!_isOpen && _formatCtx == null && _videoCodecCtx == null)
+        if (!_isOpen && _formatCtx == null && _videoCodecCtx == null && _audioCodecCtx == null)
         {
             return;
         }
@@ -249,6 +324,19 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 }
 
                 DrainEncoderPackets();
+            }
+
+            if (_audioCodecCtx != null)
+            {
+                FlushPendingAudioSamples();
+
+                var flushResult = ffmpeg.avcodec_send_frame(_audioCodecCtx, null);
+                if (flushResult != ffmpeg.AVERROR_EOF)
+                {
+                    ThrowIfError(flushResult, "avcodec_send_frame(audio_flush)");
+                }
+
+                DrainAudioEncoderPackets();
             }
         }
         finally
@@ -342,6 +430,58 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         Logger.Log($"LIBAV_ENCODER_BSF_INIT codec='{options.CodecName}' filter='{filterName}'");
     }
 
+    private void InitializeAudioIfNeeded(LibAvEncoderOptions options)
+    {
+        if (!options.AudioEnabled)
+        {
+            return;
+        }
+
+        var codec = ffmpeg.avcodec_find_encoder(AVCodecID.AV_CODEC_ID_AAC);
+        if (codec == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avcodec_find_encoder(audio) codec='aac' msg=Encoder not available.");
+        }
+
+        _audioStream = ffmpeg.avformat_new_stream(_formatCtx, codec);
+        if (_audioStream == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avformat_new_stream(audio) msg=Stream allocation returned null.");
+        }
+
+        _audioCodecCtx = ffmpeg.avcodec_alloc_context3(codec);
+        if (_audioCodecCtx == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avcodec_alloc_context3(audio) msg=Codec context allocation returned null.");
+        }
+
+        ConfigureAudioCodecContext(_audioCodecCtx, options, codec);
+
+        if ((_formatCtx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+        {
+            _audioCodecCtx->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+        }
+
+        ThrowIfError(ffmpeg.avcodec_open2(_audioCodecCtx, codec, null), "avcodec_open2(audio)");
+
+        _audioFrameSize = _audioCodecCtx->frame_size;
+        if (_audioFrameSize <= 0)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=InitializeAudioIfNeeded msg=Unexpected AAC frame size value={_audioFrameSize}");
+        }
+
+        _audioStream->time_base = _audioCodecCtx->time_base;
+
+        ThrowIfError(
+            ffmpeg.avcodec_parameters_from_context(_audioStream->codecpar, _audioCodecCtx),
+            "avcodec_parameters_from_context(audio)");
+
+        InitializeAudioResampler(options);
+        AllocateAudioFrame();
+        AllocateAudioAccumulator(options);
+    }
+
     private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)
     {
         var attached = false;
@@ -372,6 +512,88 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
 
         return attached;
+    }
+
+    private void ConfigureAudioCodecContext(AVCodecContext* codecContext, LibAvEncoderOptions options, AVCodec* codec)
+    {
+        codecContext->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
+        codecContext->sample_rate = options.AudioSampleRate;
+        codecContext->sample_fmt = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+        codecContext->bit_rate = options.AudioBitRate;
+        codecContext->time_base = new AVRational { num = 1, den = options.AudioSampleRate };
+        ffmpeg.av_channel_layout_default(&codecContext->ch_layout, options.AudioChannels);
+
+        if (!IsSampleFormatSupported(codec, codecContext->sample_fmt))
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=ConfigureAudioCodecContext msg=Requested sample format '{codecContext->sample_fmt}' is not supported by AAC encoder.");
+        }
+    }
+
+    private void InitializeAudioResampler(LibAvEncoderOptions options)
+    {
+        AVChannelLayout inputLayout = default;
+        ffmpeg.av_channel_layout_default(&inputLayout, options.AudioChannels);
+        var outputLayout = _audioCodecCtx->ch_layout;
+        var swrCtx = _swrCtx;
+
+        try
+        {
+            _swrCtx = swrCtx;
+            var result = ffmpeg.swr_alloc_set_opts2(
+                &swrCtx,
+                &outputLayout,
+                _audioCodecCtx->sample_fmt,
+                _audioCodecCtx->sample_rate,
+                &inputLayout,
+                AVSampleFormat.AV_SAMPLE_FMT_FLT,
+                options.AudioSampleRate,
+                0,
+                null);
+            _swrCtx = swrCtx;
+            ThrowIfError(result, "swr_alloc_set_opts2");
+            if (_swrCtx == null)
+            {
+                throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=swr_alloc_set_opts2 msg=Resampler allocation returned null.");
+            }
+
+            ThrowIfError(ffmpeg.swr_init(_swrCtx), "swr_init");
+        }
+        finally
+        {
+            ffmpeg.av_channel_layout_uninit(&inputLayout);
+        }
+    }
+
+    private void AllocateAudioFrame()
+    {
+        _audioFrame = ffmpeg.av_frame_alloc();
+        if (_audioFrame == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_frame_alloc(audio) msg=Frame allocation returned null.");
+        }
+
+        _audioFrame->format = (int)_audioCodecCtx->sample_fmt;
+        _audioFrame->nb_samples = _audioFrameSize;
+        _audioFrame->sample_rate = _audioCodecCtx->sample_rate;
+        ThrowIfError(ffmpeg.av_channel_layout_copy(&_audioFrame->ch_layout, &_audioCodecCtx->ch_layout), "av_channel_layout_copy(audio_frame)");
+        ThrowIfError(ffmpeg.av_frame_get_buffer(_audioFrame, 0), "av_frame_get_buffer(audio)");
+
+        if (_audioFrame->extended_data == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_frame_get_buffer(audio) msg=extended_data was null.");
+        }
+    }
+
+    private void AllocateAudioAccumulator(LibAvEncoderOptions options)
+    {
+        var accumulatorBytes = checked(_audioFrameSize * options.AudioChannels * sizeof(float));
+        _resampleBuffer = (byte*)ffmpeg.av_malloc((ulong)accumulatorBytes);
+        if (_resampleBuffer == null)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=av_malloc(audio_accumulator) msg=Allocation returned null size={accumulatorBytes}.");
+        }
     }
 
     private static void ApplyMasterDisplayMetadata(AVMasteringDisplayMetadata* metadata, string masterDisplayMetadata)
@@ -441,6 +663,29 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
     }
 
+    private void DrainAudioEncoderPackets()
+    {
+        while (true)
+        {
+            var receiveResult = ffmpeg.avcodec_receive_packet(_audioCodecCtx, _packet);
+            if (receiveResult == ffmpeg.AVERROR(ffmpeg.EAGAIN) || receiveResult == ffmpeg.AVERROR_EOF)
+            {
+                return;
+            }
+
+            ThrowIfError(receiveResult, "avcodec_receive_packet(audio)");
+
+            try
+            {
+                WriteAudioPacket(_packet);
+            }
+            finally
+            {
+                ffmpeg.av_packet_unref(_packet);
+            }
+        }
+    }
+
     private void WriteFilteredPackets()
     {
         var sendResult = ffmpeg.av_bsf_send_packet(_bsfCtx, _packet);
@@ -487,6 +732,13 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         ThrowIfError(ffmpeg.av_interleaved_write_frame(_formatCtx, packet), "av_interleaved_write_frame");
     }
 
+    private void WriteAudioPacket(AVPacket* packet)
+    {
+        ffmpeg.av_packet_rescale_ts(packet, _audioCodecCtx->time_base, _audioStream->time_base);
+        packet->stream_index = _audioStream->index;
+        ThrowIfError(ffmpeg.av_interleaved_write_frame(_formatCtx, packet), "av_interleaved_write_frame(audio)");
+    }
+
     private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)
     {
         var rowBytes = options.IsP010 ? options.Width * 2 : options.Width;
@@ -527,6 +779,96 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 destinationStart + (row * destinationStride),
                 rowBytes,
                 rowBytes);
+        }
+    }
+
+    private void EncodeAudioChunk(byte* inputPtr, int inputSamples)
+    {
+        if (_audioCodecCtx == null || _audioStream == null || _audioFrame == null || _swrCtx == null || inputSamples <= 0)
+        {
+            return;
+        }
+
+        ThrowIfError(ffmpeg.av_frame_make_writable(_audioFrame), "av_frame_make_writable(audio)");
+
+        var inputData = stackalloc byte*[1];
+        inputData[0] = inputPtr;
+
+        var convertedSamples = ffmpeg.swr_convert(
+            _swrCtx,
+            _audioFrame->extended_data,
+            inputSamples,
+            inputData,
+            inputSamples);
+        if (convertedSamples < 0)
+        {
+            ThrowIfError(convertedSamples, "swr_convert");
+        }
+
+        if (convertedSamples != inputSamples)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=swr_convert msg=Unexpected sample count converted={convertedSamples} expected={inputSamples}");
+        }
+
+        _audioFrame->nb_samples = convertedSamples;
+        _audioFrame->pts = _nextAudioPts;
+        _nextAudioPts += convertedSamples;
+
+        var sendResult = ffmpeg.avcodec_send_frame(_audioCodecCtx, _audioFrame);
+        if (sendResult == ffmpeg.AVERROR(ffmpeg.EAGAIN))
+        {
+            DrainAudioEncoderPackets();
+            sendResult = ffmpeg.avcodec_send_frame(_audioCodecCtx, _audioFrame);
+        }
+
+        ThrowIfError(sendResult, "avcodec_send_frame(audio)");
+        DrainAudioEncoderPackets();
+    }
+
+    private void FlushPendingAudioSamples()
+    {
+        if (_audioCodecCtx == null || _audioFrame == null || _audioAccumulatorBytes <= 0)
+        {
+            return;
+        }
+
+        var options = _options ?? throw new InvalidOperationException("Encoder options are not initialized.");
+        var inputBlockAlign = checked(options.AudioChannels * sizeof(float));
+        if (_audioAccumulatorBytes % inputBlockAlign != 0)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=FlushPendingAudioSamples msg=Accumulator is not sample-aligned bytes={_audioAccumulatorBytes} block_align={inputBlockAlign}");
+        }
+
+        var pendingSamples = _audioAccumulatorBytes / inputBlockAlign;
+        if (pendingSamples > 0)
+        {
+            EncodeAudioChunk(_resampleBuffer, pendingSamples);
+        }
+
+        _audioAccumulatorBytes = 0;
+    }
+
+    private void CopyToAudioAccumulator(ReadOnlySpan<byte> source, int destinationOffset)
+    {
+        if (source.IsEmpty)
+        {
+            return;
+        }
+
+        if (_resampleBuffer == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=CopyToAudioAccumulator msg=Audio accumulator buffer is null.");
+        }
+
+        fixed (byte* sourcePtr = source)
+        {
+            Buffer.MemoryCopy(
+                sourcePtr,
+                _resampleBuffer + destinationOffset,
+                (_audioFrameSize * ((_options?.AudioChannels ?? 0) * sizeof(float))) - destinationOffset,
+                source.Length);
         }
     }
 
@@ -573,11 +915,32 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 _packet = null;
             }
 
+            if (_audioFrame != null)
+            {
+                var audioFrame = _audioFrame;
+                ffmpeg.av_frame_free(&audioFrame);
+                _audioFrame = null;
+            }
+
             if (_videoFrame != null)
             {
                 var videoFrame = _videoFrame;
                 ffmpeg.av_frame_free(&videoFrame);
                 _videoFrame = null;
+            }
+
+            if (_swrCtx != null)
+            {
+                var swrCtx = _swrCtx;
+                ffmpeg.swr_free(&swrCtx);
+                _swrCtx = null;
+            }
+
+            if (_audioCodecCtx != null)
+            {
+                var audioCodecCtx = _audioCodecCtx;
+                ffmpeg.avcodec_free_context(&audioCodecCtx);
+                _audioCodecCtx = null;
             }
 
             if (_videoCodecCtx != null)
@@ -587,6 +950,12 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 _videoCodecCtx = null;
             }
 
+            if (_resampleBuffer != null)
+            {
+                ffmpeg.av_free(_resampleBuffer);
+                _resampleBuffer = null;
+            }
+
             if (_formatCtx != null)
             {
                 ffmpeg.avformat_free_context(_formatCtx);
@@ -594,6 +963,9 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             }
 
             _videoStream = null;
+            _audioStream = null;
+            _audioFrameSize = 0;
+            _audioAccumulatorBytes = 0;
             _isOpen = false;
             _headerWritten = false;
             _flushSent = false;
@@ -609,12 +981,12 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 if (normalClose)
                 {
                     Logger.Log(
-                        $"LIBAV_ENCODER_CLOSE output='{outputPath}' frames={_encodedFrameCount} dropped={_droppedFrameCount} file_bytes={outputBytes}");
+                        $"LIBAV_ENCODER_CLOSE output='{outputPath}' frames={_encodedFrameCount} dropped={_droppedFrameCount} audio_samples={_audioSamplesReceived} file_bytes={outputBytes}");
                 }
                 else if (_headerWritten || _encodedFrameCount > 0 || outputBytes > 0)
                 {
                     Logger.Log(
-                        $"LIBAV_ENCODER_CLEANUP init_failed=true output='{outputPath}' frames={_encodedFrameCount} dropped={_droppedFrameCount} file_bytes={outputBytes}");
+                        $"LIBAV_ENCODER_CLEANUP init_failed=true output='{outputPath}' frames={_encodedFrameCount} dropped={_droppedFrameCount} audio_samples={_audioSamplesReceived} file_bytes={outputBytes}");
                 }
             }
         }
@@ -665,6 +1037,27 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             throw new ArgumentOutOfRangeException(nameof(options), "BitRate must be positive.");
         }
 
+        if (!options.AudioEnabled)
+        {
+            goto ValidateHdrOptions;
+        }
+
+        if (options.AudioSampleRate <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "AudioSampleRate must be positive.");
+        }
+
+        if (options.AudioChannels <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "AudioChannels must be positive.");
+        }
+
+        if (options.AudioBitRate <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(options), "AudioBitRate must be positive.");
+        }
+
+ValidateHdrOptions:
         if (!options.HdrEnabled)
         {
             return;
@@ -718,6 +1111,34 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
 
         return preset.ToLowerInvariant();
+    }
+
+    private static bool IsSampleFormatSupported(AVCodec* codec, AVSampleFormat sampleFormat)
+    {
+        void* supportedFormats = null;
+        var supportedFormatCount = 0;
+        var result = ffmpeg.avcodec_get_supported_config(
+            null,
+            codec,
+            AVCodecConfig.AV_CODEC_CONFIG_SAMPLE_FORMAT,
+            0,
+            &supportedFormats,
+            &supportedFormatCount);
+        if (result < 0 || supportedFormats == null || supportedFormatCount <= 0)
+        {
+            return true;
+        }
+
+        var formats = (AVSampleFormat*)supportedFormats;
+        for (var i = 0; i < supportedFormatCount; i++)
+        {
+            if (formats[i] == sampleFormat)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static AVRational ToAvRational(double value)
@@ -812,6 +1233,10 @@ internal sealed record LibAvEncoderOptions
     public required bool IsP010 { get; init; }
     public string? NvencPreset { get; init; }
     public int GopSize { get; init; } = -1;
+    public bool AudioEnabled { get; init; }
+    public int AudioSampleRate { get; init; } = 48_000;
+    public int AudioChannels { get; init; } = 2;
+    public int AudioBitRate { get; init; } = 320_000;
     public bool HdrEnabled { get; init; }
     public string? HdrMasterDisplayMetadata { get; init; }
     public int HdrMaxCll { get; init; }
