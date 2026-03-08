@@ -365,6 +365,20 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         errorCode: result.Succeeded ? null : "capture-failed");
                 }
 
+                case AutomationCommandKind.CaptureWindowScreenshot:
+                {
+                    var outputPath = GetString(payload, "outputPath")
+                        ?? Path.Combine(Path.GetTempPath(), $"window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png");
+                    var result = await _windowControl.CaptureWindowScreenshotAsync(outputPath, cancellationToken).ConfigureAwait(false);
+                    return CreateSuccessResponse(
+                        correlationId,
+                        result.Message,
+                        data: result,
+                        success: result.Succeeded,
+                        status: result.Succeeded ? "ok" : "error",
+                        errorCode: result.Succeeded ? null : "capture-failed");
+                }
+
                 default:
                     return CreateSuccessResponse(
                         correlationId,

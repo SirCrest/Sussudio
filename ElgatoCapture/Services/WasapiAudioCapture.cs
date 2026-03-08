@@ -31,7 +31,16 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private long _audioFramesArrived;
     private long _audioFramesWrittenToSink;
     private long _audioLevelLastFireTick;
+    private long _audioLevelEventsFired;
+    private long _audioLevelEventsLastFireTickMs;
     private long _resampleRemainderNumerator;
+    private long _captureCallbackCount;
+    private long _lastCaptureCallbackTickMs;
+    private int _captureCallbackSilenceCount;
+    private readonly object _captureCallbackIntervalLock = new();
+    private readonly double[] _captureCallbackIntervalWindowMs = new double[100];
+    private int _captureCallbackIntervalCount;
+    private int _captureCallbackIntervalIndex;
     private int _initialized;
     private int _capturing;
     private int _stopRequested;
@@ -49,6 +58,20 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     public long AudioFramesArrived => Interlocked.Read(ref _audioFramesArrived);
 
     public long AudioFramesWrittenToSink => Interlocked.Read(ref _audioFramesWrittenToSink);
+
+    public long CaptureCallbackCount => Interlocked.Read(ref _captureCallbackCount);
+
+    public double CaptureCallbackAvgIntervalMs => GetCaptureCallbackIntervalMetrics().AverageIntervalMs;
+
+    public double CaptureCallbackMaxIntervalMs => GetCaptureCallbackIntervalMetrics().MaxIntervalMs;
+
+    public int CaptureCallbackSilenceCount => Volatile.Read(ref _captureCallbackSilenceCount);
+
+    public long LastCaptureCallbackTickMs => Interlocked.Read(ref _lastCaptureCallbackTickMs);
+
+    public long AudioLevelEventsFired => Interlocked.Read(ref _audioLevelEventsFired);
+
+    public long AudioLevelEventsLastFireTickMs => Interlocked.Read(ref _audioLevelEventsLastFireTickMs);
 
     public Task InitializeAsync(string audioDeviceId, CancellationToken ct)
     {
@@ -141,6 +164,17 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
             Interlocked.Exchange(ref _audioFramesArrived, 0);
             Interlocked.Exchange(ref _audioFramesWrittenToSink, 0);
             Interlocked.Exchange(ref _audioLevelLastFireTick, 0);
+            Interlocked.Exchange(ref _audioLevelEventsFired, 0);
+            Interlocked.Exchange(ref _audioLevelEventsLastFireTickMs, 0);
+            Interlocked.Exchange(ref _captureCallbackCount, 0);
+            Interlocked.Exchange(ref _lastCaptureCallbackTickMs, 0);
+            Volatile.Write(ref _captureCallbackSilenceCount, 0);
+            lock (_captureCallbackIntervalLock)
+            {
+                Array.Clear(_captureCallbackIntervalWindowMs, 0, _captureCallbackIntervalWindowMs.Length);
+                _captureCallbackIntervalCount = 0;
+                _captureCallbackIntervalIndex = 0;
+            }
             Interlocked.Exchange(ref _initialized, 1);
 
             Logger.Log(
@@ -313,6 +347,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
             try
             {
+                TrackCaptureCallback(Environment.TickCount64);
                 DrainCapturePackets();
             }
             catch (Exception ex)
@@ -356,6 +391,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
             {
                 if (availableFrames == 0)
                 {
+                    Interlocked.Increment(ref _captureCallbackSilenceCount);
                     continue;
                 }
 
@@ -515,7 +551,63 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
             }
         }
 
+        Interlocked.Increment(ref _audioLevelEventsFired);
+        Interlocked.Exchange(ref _audioLevelEventsLastFireTickMs, nowTick);
         handler.Invoke(this, new AudioLevelEventArgs(peak, 0, peak >= 1.0f));
+    }
+
+    private void TrackCaptureCallback(long callbackTickMs)
+    {
+        Interlocked.Increment(ref _captureCallbackCount);
+        var previousTickMs = Interlocked.Exchange(ref _lastCaptureCallbackTickMs, callbackTickMs);
+        if (previousTickMs <= 0 || callbackTickMs <= previousTickMs)
+        {
+            return;
+        }
+
+        var intervalMs = callbackTickMs - previousTickMs;
+        lock (_captureCallbackIntervalLock)
+        {
+            _captureCallbackIntervalWindowMs[_captureCallbackIntervalIndex] = intervalMs;
+            _captureCallbackIntervalIndex = (_captureCallbackIntervalIndex + 1) % _captureCallbackIntervalWindowMs.Length;
+            if (_captureCallbackIntervalCount < _captureCallbackIntervalWindowMs.Length)
+            {
+                _captureCallbackIntervalCount++;
+            }
+        }
+    }
+
+    private CallbackIntervalMetrics GetCaptureCallbackIntervalMetrics()
+    {
+        double[] intervals;
+        lock (_captureCallbackIntervalLock)
+        {
+            if (_captureCallbackIntervalCount <= 0)
+            {
+                return new CallbackIntervalMetrics(0, 0, 0);
+            }
+
+            intervals = new double[_captureCallbackIntervalCount];
+            for (var i = 0; i < _captureCallbackIntervalCount; i++)
+            {
+                var ringIndex = (_captureCallbackIntervalIndex - _captureCallbackIntervalCount + i + _captureCallbackIntervalWindowMs.Length)
+                    % _captureCallbackIntervalWindowMs.Length;
+                intervals[i] = _captureCallbackIntervalWindowMs[ringIndex];
+            }
+        }
+
+        var sum = 0.0;
+        var max = 0.0;
+        for (var i = 0; i < intervals.Length; i++)
+        {
+            sum += intervals[i];
+            if (intervals[i] > max)
+            {
+                max = intervals[i];
+            }
+        }
+
+        return new CallbackIntervalMetrics(intervals.Length, sum / intervals.Length, max);
     }
 
     private int ComputeResampledFrameCount(int inputFrames)
@@ -722,4 +814,6 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
         public bool IsPooled { get; }
     }
+
+    private readonly record struct CallbackIntervalMetrics(int SampleCount, double AverageIntervalMs, double MaxIntervalMs);
 }

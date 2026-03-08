@@ -16,6 +16,9 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
+using Microsoft.UI.Composition;
+using Microsoft.UI.Xaml.Hosting;
+using System.Numerics;
 using WinRT.Interop;
 
 namespace ElgatoCapture;
@@ -46,6 +49,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
     private D3D11PreviewRenderer? _d3dRenderer;
+    private SpriteVisual? _videoShadowVisual;
+    private SpriteVisual? _controlBarShadowVisual;
     private DispatcherQueueTimer? _statsPollTimer;
     private Storyboard? _statsDockStoryboard;
     private Storyboard? _showStatsDockStoryboard;
@@ -105,8 +110,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private bool _isSettingsShelfAnimating;
     private bool _captureSettingsNarrow;
     private const double ControlBarLabelThreshold = 900.0;
-    private const int MinWindowWidth = 780;
-    private const int MinWindowHeight = 450;
+    private const int MinWindowWidth = 900;
+    private const int MinWindowHeight = 500;
     private WndProcDelegate? _minSizeWndProc;
     private IntPtr _originalWndProc;
     private IntPtr _hwnd;
@@ -698,47 +703,128 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void OnPreviewSwapChainPanelSizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
     {
+        // Composition transform only — overlay sizing is driven by the container.
         var scale = PreviewSwapChainPanel.XamlRoot?.RasterizationScale ?? 1.0;
         _d3dRenderer?.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);
-        UpdateRecordingGlowBorderMargin();
     }
 
-    private void UpdateRecordingGlowBorderMargin()
+    private void OnPreviewContentGridSizeChanged(object sender, Microsoft.UI.Xaml.SizeChangedEventArgs e)
+    {
+        UpdateVideoContentOverlays();
+    }
+
+    private void UpdateVideoContentOverlays()
     {
         var srcW = (double)(ViewModel.SourceWidth ?? 0);
         var srcH = (double)(ViewModel.SourceHeight ?? 0);
-        var dstW = PreviewSwapChainPanel.ActualWidth;
-        var dstH = PreviewSwapChainPanel.ActualHeight;
+        // Use the container (PreviewContentGrid) size, not the SwapChainPanel,
+        // because the panel is now explicitly sized to fitW x fitH.
+        var dstW = PreviewContentGrid.ActualWidth;
+        var dstH = PreviewContentGrid.ActualHeight;
 
-        if (srcW <= 0 || srcH <= 0 || dstW <= 0 || dstH <= 0)
+        if (dstW <= 0 || dstH <= 0)
         {
             RecordingGlowBorder.Margin = new Thickness(0);
+            if (_videoShadowVisual != null) _videoShadowVisual.Size = Vector2.Zero;
             return;
         }
 
-        var srcAspect = srcW / srcH;
-        var dstAspect = dstW / dstH;
         double fitW, fitH;
-
-        if (srcAspect > dstAspect)
+        if (srcW <= 0 || srcH <= 0)
         {
+            // Source dimensions unknown — fill the container (same as old Stretch behavior).
             fitW = dstW;
-            fitH = dstW / srcAspect;
+            fitH = dstH;
         }
         else
         {
-            fitH = dstH;
-            fitW = dstH * srcAspect;
+            var srcAspect = srcW / srcH;
+            var dstAspect = dstW / dstH;
+
+            if (srcAspect > dstAspect)
+            {
+                fitW = dstW;
+                fitH = dstW / srcAspect;
+            }
+            else
+            {
+                fitH = dstH;
+                fitW = dstH * srcAspect;
+            }
         }
+
+        // Resize SwapChainPanel to exactly the video content area (no letterbox).
+        PreviewSwapChainPanel.Width = fitW;
+        PreviewSwapChainPanel.Height = fitH;
 
         var marginH = (dstW - fitW) / 2;
         var marginV = (dstH - fitH) / 2;
-        RecordingGlowBorder.Margin = new Thickness(marginH, marginV, marginH, marginV);
+        var videoMargin = new Thickness(marginH, marginV, marginH, marginV);
+        RecordingGlowBorder.Margin = videoMargin;
+
+        // Update shadow visual to match the video content rect.
+        // VideoShadowHost is a sibling of PreviewBorder — shadow casts onto app background.
+        if (_videoShadowVisual != null)
+        {
+            const float borderMarginH = 12f; // PreviewBorder Margin left/right
+            const float borderMarginV = 6f;  // PreviewBorder Margin top/bottom
+            const float hostMargin = 16f;    // PreviewShadowHost Margin
+            _videoShadowVisual.Offset = new Vector3(
+                borderMarginH + hostMargin + (float)marginH,
+                borderMarginV + hostMargin + (float)marginV, 0);
+            _videoShadowVisual.Size = new Vector2(Math.Max(0, (float)fitW), Math.Max(0, (float)fitH));
+        }
+    }
+
+    private void SetupVideoFrameShadow()
+    {
+        var compositor = ElementCompositionPreview.GetElementVisual(VideoShadowHost).Compositor;
+
+        var shadow = compositor.CreateDropShadow();
+        shadow.BlurRadius = 16;
+        shadow.Color = Windows.UI.Color.FromArgb(160, 0, 0, 0);
+        shadow.Offset = new Vector3(0, 2, 0);
+        shadow.Mask = compositor.CreateColorBrush(Windows.UI.Color.FromArgb(255, 0, 0, 0));
+
+        var spriteVisual = compositor.CreateSpriteVisual();
+        spriteVisual.Shadow = shadow;
+
+        spriteVisual.Opacity = 0f; // Start invisible — faded in with preview entrance
+        _videoShadowVisual = spriteVisual;
+        ElementCompositionPreview.SetElementChildVisual(VideoShadowHost, spriteVisual);
+    }
+
+    private void SetupControlBarShadow()
+    {
+        var compositor = ElementCompositionPreview.GetElementVisual(ControlBarShadowHost).Compositor;
+
+        var shadow = compositor.CreateDropShadow();
+        shadow.BlurRadius = 12;
+        shadow.Color = Windows.UI.Color.FromArgb(120, 0, 0, 0);
+        shadow.Offset = new Vector3(0, 1, 0);
+        shadow.Mask = compositor.CreateColorBrush(Windows.UI.Color.FromArgb(255, 0, 0, 0));
+
+        var spriteVisual = compositor.CreateSpriteVisual();
+        spriteVisual.Shadow = shadow;
+        spriteVisual.Opacity = 0f; // Start invisible — faded in with control bar entrance
+
+        _controlBarShadowVisual = spriteVisual;
+        ElementCompositionPreview.SetElementChildVisual(ControlBarShadowHost, spriteVisual);
+
+        // Track control bar size changes to keep the shadow aligned.
+        ControlBarBorder.SizeChanged += (s, e) =>
+        {
+            if (_controlBarShadowVisual == null) return;
+            var margin = ControlBarBorder.Margin;
+            _controlBarShadowVisual.Offset = new Vector3((float)margin.Left, (float)margin.Top, 0);
+            _controlBarShadowVisual.Size = new Vector2((float)e.NewSize.Width, (float)e.NewSize.Height);
+        };
     }
 
     private void SetGpuPreviewVisibility(Visibility visibility)
     {
-        PreviewLetterboxBackground.Visibility = visibility;
+        // PreviewLetterboxBackground stays Collapsed — letterbox areas must be
+        // transparent so the Composition DropShadow is visible around the video.
         PreviewSwapChainPanel.Visibility = visibility;
     }
 
@@ -1268,6 +1354,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         // Wire up UI controls to ViewModel
         SetupBindings();
         SetupButtonHoverAnimations();
+        SetupControlBarShadow();
 
         // Entrance animation: hide everything initially
         ControlBarBorder.Opacity = 0;
@@ -2091,6 +2178,32 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         };
 
         storyboard.Begin();
+
+        // 6. Control bar shadow depth fade-in (Composition animation, compositor thread)
+        // Delayed so the bar appears first, then gains depth.
+        FadeInShadow(_controlBarShadowVisual, delayMs: 400, durationMs: 500);
+    }
+
+    private static void FadeInShadow(SpriteVisual? visual, int delayMs, int durationMs)
+    {
+        if (visual == null) return;
+        var compositor = visual.Compositor;
+        var anim = compositor.CreateScalarKeyFrameAnimation();
+        anim.InsertKeyFrame(0f, 0f);
+        anim.InsertKeyFrame(1f, 1f, compositor.CreateCubicBezierEasingFunction(new Vector2(0.25f, 0.1f), new Vector2(0.25f, 1f)));
+        anim.Duration = TimeSpan.FromMilliseconds(durationMs);
+        anim.DelayTime = TimeSpan.FromMilliseconds(delayMs);
+        visual.StartAnimation("Opacity", anim);
+    }
+
+    private static void FadeOutShadow(SpriteVisual? visual, int durationMs)
+    {
+        if (visual == null) return;
+        var compositor = visual.Compositor;
+        var anim = compositor.CreateScalarKeyFrameAnimation();
+        anim.InsertKeyFrame(1f, 0f, compositor.CreateCubicBezierEasingFunction(new Vector2(0.25f, 0.1f), new Vector2(0.25f, 1f)));
+        anim.Duration = TimeSpan.FromMilliseconds(durationMs);
+        visual.StartAnimation("Opacity", anim);
     }
 
     private void StartAutomationServices()
@@ -2560,7 +2673,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         StopPreviewFadeInTimer();
         ResetPreviewContentTransform();
 
+        // Clean up composition shadow
+        _videoShadowVisual = null;
+        ElementCompositionPreview.SetElementChildVisual(VideoShadowHost, null);
+
         // Clean up D3D11 preview
+        PreviewContentGrid.SizeChanged -= OnPreviewContentGridSizeChanged;
         var renderer = _d3dRenderer;
         _d3dRenderer = null;
         if (renderer != null)
@@ -2734,7 +2852,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                     ResetAudioMeterVisuals();
                 }
 
-                UpdateRecordingGlowBorderMargin();
+                UpdateVideoContentOverlays();
                 // Three-state button: hide spinner, show correct content, animated morph
                 RecordButtonStartingContent.IsActive = false;
                 RecordButtonStartingContent.Visibility = Visibility.Collapsed;
@@ -2879,7 +2997,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
             case nameof(MainViewModel.SourceWidth):
             case nameof(MainViewModel.SourceHeight):
-                UpdateRecordingGlowBorderMargin();
+                UpdateVideoContentOverlays();
                 break;
 
             case nameof(MainViewModel.IsCustomBitrateVisible):
@@ -3211,6 +3329,284 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }, cancellationToken);
     }
 
+    public Task<WindowScreenshotResult> CaptureWindowScreenshotAsync(string outputPath, CancellationToken cancellationToken = default)
+    {
+        var completion = new TaskCompletionSource<WindowScreenshotResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            try
+            {
+                var result = CaptureWindowScreenshotCore(outputPath);
+                completion.TrySetResult(result);
+            }
+            catch (Exception ex)
+            {
+                completion.TrySetResult(new WindowScreenshotResult
+                {
+                    Succeeded = false,
+                    Message = $"Screenshot failed: {ex.Message}"
+                });
+            }
+        });
+        return completion.Task;
+    }
+
+    private WindowScreenshotResult CaptureWindowScreenshotCore(string outputPath)
+    {
+        if (_hwnd == IntPtr.Zero)
+        {
+            return new WindowScreenshotResult { Succeeded = false, Message = "Window handle not available." };
+        }
+
+        if (!GetWindowRect(_hwnd, out var rect))
+        {
+            return new WindowScreenshotResult { Succeeded = false, Message = "Failed to get window rect." };
+        }
+
+        var width = rect.Right - rect.Left;
+        var height = rect.Bottom - rect.Top;
+        if (width <= 0 || height <= 0)
+        {
+            return new WindowScreenshotResult { Succeeded = false, Message = $"Invalid window size: {width}x{height}" };
+        }
+
+        var hdcWindow = GetDC(_hwnd);
+        var hdcMemDC = CreateCompatibleDC(hdcWindow);
+        var hBitmap = CreateCompatibleBitmap(hdcWindow, width, height);
+        var hOld = SelectObject(hdcMemDC, hBitmap);
+
+        try
+        {
+            // PW_RENDERFULLCONTENT captures DWM-composited content including D3D swap chains
+            if (!PrintWindow(_hwnd, hdcMemDC, PW_RENDERFULLCONTENT))
+            {
+                return new WindowScreenshotResult { Succeeded = false, Message = "PrintWindow failed." };
+            }
+
+            SelectObject(hdcMemDC, hOld);
+
+            // Write as PNG using System.Drawing interop
+            var dir = Path.GetDirectoryName(outputPath);
+            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
+            SaveHBitmapAsImage(hBitmap, width, height, outputPath);
+
+            var fileInfo = new FileInfo(outputPath);
+            return new WindowScreenshotResult
+            {
+                Succeeded = true,
+                Message = $"Window screenshot saved: {width}x{height}",
+                FilePath = outputPath,
+                CapturedWidth = width,
+                CapturedHeight = height,
+                FileSizeBytes = fileInfo.Exists ? fileInfo.Length : 0
+            };
+        }
+        finally
+        {
+            DeleteObject(hBitmap);
+            DeleteDC(hdcMemDC);
+            ReleaseDC(_hwnd, hdcWindow);
+        }
+    }
+
+    private static void SaveHBitmapAsImage(IntPtr hBitmap, int width, int height, string outputPath)
+    {
+        var bmi = new BITMAPINFOHEADER
+        {
+            biSize = (uint)Marshal.SizeOf<BITMAPINFOHEADER>(),
+            biWidth = width,
+            biHeight = -height, // top-down
+            biPlanes = 1,
+            biBitCount = 32,
+            biCompression = 0 // BI_RGB
+        };
+
+        var stride = width * 4;
+        var pixelData = new byte[stride * height];
+
+        var hdcScreen = GetDC(IntPtr.Zero);
+        GetDIBits(hdcScreen, hBitmap, 0, (uint)height, pixelData, ref bmi, 0);
+        ReleaseDC(IntPtr.Zero, hdcScreen);
+
+        using var stream = new FileStream(outputPath, FileMode.Create, FileAccess.Write);
+        if (outputPath.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            WritePngToStream(stream, width, height, pixelData);
+        else
+            WriteBmpToStream(stream, width, height, pixelData);
+    }
+
+    private static void WritePngToStream(Stream output, int width, int height, byte[] bgra)
+    {
+        var stride = width * 4;
+
+        // PNG signature
+        output.Write(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 });
+
+        // IHDR chunk
+        var ihdr = new byte[13];
+        WriteBE32(ihdr, 0, width);
+        WriteBE32(ihdr, 4, height);
+        ihdr[8] = 8;  // bit depth
+        ihdr[9] = 6;  // color type: RGBA
+        WritePngChunk(output, new byte[] { 73, 72, 68, 82 }, ihdr); // "IHDR"
+
+        // Raw scanlines: filter byte (0=None) + RGBA pixels per row
+        var raw = new byte[(stride + 1) * height];
+        for (var y = 0; y < height; y++)
+        {
+            var rowDst = y * (stride + 1);
+            raw[rowDst] = 0; // filter: None
+            var rowSrc = y * stride;
+            for (var x = 0; x < width; x++)
+            {
+                var s = rowSrc + x * 4;
+                var d = rowDst + 1 + x * 4;
+                raw[d]     = bgra[s + 2]; // R (from BGRA B)
+                raw[d + 1] = bgra[s + 1]; // G
+                raw[d + 2] = bgra[s];     // B (from BGRA R)
+                raw[d + 3] = 255;         // A
+            }
+        }
+
+        // Compress with zlib and write IDAT
+        byte[] compressed;
+        using (var ms = new MemoryStream())
+        {
+            using (var zlib = new System.IO.Compression.ZLibStream(ms, System.IO.Compression.CompressionLevel.Fastest, leaveOpen: true))
+                zlib.Write(raw);
+            compressed = ms.ToArray();
+        }
+        WritePngChunk(output, new byte[] { 73, 68, 65, 84 }, compressed); // "IDAT"
+
+        // IEND
+        WritePngChunk(output, new byte[] { 73, 69, 78, 68 }, Array.Empty<byte>()); // "IEND"
+    }
+
+    private static void WritePngChunk(Stream output, byte[] type, byte[] data)
+    {
+        var buf = new byte[4];
+        WriteBE32(buf, 0, data.Length);
+        output.Write(buf);
+        output.Write(type);
+        if (data.Length > 0) output.Write(data);
+        var crc = PngCrc32(type, data);
+        buf[0] = (byte)(crc >> 24); buf[1] = (byte)(crc >> 16);
+        buf[2] = (byte)(crc >> 8);  buf[3] = (byte)crc;
+        output.Write(buf);
+    }
+
+    private static void WriteBE32(byte[] buf, int off, int val)
+    {
+        buf[off] = (byte)(val >> 24); buf[off + 1] = (byte)(val >> 16);
+        buf[off + 2] = (byte)(val >> 8); buf[off + 3] = (byte)val;
+    }
+
+    private static uint PngCrc32(byte[] type, byte[] data)
+    {
+        uint c = 0xFFFFFFFF;
+        foreach (var b in type) c = (c >> 8) ^ _crc32Table[(c ^ b) & 0xFF];
+        foreach (var b in data) c = (c >> 8) ^ _crc32Table[(c ^ b) & 0xFF];
+        return c ^ 0xFFFFFFFF;
+    }
+
+    private static readonly uint[] _crc32Table = InitCrc32Table();
+    private static uint[] InitCrc32Table()
+    {
+        var t = new uint[256];
+        for (uint i = 0; i < 256; i++)
+        {
+            var c = i;
+            for (var j = 0; j < 8; j++)
+                c = (c & 1) != 0 ? 0xEDB88320 ^ (c >> 1) : c >> 1;
+            t[i] = c;
+        }
+        return t;
+    }
+
+    private static void WriteBmpToStream(Stream stream, int width, int height, byte[] bgra)
+    {
+        var stride = width * 4;
+        var pixelDataSize = stride * height;
+        var fileSize = 14 + 40 + pixelDataSize;
+
+        using var writer = new BinaryWriter(stream);
+        writer.Write((ushort)0x4D42); // 'BM'
+        writer.Write(fileSize);
+        writer.Write(0);
+        writer.Write(14 + 40);
+
+        writer.Write(40);
+        writer.Write(width);
+        writer.Write(-height); // top-down
+        writer.Write((ushort)1);
+        writer.Write((ushort)32);
+        writer.Write(0);
+        writer.Write(pixelDataSize);
+        writer.Write(0); writer.Write(0); writer.Write(0); writer.Write(0);
+
+        writer.Write(bgra);
+    }
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool PrintWindow(IntPtr hWnd, IntPtr hdcBlt, uint nFlags);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
+
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetDC(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
+    private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+
+    [DllImport("gdi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DeleteDC(IntPtr hdc);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int cx, int cy);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr SelectObject(IntPtr hdc, IntPtr h);
+
+    [DllImport("gdi32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DeleteObject(IntPtr ho);
+
+    [DllImport("gdi32.dll")]
+    private static extern int GetDIBits(IntPtr hdc, IntPtr hbm, uint start, uint cLines,
+        [Out] byte[] lpvBits, ref BITMAPINFOHEADER lpbmi, uint usage);
+
+    private const uint PW_RENDERFULLCONTENT = 0x00000002;
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct RECT
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct BITMAPINFOHEADER
+    {
+        public uint biSize;
+        public int biWidth;
+        public int biHeight;
+        public ushort biPlanes;
+        public ushort biBitCount;
+        public uint biCompression;
+        public uint biSizeImage;
+        public int biXPelsPerMeter;
+        public int biYPelsPerMeter;
+        public uint biClrUsed;
+        public uint biClrImportant;
+    }
+
     public Task CloseAsync(CancellationToken cancellationToken = default)
     {
         if (Volatile.Read(ref _windowCloseCleanupStarted) != 0)
@@ -3359,13 +3755,17 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             // Wire SizeChanged and make panel visible BEFORE starting the render
             // thread so the renderer has the panel's pixel dimensions from the start.
             _d3dRenderer = renderer;
+            SetupVideoFrameShadow();
             PreviewSwapChainPanel.SizeChanged += OnPreviewSwapChainPanelSizeChanged;
+            PreviewContentGrid.SizeChanged += OnPreviewContentGridSizeChanged;
             SetGpuPreviewVisibility(Visibility.Visible);
             PreviewImage.Visibility = Visibility.Collapsed;
 
-            // Pre-seed the renderer with the panel's current pixel dimensions.
-            // Visibility=Visible triggers a deferred layout pass, so force it now
-            // to get ActualWidth/Height before the render thread starts.
+            // Pre-seed panel size and renderer dimensions.
+            // Force layout so the container has ActualWidth/Height, then
+            // UpdateVideoContentOverlays sets the panel to fitW x fitH.
+            PreviewSwapChainPanel.UpdateLayout();
+            UpdateVideoContentOverlays();
             PreviewSwapChainPanel.UpdateLayout();
             var panelW = PreviewSwapChainPanel.ActualWidth;
             var panelH = PreviewSwapChainPanel.ActualHeight;
@@ -3394,6 +3794,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         else
         {
             // Fallback CPU preview path: SoftwareBitmapSource -> Image (unchanged)
+            SetupVideoFrameShadow();
+            PreviewContentGrid.SizeChanged += OnPreviewContentGridSizeChanged;
             ViewModel.SetPreviewFrameSink(null);
             _previewStartupExpectGpuDualSignals = false;
             ConfigurePreviewStartupSignals(PreviewStartupStrategy.CpuSoftwareBitmap, PreviewStartupSignalFlags.FirstVisual);
@@ -3411,7 +3813,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private Task StopPreviewRendererAsync()
     {
+        // Clean up composition shadow
+        _videoShadowVisual = null;
+        ElementCompositionPreview.SetElementChildVisual(VideoShadowHost, null);
+
         // Clean up D3D11 preview path
+        PreviewContentGrid.SizeChanged -= OnPreviewContentGridSizeChanged;
         var renderer = _d3dRenderer;
         _d3dRenderer = null;
         if (renderer != null)
@@ -3696,6 +4103,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         storyboard.Children.Add(fadeOut);
         storyboard.Children.Add(scaleX);
         storyboard.Children.Add(scaleY);
+
+        // Fade out the video shadow first (shorter duration so it recedes before the preview)
+        FadeOutShadow(_videoShadowVisual, durationMs: 150);
+
         return BeginStoryboardAsync(storyboard);
     }
 
@@ -3734,6 +4145,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         storyboard.Children.Add(fadeIn);
         storyboard.Children.Add(scaleX);
         storyboard.Children.Add(scaleY);
+
+        // Video shadow gains depth alongside the preview
+        FadeInShadow(_videoShadowVisual, delayMs: 0, durationMs: 400);
+
         return BeginStoryboardAsync(storyboard);
     }
 

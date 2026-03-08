@@ -34,6 +34,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private string _negotiatedFormat = "unknown";
     private long _framesDelivered;
     private long _framesDropped;
+    private int _isReadSampleOutstanding;
+    private long _readSampleOutstandingStartTickMs;
+    private long _lastFrameDeliveredTickMs;
     private int _vtableDiagDone;
     private int _dxgiBufferProbeDone;
     private int _dxgiResourceFailureCount;
@@ -52,6 +55,23 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     public int Width => Volatile.Read(ref _width);
     public int Height => Volatile.Read(ref _height);
     public double Fps => Volatile.Read(ref _fps);
+    public bool IsReadSampleOutstanding => Volatile.Read(ref _isReadSampleOutstanding) != 0;
+    public long ReadSampleOutstandingMs
+    {
+        get
+        {
+            if (Volatile.Read(ref _isReadSampleOutstanding) == 0)
+            {
+                return 0;
+            }
+
+            var startedTickMs = Interlocked.Read(ref _readSampleOutstandingStartTickMs);
+            return startedTickMs <= 0
+                ? 0
+                : Math.Max(0, Environment.TickCount64 - startedTickMs);
+        }
+    }
+    public long LastFrameDeliveredTickMs => Interlocked.Read(ref _lastFrameDeliveredTickMs);
     public readonly record struct SourceCadenceMetrics(
         int SampleCount,
         double ObservedFps,
@@ -178,6 +198,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             Volatile.Write(ref _negotiatedFormat, negotiatedDescription);
             Interlocked.Exchange(ref _framesDelivered, 0);
             Interlocked.Exchange(ref _framesDropped, 0);
+            Volatile.Write(ref _isReadSampleOutstanding, 0);
+            Interlocked.Exchange(ref _readSampleOutstandingStartTickMs, 0);
+            Interlocked.Exchange(ref _lastFrameDeliveredTickMs, 0);
             Interlocked.Exchange(ref _dxgiBufferProbeDone, 0);
             Interlocked.Exchange(ref _dxgiResourceFailureCount, 0);
 
@@ -359,13 +382,28 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             IMFSample? sample = null;
             try
             {
-                var hr = reader.ReadSample(
-                    MfConstants.MF_SOURCE_READER_FIRST_VIDEO_STREAM,
-                    0,
-                    out _,
-                    out var flags,
-                    out var mfTimestamp100ns,
-                    out sample);
+                var readStartedTickMs = Environment.TickCount64;
+                Volatile.Write(ref _isReadSampleOutstanding, 1);
+                Interlocked.Exchange(ref _readSampleOutstandingStartTickMs, readStartedTickMs);
+
+                int hr;
+                int flags;
+                long mfTimestamp100ns;
+                try
+                {
+                    hr = reader.ReadSample(
+                        MfConstants.MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+                        0,
+                        out _,
+                        out flags,
+                        out mfTimestamp100ns,
+                        out sample);
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref _readSampleOutstandingStartTickMs, 0);
+                    Volatile.Write(ref _isReadSampleOutstanding, 0);
+                }
 
                 if (ct.IsCancellationRequested)
                 {
@@ -405,6 +443,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 }
 
                 DeliverFrame(sample, onFrame, onDualFrame, arrivalTick);
+                Interlocked.Exchange(ref _lastFrameDeliveredTickMs, Environment.TickCount64);
                 Interlocked.Increment(ref _framesDelivered);
             }
             catch (OperationCanceledException)

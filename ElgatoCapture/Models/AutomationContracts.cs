@@ -32,7 +32,8 @@ public enum AutomationCommandKind
     SetTrueHdrPreviewEnabled,
     ProbeVideoSource,
     ProbePreviewColor,
-    CapturePreviewFrame
+    CapturePreviewFrame,
+    CaptureWindowScreenshot
 }
 
 public enum AutomationWindowAction
@@ -195,6 +196,29 @@ public sealed class AutomationSnapshot
     public long EncoderVideoFramesEncoded { get; init; }
     public long EncoderLastEnqueueAgeMs { get; init; }
     public long EncoderLastWriteAgeMs { get; init; }
+
+    // === Thread Health Probes ===
+    // Source reader
+    public bool SourceReaderReadOutstanding { get; init; }
+    public long SourceReaderReadOutstandingMs { get; init; }
+    public long SourceReaderLastFrameTickMs { get; init; }
+    public int SourceReaderFrameChannelDepth { get; init; }
+
+    // WASAPI capture
+    public long WasapiCaptureCallbackCount { get; init; }
+    public double WasapiCaptureCallbackAvgIntervalMs { get; init; }
+    public double WasapiCaptureCallbackMaxIntervalMs { get; init; }
+    public int WasapiCaptureCallbackSilenceCount { get; init; }
+    public long WasapiCaptureLastCallbackTickMs { get; init; }
+    public long WasapiCaptureAudioLevelEventsFired { get; init; }
+    public long WasapiCaptureAudioLevelLastFireTickMs { get; init; }
+
+    // WASAPI playback
+    public long WasapiPlaybackRenderCallbackCount { get; init; }
+    public int WasapiPlaybackRenderSilenceCount { get; init; }
+    public int WasapiPlaybackQueueDepth { get; init; }
+    public int WasapiPlaybackQueueDropCount { get; init; }
+    public long WasapiPlaybackLastRenderTickMs { get; init; }
 
     public string RecordingBackend { get; init; } = "None";
     public string AudioPathMode { get; init; } = "None";
@@ -535,6 +559,24 @@ public sealed class CaptureRuntimeSnapshot
     public string PreviewColorMetadata { get; init; } = "None";
     public string SessionState { get; init; } = "Unknown";
 
+    // Thread health probes
+    public bool SourceReaderReadOutstanding { get; init; }
+    public long SourceReaderReadOutstandingMs { get; init; }
+    public long SourceReaderLastFrameTickMs { get; init; }
+    public int SourceReaderFrameChannelDepth { get; init; }
+    public long WasapiCaptureCallbackCount { get; init; }
+    public double WasapiCaptureCallbackAvgIntervalMs { get; init; }
+    public double WasapiCaptureCallbackMaxIntervalMs { get; init; }
+    public int WasapiCaptureCallbackSilenceCount { get; init; }
+    public long WasapiCaptureLastCallbackTickMs { get; init; }
+    public long WasapiCaptureAudioLevelEventsFired { get; init; }
+    public long WasapiCaptureAudioLevelLastFireTickMs { get; init; }
+    public long WasapiPlaybackRenderCallbackCount { get; init; }
+    public int WasapiPlaybackRenderSilenceCount { get; init; }
+    public int WasapiPlaybackQueueDepth { get; init; }
+    public int WasapiPlaybackQueueDropCount { get; init; }
+    public long WasapiPlaybackLastRenderTickMs { get; init; }
+
     public string? CurrentDeviceId { get; init; }
     public string? CurrentDeviceName { get; init; }
     public string? ActiveAudioDeviceId { get; init; }
@@ -789,4 +831,14 @@ public sealed class PreviewFrameCaptureResult
     public double ContentAspectRatio { get; init; }
     public int[] LuminanceHistogram { get; init; } = Array.Empty<int>();
     public long TotalPixels { get; init; }
+}
+
+public sealed class WindowScreenshotResult
+{
+    public bool Succeeded { get; init; }
+    public string Message { get; init; } = string.Empty;
+    public string? FilePath { get; init; }
+    public int CapturedWidth { get; init; }
+    public int CapturedHeight { get; init; }
+    public long FileSizeBytes { get; init; }
 }

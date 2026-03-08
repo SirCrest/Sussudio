@@ -41,9 +41,23 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private volatile float _targetVolume = 1.0f;
     private float _currentVolume;
     private const float VolumeRampPerFrame = 1.0f / (0.3f * 48000); // 300ms ramp at 48kHz
+    private long _renderCallbackCount;
+    private int _renderSilenceCount;
+    private int _playbackQueueDropCount;
+    private long _lastRenderCallbackTickMs;
 
     [DllImport("kernel32.dll")]
     private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
+
+    public long RenderCallbackCount => Interlocked.Read(ref _renderCallbackCount);
+
+    public int RenderSilenceCount => Volatile.Read(ref _renderSilenceCount);
+
+    public int PlaybackQueueDepth => _sampleQueue.Reader.Count;
+
+    public int PlaybackQueueDropCount => Volatile.Read(ref _playbackQueueDropCount);
+
+    public long LastRenderCallbackTickMs => Interlocked.Read(ref _lastRenderCallbackTickMs);
 
     public Task InitializeAsync(CancellationToken ct)
     {
@@ -121,6 +135,10 @@ internal sealed class WasapiAudioPlayback : IDisposable
             _audioClient3 = audioClient3;
             _audioRenderClient = audioRenderClient;
             _renderEvent = renderEvent;
+            Interlocked.Exchange(ref _renderCallbackCount, 0);
+            Volatile.Write(ref _renderSilenceCount, 0);
+            Volatile.Write(ref _playbackQueueDropCount, 0);
+            Interlocked.Exchange(ref _lastRenderCallbackTickMs, 0);
             Interlocked.Exchange(ref _initialized, 1);
             Logger.Log("WASAPI playback initialized (f32le 48kHz stereo).");
             return Task.CompletedTask;
@@ -284,11 +302,13 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
         if (_sampleQueue.Reader.TryRead(out var droppedChunk))
         {
+            Interlocked.Increment(ref _playbackQueueDropCount);
             ReturnChunk(droppedChunk);
         }
 
         if (!_sampleQueue.Writer.TryWrite(chunk))
         {
+            Interlocked.Increment(ref _playbackQueueDropCount);
             ReturnChunk(chunk);
         }
     }
@@ -337,6 +357,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
             return;
         }
 
+        Interlocked.Increment(ref _renderCallbackCount);
+        Interlocked.Exchange(ref _lastRenderCallbackTickMs, Environment.TickCount64);
+
         WasapiComInterop.ThrowIfFailed(
             _audioClient.GetCurrentPadding(out var paddingFrames),
             "IAudioClient.GetCurrentPadding(render)");
@@ -381,6 +404,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 ReturnActiveChunk();
                 if (!_sampleQueue.Reader.TryRead(out _activeChunk))
                 {
+                    Interlocked.Increment(ref _renderSilenceCount);
                     destination[written..].Clear();
                     return;
                 }

@@ -368,6 +368,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         var encoder = _ffmpegEncoder;
         var unifiedVideoCapture = _unifiedVideoCapture;
+        var wasapiCapture = _wasapiAudioCapture;
+        var wasapiPlayback = _wasapiAudioPlayback;
         var requestedSettings = _activeRecordingSettings ?? _currentSettings;
         var hdrRequested = requestedSettings?.HdrEnabled == true &&
                            requestedSettings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
@@ -503,9 +505,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
             IsInitialized = _isInitialized,
             IsRecording = _isRecording,
             IsAudioPreviewActive = _isAudioPreviewActive,
-            AudioReaderActive = _wasapiAudioCapture?.IsCapturing ?? false,
-            AudioFramesArrived = _wasapiAudioCapture?.AudioFramesArrived ?? 0,
-            AudioFramesWrittenToSink = _wasapiAudioCapture?.AudioFramesWrittenToSink ?? 0,
+            AudioReaderActive = wasapiCapture?.IsCapturing ?? false,
+            AudioFramesArrived = wasapiCapture?.AudioFramesArrived ?? 0,
+            AudioFramesWrittenToSink = wasapiCapture?.AudioFramesWrittenToSink ?? 0,
             VideoReaderActive = unifiedVideoCapture != null && (_isVideoPreviewActive || _isRecording),
             IngestVideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? 0,
             IngestVideoFramesWrittenToSink = unifiedVideoCapture?.VideoFramesWrittenToSink ?? 0,
@@ -519,6 +521,22 @@ public class CaptureService : IDisposable, IAsyncDisposable
             MfSourceReaderFramesDropped = mfSourceReaderFramesDropped,
             MfSourceReaderNegotiatedFormat = mfSourceReaderNegotiatedFormat,
             SessionState = _sessionState.ToString(),
+            SourceReaderReadOutstanding = unifiedVideoCapture?.SourceReaderReadOutstanding ?? false,
+            SourceReaderReadOutstandingMs = unifiedVideoCapture?.SourceReaderReadOutstandingMs ?? 0,
+            SourceReaderLastFrameTickMs = unifiedVideoCapture?.SourceReaderLastFrameTickMs ?? 0,
+            SourceReaderFrameChannelDepth = encoder?.VideoQueueCount ?? 0,
+            WasapiCaptureCallbackCount = wasapiCapture?.CaptureCallbackCount ?? 0,
+            WasapiCaptureCallbackAvgIntervalMs = wasapiCapture?.CaptureCallbackAvgIntervalMs ?? 0,
+            WasapiCaptureCallbackMaxIntervalMs = wasapiCapture?.CaptureCallbackMaxIntervalMs ?? 0,
+            WasapiCaptureCallbackSilenceCount = wasapiCapture?.CaptureCallbackSilenceCount ?? 0,
+            WasapiCaptureLastCallbackTickMs = wasapiCapture?.LastCaptureCallbackTickMs ?? 0,
+            WasapiCaptureAudioLevelEventsFired = wasapiCapture?.AudioLevelEventsFired ?? 0,
+            WasapiCaptureAudioLevelLastFireTickMs = wasapiCapture?.AudioLevelEventsLastFireTickMs ?? 0,
+            WasapiPlaybackRenderCallbackCount = wasapiPlayback?.RenderCallbackCount ?? 0,
+            WasapiPlaybackRenderSilenceCount = wasapiPlayback?.RenderSilenceCount ?? 0,
+            WasapiPlaybackQueueDepth = wasapiPlayback?.PlaybackQueueDepth ?? 0,
+            WasapiPlaybackQueueDropCount = wasapiPlayback?.PlaybackQueueDropCount ?? 0,
+            WasapiPlaybackLastRenderTickMs = wasapiPlayback?.LastRenderCallbackTickMs ?? 0,
             CurrentDeviceId = _currentDevice?.Id,
             CurrentDeviceName = _currentDevice?.Name,
             ActiveAudioDeviceId = _audioDeviceId,

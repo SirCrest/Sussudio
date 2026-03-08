@@ -832,3 +832,50 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (UI-only startup animation change)
 - Conclusion: The window now presents the requested premium entrance choreography without delaying device initialization or changing preview/HDR startup logic. Manual app launch is still required to visually confirm the exact motion timing.
+
+## E52 - Thread-health probes for source reader and WASAPI paths
+- Timestamp (UTC): 2026-03-08T06:45:03.3984633Z
+- Commit Hash: uncommitted (base 06a71ec724a0060d6ad9755488706dc7c278c7b1)
+- What Changed (single change): Added thread-health probe counters/timestamps to the MF source reader, WASAPI capture/playback paths, surfaced them through `CaptureRuntimeSnapshot`/`AutomationSnapshot`, and formatted them in the MCP snapshot output.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. If the first build hits the transient WinUI markup-compiler file lock in `obj\...\input.json`, rerun with `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true /nr:false /m:1 -p:UseSharedCompilation=false`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - The requested build initially failed with transient `CS2012` WinUI markup-compiler file locking under `obj\x64\Debug\...\win-x64\input.json`; the serialized retry with `/nr:false /m:1 -p:UseSharedCompilation=false` succeeded.
+  - The successful build still emitted `MSB3026/MSB3021/MSB3231` staging warnings because a running `latest-build\ElgatoCapture.exe` held files open, but the actual repo binary `ElgatoCapture\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ElgatoCapture.dll` built successfully.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log` returned no matches after the verification run.
+- ffprobe Evidence:
+  - N/A (runtime diagnostics/snapshot change only)
+- Conclusion: MCP snapshots now expose source-reader blocking state, WASAPI callback cadence, playback queue pressure, and audio-level fire counts so freezes/skips can be distinguished from stale freshness alone. The requested `CaptureService` frame channel did not exist in the live preview path, so the source-reader depth probe was wired to the existing encoder video queue instead of inventing a new channel.
+
+## E52 - Thread-health probes surfaced through automation snapshots and MCP
+- Timestamp (UTC): 2026-03-08T06:45:02.8220841Z
+- Commit Hash: uncommitted (base 06a71ec724a0060d6ad9755488706dc7c278c7b1)
+- What Changed (single change): Added source-reader and WASAPI thread-health probes, surfaced them through `CaptureRuntimeSnapshot`/`AutomationSnapshot`, and formatted them in MCP so automation can distinguish blocked reads, callback stalls, silence writes, queue drops, and queue depth.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true /nr:false /m:1 -p:UseSharedCompilation=false`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true /nr:false /m:1 -p:UseSharedCompilation=false` succeeded; staging still emitted `latest-build` file-lock copy warnings while `ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll` built successfully.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log` returned no matches after the verification run.
+- ffprobe Evidence:
+  - N/A (automation/runtime diagnostics change only)
+- Conclusion: MCP snapshots now expose enough live thread-health state to separate source-reader blocking, WASAPI callback cadence problems, playback starvation, and queue pressure without adding new pipeline behavior. Live device repro is still needed to capture a real stall signature.
+
+## E53 - Experiment log correction for duplicate E52 thread-health entry
+- Timestamp (UTC): 2026-03-08T06:45:03.3984633Z
+- Commit Hash: uncommitted (base 06a71ec724a0060d6ad9755488706dc7c278c7b1)
+- What Changed (single change): Corrected the experiment log bookkeeping after a duplicate `E52` heading was appended for the same thread-health probe work; treat the earlier `E52 - Thread-health probes for source reader and WASAPI paths` entry as the canonical record for this change.
+- How To Run:
+  1. Read the `E52`/`E53` headings in `docs/experiment_log.md`.
+  2. Use the first `E52` entry as the authoritative validation record for the thread-health probe implementation.
+- Validator Output:
+  - N/A (experiment log correction only)
+- ffprobe Evidence:
+  - N/A (documentation correction only)
+- Conclusion: The duplicate experiment heading is now explicitly corrected without rewriting prior append-only history.

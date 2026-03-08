@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using System.Text.Json;
 
@@ -57,6 +58,30 @@ public static class ResponseFormatter
         builder.AppendLine($"Freshness: reader {Get(snapshot, "IngestLastVideoFrameAgeMs")}ms | enqueue {Get(snapshot, "EncoderLastEnqueueAgeMs")}ms | write {Get(snapshot, "EncoderLastWriteAgeMs")}ms");
         builder.AppendLine($"Diagnostics: MemPref={Get(snapshot, "MemoryPreference")} ReqSubtype={Get(snapshot, "VideoRequestedSubtype")} NegSubtype={Get(snapshot, "VideoNegotiatedSubtype")} Errors={Get(snapshot, "VideoIngestErrorCount")}");
         builder.AppendLine();
+        builder.AppendLine("== Thread Health ==");
+        var sourceReaderLastFrameAgeMs = FormatTickAgeMs(GetLong(snapshot, "SourceReaderLastFrameTickMs"));
+        var wasapiCaptureLastCallbackAgeMs = FormatTickAgeMs(GetLong(snapshot, "WasapiCaptureLastCallbackTickMs"));
+        var wasapiPlaybackLastRenderAgeMs = FormatTickAgeMs(GetLong(snapshot, "WasapiPlaybackLastRenderTickMs"));
+        var sourceReaderOutstanding = Get(snapshot, "SourceReaderReadOutstanding");
+        var sourceReaderOutstandingSuffix = string.Equals(sourceReaderOutstanding, "true", StringComparison.OrdinalIgnoreCase)
+            ? $" outstandingFor={Get(snapshot, "SourceReaderReadOutstandingMs")}ms"
+            : string.Empty;
+        builder.AppendLine(
+            $"Source Reader: outstanding={sourceReaderOutstanding}{sourceReaderOutstandingSuffix} " +
+            $"lastFrame={sourceReaderLastFrameAgeMs}ms ago channelDepth={Get(snapshot, "SourceReaderFrameChannelDepth")}");
+        builder.AppendLine(
+            $"WASAPI Capture: callbacks={Get(snapshot, "WasapiCaptureCallbackCount")} " +
+            $"interval={Get(snapshot, "WasapiCaptureCallbackAvgIntervalMs")}ms/avg {Get(snapshot, "WasapiCaptureCallbackMaxIntervalMs")}ms/max " +
+            $"silence={Get(snapshot, "WasapiCaptureCallbackSilenceCount")} " +
+            $"lastCallback={wasapiCaptureLastCallbackAgeMs}ms ago " +
+            $"levelEvents={Get(snapshot, "WasapiCaptureAudioLevelEventsFired")}");
+        builder.AppendLine(
+            $"WASAPI Playback: callbacks={Get(snapshot, "WasapiPlaybackRenderCallbackCount")} " +
+            $"silence={Get(snapshot, "WasapiPlaybackRenderSilenceCount")} " +
+            $"queueDepth={Get(snapshot, "WasapiPlaybackQueueDepth")} " +
+            $"drops={Get(snapshot, "WasapiPlaybackQueueDropCount")} " +
+            $"lastCallback={wasapiPlaybackLastRenderAgeMs}ms ago");
+        builder.AppendLine();
         builder.AppendLine("== Recording ==");
         builder.AppendLine($"Recording: {Get(snapshot, "IsRecording")} | Output: {Get(snapshot, "OutputPath")}");
         builder.AppendLine($"Time: {Get(snapshot, "RecordingTime")} | Size: {Get(snapshot, "RecordingSizeInfo")} | Bitrate: {Get(snapshot, "RecordingBitrateInfo")}");
@@ -104,6 +129,28 @@ public static class ResponseFormatter
         builder.AppendLine($"Telemetry: {Get(snapshot, "SourceTelemetryAvailability")} ({Get(snapshot, "SourceTelemetryConfidence")})");
 
         return builder.ToString().TrimEnd();
+    }
+
+    private static long GetLong(JsonElement el, string prop, long fallback = 0)
+    {
+        if (el.ValueKind != JsonValueKind.Object || !el.TryGetProperty(prop, out var value))
+        {
+            return fallback;
+        }
+
+        return value.ValueKind == JsonValueKind.Number && value.TryGetInt64(out var number)
+            ? number
+            : fallback;
+    }
+
+    private static long FormatTickAgeMs(long tickMs)
+    {
+        if (tickMs <= 0)
+        {
+            return -1;
+        }
+
+        return Math.Max(0, Environment.TickCount64 - tickMs);
     }
 
     public static string Get(JsonElement el, string prop, string fallback = "N/A")

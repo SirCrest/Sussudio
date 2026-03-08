@@ -15,6 +15,7 @@ public interface IAutomationWindowControl
     Task MoveToAsync(int x, int y, CancellationToken cancellationToken = default);
     Task ResizeToAsync(int width, int height, CancellationToken cancellationToken = default);
     Task SnapToRegionAsync(AutomationWindowAction region, CancellationToken cancellationToken = default);
+    Task<WindowScreenshotResult> CaptureWindowScreenshotAsync(string outputPath, CancellationToken cancellationToken = default);
 }
 
 public interface IRecordingVerifier

@@ -47,6 +47,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     public long RecordingFramesDelivered => Interlocked.Read(ref _recordingFramesDelivered);
     public long RecordingFramesEnqueued => Interlocked.Read(ref _recordingFramesEnqueued);
     public long LastVideoFrameArrivedTick => Interlocked.Read(ref _lastVideoFrameArrivedTick);
+    public bool SourceReaderReadOutstanding => _capture?.IsReadSampleOutstanding ?? false;
+    public long SourceReaderReadOutstandingMs => _capture?.ReadSampleOutstandingMs ?? 0;
+    public long SourceReaderLastFrameTickMs => _capture?.LastFrameDeliveredTickMs ?? 0;
     public SharedD3DDeviceManager? D3DManager => Volatile.Read(ref _d3dManager);
     public MfSourceReaderVideoCapture.SourceCadenceMetrics GetSourceCadenceMetrics()
     {

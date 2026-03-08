@@ -45,12 +45,17 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition x:Name="StatsDockColumn" Width="Auto"/>
             </Grid.ColumnDefinitions>
+            <!-- Composition DropShadow — behind PreviewBorder, casts onto app background -->
+            <Border x:Name="VideoShadowHost" Grid.Column="0"
+                    Background="Transparent"
+                    IsHitTestVisible="False"/>
+
             <!-- Preview Border -->
             <Border x:Name="PreviewBorder" Grid.Column="0"
-                    Background="{ThemeResource PreviewAreaBackgroundBrush}"
+                    Background="Transparent"
                     BorderThickness="0"
-                    CornerRadius="8"
-                    Margin="12,8,0,0"
+                    CornerRadius="0"
+                    Margin="12,6,12,6"
                     RenderTransformOrigin="0.5,0.5">
                 <Border.RenderTransform>
                     <ScaleTransform x:Name="PreviewBorderScale"
@@ -58,6 +63,10 @@
                                     ScaleY="1"/>
                 </Border.RenderTransform>
                 <Grid>
+                    <Border x:Name="PreviewShadowHost"
+                            Margin="16"
+                            CornerRadius="4"
+                            Background="Transparent">
                     <Grid x:Name="PreviewContentGrid"
                           RenderTransformOrigin="0.5,0.5">
                         <Grid.RenderTransform>
@@ -73,8 +82,8 @@
                     <SwapChainPanel x:Name="PreviewSwapChainPanel"
                                     AutomationProperties.AutomationId="PreviewPlayerElement"
                                     Visibility="Collapsed"
-                                    HorizontalAlignment="Stretch"
-                                    VerticalAlignment="Stretch" />
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
 
                     <!-- Fallback CPU preview path -->
                     <Image x:Name="PreviewImage"
@@ -106,6 +115,7 @@
                             Opacity="0"
                             IsHitTestVisible="False"/>
                     </Grid>
+                    </Border>
 
                     <!-- No Device Placeholder -->
                     <StackPanel x:Name="NoDevicePlaceholder"
@@ -651,9 +661,13 @@
         </Border>
 
         <!-- Row 1: Two-Tier Control Bar -->
+        <Border x:Name="ControlBarShadowHost" Grid.Row="1"
+                Background="Transparent"
+                IsHitTestVisible="False"/>
         <Border x:Name="ControlBarBorder" Grid.Row="1"
                 Margin="16,8,16,16"
-                BorderThickness="0" CornerRadius="12" Padding="16,12">
+                BorderBrush="#10FFFFFF" BorderThickness="1"
+                CornerRadius="12" Padding="16,12">
             <Border.Background>
                 <AcrylicBrush TintColor="#141414"
                               TintOpacity="0.85"

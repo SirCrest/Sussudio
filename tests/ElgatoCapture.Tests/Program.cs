@@ -34,7 +34,10 @@ static class Program
                 GetRuntimeSnapshot_PipelineParity_Ready_WhenHdrRequestedAndIdle),
             await RunCheckAsync(
                 "HDR recording mismatch reports violation",
-                GetRuntimeSnapshot_PipelineParity_Violation_WhenHdrRequestedButIngressIsSdr)
+                GetRuntimeSnapshot_PipelineParity_Violation_WhenHdrRequestedButIngressIsSdr),
+            await RunCheckAsync(
+                "Thread health probes default cleanly when inactive",
+                GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive)
         };
 
         var failed = results.Where(r => !r.Passed).ToList();
@@ -206,6 +209,26 @@ static class Program
         AssertEqual(false, GetBoolProperty(snapshot, "PipelineModeMatched"), "PipelineModeMatched");
         AssertEqual("Violation", GetStringProperty(snapshot, "PipelineModeStatus"), "PipelineModeStatus");
         AssertContains(GetStringProperty(snapshot, "PipelineModeReason"), "Requested pipeline");
+
+        await DisposeAsync(captureService).ConfigureAwait(false);
+    }
+
+    private static async Task GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive()
+    {
+        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var device = BuildDevice();
+        var settings = BuildSettings(hdrEnabled: false);
+
+        await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
+
+        var snapshot = InvokeInstanceMethod(captureService, "GetRuntimeSnapshot");
+        AssertEqual(false, GetBoolProperty(snapshot, "SourceReaderReadOutstanding"), "SourceReaderReadOutstanding");
+        AssertEqual(0L, GetLongProperty(snapshot, "SourceReaderReadOutstandingMs"), "SourceReaderReadOutstandingMs");
+        AssertEqual(0L, GetLongProperty(snapshot, "SourceReaderLastFrameTickMs"), "SourceReaderLastFrameTickMs");
+        AssertEqual(0L, GetLongProperty(snapshot, "WasapiCaptureCallbackCount"), "WasapiCaptureCallbackCount");
+        AssertEqual(0L, GetLongProperty(snapshot, "WasapiCaptureAudioLevelEventsFired"), "WasapiCaptureAudioLevelEventsFired");
+        AssertEqual(0L, GetLongProperty(snapshot, "WasapiPlaybackRenderCallbackCount"), "WasapiPlaybackRenderCallbackCount");
+        AssertEqual(0L, GetLongProperty(snapshot, "WasapiPlaybackQueueDropCount"), "WasapiPlaybackQueueDropCount");
 
         await DisposeAsync(captureService).ConfigureAwait(false);
     }

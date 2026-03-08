@@ -42,7 +42,8 @@ public sealed class PipeClient
         ["SetTrueHdrPreviewEnabled"] = 23,
         ["ProbeVideoSource"] = 24,
         ["ProbePreviewColor"] = 25,
-        ["CapturePreviewFrame"] = 26
+        ["CapturePreviewFrame"] = 26,
+        ["CaptureWindowScreenshot"] = 27
     };
 
     public async Task<JsonElement> SendCommandAsync(
@@ -160,7 +161,7 @@ public sealed class PipeClient
     {
         return commandName switch
         {
-            "WaitForCondition" or "VerifyLastRecording" or "CapturePreviewFrame" => ExtendedResponseTimeoutMs,
+            "WaitForCondition" or "VerifyLastRecording" or "CapturePreviewFrame" or "CaptureWindowScreenshot" => ExtendedResponseTimeoutMs,
             _ => ResponseTimeoutMs
         };
     }
