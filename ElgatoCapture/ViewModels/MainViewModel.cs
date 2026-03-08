@@ -716,7 +716,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 IsAudioPreviewEnabled = IsAudioPreviewEnabled,
                 IsCustomAudioInputEnabled = IsCustomAudioInputEnabled,
                 SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,
-                PreviewVolume = PreviewVolume,
+                PreviewVolume = VolumeSaveOverride ?? PreviewVolume,
             };
 
             SettingsService.Save(settings);
@@ -3187,6 +3187,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     }
 
     internal bool SuppressVolumeSave { get; set; }
+
+    /// <summary>
+    /// When non-null, SaveSettings writes this value for PreviewVolume instead of the
+    /// current (animation-transient) property value. Set during the entrance volume
+    /// fade-in to prevent intermediate 0 values from corrupting persisted settings.
+    /// </summary>
+    internal double? VolumeSaveOverride { get; set; }
 
     partial void OnPreviewVolumeChanged(double value)
     {
