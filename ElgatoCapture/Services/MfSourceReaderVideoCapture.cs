@@ -30,8 +30,12 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private int _height;
     private double _fps;
     private bool _isP010;
+    private bool _strictD3DOutputRequired;
+    private bool _strictTextureOutputRequired;
     private string _deviceSymbolicLink = string.Empty;
+    private string _nativeInputFormat = "unknown";
     private string _negotiatedFormat = "unknown";
+    private int _fatalErrorSignaled;
     private long _framesDelivered;
     private long _framesDropped;
     private int _isReadSampleOutstanding;
@@ -50,11 +54,14 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     public long FramesDelivered => Interlocked.Read(ref _framesDelivered);
     public long FramesDropped => Interlocked.Read(ref _framesDropped);
     public string NegotiatedFormat => Volatile.Read(ref _negotiatedFormat);
+    public string NativeInputFormat => Volatile.Read(ref _nativeInputFormat);
     public bool IsP010 => Volatile.Read(ref _isP010);
     public bool IsD3DOutputEnabled => Volatile.Read(ref _sourceReaderD3DEnabled);
+    public bool IsHighFrameRateMjpegMode => Volatile.Read(ref _strictD3DOutputRequired);
     public int Width => Volatile.Read(ref _width);
     public int Height => Volatile.Read(ref _height);
     public double Fps => Volatile.Read(ref _fps);
+    public event EventHandler<Exception>? FatalErrorOccurred;
     public bool IsReadSampleOutstanding => Volatile.Read(ref _isReadSampleOutstanding) != 0;
     public long ReadSampleOutstandingMs
     {
@@ -90,6 +97,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         int height,
         double fps,
         bool requireP010,
+        string? requestedPixelFormat = null,
+        bool useMjpegHighFrameRateMode = false,
         IntPtr dxgiDeviceManager = default)
     {
         if (string.IsNullOrWhiteSpace(deviceSymbolicLink))
@@ -119,8 +128,14 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         IMFSourceReader? sourceReader = null;
         IMFAttributes? readerAttributes = null;
         IMFMediaType? selectedMediaType = null;
+        IMFMediaType? actualMediaType = null;
         var startupHeld = false;
         var sourceReaderD3DEnabled = false;
+        var disableConverters = true;
+        var requestedSourceSubtypeName = requestedPixelFormat;
+        var useConvertedMjpegNv12 = useMjpegHighFrameRateMode &&
+                                    !requireP010 &&
+                                    string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
 
         try
         {
@@ -129,22 +144,41 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
             mediaSource = CreateMediaSource(deviceSymbolicLink);
 
+            disableConverters = !useConvertedMjpegNv12;
             ThrowIfFailed(
-                MfInterop.MFCreateAttributes(out readerAttributes, 2),
+                MfInterop.MFCreateAttributes(out readerAttributes, useConvertedMjpegNv12 ? 3 : 2),
                 "MFCreateAttributes(reader)");
-            ThrowIfFailed(
-                readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_DISABLE_CONVERTERS, 1),
-                "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
+            if (useConvertedMjpegNv12)
+            {
+                ThrowIfFailed(
+                    readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS, 1),
+                    "IMFAttributes.SetUINT32(MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS)");
+            }
+            if (disableConverters)
+            {
+                ThrowIfFailed(
+                    readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_DISABLE_CONVERTERS, 1),
+                    "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
+            }
 
             if (dxgiDeviceManager != IntPtr.Zero &&
                 TrySetSourceReaderD3DManager(readerAttributes, dxgiDeviceManager))
             {
                 sourceReaderD3DEnabled = true;
             }
+            else if (useConvertedMjpegNv12)
+            {
+                throw new InvalidOperationException("4K120 MJPG mode requires D3D11-backed SourceReader output.");
+            }
 
             var createSourceReaderHr = MfInterop.MFCreateSourceReaderFromMediaSource(mediaSource, readerAttributes, out sourceReader);
             if (createSourceReaderHr < 0 && sourceReaderD3DEnabled)
             {
+                if (useConvertedMjpegNv12)
+                {
+                    ThrowIfFailed(createSourceReaderHr, "MFCreateSourceReaderFromMediaSource(hfr_mjpeg_d3d)");
+                }
+
                 Log(
                     "MF_SOURCE_READER_D3D_INIT_WARN " +
                     $"stage=CreateSourceReader hr=0x{createSourceReaderHr:X8} " +
@@ -156,9 +190,12 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 ThrowIfFailed(
                     MfInterop.MFCreateAttributes(out readerAttributes, 1),
                     "MFCreateAttributes(reader_cpu_fallback)");
-                ThrowIfFailed(
-                    readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_DISABLE_CONVERTERS, 1),
-                    "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
+                if (disableConverters)
+                {
+                    ThrowIfFailed(
+                        readerAttributes.SetUINT32(ref MfGuids.MF_READWRITE_DISABLE_CONVERTERS, 1),
+                        "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
+                }
 
                 sourceReaderD3DEnabled = false;
                 createSourceReaderHr = MfInterop.MFCreateSourceReaderFromMediaSource(mediaSource, readerAttributes, out sourceReader);
@@ -170,17 +207,41 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 ? MfGuids.MFVideoFormat_P010
                 : MfGuids.MFVideoFormat_NV12;
 
-            selectedMediaType = SelectMediaType(
-                sourceReader,
-                width,
-                height,
-                fps,
-                requestedSubtype,
-                out var negotiatedSubtype,
-                out var negotiatedWidth,
-                out var negotiatedHeight,
-                out var negotiatedFps,
-                out var negotiatedDescription);
+            Guid negotiatedSubtype;
+            int negotiatedWidth;
+            int negotiatedHeight;
+            double negotiatedFps;
+            string negotiatedDescription;
+            if (useConvertedMjpegNv12)
+            {
+                requestedSourceSubtypeName = "MJPG";
+                selectedMediaType = SelectConvertedMediaType(
+                    sourceReader,
+                    width,
+                    height,
+                    fps,
+                    MfGuids.MFVideoFormat_MJPG,
+                    requestedSubtype,
+                    out negotiatedSubtype,
+                    out negotiatedWidth,
+                    out negotiatedHeight,
+                    out negotiatedFps,
+                    out negotiatedDescription);
+            }
+            else
+            {
+                selectedMediaType = SelectMediaType(
+                    sourceReader,
+                    width,
+                    height,
+                    fps,
+                    requestedSubtype,
+                    out negotiatedSubtype,
+                    out negotiatedWidth,
+                    out negotiatedHeight,
+                    out negotiatedFps,
+                    out negotiatedDescription);
+            }
 
             ThrowIfFailed(
                 sourceReader.SetCurrentMediaType(
@@ -189,12 +250,61 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     selectedMediaType),
                 $"IMFSourceReader.SetCurrentMediaType({SubtypeGuidToName(negotiatedSubtype)})");
 
+            ThrowIfFailed(
+                sourceReader.GetCurrentMediaType(
+                    MfConstants.MF_SOURCE_READER_FIRST_VIDEO_STREAM,
+                    out actualMediaType),
+                "IMFSourceReader.GetCurrentMediaType");
+
+            if (actualMediaType != null)
+            {
+                if (TryGetGuid(actualMediaType, ref MfGuids.MF_MT_SUBTYPE, out var actualSubtype))
+                {
+                    negotiatedSubtype = actualSubtype;
+                }
+
+                if (TryGetFrameSize(actualMediaType, out var actualWidth, out var actualHeight))
+                {
+                    negotiatedWidth = actualWidth;
+                    negotiatedHeight = actualHeight;
+                }
+
+                if (TryGetFrameRate(actualMediaType, out var actualFpsNumerator, out var actualFpsDenominator) &&
+                    actualFpsDenominator > 0)
+                {
+                    negotiatedFps = (double)actualFpsNumerator / actualFpsDenominator;
+                }
+
+                if (useConvertedMjpegNv12)
+                {
+                    negotiatedDescription =
+                        $"{SubtypeGuidToName(negotiatedSubtype)} <= MJPG {negotiatedWidth}x{negotiatedHeight}@{negotiatedFps:0.###}";
+                }
+            }
+
+            if (useConvertedMjpegNv12)
+            {
+                if (!sourceReaderD3DEnabled)
+                {
+                    throw new InvalidOperationException("4K120 MJPG mode requires D3D11-backed decoded output.");
+                }
+
+                if (negotiatedSubtype != MfGuids.MFVideoFormat_NV12)
+                {
+                    throw new InvalidOperationException(
+                        $"4K120 MJPG mode requires decoded NV12 output, but negotiated {SubtypeGuidToName(negotiatedSubtype)}.");
+                }
+            }
+
             _deviceSymbolicLink = deviceSymbolicLink;
             _width = negotiatedWidth;
             _height = negotiatedHeight;
             _fps = negotiatedFps;
             SetExpectedFrameRate(_fps);
             _isP010 = negotiatedSubtype == MfGuids.MFVideoFormat_P010;
+            _strictD3DOutputRequired = useConvertedMjpegNv12;
+            _strictTextureOutputRequired = useConvertedMjpegNv12;
+            Volatile.Write(ref _nativeInputFormat, useConvertedMjpegNv12 ? "MJPG" : SubtypeGuidToName(negotiatedSubtype));
             Volatile.Write(ref _negotiatedFormat, negotiatedDescription);
             Interlocked.Exchange(ref _framesDelivered, 0);
             Interlocked.Exchange(ref _framesDropped, 0);
@@ -203,6 +313,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             Interlocked.Exchange(ref _lastFrameDeliveredTickMs, 0);
             Interlocked.Exchange(ref _dxgiBufferProbeDone, 0);
             Interlocked.Exchange(ref _dxgiResourceFailureCount, 0);
+            Interlocked.Exchange(ref _fatalErrorSignaled, 0);
 
             lock (_sync)
             {
@@ -221,9 +332,12 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 "MF_SOURCE_READER_INIT " +
                 $"device='{deviceSymbolicLink}' " +
                 $"requested={width}x{height}@{fps:0.###} " +
+                $"requested_source_subtype='{requestedSourceSubtypeName ?? (requireP010 ? "P010" : "NV12")}' " +
+                $"native_input='{_nativeInputFormat}' " +
                 $"negotiated='{_negotiatedFormat}' " +
                 $"d3d_manager_enabled={sourceReaderD3DEnabled} " +
-                "mf_readwrite_disable_converters=true");
+                $"mf_readwrite_disable_converters={disableConverters.ToString().ToLowerInvariant()} " +
+                $"mf_readwrite_enable_hardware_transforms={useConvertedMjpegNv12.ToString().ToLowerInvariant()}");
         }
         catch (Exception ex)
         {
@@ -231,12 +345,14 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 "MF_SOURCE_READER_INIT_FAIL " +
                 $"device='{deviceSymbolicLink}' " +
                 $"requested={width}x{height}@{fps:0.###} " +
+                $"requested_source_subtype='{requestedSourceSubtypeName ?? (requireP010 ? "P010" : "NV12")}' " +
                 $"d3d_manager_requested={(dxgiDeviceManager != IntPtr.Zero)} " +
                 $"type={ex.GetType().Name} msg={ex.Message}");
             throw;
         }
         finally
         {
+            ReleaseComObject(ref actualMediaType);
             ReleaseComObject(ref selectedMediaType);
             ReleaseComObject(ref readerAttributes);
             ReleaseComObject(ref sourceReader);
@@ -351,8 +467,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             _isInitialized = false;
             _deviceSymbolicLink = string.Empty;
             _isP010 = false;
+            _strictD3DOutputRequired = false;
+            _strictTextureOutputRequired = false;
             _sourceReaderD3DEnabled = false;
             _dxgiDeviceManagerPtr = IntPtr.Zero;
+            _nativeInputFormat = "unknown";
+            _negotiatedFormat = "unknown";
+            Interlocked.Exchange(ref _fatalErrorSignaled, 0);
         }
 
         if (_startupHeld)
@@ -458,6 +579,12 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     $"type={ex.GetType().Name} " +
                     $"hr=0x{ex.HResult:X8} " +
                     $"msg={ex.Message}");
+
+                if (Volatile.Read(ref _strictD3DOutputRequired))
+                {
+                    SignalFatalError(ex);
+                    break;
+                }
             }
             finally
             {
@@ -811,6 +938,11 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         long arrivalTick)
     {
         var hasTexture = TryGetDxgiTexture(buffer, out var gpuTexture, out var gpuSubresource);
+        if (!hasTexture && Volatile.Read(ref _strictTextureOutputRequired))
+        {
+            throw new InvalidOperationException("4K120 MJPG mode requires D3D11 texture delivery for preview.");
+        }
+
         if (!hasTexture && fallbackRawFrame != null)
         {
             DeliverRawFrameFromBuffer(buffer, fallbackRawFrame, arrivalTick);
@@ -1380,6 +1512,78 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         return bestType;
     }
 
+    private IMFMediaType SelectConvertedMediaType(
+        IMFSourceReader reader,
+        int requestedWidth,
+        int requestedHeight,
+        double requestedFps,
+        Guid requestedSourceSubtype,
+        Guid requestedOutputSubtype,
+        out Guid selectedSubtype,
+        out int selectedWidth,
+        out int selectedHeight,
+        out double selectedFps,
+        out string negotiatedDescription)
+    {
+        var nativeType = SelectMediaType(
+            reader,
+            requestedWidth,
+            requestedHeight,
+            requestedFps,
+            requestedSourceSubtype,
+            out var nativeSubtype,
+            out selectedWidth,
+            out selectedHeight,
+            out selectedFps,
+            out _);
+
+        IMFMediaType? convertedType = null;
+        try
+        {
+            ThrowIfFailed(MfInterop.MFCreateMediaType(out convertedType), "MFCreateMediaType");
+
+            ThrowIfFailed(
+                convertedType.SetGUID(ref MfGuids.MF_MT_MAJOR_TYPE, ref MfGuids.MFMediaType_Video),
+                "IMFMediaType.SetGUID(MF_MT_MAJOR_TYPE)");
+            ThrowIfFailed(
+                convertedType.SetGUID(ref MfGuids.MF_MT_SUBTYPE, ref requestedOutputSubtype),
+                $"IMFMediaType.SetGUID(MF_MT_SUBTYPE,{SubtypeGuidToName(requestedOutputSubtype)})");
+
+            if (TryGetUInt64(nativeType, ref MfGuids.MF_MT_FRAME_SIZE, out var frameSize))
+            {
+                ThrowIfFailed(
+                    convertedType.SetUINT64(ref MfGuids.MF_MT_FRAME_SIZE, frameSize),
+                    "IMFMediaType.SetUINT64(MF_MT_FRAME_SIZE)");
+            }
+
+            if (TryGetUInt64(nativeType, ref MfGuids.MF_MT_FRAME_RATE, out var frameRate))
+            {
+                ThrowIfFailed(
+                    convertedType.SetUINT64(ref MfGuids.MF_MT_FRAME_RATE, frameRate),
+                    "IMFMediaType.SetUINT64(MF_MT_FRAME_RATE)");
+            }
+
+            CopyOptionalUInt64(nativeType, convertedType, ref MfGuids.MF_MT_FRAME_RATE_RANGE_MIN);
+            CopyOptionalUInt64(nativeType, convertedType, ref MfGuids.MF_MT_FRAME_RATE_RANGE_MAX);
+            CopyOptionalUInt64(nativeType, convertedType, ref MfGuids.MF_MT_PIXEL_ASPECT_RATIO);
+            CopyOptionalUInt32(nativeType, convertedType, ref MfGuids.MF_MT_INTERLACE_MODE);
+            CopyOptionalUInt32(nativeType, convertedType, ref MfGuids.MF_MT_ALL_SAMPLES_INDEPENDENT);
+
+            selectedSubtype = requestedOutputSubtype;
+            negotiatedDescription =
+                $"{SubtypeGuidToName(requestedOutputSubtype)} <= {SubtypeGuidToName(nativeSubtype)} {selectedWidth}x{selectedHeight}@{selectedFps:0.###}";
+
+            var result = convertedType;
+            convertedType = null;
+            return result;
+        }
+        finally
+        {
+            ReleaseComObject(ref nativeType);
+            ReleaseComObject(ref convertedType);
+        }
+    }
+
     private static bool TryGetFrameSize(IMFAttributes attributes, out int width, out int height)
     {
         width = 0;
@@ -1435,6 +1639,39 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         ThrowIfFailed(hr, $"IMFAttributes.GetUINT64({key})");
         return true;
+    }
+
+    private static bool TryGetUInt32(IMFAttributes attributes, ref Guid key, out int value)
+    {
+        var hr = attributes.GetUINT32(ref key, out value);
+        if (hr == MfHResults.MF_E_ATTRIBUTENOTFOUND)
+        {
+            value = 0;
+            return false;
+        }
+
+        ThrowIfFailed(hr, $"IMFAttributes.GetUINT32({key})");
+        return true;
+    }
+
+    private static void CopyOptionalUInt64(IMFAttributes source, IMFAttributes destination, ref Guid key)
+    {
+        if (!TryGetUInt64(source, ref key, out var value))
+        {
+            return;
+        }
+
+        ThrowIfFailed(destination.SetUINT64(ref key, value), $"IMFAttributes.SetUINT64({key})");
+    }
+
+    private static void CopyOptionalUInt32(IMFAttributes source, IMFAttributes destination, ref Guid key)
+    {
+        if (!TryGetUInt32(source, ref key, out var value))
+        {
+            return;
+        }
+
+        ThrowIfFailed(destination.SetUINT32(ref key, value), $"IMFAttributes.SetUINT32({key})");
     }
 
     private static string TryReadAllocatedString(IMFAttributes attributes, ref Guid key)
@@ -1642,6 +1879,23 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         Logger.Log(message);
     }
 
+    private void SignalFatalError(Exception ex)
+    {
+        if (Interlocked.Exchange(ref _fatalErrorSignaled, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            FatalErrorOccurred?.Invoke(this, ex);
+        }
+        catch (Exception callbackEx)
+        {
+            Log($"MF_SOURCE_READER_FATAL_ERROR_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
+        }
+    }
+
     private static void ThrowIfFailed(int hr, string operation)
     {
         if (hr >= 0)
@@ -1711,6 +1965,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             [MarshalAs(UnmanagedType.Interface)] out IMFSourceReader ppSourceReader);
 
         [DllImport("mfplat.dll", ExactSpelling = true)]
+        internal static extern int MFCreateMediaType(
+            [MarshalAs(UnmanagedType.Interface)] out IMFMediaType ppMFType);
+
+        [DllImport("mfplat.dll", ExactSpelling = true)]
         internal static extern int MFCreateDXGIDeviceManager(out uint pResetToken, out IntPtr ppDeviceManager);
 
         internal static void AddStartupReference()
@@ -1769,18 +2027,36 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             0x58F0AAD8, 0x22BF, 0x4F8A, 0xBB, 0x3D, 0xD2, 0xC4, 0x97, 0x8C, 0x6E, 0x2F);
         internal static Guid MF_READWRITE_DISABLE_CONVERTERS = new(
             0x98D5B065, 0x1374, 0x4847, 0x8D, 0x5D, 0x31, 0x52, 0x0F, 0xEE, 0x71, 0x56);
+        internal static Guid MF_READWRITE_ENABLE_HARDWARE_TRANSFORMS = new(
+            0xA634A91C, 0x822B, 0x41B9, 0xA4, 0x94, 0x4D, 0xE4, 0x64, 0x36, 0x12, 0xB0);
         internal static Guid MF_SOURCE_READER_D3D_MANAGER = new(
             0xEC822DA2, 0xE1E9, 0x4B29, 0xA0, 0xD8, 0x56, 0x3C, 0x71, 0x9F, 0x52, 0x69);
+        internal static Guid MF_MT_MAJOR_TYPE = new(
+            0x48EBA18E, 0xF8C9, 0x4687, 0xBF, 0x11, 0x0A, 0x74, 0xC9, 0xF9, 0x6A, 0x8F);
         internal static Guid MF_MT_SUBTYPE = new(
             0xF7E34C9A, 0x42E8, 0x4714, 0xB7, 0x4B, 0xCB, 0x29, 0xD7, 0x2C, 0x35, 0xE5);
+        internal static Guid MF_MT_ALL_SAMPLES_INDEPENDENT = new(
+            0xC9173739, 0x5E56, 0x461C, 0xB7, 0x13, 0x46, 0xFB, 0x99, 0x5C, 0xB9, 0x5F);
         internal static Guid MF_MT_FRAME_SIZE = new(
             0x1652C33D, 0xD6B2, 0x4012, 0xB8, 0x34, 0x72, 0x03, 0x08, 0x49, 0xA3, 0x7D);
         internal static Guid MF_MT_FRAME_RATE = new(
             0xC459A2E8, 0x3D2C, 0x4E44, 0xB1, 0x32, 0xFE, 0xE5, 0x15, 0x6C, 0x7B, 0xB0);
+        internal static Guid MF_MT_FRAME_RATE_RANGE_MIN = new(
+            0xD2E7558C, 0xDC1F, 0x403F, 0x9A, 0x72, 0xD2, 0x8B, 0xB1, 0xEB, 0x3B, 0x5E);
+        internal static Guid MF_MT_FRAME_RATE_RANGE_MAX = new(
+            0xE3371D41, 0xB4CF, 0x4A05, 0xBD, 0x4E, 0x20, 0xB8, 0x8B, 0xB2, 0xC4, 0xD6);
+        internal static Guid MF_MT_PIXEL_ASPECT_RATIO = new(
+            0xC6376A1E, 0x8D0A, 0x4027, 0xBE, 0x45, 0x6D, 0x9A, 0x0A, 0xD3, 0x9B, 0xB6);
+        internal static Guid MF_MT_INTERLACE_MODE = new(
+            0xE2724BB8, 0xE676, 0x4806, 0xB4, 0xB2, 0xA8, 0xD6, 0xEF, 0xB4, 0x4C, 0xCD);
+        internal static Guid MFMediaType_Video = new(
+            0x73646976, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
         internal static Guid MFVideoFormat_P010 = new(
             0x30313050, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
         internal static Guid MFVideoFormat_NV12 = new(
             0x3231564E, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
+        internal static Guid MFVideoFormat_MJPG = new(
+            0x47504A4D, 0x0000, 0x0010, 0x80, 0x00, 0x00, 0xAA, 0x00, 0x38, 0x9B, 0x71);
     }
 }
 

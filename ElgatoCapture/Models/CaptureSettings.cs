@@ -62,6 +62,27 @@ public class CaptureSettings
     public AudioPathMode AudioPathMode { get; set; } = AudioPathMode.PostMuxDefault;
     public RecordingPipelineOptions PipelineOptions { get; set; } = new();
 
+    public bool UseMjpegHighFrameRateMode =>
+        IsMjpegHighFrameRateMode(RequestedPixelFormat, Width, Height, FrameRate, HdrEnabled);
+
+    public static bool IsMjpegHighFrameRateMode(
+        string? requestedPixelFormat,
+        uint width,
+        uint height,
+        double frameRate,
+        bool hdrEnabled)
+    {
+        if (hdrEnabled)
+        {
+            return false;
+        }
+
+        return string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase) &&
+               width >= 3840 &&
+               height >= 2160 &&
+               frameRate >= 100;
+    }
+
     /// <summary>
     /// Calculates the target video bitrate based on quality setting, resolution, and frame rate.
     /// Returns bitrate in bits per second.

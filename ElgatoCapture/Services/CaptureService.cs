@@ -134,9 +134,34 @@ public class CaptureService : IDisposable, IAsyncDisposable
         unifiedVideoCapture.SetObservedPixelFormatObserver(OnUnifiedVideoFrameObserved);
     }
 
+    private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)
+    {
+        unifiedVideoCapture.FatalErrorOccurred += OnUnifiedVideoCaptureFatalError;
+        ConfigureObservedPixelTelemetry(unifiedVideoCapture);
+    }
+
+    private void DetachUnifiedVideoCapture(UnifiedVideoCapture? unifiedVideoCapture)
+    {
+        if (unifiedVideoCapture == null)
+        {
+            return;
+        }
+
+        unifiedVideoCapture.FatalErrorOccurred -= OnUnifiedVideoCaptureFatalError;
+        unifiedVideoCapture.SetObservedPixelFormatObserver(null);
+    }
+
     private void OnUnifiedVideoFrameObserved(bool isP010)
     {
         RecordObservedPixelFormat(isP010 ? "P010" : "NV12");
+    }
+
+    private void OnUnifiedVideoCaptureFatalError(object? sender, Exception ex)
+    {
+        Logger.Log($"UNIFIED_VIDEO_CAPTURE_FATAL type={ex.GetType().Name} msg={ex.Message}");
+        _sessionState = CaptureSessionState.Faulted;
+        StatusChanged?.Invoke(this, $"Video capture error: {ex.Message}");
+        ErrorOccurred?.Invoke(this, ex);
     }
 
     public RecordingStats GetRecordingStats()
@@ -1013,6 +1038,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
             var hdrRequested = HdrOutputPolicy.IsEnabled(settings);
             var requireP010 = hdrRequested;
+            var useMjpegHighFrameRateMode = settings.UseMjpegHighFrameRateMode;
             var audioDeviceId = settings.AudioEnabled
                 ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice.AudioDeviceId))
                 : null;
@@ -1021,6 +1047,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 "HDR_REQUEST_STATE scope=preview " +
                 $"hdr_toggle={settings.HdrEnabled} " +
                 $"require_p010={requireP010} " +
+                $"mjpeg_hfr={useMjpegHighFrameRateMode} " +
                 $"mode={settings.Width}x{settings.Height}@{settings.FrameRate:0.###}");
 
             UnifiedVideoCapture? unifiedVideoCapture = null;
@@ -1028,13 +1055,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
             try
             {
                 unifiedVideoCapture = new UnifiedVideoCapture();
-                ConfigureObservedPixelTelemetry(unifiedVideoCapture);
+                AttachUnifiedVideoCapture(unifiedVideoCapture);
                 await unifiedVideoCapture.InitializeAsync(
                     _currentDevice.Id,
                     (int)settings.Width,
                     (int)settings.Height,
                     settings.FrameRate,
-                    requireP010).ConfigureAwait(false);
+                    requireP010,
+                    settings.RequestedPixelFormat,
+                    useMjpegHighFrameRateMode).ConfigureAwait(false);
                 unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
                 TryApplySharedPreviewDevice(unifiedVideoCapture, _previewFrameSink);
                 unifiedVideoCapture.Start();
@@ -1075,6 +1104,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _unifiedVideoCapture = null;
                 if (unifiedVideoCapture != null)
                 {
+                    DetachUnifiedVideoCapture(unifiedVideoCapture);
                     try
                     {
                         await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
@@ -1133,6 +1163,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     _lastMfSourceReaderFramesDelivered = unifiedVideoCapture.VideoFramesArrived;
                     _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
                     _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
+                    DetachUnifiedVideoCapture(unifiedVideoCapture);
                     await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
                     await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
                 }
@@ -1227,11 +1258,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
                 transitionToken.ThrowIfCancellationRequested();
                 var requireP010 = recordingContext.HdrPipelineActive;
+                var useMjpegHighFrameRateMode = settings.UseMjpegHighFrameRateMode;
                 encoder.SetMfReadwriteDisableConverters(requireP010);
                 Logger.Log(
                     "HDR_NEGOTIATION " +
                     $"requested_hdr={hdrPipelineRequested} " +
                     $"requested_subtype={(hdrPipelineRequested ? "P010" : "NV12")} " +
+                    $"requested_source_subtype={settings.RequestedPixelFormat ?? (hdrPipelineRequested ? "P010" : "NV12")} " +
+                    $"mjpeg_hfr={useMjpegHighFrameRateMode} " +
                     $"negotiated_pixel_format={_actualPixelFormat ?? "unknown"} " +
                     $"negotiated_subtype_token={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "P010|MFVideoFormat_P010" : "NV12")} " +
                     $"hdr_static_metadata_requested={(!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata) || (settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0))} " +
@@ -1248,13 +1282,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 if (unifiedVideoCapture == null)
                 {
                     ownedUnifiedVideoCapture = new UnifiedVideoCapture();
-                    ConfigureObservedPixelTelemetry(ownedUnifiedVideoCapture);
+                    AttachUnifiedVideoCapture(ownedUnifiedVideoCapture);
                     await ownedUnifiedVideoCapture.InitializeAsync(
                         _currentDevice.Id,
                         (int)effectiveWidth,
                         (int)effectiveHeight,
                         effectiveFrameRate,
-                        requireP010).ConfigureAwait(false);
+                        requireP010,
+                        settings.RequestedPixelFormat,
+                        useMjpegHighFrameRateMode).ConfigureAwait(false);
                     ownedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _previewFrameSink : null);
                     TryApplySharedPreviewDevice(ownedUnifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
                     ownedUnifiedVideoCapture.Start();
@@ -1265,6 +1301,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 {
                     throw new InvalidOperationException(
                         $"Recording requires {(requireP010 ? "P010" : "NV12")}, but the active source-reader session negotiated {(unifiedVideoCapture.IsP010 ? "P010" : "NV12")}.");
+                }
+                else if (unifiedVideoCapture.IsHighFrameRateMjpegMode != useMjpegHighFrameRateMode)
+                {
+                    throw new InvalidOperationException(
+                        $"Recording requested mjpeg_hfr={useMjpegHighFrameRateMode}, but the active preview session is mjpeg_hfr={unifiedVideoCapture.IsHighFrameRateMjpegMode}.");
                 }
 
                 TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
@@ -1327,6 +1368,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 if (sinkAttachedForAudioOnly && _wasapiAudioCapture != null)
                 {
                     _wasapiAudioCapture.DetachRecordingSink();
+                }
+
+                if (ownedUnifiedVideoCapture != null)
+                {
+                    DetachUnifiedVideoCapture(ownedUnifiedVideoCapture);
                 }
 
                 await DisposeTransientRecordingBackendAsync(
@@ -1470,6 +1516,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     _lastMfSourceReaderFramesDelivered = unifiedVideoCapture.VideoFramesArrived;
                     _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
                     _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
+                    DetachUnifiedVideoCapture(unifiedVideoCapture);
                     await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
                     await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
                 }
@@ -1575,6 +1622,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             {
                 try
                 {
+                    DetachUnifiedVideoCapture(unifiedVideoCapture);
                     await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
                     await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
                 }

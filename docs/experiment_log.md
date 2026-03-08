@@ -879,3 +879,43 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (documentation correction only)
 - Conclusion: The duplicate experiment heading is now explicitly corrected without rewriting prior append-only history.
+
+## E54 - Special 4K120 MJPG mode preserves MJPG selection and requests converted NV12 output from SourceReader
+- Timestamp (UTC): 2026-03-08T12:29:57.2375024Z
+- Commit Hash: uncommitted (base 60b620de320851913f93357b90d015d0097d7b66)
+- What Changed (single change): Added an SDR-only 4K120-style MJPG mode contract that preserves MJPG selection in the view model, threads that intent through `CaptureSettings`/`CaptureService`, and makes `MfSourceReaderVideoCapture` request decoded `NV12` output from a matching native `MJPG` mode with hardware transforms instead of retargeting the UI back to a raw NV12 mode.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64 /nr:false /m:1 -p:UseSharedCompilation=false`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64 /nr:false /m:1 -p:UseSharedCompilation=false`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. Launch the app on a 4K X machine, select the `MJPG` 4K120 mode, and verify the log contains `MF_SOURCE_READER_INIT ... requested_source_subtype='MJPG' ... negotiated='NV12 <= MJPG ...'` with no fallback/retarget back to `NV12` in the UI.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64 /nr:false /m:1 -p:UseSharedCompilation=false` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64 /nr:false /m:1 -p:UseSharedCompilation=false` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` was not created by the regression-harness-only validation in this fresh worktree, so real-device preview/record startup is still required to capture SourceReader negotiation evidence for this experiment.
+- ffprobe Evidence:
+  - N/A (no real recording captured yet; this checkpoint is ingest/selection plumbing only)
+- Conclusion: The codebase now has an explicit special-mode path for SDR 4K120-style MJPG requests, and the app will keep that mode selected long enough to ask Media Foundation for decoded NV12 output instead of auto-retargeting back to a raw NV12 format. Real hardware is still required to prove whether the SourceReader+hardware-transform path sustains 4K120 and delivers D3D-backed textures without CPU fallback.
+
+## E55 - Strict 4K120 MJPG failures now fault the capture session instead of only logging and breaking
+- Timestamp (UTC): 2026-03-08T12:46:22.9295877Z
+- Commit Hash: uncommitted (base 60b620de320851913f93357b90d015d0097d7b66)
+- What Changed (single change): Added one-shot fatal error propagation for the strict 4K120 MJPG path so `MfSourceReaderVideoCapture` signals HFR read-loop failures, `UnifiedVideoCapture` escalates strict texture-missing failures, and `CaptureService` moves the session to `Faulted` and raises `ErrorOccurred` instead of letting the HFR session silently black out.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64 /nr:false /m:1 -p:UseSharedCompilation=false`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ --no-restore -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64 /nr:false /m:1 -p:UseSharedCompilation=false`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64 /nr:false /m:1 -p:UseSharedCompilation=false` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ --no-restore -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`, including `PASS: Strict HFR fatal handler faults the capture session`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64 /nr:false /m:1 -p:UseSharedCompilation=false` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` contained `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` from the regression harness exercising the new fatal handler path.
+- ffprobe Evidence:
+  - N/A (no real-device 4K120 recording captured in this checkpoint)
+- Conclusion: The special HFR MJPG mode now fails loudly at the app-session layer when its strict decode/texture contract breaks, which closes the previous “log and black out” behavior. This is still not proof of sustained 4K120 throughput; it only hardens the failure semantics around the negotiated HFR path.

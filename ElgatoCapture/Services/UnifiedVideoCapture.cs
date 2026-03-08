@@ -17,9 +17,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private bool _recordingActive;
     private bool _disposed;
     private bool _isP010;
+    private bool _strictPreviewTextureRequired;
+    private int _fatalErrorSignaled;
     private int _width;
     private int _height;
     private double _fps;
+    private string _nativeInputFormat = "unknown";
     private string _negotiatedFormat = "unknown";
     private long _videoFramesArrived;
     private long _videoFramesDropped;
@@ -33,6 +36,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     public int Width => Volatile.Read(ref _width);
     public int Height => Volatile.Read(ref _height);
     public double Fps => Volatile.Read(ref _fps);
+    public bool IsHighFrameRateMjpegMode => Volatile.Read(ref _strictPreviewTextureRequired);
+    public string NativeInputFormat => Volatile.Read(ref _nativeInputFormat);
     public string NegotiatedFormat => Volatile.Read(ref _negotiatedFormat);
     public long VideoFramesArrived => Interlocked.Read(ref _videoFramesArrived);
     public long VideoFramesDropped
@@ -47,6 +52,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     public long RecordingFramesDelivered => Interlocked.Read(ref _recordingFramesDelivered);
     public long RecordingFramesEnqueued => Interlocked.Read(ref _recordingFramesEnqueued);
     public long LastVideoFrameArrivedTick => Interlocked.Read(ref _lastVideoFrameArrivedTick);
+    public event EventHandler<Exception>? FatalErrorOccurred;
     public bool SourceReaderReadOutstanding => _capture?.IsReadSampleOutstanding ?? false;
     public long SourceReaderReadOutstandingMs => _capture?.ReadSampleOutstandingMs ?? 0;
     public long SourceReaderLastFrameTickMs => _capture?.LastFrameDeliveredTickMs ?? 0;
@@ -62,7 +68,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         int width,
         int height,
         double fps,
-        bool requireP010)
+        bool requireP010,
+        string? requestedPixelFormat = null,
+        bool useMjpegHighFrameRateMode = false)
     {
         ThrowIfDisposed();
 
@@ -86,6 +94,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
                 height,
                 fps,
                 requireP010,
+                requestedPixelFormat,
+                useMjpegHighFrameRateMode,
                 dxgiDeviceManagerPtr).ConfigureAwait(false);
         }
         catch
@@ -104,15 +114,20 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             _capture = capture;
             _d3dManager = d3dManager;
             _isP010 = capture.IsP010;
+            _strictPreviewTextureRequired = capture.IsHighFrameRateMjpegMode;
             _width = capture.Width;
             _height = capture.Height;
             _fps = capture.Fps;
+            _nativeInputFormat = capture.NativeInputFormat;
             _negotiatedFormat = capture.NegotiatedFormat;
             Interlocked.Exchange(ref _videoFramesArrived, 0);
             Interlocked.Exchange(ref _videoFramesDropped, 0);
             Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
             Interlocked.Exchange(ref _lastVideoFrameArrivedTick, 0);
+            Interlocked.Exchange(ref _fatalErrorSignaled, 0);
         }
+
+        capture.FatalErrorOccurred += OnCaptureFatalError;
     }
 
     public void Start()
@@ -262,6 +277,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
         if (capture != null)
         {
+            capture.FatalErrorOccurred -= OnCaptureFatalError;
             await capture.DisposeAsync().ConfigureAwait(false);
         }
 
@@ -320,7 +336,17 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
                 }
             }
 
-            if (!textureSubmitted && !frameData.IsEmpty)
+            if (!textureSubmitted &&
+                Volatile.Read(ref _strictPreviewTextureRequired))
+            {
+                Interlocked.Increment(ref _videoFramesDropped);
+                SignalFatalError(
+                    new InvalidOperationException(
+                        $"4K120 MJPG mode requires D3D preview textures, but texture delivery failed for native_input='{_nativeInputFormat}' negotiated='{_negotiatedFormat}'."),
+                    "UNIFIED_VIDEO_PREVIEW_TEXTURE_REQUIRED " +
+                    $"native_input='{_nativeInputFormat}' negotiated='{_negotiatedFormat}'");
+            }
+            else if (!textureSubmitted && !frameData.IsEmpty)
             {
                 SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick);
             }
@@ -397,6 +423,32 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         if (_disposed)
         {
             throw new ObjectDisposedException(nameof(UnifiedVideoCapture));
+        }
+    }
+
+    private void OnCaptureFatalError(object? sender, Exception ex)
+    {
+        SignalFatalError(
+            ex,
+            $"UNIFIED_VIDEO_FATAL_CAPTURE_ERROR type={ex.GetType().Name} msg={ex.Message}");
+    }
+
+    private void SignalFatalError(Exception ex, string logMessage)
+    {
+        Logger.Log(logMessage);
+
+        if (Interlocked.Exchange(ref _fatalErrorSignaled, 1) != 0)
+        {
+            return;
+        }
+
+        try
+        {
+            FatalErrorOccurred?.Invoke(this, ex);
+        }
+        catch (Exception callbackEx)
+        {
+            Logger.Log($"UNIFIED_VIDEO_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
         }
     }
 }

@@ -1312,6 +1312,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 !IsHdrEnabled &&
                 SelectedFormat?.PixelFormat.Equals("MJPG", StringComparison.OrdinalIgnoreCase) == true)
             {
+                if (ShouldPreserveMjpegHighFrameRateMode(SelectedFormat))
+                {
+                    Logger.Log(
+                        $"Format probe preserved special MJPG HFR mode at {SelectedResolution}@{SelectedFrameRate:0.###}; " +
+                        "skipping SDR NV12 retarget.");
+                    return;
+                }
+
                 var preferredRate = previousFrameRate > 0 ? previousFrameRate : SelectedFrameRate;
                 var preferredBucket = GetFriendlyFrameRateBucket(preferredRate);
                 var nv12Candidates = target.SupportedFormats
@@ -1589,6 +1597,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private static bool IsHdrModeCandidate(MediaFormat format)
         => format.IsHdr || MediaFormat.IsTrue10BitPixelFormat(format.PixelFormat);
+
+    private static bool ShouldPreserveMjpegHighFrameRateMode(MediaFormat? format)
+        => format != null &&
+           CaptureSettings.IsMjpegHighFrameRateMode(
+               format.PixelFormat,
+               format.Width,
+               format.Height,
+               format.FrameRateExact,
+               hdrEnabled: false);
 
     partial void OnIsHdrEnabledChanged(bool value)
     {
@@ -2906,8 +2923,26 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             .OrderBy(format => GetTimingFamilyRank(format, friendlyBucket, timingFamily))
             .ThenBy(format => Math.Abs(format.FrameRateExact - friendlyBucket))
             .ThenByDescending(IsHdrModeCandidate)
-            .ThenBy(format => MediaFormat.GetPixelFormatPriority(format.PixelFormat))
+            .ThenBy(format => GetEffectivePixelFormatPriority(format))
             .First();
+    }
+
+    /// <summary>
+    /// At 4K HFR (≥3840x2160 @ ≥100fps SDR), prefer MJPG over NV12. The UVC driver
+    /// presents NV12 at these rates, but it's actually CPU-decoded MJPG causing frame
+    /// drops. Selecting raw MJPG lets MF use GPU DXVA decode via hardware transforms.
+    /// </summary>
+    private static int GetEffectivePixelFormatPriority(MediaFormat format)
+    {
+        if (format.Width >= 3840 &&
+            format.Height >= 2160 &&
+            format.FrameRateExact >= 100 &&
+            format.PixelFormat.Equals("MJPG", StringComparison.OrdinalIgnoreCase))
+        {
+            return 0;
+        }
+
+        return MediaFormat.GetPixelFormatPriority(format.PixelFormat);
     }
 
     private static int GetTimingFamilyRank(MediaFormat format, int friendlyBucket, FrameRateTimingFamily timingFamily)

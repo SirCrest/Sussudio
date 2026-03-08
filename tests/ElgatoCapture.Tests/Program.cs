@@ -37,7 +37,13 @@ static class Program
                 GetRuntimeSnapshot_PipelineParity_Violation_WhenHdrRequestedButIngressIsSdr),
             await RunCheckAsync(
                 "Thread health probes default cleanly when inactive",
-                GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive)
+                GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive),
+            await RunCheckAsync(
+                "MJPG HFR mode only activates for SDR 4K120-style settings",
+                CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest),
+            await RunCheckAsync(
+                "Strict HFR fatal handler faults the capture session",
+                CaptureService_StrictHfrFatalHandler_FaultsSession)
         };
 
         var failed = results.Where(r => !r.Passed).ToList();
@@ -233,6 +239,45 @@ static class Program
         await DisposeAsync(captureService).ConfigureAwait(false);
     }
 
+    private static Task CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest()
+    {
+        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "Width", 3840u);
+        SetPropertyOrBackingField(settings, "Height", 2160u);
+        SetPropertyOrBackingField(settings, "FrameRate", 120d);
+        SetPropertyOrBackingField(settings, "RequestedPixelFormat", "MJPG");
+        SetPropertyOrBackingField(settings, "HdrEnabled", false);
+
+        AssertEqual(true, GetBoolProperty(settings, "UseMjpegHighFrameRateMode"), "UseMjpegHighFrameRateMode");
+
+        SetPropertyOrBackingField(settings, "HdrEnabled", true);
+        AssertEqual(false, GetBoolProperty(settings, "UseMjpegHighFrameRateMode"), "UseMjpegHighFrameRateMode HDR");
+
+        SetPropertyOrBackingField(settings, "HdrEnabled", false);
+        SetPropertyOrBackingField(settings, "Width", 1920u);
+        AssertEqual(false, GetBoolProperty(settings, "UseMjpegHighFrameRateMode"), "UseMjpegHighFrameRateMode non-4k");
+
+        return Task.CompletedTask;
+    }
+
+    private static async Task CaptureService_StrictHfrFatalHandler_FaultsSession()
+    {
+        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var device = BuildDevice();
+        var settings = BuildSettings(hdrEnabled: false);
+
+        await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
+
+        InvokeNonPublicInstanceMethod(
+            captureService,
+            "OnUnifiedVideoCaptureFatalError",
+            new object?[] { null, new InvalidOperationException("synthetic hfr failure") });
+
+        AssertEqual("Faulted", GetPropertyValue(captureService, "SessionState")?.ToString(), "SessionState");
+
+        await DisposeAsync(captureService).ConfigureAwait(false);
+    }
+
     private static object BuildDevice()
     {
         var device = CreateInstance("ElgatoCapture.Models.CaptureDevice");
@@ -344,6 +389,17 @@ static class Program
 
         return method.Invoke(instance, null)
                ?? throw new InvalidOperationException($"Method '{methodName}' returned null.");
+    }
+
+    private static object? InvokeNonPublicInstanceMethod(object instance, string methodName, object?[]? arguments)
+    {
+        var method = instance.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        if (method == null)
+        {
+            throw new InvalidOperationException($"Non-public method '{methodName}' not found on '{instance.GetType().Name}'.");
+        }
+
+        return method.Invoke(instance, arguments);
     }
 
     private static void SetPrivateField(object instance, string fieldName, object? value)
