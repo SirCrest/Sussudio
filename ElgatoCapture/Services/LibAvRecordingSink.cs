@@ -17,6 +17,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder
 
     private readonly object _sync = new();
     private readonly LibAvEncoder _encoder = new();
+    private readonly SemaphoreSlim _workAvailable = new(0, 1);
     private Channel<VideoFramePacket>? _videoQueue;
     private Channel<AudioSamplePacket>? _audioQueue;
     private CancellationTokenSource? _cts;
@@ -45,6 +46,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder
     public long DroppedVideoFrames => Interlocked.Read(ref _droppedVideoFrames) + _encoder.DroppedFrameCount;
     public long EncodedVideoFrames => Interlocked.Read(ref _encodedVideoFrames);
     public long AudioSamplesReceived => _encoder.AudioSamplesReceived;
+    public long OutputBytes => _encoder.TotalBytesWritten;
     public string OutputPath => _context?.FinalOutputPath ?? _encoder.OutputPath;
     public int VideoQueueCount => Volatile.Read(ref _videoQueueDepth);
     public int AudioQueueCount => Volatile.Read(ref _audioQueueDepth);
@@ -336,6 +338,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder
         _videoQueue = null;
         _audioQueue = null;
         _encodingTask = null;
+        _workAvailable.Dispose();
 
         try
         {
@@ -377,9 +380,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder
         return (numerator, denominator);
     }
 
-    private static void CompleteWriter<TPacket>(Channel<TPacket>? channel)
+    private void CompleteWriter<TPacket>(Channel<TPacket>? channel)
     {
         channel?.Writer.TryComplete();
+        SignalWork();
     }
 
     private static void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue)
@@ -459,7 +463,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder
                     continue;
                 }
 
-                WaitForWork(videoQueue.Reader, audioQueue.Reader, cancellationToken);
+                _workAvailable.Wait(cancellationToken);
             }
 
             _encoder.FlushAndClose();
@@ -537,44 +541,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder
         return drainedAny;
     }
 
-    private static void WaitForWork(
-        ChannelReader<VideoFramePacket> videoReader,
-        ChannelReader<AudioSamplePacket> audioReader,
-        CancellationToken cancellationToken)
+    private void SignalWork()
     {
-        using var waitCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        var videoReadyTask = videoReader.WaitToReadAsync(waitCts.Token).AsTask();
-        var audioReadyTask = audioReader.WaitToReadAsync(waitCts.Token).AsTask();
-        var completedTask = Task.WhenAny(videoReadyTask, audioReadyTask).GetAwaiter().GetResult();
-        waitCts.Cancel();
-        if (ReferenceEquals(completedTask, videoReadyTask))
-        {
-            var hasVideo = videoReadyTask.GetAwaiter().GetResult();
-            if (!hasVideo)
-            {
-                try
-                {
-                    _ = audioReadyTask.GetAwaiter().GetResult();
-                }
-                catch (OperationCanceledException)
-                {
-                }
-            }
-
-            return;
-        }
-
-        var hasAudio = audioReadyTask.GetAwaiter().GetResult();
-        if (!hasAudio)
-        {
-            try
-            {
-                _ = videoReadyTask.GetAwaiter().GetResult();
-            }
-            catch (OperationCanceledException)
-            {
-            }
-        }
+        try { _workAvailable.Release(); }
+        catch (SemaphoreFullException) { }
     }
 
     private bool TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
@@ -589,6 +559,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder
         {
             Interlocked.Increment(ref _videoQueueDepth);
             Interlocked.Increment(ref _videoFramesEnqueued);
+            SignalWork();
             return true;
         }
 
@@ -601,6 +572,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder
             {
                 Interlocked.Increment(ref _videoQueueDepth);
                 Interlocked.Increment(ref _videoFramesEnqueued);
+                SignalWork();
                 return true;
             }
         }
@@ -621,6 +593,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder
         if (queue.Writer.TryWrite(packet))
         {
             Interlocked.Increment(ref _audioQueueDepth);
+            SignalWork();
             return true;
         }
 
@@ -632,6 +605,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder
             if (queue.Writer.TryWrite(packet))
             {
                 Interlocked.Increment(ref _audioQueueDepth);
+                SignalWork();
                 return true;
             }
         }

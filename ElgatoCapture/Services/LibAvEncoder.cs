@@ -36,6 +36,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     private long _encodedFrameCount;
     private long _droppedFrameCount;
     private long _audioSamplesReceived;
+    private long _totalBytesWritten;
     private byte* _resampleBuffer;
     private int _audioFrameSize;
     private int _accumulatorCapacity;
@@ -47,6 +48,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     public long EncodedFrameCount => _encodedFrameCount;
     public long DroppedFrameCount => _droppedFrameCount;
     public long AudioSamplesReceived => _audioSamplesReceived;
+    public long TotalBytesWritten => _totalBytesWritten;
     public bool IsEncoding => _isOpen;
     public bool AudioEnabled => _options?.AudioEnabled == true && _audioCodecCtx != null && _audioStream != null;
     public string VideoCodecName => _options?.CodecName ?? string.Empty;
@@ -735,14 +737,18 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         var sourceTimeBase = useBsfTimeBase && _bsfCtx != null ? _bsfCtx->time_base_out : _videoCodecCtx->time_base;
         ffmpeg.av_packet_rescale_ts(packet, sourceTimeBase, _videoStream->time_base);
         packet->stream_index = _videoStream->index;
+        var packetSize = packet->size;
         ThrowIfError(ffmpeg.av_interleaved_write_frame(_formatCtx, packet), "av_interleaved_write_frame");
+        _totalBytesWritten += packetSize;
     }
 
     private void WriteAudioPacket(AVPacket* packet)
     {
         ffmpeg.av_packet_rescale_ts(packet, _audioCodecCtx->time_base, _audioStream->time_base);
         packet->stream_index = _audioStream->index;
+        var packetSize = packet->size;
         ThrowIfError(ffmpeg.av_interleaved_write_frame(_formatCtx, packet), "av_interleaved_write_frame(audio)");
+        _totalBytesWritten += packetSize;
     }
 
     private void CopyPackedFrameToVideoFrame(ReadOnlySpan<byte> frameData, LibAvEncoderOptions options)

@@ -168,11 +168,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             if (_isRecording && _libavSink != null)
             {
-                var outputPath = _libavSink.OutputPath;
-                if (!string.IsNullOrWhiteSpace(outputPath) && File.Exists(outputPath))
-                {
-                    return new RecordingStats(new FileInfo(outputPath).Length, 0);
-                }
+                return new RecordingStats(_libavSink.OutputBytes, 0);
             }
 
             var path = _recordingContext?.VideoOutputPath ?? _lastOutputPath;
