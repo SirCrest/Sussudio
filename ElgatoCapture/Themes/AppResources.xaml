@@ -3,17 +3,25 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ResourceDictionary.ThemeDictionaries>
-        <!-- Dark theme (Default) -->
+        <!-- Dark theme (Default) — Floating Cinema concept -->
         <ResourceDictionary x:Key="Default">
-            <SolidColorBrush x:Key="AudioMeterTrackBrush" Color="#1E1E1E"/>
-            <SolidColorBrush x:Key="AudioMeterBorderBrush" Color="#333333"/>
+            <SolidColorBrush x:Key="AudioMeterTrackBrush" Color="#141414"/>
+            <SolidColorBrush x:Key="AudioMeterBorderBrush" Color="#2A2A2A"/>
             <SolidColorBrush x:Key="RecordButtonBrush" Color="#E81123"/>
-            <SolidColorBrush x:Key="RecordButtonHoverBrush" Color="#F1707A"/>
-            <SolidColorBrush x:Key="RecordButtonPressedBrush" Color="#C50F1F"/>
-            <SolidColorBrush x:Key="RecordButtonBorderBrush" Color="#C50F1F"/>
+            <SolidColorBrush x:Key="RecordButtonHoverBrush" Color="#FF4D5E"/>
+            <SolidColorBrush x:Key="RecordButtonPressedBrush" Color="#CC0E1B"/>
+            <SolidColorBrush x:Key="RecordButtonBorderBrush" Color="Transparent"/>
             <SolidColorBrush x:Key="RecordingIndicatorBrush" Color="#E0FF0000"/>
             <SolidColorBrush x:Key="WarningHintBrush" Color="#F5C542"/>
-            <SolidColorBrush x:Key="ClipAlertBrush" Color="#D13438"/>
+            <SolidColorBrush x:Key="ClipAlertBrush" Color="#FF1744"/>
+
+            <!-- Floating Cinema surfaces -->
+            <SolidColorBrush x:Key="PreviewAreaBackgroundBrush" Color="#000000"/>
+            <SolidColorBrush x:Key="SurfaceBorderSubtleBrush" Color="Transparent"/>
+            <SolidColorBrush x:Key="ToolbarSeparatorBrush" Color="#0AFFFFFF"/>
+
+            <!-- Accent system -->
+            <SolidColorBrush x:Key="AccentBrush" Color="#00CED1"/>
         </ResourceDictionary>
 
         <!-- Light theme -->
@@ -21,16 +29,23 @@
             <SolidColorBrush x:Key="AudioMeterTrackBrush" Color="#E8E8E8"/>
             <SolidColorBrush x:Key="AudioMeterBorderBrush" Color="#CCCCCC"/>
             <SolidColorBrush x:Key="RecordButtonBrush" Color="#E81123"/>
-            <SolidColorBrush x:Key="RecordButtonHoverBrush" Color="#F1707A"/>
-            <SolidColorBrush x:Key="RecordButtonPressedBrush" Color="#C50F1F"/>
-            <SolidColorBrush x:Key="RecordButtonBorderBrush" Color="#C50F1F"/>
+            <SolidColorBrush x:Key="RecordButtonHoverBrush" Color="#FF4D5E"/>
+            <SolidColorBrush x:Key="RecordButtonPressedBrush" Color="#CC0E1B"/>
+            <SolidColorBrush x:Key="RecordButtonBorderBrush" Color="Transparent"/>
             <SolidColorBrush x:Key="RecordingIndicatorBrush" Color="#E0FF0000"/>
             <SolidColorBrush x:Key="WarningHintBrush" Color="#C49000"/>
             <SolidColorBrush x:Key="ClipAlertBrush" Color="#D13438"/>
+
+            <!-- Light fallbacks -->
+            <SolidColorBrush x:Key="PreviewAreaBackgroundBrush" Color="#F0F0F0"/>
+            <SolidColorBrush x:Key="SurfaceBorderSubtleBrush" Color="#08000000"/>
+            <SolidColorBrush x:Key="ToolbarSeparatorBrush" Color="#0A000000"/>
+
+            <SolidColorBrush x:Key="AccentBrush" Color="#00868A"/>
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
-    <!-- Secondary label style for Opacity="0.7" + FontSize="12" pattern -->
+    <!-- Secondary label style -->
     <Style x:Key="SecondaryLabelStyle" TargetType="TextBlock">
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>

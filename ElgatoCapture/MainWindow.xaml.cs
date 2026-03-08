@@ -34,7 +34,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const int PreviewStartupDefaultVisualTimeoutMs = 10000;
     private const int PreviewStartupMinVisualTimeoutMs = 1000;
     private const int PreviewStartupMaxVisualTimeoutMs = 15000;
-    private const int PreviewStartupOverlayUpdateIntervalMs = 100;
     private static readonly TimeSpan PreviewStartupPlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);
     private static readonly int PreviewStartupVisualTimeoutMs = ResolveStartupSetting(
         "ELGATOCAPTURE_PREVIEW_START_TIMEOUT_MS",
@@ -71,7 +70,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private int _splitEncodeSelectionSyncQueued;
     private readonly string _windowTitleBase;
     private DispatcherQueueTimer? _previewStartupWatchdogTimer;
-    private DispatcherQueueTimer? _previewStartupOverlayTimer;
     private DispatcherQueueTimer? _previewStartupTelemetryTimer;
     private PreviewStartupState _previewStartupState = PreviewStartupState.Idle;
     private string? _previewStartupAttemptId;
@@ -95,6 +93,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private int _previewStartupFailureStopScheduled;
     private long _previewStartupLastPositionDispatchTick;
     private bool _previewStopRequestedByUser;
+    private bool _isPreviewReinitAnimating;
+    private DispatcherQueueTimer? _previewFadeInTimer;
+    private const int PreviewFadeInFrameThreshold = 3;
     private bool _isWindowClosing;
     private bool _toggleLabelsVisible;
     private bool _isSettingsShelfAnimating;
@@ -221,47 +222,28 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void StartPreviewStartupOverlay()
     {
-        PreviewLoadingOverlay.Visibility = Visibility.Visible;
-        UpdatePreviewLoadingOverlayText();
-
-        _previewStartupOverlayTimer ??= _dispatcherQueue.CreateTimer();
-        _previewStartupOverlayTimer.Interval = TimeSpan.FromMilliseconds(PreviewStartupOverlayUpdateIntervalMs);
-        _previewStartupOverlayTimer.IsRepeating = true;
-        _previewStartupOverlayTimer.Tick -= PreviewStartupOverlayTimer_Tick;
-        _previewStartupOverlayTimer.Tick += PreviewStartupOverlayTimer_Tick;
-        _previewStartupOverlayTimer.Start();
+        var ring = (ProgressRing)PreviewLoadingOverlay.Children[0];
+        ring.IsActive = true;
+        FadeInElement(PreviewLoadingOverlay);
     }
 
     private void StopPreviewStartupOverlay()
     {
-        _previewStartupOverlayTimer?.Stop();
-        PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
-        PreviewLoadingText.Text = "Starting preview...";
-    }
-
-    private void PreviewStartupOverlayTimer_Tick(object? sender, object e)
-    {
-        UpdatePreviewLoadingOverlayText();
-    }
-
-    private void UpdatePreviewLoadingOverlayText()
-    {
-        if (!ViewModel.IsPreviewing ||
-            _previewStartupState is PreviewStartupState.Rendering or PreviewStartupState.Failed ||
-            _previewFirstVisualConfirmed)
+        if (PreviewLoadingOverlay.Visibility == Visibility.Collapsed)
         {
             return;
         }
 
-        double remainingMs = PreviewStartupVisualTimeoutMs;
-        if (_previewStartupRequestedUtc.HasValue)
+        var ring = (ProgressRing)PreviewLoadingOverlay.Children[0];
+        ring.IsActive = false;
+        if (_isPreviewReinitAnimating)
         {
-            remainingMs = Math.Max(0d, PreviewStartupVisualTimeoutMs - (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds);
+            PreviewLoadingOverlay.Visibility = Visibility.Collapsed;
+            PreviewLoadingOverlay.Opacity = 1.0;
+            return;
         }
 
-        PreviewLoadingText.Text =
-            $"Waiting for video engine...{Environment.NewLine}" +
-            $"Timeout in {remainingMs / 1000.0:0.0}s";
+        FadeOutElement(PreviewLoadingOverlay);
     }
 
     private string BuildPreviewStartupMissingSignals()
@@ -498,7 +480,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 }
 
                 Logger.Log($"PREVIEW_START_FAILURE_STOP begin reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
-                await ViewModel.StopPreviewAsync();
+                await ViewModel.StopPreviewAsync(userInitiated: true);
                 ViewModel.StatusText = $"Preview startup failed: {reason}";
                 Logger.Log($"PREVIEW_START_FAILURE_STOP completed reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
             }
@@ -560,12 +542,28 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             return;
         }
 
+        if (_previewStopRequestedByUser)
+        {
+            Logger.Log(
+                $"PREVIEW_FIRST_VISUAL_IGNORED attempt={_previewStartupAttemptId ?? "none"} " +
+                $"source={source} reason=stop-requested");
+            return;
+        }
+
         _previewFirstVisualConfirmed = true;
         _previewStartupReceivedSignals |= PreviewStartupSignalFlags.FirstVisual;
         _previewFirstVisualUtc = DateTimeOffset.UtcNow;
         SetPreviewStartupState(PreviewStartupState.Rendering);
         StopPreviewStartupWatchdog();
         StopPreviewStartupOverlay();
+        // Wait for a few rendered frames before fading in — the first frame
+        // from the source reader may be black or stale while the signal settles.
+        SchedulePreviewFadeIn();
+        if (_isPreviewReinitAnimating)
+        {
+            Logger.Log($"PREVIEW_REINIT_ANIMATE_IN attempt={_previewStartupAttemptId ?? "none"}");
+            _isPreviewReinitAnimating = false;
+        }
         _previewStartupMissingSignals = string.Empty;
         var elapsedMs = _previewStartupRequestedUtc.HasValue
             ? (DateTimeOffset.UtcNow - _previewStartupRequestedUtc.Value).TotalMilliseconds
@@ -575,10 +573,69 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             $"source={source} elapsedMs={elapsedMs:0} recovery={_previewRecoveryAttemptCount}");
     }
 
-    private void ResetPreviewStartupTracking(bool keepRecoveryCount = false)
+    private void SchedulePreviewFadeIn()
+    {
+        StopPreviewFadeInTimer();
+
+        var renderer = _d3dRenderer;
+        if (renderer == null)
+        {
+            // CPU fallback path — no frame counter, just animate in after a short delay
+            _previewFadeInTimer = _dispatcherQueue.CreateTimer();
+            _previewFadeInTimer.Interval = TimeSpan.FromMilliseconds(50);
+            _previewFadeInTimer.IsRepeating = false;
+            _previewFadeInTimer.Tick += (_, _) =>
+            {
+                StopPreviewFadeInTimer();
+                _ = AnimatePreviewInAsync();
+            };
+            _previewFadeInTimer.Start();
+            return;
+        }
+
+        // Wait until the renderer has rendered enough frames for the signal to stabilize.
+        // Poll every ~16ms (one vsync) and check FramesRendered.
+        var baselineFrames = renderer.FramesRendered;
+        _previewFadeInTimer = _dispatcherQueue.CreateTimer();
+        _previewFadeInTimer.Interval = TimeSpan.FromMilliseconds(16);
+        _previewFadeInTimer.IsRepeating = true;
+        _previewFadeInTimer.Tick += (_, _) =>
+        {
+            var current = _d3dRenderer;
+            if (current == null || current != renderer)
+            {
+                // Renderer changed or gone — fade in now to avoid being stuck invisible
+                StopPreviewFadeInTimer();
+                _ = AnimatePreviewInAsync();
+                return;
+            }
+
+            var rendered = current.FramesRendered - baselineFrames;
+            if (rendered >= PreviewFadeInFrameThreshold)
+            {
+                StopPreviewFadeInTimer();
+                Logger.Log($"PREVIEW_FADE_IN_READY framesRendered={rendered} baseline={baselineFrames}");
+                _ = AnimatePreviewInAsync();
+            }
+        };
+        _previewFadeInTimer.Start();
+    }
+
+    private void StopPreviewFadeInTimer()
+    {
+        _previewFadeInTimer?.Stop();
+        _previewFadeInTimer = null;
+    }
+
+    private void ResetPreviewStartupTracking(bool keepRecoveryCount = false, bool preserveReinitAnimation = false)
     {
         StopPreviewStartupWatchdog();
         StopPreviewStartupOverlay();
+        StopPreviewFadeInTimer();
+        if (!preserveReinitAnimation)
+        {
+            _isPreviewReinitAnimating = false;
+        }
         _previewStartupAttemptId = null;
         _previewStartupRequestedUtc = null;
         _previewRendererAttachedUtc = null;
@@ -624,6 +681,40 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         var scale = PreviewSwapChainPanel.XamlRoot?.RasterizationScale ?? 1.0;
         _d3dRenderer?.OnPanelSizeChanged(e.NewSize.Width, e.NewSize.Height, scale);
+        UpdateRecordingGlowBorderMargin();
+    }
+
+    private void UpdateRecordingGlowBorderMargin()
+    {
+        var srcW = (double)(ViewModel.SourceWidth ?? 0);
+        var srcH = (double)(ViewModel.SourceHeight ?? 0);
+        var dstW = PreviewSwapChainPanel.ActualWidth;
+        var dstH = PreviewSwapChainPanel.ActualHeight;
+
+        if (srcW <= 0 || srcH <= 0 || dstW <= 0 || dstH <= 0)
+        {
+            RecordingGlowBorder.Margin = new Thickness(0);
+            return;
+        }
+
+        var srcAspect = srcW / srcH;
+        var dstAspect = dstW / dstH;
+        double fitW, fitH;
+
+        if (srcAspect > dstAspect)
+        {
+            fitW = dstW;
+            fitH = dstW / srcAspect;
+        }
+        else
+        {
+            fitH = dstH;
+            fitW = dstH * srcAspect;
+        }
+
+        var marginH = (dstW - fitW) / 2;
+        var marginV = (dstH - fitH) / 2;
+        RecordingGlowBorder.Margin = new Thickness(marginH, marginV, marginH, marginV);
     }
 
     private void SetGpuPreviewVisibility(Visibility visibility)
@@ -1147,6 +1238,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ViewModel.PropertyChanged += ViewModel_PropertyChanged;
         ViewModel.PreviewStartRequested += ViewModel_PreviewStartRequested;
         ViewModel.PreviewStopRequested += ViewModel_PreviewStopRequested;
+        ViewModel.PreviewReinitRequested += ViewModel_PreviewReinitRequested;
 
         // Wire up UI controls to ViewModel
         SetupBindings();
@@ -1156,6 +1248,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         shadow.Receivers.Add(SettingsOverlayPanel);
         ControlBarBorder.Shadow = shadow;
         ControlBarBorder.Translation = new System.Numerics.Vector3(0, 0, 32);
+
+        // Record button: floating elevation with shadow
+        var recShadow = new Microsoft.UI.Xaml.Media.ThemeShadow();
+        RecordButton.Shadow = recShadow;
+        RecordButton.Translation = new System.Numerics.Vector3(0, 0, 16);
 
         // Refresh devices on load - use Loaded event to ensure XAML is fully parsed
         var mainContent = (FrameworkElement)this.Content;
@@ -1437,7 +1534,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         StatsToggleLabel.Visibility = vis;
         RecordButtonLabel.Visibility = vis;
         RecordButtonStopLabel.Visibility = vis;
-        RecordButton.MinWidth = showLabels ? 120 : 44;
+        RecordButton.MinWidth = showLabels ? 140 : 48;
+        // When idle, also morph shape to match label visibility
+        if (!ViewModel.IsRecording)
+        {
+            RecordButton.Width = showLabels ? double.NaN : 48;
+            RecordButton.Padding = showLabels ? new Thickness(20, 0, 20, 0) : new Thickness(0);
+        }
     }
 
     private void StatsToggle_Checked(object sender, RoutedEventArgs e)
@@ -1692,6 +1795,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ViewModel.PropertyChanged -= ViewModel_PropertyChanged;
         ViewModel.PreviewStartRequested -= ViewModel_PreviewStartRequested;
         ViewModel.PreviewStopRequested -= ViewModel_PreviewStopRequested;
+        ViewModel.PreviewReinitRequested -= ViewModel_PreviewReinitRequested;
 
         try
         {
@@ -2090,6 +2194,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void StopPreviewForShutdown()
     {
+        _isPreviewReinitAnimating = false;
+        StopPreviewFadeInTimer();
+        ResetPreviewContentTransform();
+
         // Clean up D3D11 preview
         var renderer = _d3dRenderer;
         _d3dRenderer = null;
@@ -2131,9 +2239,21 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewStopRequestedByUser = false;
     }
 
+    private async Task ViewModel_PreviewReinitRequested(string reason)
+    {
+        if (!ViewModel.IsPreviewing)
+        {
+            return;
+        }
+
+        _isPreviewReinitAnimating = true;
+        Logger.Log($"PREVIEW_REINIT_ANIMATE_OUT reason={reason}");
+        await AnimatePreviewOutAsync();
+    }
+
     private void ViewModel_PreviewStopRequested(object? sender, EventArgs e)
     {
-        _previewStopRequestedByUser = true;
+        _previewStopRequestedByUser = _previewStopRequestedByUser || !ViewModel.IsPreviewReinitializing;
         StopPreviewStartupWatchdog();
         StopPreviewStartupOverlay();
     }
@@ -2155,10 +2275,31 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
                     SetPreviewStartupState(PreviewStartupState.StartingSession);
                     Logger.Log($"PREVIEW_SESSION_STARTED attempt={_previewStartupAttemptId ?? "none"}");
-                    FadeOutElement(NoDevicePlaceholder);
-                    StartPreviewStartupOverlay();
+                    if (!ViewModel.IsPreviewReinitializing && !_isPreviewReinitAnimating)
+                    {
+                        FadeOutElement(NoDevicePlaceholder);
+                        StartPreviewStartupOverlay();
+                        PreviewContentGrid.Opacity = 0.0;
+                        PreviewContentScale.ScaleX = 0.97;
+                        PreviewContentScale.ScaleY = 0.97;
+                    }
                     SetPreviewStartupState(PreviewStartupState.RendererAttaching);
-                    await StartPreviewRendererAsync();
+                    try
+                    {
+                        await StartPreviewRendererAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        var attachFailureReason = $"renderer-attach-failed:{ex.Message}";
+                        SetPreviewStartupState(PreviewStartupState.Failed, attachFailureReason);
+                        StopPreviewStartupWatchdog();
+                        StopPreviewStartupOverlay();
+                        ResetPreviewContentTransform();
+                        FadeInElement(NoDevicePlaceholder);
+                        Logger.Log($"PREVIEW_RENDERER_ATTACH_FAILED attempt={_previewStartupAttemptId ?? "none"} reason={attachFailureReason}");
+                        SchedulePreviewStartupFailureStop(attachFailureReason);
+                        throw;
+                    }
                     if (!_previewFirstVisualConfirmed)
                     {
                         SetPreviewStartupState(PreviewStartupState.WaitingForFirstVisual);
@@ -2173,19 +2314,71 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                     StopPreviewStartupWatchdog();
                     StopPreviewStartupOverlay();
                     await StopPreviewRendererAsync();
-                    FadeInElement(NoDevicePlaceholder);
+                    if (!ViewModel.IsPreviewReinitializing && !_isPreviewReinitAnimating)
+                    {
+                        ResetPreviewContentTransform();
+                        FadeInElement(NoDevicePlaceholder);
+                    }
+                    if (ViewModel.IsPreviewReinitializing)
+                    {
+                        PreviewButtonIcon.Glyph = "\uE71A";
+                        ToolTipService.SetToolTip(PreviewButton, "Stop Preview");
+                    }
+                    else
+                    {
+                        PreviewButtonIcon.Glyph = "\uE768";
+                        ToolTipService.SetToolTip(PreviewButton, "Start Preview");
+                    }
+                    TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
+                    ResetPreviewStartupTracking(preserveReinitAnimation: ViewModel.IsPreviewReinitializing || _isPreviewReinitAnimating);
+                }
+                break;
+
+            case nameof(MainViewModel.IsPreviewReinitializing):
+                if (!ViewModel.IsPreviewReinitializing && _isPreviewReinitAnimating)
+                {
+                    if (!ViewModel.IsPreviewing)
+                    {
+                        _isPreviewReinitAnimating = false;
+                        StopPreviewStartupOverlay();
+                        ResetPreviewContentTransform();
+                        FadeInElement(NoDevicePlaceholder);
+                    }
+                    else if (_previewFirstVisualConfirmed)
+                    {
+                        Logger.Log($"PREVIEW_REINIT_ANIMATE_RESET attempt={_previewStartupAttemptId ?? "none"} reason=reinit-stop-failed");
+                        _isPreviewReinitAnimating = false;
+                        StopPreviewStartupOverlay();
+                        ResetPreviewContentTransform();
+                    }
+                }
+                else if (!ViewModel.IsPreviewReinitializing && !ViewModel.IsPreviewing)
+                {
                     PreviewButtonIcon.Glyph = "\uE768";
                     ToolTipService.SetToolTip(PreviewButton, "Start Preview");
-                    TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
-                    ResetPreviewStartupTracking();
                 }
                 break;
 
             case nameof(MainViewModel.IsRecording):
-                RecordingIndicator.Visibility = ViewModel.IsRecording ? Visibility.Visible : Visibility.Collapsed;
-                // Toggle record button content between normal and recording states
+                RecordingGlowBorder.Opacity = ViewModel.IsRecording ? 1.0 : 0.0;
+                UpdateRecordingGlowBorderMargin();
+                // Three-state button: hide spinner, show correct content, morph shape
+                RecordButtonStartingContent.IsActive = false;
+                RecordButtonStartingContent.Visibility = Visibility.Collapsed;
                 RecordButtonNormalContent.Visibility = ViewModel.IsRecording ? Visibility.Collapsed : Visibility.Visible;
                 RecordButtonRecordingContent.Visibility = ViewModel.IsRecording ? Visibility.Visible : Visibility.Collapsed;
+                if (ViewModel.IsRecording)
+                {
+                    // Morph to pill shape
+                    RecordButton.Width = double.NaN;
+                    RecordButton.Padding = new Thickness(20, 0, 20, 0);
+                }
+                else
+                {
+                    // Morph back to circle
+                    RecordButton.Width = _toggleLabelsVisible ? double.NaN : 48;
+                    RecordButton.Padding = _toggleLabelsVisible ? new Thickness(20, 0, 20, 0) : new Thickness(0);
+                }
                 AudioRecordToggle.IsEnabled = !ViewModel.IsRecording;
                 CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
@@ -2301,6 +2494,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 UpdateFpsTelemetryTooltip();
                 break;
 
+            case nameof(MainViewModel.SourceWidth):
+            case nameof(MainViewModel.SourceHeight):
+                UpdateRecordingGlowBorderMargin();
+                break;
+
             case nameof(MainViewModel.IsCustomBitrateVisible):
                 CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
                 break;
@@ -2394,6 +2592,21 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
             case nameof(MainViewModel.IsRecordingTransitioning):
                 RecordButton.IsEnabled = !ViewModel.IsRecordingTransitioning;
+                // Show spinner during both start and stop transitions
+                if (ViewModel.IsRecordingTransitioning)
+                {
+                    RecordButtonNormalContent.Visibility = Visibility.Collapsed;
+                    RecordButtonRecordingContent.Visibility = Visibility.Collapsed;
+                    RecordButtonStartingContent.IsActive = true;
+                    RecordButtonStartingContent.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    RecordButtonStartingContent.IsActive = false;
+                    RecordButtonStartingContent.Visibility = Visibility.Collapsed;
+                    RecordButtonNormalContent.Visibility = ViewModel.IsRecording ? Visibility.Collapsed : Visibility.Visible;
+                    RecordButtonRecordingContent.Visibility = ViewModel.IsRecording ? Visibility.Visible : Visibility.Collapsed;
+                }
                 break;
 
             case nameof(MainViewModel.IsFfmpegMissing):
@@ -2831,7 +3044,98 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var clamped = Math.Clamp(level, 0.0, 1.0);
         var trackWidth = AudioMeterTrack.ActualWidth;
         if (trackWidth <= 0) return;
-        AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * clamped, 8);
+        AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * clamped, 12);
+    }
+
+    private void ResetPreviewContentTransform()
+    {
+        PreviewContentGrid.Opacity = 1.0;
+        PreviewContentScale.ScaleX = 1.0;
+        PreviewContentScale.ScaleY = 1.0;
+    }
+
+    private static Task BeginStoryboardAsync(Storyboard storyboard)
+    {
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        storyboard.Completed += (_, _) => tcs.TrySetResult(true);
+        storyboard.Begin();
+        return tcs.Task;
+    }
+
+    private Task AnimatePreviewOutAsync()
+    {
+        var duration = TimeSpan.FromMilliseconds(200);
+
+        var fadeOut = new DoubleAnimation
+        {
+            To = 0.0,
+            Duration = new Duration(duration),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(fadeOut, PreviewContentGrid);
+        Storyboard.SetTargetProperty(fadeOut, "Opacity");
+
+        var scaleX = new DoubleAnimation
+        {
+            To = 0.97,
+            Duration = new Duration(duration),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(scaleX, PreviewContentScale);
+        Storyboard.SetTargetProperty(scaleX, "ScaleX");
+
+        var scaleY = new DoubleAnimation
+        {
+            To = 0.97,
+            Duration = new Duration(duration),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        };
+        Storyboard.SetTarget(scaleY, PreviewContentScale);
+        Storyboard.SetTargetProperty(scaleY, "ScaleY");
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(fadeOut);
+        storyboard.Children.Add(scaleX);
+        storyboard.Children.Add(scaleY);
+        return BeginStoryboardAsync(storyboard);
+    }
+
+    private Task AnimatePreviewInAsync()
+    {
+        var duration = TimeSpan.FromMilliseconds(250);
+
+        var fadeIn = new DoubleAnimation
+        {
+            To = 1.0,
+            Duration = new Duration(duration),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(fadeIn, PreviewContentGrid);
+        Storyboard.SetTargetProperty(fadeIn, "Opacity");
+
+        var scaleX = new DoubleAnimation
+        {
+            To = 1.0,
+            Duration = new Duration(duration),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(scaleX, PreviewContentScale);
+        Storyboard.SetTargetProperty(scaleX, "ScaleX");
+
+        var scaleY = new DoubleAnimation
+        {
+            To = 1.0,
+            Duration = new Duration(duration),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        Storyboard.SetTarget(scaleY, PreviewContentScale);
+        Storyboard.SetTargetProperty(scaleY, "ScaleY");
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(fadeIn);
+        storyboard.Children.Add(scaleX);
+        storyboard.Children.Add(scaleY);
+        return BeginStoryboardAsync(storyboard);
     }
 
 
@@ -2894,15 +3198,33 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _ = RunUiEventHandlerAsync(async () =>
         {
+            if (ViewModel.IsPreviewReinitializing && !ViewModel.IsPreviewing)
+            {
+                _previewStopRequestedByUser = true;
+                ViewModel.CancelPendingPreviewRestart();
+                Logger.Log($"PREVIEW_REINIT_CANCEL_REQUESTED attempt={_previewStartupAttemptId ?? "none"}");
+                return;
+            }
+
             if (ViewModel.IsPreviewing)
             {
                 _previewStopRequestedByUser = true;
-                await ViewModel.StopPreviewAsync();
+                StopPreviewFadeInTimer();
+                await AnimatePreviewOutAsync();
+                try
+                {
+                    await ViewModel.StopPreviewAsync(userInitiated: true);
+                }
+                finally
+                {
+                    _isPreviewReinitAnimating = false;
+                    ResetPreviewContentTransform();
+                }
             }
             else
             {
                 _previewStopRequestedByUser = false;
-                await ViewModel.StartPreviewAsync();
+                await ViewModel.StartPreviewAsync(userInitiated: true);
             }
         }, nameof(PreviewButton_Click));
     }

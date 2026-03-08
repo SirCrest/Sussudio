@@ -13,7 +13,7 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid Padding="16" RowSpacing="12">
+    <Grid Padding="0" RowSpacing="0">
         <Grid.Resources>
             <Storyboard x:Name="RecPulseStoryboard" RepeatBehavior="Forever">
                 <DoubleAnimation Storyboard.TargetName="RecIndicatorDot"
@@ -29,18 +29,25 @@
         </Grid.RowDefinitions>
 
         <!-- Row 0: Preview Area + Settings Overlay -->
-        <Grid Grid.Row="0" ColumnSpacing="12">
+        <Grid Grid.Row="0" ColumnSpacing="0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition x:Name="StatsDockColumn" Width="Auto"/>
             </Grid.ColumnDefinitions>
             <!-- Preview Border -->
-            <Border Grid.Column="0"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1"
-                    CornerRadius="8">
+            <Border x:Name="PreviewBorder" Grid.Column="0"
+                    Background="{ThemeResource PreviewAreaBackgroundBrush}"
+                    BorderThickness="0"
+                    CornerRadius="8"
+                    Margin="12,8,0,0">
                 <Grid>
+                    <Grid x:Name="PreviewContentGrid"
+                          RenderTransformOrigin="0.5,0.5">
+                        <Grid.RenderTransform>
+                            <ScaleTransform x:Name="PreviewContentScale"
+                                            ScaleX="1"
+                                            ScaleY="1"/>
+                        </Grid.RenderTransform>
                     <Border x:Name="PreviewLetterboxBackground"
                             Background="Black"
                             Visibility="Collapsed" />
@@ -60,13 +67,13 @@
                            HorizontalAlignment="Stretch"
                            VerticalAlignment="Stretch"/>
 
-                    <!-- Recording Indicator -->
+                    <!-- Recording Indicator (hidden — glow border serves as tally) -->
                     <Border x:Name="RecordingIndicator"
                             AutomationProperties.AutomationId="RecordingIndicator"
                             Visibility="Collapsed"
-                            HorizontalAlignment="Right"
+                            HorizontalAlignment="Left"
                             VerticalAlignment="Top"
-                            Margin="12"
+                            Margin="16,12,0,0"
                             Padding="8,4"
                             CornerRadius="4"
                             Background="{ThemeResource RecordingIndicatorBrush}">
@@ -75,6 +82,13 @@
                             <TextBlock Text="REC" Foreground="White" FontWeight="Bold" FontSize="12"/>
                         </StackPanel>
                     </Border>
+
+                    <Border x:Name="RecordingGlowBorder"
+                            BorderThickness="3"
+                            BorderBrush="#50FF1414"
+                            Opacity="0"
+                            IsHitTestVisible="False"/>
+                    </Grid>
 
                     <!-- No Device Placeholder -->
                     <StackPanel x:Name="NoDevicePlaceholder"
@@ -100,12 +114,7 @@
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Spacing="12">
-                        <ProgressRing IsActive="True" Width="40" Height="40"/>
-                        <TextBlock x:Name="PreviewLoadingText"
-                                   Text="Starting preview..."
-                                   Style="{ThemeResource CaptionTextBlockStyle}"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                   HorizontalAlignment="Center"/>
+                        <ProgressRing IsActive="False" Width="40" Height="40"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -116,11 +125,15 @@
                     Visibility="Collapsed"
                     Width="0"
                     MaxWidth="300"
+                    Margin="8,8,12,0"
                     Padding="12"
-                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1"
+                    BorderThickness="0"
                     CornerRadius="8">
+                <Border.Background>
+                    <AcrylicBrush TintColor="#0A0A0A"
+                                  TintOpacity="0.80"
+                                  FallbackColor="#141414"/>
+                </Border.Background>
                 <Border.Resources>
                     <Style x:Key="DockStatsLabelStyle" TargetType="TextBlock">
                         <Setter Property="FontSize" Value="12" />
@@ -394,13 +407,12 @@
                 VerticalAlignment="Bottom"
                 Margin="0,0,0,0"
                 Padding="16,12"
-                CornerRadius="8,8,0,0"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="0,1,0,0">
+                CornerRadius="12,12,0,0"
+                BorderThickness="0">
             <Border.Background>
-                <AcrylicBrush TintColor="#202020"
-                              TintOpacity="0.65"
-                              FallbackColor="#2C2C2C"/>
+                <AcrylicBrush TintColor="#0A0A0A"
+                              TintOpacity="0.80"
+                              FallbackColor="#141414"/>
             </Border.Background>
             <Border.RenderTransform>
                 <TranslateTransform x:Name="SettingsShelfTranslate" Y="0"/>
@@ -623,9 +635,13 @@
 
         <!-- Row 1: Two-Tier Control Bar -->
         <Border x:Name="ControlBarBorder" Grid.Row="1"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                BorderThickness="1" CornerRadius="8" Padding="12,8">
+                Margin="16,8,16,16"
+                BorderThickness="0" CornerRadius="12" Padding="16,12">
+            <Border.Background>
+                <AcrylicBrush TintColor="#141414"
+                              TintOpacity="0.85"
+                              FallbackColor="#1C1C1C"/>
+            </Border.Background>
             <Grid RowSpacing="4">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -683,27 +699,27 @@
                                    VerticalAlignment="Center"/>
                     </StackPanel>
                     <Border x:Name="AudioMeterTrack"
-                            MinWidth="120" MaxWidth="300" Height="8"
+                            MinWidth="120" MaxWidth="300" Height="12"
                             HorizontalAlignment="Stretch"
                             Background="{ThemeResource AudioMeterTrackBrush}"
                             BorderBrush="{ThemeResource AudioMeterBorderBrush}"
                             BorderThickness="1"
-                            CornerRadius="4"
+                            CornerRadius="6"
                             VerticalAlignment="Center">
                         <Grid>
                             <Border x:Name="AudioMeterFill"
-                                    CornerRadius="4">
+                                    CornerRadius="6">
                                 <Border.Background>
                                     <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                        <GradientStop Color="#32CD32" Offset="0"/>
-                                        <GradientStop Color="#32CD32" Offset="0.6"/>
-                                        <GradientStop Color="#DAA520" Offset="0.75"/>
-                                        <GradientStop Color="#FF8C00" Offset="0.88"/>
-                                        <GradientStop Color="#FF4500" Offset="1"/>
+                                        <GradientStop Color="#00CED1" Offset="0"/>
+                                        <GradientStop Color="#00E5B0" Offset="0.55"/>
+                                        <GradientStop Color="#FFD700" Offset="0.75"/>
+                                        <GradientStop Color="#FF6B3D" Offset="0.90"/>
+                                        <GradientStop Color="#FF1744" Offset="1"/>
                                     </LinearGradientBrush>
                                 </Border.Background>
                                 <Border.Clip>
-                                    <RectangleGeometry x:Name="AudioMeterClip" Rect="0,0,0,8"/>
+                                    <RectangleGeometry x:Name="AudioMeterClip" Rect="0,0,0,12"/>
                                 </Border.Clip>
                             </Border>
                         </Grid>
@@ -720,52 +736,109 @@
 
                 <!-- Row 1: Controls -->
                 <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <StackPanel.Resources>
+                        <!-- Floating Cinema: accent-driven, borderless, ghost buttons -->
+                        <CornerRadius x:Key="ControlCornerRadius">8</CornerRadius>
+
+                        <!-- Button: ghost style with dim-to-bright -->
+                        <SolidColorBrush x:Key="ButtonBackground" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#12FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#08FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonBackgroundDisabled" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ButtonBorderBrushDisabled" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ButtonForeground" Color="#707070"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#A0A0A0"/>
+                        <SolidColorBrush x:Key="ButtonForegroundDisabled" Color="#3A3A3A"/>
+
+                        <!-- ToggleButton unchecked: same ghost style -->
+                        <SolidColorBrush x:Key="ToggleButtonBackground" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundPointerOver" Color="#12FFFFFF"/>
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundPressed" Color="#08FFFFFF"/>
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundDisabled" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrush" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushPointerOver" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushPressed" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushDisabled" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ToggleButtonForeground" Color="#707070"/>
+                        <SolidColorBrush x:Key="ToggleButtonForegroundPointerOver" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="ToggleButtonForegroundPressed" Color="#A0A0A0"/>
+                        <SolidColorBrush x:Key="ToggleButtonForegroundDisabled" Color="#3A3A3A"/>
+
+                        <!-- ToggleButton checked: teal accent glow -->
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundChecked" Color="#1800CED1"/>
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPointerOver" Color="#2400CED1"/>
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedPressed" Color="#1000CED1"/>
+                        <SolidColorBrush x:Key="ToggleButtonBackgroundCheckedDisabled" Color="#0800CED1"/>
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushChecked" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPointerOver" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedPressed" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ToggleButtonBorderBrushCheckedDisabled" Color="Transparent"/>
+                        <SolidColorBrush x:Key="ToggleButtonForegroundChecked" Color="#00CED1"/>
+                        <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPointerOver" Color="#3FE8E8"/>
+                        <SolidColorBrush x:Key="ToggleButtonForegroundCheckedPressed" Color="#00A5A8"/>
+                        <SolidColorBrush x:Key="ToggleButtonForegroundCheckedDisabled" Color="#1A6B6D"/>
+                    </StackPanel.Resources>
                     <Button x:Name="SettingsToggleButton"
                             Click="SettingsToggleButton_Click"
                             VerticalAlignment="Center"
-                            Width="32" Height="32"
+                            Width="40" Height="40"
                             Padding="0"
-                            CornerRadius="4"
+                            CornerRadius="8"
                             ToolTipService.ToolTip="Device and output settings">
                         <FontIcon Glyph="&#xE713;" FontSize="14"/>
                     </Button>
                     <Button x:Name="OpenRecordingsButton"
                             Click="OpenRecordingsButton_Click"
                             VerticalAlignment="Center"
-                            Width="32" Height="32"
+                            Width="40" Height="40"
                             Padding="0"
-                            CornerRadius="4"
+                            CornerRadius="8"
                             ToolTipService.ToolTip="Open recordings folder">
                         <FontIcon Glyph="&#xE8B7;" FontSize="14"/>
                     </Button>
-                    <Border Width="1" Height="20" Background="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                    <Border Width="1" Height="24" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
                     <Button x:Name="RecordButton"
                             AutomationProperties.AutomationId="RecordButton"
                             Click="RecordButton_Click"
-                            Height="44"
-                            Padding="16,0"
+                            Height="48"
+                            Width="48"
+                            Padding="0"
                             Background="{ThemeResource RecordButtonBrush}"
-                            BorderBrush="{ThemeResource RecordButtonBorderBrush}"
-                            CornerRadius="4">
+                            BorderBrush="Transparent"
+                            CornerRadius="24">
                         <Button.Resources>
-                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#F1707A"/>
-                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#C50F1F"/>
+                            <SolidColorBrush x:Key="ButtonBackground" Color="#E81123"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF4D5E"/>
+                            <SolidColorBrush x:Key="ButtonBackgroundPressed" Color="#CC0E1B"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrush" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrushPointerOver" Color="Transparent"/>
+                            <SolidColorBrush x:Key="ButtonBorderBrushPressed" Color="Transparent"/>
                             <SolidColorBrush x:Key="ButtonForeground" Color="White"/>
                             <SolidColorBrush x:Key="ButtonForegroundPointerOver" Color="White"/>
-                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="White"/>
+                            <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#E0E0E0"/>
                         </Button.Resources>
                         <Grid>
-                            <!-- Normal state: RECORD -->
+                            <!-- Idle state: white circle -->
                             <StackPanel x:Name="RecordButtonNormalContent"
                                         Orientation="Horizontal"
                                         Spacing="8"
                                         HorizontalAlignment="Center">
-                                <Ellipse Width="12" Height="12" Fill="White" VerticalAlignment="Center"/>
+                                <Ellipse Width="16" Height="16" Fill="White" VerticalAlignment="Center"/>
                                 <TextBlock x:Name="RecordButtonLabel" Text="RECORD"
                                            FontWeight="SemiBold"
                                            Foreground="White"
                                            VerticalAlignment="Center"/>
                             </StackPanel>
+                            <!-- Starting state: spinner -->
+                            <ProgressRing x:Name="RecordButtonStartingContent"
+                                          Width="20" Height="20"
+                                          IsActive="False"
+                                          Foreground="White"
+                                          Visibility="Collapsed"/>
                             <!-- Recording state: Stop + label -->
                             <StackPanel x:Name="RecordButtonRecordingContent"
                                         Orientation="Horizontal"
@@ -795,9 +868,9 @@
                             AutomationProperties.AutomationId="PreviewButton"
                             Click="PreviewButton_Click"
                             VerticalAlignment="Center"
-                            Height="36"
-                            Padding="8,0"
-                            CornerRadius="4"
+                            Height="40"
+                            Padding="10,0"
+                            CornerRadius="8"
                             ToolTipService.ToolTip="Start Preview">
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon x:Name="PreviewButtonIcon" Glyph="&#xE768;" FontSize="16"/>
@@ -806,7 +879,7 @@
                                        Visibility="Collapsed"/>
                         </StackPanel>
                     </Button>
-                    <Border Width="1" Height="20" Background="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                    <Border Width="1" Height="24" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
                     <ToggleButton x:Name="HdrToggle"
                                   AutomationProperties.AutomationId="HdrToggle"
                                   Height="32"
@@ -836,7 +909,7 @@
                                        Visibility="Collapsed"/>
                         </StackPanel>
                     </ToggleButton>
-                    <Border Width="1" Height="20" Background="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                    <Border Width="1" Height="24" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
                     <ToggleButton x:Name="TrueHdrPreviewToggle"
                                   AutomationProperties.AutomationId="TrueHdrPreviewToggle"
                                   Height="32" Padding="8,0"
@@ -860,7 +933,7 @@
                                        Visibility="Collapsed"/>
                         </StackPanel>
                     </ToggleButton>
-                    <Border Width="1" Height="20" Background="{ThemeResource CardStrokeColorDefaultBrush}"/>
+                    <Border Width="1" Height="24" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
                     <ToggleButton x:Name="StatsToggle"
                                   AutomationProperties.AutomationId="StatsToggle"
                                   Height="32"

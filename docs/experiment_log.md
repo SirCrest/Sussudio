@@ -698,3 +698,103 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (experiment-log correction only)
 - Conclusion: The append-only log now explicitly identifies which `E42` entry is canonical and prevents future ambiguity without editing or deleting prior experiment records.
+
+## E44 - Smooth preview reinit and stop transitions
+- Timestamp (UTC): 2026-03-07T17:19:38.4858403Z
+- Commit Hash: uncommitted (base 160a97186a628b1c4057df090588b246734fa554)
+- What Changed (single change): Added smooth preview fade/scale transitions around preview reinitialization and user-initiated preview stop by introducing an awaited `PreviewReinitRequested` hook in `MainViewModel`, moving the loading overlay to a ring-only fade path, wrapping the live preview visuals in a transformable `PreviewContentGrid`, and resetting the preview animation state on shutdown/failure paths.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log`
+  5. On a live source, verify preview start fades in on first visual, format/HDR changes breathe the preview out and back in without flashing the placeholder, and a user stop leaves the preview hidden with the placeholder restored.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200` showed normal RTICE polling, recording, and shutdown activity with no preview-transition exceptions.
+  - `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log` returned no matches after the verification run.
+- ffprobe Evidence:
+  - N/A (preview UI transition change only)
+- Conclusion: Preview start/stop/reinit transitions now animate through the window-owned preview host without changing the capture pipeline contract, and the verification run stayed clean at build, test, and log-scan time. Live hardware validation is still needed for the exact visual feel of the new transitions.
+
+## E45 - Preview transition reliability follow-up
+- Timestamp (UTC): 2026-03-07T17:26:11.0998358Z
+- Commit Hash: uncommitted (base 160a97186a628b1c4057df090588b246734fa554)
+- What Changed (single change): Hardened the preview transition state machine after review by guarding first-visual confirmation against pending user stops, resetting the preview transform on non-reinit failure exits and stop failures, serializing `ReinitializeDeviceAsync`, and treating the preview button as cancel/stop-only while a reinitialize is still active.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log`
+  4. On a live source, verify a late first frame does not re-reveal preview after pressing Stop, a failed/aborted preview start restores the host to full opacity/scale, and rapid format/HDR changes do not overlap into multiple concurrent reinit animations.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log` returned no matches after the follow-up verification run.
+- ffprobe Evidence:
+  - N/A (preview UI transition reliability follow-up only)
+- Conclusion: The preview transition implementation now has explicit guardrails for late first-frame callbacks, failure cleanup, queued reinitializations, and canceling a restart-in-progress. Live preview validation is still needed for the exact visual timing on hardware.
+
+## E46 - Experiment scope correction for concurrent MainWindow restyle edits
+- Timestamp (UTC): 2026-03-07T17:26:54.1555581Z
+- Commit Hash: uncommitted (base 160a97186a628b1c4057df090588b246734fa554)
+- What Changed (single change): Appended a scope note clarifying that `E44` and `E45` cover only the preview transition and reliability changes, while unrelated window-shell/control-bar restyle edits already present in the worktree remain out of scope for those experiment entries.
+- How To Run:
+  1. `rg -n "^## E44\\b|^## E45\\b|^## E46\\b" docs/experiment_log.md`
+  2. Confirm the log now contains the original transition entry, the reliability follow-up, and this append-only scope clarification.
+- Validator Output:
+  - `rg -n "^## E44\\b|^## E45\\b|^## E46\\b" docs/experiment_log.md` should show all three related entries in sequence.
+- ffprobe Evidence:
+  - N/A (experiment-log scope correction only)
+- Conclusion: The append-only log now separates the preview-transition experiments from the concurrent unrelated `MainWindow` restyle work that was already present in the worktree, without rewriting prior history.
+
+## E47 - Automation-safe cancel for preview restart in progress
+- Timestamp (UTC): 2026-03-07T17:39:50.9630287Z
+- Commit Hash: uncommitted (base 160a97186a628b1c4057df090588b246734fa554)
+- What Changed (single change): Updated `SetPreviewEnabledAsync(false)` to cancel a pending preview restart whenever `IsPreviewReinitializing` is true, even during the temporary `IsPreviewing == false` gap, so automation/IPC callers match the window button’s cancel behavior.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log`
+  4. Through automation or IPC, request `SetPreviewEnabled(false)` during a format/HDR reinitialize and verify preview stays stopped after the reinit completes.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log` returned no matches after the verification run.
+- ffprobe Evidence:
+  - N/A (preview control/cancel behavior change only)
+- Conclusion: Preview restart cancellation now works through both the window button path and the automation-facing preview-enable API. Live automation validation during a real reinit is still needed.
+
+## E48 - Cleanup after immediate preview renderer attach failure
+- Timestamp (UTC): 2026-03-07T17:39:50.9630287Z
+- Commit Hash: uncommitted (base 160a97186a628b1c4057df090588b246734fa554)
+- What Changed (single change): Added explicit cleanup around preview renderer attach/start exceptions so the loading overlay stops, the preview transform resets, the placeholder returns, and a startup-failure stop is scheduled instead of leaving the host hidden after an immediate attach failure.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log`
+  4. Force `StartPreviewRendererAsync()` to fail during preview startup and verify the placeholder/transform recover instead of leaving the host dimmed.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log` returned no matches after the verification run.
+- ffprobe Evidence:
+  - N/A (preview startup failure cleanup change only)
+- Conclusion: Immediate preview renderer attach failures now restore the preview host state instead of stranding it in the hidden/scaled transition pose. Live forced-failure validation is still needed.
+
+## E49 - Record button spinner reset on failed transition
+- Timestamp (UTC): 2026-03-07T17:39:50.9630287Z
+- Commit Hash: uncommitted (base 160a97186a628b1c4057df090588b246734fa554)
+- What Changed (single change): Added the missing `IsRecordingTransitioning == false` UI reset path so the record button leaves the spinner and returns to the correct normal/recording content even when a recording start/stop transition fails without flipping `IsRecording`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log`
+  4. Force a recording start/stop failure and verify the record button leaves the spinner when `IsRecordingTransitioning` drops back to `false`.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log` returned no matches after the verification run.
+- ffprobe Evidence:
+  - N/A (record-button UI state fix only)
+- Conclusion: The record button no longer relies on an `IsRecording` change to exit the spinner state after a failed transition. Live failure-path validation is still needed.

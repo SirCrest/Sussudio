@@ -274,6 +274,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial bool IsPreviewing { get; set; }
 
     [ObservableProperty]
+    public partial bool IsPreviewReinitializing { get; set; }
+
+    [ObservableProperty]
     public partial bool IsInitialized { get; set; }
 
     [ObservableProperty]
@@ -290,9 +293,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private double _audioMeterDb = MeterFloorDb;
     private long _audioMeterLastTick;
     private int _disposeState;
+    private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);
+    private bool _cancelPreviewRestartAfterReinitialize;
 
     public event EventHandler? PreviewStartRequested;
     public event EventHandler? PreviewStopRequested;
+    public event Func<string, Task>? PreviewReinitRequested;
 
     public CaptureRuntimeSnapshot GetCaptureRuntimeSnapshot() => _captureService.GetRuntimeSnapshot();
     public CaptureHealthSnapshot GetCaptureHealthSnapshot() => _captureService.GetHealthSnapshot();
@@ -312,6 +318,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
         _captureService.SetPreviewFrameSink(sink);
+    }
+
+    internal void CancelPendingPreviewRestart()
+    {
+        if (IsPreviewReinitializing)
+        {
+            _cancelPreviewRestartAfterReinitialize = true;
+        }
     }
 
 
@@ -354,6 +368,20 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             Logger.LogException(ex);
             StatusText = $"{operationName} failed: {ex.Message}";
+        }
+    }
+
+    private async Task NotifyPreviewReinitRequestedAsync(string reason)
+    {
+        var handlers = PreviewReinitRequested;
+        if (handlers == null)
+        {
+            return;
+        }
+
+        foreach (Func<string, Task> handler in handlers.GetInvocationList())
+        {
+            await handler(reason);
         }
     }
 
@@ -1098,7 +1126,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 // Auto-start preview (StartPreviewAsync will initialize device if needed)
                 try
                 {
-                    await StartPreviewAsync();
+                    await StartPreviewAsync(userInitiated: false);
                 }
                 catch (Exception ex)
                 {
@@ -3043,14 +3071,23 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (SelectedDevice == null || SelectedFormat == null)
             return;
 
+        await _previewReinitializeGate.WaitAsync();
+        var shouldRestartPreview = IsPreviewing;
         try
         {
             StatusText = "Applying new settings...";
             Logger.Log($"=== Reinitializing device ({reason}) ===");
 
+            if (shouldRestartPreview)
+            {
+                IsPreviewReinitializing = true;
+                _cancelPreviewRestartAfterReinitialize = false;
+                await NotifyPreviewReinitRequestedAsync(reason);
+            }
+
             if (IsPreviewing)
             {
-                await StopPreviewAsync();
+                await StopPreviewAsync(userInitiated: false);
             }
 
             // Reinitialize the device with new settings
@@ -3058,9 +3095,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             await InitializeDeviceAsync();
 
             // Restart preview
-            if (IsInitialized)
+            if (IsInitialized && shouldRestartPreview && !_cancelPreviewRestartAfterReinitialize)
             {
-                await StartPreviewAsync();
+                await StartPreviewAsync(userInitiated: false);
 
                 StatusText = $"Preview: {SelectedFormat.Width}x{SelectedFormat.Height}@{SelectedFormat.FrameRate}fps";
             }
@@ -3069,6 +3106,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             Logger.LogException(ex);
             StatusText = $"Failed to apply format: {ex.Message}";
+        }
+        finally
+        {
+            _cancelPreviewRestartAfterReinitialize = false;
+            if (shouldRestartPreview)
+            {
+                IsPreviewReinitializing = false;
+            }
+            _previewReinitializeGate.Release();
         }
     }
 
@@ -3381,8 +3427,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         System.Diagnostics.Debug.WriteLine("=== InitializeDeviceAsync END ===");
     }
 
-    public async Task StartPreviewAsync()
+    public async Task StartPreviewAsync(bool userInitiated = true)
     {
+        if (userInitiated)
+        {
+            _cancelPreviewRestartAfterReinitialize = false;
+        }
+
         PreviewStartRequested?.Invoke(this, EventArgs.Empty);
         Logger.Log("=== StartPreviewAsync (ViewModel) BEGIN ===");
         Logger.Log($"IsInitialized: {IsInitialized}");
@@ -3429,8 +3480,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         System.Diagnostics.Debug.WriteLine("=== StartPreviewAsync (ViewModel) END ===");
     }
 
-    public async Task StopPreviewAsync()
+    public async Task StopPreviewAsync(bool userInitiated = true)
     {
+        if (userInitiated && IsPreviewReinitializing)
+        {
+            _cancelPreviewRestartAfterReinitialize = true;
+        }
+
         PreviewStopRequested?.Invoke(this, EventArgs.Empty);
         await _sessionCoordinator.StopVideoPreviewAsync();
         IsPreviewing = false;
@@ -3441,7 +3497,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             await _sessionCoordinator.StopAudioPreviewAsync();
         }
 
-        StatusText = "Preview stopped";
+        if (!IsPreviewReinitializing)
+        {
+            StatusText = "Preview stopped";
+        }
     }
 
     public async Task ToggleRecordingAsync()
@@ -3784,6 +3843,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         return InvokeOnUiThreadAsync(async () =>
         {
+            if (!enabled && IsPreviewReinitializing)
+            {
+                CancelPendingPreviewRestart();
+                if (!IsPreviewing)
+                {
+                    return;
+                }
+            }
+
             if (enabled == IsPreviewing)
             {
                 return;
@@ -3791,11 +3859,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
             if (enabled)
             {
-                await StartPreviewAsync();
+                await StartPreviewAsync(userInitiated: true);
             }
             else
             {
-                await StopPreviewAsync();
+                await StopPreviewAsync(userInitiated: true);
             }
         }, cancellationToken);
     }
