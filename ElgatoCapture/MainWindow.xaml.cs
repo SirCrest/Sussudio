@@ -1258,16 +1258,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var exePath = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
         {
-            return "Elgato Capture";
+            return "SimpleCapture";
         }
 
         var buildTime = File.GetLastWriteTime(exePath);
         if (buildTime == DateTime.MinValue)
         {
-            return "Elgato Capture";
+            return "SimpleCapture";
         }
 
-        return $"Elgato Capture (build {buildTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)})";
+        return $"SimpleCapture (build {buildTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)})";
     }
 
     private void ApplyWindowTitle()
@@ -1531,6 +1531,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             ViewModel.PreviewVolume = e.NewValue / 100.0;
             PreviewVolumeLabel.Text = $"{(int)e.NewValue}%";
+        };
+        PreviewVolumeSlider.PointerCaptureLost += (s, e) =>
+        {
+            if (!_isVolumeFadingIn)
+            {
+                ViewModel.SavePreviewVolume();
+            }
         };
         CustomAudioToggle.IsOn = ViewModel.IsCustomAudioInputEnabled;
         CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
@@ -4463,3 +4470,4 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     #endregion
 }
+

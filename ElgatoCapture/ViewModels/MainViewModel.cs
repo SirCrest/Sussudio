@@ -3198,11 +3198,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     partial void OnPreviewVolumeChanged(double value)
     {
         _captureService.SetPreviewVolume((float)Math.Clamp(value, 0.0, 1.0));
-        if (!SuppressVolumeSave)
-        {
-            SaveSettings();
-        }
     }
+
+    /// <summary>
+    /// Persists the current preview volume to settings. Called by the UI on
+    /// pointer release so the slider doesn't trigger disk I/O on every tick.
+    /// </summary>
+    internal void SavePreviewVolume() => SaveSettings();
 
     partial void OnIsAudioPreviewEnabledChanged(bool value)
     {
