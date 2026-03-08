@@ -68,6 +68,11 @@ public sealed class FinalizeResult
     }
 }
 
+public interface IRawVideoFrameEncoder
+{
+    void EnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize);
+}
+
 public interface IRecordingSink : IDisposable, IAsyncDisposable
 {
     Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default);

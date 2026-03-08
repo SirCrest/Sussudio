@@ -26,7 +26,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private CaptureSettings? _currentSettings;
     private CaptureSettings? _activeRecordingSettings;
     private SourceSignalTelemetrySnapshot _latestSourceTelemetry = SourceSignalTelemetrySnapshot.CreateUnavailable("telemetry-not-started");
-    private FFmpegEncoderService? _ffmpegEncoder;
+    private LibAvRecordingSink? _libavSink;
     private IRecordingSink? _recordingSink;
     private WasapiAudioCapture? _wasapiAudioCapture;
     private WasapiAudioPlayback? _wasapiAudioPlayback;
@@ -45,6 +45,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private bool _lastUsePostMuxAudio;
     private string? _audioDeviceId;
     private string? _audioDeviceName;
+    private bool _mfReadwriteDisableConverters;
     private uint? _actualWidth;
     private uint? _actualHeight;
     private double? _actualFrameRate;
@@ -63,9 +64,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private long _observedP010FrameCount;
     private long _observedNv12FrameCount;
     private long _observedOtherFrameCount;
-    private long _observedP010BitDepthSampleCount;
-    private double _observedP010Low2BitNonZeroPercent;
-    private bool? _observedP010Likely8BitUpscaled;
     private long _lastMfSourceReaderFramesDelivered;
     private long _lastMfSourceReaderFramesDropped;
     private string? _lastMfSourceReaderNegotiatedFormat;
@@ -168,12 +166,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         try
         {
-            if (_isRecording && _ffmpegEncoder != null)
+            if (_isRecording && _libavSink != null)
             {
-                var reported = _ffmpegEncoder.LastReportedOutputBytes;
-                if (reported > 0)
+                var outputPath = _libavSink.OutputPath;
+                if (!string.IsNullOrWhiteSpace(outputPath) && File.Exists(outputPath))
                 {
-                    return new RecordingStats(reported, 0);
+                    return new RecordingStats(new FileInfo(outputPath).Length, 0);
                 }
             }
 
@@ -199,7 +197,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             TimestampUtc = DateTimeOffset.UtcNow,
             SessionState = _sessionState,
             IsRecording = _isRecording,
-            RecordingBackend = _isRecording ? "FfmpegPipe" : "None"
+            RecordingBackend = _isRecording ? "LibAv" : "None"
         };
 
     private void ResetObservedPixelTelemetry()
@@ -210,9 +208,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
         Interlocked.Exchange(ref _observedP010FrameCount, 0);
         Interlocked.Exchange(ref _observedNv12FrameCount, 0);
         Interlocked.Exchange(ref _observedOtherFrameCount, 0);
-        Interlocked.Exchange(ref _observedP010BitDepthSampleCount, 0);
-        _observedP010Low2BitNonZeroPercent = 0;
-        _observedP010Likely8BitUpscaled = null;
     }
 
     private static string? NormalizeObservedPixelFormat(string? pixelFormat)
@@ -233,6 +228,50 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         return pixelFormat.Trim().ToUpperInvariant();
+    }
+
+    private static string? ResolveEncoderCodecName(CaptureSettings? settings)
+    {
+        if (settings == null)
+        {
+            return null;
+        }
+
+        return settings.Format switch
+        {
+            RecordingFormat.HevcMp4 => "hevc_nvenc",
+            RecordingFormat.Av1Mp4 => "av1_nvenc",
+            _ => "h264_nvenc"
+        };
+    }
+
+    private static string? ResolveEncoderOutputPixelFormat(RecordingContext? context, CaptureSettings? settings)
+    {
+        if (context?.HdrPipelineActive == true)
+        {
+            return "yuv420p10le";
+        }
+
+        return settings == null ? null : "yuv420p";
+    }
+
+    private static string? ResolveEncoderVideoProfile(RecordingContext? context, CaptureSettings? settings)
+    {
+        if (settings == null)
+        {
+            return null;
+        }
+
+        if (context?.HdrPipelineActive == true)
+        {
+            return "main10";
+        }
+
+        return settings.Format switch
+        {
+            RecordingFormat.H264Mp4 => "high",
+            _ => "main"
+        };
     }
 
     private void OnWasapiAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
@@ -346,18 +385,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    private void CaptureEncoderRuntimeTelemetry(FFmpegEncoderService encoder)
+    private void CaptureEncoderRuntimeTelemetry(LibAvRecordingSink? sink)
     {
-        Interlocked.Exchange(ref _videoFramesDropped, encoder.DroppedVideoFrames);
-        _firstObservedFramePixelFormat = encoder.FirstObservedFramePixelFormat ?? _firstObservedFramePixelFormat;
-        _latestObservedFramePixelFormat = encoder.LatestObservedFramePixelFormat ?? _latestObservedFramePixelFormat;
-        _latestObservedSurfaceFormat = encoder.LatestObservedSurfaceFormat ?? _latestObservedSurfaceFormat;
-        Interlocked.Exchange(ref _observedP010FrameCount, encoder.ObservedP010FrameCount);
-        Interlocked.Exchange(ref _observedNv12FrameCount, encoder.ObservedNv12FrameCount);
-        Interlocked.Exchange(ref _observedOtherFrameCount, encoder.ObservedOtherFrameCount);
-        Interlocked.Exchange(ref _observedP010BitDepthSampleCount, encoder.ObservedP010BitDepthSampleCount);
-        _observedP010Low2BitNonZeroPercent = encoder.ObservedP010Low2BitNonZeroPercent;
-        _observedP010Likely8BitUpscaled = encoder.ObservedP010Likely8BitUpscaled;
+        if (sink == null)
+        {
+            return;
+        }
+
+        Interlocked.Exchange(ref _videoFramesDropped, sink.DroppedVideoFrames);
     }
 
     private (
@@ -370,28 +405,28 @@ public class CaptureService : IDisposable, IAsyncDisposable
         long ObservedP010BitDepthSampleCount,
         double ObservedP010Low2BitNonZeroPercent,
         bool? ObservedP010Likely8BitUpscaled)
-        ResolveObservedFrameTelemetry(FFmpegEncoderService? encoder)
+        ResolveObservedFrameTelemetry()
     {
-        if (encoder != null)
-        {
-            CaptureEncoderRuntimeTelemetry(encoder);
-        }
+        var expectedFormat = _recordingContext?.HdrPipelineActive == true ? "P010" : _recordingContext != null ? "NV12" : null;
+        var firstObserved = _firstObservedFramePixelFormat ?? expectedFormat;
+        var latestObserved = _latestObservedFramePixelFormat ?? expectedFormat;
+        var latestSurface = _latestObservedSurfaceFormat ?? latestObserved;
 
         return (
-            _firstObservedFramePixelFormat,
-            _latestObservedFramePixelFormat,
-            _latestObservedSurfaceFormat,
+            firstObserved,
+            latestObserved,
+            latestSurface,
             Math.Max(0, Interlocked.Read(ref _observedP010FrameCount)),
             Math.Max(0, Interlocked.Read(ref _observedNv12FrameCount)),
             Math.Max(0, Interlocked.Read(ref _observedOtherFrameCount)),
-            Math.Max(0, Interlocked.Read(ref _observedP010BitDepthSampleCount)),
-            _observedP010Low2BitNonZeroPercent,
-            _observedP010Likely8BitUpscaled);
+            0,
+            0,
+            null);
     }
 
     public CaptureRuntimeSnapshot GetRuntimeSnapshot()
     {
-        var encoder = _ffmpegEncoder;
+        var sink = _libavSink;
         var unifiedVideoCapture = _unifiedVideoCapture;
         var wasapiCapture = _wasapiAudioCapture;
         var wasapiPlayback = _wasapiAudioPlayback;
@@ -399,12 +434,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var hdrRequested = requestedSettings?.HdrEnabled == true &&
                            requestedSettings.HdrOutputMode == HdrOutputMode.Hdr10Pq;
         var requestedPipelineMode = hdrRequested ? "HDR10-PQ" : "SDR";
-        var encoderInputPixelFormat = encoder?.ActiveInputPixelFormat ?? _activeVideoInputPixelFormat;
-        var encoderOutputPixelFormat = encoder?.ActiveOutputPixelFormat;
-        var encoderVideoCodec = encoder?.ActiveVideoCodec;
-        var encoderVideoProfile = encoder?.ActiveVideoProfile;
-        var encoderTenBitPipelineConfirmed = encoder?.ActiveTenBitPipelineConfirmed;
-        var mfReadwriteDisableConverters = encoder?.MfReadwriteDisableConverters ?? false;
+        var encoderInputPixelFormat = _activeVideoInputPixelFormat;
+        var encoderOutputPixelFormat = ResolveEncoderOutputPixelFormat(_recordingContext, requestedSettings);
+        var encoderVideoCodec = ResolveEncoderCodecName(requestedSettings);
+        var encoderVideoProfile = ResolveEncoderVideoProfile(_recordingContext, requestedSettings);
+        bool? encoderTenBitPipelineConfirmed = _isRecording
+            ? _recordingContext?.HdrPipelineActive == true
+            : null;
+        var mfReadwriteDisableConverters = _mfReadwriteDisableConverters;
         var negotiatedMediaSubtypeToken = string.Equals(encoderInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
             ? "P010|MFVideoFormat_P010"
             : "NV12";
@@ -471,7 +508,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _actualHeight,
             _actualFrameRate,
             hdrRequested);
-        var observedTelemetry = ResolveObservedFrameTelemetry(encoder);
+        var observedTelemetry = ResolveObservedFrameTelemetry();
         var observedP010FrameCount = observedTelemetry.ObservedP010FrameCount;
         var observedNv12FrameCount = observedTelemetry.ObservedNv12FrameCount;
         var observedOtherFrameCount = observedTelemetry.ObservedOtherFrameCount;
@@ -479,7 +516,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var observedP010Low2BitNonZeroPercent = observedTelemetry.ObservedP010Low2BitNonZeroPercent;
         var observedP010Likely8BitUpscaled = observedTelemetry.ObservedP010Likely8BitUpscaled;
         var observedNonP010FrameCount = observedNv12FrameCount + observedOtherFrameCount;
-        var observedFrameCount = observedP010FrameCount + observedNonP010FrameCount;
         var hdrWarmupState = ResolveHdrWarmupState(
             hdrRequested,
             hdrOutputActive,
@@ -510,19 +546,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
             ? "MfSourceReader"
             : null;
         var previewColorMetadata = (_previewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? "None";
-        var muxAttempted = !_isRecording && _lastFinalizeUtc.HasValue && _lastUsePostMuxAudio;
+        const bool muxAttempted = false;
         bool? muxSucceeded = null;
-        if (muxAttempted)
-        {
-            if (_lastFinalizeStatus.Contains("mux failed", StringComparison.OrdinalIgnoreCase))
-            {
-                muxSucceeded = false;
-            }
-            else if (_lastFinalizeStatus.Contains("stopped", StringComparison.OrdinalIgnoreCase))
-            {
-                muxSucceeded = true;
-            }
-        }
 
         return new CaptureRuntimeSnapshot
         {
@@ -549,7 +574,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceReaderReadOutstanding = unifiedVideoCapture?.SourceReaderReadOutstanding ?? false,
             SourceReaderReadOutstandingMs = unifiedVideoCapture?.SourceReaderReadOutstandingMs ?? 0,
             SourceReaderLastFrameTickMs = unifiedVideoCapture?.SourceReaderLastFrameTickMs ?? 0,
-            SourceReaderFrameChannelDepth = encoder?.VideoQueueCount ?? 0,
+            SourceReaderFrameChannelDepth = sink?.VideoQueueCount ?? 0,
             WasapiCaptureCallbackCount = wasapiCapture?.CaptureCallbackCount ?? 0,
             WasapiCaptureCallbackAvgIntervalMs = wasapiCapture?.CaptureCallbackAvgIntervalMs ?? 0,
             WasapiCaptureCallbackMaxIntervalMs = wasapiCapture?.CaptureCallbackMaxIntervalMs ?? 0,
@@ -613,15 +638,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
             RequestedReaderSubtype = requestedReaderSubtype,
             ReaderSourceStreamType = readerSourceStreamType,
             ReaderSourceSubtype = observedTelemetry.LatestObservedFramePixelFormat ?? _actualPixelFormat,
-            FirstObservedFramePixelFormat = observedFrameCount > 0
-                ? observedTelemetry.FirstObservedFramePixelFormat
-                : null,
-            LatestObservedFramePixelFormat = observedFrameCount > 0
-                ? observedTelemetry.LatestObservedFramePixelFormat
-                : null,
-            LatestObservedSurfaceFormat = observedFrameCount > 0
-                ? observedTelemetry.LatestObservedSurfaceFormat
-                : null,
+            FirstObservedFramePixelFormat = observedTelemetry.FirstObservedFramePixelFormat,
+            LatestObservedFramePixelFormat = observedTelemetry.LatestObservedFramePixelFormat,
+            LatestObservedSurfaceFormat = observedTelemetry.LatestObservedSurfaceFormat,
             ObservedP010FrameCount = observedP010FrameCount,
             ObservedNv12FrameCount = observedNv12FrameCount,
             ObservedOtherFrameCount = observedOtherFrameCount,
@@ -641,7 +660,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceWidth = _latestSourceTelemetry.Width,
             SourceHeight = _latestSourceTelemetry.Height,
             SourceIsHdr = _latestSourceTelemetry.IsHdr,
-            RecordingBackend = _isRecording ? "FfmpegPipe" : "None",
+            RecordingBackend = _isRecording ? "LibAv" : "None",
             AudioPathMode = requestedSettings?.AudioPathMode.ToString() ?? "None",
             MuxAttempted = muxAttempted,
             MuxSucceeded = muxSucceeded,
@@ -921,10 +940,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
     public CaptureHealthSnapshot GetHealthSnapshot()
     {
-        var encoder = _ffmpegEncoder;
+        var sink = _libavSink;
         var unifiedVideoCapture = _unifiedVideoCapture;
-        var observedTelemetry = ResolveObservedFrameTelemetry(encoder);
-        var videoFramesDropped = encoder?.DroppedVideoFrames ?? Interlocked.Read(ref _videoFramesDropped);
+        var observedTelemetry = ResolveObservedFrameTelemetry();
+        var videoFramesDropped = sink?.DroppedVideoFrames ?? Interlocked.Read(ref _videoFramesDropped);
         var sourceTelemetrySuppressedReason = ResolveSourceTelemetrySuppressedReason(_latestSourceTelemetry);
         var sourceTelemetrySuppressed = !string.IsNullOrWhiteSpace(sourceTelemetrySuppressedReason);
         var sourceCadence = unifiedVideoCapture?.GetSourceCadenceMetrics()
@@ -935,7 +954,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             TimestampUtc = DateTimeOffset.UtcNow,
             SessionState = _sessionState,
             IsRecording = _isRecording,
-            RecordingBackend = _isRecording ? "FfmpegPipe" : "None",
+            RecordingBackend = _isRecording ? "LibAv" : "None",
             RecordingElapsedMs = _isRecording ? _recordingStopwatch.ElapsedMilliseconds : 0,
             ExpectedFrameRate = _actualFrameRate ?? _currentSettings?.FrameRate ?? 0,
             NegotiatedWidth = _actualWidth,
@@ -974,15 +993,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 sourceTelemetrySuppressed),
             VideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? Interlocked.Read(ref _videoFramesArrived),
             VideoFramesDropped = videoFramesDropped,
-            VideoDropsQueueSaturated = encoder?.VideoDropsQueueSaturated ?? 0,
-            VideoDropsBacklogEviction = encoder?.VideoDropsBacklogEviction ?? 0,
-            AudioDropsQueueSaturated = encoder?.AudioDropsQueueSaturated ?? 0,
-            AudioDropsBacklogEviction = encoder?.AudioDropsBacklogEviction ?? 0,
-            FfmpegVideoQueueDepth = encoder?.VideoQueueCount ?? 0,
-            FfmpegAudioQueueDepth = encoder?.AudioQueueCount ?? 0,
-            VideoFramesEnqueued = encoder?.VideoFramesEnqueuedCount ?? 0,
-            LastVideoEnqueueAgeMs = ComputeTickAge(encoder?.LastVideoEnqueueTick ?? 0),
-            LastVideoWriteAgeMs = ComputeTickAge(encoder?.LastVideoWriteTick ?? 0),
+            VideoDropsQueueSaturated = sink?.VideoDropsQueueSaturated ?? 0,
+            VideoDropsBacklogEviction = sink?.VideoDropsBacklogEviction ?? 0,
+            AudioDropsQueueSaturated = sink?.AudioDropsQueueSaturated ?? 0,
+            AudioDropsBacklogEviction = sink?.AudioDropsBacklogEviction ?? 0,
+            FfmpegVideoQueueDepth = sink?.VideoQueueCount ?? 0,
+            FfmpegAudioQueueDepth = sink?.AudioQueueCount ?? 0,
+            VideoFramesEnqueued = sink?.VideoFramesEnqueuedCount ?? 0,
+            LastVideoEnqueueAgeMs = ComputeTickAge(sink?.LastVideoEnqueueTick ?? 0),
+            LastVideoWriteAgeMs = ComputeTickAge(sink?.LastVideoWriteTick ?? 0),
             CaptureCadenceSampleCount = sourceCadence.SampleCount,
             CaptureCadenceObservedFps = sourceCadence.ObservedFps,
             CaptureCadenceExpectedIntervalMs = sourceCadence.ExpectedIntervalMs,
@@ -1198,21 +1217,19 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
             transitionToken.ThrowIfCancellationRequested();
 
-            FFmpegEncoderService? encoder = null;
+            LibAvRecordingSink? libAvSink = null;
             IRecordingSink? recordingSink = null;
             WasapiAudioCapture? ownedWasapiAudioCapture = null;
             UnifiedVideoCapture? ownedUnifiedVideoCapture = null;
+            RecordingContext? recordingContext = null;
             var sinkAttachedForAudioOnly = false;
             Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
             Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
             try
             {
-                encoder = new FFmpegEncoderService();
-                encoder.FrameEncoded += (s, count) => FrameCaptured?.Invoke(this, count);
-                encoder.IngressViolationDetected += (s, reason) =>
-                {
-                    ErrorOccurred?.Invoke(this, new InvalidOperationException(reason));
-                };
+                libAvSink = new LibAvRecordingSink();
+                libAvSink.FrameEncoded += (s, count) => FrameCaptured?.Invoke(this, unchecked((ulong)Math.Max(0L, count)));
+                recordingSink = libAvSink;
 
                 StorageFolder outputFolder;
                 try
@@ -1245,10 +1262,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice.AudioDeviceId))
                     : null;
 
-                var recordingContext = await _artifactManager.CreateContextAsync(
+                recordingContext = await _artifactManager.CreateContextAsync(
                     outputFolder,
                     settings,
-                    usePostMuxAudio: true,
+                    usePostMuxAudio: false,
                     audioDeviceName,
                     effectiveFrameRate,
                     frameRateArg,
@@ -1259,7 +1276,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 transitionToken.ThrowIfCancellationRequested();
                 var requireP010 = recordingContext.HdrPipelineActive;
                 var useMjpegHighFrameRateMode = settings.UseMjpegHighFrameRateMode;
-                encoder.SetMfReadwriteDisableConverters(requireP010);
+                _mfReadwriteDisableConverters = requireP010;
                 Logger.Log(
                     "HDR_NEGOTIATION " +
                     $"requested_hdr={hdrPipelineRequested} " +
@@ -1273,9 +1290,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     $"hdr_max_cll={settings.HdrMaxCll} " +
                     $"hdr_max_fall={settings.HdrMaxFall} " +
                     $"mf_readwrite_disable_converters={(requireP010 ? "true" : "false")} " +
-                    $"ffmpeg_ingest_pix_fmt={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "AV_PIX_FMT_P010LE" : "AV_PIX_FMT_NV12")}");
+                    $"libav_ingest_pix_fmt={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "AV_PIX_FMT_P010LE" : "AV_PIX_FMT_NV12")}");
 
-                recordingSink = new FfmpegRecordingSink(encoder);
                 await recordingSink.StartAsync(recordingContext, transitionToken).ConfigureAwait(false);
                 transitionToken.ThrowIfCancellationRequested();
                 var unifiedVideoCapture = _unifiedVideoCapture;
@@ -1341,9 +1357,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     }
                 }
 
-                await unifiedVideoCapture.StartRecordingAsync(recordingSink, encoder).ConfigureAwait(false);
+                await unifiedVideoCapture.StartRecordingAsync(recordingSink, libAvSink).ConfigureAwait(false);
 
-                _ffmpegEncoder = encoder;
+                _libavSink = libAvSink;
                 _recordingSink = recordingSink;
                 _recordingContext = recordingContext;
                 _activeRecordingSettings = settings;
@@ -1351,6 +1367,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _activeVideoInputPixelFormat = videoInputPixelFormat;
                 Interlocked.Exchange(ref _videoFramesDropped, 0);
                 ResetObservedPixelTelemetry();
+                RecordObservedPixelFormat(recordingContext.HdrPipelineActive ? "P010" : "NV12", incrementAsFrame: false);
                 _lastOutputPath = recordingContext.FinalOutputPath;
                 _lastFinalizeStatus = "Recording";
                 _lastFinalizeUtc = null;
@@ -1358,7 +1375,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _lastUsePostMuxAudio = recordingContext.UsePostMuxAudio;
                 _recordingStopwatch.Restart();
                 StatusChanged?.Invoke(this, "Recording");
-                encoder = null;
+                libAvSink = null;
                 recordingSink = null;
                 ownedWasapiAudioCapture = null;
                 ownedUnifiedVideoCapture = null;
@@ -1375,9 +1392,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     DetachUnifiedVideoCapture(ownedUnifiedVideoCapture);
                 }
 
+                await _artifactManager.RollbackAsync(recordingContext).ConfigureAwait(false);
                 await DisposeTransientRecordingBackendAsync(
                     recordingSink,
-                    encoder,
                     ownedWasapiAudioCapture,
                     ownedUnifiedVideoCapture).ConfigureAwait(false);
 
@@ -1399,6 +1416,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _activeRecordingSettings = null;
                 _isRecording = false;
                 _recordingStopwatch.Reset();
+                _mfReadwriteDisableConverters = false;
                 throw;
             }
         }, cancellationToken);
@@ -1406,7 +1424,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public Task StopRecordingAsync(CancellationToken cancellationToken = default)
         => RunTransitionAsync(CaptureSessionState.Ready, async transitionToken =>
         {
-            if (!_isRecording && _recordingSink == null && _ffmpegEncoder == null)
+            if (!_isRecording && _recordingSink == null && _libavSink == null)
             {
                 return;
             }
@@ -1489,7 +1507,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         => RunTransitionAsync(CaptureSessionState.CleaningUp, async transitionToken =>
         {
             var cancellationRequested = false;
-            if (_isRecording || _recordingSink != null || _ffmpegEncoder != null)
+            if (_isRecording || _recordingSink != null || _libavSink != null)
             {
                 try
                 {
@@ -1560,12 +1578,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(string fallbackStatusMessage, CancellationToken cancellationToken)
     {
         var sink = _recordingSink;
-        var encoder = _ffmpegEncoder;
+        var libAvSink = _libavSink;
         var recordingContext = _recordingContext;
         var fallbackOutputPath = recordingContext?.FinalOutputPath ?? (_lastOutputPath ?? string.Empty);
 
         _recordingSink = null;
-        _ffmpegEncoder = null;
+        _libavSink = null;
 
         var result = FinalizeResult.Success(fallbackOutputPath, fallbackStatusMessage);
         OperationCanceledException? cancellationException = null;
@@ -1696,31 +1714,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
             result = FinalizeResult.Failure(result.OutputPath, statusMessage);
         }
 
-        // Finalize split recording artifacts (clean up temp files on success, preserve on failure)
-        if (recordingContext is { UsePostMuxAudio: true })
+        if (libAvSink != null)
         {
-            var artifactResult = _artifactManager.FinalizeContext(recordingContext, result.Succeeded);
-            if (!artifactResult.Succeeded && result.Succeeded)
-            {
-                result = artifactResult;
-            }
-        }
-
-        if (encoder != null)
-        {
-            CaptureEncoderRuntimeTelemetry(encoder);
-            try
-            {
-                await encoder.DisposeAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Recording encoder dispose failed: {ex.Message}");
-                if (result.Succeeded)
-                {
-                    result = FinalizeResult.Failure(fallbackOutputPath, $"Recording encoder dispose failed: {ex.Message}");
-                }
-            }
+            CaptureEncoderRuntimeTelemetry(libAvSink);
         }
 
         _recordingStopwatch.Stop();
@@ -1728,6 +1724,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         if (!_isVideoPreviewActive) StopTelemetryPoll();
         _recordingContext = null;
         _activeRecordingSettings = null;
+        _mfReadwriteDisableConverters = false;
         _lastOutputPath = result.OutputPath;
         _lastFinalizeStatus = result.StatusMessage;
         _lastFinalizeUtc = DateTimeOffset.UtcNow;
@@ -1766,7 +1763,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
     private static async Task DisposeTransientRecordingBackendAsync(
         IRecordingSink? sink,
-        FFmpegEncoderService? encoder,
         WasapiAudioCapture? wasapiCapture,
         UnifiedVideoCapture? unifiedVideoCapture)
     {
@@ -1824,19 +1820,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
         }
 
-        if (encoder == null)
-        {
-            return;
-        }
-
-        try
-        {
-            await encoder.DisposeAsync().ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"Transient recording encoder dispose failed during rollback: {ex.Message}");
-        }
     }
 
     private async Task RunTransitionAsync(

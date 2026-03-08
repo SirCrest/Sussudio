@@ -919,3 +919,17 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (no real-device 4K120 recording captured in this checkpoint)
 - Conclusion: The special HFR MJPG mode now fails loudly at the app-session layer when its strict decode/texture contract breaks, which closes the previous “log and black out” behavior. This is still not proof of sustained 4K120 throughput; it only hardens the failure semantics around the negotiated HFR path.
+
+## E56 - LibAv recording sink replaces the subprocess recording backend
+- Timestamp (UTC): 2026-03-08T15:26:20.5260487Z
+- Commit Hash: bf1e1d41e9061eaa98e3a55bc13a477db85ef62c
+- What Changed (single change): Replaced the subprocess recording path for active recording with an in-process `LibAvRecordingSink` that owns `LibAvEncoder`, accepts raw video through `IRawVideoFrameEncoder`, routes WASAPI audio directly into the same sink, and updates `CaptureService`/`UnifiedVideoCapture` to use the new single-backend ownership and no-split artifact mode.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `temp/logs/ElgatoCapture_Debug.log` tail after the successful build showed only ongoing RTICE polling plus normal cleanup lines; no new `FAIL`/`EXCEPTION` tokens were emitted by this verification pass.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this build-only verification pass)
+- Conclusion: The libav sink integration compiles cleanly with the raw-frame interface and new ownership model in place. Real preview/record/stop smoke validation, plus HDR capture validation with `tools/validate_hdr.ps1 -ExpectHdr`, is still required on hardware to prove runtime encode behavior.

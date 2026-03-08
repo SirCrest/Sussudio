@@ -22,7 +22,7 @@ namespace ElgatoCapture.Services;
 /// FFmpeg-based video encoder service for guaranteed CFR output.
 /// Pipes raw video frames and audio samples to FFmpeg subprocess.
 /// </summary>
-public class FFmpegEncoderService : IDisposable, IAsyncDisposable
+public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFrameEncoder
 {
     private Process? _ffmpegProcess;
     private Stream? _videoStream;  // stdin stream for video

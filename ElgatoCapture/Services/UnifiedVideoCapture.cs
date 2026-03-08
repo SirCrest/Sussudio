@@ -12,7 +12,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private CancellationTokenSource? _readCts;
     private IPreviewFrameSink? _previewSink;
     private IRecordingSink? _recordingSink;
-    private FFmpegEncoderService? _recordingEncoder;
+    private IRawVideoFrameEncoder? _recordingEncoder;
     private bool _started;
     private bool _recordingActive;
     private bool _disposed;
@@ -185,7 +185,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         Volatile.Write(ref _observedPixelFormatObserver, observer);
     }
 
-    public Task StartRecordingAsync(IRecordingSink sink, FFmpegEncoderService encoder)
+    public Task StartRecordingAsync(IRecordingSink sink, IRawVideoFrameEncoder encoder)
     {
         ThrowIfDisposed();
         ArgumentNullException.ThrowIfNull(sink);
@@ -377,7 +377,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
     private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010)
     {
-        FFmpegEncoderService? encoder = null;
+        IRawVideoFrameEncoder? encoder = null;
         bool recordingActive;
         lock (_sync)
         {
