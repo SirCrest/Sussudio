@@ -1532,15 +1532,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         HdrPreviewToggleLabel.Visibility = vis;
         AudioPreviewToggleLabel.Visibility = vis;
         StatsToggleLabel.Visibility = vis;
-        RecordButtonLabel.Visibility = vis;
-        RecordButtonStopLabel.Visibility = vis;
-        RecordButton.MinWidth = showLabels ? 140 : 48;
-        // When idle, also morph shape to match label visibility
-        if (!ViewModel.IsRecording)
-        {
-            RecordButton.Width = showLabels ? double.NaN : 48;
-            RecordButton.Padding = showLabels ? new Thickness(20, 0, 20, 0) : new Thickness(0);
-        }
+        // Record button is always a circle when idle — no label mode
     }
 
     private void StatsToggle_Checked(object sender, RoutedEventArgs e)
@@ -2369,15 +2361,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 RecordButtonRecordingContent.Visibility = ViewModel.IsRecording ? Visibility.Visible : Visibility.Collapsed;
                 if (ViewModel.IsRecording)
                 {
-                    // Morph to pill shape
+                    // Morph to pill shape for stop + time
                     RecordButton.Width = double.NaN;
-                    RecordButton.Padding = new Thickness(20, 0, 20, 0);
+                    RecordButton.Padding = new Thickness(12, 0, 12, 0);
                 }
                 else
                 {
                     // Morph back to circle
-                    RecordButton.Width = _toggleLabelsVisible ? double.NaN : 48;
-                    RecordButton.Padding = _toggleLabelsVisible ? new Thickness(20, 0, 20, 0) : new Thickness(0);
+                    RecordButton.Width = 36;
+                    RecordButton.Padding = new Thickness(0);
                 }
                 AudioRecordToggle.IsEnabled = !ViewModel.IsRecording;
                 CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
@@ -3266,6 +3258,46 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             System.Diagnostics.Process.Start("explorer.exe", path);
         }
+    }
+
+    private void ScreenshotButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(async () =>
+        {
+            if (!ViewModel.IsPreviewing)
+            {
+                ViewModel.StatusText = "Start preview before capturing a screenshot";
+                return;
+            }
+
+            var outputDir = ViewModel.OutputPath;
+            if (string.IsNullOrWhiteSpace(outputDir))
+                outputDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "ElgatoCapture");
+
+            Directory.CreateDirectory(outputDir);
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+            var filePath = Path.Combine(outputDir, $"Screenshot_{timestamp}.png");
+
+            ScreenshotButton.IsEnabled = false;
+            try
+            {
+                var result = await ViewModel.CapturePreviewFrameAsync(filePath);
+                if (result.Succeeded)
+                {
+                    ViewModel.StatusText = $"Screenshot saved: {Path.GetFileName(filePath)}";
+                    Logger.Log($"SCREENSHOT_SAVED path={filePath} width={result.CapturedWidth} height={result.CapturedHeight}");
+                }
+                else
+                {
+                    ViewModel.StatusText = $"Screenshot failed: {result.Message}";
+                    Logger.Log($"SCREENSHOT_FAILED reason={result.Message}");
+                }
+            }
+            finally
+            {
+                ScreenshotButton.IsEnabled = true;
+            }
+        }, nameof(ScreenshotButton_Click));
     }
 
     private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)

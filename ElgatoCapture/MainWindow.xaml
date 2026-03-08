@@ -785,7 +785,7 @@
                     <Button x:Name="SettingsToggleButton"
                             Click="SettingsToggleButton_Click"
                             VerticalAlignment="Center"
-                            Width="40" Height="40"
+                            Width="36" Height="36"
                             Padding="0"
                             CornerRadius="8"
                             ToolTipService.ToolTip="Device and output settings">
@@ -794,22 +794,34 @@
                     <Button x:Name="OpenRecordingsButton"
                             Click="OpenRecordingsButton_Click"
                             VerticalAlignment="Center"
-                            Width="40" Height="40"
+                            Width="36" Height="36"
                             Padding="0"
                             CornerRadius="8"
                             ToolTipService.ToolTip="Open recordings folder">
-                        <FontIcon Glyph="&#xE8B7;" FontSize="14"/>
+                        <Grid>
+                            <FontIcon Glyph="&#xE8B7;" FontSize="15"/>
+                            <FontIcon Glyph="&#xE768;" FontSize="6" Margin="1,2,0,0"/>
+                        </Grid>
                     </Button>
-                    <Border Width="1" Height="24" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
+                    <Border Width="1" Height="20" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
+                    <Button x:Name="ScreenshotButton"
+                            Click="ScreenshotButton_Click"
+                            VerticalAlignment="Center"
+                            Width="36" Height="36"
+                            Padding="0"
+                            CornerRadius="8"
+                            ToolTipService.ToolTip="Capture screenshot">
+                        <FontIcon Glyph="&#xE722;" FontSize="14"/>
+                    </Button>
                     <Button x:Name="RecordButton"
                             AutomationProperties.AutomationId="RecordButton"
                             Click="RecordButton_Click"
-                            Height="48"
-                            Width="48"
+                            Height="36"
+                            Width="36"
                             Padding="0"
                             Background="{ThemeResource RecordButtonBrush}"
                             BorderBrush="Transparent"
-                            CornerRadius="24">
+                            CornerRadius="18">
                         <Button.Resources>
                             <SolidColorBrush x:Key="ButtonBackground" Color="#E81123"/>
                             <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF4D5E"/>
@@ -822,41 +834,29 @@
                             <SolidColorBrush x:Key="ButtonForegroundPressed" Color="#E0E0E0"/>
                         </Button.Resources>
                         <Grid>
-                            <!-- Idle state: white circle -->
-                            <StackPanel x:Name="RecordButtonNormalContent"
-                                        Orientation="Horizontal"
-                                        Spacing="8"
-                                        HorizontalAlignment="Center">
-                                <Ellipse Width="16" Height="16" Fill="White" VerticalAlignment="Center"/>
-                                <TextBlock x:Name="RecordButtonLabel" Text="RECORD"
-                                           FontWeight="SemiBold"
-                                           Foreground="White"
-                                           VerticalAlignment="Center"/>
-                            </StackPanel>
-                            <!-- Starting state: spinner -->
+                            <!-- Idle state: white dot -->
+                            <Ellipse x:Name="RecordButtonNormalContent"
+                                     Width="12" Height="12" Fill="White"/>
+                            <!-- Starting/stopping state: spinner -->
                             <ProgressRing x:Name="RecordButtonStartingContent"
-                                          Width="20" Height="20"
+                                          Width="16" Height="16"
                                           IsActive="False"
                                           Foreground="White"
                                           Visibility="Collapsed"/>
-                            <!-- Recording state: Stop + label -->
+                            <!-- Recording state: stop square + time -->
                             <StackPanel x:Name="RecordButtonRecordingContent"
                                         Orientation="Horizontal"
                                         Spacing="8"
                                         Visibility="Collapsed"
                                         HorizontalAlignment="Center">
-                                <Border Width="14" Height="14"
+                                <Border Width="12" Height="12"
                                         Background="#1A1A1A"
                                         CornerRadius="2"
                                         VerticalAlignment="Center"/>
-                                <TextBlock x:Name="RecordButtonStopLabel" Text="STOP"
-                                           FontWeight="SemiBold"
-                                           Foreground="White"
-                                           VerticalAlignment="Center"/>
                                 <TextBlock x:Name="RecordingTimeTextBlock"
                                            AutomationProperties.AutomationId="RecordingTimeTextBlock"
                                            Text="00:00:00"
-                                           FontSize="14"
+                                           FontSize="13"
                                            FontWeight="Bold"
                                            FontFamily="Consolas"
                                            Foreground="White"
@@ -868,18 +868,18 @@
                             AutomationProperties.AutomationId="PreviewButton"
                             Click="PreviewButton_Click"
                             VerticalAlignment="Center"
-                            Height="40"
+                            Height="36"
                             Padding="10,0"
                             CornerRadius="8"
                             ToolTipService.ToolTip="Start Preview">
                         <StackPanel Orientation="Horizontal" Spacing="6">
-                            <FontIcon x:Name="PreviewButtonIcon" Glyph="&#xE768;" FontSize="16"/>
+                            <FontIcon x:Name="PreviewButtonIcon" Glyph="&#xE768;" FontSize="14"/>
                             <TextBlock x:Name="PreviewButtonLabel" Text="Preview"
                                        FontSize="12" VerticalAlignment="Center"
                                        Visibility="Collapsed"/>
                         </StackPanel>
                     </Button>
-                    <Border Width="1" Height="24" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
+                    <Border Width="1" Height="20" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
                     <ToggleButton x:Name="HdrToggle"
                                   AutomationProperties.AutomationId="HdrToggle"
                                   Height="32"
@@ -909,7 +909,7 @@
                                        Visibility="Collapsed"/>
                         </StackPanel>
                     </ToggleButton>
-                    <Border Width="1" Height="24" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
+                    <Border Width="1" Height="20" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
                     <ToggleButton x:Name="TrueHdrPreviewToggle"
                                   AutomationProperties.AutomationId="TrueHdrPreviewToggle"
                                   Height="32" Padding="8,0"
@@ -933,7 +933,7 @@
                                        Visibility="Collapsed"/>
                         </StackPanel>
                     </ToggleButton>
-                    <Border Width="1" Height="24" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
+                    <Border Width="1" Height="20" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
                     <ToggleButton x:Name="StatsToggle"
                                   AutomationProperties.AutomationId="StatsToggle"
                                   Height="32"
