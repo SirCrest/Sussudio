@@ -57,6 +57,18 @@ public sealed class CaptureDiagnosticsSnapshot
     public long CaptureCadenceSevereGapCount { get; init; }
     public long CaptureCadenceEstimatedDroppedFrames { get; init; }
     public double CaptureCadenceEstimatedDropPercent { get; init; }
+    public int MjpegDecodeSampleCount { get; init; }
+    public double MjpegDecodeAvgMs { get; init; }
+    public double MjpegDecodeP95Ms { get; init; }
+    public double MjpegDecodeMaxMs { get; init; }
+    public int MjpegInteropCopySampleCount { get; init; }
+    public double MjpegInteropCopyAvgMs { get; init; }
+    public double MjpegInteropCopyP95Ms { get; init; }
+    public double MjpegInteropCopyMaxMs { get; init; }
+    public int MjpegCallbackSampleCount { get; init; }
+    public double MjpegCallbackAvgMs { get; init; }
+    public double MjpegCallbackP95Ms { get; init; }
+    public double MjpegCallbackMaxMs { get; init; }
 
     public int ConversionQueueDepth { get; init; }
     public int FfmpegVideoQueueDepth { get; init; }

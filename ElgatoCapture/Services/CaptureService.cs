@@ -64,6 +64,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private long _lastMfSourceReaderFramesDelivered;
     private long _lastMfSourceReaderFramesDropped;
     private string? _lastMfSourceReaderNegotiatedFormat;
+    private UnifiedVideoCapture.MjpegPipelineTimingMetrics _lastMjpegPipelineTimingMetrics;
     private CancellationTokenSource? _telemetryPollCts;
     private Task? _telemetryPollTask;
     private const int TelemetryPollIntervalMs = 2000;
@@ -124,6 +125,21 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private void ConfigureObservedPixelTelemetry(UnifiedVideoCapture unifiedVideoCapture)
     {
         unifiedVideoCapture.SetObservedPixelFormatObserver(OnUnifiedVideoFrameObserved);
+    }
+
+    private void CacheMjpegTimingMetrics(UnifiedVideoCapture? unifiedVideoCapture)
+    {
+        if (unifiedVideoCapture == null)
+        {
+            return;
+        }
+
+        _lastMjpegPipelineTimingMetrics = unifiedVideoCapture.GetMjpegPipelineTimingMetrics();
+    }
+
+    private void ResetCachedMjpegTimingMetrics()
+    {
+        _lastMjpegPipelineTimingMetrics = default;
     }
 
     private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)
@@ -189,13 +205,40 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public SourceSignalTelemetrySnapshot GetLatestSourceTelemetrySnapshot() => _latestSourceTelemetry;
 
     public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()
-        => new()
+    {
+        var health = GetHealthSnapshot();
+        return new CaptureDiagnosticsSnapshot
         {
-            TimestampUtc = DateTimeOffset.UtcNow,
-            SessionState = _sessionState,
-            IsRecording = _isRecording,
-            RecordingBackend = _isRecording ? "LibAv" : "None"
+            TimestampUtc = health.TimestampUtc,
+            SessionState = health.SessionState,
+            IsRecording = health.IsRecording,
+            RecordingBackend = health.RecordingBackend,
+            AudioPathMode = health.AudioPathMode,
+            MuxResult = health.MuxResult,
+            CaptureCadenceSampleCount = health.CaptureCadenceSampleCount,
+            CaptureCadenceObservedFps = health.CaptureCadenceObservedFps,
+            CaptureCadenceExpectedIntervalMs = health.CaptureCadenceExpectedIntervalMs,
+            CaptureCadenceAverageIntervalMs = health.CaptureCadenceAverageIntervalMs,
+            CaptureCadenceP95IntervalMs = health.CaptureCadenceP95IntervalMs,
+            CaptureCadenceMaxIntervalMs = health.CaptureCadenceMaxIntervalMs,
+            CaptureCadenceJitterStdDevMs = health.CaptureCadenceJitterStdDevMs,
+            CaptureCadenceSevereGapCount = health.CaptureCadenceSevereGapCount,
+            CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,
+            CaptureCadenceEstimatedDropPercent = health.CaptureCadenceEstimatedDropPercent,
+            MjpegDecodeSampleCount = health.MjpegDecodeSampleCount,
+            MjpegDecodeAvgMs = health.MjpegDecodeAvgMs,
+            MjpegDecodeP95Ms = health.MjpegDecodeP95Ms,
+            MjpegDecodeMaxMs = health.MjpegDecodeMaxMs,
+            MjpegInteropCopySampleCount = health.MjpegInteropCopySampleCount,
+            MjpegInteropCopyAvgMs = health.MjpegInteropCopyAvgMs,
+            MjpegInteropCopyP95Ms = health.MjpegInteropCopyP95Ms,
+            MjpegInteropCopyMaxMs = health.MjpegInteropCopyMaxMs,
+            MjpegCallbackSampleCount = health.MjpegCallbackSampleCount,
+            MjpegCallbackAvgMs = health.MjpegCallbackAvgMs,
+            MjpegCallbackP95Ms = health.MjpegCallbackP95Ms,
+            MjpegCallbackMaxMs = health.MjpegCallbackMaxMs
         };
+    }
 
     private void ResetObservedPixelTelemetry()
     {
@@ -941,6 +984,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var sourceTelemetrySuppressed = !string.IsNullOrWhiteSpace(sourceTelemetrySuppressedReason);
         var sourceCadence = unifiedVideoCapture?.GetSourceCadenceMetrics()
             ?? default(MfSourceReaderVideoCapture.SourceCadenceMetrics);
+        var mjpegTiming = unifiedVideoCapture?.GetMjpegPipelineTimingMetrics()
+            ?? _lastMjpegPipelineTimingMetrics;
 
         return new CaptureHealthSnapshot
         {
@@ -1004,7 +1049,19 @@ public class CaptureService : IDisposable, IAsyncDisposable
             CaptureCadenceJitterStdDevMs = sourceCadence.JitterStdDevMs,
             CaptureCadenceSevereGapCount = sourceCadence.SevereGapCount,
             CaptureCadenceEstimatedDroppedFrames = sourceCadence.EstimatedDroppedFrames,
-            CaptureCadenceEstimatedDropPercent = sourceCadence.EstimatedDropPercent
+            CaptureCadenceEstimatedDropPercent = sourceCadence.EstimatedDropPercent,
+            MjpegDecodeSampleCount = mjpegTiming.DecodeSampleCount,
+            MjpegDecodeAvgMs = mjpegTiming.DecodeAvgMs,
+            MjpegDecodeP95Ms = mjpegTiming.DecodeP95Ms,
+            MjpegDecodeMaxMs = mjpegTiming.DecodeMaxMs,
+            MjpegInteropCopySampleCount = mjpegTiming.InteropCopySampleCount,
+            MjpegInteropCopyAvgMs = mjpegTiming.InteropCopyAvgMs,
+            MjpegInteropCopyP95Ms = mjpegTiming.InteropCopyP95Ms,
+            MjpegInteropCopyMaxMs = mjpegTiming.InteropCopyMaxMs,
+            MjpegCallbackSampleCount = mjpegTiming.CallbackSampleCount,
+            MjpegCallbackAvgMs = mjpegTiming.CallbackAvgMs,
+            MjpegCallbackP95Ms = mjpegTiming.CallbackP95Ms,
+            MjpegCallbackMaxMs = mjpegTiming.CallbackMaxMs
         };
     }
 
@@ -1026,6 +1083,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _lastUsePostMuxAudio = false;
             Interlocked.Exchange(ref _videoFramesDropped, 0);
             ResetObservedPixelTelemetry();
+            ResetCachedMjpegTimingMetrics();
             _latestSourceTelemetry = BuildFallbackTelemetry();
             await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);
             _isInitialized = true;
@@ -1180,6 +1238,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _unifiedVideoCapture = null;
                 if (unifiedVideoCapture != null)
                 {
+                    CacheMjpegTimingMetrics(unifiedVideoCapture);
                     _lastMfSourceReaderFramesDelivered = unifiedVideoCapture.VideoFramesArrived;
                     _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
                     _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
@@ -1451,6 +1510,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
                 if (ownedUnifiedVideoCapture != null && ReferenceEquals(_unifiedVideoCapture, ownedUnifiedVideoCapture))
                 {
+                    CacheMjpegTimingMetrics(ownedUnifiedVideoCapture);
                     _lastMfSourceReaderFramesDelivered = ownedUnifiedVideoCapture.VideoFramesArrived;
                     _lastMfSourceReaderFramesDropped = ownedUnifiedVideoCapture.VideoFramesDropped;
                     _lastMfSourceReaderNegotiatedFormat = ownedUnifiedVideoCapture.NegotiatedFormat;
@@ -1576,6 +1636,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             {
                 try
                 {
+                    CacheMjpegTimingMetrics(unifiedVideoCapture);
                     _lastMfSourceReaderFramesDelivered = unifiedVideoCapture.VideoFramesArrived;
                     _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
                     _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
@@ -1723,6 +1784,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             {
                 try
                 {
+                    CacheMjpegTimingMetrics(unifiedVideoCapture);
                     DetachUnifiedVideoCapture(unifiedVideoCapture);
                     await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
                     await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);

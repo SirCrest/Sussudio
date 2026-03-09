@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using FFmpeg.AutoGen;
@@ -39,6 +40,17 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private Task? _mjpegPreviewTask;
     private int _mjpegPreviewInFlight;
     private Action<string>? _observedPixelFormatObserver;
+    private readonly double[] _mjpegDecodeTimeMs = new double[300];
+    private int _mjpegDecodeTimeCount;
+    private int _mjpegDecodeTimeIndex;
+    private readonly double[] _mjpegInteropCopyTimeMs = new double[300];
+    private int _mjpegInteropCopyTimeCount;
+    private int _mjpegInteropCopyTimeIndex;
+    private readonly double[] _mjpegCallbackTimeMs = new double[300];
+    private int _mjpegCallbackTimeCount;
+    private int _mjpegCallbackTimeIndex;
+    private readonly object _timingLock = new();
+    private int _timingDiagDone;
 
     public bool IsP010 => Volatile.Read(ref _isP010);
     public int Width => Volatile.Read(ref _width);
@@ -66,10 +78,63 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     public long SourceReaderLastFrameTickMs => _capture?.LastFrameDeliveredTickMs ?? 0;
     public SharedD3DDeviceManager? D3DManager => Volatile.Read(ref _d3dManager);
     public NvdecMjpegDecoder? MjpegDecoder => Volatile.Read(ref _mjpegDecoder);
+    public readonly record struct MjpegPipelineTimingMetrics(
+        int DecodeSampleCount,
+        double DecodeAvgMs,
+        double DecodeP95Ms,
+        double DecodeMaxMs,
+        int InteropCopySampleCount,
+        double InteropCopyAvgMs,
+        double InteropCopyP95Ms,
+        double InteropCopyMaxMs,
+        int CallbackSampleCount,
+        double CallbackAvgMs,
+        double CallbackP95Ms,
+        double CallbackMaxMs);
+
     public MfSourceReaderVideoCapture.SourceCadenceMetrics GetSourceCadenceMetrics()
     {
         var capture = _capture;
         return capture?.GetSourceCadenceMetrics() ?? default;
+    }
+
+    public MjpegPipelineTimingMetrics GetMjpegPipelineTimingMetrics()
+    {
+        double[] decodeSamples;
+        double[] interopSamples;
+        double[] callbackSamples;
+        lock (_timingLock)
+        {
+            decodeSamples = CopyTimingSamples(_mjpegDecodeTimeMs, _mjpegDecodeTimeCount, _mjpegDecodeTimeIndex);
+            interopSamples = CopyTimingSamples(_mjpegInteropCopyTimeMs, _mjpegInteropCopyTimeCount, _mjpegInteropCopyTimeIndex);
+            callbackSamples = CopyTimingSamples(_mjpegCallbackTimeMs, _mjpegCallbackTimeCount, _mjpegCallbackTimeIndex);
+        }
+
+        var decodeMetrics = ComputeTimingMetrics(decodeSamples);
+        var interopMetrics = ComputeTimingMetrics(interopSamples);
+        var callbackMetrics = ComputeTimingMetrics(callbackSamples);
+
+        if (decodeMetrics.SampleCount > 0 && Interlocked.Exchange(ref _timingDiagDone, 1) == 0)
+        {
+            Logger.Log(
+                $"MJPEG_TIMING_DIAG decode={decodeMetrics.SampleCount}s/{decodeMetrics.AverageMs:F2}avg/{decodeMetrics.P95Ms:F2}p95 " +
+                $"interop={interopMetrics.SampleCount}s/{interopMetrics.AverageMs:F2}avg/{interopMetrics.P95Ms:F2}p95 " +
+                $"callback={callbackMetrics.SampleCount}s/{callbackMetrics.AverageMs:F2}avg/{callbackMetrics.P95Ms:F2}p95");
+        }
+
+        return new MjpegPipelineTimingMetrics(
+            DecodeSampleCount: decodeMetrics.SampleCount,
+            DecodeAvgMs: decodeMetrics.AverageMs,
+            DecodeP95Ms: decodeMetrics.P95Ms,
+            DecodeMaxMs: decodeMetrics.MaxMs,
+            InteropCopySampleCount: interopMetrics.SampleCount,
+            InteropCopyAvgMs: interopMetrics.AverageMs,
+            InteropCopyP95Ms: interopMetrics.P95Ms,
+            InteropCopyMaxMs: interopMetrics.MaxMs,
+            CallbackSampleCount: callbackMetrics.SampleCount,
+            CallbackAvgMs: callbackMetrics.AverageMs,
+            CallbackP95Ms: callbackMetrics.P95Ms,
+            CallbackMaxMs: callbackMetrics.MaxMs);
     }
 
     public async Task InitializeAsync(
@@ -181,6 +246,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
             Interlocked.Exchange(ref _lastVideoFrameArrivedTick, 0);
             Interlocked.Exchange(ref _fatalErrorSignaled, 0);
+            ResetMjpegTimingMetrics();
         }
 
         capture.FatalErrorOccurred += OnCaptureFatalError;
@@ -326,6 +392,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         }
 
         await DrainMjpegPreviewAsync().ConfigureAwait(false);
+        ResetMjpegTimingMetrics();
 
         readCts?.Dispose();
     }
@@ -528,22 +595,44 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         long arrivalTick)
     {
         const bool isP010 = false;
+        var callbackStart = Stopwatch.GetTimestamp();
         Volatile.Read(ref _observedPixelFormatObserver)?.Invoke("MJPG");
 
         AVFrame* cudaFrame;
+        var decodeStart = Stopwatch.GetTimestamp();
         try
         {
             cudaFrame = decoder.DecodeFrame(jpegData);
+            RecordTimingSample(
+                _mjpegDecodeTimeMs,
+                ref _mjpegDecodeTimeCount,
+                ref _mjpegDecodeTimeIndex,
+                GetElapsedMilliseconds(decodeStart, Stopwatch.GetTimestamp()));
             if (cudaFrame == null)
             {
                 Interlocked.Increment(ref _videoFramesDropped);
+                RecordTimingSample(
+                    _mjpegCallbackTimeMs,
+                    ref _mjpegCallbackTimeCount,
+                    ref _mjpegCallbackTimeIndex,
+                    GetElapsedMilliseconds(callbackStart, Stopwatch.GetTimestamp()));
                 return;
             }
         }
         catch (Exception ex)
         {
+            RecordTimingSample(
+                _mjpegDecodeTimeMs,
+                ref _mjpegDecodeTimeCount,
+                ref _mjpegDecodeTimeIndex,
+                GetElapsedMilliseconds(decodeStart, Stopwatch.GetTimestamp()));
             Interlocked.Increment(ref _videoFramesDropped);
             Logger.Log($"NVDEC_MJPEG_DECODE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            RecordTimingSample(
+                _mjpegCallbackTimeMs,
+                ref _mjpegCallbackTimeCount,
+                ref _mjpegCallbackTimeIndex,
+                GetElapsedMilliseconds(callbackStart, Stopwatch.GetTimestamp()));
             return;
         }
 
@@ -553,9 +642,22 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         var previewSink = Volatile.Read(ref _previewSink);
         if (interop != null && previewSink != null)
         {
+            var copyStart = Stopwatch.GetTimestamp();
             try
             {
                 interop.CopyFrameToTexture(cudaFrame);
+            }
+            finally
+            {
+                RecordTimingSample(
+                    _mjpegInteropCopyTimeMs,
+                    ref _mjpegInteropCopyTimeCount,
+                    ref _mjpegInteropCopyTimeIndex,
+                    GetElapsedMilliseconds(copyStart, Stopwatch.GetTimestamp()));
+            }
+
+            try
+            {
                 previewSink.SubmitTexture(interop.TextureNativePointer, 0, width, height, isP010, arrivalTick);
             }
             catch (Exception ex)
@@ -564,6 +666,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
                 Logger.Log($"CUDA_D3D11_PREVIEW_FAIL type={ex.GetType().Name} msg={ex.Message}");
             }
 
+            RecordTimingSample(
+                _mjpegCallbackTimeMs,
+                ref _mjpegCallbackTimeCount,
+                ref _mjpegCallbackTimeIndex,
+                GetElapsedMilliseconds(callbackStart, Stopwatch.GetTimestamp()));
             return;
         }
 
@@ -576,6 +683,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
                 new InvalidOperationException(
                     "CUDA-D3D11 interop unavailable — CPU preview fallback is not viable for HFR MJPG mode."),
                 "MJPEG_HFR_NO_GPU_PREVIEW");
+            RecordTimingSample(
+                _mjpegCallbackTimeMs,
+                ref _mjpegCallbackTimeCount,
+                ref _mjpegCallbackTimeIndex,
+                GetElapsedMilliseconds(callbackStart, Stopwatch.GetTimestamp()));
             return;
         }
 
@@ -584,11 +696,21 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         {
             if (!_started || _disposed || _readCts == null || _previewSink == null)
             {
+                RecordTimingSample(
+                    _mjpegCallbackTimeMs,
+                    ref _mjpegCallbackTimeCount,
+                    ref _mjpegCallbackTimeIndex,
+                    GetElapsedMilliseconds(callbackStart, Stopwatch.GetTimestamp()));
                 return;
             }
 
             if (Interlocked.CompareExchange(ref _mjpegPreviewInFlight, 1, 0) != 0)
             {
+                RecordTimingSample(
+                    _mjpegCallbackTimeMs,
+                    ref _mjpegCallbackTimeCount,
+                    ref _mjpegCallbackTimeIndex,
+                    GetElapsedMilliseconds(callbackStart, Stopwatch.GetTimestamp()));
                 return;
             }
 
@@ -598,6 +720,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
                 Interlocked.Exchange(ref _mjpegPreviewInFlight, 0);
                 Interlocked.Increment(ref _videoFramesDropped);
                 Logger.Log("NVDEC_PREVIEW_CLONE_FAIL");
+                RecordTimingSample(
+                    _mjpegCallbackTimeMs,
+                    ref _mjpegCallbackTimeCount,
+                    ref _mjpegCallbackTimeIndex,
+                    GetElapsedMilliseconds(callbackStart, Stopwatch.GetTimestamp()));
                 return;
             }
 
@@ -629,6 +756,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
                 }
             });
         }
+
+        RecordTimingSample(
+            _mjpegCallbackTimeMs,
+            ref _mjpegCallbackTimeCount,
+            ref _mjpegCallbackTimeIndex,
+            GetElapsedMilliseconds(callbackStart, Stopwatch.GetTimestamp()));
     }
 
     private async Task DrainMjpegPreviewAsync()
@@ -712,6 +845,75 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             Logger.Log($"NVDEC_CUDA_ENQUEUE_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
     }
+
+    private void RecordTimingSample(double[] window, ref int count, ref int index, double valueMs)
+    {
+        lock (_timingLock)
+        {
+            window[index] = valueMs;
+            index = (index + 1) % window.Length;
+            if (count < window.Length)
+            {
+                count++;
+            }
+        }
+    }
+
+    private void ResetMjpegTimingMetrics()
+    {
+        lock (_timingLock)
+        {
+            Array.Clear(_mjpegDecodeTimeMs, 0, _mjpegDecodeTimeMs.Length);
+            _mjpegDecodeTimeCount = 0;
+            _mjpegDecodeTimeIndex = 0;
+            Array.Clear(_mjpegInteropCopyTimeMs, 0, _mjpegInteropCopyTimeMs.Length);
+            _mjpegInteropCopyTimeCount = 0;
+            _mjpegInteropCopyTimeIndex = 0;
+            Array.Clear(_mjpegCallbackTimeMs, 0, _mjpegCallbackTimeMs.Length);
+            _mjpegCallbackTimeCount = 0;
+            _mjpegCallbackTimeIndex = 0;
+        }
+    }
+
+    private static double[] CopyTimingSamples(double[] window, int count, int index)
+    {
+        var samples = new double[count];
+        for (var i = 0; i < count; i++)
+        {
+            var ringIndex = (index - count + i + window.Length) % window.Length;
+            samples[i] = window[ringIndex];
+        }
+
+        return samples;
+    }
+
+    private static (int SampleCount, double AverageMs, double P95Ms, double MaxMs) ComputeTimingMetrics(double[] samples)
+    {
+        var sampleCount = samples.Length;
+        if (sampleCount == 0)
+        {
+            return (0, 0, 0, 0);
+        }
+
+        var sum = 0.0;
+        var max = 0.0;
+        for (var i = 0; i < sampleCount; i++)
+        {
+            sum += samples[i];
+            if (samples[i] > max)
+            {
+                max = samples[i];
+            }
+        }
+
+        Array.Sort(samples);
+        var p95Index = Math.Min((int)(sampleCount * 0.95), sampleCount - 1);
+
+        return (sampleCount, sum / sampleCount, samples[p95Index], max);
+    }
+
+    private static double GetElapsedMilliseconds(long startTimestamp, long endTimestamp)
+        => (endTimestamp - startTimestamp) * 1000.0 / Stopwatch.Frequency;
 
     private void ThrowIfDisposed()
         => ObjectDisposedException.ThrowIf(_disposed, this);

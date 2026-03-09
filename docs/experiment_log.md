@@ -1332,3 +1332,78 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (documentation correction only)
 - Conclusion: The append-only history now ends with an explicit canonical-record rule, so the duplicate headings do not create ambiguity for this fix.
+
+## E69 - MJPEG pipeline timing metrics surfaced through automation + MCP
+- Timestamp (UTC): 2026-03-09T18:57:01Z
+- Commit Hash: uncommitted (base fa9fb6fef6ee2d5d82bb886c573fc44baeb37019)
+- What Changed (single change): Added rolling-window MJPEG decode / CUDA-D3D11 interop copy / total callback timing metrics in `UnifiedVideoCapture`, surfaced them through `CaptureHealthSnapshot` -> `AutomationSnapshot`, and formatted them in MCP `get_app_state`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 220`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the verification run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token; no new warning/failure tokens were emitted by this change in the repo-local harness pass.
+- ffprobe Evidence:
+  - N/A (diagnostics/automation surface change only; no recording artifact generated in this verification pass)
+- Conclusion: Build, regression tests, and repo-local log inspection are clean after adding MJPEG timing metrics. Live MJPG/NVDEC hardware runs are now able to inspect decode/copy/callback timing through automation/MCP without log spelunking.
+
+## E70 - MJPEG timing snapshots preserved across stop + regression coverage expanded
+- Timestamp (UTC): 2026-03-09T19:11:46Z
+- Commit Hash: uncommitted (base fa9fb6fef6ee2d5d82bb886c573fc44baeb37019)
+- What Changed (single change): Preserved the last MJPEG timing metrics across stop/teardown in `CaptureService`, populated the new timing fields in `GetDiagnosticsSnapshot()`, tightened the interop-copy timing boundary to cover only `CopyFrameToTexture`, and extended the regression harness to assert cached health/diagnostics propagation plus the MCP formatter section.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `dotnet build tools/McpServer/McpServer.csproj`
+  6. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 220`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.` including `Health snapshot uses cached MJPEG timing metrics when capture is gone`, `Diagnostics snapshot mirrors MJPEG timing metrics`, and `MCP formatter renders MJPEG timing section when fields exist`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `dotnet build tools/McpServer/McpServer.csproj` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `temp/logs/ElgatoCapture_Debug.log` from the final verification run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token; no new warning/failure tokens were emitted by this change in the repo-local harness pass.
+- ffprobe Evidence:
+  - N/A (diagnostics/automation surface change only; no recording artifact generated in this verification pass)
+- Conclusion: The MJPEG timing metrics now survive stop transitions long enough to inspect via automation, the diagnostics snapshot no longer advertises zeroed timing fields, and the repo-local validation set now covers health, diagnostics, and MCP formatter surfacing for the new metrics.
+
+## E71 - MCP formatter verification correction for MJPEG timing surface
+- Timestamp (UTC): 2026-03-09T19:11:46Z
+- Commit Hash: uncommitted (base fa9fb6fef6ee2d5d82bb886c573fc44baeb37019)
+- What Changed (single change): Corrected the validation record for the MJPEG timing surface: the regression harness now contains a best-effort MCP formatter check, but this environment may skip direct `McpServer.dll` execution when the test host cannot load the tool's `.NET 8`/`System.Text.Json 10.x` dependency graph.
+- How To Run:
+  1. `dotnet build tools/McpServer/McpServer.csproj`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. If the local host can resolve the MCP tool dependencies, confirm the harness still reports `PASS: MCP formatter renders MJPEG timing section when fields exist`.
+- Validator Output:
+  - `dotnet build tools/McpServer/McpServer.csproj` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - The app regression harness stayed green after adding the best-effort MCP formatter check.
+  - This environment did not provide a standalone live `get_app_state` invocation against a running MCP process; formatter execution remains host-dependent here.
+- ffprobe Evidence:
+  - N/A (diagnostics/automation surface change only; no recording artifact generated in this verification pass)
+- Conclusion: App-side health/automation plumbing is verified locally; direct MCP formatter execution is partially validated by build + best-effort harness coverage, but a live MCP process smoke remains outstanding for a host that can resolve the tool assembly graph cleanly.
+
+## E26 - MJPEG Pipeline Timing: Live Results at 4K120
+- Timestamp (UTC): 2026-03-09T20:00:00Z
+- Commit Hash: (uncommitted — timing instrumentation from E25)
+- What Changed: Verified live timing instrumentation via direct pipe queries. Fixed `_timingDiagDone` short-circuit bug (Interlocked.Exchange was consuming the one-shot flag before checking sample count). MCP server display confirmed working via raw JSON but ResponseFormatter not rendering due to stale MCP server process during session.
+- How To Run:
+  1. Build and launch: `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. Launch app, wait for MJPG 4K120 preview
+  3. `powershell.exe -File temp/full-snapshot.ps1` (queries pipe directly)
+  4. `powershell.exe -File temp/check-timing5.ps1` (compact timing view)
+- Measurements (300-sample rolling windows, PS5 source at 3840x2160@120):
+  - **Simple scene**: Decode avg=5.4-6.7ms P95=5.9-7.5ms | Interop avg=1.5-2.7ms | Callback avg=8.1-8.2ms | **0-1% drops**
+  - **Complex scene**: Decode avg=8.1-14.2ms P95=13.1-16.1ms | Interop avg=1.3-2.4ms | Callback avg=10.6-16.0ms | **25-43% drops**
+  - **Budget analysis**: Decode = 82% of callback time, interop copy = 18%
+- Key Findings:
+  - `mjpeg_cuvid` is a hybrid CPU (Huffman) + CUDA (IDCT) decoder, NOT the NVDEC ASIC (nvidia-smi shows 0% NVDEC)
+  - Pipeline is strictly single-threaded: one frame at a time through decode → interop copy
+  - Performance is entirely scene-complexity-dependent (JPEG compressed size varies with content)
+  - Frame budget at 120fps is 8.33ms; complex scenes blow this by 50-70%
+  - Interop copy (CUDA staging → D3D11) is fast enough at 1.5-2.7ms avg
+- Conclusion: The decode stage is the bottleneck, not the interop copy or D3D11 contention. CPU multi-threaded MJPEG decode (FFmpeg `mjpeg` with AVX2, 2-3 threads) is the leading candidate for improvement since MJPEG frames are independent and can be decoded in parallel.

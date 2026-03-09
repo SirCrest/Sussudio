@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Runtime.Loader;
+using System.Text.Json;
 
 static class Program
 {
@@ -38,6 +40,15 @@ static class Program
             await RunCheckAsync(
                 "Thread health probes default cleanly when inactive",
                 GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive),
+            await RunCheckAsync(
+                "Health snapshot uses cached MJPEG timing metrics when capture is gone",
+                GetHealthSnapshot_UsesCachedMjpegTimingMetricsWhenCaptureIsGone),
+            await RunCheckAsync(
+                "Diagnostics snapshot mirrors MJPEG timing metrics",
+                GetDiagnosticsSnapshot_PropagatesMjpegTimingMetrics),
+            await RunCheckAsync(
+                "MCP formatter renders MJPEG timing section when fields exist",
+                McpFormatter_RendersMjpegTimingSection_WhenFieldsExist),
             await RunCheckAsync(
                 "MJPG HFR mode only activates for SDR 4K120-style settings",
                 CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest),
@@ -236,6 +247,130 @@ static class Program
         AssertEqual(0L, GetLongProperty(snapshot, "WasapiPlaybackQueueDropCount"), "WasapiPlaybackQueueDropCount");
 
         await DisposeAsync(captureService).ConfigureAwait(false);
+    }
+
+    private static async Task GetHealthSnapshot_UsesCachedMjpegTimingMetricsWhenCaptureIsGone()
+    {
+        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var device = BuildDevice();
+        var settings = BuildSettings(hdrEnabled: false);
+
+        await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
+
+        SetPrivateField(
+            captureService,
+            "_lastMjpegPipelineTimingMetrics",
+            CreateMjpegTimingMetrics(
+                decodeSampleCount: 7,
+                decodeAvgMs: 1.5,
+                decodeP95Ms: 2.5,
+                decodeMaxMs: 3.5,
+                interopCopySampleCount: 5,
+                interopCopyAvgMs: 4.5,
+                interopCopyP95Ms: 5.5,
+                interopCopyMaxMs: 6.5,
+                callbackSampleCount: 9,
+                callbackAvgMs: 7.5,
+                callbackP95Ms: 8.5,
+                callbackMaxMs: 9.5));
+        SetPrivateField(captureService, "_unifiedVideoCapture", null);
+
+        var snapshot = InvokeInstanceMethod(captureService, "GetHealthSnapshot");
+        AssertEqual(7L, GetLongProperty(snapshot, "MjpegDecodeSampleCount"), "MjpegDecodeSampleCount");
+        AssertEqual(5L, GetLongProperty(snapshot, "MjpegInteropCopySampleCount"), "MjpegInteropCopySampleCount");
+        AssertEqual(9L, GetLongProperty(snapshot, "MjpegCallbackSampleCount"), "MjpegCallbackSampleCount");
+        AssertEqual(1.5, GetDoubleProperty(snapshot, "MjpegDecodeAvgMs"), "MjpegDecodeAvgMs");
+        AssertEqual(8.5, GetDoubleProperty(snapshot, "MjpegCallbackP95Ms"), "MjpegCallbackP95Ms");
+
+        await DisposeAsync(captureService).ConfigureAwait(false);
+    }
+
+    private static async Task GetDiagnosticsSnapshot_PropagatesMjpegTimingMetrics()
+    {
+        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var device = BuildDevice();
+        var settings = BuildSettings(hdrEnabled: false);
+
+        await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
+
+        SetPrivateField(
+            captureService,
+            "_lastMjpegPipelineTimingMetrics",
+            CreateMjpegTimingMetrics(
+                decodeSampleCount: 11,
+                decodeAvgMs: 10.1,
+                decodeP95Ms: 10.2,
+                decodeMaxMs: 10.3,
+                interopCopySampleCount: 12,
+                interopCopyAvgMs: 11.1,
+                interopCopyP95Ms: 11.2,
+                interopCopyMaxMs: 11.3,
+                callbackSampleCount: 13,
+                callbackAvgMs: 12.1,
+                callbackP95Ms: 12.2,
+                callbackMaxMs: 12.3));
+        SetPrivateField(captureService, "_unifiedVideoCapture", null);
+
+        var snapshot = InvokeInstanceMethod(captureService, "GetDiagnosticsSnapshot");
+        AssertEqual(11L, GetLongProperty(snapshot, "MjpegDecodeSampleCount"), "MjpegDecodeSampleCount");
+        AssertEqual(12L, GetLongProperty(snapshot, "MjpegInteropCopySampleCount"), "MjpegInteropCopySampleCount");
+        AssertEqual(13L, GetLongProperty(snapshot, "MjpegCallbackSampleCount"), "MjpegCallbackSampleCount");
+        AssertEqual(10.2, GetDoubleProperty(snapshot, "MjpegDecodeP95Ms"), "MjpegDecodeP95Ms");
+        AssertEqual(12.3, GetDoubleProperty(snapshot, "MjpegCallbackMaxMs"), "MjpegCallbackMaxMs");
+
+        await DisposeAsync(captureService).ConfigureAwait(false);
+    }
+
+    private static Task McpFormatter_RendersMjpegTimingSection_WhenFieldsExist()
+    {
+        var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var mcpAssemblyPath = Path.Combine(root, "tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll");
+        if (!File.Exists(mcpAssemblyPath))
+        {
+            return Task.CompletedTask;
+        }
+
+        var mcpAssemblyDirectory = Path.GetDirectoryName(mcpAssemblyPath)
+            ?? throw new InvalidOperationException("McpServer assembly directory was not found.");
+        var loadContext = AssemblyLoadContext.Default;
+        Assembly? ResolveMcpDependency(AssemblyLoadContext context, AssemblyName assemblyName)
+        {
+            var dependencyPath = Path.Combine(mcpAssemblyDirectory, $"{assemblyName.Name}.dll");
+            return File.Exists(dependencyPath)
+                ? context.LoadFromAssemblyPath(dependencyPath)
+                : null;
+        }
+
+        loadContext.Resolving += ResolveMcpDependency;
+        try
+        {
+            var mcpAssembly = loadContext.LoadFromAssemblyPath(mcpAssemblyPath);
+            var formatterType = mcpAssembly.GetType("McpServer.ResponseFormatter")
+                ?? throw new InvalidOperationException("McpServer.ResponseFormatter type not found.");
+            var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.Public | BindingFlags.Static)
+                ?? throw new InvalidOperationException("ResponseFormatter.FormatSnapshot not found.");
+
+            const string json = """
+                                {"Snapshot":{"SessionState":"Ready","StatusText":"Idle","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":true,"IsRecording":false,"SelectedResolution":"3840x2160","SelectedFrameRate":120,"SelectedRecordingFormat":"HEVC","SelectedQuality":"High","IsHdrEnabled":false,"IsHdrAvailable":true,"HdrOutputActive":false,"HdrRuntimeState":"Inactive","RequestedPipelineMode":"SDR","ActivePipelineMode":"SDR","PipelineModeMatched":true,"IsAudioEnabled":true,"IsAudioPreviewEnabled":false,"IsCustomAudioInputEnabled":false,"AudioPeak":0,"AudioClipping":false,"AudioSignalPresent":false,"AudioReaderActive":false,"AudioFramesArrived":0,"AudioFramesWrittenToSink":0,"VideoReaderActive":true,"IngestVideoFramesArrived":120,"IngestVideoFramesWrittenToSink":120,"EncoderVideoFramesEnqueued":0,"EncoderVideoFramesEncoded":0,"FfmpegVideoQueueDepth":0,"VideoDropsQueueSaturated":0,"IngestLastVideoFrameAgeMs":5,"EncoderLastEnqueueAgeMs":0,"EncoderLastWriteAgeMs":0,"MemoryPreference":"Gpu","VideoRequestedSubtype":"MJPG","VideoNegotiatedSubtype":"MJPG","VideoIngestErrorCount":0,"SourceReaderReadOutstanding":false,"SourceReaderReadOutstandingMs":0,"SourceReaderLastFrameTickMs":0,"SourceReaderFrameChannelDepth":0,"WasapiCaptureCallbackCount":0,"WasapiCaptureCallbackAvgIntervalMs":0,"WasapiCaptureCallbackMaxIntervalMs":0,"WasapiCaptureCallbackSilenceCount":0,"WasapiCaptureLastCallbackTickMs":0,"WasapiCaptureAudioLevelEventsFired":0,"WasapiPlaybackRenderCallbackCount":0,"WasapiPlaybackRenderSilenceCount":0,"WasapiPlaybackQueueDepth":0,"WasapiPlaybackQueueDropCount":0,"WasapiPlaybackLastRenderTickMs":0,"OutputPath":"","RecordingTime":"00:00:00","RecordingSizeInfo":"0 B","RecordingBitrateInfo":"0 Mbps","RecordingBackend":"None","AudioPathMode":"None","MuxResult":"NotAttempted","LastOutputPath":"","LastOutputSizeBytes":0,"LastFinalizeStatus":"None","PerformanceScore":100,"PerformancePerfectionMet":true,"PerformanceSummary":"OK","EstimatedPipelineLatencyMs":1,"CaptureCadenceObservedFps":120,"ExpectedCaptureFrameRate":120,"CaptureCadenceSampleCount":300,"CaptureCadenceAverageIntervalMs":8.3,"CaptureCadenceP95IntervalMs":8.5,"CaptureCadenceMaxIntervalMs":9.0,"CaptureCadenceJitterStdDevMs":0.1,"CaptureCadenceSevereGapCount":0,"CaptureCadenceEstimatedDroppedFrames":0,"CaptureCadenceEstimatedDropPercent":0,"MjpegDecodeSampleCount":300,"MjpegDecodeAvgMs":2.1,"MjpegDecodeP95Ms":3.4,"MjpegDecodeMaxMs":5.6,"MjpegInteropCopySampleCount":300,"MjpegInteropCopyAvgMs":0.9,"MjpegInteropCopyP95Ms":1.4,"MjpegInteropCopyMaxMs":2.2,"MjpegCallbackSampleCount":300,"MjpegCallbackAvgMs":4.5,"MjpegCallbackP95Ms":6.7,"MjpegCallbackMaxMs":9.1,"PreviewRendererMode":"D3D11VideoProcessor","PreviewStartupState":"Rendering","PreviewFirstVisualConfirmed":true,"PreviewD3DFramesSubmitted":120,"PreviewD3DFramesRendered":120,"PreviewD3DFramesDropped":0,"PreviewD3DInputColorSpace":"BT.709","PreviewD3DOutputColorSpace":"sRGB","PreviewCadenceObservedFps":120,"DetectedSourceFrameRate":120,"SourceWidth":3840,"SourceHeight":2160,"SourceIsHdr":false,"SourceTelemetryAvailability":"Available","SourceTelemetryConfidence":"High"}}
+                                """;
+            using var document = JsonDocument.Parse(json);
+            var output = formatSnapshot.Invoke(null, new object[] { document.RootElement })?.ToString()
+                ?? throw new InvalidOperationException("ResponseFormatter.FormatSnapshot returned null.");
+
+            AssertContains(output, "== MJPEG Pipeline Timing ==");
+            AssertContains(output, "Decode: avg=2.1ms");
+            AssertContains(output, "Interop Copy: avg=0.9ms");
+            AssertContains(output, "Total Callback: avg=4.5ms");
+        }
+        catch (Exception ex) when (ex is FileLoadException or FileNotFoundException)
+        {
+            return Task.CompletedTask;
+        }
+        finally
+        {
+            loadContext.Resolving -= ResolveMcpDependency;
+        }
+        return Task.CompletedTask;
     }
 
     private static Task CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest()
@@ -444,6 +579,12 @@ static class Program
         return Convert.ToInt64(value);
     }
 
+    private static double GetDoubleProperty(object instance, string propertyName)
+    {
+        var value = GetPropertyValue(instance, propertyName);
+        return Convert.ToDouble(value);
+    }
+
     private static bool GetBoolProperty(object instance, string propertyName)
     {
         var value = GetPropertyValue(instance, propertyName);
@@ -478,5 +619,37 @@ static class Program
             throw new InvalidOperationException(
                 $"Assertion failed: expected '{value}' to contain '{token}'.");
         }
+    }
+
+    private static object CreateMjpegTimingMetrics(
+        int decodeSampleCount,
+        double decodeAvgMs,
+        double decodeP95Ms,
+        double decodeMaxMs,
+        int interopCopySampleCount,
+        double interopCopyAvgMs,
+        double interopCopyP95Ms,
+        double interopCopyMaxMs,
+        int callbackSampleCount,
+        double callbackAvgMs,
+        double callbackP95Ms,
+        double callbackMaxMs)
+    {
+        var type = RequireType("ElgatoCapture.Services.UnifiedVideoCapture+MjpegPipelineTimingMetrics");
+        return Activator.CreateInstance(
+                   type,
+                   decodeSampleCount,
+                   decodeAvgMs,
+                   decodeP95Ms,
+                   decodeMaxMs,
+                   interopCopySampleCount,
+                   interopCopyAvgMs,
+                   interopCopyP95Ms,
+                   interopCopyMaxMs,
+                   callbackSampleCount,
+                   callbackAvgMs,
+                   callbackP95Ms,
+                   callbackMaxMs)
+               ?? throw new InvalidOperationException("Failed to create MjpegPipelineTimingMetrics.");
     }
 }
