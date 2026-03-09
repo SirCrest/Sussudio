@@ -1258,16 +1258,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var exePath = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
         {
-            return "Elgato Capture";
+            return "SimpleCapture";
         }
 
         var buildTime = File.GetLastWriteTime(exePath);
         if (buildTime == DateTime.MinValue)
         {
-            return "Elgato Capture";
+            return "SimpleCapture";
         }
 
-        return $"Elgato Capture (build {buildTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)})";
+        return $"SimpleCapture (build {buildTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)})";
     }
 
     private void ApplyWindowTitle()
@@ -1521,6 +1521,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         // Save the user's preferred volume, start at 0 for fade-in
         _savedPreviewVolume = ViewModel.PreviewVolume;
         _isVolumeFadingIn = true;
+        ViewModel.VolumeSaveOverride = _savedPreviewVolume;
         ViewModel.SuppressVolumeSave = true;
         ViewModel.PreviewVolume = 0;
         ViewModel.SuppressVolumeSave = false;
@@ -1530,6 +1531,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             ViewModel.PreviewVolume = e.NewValue / 100.0;
             PreviewVolumeLabel.Text = $"{(int)e.NewValue}%";
+        };
+        PreviewVolumeSlider.PointerCaptureLost += (s, e) =>
+        {
+            if (!_isVolumeFadingIn)
+            {
+                ViewModel.SavePreviewVolume();
+            }
         };
         CustomAudioToggle.IsOn = ViewModel.IsCustomAudioInputEnabled;
         CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
@@ -1949,12 +1957,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 await ViewModel.InitializeAsync();
                 // LoadSettings just pushed saved volume to CaptureService — capture it, reset to 0
                 // so WASAPI playback starts silent. The entrance animation will ramp the slider.
+                // NOTE: Do NOT toggle SuppressVolumeSave here — PlaySplashAndEntrance already
+                // set it to true, and setting it to false would allow intermediate animation
+                // ticks and unrelated SaveSettings() calls to persist PreviewVolume = 0.
+                // VolumeSaveOverride ensures any save during the fade writes the real value.
                 if (_isVolumeFadingIn)
                 {
                     _savedPreviewVolume = ViewModel.PreviewVolume;
-                    ViewModel.SuppressVolumeSave = true;
+                    ViewModel.VolumeSaveOverride = _savedPreviewVolume;
                     ViewModel.PreviewVolume = 0;
-                    ViewModel.SuppressVolumeSave = false;
                 }
                 await ViewModel.RefreshDevicesAsync();
             }
@@ -2171,6 +2182,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             _isVolumeFadingIn = false;
             ViewModel.SuppressVolumeSave = false;
+            ViewModel.VolumeSaveOverride = null;
             if (_savedPreviewVolume > 0)
             {
                 ViewModel.PreviewVolume = _savedPreviewVolume;
@@ -4458,3 +4470,4 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     #endregion
 }
+

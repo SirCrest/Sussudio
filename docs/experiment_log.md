@@ -1199,3 +1199,35 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (no new recording artifact generated in this verification pass)
 - Conclusion: Build, regression tests, and repo-local log inspection are clean after the Phase 7b change. Real NVIDIA hardware validation is still required to prove `CUDA_D3D11_INTEROP_OK`, live zero-copy MJPG preview, and runtime fallback behavior on unsupported device combinations.
+## E54 - Source telemetry provider migrated from RTICE SDK wrappers to direct RTK_IO AT calls
+- Timestamp (UTC): 2026-03-09T06:25:04.3090635Z
+- Commit Hash: uncommitted (base c67b7032701b31b518b2560096acce26ad7518c2)
+- What Changed (single change): Added `RtkIoSourceSignalTelemetryProvider` that talks directly to `RTK_IO_x64.dll` via `rtk_initialize`/`rtk_setUVCExtension`/`rtk_setDevice`/`rtk_openPort`/`rtk_sendATCommand`, updated `CaptureService` to use it, and added `SourceTelemetryOrigin.RtkIo` for the new telemetry path while keeping the old RTICE file as reference.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|RTKIO_|RTICE_" temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` contained no `ERROR|WARNING|WARN|FAIL|EXCEPTION` matches for the verification run.
+  - The same verification log still showed `RTICE_*` telemetry lines during app startup, so the automated run did not prove that live hardware exercised the new `RtkIo` provider path.
+- ffprobe Evidence:
+  - N/A (telemetry-provider migration only; no recording artifact generated in this verification pass)
+- Conclusion: The direct RTK_IO provider compiles, the runtime snapshot regression harness stays green, and the caller-facing telemetry origin surface is updated. A live hardware run is still required to confirm the new `RTKIO_*` runtime path is the one being exercised in the app log.
+
+## E55 - Pure C# source signal telemetry — eliminate all proprietary DLLs
+- Timestamp (UTC): 2026-03-09T09:00:00Z
+- Commit Hash: 83b1204 (explore/source-signal-re, merged to main)
+- What Changed (single change): Rewrote `NativeXuAtCommandProvider` to use the verified two-packet UVC AT protocol (selectors 1+2, 0xa1 framing with LRC checksum), added `TryXuGetDirect` for fixed-size one-shot GETs, added VIC/Vfreq/VideoStable commands with 120Hz VIC codes, removed all fallback providers (KsXu, Egav, Rtice, Composite), and simplified the telemetry stack to a single pure C# provider with zero proprietary DLL dependencies.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for `NATIVEXU_AT` / `NATIVEXU_AT_FAILED` after a device-backed app run.
+- Validator Output:
+  - Build succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - All runtime snapshot regression checks passed.
+- ffprobe Evidence:
+  - N/A (telemetry-provider rewrite only).
+- Conclusion: The NativeXu provider uses the reverse-engineered two-packet UVC AT protocol (from elgato4k-linux RE work) to communicate directly with the Realtek chipset firmware via Win32 KS property sets. RTICE_SDK, RTK_IO, EGAV SDK, and KsXu heuristic providers are all eliminated. Hardware-backed runtime confirmation is the next validation step.

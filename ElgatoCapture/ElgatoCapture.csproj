@@ -13,6 +13,7 @@
     <WinUISDKReferences>false</WinUISDKReferences>
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
+    <SatelliteResourceLanguages>en-US;de-DE;fr-FR;es-ES</SatelliteResourceLanguages>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
@@ -98,6 +99,15 @@
     <RuntimeHostConfigurationOption Include="System.Runtime.InteropServices.BuiltInComInterop.IsSupported" Value="true" />
     <RuntimeHostConfigurationOption Include="System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault" Value="true" />
   </ItemGroup>
+
+  <!-- Strip WinUI satellite locale folders that SatelliteResourceLanguages doesn't cover.
+       Keep: en-us, en-GB, de-DE, es-ES, fr-FR. Remove all other ??-?? directories. -->
+  <Target Name="StripUnwantedLocales"
+          AfterTargets="Build"
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
+    <Exec Command="powershell -NoProfile -Command &quot;Get-ChildItem '$(TargetDir)' -Directory | Where-Object { $_.Name -match '^[a-z]{2}(-[A-Za-z]{2,})$' -and $_.Name -notin @('en-us','en-GB','de-DE','es-ES','fr-FR') } | Remove-Item -Recurse -Force&quot;"
+          ContinueOnError="WarnAndContinue" />
+  </Target>
 
   <Target Name="StageLatestBuildToRepoRoot"
           AfterTargets="Build"

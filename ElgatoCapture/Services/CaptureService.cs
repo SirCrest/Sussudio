@@ -114,10 +114,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
     private static ISourceSignalTelemetryProvider CreateDefaultTelemetryProvider()
     {
-        return new CompositeSourceSignalTelemetryProvider(
-            new RticeSourceSignalTelemetryProvider(),
-            new KsXuSourceSignalTelemetryProvider(),
-            new EgavSourceSignalTelemetryProvider());
+        return new NativeXuAtCommandProvider();
     }
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
@@ -802,10 +799,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private static string ResolveSourceTelemetryBackend(SourceSignalTelemetrySnapshot telemetry)
         => telemetry.Origin switch
         {
-            SourceTelemetryOrigin.Egav => "Egav",
             SourceTelemetryOrigin.DeviceFormatFallback => "DeviceFormatFallback",
-            SourceTelemetryOrigin.KsXu => "KsXu",
-            SourceTelemetryOrigin.Rtice => "Rtice",
+            SourceTelemetryOrigin.NativeXu => "NativeXu",
             _ => "Unknown"
         };
 
@@ -818,10 +813,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         return telemetry.Origin switch
         {
-            SourceTelemetryOrigin.Egav => "SourceTelemetry(Egav)",
             SourceTelemetryOrigin.DeviceFormatFallback => "SourceTelemetry(DeviceFormatFallback)",
-            SourceTelemetryOrigin.KsXu => "SourceTelemetry(KsXu)",
-            SourceTelemetryOrigin.Rtice => "SourceTelemetry(Rtice)",
+            SourceTelemetryOrigin.NativeXu => "SourceTelemetry(NativeXu)",
             _ => "SourceTelemetry"
         };
     }
