@@ -64,7 +64,7 @@
                         Style="{StaticResource StatsLabelStyle}" />
 
                     <StackPanel Spacing="6">
-                        <TextBlock Text="Source Signal" Style="{StaticResource StatsSectionHeaderStyle}" />
+                        <TextBlock Text="HDMI Input" Style="{StaticResource StatsSectionHeaderStyle}" />
                         <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
 
                         <Grid>

@@ -30,6 +30,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private int _height;
     private double _fps;
     private bool _isP010;
+    private bool _isCompressedMjpgOutput;
+    private bool _isHighFrameRateMjpegMode;
     private bool _strictD3DOutputRequired;
     private bool _strictTextureOutputRequired;
     private string _deviceSymbolicLink = string.Empty;
@@ -44,6 +46,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private int _vtableDiagDone;
     private int _dxgiBufferProbeDone;
     private int _dxgiResourceFailureCount;
+    private bool _skipCpuReadback;
     private readonly object _cadenceLock = new();
     private readonly double[] _sourceIntervalWindowMs = new double[300];
     private int _sourceIntervalCount;
@@ -56,11 +59,17 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     public string NegotiatedFormat => Volatile.Read(ref _negotiatedFormat);
     public string NativeInputFormat => Volatile.Read(ref _nativeInputFormat);
     public bool IsP010 => Volatile.Read(ref _isP010);
+    public bool IsCompressedMjpgOutput => Volatile.Read(ref _isCompressedMjpgOutput);
     public bool IsD3DOutputEnabled => Volatile.Read(ref _sourceReaderD3DEnabled);
-    public bool IsHighFrameRateMjpegMode => Volatile.Read(ref _strictD3DOutputRequired);
+    public bool IsHighFrameRateMjpegMode => Volatile.Read(ref _isHighFrameRateMjpegMode);
     public int Width => Volatile.Read(ref _width);
     public int Height => Volatile.Read(ref _height);
     public double Fps => Volatile.Read(ref _fps);
+    public bool SkipCpuReadback
+    {
+        get => Volatile.Read(ref _skipCpuReadback);
+        set => Volatile.Write(ref _skipCpuReadback, value);
+    }
     public event EventHandler<Exception>? FatalErrorOccurred;
     public bool IsReadSampleOutstanding => Volatile.Read(ref _isReadSampleOutstanding) != 0;
     public long ReadSampleOutstandingMs
@@ -99,7 +108,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         bool requireP010,
         string? requestedPixelFormat = null,
         bool useMjpegHighFrameRateMode = false,
-        IntPtr dxgiDeviceManager = default)
+        IntPtr dxgiDeviceManager = default,
+        bool useExternalMjpegDecode = false)
     {
         if (string.IsNullOrWhiteSpace(deviceSymbolicLink))
         {
@@ -135,6 +145,11 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         var requestedSourceSubtypeName = requestedPixelFormat;
         var useConvertedMjpegNv12 = useMjpegHighFrameRateMode &&
                                     !requireP010 &&
+                                    !useExternalMjpegDecode &&
+                                    string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
+        var useRawMjpgOutput = useMjpegHighFrameRateMode &&
+                               !requireP010 &&
+                               useExternalMjpegDecode &&
                                     string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
 
         try
@@ -144,7 +159,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
             mediaSource = CreateMediaSource(deviceSymbolicLink);
 
-            disableConverters = !useConvertedMjpegNv12;
+            disableConverters = !useConvertedMjpegNv12 && !useRawMjpgOutput;
             ThrowIfFailed(
                 MfInterop.MFCreateAttributes(out readerAttributes, useConvertedMjpegNv12 ? 3 : 2),
                 "MFCreateAttributes(reader)");
@@ -161,7 +176,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     "IMFAttributes.SetUINT32(MF_READWRITE_DISABLE_CONVERTERS)");
             }
 
-            if (dxgiDeviceManager != IntPtr.Zero &&
+            if (!useRawMjpgOutput &&
+                dxgiDeviceManager != IntPtr.Zero &&
                 TrySetSourceReaderD3DManager(readerAttributes, dxgiDeviceManager))
             {
                 sourceReaderD3DEnabled = true;
@@ -222,6 +238,21 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     fps,
                     MfGuids.MFVideoFormat_MJPG,
                     requestedSubtype,
+                    out negotiatedSubtype,
+                    out negotiatedWidth,
+                    out negotiatedHeight,
+                    out negotiatedFps,
+                    out negotiatedDescription);
+            }
+            else if (useRawMjpgOutput)
+            {
+                requestedSourceSubtypeName = "MJPG";
+                selectedMediaType = SelectMediaType(
+                    sourceReader,
+                    width,
+                    height,
+                    fps,
+                    MfGuids.MFVideoFormat_MJPG,
                     out negotiatedSubtype,
                     out negotiatedWidth,
                     out negotiatedHeight,
@@ -295,16 +326,23 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                         $"4K120 MJPG mode requires decoded NV12 output, but negotiated {SubtypeGuidToName(negotiatedSubtype)}.");
                 }
             }
+            else if (useRawMjpgOutput && negotiatedSubtype != MfGuids.MFVideoFormat_MJPG)
+            {
+                throw new InvalidOperationException(
+                    $"External MJPG decode requires native MJPG output, but negotiated {SubtypeGuidToName(negotiatedSubtype)}.");
+            }
 
             _deviceSymbolicLink = deviceSymbolicLink;
             _width = negotiatedWidth;
             _height = negotiatedHeight;
             _fps = negotiatedFps;
             SetExpectedFrameRate(_fps);
-            _isP010 = negotiatedSubtype == MfGuids.MFVideoFormat_P010;
+            _isP010 = useRawMjpgOutput ? false : negotiatedSubtype == MfGuids.MFVideoFormat_P010;
+            _isCompressedMjpgOutput = useRawMjpgOutput;
+            _isHighFrameRateMjpegMode = useConvertedMjpegNv12 || useRawMjpgOutput;
             _strictD3DOutputRequired = useConvertedMjpegNv12;
             _strictTextureOutputRequired = useConvertedMjpegNv12;
-            Volatile.Write(ref _nativeInputFormat, useConvertedMjpegNv12 ? "MJPG" : SubtypeGuidToName(negotiatedSubtype));
+            Volatile.Write(ref _nativeInputFormat, (useConvertedMjpegNv12 || useRawMjpgOutput) ? "MJPG" : SubtypeGuidToName(negotiatedSubtype));
             Volatile.Write(ref _negotiatedFormat, negotiatedDescription);
             Interlocked.Exchange(ref _framesDelivered, 0);
             Interlocked.Exchange(ref _framesDropped, 0);
@@ -467,6 +505,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             _isInitialized = false;
             _deviceSymbolicLink = string.Empty;
             _isP010 = false;
+            _isCompressedMjpgOutput = false;
+            _isHighFrameRateMjpegMode = false;
             _strictD3DOutputRequired = false;
             _strictTextureOutputRequired = false;
             _sourceReaderD3DEnabled = false;
@@ -832,6 +872,20 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         IMFMediaBuffer? buffer = null;
         try
         {
+            if (Volatile.Read(ref _isCompressedMjpgOutput) && onDualFrame == null && onFrame != null)
+            {
+                var getBufferCountHr = sample.GetBufferCount(out var bufferCount);
+                if (getBufferCountHr >= 0 && bufferCount == 1)
+                {
+                    var getBufferHr = sample.GetBufferByIndex(0, out buffer);
+                    if (getBufferHr >= 0 && buffer != null)
+                    {
+                        DeliverRawFrameFromBuffer(buffer, onFrame!, arrivalTick);
+                        return;
+                    }
+                }
+            }
+
             var ctcbHr = sample.ConvertToContiguousBuffer(out buffer);
             if (ctcbHr < 0 || buffer == null)
             {
@@ -868,6 +922,29 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
     private unsafe void DeliverRawFrameFromBuffer(IMFMediaBuffer buffer, RawFrameCallback onFrame, long arrivalTick)
     {
+        if (Volatile.Read(ref _isCompressedMjpgOutput))
+        {
+            ThrowIfFailed(
+                buffer.Lock(out var compressedDataPtr, out _, out var compressedLength),
+                "IMFMediaBuffer.Lock");
+            try
+            {
+                if (compressedDataPtr == IntPtr.Zero || compressedLength <= 0)
+                {
+                    Interlocked.Increment(ref _framesDropped);
+                    return;
+                }
+
+                onFrame(new ReadOnlySpan<byte>((void*)compressedDataPtr, compressedLength), _width, _height, arrivalTick);
+            }
+            finally
+            {
+                _ = buffer.Unlock();
+            }
+
+            return;
+        }
+
         if (TryDeliverFrameFrom2DBuffer(buffer, onFrame, arrivalTick))
         {
             return;
@@ -951,6 +1028,26 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         try
         {
+            if (hasTexture && Volatile.Read(ref _skipCpuReadback))
+            {
+                try
+                {
+                    InvokeDualFrameCallback(
+                        onDualFrame,
+                        gpuTexture,
+                        gpuSubresource,
+                        ReadOnlySpan<byte>.Empty,
+                        _width,
+                        _height,
+                        arrivalTick);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"MF_SOURCE_READER_GPU_ONLY_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                }
+            }
+
             if (TryDeliverDualFrameFrom2DBuffer(buffer, gpuTexture, gpuSubresource, onDualFrame, arrivalTick))
             {
                 return;

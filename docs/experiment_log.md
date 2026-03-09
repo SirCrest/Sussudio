@@ -933,3 +933,269 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (no new recording artifact generated in this build-only verification pass)
 - Conclusion: The libav sink integration compiles cleanly with the raw-frame interface and new ownership model in place. Real preview/record/stop smoke validation, plus HDR capture validation with `tools/validate_hdr.ps1 -ExpectHdr`, is still required on hardware to prove runtime encode behavior.
+
+## E57 - D3D11 hardware frames path for zero-copy NVENC ingestion
+- Timestamp (UTC): 2026-03-08T19:15:51.7688292Z
+- Commit Hash: 72c78824d9bb68427a34501d4d93dd07f2e18d28
+- What Changed (single change): Added the D3D11 hardware-frames recording path end-to-end: `RecordingContext`/artifact creation now carry shared D3D11 device pointers, `LibAvEncoder` initializes optional D3D11VA hardware frames and accepts GPU textures, `LibAvRecordingSink` drains a bounded GPU texture queue, and `UnifiedVideoCapture` + `MfSourceReaderVideoCapture` can skip CPU readback when a GPU encoder is active while preserving CPU fallback when textures are unavailable.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION" temp/logs/ElgatoCapture_Debug.log` returned no matches after the verification rerun.
+- ffprobe Evidence:
+  - N/A (no real recording artifact generated in this verification pass)
+- Conclusion: The codebase now has a zero-copy-capable GPU recording path that keeps the existing CPU path as the fallback when D3D11VA hardware frames are unavailable or textures are missing. Real hardware validation is still required to confirm NVENC accepts the shared textures at runtime and that 120fps cadence gaps drop as expected.
+
+## E57 - D3D11VA hardware frames path for zero-copy NVENC ingest
+- Timestamp (UTC): 2026-03-08T19:15:00.3658208Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Added the D3D11VA hardware-frames recording path so `MfSourceReaderVideoCapture` can hand GPU textures through `UnifiedVideoCapture` into `LibAvRecordingSink`/`LibAvEncoder`, with `RecordingContext` carrying the shared D3D11 device pointers, CPU readback bypass during GPU recording, and stop/rollback ordering updated so the shared D3D device outlives libav drain.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true /nr:false /m:1 -p:UseSharedCompilation=false`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 160`
+- Validator Output:
+  - The first build attempt hit the known transient WinUI markup-compiler file lock on `obj\x64\Debug\...\intermediatexaml\ElgatoCapture.dll`; the immediate retry with `/nr:false /m:1 -p:UseSharedCompilation=false` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the regression run contained only the intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` token emitted by the existing strict-HFR snapshot test; no new `ERROR|WARNING|FAIL|EXCEPTION` matches were present.
+- ffprobe Evidence:
+  - N/A (no real recording artifact generated in this regression-harness-only verification pass)
+- Conclusion: The codebase now has the intended zero-copy GPU-texture ingest path wired end-to-end for NVENC via libav’s D3D11VA hardware frames API, while preserving CPU fallback and keeping the shared D3D device alive until libav drain completes. Real hardware preview/record/stop validation is still required to prove runtime texture delivery and HDR file validation on-device.
+
+## E58 - Experiment log correction for E57 hardware-frames verification details
+- Timestamp (UTC): 2026-03-08T19:15:41.1275347Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Corrected the verification notes for `E57`; the first build failure in this run was the compile-time D3D11VA pointer-cast mismatch in `LibAvEncoder`, not a transient WinUI markup-compiler file lock, and the follow-up rebuild/test/log-review sequence is the canonical evidence for the hardware-frames change.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 160`
+- Validator Output:
+  - The initial build failed on `CS0266` in `LibAvEncoder.cs` because `AVD3D11VADeviceContext.device` and `.device_context` require typed `ID3D11Device*` / `ID3D11DeviceContext*` assignments.
+  - After the explicit pointer-cast fix, `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the final verification run contained only the intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` token from the existing strict-HFR regression.
+- ffprobe Evidence:
+  - N/A (no real recording artifact generated in this correction pass)
+- Conclusion: Treat `E58` as the authoritative verification record for the Phase 6 hardware-frames change. The compile issue is resolved, the regression harness is still green, and on-device recording validation remains the next required proof point.
+
+## E59 - NVDEC MJPEG decode path shares CUDA frames with NVENC for 4K120
+- Timestamp (UTC): 2026-03-09T05:15:41.6613096Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Added the Phase 7 NVDEC MJPEG path end-to-end: `MfSourceReaderVideoCapture` can expose raw MJPG bytes, `UnifiedVideoCapture` initializes `NvdecMjpegDecoder` when `mjpeg_cuvid` is available and routes decoded CUDA frames to recording plus CPU-downloaded preview, `RecordingContext`/artifact creation carry CUDA context pointers, and `LibAvRecordingSink`/`LibAvEncoder` accept shared CUDA `AVFrame*` input for zero-copy NVENC while keeping the prior MF-hardware-transform path as the fallback when NVDEC is unavailable.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception" temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the regression run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` token from the strict-HFR snapshot.
+  - `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception" temp/logs/ElgatoCapture_Debug.log` matched only that intentional synthetic-HFR line and no new Phase 7 warnings/failures.
+- ffprobe Evidence:
+  - N/A (no real MJPEG/NVDEC recording artifact generated in this regression-harness-only verification pass)
+- Conclusion: The codebase now has the intended NVDEC-to-NVENC CUDA path wired end-to-end with a raw-MJPG source-reader mode and shared CUDA frames context, while preserving fallback to the prior MF transform path when `mjpeg_cuvid` is unavailable. Real hardware validation is still required to prove sustained 4K120 decode throughput and successful on-device recording output.
+
+## E59 - NVDEC MJPEG decode path for 4K120 with shared CUDA hardware frames
+- Timestamp (UTC): 2026-03-09T05:14:18.0292233Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Added the Phase 7 NVDEC MJPEG path end-to-end: `MfSourceReaderVideoCapture` can request raw MJPG bytes for external decode, new `NvdecMjpegDecoder` owns shared CUDA device/frames contexts, `UnifiedVideoCapture` decodes MJPG via `mjpeg_cuvid` and enqueues CUDA frames for recording while downloading NV12 only for preview, and `LibAvRecordingSink`/`LibAvEncoder` accept shared CUDA AVFrames for zero-copy NVENC ingest.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. On NVIDIA hardware, select the SDR `MJPG` 4K120 mode, start preview/record, and confirm the log contains `NVDEC_MJPEG_DECODER_AVAILABLE`, `LIBAV_SINK_CUDA_QUEUE_INIT`, and `CUDA_RECORDING_ACTIVE`.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the regression run contained only the intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` token from the existing strict-HFR snapshot test; no new Phase 7 `ERROR|WARNING|WARN|FAIL|EXCEPTION` tokens were emitted.
+- ffprobe Evidence:
+  - N/A (no real MJPG/NVDEC recording artifact generated in this regression-harness-only verification pass)
+- Conclusion: The codebase now has the requested NVDEC MJPEG ingest path and CUDA frame handoff wired through capture, recording context creation, the libav sink, and NVENC initialization. Real NVIDIA hardware validation is still required to prove `mjpeg_cuvid` availability, sustained 4K120 decode/encode cadence, and on-device preview/record behavior.
+
+## E60 - NVDEC MJPG callback-path pressure reduction for preview and sample delivery
+- Timestamp (UTC): 2026-03-09T06:15:00.0000000Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Reduced Phase 7 callback-path pressure by bypassing `IMFSample.ConvertToContiguousBuffer` for single-buffer raw-MJPG samples in `MfSourceReaderVideoCapture`, and by moving MJPG preview download in `UnifiedVideoCapture` onto a single in-flight background task that drops preview work when the prior preview download has not finished so recording enqueue stays ahead of preview readback.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception" temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` and `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception" temp/logs/ElgatoCapture_Debug.log` matched only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token.
+- ffprobe Evidence:
+  - N/A (no real MJPG/NVDEC recording artifact generated in this regression-harness-only verification pass)
+- Conclusion: The raw-MJPG NVDEC path now avoids an unnecessary source-sample flatten in the common single-buffer case and no longer blocks the source-reader callback on MJPG preview download when preview falls behind. Real NVIDIA hardware validation is still required to confirm sustained 4K120 cadence and acceptable preview-drop behavior on device.
+
+## E61 - NVDEC MJPG preview task teardown race closure
+- Timestamp (UTC): 2026-03-09T06:23:30.0000000Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Closed the Phase 7 MJPG preview-task teardown race in `UnifiedVideoCapture` by preventing new preview work from being scheduled once stop begins and by draining the actual final in-flight preview task before decoder disposal, so `NvdecMjpegDecoder.TryDownloadToCpu` cannot outlive the decoder during stop/dispose.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception" temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` and `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception" temp/logs/ElgatoCapture_Debug.log` matched only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token.
+- ffprobe Evidence:
+  - N/A (no real MJPG/NVDEC recording artifact generated in this regression-harness-only verification pass)
+- Conclusion: The MJPG preview offload path now drains cleanly during stop/dispose and should no longer race decoder teardown. Real NVIDIA hardware validation is still required to confirm sustained 4K120 cadence, preview-drop behavior, and on-device recording output.
+
+## E62 - NVDEC MJPG preview scheduling gate aligned with stop lock
+- Timestamp (UTC): 2026-03-09T06:24:45.0000000Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Tightened the `UnifiedVideoCapture` MJPG preview scheduling gate so `_previewSink` is checked under the same `_sync` lock as `_started`, `_disposed`, and `_readCts`, keeping preview-task admission aligned with the stop/dispose gate before the background preview task is created.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception" temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` and `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception" temp/logs/ElgatoCapture_Debug.log` matched only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token.
+- ffprobe Evidence:
+  - N/A (no real MJPG/NVDEC recording artifact generated in this regression-harness-only verification pass)
+- Conclusion: The MJPG preview offload path now takes its scheduling decision under the same stop/dispose lock that gates capture shutdown, reducing state skew between preview admission and teardown. Real NVIDIA hardware validation is still required to confirm sustained 4K120 cadence and on-device preview/record behavior.
+
+## E61 - NVDEC MJPG preview-task shutdown race hardening
+- Timestamp (UTC): 2026-03-09T06:21:30.0000000Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Hardened the Phase 7 follow-up preview path by making `UnifiedVideoCapture.StopAsync` wait until the latest queued MJPG preview task has actually drained before shutdown continues, and by guarding the raw-MJPG single-buffer fast path so it only runs when a raw callback is present.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+  4. `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception" temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` and `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception" temp/logs/ElgatoCapture_Debug.log` matched only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token.
+- ffprobe Evidence:
+  - N/A (no real MJPG/NVDEC recording artifact generated in this regression-harness-only verification pass)
+- Conclusion: The follow-up MJPG preview offload path now shuts down cleanly without letting a later-scheduled preview task race decoder disposal, while preserving the single-buffer raw-MJPG fast path only for valid raw callbacks. Real NVIDIA hardware validation is still required to prove the runtime behavior on device.
+
+## E63 - Raw MJPG source reader leaves converters enabled for NVDEC pass-through
+- Timestamp (UTC): 2026-03-09T08:01:20.3447057Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Changed `MfSourceReaderVideoCapture.InitializeAsync` so the raw `MJPG` / external-NVDEC path no longer sets `MF_READWRITE_DISABLE_CONVERTERS`, while keeping native `MJPG` media-type selection and the existing hard-fail if `GetCurrentMediaType` renegotiates away from `MJPG`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 220`
+  4. On NVIDIA hardware, select SDR `MJPG` 3840x2160@120, start preview/record, and confirm `MF_SOURCE_READER_INIT ... negotiated='MJPG 3840x2160@120' ... mf_readwrite_disable_converters=false` is followed by frame delivery instead of `PREVIEW_START_TIMEOUT`.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the regression run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` token from the strict-HFR snapshot; no new `FAIL|ERROR|WARN|PREVIEW_START_TIMEOUT` lines were emitted in this verification pass.
+- ffprobe Evidence:
+  - N/A (no real MJPG/NVDEC recording artifact generated in this regression-harness-only verification pass)
+- Conclusion: The source-reader configuration now matches the intended raw-MJPG pass-through contract more closely by leaving converters enabled only for that path. Build/test verification is clean, but real-device proof is still required to confirm that `ReadSample` now returns MJPG samples, preview renders correctly, and CUDA recording produces the expected HEVC output.
+
+## E63 - Raw MJPG SourceReader no longer disables converters in the NVDEC path
+- Timestamp (UTC): 2026-03-09T08:00:15.6732820Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Changed `MfSourceReaderVideoCapture.InitializeAsync` so the raw-MJPG external-decode path (`useRawMjpgOutput`) no longer sets `MF_READWRITE_DISABLE_CONVERTERS`, while keeping native `MJPG` media-type selection and the hard-fail if `GetCurrentMediaType` renegotiates away from `MJPG`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 220`
+  4. On NVIDIA hardware, start the SDR `MJPG` 3840x2160@120 preview/record path and confirm `MF_SOURCE_READER_INIT ... negotiated='MJPG 3840x2160@120' ... mf_readwrite_disable_converters=false` is followed by frame delivery instead of `PREVIEW_START_TIMEOUT`.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the regression run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` token from the strict-HFR snapshot harness; no new warning/failure tokens were emitted by this verification pass.
+- ffprobe Evidence:
+  - N/A (no real MJPG/NVDEC recording artifact generated in this verification pass)
+- Conclusion: The raw-MJPG SourceReader path now keeps native `MJPG` negotiation without forcing the converter-disable attribute that correlated with the `ReadSample` stall. Repo-local build/test/log verification is clean, but live NVIDIA hardware validation is still required to prove preview frames, correct colors, and NVENC recording output on-device.
+
+## E63 - Raw MJPG source-reader path no longer disables converters
+- Timestamp (UTC): 2026-03-09T08:57:00Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Changed `MfSourceReaderVideoCapture.InitializeAsync()` so the raw external-decode MJPG path (`useRawMjpgOutput`) no longer sets `MF_READWRITE_DISABLE_CONVERTERS`, while keeping native `MJPG` media-type selection and the existing hard-fail if `GetCurrentMediaType` renegotiates away from `MJPG`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 220`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the regression run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` token from the strict-HFR snapshot; no new `FAIL|ERROR|WARN|PREVIEW_START_TIMEOUT` tokens were emitted by this verification pass.
+- ffprobe Evidence:
+  - N/A (no real MJPG/NVDEC recording artifact generated in this regression-harness-only verification pass)
+- Conclusion: The raw-MJPG source-reader branch now matches the selected fix: native `MJPG` negotiation remains strict, but the reader no longer forces `MF_READWRITE_DISABLE_CONVERTERS` for that mode. Build/test coverage is clean; real-device preview/record validation is still required to prove that `ReadSample` now returns live MJPG samples and that NVDEC preview/recording runs end-to-end on hardware.
+
+## E63 - Raw MJPG SourceReader path leaves converters enabled for native pass-through
+- Timestamp (UTC): 2026-03-09T08:10:00Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Changed `MfSourceReaderVideoCapture.InitializeAsync()` so the raw external-decode MJPG path (`useRawMjpgOutput`) no longer sets `MF_READWRITE_DISABLE_CONVERTERS`, while keeping the existing native `MJPG` media-type selection and the hard-fail if `GetCurrentMediaType` renegotiates away from `MJPG`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 220`
+  4. On NVIDIA hardware, start the SDR `MJPG` 3840x2160@120 preview path and confirm `MF_SOURCE_READER_INIT ... negotiated='MJPG 3840x2160@120' ... mf_readwrite_disable_converters=false` is followed by frame delivery instead of `PREVIEW_START_TIMEOUT`.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the regression run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` token from the strict-HFR snapshot; no new `FAIL|ERROR|WARN|PREVIEW_START_TIMEOUT` tokens were emitted in this non-device verification pass.
+- ffprobe Evidence:
+  - N/A (no real MJPG/NVDEC recording artifact generated in this environment)
+- Conclusion: The raw MJPG SourceReader path now matches the intended native-pass-through contract closely enough to test on hardware without the converter-disable flag that correlated with the `ReadSample` stall. Real device validation is still required to prove preview frames, correct color display, and CUDA recording on the 4K120 MJPG path.
+
+## E63 - Raw MJPG source-reader path leaves converters enabled for native passthrough
+- Timestamp (UTC): 2026-03-09T08:15:00Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Changed `MfSourceReaderVideoCapture.InitializeAsync()` so `useRawMjpgOutput` no longer sets `MF_READWRITE_DISABLE_CONVERTERS`, while keeping native `MJPG` media-type selection and the existing hard-fail if Media Foundation renegotiates away from `MJPG`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 220`
+  4. On NVIDIA hardware, start 3840x2160@120 `MJPG` preview/record and confirm `MF_SOURCE_READER_INIT ... negotiated='MJPG 3840x2160@120' ... mf_readwrite_disable_converters=false`, frame delivery after `MF_SOURCE_READER_START`, no `PREVIEW_START_TIMEOUT`, and downstream `NVDEC_MJPEG_*` / `CUDA_RECORDING_ACTIVE` activity.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the regression run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` token from the strict-HFR snapshot; no new warning/failure tokens were emitted by this verification pass.
+- ffprobe Evidence:
+  - N/A (no recording artifact generated in this regression-harness-only verification pass)
+- Conclusion: The raw-MJPG source-reader path now matches the most likely MF pass-through contract by leaving converters enabled while still hard-failing if the negotiated subtype stops being native `MJPG`. Real NVIDIA hardware validation is still required to prove the 4K120 preview/record path now delivers frames on-device.
+
+## E64 - Experiment log correction for duplicate E63 raw-MJPG converter entry
+- Timestamp (UTC): 2026-03-09T08:20:00Z
+- Commit Hash: uncommitted (base 72c78824d9bb68427a34501d4d93dd07f2e18d28)
+- What Changed (single change): Corrected the append-only bookkeeping after a duplicate `E63` heading was present in the working tree for the same raw-MJPG converter-flag fix; treat the later `E63 - Raw MJPG source-reader path leaves converters enabled for native passthrough` entry as the canonical record for this change.
+- How To Run:
+  1. Read the final `E63` and `E64` headings in `docs/experiment_log.md`.
+  2. Use the later `E63` entry as the authoritative validation record for the raw-MJPG converter-flag fix.
+- Validator Output:
+  - N/A (experiment-log correction only)
+- ffprobe Evidence:
+  - N/A (documentation correction only)
+- Conclusion: The duplicate heading is now explicitly corrected without rewriting prior append-only history.
+
+## E65 - Phase 7b CUDA-D3D11 MJPG preview interop + observed-format/UI fixes
+- Timestamp (UTC): 2026-03-09T09:41:50Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added a CUDA-D3D11 zero-copy MJPG preview bridge for the NVDEC path, changed observed frame telemetry to report the actual format string (`MJPG` / `NV12` / `P010`), and renamed the two stats headers from `Source Signal` to `HDMI Input`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 220`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` and `rg -n "ERROR|WARNING|WARN|FAIL|EXCEPTION|Exception|exception|CUDA_D3D11" temp/logs/ElgatoCapture_Debug.log` matched only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token; the harness did not exercise live NVIDIA interop, so no `CUDA_D3D11_*` runtime tokens were expected in this pass.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: Build, regression tests, and repo-local log inspection are clean after the Phase 7b change. Real NVIDIA hardware validation is still required to prove `CUDA_D3D11_INTEROP_OK`, live zero-copy MJPG preview, and runtime fallback behavior on unsupported device combinations.

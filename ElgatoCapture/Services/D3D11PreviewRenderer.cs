@@ -312,6 +312,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private int _configuredOutputHeight;
     private Format _configuredInputFormat = Format.Unknown;
     private bool _configuredHdr;
+    private bool _fullRangeInput;
     private bool _hdrCapableSwapChain;
     private bool _swapChainIsHdr10;
     private uint _outputFrameIndex;
@@ -517,6 +518,16 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         Interlocked.Exchange(ref _compositionTransformDirty, 1);
         _frameReadyEvent.Set();
         Logger.Log($"D3D11 preview resize requested width={pixelWidth} height={pixelHeight} scale={rasterizationScale}.");
+    }
+
+    /// <summary>
+    /// Set to true when the input NV12 data uses full range (0-255), e.g. from MJPEG/NVDEC decode.
+    /// Must be set before frames are submitted. Affects VP input color space.
+    /// </summary>
+    public bool FullRangeInput
+    {
+        get => Volatile.Read(ref _fullRangeInput);
+        set => Volatile.Write(ref _fullRangeInput, value);
     }
 
     public void SubmitRawFrame(IntPtr data, int dataLength, int width, int height, bool isHdr, long arrivalTick = 0)
@@ -2659,7 +2670,12 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     {
         if (_videoContext1 == null || _videoProcessor == null) return;
 
-        var inputColorSpace = isHdr ? ColorSpaceType.YcbcrStudioG2084LeftP2020 : ColorSpaceType.YcbcrStudioG22LeftP709;
+        var fullRange = Volatile.Read(ref _fullRangeInput);
+        var inputColorSpace = isHdr
+            ? ColorSpaceType.YcbcrStudioG2084LeftP2020
+            : fullRange
+                ? ColorSpaceType.YcbcrFullG22LeftP709
+                : ColorSpaceType.YcbcrStudioG22LeftP709;
         var outputColorSpace = ColorSpaceType.RgbFullG22NoneP709;
 
         _videoContext1.VideoProcessorSetStreamColorSpace1(_videoProcessor, 0, inputColorSpace);

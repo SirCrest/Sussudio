@@ -44,6 +44,16 @@ internal sealed class SharedD3DDeviceManager : IDisposable
         }
     }
 
+    public ID3D11DeviceContext ImmediateContext
+    {
+        get
+        {
+            ThrowIfDisposed();
+            return _device?.ImmediateContext
+                ?? throw new ObjectDisposedException(nameof(SharedD3DDeviceManager));
+        }
+    }
+
     public uint ResetToken { get; private set; }
 
     public void Dispose()

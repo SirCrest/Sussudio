@@ -20,6 +20,10 @@ public sealed class RecordingArtifactManager
         uint effectiveWidth,
         uint effectiveHeight,
         string videoInputPixelFormat,
+        IntPtr d3d11DevicePtr = default,
+        IntPtr d3d11DeviceContextPtr = default,
+        IntPtr cudaHwDeviceCtxPtr = default,
+        IntPtr cudaHwFramesCtxPtr = default,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(outputFolder);
@@ -46,7 +50,11 @@ public sealed class RecordingArtifactManager
                 EffectiveWidth = effectiveWidth,
                 EffectiveHeight = effectiveHeight,
                 VideoInputPixelFormat = videoInputPixelFormat,
-                HdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
+                HdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase),
+                D3D11DevicePtr = d3d11DevicePtr,
+                D3D11DeviceContextPtr = d3d11DeviceContextPtr,
+                CudaHwDeviceCtxPtr = cudaHwDeviceCtxPtr,
+                CudaHwFramesCtxPtr = cudaHwFramesCtxPtr
             };
         }
 
@@ -74,7 +82,11 @@ public sealed class RecordingArtifactManager
             EffectiveWidth = effectiveWidth,
             EffectiveHeight = effectiveHeight,
             VideoInputPixelFormat = videoInputPixelFormat,
-            HdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
+            HdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase),
+            D3D11DevicePtr = d3d11DevicePtr,
+            D3D11DeviceContextPtr = d3d11DeviceContextPtr,
+            CudaHwDeviceCtxPtr = cudaHwDeviceCtxPtr,
+            CudaHwFramesCtxPtr = cudaHwFramesCtxPtr
         };
     }
 

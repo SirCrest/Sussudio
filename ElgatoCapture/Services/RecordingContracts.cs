@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using FFmpeg.AutoGen;
 using Windows.Graphics.Imaging;
 
 namespace ElgatoCapture.Services;
@@ -23,6 +24,10 @@ public sealed class RecordingContext
     public uint EffectiveHeight { get; init; }
     public string VideoInputPixelFormat { get; init; } = "nv12";
     public bool HdrPipelineActive { get; init; }
+    public IntPtr D3D11DevicePtr { get; init; }
+    public IntPtr D3D11DeviceContextPtr { get; init; }
+    public IntPtr CudaHwDeviceCtxPtr { get; init; }
+    public IntPtr CudaHwFramesCtxPtr { get; init; }
 }
 
 public sealed class FinalizeResult
@@ -71,6 +76,24 @@ public sealed class FinalizeResult
 public interface IRawVideoFrameEncoder
 {
     void EnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize);
+}
+
+/// <summary>
+/// Accepts D3D11 texture references for GPU-resident NVENC encoding.
+/// Callee does AddRef on the texture; caller may release after return.
+/// </summary>
+public interface IGpuVideoFrameEncoder
+{
+    void EnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);
+}
+
+/// <summary>
+/// Accepts decoded CUDA AVFrame references for GPU-resident NVENC encoding.
+/// Callee clones the frame; caller retains ownership.
+/// </summary>
+public unsafe interface ICudaVideoFrameEncoder
+{
+    void EnqueueCudaVideoFrame(AVFrame* cudaFrame);
 }
 
 public interface IRecordingSink : IDisposable, IAsyncDisposable

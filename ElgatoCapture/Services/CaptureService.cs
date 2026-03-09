@@ -149,9 +149,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
         unifiedVideoCapture.SetObservedPixelFormatObserver(null);
     }
 
-    private void OnUnifiedVideoFrameObserved(bool isP010)
+    private void OnUnifiedVideoFrameObserved(string format)
     {
-        RecordObservedPixelFormat(isP010 ? "P010" : "NV12");
+        RecordObservedPixelFormat(format);
     }
 
     private void OnUnifiedVideoCaptureFatalError(object? sender, Exception ex)
@@ -1082,6 +1082,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
                 TryApplySharedPreviewDevice(unifiedVideoCapture, _previewFrameSink);
                 unifiedVideoCapture.Start();
+                // Skip Lock2D by default — preview uses GPU textures via SubmitTexture,
+                // never CPU bytes. Lock2D causes GPU pipeline stalls (~5% cadence drops
+                // at 120fps, worse at 4K). The existing guards (hasTexture, !frameData.IsEmpty)
+                // handle the rare fallback case where GPU texture extraction fails.
+                if (unifiedVideoCapture.D3DManager != null)
+                {
+                    unifiedVideoCapture.SetSkipCpuReadback(true);
+                }
                 _unifiedVideoCapture = unifiedVideoCapture;
                 _lastMfSourceReaderFramesDelivered = 0;
                 _lastMfSourceReaderFramesDropped = 0;
@@ -1090,8 +1098,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
                 _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
                 _actualFrameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
-                _actualFrameRateArg = settings.RequestedFrameRateArg ?? _actualFrameRate.Value.ToString("0.###");
-                _actualPixelFormat = unifiedVideoCapture.IsP010 ? "P010" : "NV12";
+                _actualFrameRateArg = ResolveFrameRateArg(settings, _actualFrameRate ?? settings.FrameRate);
+                _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
                 _activeVideoInputPixelFormat = unifiedVideoCapture.IsP010 ? "p010le" : "nv12";
 
                 if (settings.AudioEnabled)
@@ -1218,6 +1226,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             WasapiAudioCapture? ownedWasapiAudioCapture = null;
             UnifiedVideoCapture? ownedUnifiedVideoCapture = null;
             RecordingContext? recordingContext = null;
+            UnifiedVideoCapture? recordingVideoCapture = null;
             var sinkAttachedForAudioOnly = false;
             Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
             Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
@@ -1242,7 +1251,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 var effectiveWidth = _actualWidth ?? settings.Width;
                 var effectiveHeight = _actualHeight ?? settings.Height;
                 var effectiveFrameRate = _actualFrameRate ?? settings.FrameRate;
-                var frameRateArg = ResolveFrameRateArg(settings, effectiveFrameRate);
                 await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);
                 var hdrPipelineRequested = HdrOutputPolicy.IsEnabled(settings);
                 if (hdrPipelineRequested && _latestSourceTelemetry.IsHdr == false)
@@ -1258,38 +1266,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice.AudioDeviceId))
                     : null;
 
-                recordingContext = await _artifactManager.CreateContextAsync(
-                    outputFolder,
-                    settings,
-                    usePostMuxAudio: false,
-                    audioDeviceName,
-                    effectiveFrameRate,
-                    frameRateArg,
-                    effectiveWidth,
-                    effectiveHeight,
-                    videoInputPixelFormat).ConfigureAwait(false);
-
-                transitionToken.ThrowIfCancellationRequested();
-                var requireP010 = recordingContext.HdrPipelineActive;
+                var requireP010 = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
                 var useMjpegHighFrameRateMode = settings.UseMjpegHighFrameRateMode;
-                _mfReadwriteDisableConverters = requireP010;
-                Logger.Log(
-                    "HDR_NEGOTIATION " +
-                    $"requested_hdr={hdrPipelineRequested} " +
-                    $"requested_subtype={(hdrPipelineRequested ? "P010" : "NV12")} " +
-                    $"requested_source_subtype={settings.RequestedPixelFormat ?? (hdrPipelineRequested ? "P010" : "NV12")} " +
-                    $"mjpeg_hfr={useMjpegHighFrameRateMode} " +
-                    $"negotiated_pixel_format={_actualPixelFormat ?? "unknown"} " +
-                    $"negotiated_subtype_token={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "P010|MFVideoFormat_P010" : "NV12")} " +
-                    $"hdr_static_metadata_requested={(!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata) || (settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0))} " +
-                    $"hdr_master_display_set={(!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata))} " +
-                    $"hdr_max_cll={settings.HdrMaxCll} " +
-                    $"hdr_max_fall={settings.HdrMaxFall} " +
-                    $"mf_readwrite_disable_converters={(requireP010 ? "true" : "false")} " +
-                    $"libav_ingest_pix_fmt={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "AV_PIX_FMT_P010LE" : "AV_PIX_FMT_NV12")}");
-
-                await recordingSink.StartAsync(recordingContext, transitionToken).ConfigureAwait(false);
-                transitionToken.ThrowIfCancellationRequested();
                 var unifiedVideoCapture = _unifiedVideoCapture;
                 if (unifiedVideoCapture == null)
                 {
@@ -1305,7 +1283,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
                         useMjpegHighFrameRateMode).ConfigureAwait(false);
                     ownedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _previewFrameSink : null);
                     TryApplySharedPreviewDevice(ownedUnifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
-                    ownedUnifiedVideoCapture.Start();
                     unifiedVideoCapture = ownedUnifiedVideoCapture;
                     _unifiedVideoCapture = ownedUnifiedVideoCapture;
                 }
@@ -1320,7 +1297,60 @@ public class CaptureService : IDisposable, IAsyncDisposable
                         $"Recording requested mjpeg_hfr={useMjpegHighFrameRateMode}, but the active preview session is mjpeg_hfr={unifiedVideoCapture.IsHighFrameRateMjpegMode}.");
                 }
 
+                recordingVideoCapture = unifiedVideoCapture;
                 TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
+
+                var mjpegDecoder = recordingVideoCapture.MjpegDecoder;
+                var d3dManager = unifiedVideoCapture.D3DManager;
+                var recordingWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
+                var recordingHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
+                var recordingFrameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate;
+                var frameRateArg = ResolveFrameRateArg(settings, recordingFrameRate);
+                IntPtr cudaHwDeviceCtxPtr = IntPtr.Zero;
+                IntPtr cudaHwFramesCtxPtr = IntPtr.Zero;
+                if (mjpegDecoder != null)
+                {
+                    unsafe
+                    {
+                        cudaHwDeviceCtxPtr = (IntPtr)(void*)mjpegDecoder.HwDeviceCtx;
+                        cudaHwFramesCtxPtr = (IntPtr)(void*)mjpegDecoder.HwFramesCtx;
+                    }
+                }
+
+                recordingContext = await _artifactManager.CreateContextAsync(
+                    outputFolder,
+                    settings,
+                    usePostMuxAudio: false,
+                    audioDeviceName,
+                    recordingFrameRate,
+                    frameRateArg,
+                    recordingWidth,
+                    recordingHeight,
+                    videoInputPixelFormat,
+                    mjpegDecoder != null ? IntPtr.Zero : (d3dManager?.Device.NativePointer ?? IntPtr.Zero),
+                    mjpegDecoder != null ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero),
+                    cudaHwDeviceCtxPtr,
+                    cudaHwFramesCtxPtr).ConfigureAwait(false);
+
+                transitionToken.ThrowIfCancellationRequested();
+                _mfReadwriteDisableConverters = requireP010 || mjpegDecoder != null;
+                Logger.Log(
+                    "HDR_NEGOTIATION " +
+                    $"requested_hdr={hdrPipelineRequested} " +
+                    $"requested_subtype={(hdrPipelineRequested ? "P010" : "NV12")} " +
+                    $"requested_source_subtype={settings.RequestedPixelFormat ?? (hdrPipelineRequested ? "P010" : "NV12")} " +
+                    $"mjpeg_hfr={useMjpegHighFrameRateMode} " +
+                    $"negotiated_pixel_format={(unifiedVideoCapture.IsP010 ? "P010" : "NV12")} " +
+                    $"negotiated_subtype_token={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "P010|MFVideoFormat_P010" : "NV12")} " +
+                    $"hdr_static_metadata_requested={(!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata) || (settings.HdrMaxCll > 0 && settings.HdrMaxFall > 0))} " +
+                    $"hdr_master_display_set={(!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata))} " +
+                    $"hdr_max_cll={settings.HdrMaxCll} " +
+                    $"hdr_max_fall={settings.HdrMaxFall} " +
+                    $"mf_readwrite_disable_converters={(_mfReadwriteDisableConverters ? "true" : "false")} " +
+                    $"libav_ingest_pix_fmt={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "AV_PIX_FMT_P010LE" : "AV_PIX_FMT_NV12")}");
+
+                await recordingSink.StartAsync(recordingContext, transitionToken).ConfigureAwait(false);
+                transitionToken.ThrowIfCancellationRequested();
 
                 _lastMfSourceReaderFramesDelivered = 0;
                 _lastMfSourceReaderFramesDropped = 0;
@@ -1328,8 +1358,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
                 _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
                 _actualFrameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate;
-                _actualFrameRateArg = settings.RequestedFrameRateArg ?? _actualFrameRate.Value.ToString("0.###");
-                _actualPixelFormat = unifiedVideoCapture.IsP010 ? "P010" : "NV12";
+                _actualFrameRateArg = ResolveFrameRateArg(settings, _actualFrameRate ?? effectiveFrameRate);
+                _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
 
                 if (_wasapiAudioCapture == null && settings.AudioEnabled)
                 {
@@ -1353,7 +1383,27 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     }
                 }
 
-                await unifiedVideoCapture.StartRecordingAsync(recordingSink, libAvSink).ConfigureAwait(false);
+                ICudaVideoFrameEncoder? cudaEncoder = libAvSink.CudaEncodingEnabled ? libAvSink : null;
+                IGpuVideoFrameEncoder? gpuEncoder = (cudaEncoder == null && libAvSink.GpuEncodingEnabled) ? libAvSink : null;
+                if (mjpegDecoder != null && cudaEncoder == null)
+                {
+                    throw new InvalidOperationException("NVDEC MJPEG decode is active, but the recording sink did not initialize CUDA hardware frames.");
+                }
+
+                await unifiedVideoCapture.StartRecordingAsync(recordingSink, libAvSink, gpuEncoder, cudaEncoder).ConfigureAwait(false);
+                if (cudaEncoder != null)
+                {
+                    Logger.Log("CUDA_RECORDING_ACTIVE cuda_encoder=active");
+                }
+                else if (gpuEncoder != null)
+                {
+                    Logger.Log("GPU_RECORDING_ACTIVE gpu_encoder=active");
+                }
+
+                if (ownedUnifiedVideoCapture != null)
+                {
+                    ownedUnifiedVideoCapture.Start();
+                }
 
                 _libavSink = libAvSink;
                 _recordingSink = recordingSink;
@@ -1378,6 +1428,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
             catch
             {
+                // SkipCpuReadback stays true — it was enabled at preview start, not recording start.
+
                 if (sinkAttachedForAudioOnly && _wasapiAudioCapture != null)
                 {
                     _wasapiAudioCapture.DetachRecordingSink();
@@ -1599,6 +1651,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
             {
                 Logger.Log($"Unified video recording stop failed: {ex.Message}");
             }
+            finally
+            {
+                // Keep SkipCpuReadback=true — preview uses GPU textures, not CPU bytes.
+                // Lock2D is never needed while D3D shared device is active.
+            }
 
             _lastMfSourceReaderFramesDelivered = unifiedVideoCapture.VideoFramesArrived;
             _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
@@ -1626,41 +1683,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
             catch (Exception ex)
             {
                 Logger.Log($"Audio recording sink detach failed: {ex.Message}");
-            }
-        }
-
-        if (!_isVideoPreviewActive)
-        {
-            _unifiedVideoCapture = null;
-            if (unifiedVideoCapture != null)
-            {
-                try
-                {
-                    DetachUnifiedVideoCapture(unifiedVideoCapture);
-                    await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
-                    await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"Unified video capture dispose failed: {ex.Message}");
-                    result = FinalizeResult.Failure(fallbackOutputPath, $"Unified video capture dispose failed: {ex.Message}");
-                }
-            }
-
-            var capture = _wasapiAudioCapture;
-            _wasapiAudioCapture = null;
-            DetachWasapiAudioCapture(capture);
-            if (capture != null)
-            {
-                try
-                {
-                    await capture.DisposeAsync().ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"Recording WASAPI capture dispose failed: {ex.Message}");
-                    result = FinalizeResult.Failure(fallbackOutputPath, $"Recording WASAPI capture dispose failed: {ex.Message}");
-                }
             }
         }
 
@@ -1695,6 +1717,47 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 }
             }
 
+        }
+
+        if (!_isVideoPreviewActive)
+        {
+            _unifiedVideoCapture = null;
+            if (unifiedVideoCapture != null)
+            {
+                try
+                {
+                    DetachUnifiedVideoCapture(unifiedVideoCapture);
+                    await unifiedVideoCapture.StopAsync().ConfigureAwait(false);
+                    await unifiedVideoCapture.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Unified video capture dispose failed: {ex.Message}");
+                    if (cancellationException == null && result.Succeeded)
+                    {
+                        result = FinalizeResult.Failure(fallbackOutputPath, $"Unified video capture dispose failed: {ex.Message}");
+                    }
+                }
+            }
+
+            var capture = _wasapiAudioCapture;
+            _wasapiAudioCapture = null;
+            DetachWasapiAudioCapture(capture);
+            if (capture != null)
+            {
+                try
+                {
+                    await capture.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"Recording WASAPI capture dispose failed: {ex.Message}");
+                    if (cancellationException == null && result.Succeeded)
+                    {
+                        result = FinalizeResult.Failure(fallbackOutputPath, $"Recording WASAPI capture dispose failed: {ex.Message}");
+                    }
+                }
+            }
         }
 
         var wasapiAudioCaptureFaulted = Volatile.Read(ref _wasapiAudioCaptureFaulted);
@@ -1741,6 +1804,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
             return;
         }
 
+        // MJPEG (JPEG) uses full-range YCbCr (0-255). Tell the VP to use
+        // YcbcrFullG22LeftP709 instead of the default studio-range color space.
+        renderer.FullRangeInput = capture.MjpegDecoder != null;
+
         var sharedDevice = capture.D3DManager?.Device;
         if (sharedDevice == null)
         {
@@ -1762,6 +1829,39 @@ public class CaptureService : IDisposable, IAsyncDisposable
         WasapiAudioCapture? wasapiCapture,
         UnifiedVideoCapture? unifiedVideoCapture)
     {
+        if (unifiedVideoCapture != null)
+        {
+            try
+            {
+                await unifiedVideoCapture.StopRecordingAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Transient unified video recording stop failed during rollback: {ex.Message}");
+            }
+        }
+
+        if (sink != null)
+        {
+            try
+            {
+                await sink.StopAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Transient recording sink stop failed during rollback: {ex.Message}");
+            }
+
+            try
+            {
+                await sink.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Transient recording sink dispose failed during rollback: {ex.Message}");
+            }
+        }
+
         if (unifiedVideoCapture != null)
         {
             try
@@ -1792,27 +1892,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
             catch (Exception ex)
             {
                 Logger.Log($"Transient WASAPI capture dispose failed during rollback: {ex.Message}");
-            }
-        }
-
-        if (sink != null)
-        {
-            try
-            {
-                await sink.StopAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Transient recording sink stop failed during rollback: {ex.Message}");
-            }
-
-            try
-            {
-                await sink.DisposeAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"Transient recording sink dispose failed during rollback: {ex.Message}");
             }
         }
 
