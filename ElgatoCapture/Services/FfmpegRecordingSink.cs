@@ -9,6 +9,8 @@ namespace ElgatoCapture.Services;
 
 public sealed class FfmpegRecordingSink : IRecordingSink
 {
+    private const int AudioEncoderExitTimeoutMs = 30_000;
+
     private readonly FFmpegEncoderService _encoder;
     private RecordingContext? _context;
     private bool _started;
@@ -81,32 +83,11 @@ public sealed class FfmpegRecordingSink : IRecordingSink
             Logger.Log($"Audio encoder started (PID: {_audioEncoderProcess.Id})");
 
             // Start video encoder in video-only mode
-            await _encoder.StartEncodingAsync(
-                context.Settings,
-                context.VideoOutputPath,
-                context.AudioDeviceName,
-                context.EffectiveFrameRate,
-                context.FrameRateArg,
-                context.EffectiveWidth,
-                context.EffectiveHeight,
-                context.VideoInputPixelFormat,
-                context.HdrPipelineActive,
-                context.Settings.PipelineOptions,
-                videoOnly: true);
+            await StartEncoderAsync(context, videoOnly: true);
         }
         else
         {
-            await _encoder.StartEncodingAsync(
-                context.Settings,
-                context.VideoOutputPath,
-                context.AudioDeviceName,
-                context.EffectiveFrameRate,
-                context.FrameRateArg,
-                context.EffectiveWidth,
-                context.EffectiveHeight,
-                context.VideoInputPixelFormat,
-                context.HdrPipelineActive,
-                context.Settings.PipelineOptions);
+            await StartEncoderAsync(context);
         }
 
         _started = true;
@@ -141,6 +122,22 @@ public sealed class FfmpegRecordingSink : IRecordingSink
         }
     }
 
+    private Task StartEncoderAsync(RecordingContext context, bool videoOnly = false)
+    {
+        return _encoder.StartEncodingAsync(
+            context.Settings,
+            context.VideoOutputPath,
+            context.AudioDeviceName,
+            context.EffectiveFrameRate,
+            context.FrameRateArg,
+            context.EffectiveWidth,
+            context.EffectiveHeight,
+            context.VideoInputPixelFormat,
+            context.HdrPipelineActive,
+            context.Settings.PipelineOptions,
+            videoOnly);
+    }
+
     public async Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)
     {
         var outputPath = _context?.FinalOutputPath ?? string.Empty;
@@ -148,7 +145,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
 
         if (_disposed)
         {
-            return Services.FinalizeResult.Success(outputPath, "Stopped");
+            return FinalizeResult.Success(outputPath, "Stopped");
         }
 
         if (_started)
@@ -171,7 +168,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
                 }
 
                 using var exitCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-                exitCts.CancelAfter(30_000); // 30s should be ample for AAC flush
+                exitCts.CancelAfter(AudioEncoderExitTimeoutMs);
                 await _audioEncoderProcess.WaitForExitAsync(exitCts.Token).ConfigureAwait(false);
 
                 var exitCode = _audioEncoderProcess.ExitCode;
@@ -179,7 +176,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
 
                 if (exitCode != 0)
                 {
-                    FinalizeResult = Services.FinalizeResult.Failure(
+                    FinalizeResult = FinalizeResult.Failure(
                         outputPath,
                         $"Stopped (audio encoder failed: exit code {exitCode})");
                     return FinalizeResult;
@@ -189,7 +186,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
             {
                 Logger.Log($"Audio encoder wait timed out after {sw.ElapsedMilliseconds}ms — killing");
                 try { _audioEncoderProcess.Kill(); } catch { /* best-effort */ }
-                FinalizeResult = Services.FinalizeResult.Failure(
+                FinalizeResult = FinalizeResult.Failure(
                     outputPath,
                     "Stopped (audio encoder timed out)");
                 return FinalizeResult;
@@ -203,7 +200,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
 
         if (_encoder.LastStopTimedOut)
         {
-            FinalizeResult = Services.FinalizeResult.Failure(
+            FinalizeResult = FinalizeResult.Failure(
                 outputPath,
                 "Stopped (encoder stop timed out)");
             return FinalizeResult;
@@ -211,7 +208,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
 
         if (_encoder.LastWriterDrainTimedOut)
         {
-            FinalizeResult = Services.FinalizeResult.Failure(
+            FinalizeResult = FinalizeResult.Failure(
                 outputPath,
                 "Stopped (encoder writer drain timed out)");
             return FinalizeResult;
@@ -219,7 +216,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
 
         if (_encoder.LastExitCode is int exitCode2 && exitCode2 != 0)
         {
-            FinalizeResult = Services.FinalizeResult.Failure(
+            FinalizeResult = FinalizeResult.Failure(
                 outputPath,
                 $"Stopped (encoder failed: exit code {exitCode2})");
             return FinalizeResult;
@@ -252,7 +249,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
                 }
                 else
                 {
-                    FinalizeResult = Services.FinalizeResult.Failure(
+                    FinalizeResult = FinalizeResult.Failure(
                         outputPath,
                         $"Stopped (hdr validation failed: {validationDetail})",
                         new[] { validationTargetPath });
@@ -261,7 +258,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
             }
         }
 
-        FinalizeResult = Services.FinalizeResult.Success(outputPath, "Stopped");
+        FinalizeResult = FinalizeResult.Success(outputPath, "Stopped");
         return FinalizeResult;
     }
 
@@ -297,7 +294,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
         {
             var errorMsg = result.StartException?.Message ?? "unknown error";
             Logger.Log($"Post-mux FFmpeg failed to start: {errorMsg}");
-            return Services.FinalizeResult.Failure(
+            return FinalizeResult.Failure(
                 finalPath,
                 $"Stopped (post-mux failed to start: {errorMsg})",
                 new[] { videoPath, audioPath });
@@ -306,7 +303,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
         if (result.TimedOut)
         {
             Logger.Log("Post-mux FFmpeg timed out");
-            return Services.FinalizeResult.Failure(
+            return FinalizeResult.Failure(
                 finalPath,
                 "Stopped (post-mux timed out)",
                 new[] { videoPath, audioPath });
@@ -319,22 +316,19 @@ public sealed class FfmpegRecordingSink : IRecordingSink
             {
                 Logger.Log($"Post-mux stderr: {result.StdErr}");
             }
-            return Services.FinalizeResult.Failure(
+            return FinalizeResult.Failure(
                 finalPath,
                 $"Stopped (post-mux failed: exit code {muxExitCode})",
                 new[] { videoPath, audioPath });
         }
 
         Logger.Log("Post-mux completed successfully");
-        return Services.FinalizeResult.Success(finalPath, "Stopped");
+        return FinalizeResult.Success(finalPath, "Stopped");
     }
 
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
+        if (_disposed) return;
 
         _disposed = true;
         _started = false;
@@ -347,20 +341,20 @@ public sealed class FfmpegRecordingSink : IRecordingSink
 
     public async ValueTask DisposeAsync()
     {
-        if (_disposed)
-        {
-            return;
-        }
+        if (_disposed) return;
 
         _disposed = true;
         _started = false;
+
         if (_audioStdinStream != null)
         {
             await _audioStdinStream.DisposeAsync().ConfigureAwait(false);
             _audioStdinStream = null;
         }
+
         _audioEncoderProcess?.Dispose();
         _audioEncoderProcess = null;
+
         await _encoder.DisposeAsync();
     }
 }

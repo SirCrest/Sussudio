@@ -201,9 +201,23 @@
                                    Style="{StaticResource DockStatsLabelStyle}" />
 
                         <StackPanel Spacing="2">
-                            <TextBlock Text="HDMI Input" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+                            <Grid x:Name="SourceSignal_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="SourceSignal_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="HDMI Input" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="SourceSignal_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="0" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
 
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                            <StackPanel x:Name="SourceSignal_Content" Spacing="2">
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -257,12 +271,27 @@
                                     <TextBlock x:Name="Stats_TelemetryOriginValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
+                            </StackPanel>
                         </StackPanel>
 
                         <StackPanel Spacing="2">
-                            <TextBlock Text="Source Cadence" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+                            <Grid x:Name="SourceCadence_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="SourceCadence_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Source Cadence" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="SourceCadence_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="0" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
 
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                            <StackPanel x:Name="SourceCadence_Content" Spacing="2">
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -316,12 +345,27 @@
                                     </StackPanel>
                                 </Grid>
                             </Border>
+                            </StackPanel>
                         </StackPanel>
 
                         <StackPanel Spacing="2">
-                            <TextBlock Text="Preview Cadence" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+                            <Grid x:Name="PreviewCadence_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="PreviewCadence_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Preview Cadence" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="PreviewCadence_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="0" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
 
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                            <StackPanel x:Name="PreviewCadence_Content" Spacing="2">
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -356,12 +400,27 @@
                                     <TextBlock x:Name="Stats_PreviewSlowValue" Grid.Column="1" Text="0 frames (0.0%)" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
+                            </StackPanel>
                         </StackPanel>
 
                         <StackPanel Spacing="2">
-                            <TextBlock Text="Pipeline" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+                            <Grid x:Name="Pipeline_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="Pipeline_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Pipeline" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="Pipeline_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="0" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
 
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                            <StackPanel x:Name="Pipeline_Content" Spacing="2">
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -371,12 +430,27 @@
                                     <TextBlock x:Name="Stats_PipelineLatencyValue" Grid.Column="1" Text="0ms avg" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
+                            </StackPanel>
                         </StackPanel>
 
                         <StackPanel Spacing="2">
-                            <TextBlock Text="Frames" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+                            <Grid x:Name="Frames_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="Frames_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Frames" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="Frames_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="0" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
 
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                            <StackPanel x:Name="Frames_Content" Spacing="2">
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -403,12 +477,27 @@
                                     </StackPanel>
                                 </Grid>
                             </Border>
+                            </StackPanel>
                         </StackPanel>
 
                         <StackPanel Spacing="2">
-                            <TextBlock Text="Performance" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+                            <Grid x:Name="Performance_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="Performance_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Performance" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="Performance_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="0" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
 
-                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                            <StackPanel x:Name="Performance_Content" Spacing="2">
+                                <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -418,6 +507,25 @@
                                     <TextBlock x:Name="Stats_PerfScoreValue" Grid.Column="1" Text="0.0 / 100" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Spacing="2">
+                            <Grid x:Name="Diagnostics_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="Diagnostics_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Diagnostics" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="Diagnostics_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="-90" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
+                            <StackPanel x:Name="Diagnostics_Content" Spacing="2" Visibility="Collapsed" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>

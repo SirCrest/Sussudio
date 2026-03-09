@@ -314,7 +314,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private bool _configuredHdr;
     private bool _fullRangeInput;
     private bool _hdrCapableSwapChain;
-    private bool _swapChainIsHdr10;
     private uint _outputFrameIndex;
     private int _hdrPassthroughEnabled;
     private int _swapChainColorSpaceDirty;
@@ -938,7 +937,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             : ColorSpaceType.RgbFullG22NoneP709;
 
         _swapChain3.SetColorSpace1(targetColorSpace);
-        _swapChainIsHdr10 = wantHdr;
 
         var label = wantHdr ? "HDR10-PQ (BT.2020)" : "sRGB (BT.709)";
         _outputColorSpaceLabel = label;
@@ -1034,7 +1032,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
         else if (frame.RawData != null)
         {
-            if (!UploadRawFrameToHdrTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height))
+            if (!UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, true, _hdrStagingTexture!, _hdrInputTexture!))
             {
                 return;
             }
@@ -1741,11 +1739,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         return table;
     }
 
-    private static uint ComputePngCrc32(byte[] buffer, int offset, int length)
-    {
-        return UpdatePngCrc32(0xFFFFFFFFu, buffer, offset, length) ^ 0xFFFFFFFFu;
-    }
-
     private static uint UpdatePngCrc32(uint crc, byte[] buffer, int offset, int length)
     {
         for (var i = offset; i < offset + length; i++)
@@ -1826,21 +1819,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         Logger.Log($"PREVIEW_FRAME_CAPTURE_ABORTED reason={message}");
     }
 
-    private bool UploadFrameToInputTexture(PendingFrame frame)
-    {
-        if (_deviceContext == null || _inputTexture == null || _stagingTexture == null)
-        {
-            return false;
-        }
-
-        if (frame.RawData != null)
-        {
-            return UploadRawFrame(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, frame.IsHdr);
-        }
-
-        return false;
-    }
-
     private bool TryResolveInputView(PendingFrame frame, out ID3D11VideoProcessorInputView? inputView, out bool disposeInputView)
     {
         inputView = null;
@@ -1853,7 +1831,13 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             return true;
         }
 
-        if (!UploadFrameToInputTexture(frame))
+        if (_deviceContext == null || _inputTexture == null || _stagingTexture == null)
+        {
+            return false;
+        }
+
+        if (frame.RawData == null ||
+            !UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, frame.IsHdr, _stagingTexture, _inputTexture))
         {
             return false;
         }
@@ -1888,14 +1872,18 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         return _videoDevice.CreateVideoProcessorInputView(texture, _videoProcessorEnumerator, inputViewDescription);
     }
 
-    private unsafe bool UploadRawFrame(byte[] data, int dataLength, int width, int height, bool isHdr)
+    private unsafe bool UploadRawFrameToTexture(
+        byte[] data, int dataLength, int width, int height, bool isHdr,
+        ID3D11Texture2D stagingTexture, ID3D11Texture2D inputTexture)
     {
-        if (_deviceContext == null || _stagingTexture == null || _inputTexture == null)
+        if (_deviceContext == null)
         {
             return false;
         }
 
-        var expectedBytes = isHdr ? width * height * 3 : (width * height * 3) / 2;
+        var rowBytes = isHdr ? width * 2 : width;
+        var uvRows = height / 2;
+        var expectedBytes = (rowBytes * height) + (rowBytes * uvRows);
         if (dataLength < expectedBytes)
         {
             Logger.Log(
@@ -1903,15 +1891,12 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             return false;
         }
 
-        var rowBytes = isHdr ? width * 2 : width;
-        var uvRows = height / 2;
-
         fixed (byte* srcStart = data)
         {
             var srcY = srcStart;
             var srcUv = srcStart + (rowBytes * height);
 
-            _deviceContext.Map(_stagingTexture, 0, MapMode.Write, Vortice.Direct3D11.MapFlags.None, out var mapped);
+            _deviceContext.Map(stagingTexture, 0, MapMode.Write, Vortice.Direct3D11.MapFlags.None, out var mapped);
             try
             {
                 var dstY = (byte*)mapped.DataPointer;
@@ -1937,11 +1922,11 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             }
             finally
             {
-                _deviceContext.Unmap(_stagingTexture, 0);
+                _deviceContext.Unmap(stagingTexture, 0);
             }
         }
 
-        _deviceContext.CopyResource(_inputTexture, _stagingTexture);
+        _deviceContext.CopyResource(inputTexture, stagingTexture);
         return true;
     }
 
@@ -1988,7 +1973,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
         var swapChainFormat = Format.B8G8R8A8_UNorm;
         _hdrCapableSwapChain = false;
-        _swapChainIsHdr10 = false;
         _swapChain3?.Dispose();
         _swapChain3 = null;
 
@@ -2029,7 +2013,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
                         ? ColorSpaceType.RgbFullG2084NoneP2020
                         : ColorSpaceType.RgbFullG22NoneP709;
                     _swapChain3.SetColorSpace1(initialColorSpace);
-                    _swapChainIsHdr10 = wantHdr;
                     _outputColorSpaceLabel = wantHdr ? "HDR10-PQ (BT.2020)" : "sRGB (BT.709)";
                     Interlocked.Exchange(ref _swapChainColorSpaceDirty, 0);
                     Logger.Log($"D3D11 preview HDR-capable swap chain: srgb={srgbOk} hdr10={hdr10Ok} initial={initialColorSpace}.");
@@ -2212,7 +2195,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
             _linearSampler = _device.CreateSamplerState(samplerDescription);
 
-            _viewportCB?.Dispose();
             _viewportCB = _device.CreateBuffer(new BufferDescription(
                 16, BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
 
@@ -2568,61 +2550,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         return _device.CreateShaderResourceView(_hdrInputTexture, fallbackDesc);
     }
 
-    private unsafe bool UploadRawFrameToHdrTexture(byte[] data, int dataLength, int width, int height)
-    {
-        if (_deviceContext == null || _hdrStagingTexture == null || _hdrInputTexture == null)
-        {
-            return false;
-        }
-
-        var rowBytes = width * 2;
-        var uvRows = height / 2;
-        var expectedBytes = (rowBytes * height) + (rowBytes * uvRows);
-        if (dataLength < expectedBytes)
-        {
-            Logger.Log($"D3D11 preview HDR raw frame too small: expected={expectedBytes} actual={dataLength}.");
-            return false;
-        }
-
-        fixed (byte* srcStart = data)
-        {
-            var srcY = srcStart;
-            var srcUv = srcStart + (rowBytes * height);
-
-            _deviceContext.Map(_hdrStagingTexture, 0, MapMode.Write, Vortice.Direct3D11.MapFlags.None, out var mapped);
-            try
-            {
-                var dstY = (byte*)mapped.DataPointer;
-                var dstUv = dstY + (mapped.RowPitch * height);
-
-                for (var row = 0; row < height; row++)
-                {
-                    Buffer.MemoryCopy(
-                        srcY + (row * rowBytes),
-                        dstY + (row * mapped.RowPitch),
-                        mapped.RowPitch,
-                        rowBytes);
-                }
-
-                for (var row = 0; row < uvRows; row++)
-                {
-                    Buffer.MemoryCopy(
-                        srcUv + (row * rowBytes),
-                        dstUv + (row * mapped.RowPitch),
-                        mapped.RowPitch,
-                        rowBytes);
-                }
-            }
-            finally
-            {
-                _deviceContext.Unmap(_hdrStagingTexture, 0);
-            }
-        }
-
-        _deviceContext.CopyResource(_hdrInputTexture, _hdrStagingTexture);
-        return true;
-    }
-
     private void EnsureSwapChainRTV()
     {
         if (_device == null || _swapChain == null)
@@ -2801,10 +2728,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _stagingTexture = null;
         _inputTexture?.Dispose();
         _inputTexture = null;
-        _swapChainRTV?.Dispose();
-        _swapChainRTV = null;
-        _swapChainBackBuffer?.Dispose();
-        _swapChainBackBuffer = null;
         _swapChain3?.Dispose();
         _swapChain3 = null;
         _swapChain?.Dispose();
@@ -2842,7 +2765,6 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _configuredOutputHeight = 0;
         _configuredInputFormat = Format.Unknown;
         _hdrCapableSwapChain = false;
-        _swapChainIsHdr10 = false;
         Interlocked.Exchange(ref _sharedDeviceActive, 0);
     }
 

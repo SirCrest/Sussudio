@@ -35,6 +35,8 @@ public sealed class RecordingArtifactManager
             settings.GetOutputFileName(),
             CreationCollisionOption.GenerateUniqueName);
 
+        var hdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
+
         if (!usePostMuxAudio)
         {
             return new RecordingContext
@@ -50,7 +52,7 @@ public sealed class RecordingArtifactManager
                 EffectiveWidth = effectiveWidth,
                 EffectiveHeight = effectiveHeight,
                 VideoInputPixelFormat = videoInputPixelFormat,
-                HdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase),
+                HdrPipelineActive = hdrPipelineActive,
                 D3D11DevicePtr = d3d11DevicePtr,
                 D3D11DeviceContextPtr = d3d11DeviceContextPtr,
                 CudaHwDeviceCtxPtr = cudaHwDeviceCtxPtr,
@@ -82,7 +84,7 @@ public sealed class RecordingArtifactManager
             EffectiveWidth = effectiveWidth,
             EffectiveHeight = effectiveHeight,
             VideoInputPixelFormat = videoInputPixelFormat,
-            HdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase),
+            HdrPipelineActive = hdrPipelineActive,
             D3D11DevicePtr = d3d11DevicePtr,
             D3D11DeviceContextPtr = d3d11DeviceContextPtr,
             CudaHwDeviceCtxPtr = cudaHwDeviceCtxPtr,

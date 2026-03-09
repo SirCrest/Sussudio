@@ -109,7 +109,7 @@ internal static class MfDeviceEnumerator
                             }
                         }
 
-                        ReleaseComObject(ref activate);
+                        WasapiComInterop.ReleaseComObject(ref activate);
                     }
                 }
             }
@@ -120,7 +120,7 @@ internal static class MfDeviceEnumerator
                     Marshal.FreeCoTaskMem(activateArray);
                 }
 
-                ReleaseComObject(ref attributes);
+                WasapiComInterop.ReleaseComObject(ref attributes);
             }
         }
         catch (Exception ex)
@@ -289,7 +289,7 @@ internal static class MfDeviceEnumerator
                 }
                 finally
                 {
-                    ReleaseComObject(ref mediaType);
+                    WasapiComInterop.ReleaseComObject(ref mediaType);
                 }
             }
         }
@@ -300,9 +300,9 @@ internal static class MfDeviceEnumerator
         }
         finally
         {
-            ReleaseComObject(ref sourceReader);
-            ReleaseComObject(ref readerAttributes);
-            ReleaseComObject(ref mediaSource);
+            WasapiComInterop.ReleaseComObject(ref sourceReader);
+            WasapiComInterop.ReleaseComObject(ref readerAttributes);
+            WasapiComInterop.ReleaseComObject(ref mediaSource);
             ReleaseStartupReference();
         }
 
@@ -360,7 +360,7 @@ internal static class MfDeviceEnumerator
         }
         finally
         {
-            ReleaseComObject(ref attributes);
+            WasapiComInterop.ReleaseComObject(ref attributes);
         }
     }
 
@@ -428,7 +428,7 @@ internal static class MfDeviceEnumerator
                         }
                     }
 
-                    ReleaseComObject(ref activate);
+                    WasapiComInterop.ReleaseComObject(ref activate);
                 }
             }
         }
@@ -439,7 +439,7 @@ internal static class MfDeviceEnumerator
                 Marshal.FreeCoTaskMem(activateArray);
             }
 
-            ReleaseComObject(ref attributes);
+            WasapiComInterop.ReleaseComObject(ref attributes);
         }
 
         throw new InvalidOperationException(
@@ -628,28 +628,4 @@ internal static class MfDeviceEnumerator
         throw new InvalidOperationException($"{operation} failed (hr=0x{hr:X8}).");
     }
 
-    private static void ReleaseComObject<T>(ref T? comObject)
-        where T : class
-    {
-        if (comObject == null)
-        {
-            return;
-        }
-
-        try
-        {
-            if (Marshal.IsComObject(comObject))
-            {
-                _ = Marshal.ReleaseComObject(comObject);
-            }
-        }
-        catch
-        {
-            // Best effort.
-        }
-        finally
-        {
-            comObject = null;
-        }
-    }
 }

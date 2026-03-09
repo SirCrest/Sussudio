@@ -242,7 +242,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
     public FFmpegEncoderService()
     {
         // Look for FFmpeg in multiple locations
-        _ffmpegPath = FindFFmpegPath();
+        _ffmpegPath = CachedFfmpegPath.Value;
     }
 
     public void SetMfReadwriteDisableConverters(bool enabled)
@@ -252,7 +252,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
 
     public static string ResolveFfmpegPath()
     {
-        return FindFFmpegPath();
+        return CachedFfmpegPath.Value;
     }
 
     /// <summary>
@@ -282,6 +282,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
             FullMode = BoundedChannelFullMode.Wait
         });
     }
+
+    private static readonly Lazy<string> CachedFfmpegPath = new(FindFFmpegPath);
 
     private static string FindFFmpegPath()
     {
@@ -356,7 +358,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
 
     private static async Task<EncoderSupport> ProbeEncoderSupportAsync()
     {
-        var ffmpegPath = FindFFmpegPath();
+        var ffmpegPath = CachedFfmpegPath.Value;
         try
         {
             var startInfo = new ProcessStartInfo
@@ -409,11 +411,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
 
     private static async Task<HdrArgumentSupport> ProbeHdrArgumentSupportAsync()
     {
-        var ffmpegPath = FindFFmpegPath();
+        var ffmpegPath = CachedFfmpegPath.Value;
         try
         {
-            var fullHelpTask = RunProbeCommandAsync(ffmpegPath, "-hide_banner -h full");
-            var pixFmtTask = RunProbeCommandAsync(ffmpegPath, "-hide_banner -pix_fmts");
+            var fullHelpTask = RunProbeCommandWithExitCodeAsync(ffmpegPath, "-hide_banner -h full");
+            var pixFmtTask = RunProbeCommandWithExitCodeAsync(ffmpegPath, "-hide_banner -pix_fmts");
             var masterDisplayTask = SupportsFfmpegOptionAsync(
                 ffmpegPath,
                 "master_display",
@@ -424,8 +426,8 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
                 "-max_cll 1000,400");
             await Task.WhenAll(fullHelpTask, pixFmtTask, masterDisplayTask, maxCllTask).ConfigureAwait(false);
 
-            var fullHelp = fullHelpTask.Result;
-            var pixFmts = pixFmtTask.Result;
+            var fullHelp = fullHelpTask.Result.Output;
+            var pixFmts = pixFmtTask.Result.Output;
             var supportsP010 = pixFmts.Contains("p010", StringComparison.OrdinalIgnoreCase);
             var supportsColorPrimaries = fullHelp.Contains("color_primaries", StringComparison.OrdinalIgnoreCase);
             var supportsColorTransfer = fullHelp.Contains("color_trc", StringComparison.OrdinalIgnoreCase);
@@ -468,7 +470,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
 
     private static async Task<SplitEncodeSupport> ProbeSplitEncodeSupportAsync()
     {
-        var ffmpegPath = FindFFmpegPath();
+        var ffmpegPath = CachedFfmpegPath.Value;
         try
         {
             var twoWayTask = TestSplitEncodeModeAsync(ffmpegPath, 2);
@@ -514,30 +516,6 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
         }
 
         return result.ExitCode == 0;
-    }
-
-    private static async Task<string> RunProbeCommandAsync(string fileName, string arguments)
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = fileName,
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using var process = Process.Start(startInfo);
-        if (process == null)
-        {
-            return string.Empty;
-        }
-
-        var stdoutTask = process.StandardOutput.ReadToEndAsync();
-        var stderrTask = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync().ConfigureAwait(false);
-        return (await stdoutTask.ConfigureAwait(false)) + Environment.NewLine + (await stderrTask.ConfigureAwait(false));
     }
 
     private static async Task<(string Output, int ExitCode)> RunProbeCommandWithExitCodeAsync(string fileName, string arguments)
@@ -1057,20 +1035,6 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
         _activeVideoProfile = "sdr";
         _activeTenBitPipelineConfirmed = false;
 
-        if (hdrRequested &&
-            videoCodec.Equals("hevc_nvenc", StringComparison.OrdinalIgnoreCase) &&
-            (hdrMasterRequested || hdrCllRequested))
-        {
-            var missingMasterSupport = hdrMasterRequested && !_hdrArgumentSupport.SupportsMasterDisplay;
-            var missingCllSupport = hdrCllRequested && !_hdrArgumentSupport.SupportsMaxCll;
-            if (missingMasterSupport || missingCllSupport)
-            {
-                throw new InvalidOperationException(
-                    "HDR mastering metadata was requested, but the active FFmpeg/NVENC path does not support " +
-                    "master-display/max-cll metadata emission.");
-            }
-        }
-
         var escapedVideoDevice = EscapeDshowDeviceName(videoDeviceName);
         var inputArgs = $"-f dshow -rtbufsize 512M -thread_queue_size 2048 " +
                         $"-video_size {effectiveWidth}x{effectiveHeight} " +
@@ -1166,14 +1130,13 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
                         $"max_fall={settings.HdrMaxFall}");
                 }
 
+                EnsureHdrMasteringMetadataSupport(hdrMasterRequested, hdrCllRequested);
                 if (hdrMasterRequested)
                 {
-                    EnsureHdrMasteringMetadataSupport(hdrMasterRequested: true, hdrCllRequested: false);
                     hdrMetadataArgs += $"-master_display \"{settings.HdrMasterDisplayMetadata}\" ";
                 }
                 if (hdrCllRequested)
                 {
-                    EnsureHdrMasteringMetadataSupport(hdrMasterRequested: false, hdrCllRequested: true);
                     hdrMetadataArgs += $"-max_cll {settings.HdrMaxCll},{settings.HdrMaxFall} ";
                 }
             }
@@ -1615,20 +1578,6 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
         _activeVideoProfile = "sdr";
         _activeTenBitPipelineConfirmed = false;
 
-        if (hdrRequested &&
-            videoCodec.Equals("hevc_nvenc", StringComparison.OrdinalIgnoreCase) &&
-            (hdrMasterRequested || hdrCllRequested))
-        {
-            var missingMasterSupport = hdrMasterRequested && !_hdrArgumentSupport.SupportsMasterDisplay;
-            var missingCllSupport = hdrCllRequested && !_hdrArgumentSupport.SupportsMaxCll;
-            if (missingMasterSupport || missingCllSupport)
-            {
-                throw new InvalidOperationException(
-                    "HDR mastering metadata was requested, but the active FFmpeg/NVENC path does not support " +
-                    "master-display/max-cll metadata emission.");
-            }
-        }
-
         // Build audio input string
         // In videoOnly mode (split recording), audio is written to a raw file and muxed post-recording.
         // Using named pipe for audio gives us full timestamp control - both streams start at 0
@@ -1741,15 +1690,14 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
             }
             else
             {
+                EnsureHdrMasteringMetadataSupport(hdrMasterRequested, hdrCllRequested);
                 if (hdrMasterRequested)
                 {
-                    EnsureHdrMasteringMetadataSupport(hdrMasterRequested: true, hdrCllRequested: false);
                     hdrMetadataArgs += $"-master_display \"{settings.HdrMasterDisplayMetadata}\" ";
                 }
 
                 if (hdrCllRequested)
                 {
-                    EnsureHdrMasteringMetadataSupport(hdrMasterRequested: false, hdrCllRequested: true);
                     hdrMetadataArgs += $"-max_cll {settings.HdrMaxCll},{settings.HdrMaxFall} ";
                 }
             }
@@ -2038,12 +1986,12 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
             if (frame.BitmapPixelFormat == BitmapPixelFormat.Nv12)
             {
                 RecordObservedPixelFormatSample("NV12", incrementAsFrame: true);
-                CopyNv12ToBuffer(frame, buffer);
+                CopyYuvPlanarToBuffer(frame, buffer, isP010: false);
             }
             else if (frame.BitmapPixelFormat == BitmapPixelFormat.P010)
             {
                 RecordObservedPixelFormatSample("P010", incrementAsFrame: true);
-                CopyP010ToBuffer(frame, buffer);
+                CopyYuvPlanarToBuffer(frame, buffer, isP010: true);
                 SampleP010BitDepthTelemetry(buffer, bufferSize);
             }
             else
@@ -2910,7 +2858,7 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
 
     public static int GetP010FrameSizeBytes(int width, int height) => width * height * 3;
 
-    private static unsafe void CopyNv12ToBuffer(SoftwareBitmap frame, byte[] destination)
+    private static unsafe void CopyYuvPlanarToBuffer(SoftwareBitmap frame, byte[] destination, bool isP010)
     {
         using var bitmapBuffer = frame.LockBuffer(BitmapBufferAccessMode.Read);
         using var reference = bitmapBuffer.CreateReference();
@@ -2925,19 +2873,20 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
 
         var width = frame.PixelWidth;
         var height = frame.PixelHeight;
-        var ySize = width * height;
+        var rowBytes = isP010 ? width * 2 : width;
         var uvHeight = height / 2;
-        var totalSize = ySize + (uvHeight * width);
+        var ySize = rowBytes * height;
+        var uvSize = rowBytes * uvHeight;
+        var totalSize = ySize + uvSize;
 
         if (destination.Length < totalSize)
         {
-            throw new ArgumentException("Destination buffer too small for NV12 frame.");
+            throw new ArgumentException($"Destination buffer too small for {(isP010 ? "P010" : "NV12")} frame.");
         }
 
         fixed (byte* dest = destination)
         {
-            // Fast path: if stride matches width, copy each plane in a single operation
-            if (planeY.Stride == width)
+            if (planeY.Stride == rowBytes)
             {
                 Buffer.MemoryCopy(
                     dataInBytes + planeY.StartIndex,
@@ -2951,20 +2900,20 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
                 {
                     Buffer.MemoryCopy(
                         dataInBytes + planeY.StartIndex + (row * planeY.Stride),
-                        dest + (row * width),
-                        width,
-                        width);
+                        dest + (row * rowBytes),
+                        rowBytes,
+                        rowBytes);
                 }
             }
 
             var uvDest = dest + ySize;
-            if (planeUV.Stride == width)
+            if (planeUV.Stride == rowBytes)
             {
                 Buffer.MemoryCopy(
                     dataInBytes + planeUV.StartIndex,
                     uvDest,
-                    uvHeight * width,
-                    uvHeight * width);
+                    uvSize,
+                    uvSize);
             }
             else
             {
@@ -2972,9 +2921,9 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
                 {
                     Buffer.MemoryCopy(
                         dataInBytes + planeUV.StartIndex + (row * planeUV.Stride),
-                        uvDest + (row * width),
-                        width,
-                        width);
+                        uvDest + (row * rowBytes),
+                        rowBytes,
+                        rowBytes);
                 }
             }
         }
@@ -3043,78 +2992,6 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
         if (Volatile.Read(ref _videoQueueDepth) < 0)
         {
             Interlocked.Exchange(ref _videoQueueDepth, 0);
-        }
-    }
-
-    private static unsafe void CopyP010ToBuffer(SoftwareBitmap frame, byte[] destination)
-    {
-        using var bitmapBuffer = frame.LockBuffer(BitmapBufferAccessMode.Read);
-        using var reference = bitmapBuffer.CreateReference();
-
-        byte* dataInBytes;
-        uint capacityInBytes;
-        var byteAccess = reference.As<IMemoryBufferByteAccess>();
-        byteAccess.GetBuffer(out dataInBytes, out capacityInBytes);
-
-        var planeY = bitmapBuffer.GetPlaneDescription(0);
-        var planeUV = bitmapBuffer.GetPlaneDescription(1);
-
-        var width = frame.PixelWidth;
-        var height = frame.PixelHeight;
-        var yRowBytes = width * 2;
-        var uvRowBytes = width * 2;
-        var uvHeight = height / 2;
-        var ySize = yRowBytes * height;
-        var uvSize = uvRowBytes * uvHeight;
-        var totalSize = ySize + uvSize;
-
-        if (destination.Length < totalSize)
-        {
-            throw new ArgumentException("Destination buffer too small for P010 frame.");
-        }
-
-        fixed (byte* dest = destination)
-        {
-            if (planeY.Stride == yRowBytes)
-            {
-                Buffer.MemoryCopy(
-                    dataInBytes + planeY.StartIndex,
-                    dest,
-                    ySize,
-                    ySize);
-            }
-            else
-            {
-                for (var row = 0; row < height; row++)
-                {
-                    Buffer.MemoryCopy(
-                        dataInBytes + planeY.StartIndex + (row * planeY.Stride),
-                        dest + (row * yRowBytes),
-                        yRowBytes,
-                        yRowBytes);
-                }
-            }
-
-            var uvDest = dest + ySize;
-            if (planeUV.Stride == uvRowBytes)
-            {
-                Buffer.MemoryCopy(
-                    dataInBytes + planeUV.StartIndex,
-                    uvDest,
-                    uvSize,
-                    uvSize);
-            }
-            else
-            {
-                for (var row = 0; row < uvHeight; row++)
-                {
-                    Buffer.MemoryCopy(
-                        dataInBytes + planeUV.StartIndex + (row * planeUV.Stride),
-                        uvDest + (row * uvRowBytes),
-                        uvRowBytes,
-                        uvRowBytes);
-                }
-            }
         }
     }
 

@@ -267,87 +267,33 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
         }
     }
 
-    private static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)
-    {
-        var rawValue = Environment.GetEnvironmentVariable(variableName);
-        if (int.TryParse(rawValue, out var parsedValue))
-        {
-            return Math.Clamp(parsedValue, minValue, maxValue);
-        }
-
-        return defaultValue;
-    }
-
     public void Dispose()
     {
-        lock (_disposeLock)
-        {
-            if (_isDisposed)
-            {
-                return;
-            }
-
-            _isDisposed = true;
-        }
-
-        _queue.Writer.TryComplete();
-        _workerCancellation.Cancel();
-        var drainTimeoutMs = GetIntFromEnv(
-            "ELGATOCAPTURE_COORDINATOR_DISPOSE_TIMEOUT_MS",
-            DefaultDisposeDrainTimeoutMs,
-            1000,
-            300000);
-
-        try
-        {
-            var completed = Task.WhenAny(_workerTask, Task.Delay(drainTimeoutMs)).GetAwaiter().GetResult();
-            if (completed != _workerTask)
-            {
-                Logger.Log($"CaptureSessionCoordinator dispose timed out after {drainTimeoutMs} ms.");
-            }
-
-            if (_workerTask.IsCompleted)
-            {
-                _workerTask.GetAwaiter().GetResult();
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected if cancellation has already been requested.
-        }
-        catch (Exception ex)
-        {
-            Logger.LogException(ex);
-        }
-        finally
-        {
-            try
-            {
-                _workerCancellation.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-
-            DisposeWorkerCancellationWhenSafe();
-        }
+        if (!TryBeginDispose()) return;
+        CoreDisposeAsync().AsTask().GetAwaiter().GetResult();
     }
 
     public async ValueTask DisposeAsync()
     {
+        if (!TryBeginDispose()) return;
+        await CoreDisposeAsync().ConfigureAwait(false);
+    }
+
+    private bool TryBeginDispose()
+    {
         lock (_disposeLock)
         {
-            if (_isDisposed)
-            {
-                return;
-            }
-
+            if (_isDisposed) return false;
             _isDisposed = true;
         }
+        return true;
+    }
 
+    private async ValueTask CoreDisposeAsync()
+    {
         _queue.Writer.TryComplete();
         _workerCancellation.Cancel();
-        var drainTimeoutMs = GetIntFromEnv(
+        var drainTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "ELGATOCAPTURE_COORDINATOR_DISPOSE_TIMEOUT_MS",
             DefaultDisposeDrainTimeoutMs,
             1000,
@@ -355,16 +301,11 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
 
         try
         {
-            var completed = await Task.WhenAny(_workerTask, Task.Delay(drainTimeoutMs));
-            if (completed != _workerTask)
-            {
-                Logger.Log($"CaptureSessionCoordinator async dispose timed out after {drainTimeoutMs} ms.");
-            }
-
-            if (_workerTask.IsCompleted)
-            {
-                await _workerTask;
-            }
+            await _workerTask.WaitAsync(TimeSpan.FromMilliseconds(drainTimeoutMs)).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            Logger.Log($"CaptureSessionCoordinator dispose timed out after {drainTimeoutMs} ms.");
         }
         catch (OperationCanceledException)
         {
@@ -376,14 +317,6 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
         }
         finally
         {
-            try
-            {
-                _workerCancellation.Cancel();
-            }
-            catch (ObjectDisposedException)
-            {
-            }
-
             DisposeWorkerCancellationWhenSafe();
         }
     }

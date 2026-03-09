@@ -251,4 +251,5 @@ public sealed record StatsSnapshot(
     bool? SourceIsHdr = null,
     string? NegotiatedPixelFormat = null,
     string? TelemetryOrigin = null,
-    string? TelemetryConfidence = null);
+    string? TelemetryConfidence = null,
+    string? DiagnosticSummary = null);

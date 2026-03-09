@@ -1231,3 +1231,19 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (telemetry-provider rewrite only).
 - Conclusion: The NativeXu provider uses the reverse-engineered two-packet UVC AT protocol (from elgato4k-linux RE work) to communicate directly with the Realtek chipset firmware via Win32 KS property sets. RTICE_SDK, RTK_IO, EGAV SDK, and KsXu heuristic providers are all eliminated. Hardware-backed runtime confirmation is the next validation step.
+
+## E56 - NativeXu diagnostics surface expanded with additional chip status fields
+- Timestamp (UTC): 2026-03-09T11:43:46.4319531Z
+- Commit Hash: uncommitted (base 57f510980c034e80dd5e2203966cb1284558e14d)
+- What Changed (single change): Expanded `NativeXuAtCommandProvider` to issue additional simple GET AT commands, append their raw results to the structured `nativexu:` diagnostic summary, derive audio-input state from `InputSource`, added `SendAtSetCommandAsync`/write-frame support for future SET commands, and mapped the new summary keys in the stats-panel diagnostics UI.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for NativeXu AT reads and any runtime warnings after the verification run.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` still contained pre-existing `MF_SOURCE_READER_FRAME_ERROR`, `PREVIEW_START_TIMEOUT`, and `NATIVEXU_AT_FAILED cmd=CableConnect` lines during the app run; this change did not introduce new build/test regressions.
+- ffprobe Evidence:
+  - N/A (telemetry/diagnostics-only change)
+- Conclusion: The diagnostics panel can now surface the extra chip telemetry fields while preserving the existing `nativexu:` grammar and non-NativeXu fallback behavior. Hardware-backed runs are still needed to confirm live values for the newly added AT commands.
