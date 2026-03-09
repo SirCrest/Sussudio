@@ -17,11 +17,14 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     private static readonly SemaphoreSlim CallGate = new(1, 1);
     private static readonly IReadOnlyDictionary<int, VicTiming> VicTimingMap = new Dictionary<int, VicTiming>
     {
+        [118] = new(3840, 2160, 120.0, false),
+        [119] = new(3840, 2160, 120.0, false),
         [97] = new(3840, 2160, 60.0, false),
         [96] = new(3840, 2160, 50.0, false),
         [95] = new(3840, 2160, 30.0, false),
         [94] = new(3840, 2160, 25.0, false),
         [93] = new(3840, 2160, 24.0, false),
+        [63] = new(1920, 1080, 120.0, false),
         [16] = new(1920, 1080, 60.0, false),
         [31] = new(1920, 1080, 50.0, false),
         [34] = new(1920, 1080, 30.0, false),
@@ -46,17 +49,22 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     };
 
     private const int GateTimeoutMs = 500;
-    private const int AtCommandSelector = 3;
-    private const int AtCommandBufferSize = 150;
-    private const int MaxResponseSize = 1024;
+    private const int AtPayloadSelector = 1;
+    private const int AtTriggerSelector = 2;
+    private const int AtFrameHeaderSize = 4;
+    private const int AtFrameLrcSize = 1;
+    private const int MaxAtResponseFrameSize = 128;
     private const ushort Elgato4kXVendorId = 0x0FD9;
     private const ushort Elgato4kXProductId = 0x009B;
 
-    private const byte CmdCableConnect = 0x49;
-    private const byte CmdAviInfoFrame = 0x3A;
-    private const byte CmdHdrMetadata = 0x64;
-    private const byte CmdSystemInfo = 0x42;
-    private const byte CmdHdr2Sdr = 0x39;
+    private const int CmdCableConnect = 0x36;
+    private const int CmdVideoStable = 0x38;
+    private const int CmdVic = 0x3C;
+    private const int CmdSystemInfo = 0x23;
+    private const int CmdHdrMetadata = 0x65;
+    private const int CmdVfreq = 0x86;
+    private const int CmdHdr2Sdr = 0x90;
+    private const int CmdAviInfoFrame = 0x92;
 
     public async Task<SourceSignalTelemetrySnapshot> ReadAsync(
         CaptureDevice? device,
@@ -211,7 +219,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return HandleFailedCommand("nativexu-read-failed", interfacePath, cable);
         }
 
-        if (TryReadByte(cable.Response, out var cableState) && cableState == 0)
+        if (TryReadInt32(cable.Response, out var cableState) && cableState == 0)
         {
             Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=no-cable");
             return new NodeReadAttempt(
@@ -229,6 +237,32 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 interfacePath);
         }
 
+        var videoStable = SendAtCommand(handle, nodeId, "VideoStable", CmdVideoStable);
+        if (!videoStable.Success)
+        {
+            return HandleFailedCommand("nativexu-read-failed", interfacePath, videoStable);
+        }
+
+        if (TryReadInt32(videoStable.Response, out var stableValue) && stableValue == 0)
+        {
+            Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=signal-unstable");
+            return new NodeReadAttempt(
+                new SourceSignalTelemetrySnapshot
+                {
+                    TimestampUtc = DateTimeOffset.UtcNow,
+                    Availability = SourceTelemetryAvailability.Unavailable,
+                    Origin = SourceTelemetryOrigin.NativeXu,
+                    OriginDetail = $"NativeXu:{interfacePath}",
+                    Confidence = SourceTelemetryConfidence.Unknown,
+                    DiagnosticSummary = "nativexu-signal-unstable"
+                },
+                false,
+                "nativexu-signal-unstable",
+                interfacePath);
+        }
+
+        var vicResult = SendAtCommand(handle, nodeId, "VIC", CmdVic);
+        var vfreqResult = SendAtCommand(handle, nodeId, "Vfreq", CmdVfreq);
         var aviInfoResult = SendAtCommand(handle, nodeId, "AviInfoFrame", CmdAviInfoFrame);
         var hdrMetadataResult = SendAtCommand(handle, nodeId, "HdrMetadata", CmdHdrMetadata);
         var systemInfoResult = SendAtCommand(handle, nodeId, "SystemInfo", CmdSystemInfo);
@@ -237,18 +271,30 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         var aviInfo = aviInfoResult.Success ? DecodeAviInfoFrame(aviInfoResult.Response) : AviInfoFrameInfo.Empty;
         var hdrInfo = hdrMetadataResult.Success ? DecodeHdrMetadata(hdrMetadataResult.Response) : new HdrMetadataInfo(false, null, null);
         var systemInfo = systemInfoResult.Success ? DecodeCString(systemInfoResult.Response) : null;
-        var vicCode = aviInfoResult.Success ? ExtractVicCodeFromAviInfoFrame(aviInfoResult.Response) : null;
+        var vicCode = vicResult.Success ? ExtractInt32AsVicCode(vicResult.Response) : null;
+        var vfreqHz100 = vfreqResult.Success ? TryReadInt32Value(vfreqResult.Response) : null;
         var timing = vicCode.HasValue && VicTimingMap.TryGetValue(vicCode.Value, out var mappedTiming)
             ? mappedTiming
             : (VicTiming?)null;
-        var frameRateExact = timing.HasValue
-            ? SnapToCanonicalFrameRate(timing.Value.NominalFrameRate)
-            : (double?)null;
-        var hdr2SdrState = hdr2SdrResult.Success && TryReadByte(hdr2SdrResult.Response, out var hdr2SdrValue)
-            ? hdr2SdrValue
+        double? frameRateExact;
+        if (vfreqHz100.HasValue && vfreqHz100.Value > 0)
+        {
+            frameRateExact = SnapToCanonicalFrameRate(vfreqHz100.Value / 100.0);
+        }
+        else if (timing.HasValue)
+        {
+            frameRateExact = SnapToCanonicalFrameRate(timing.Value.NominalFrameRate);
+        }
+        else
+        {
+            frameRateExact = null;
+        }
+
+        var hdr2SdrState = hdr2SdrResult.Success && TryReadInt32(hdr2SdrResult.Response, out var hdr2SdrValue)
+            ? (hdr2SdrValue == 1 ? (byte)1 : (byte)0)
             : (byte?)null;
 
-        if (!timing.HasValue && !frameRateExact.HasValue && !hdrInfo.HasMetadata && !aviInfo.HasData)
+        if (!vicCode.HasValue && !timing.HasValue && !frameRateExact.HasValue && !hdrInfo.HasMetadata && !aviInfo.HasData)
         {
             Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=no-decodable-source-data");
             return new NodeReadAttempt(
@@ -262,6 +308,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"NATIVEXU_DECODE vic={(vicCode.HasValue ? vicCode.Value.ToString(CultureInfo.InvariantCulture) : "none")} " +
             $"size={timing?.Width.ToString(CultureInfo.InvariantCulture) ?? "?"}x{timing?.Height.ToString(CultureInfo.InvariantCulture) ?? "?"} " +
             $"fps={(frameRateExact.HasValue ? frameRateExact.Value.ToString("0.###", CultureInfo.InvariantCulture) : "?")} " +
+            $"vfreq={(vfreqHz100.HasValue ? vfreqHz100.Value.ToString(CultureInfo.InvariantCulture) : "?")} " +
             $"hdr={BoolToToken(hdrInfo.IsHdr)} colorspace={aviInfo.ColorSpace ?? "unknown"} " +
             $"colorimetry={aviInfo.Colorimetry ?? "unknown"} firmware={systemInfo ?? "unknown"}");
 
@@ -284,6 +331,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                     frameRateExact,
                     hdrInfo,
                     aviInfo,
+                    vfreqHz100,
                     hdr2SdrState,
                     systemInfo),
                 AudioInputAvailability = SourceAudioInputAvailability.Unavailable,
@@ -309,44 +357,129 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         SafeFileHandle handle,
         int nodeId,
         string name,
-        byte cmdCode)
+        int cmdCode)
     {
-        var commandBuffer = new byte[AtCommandBufferSize];
-        commandBuffer[0] = cmdCode;
-
-        if (!KsExtensionUnitNative.TryXuSetViaOutput(handle, nodeId, XuGuid, AtCommandSelector, commandBuffer, out var setWin32Code))
+        var requestFrame = BuildAtReadFrame(cmdCode);
+        var triggerData = new byte[]
         {
-            Logger.Log($"NATIVEXU_AT_FAILED cmd={name} cmdCode=0x{cmdCode:X2} stage=set win32={FormatWin32Code(setWin32Code)}");
-            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, setWin32Code, "set");
+            (byte)(requestFrame.Length & 0xFF),
+            (byte)((requestFrame.Length >> 8) & 0xFF)
+        };
+
+        if (!KsExtensionUnitNative.TryXuSetViaOutput(handle, nodeId, XuGuid, AtTriggerSelector, triggerData, out var triggerWin32))
+        {
+            Logger.Log($"NATIVEXU_AT_FAILED cmd={name} code=0x{cmdCode:X2} stage=trigger win32={FormatWin32Code(triggerWin32)}");
+            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, triggerWin32, "trigger");
         }
 
-        if (!KsExtensionUnitNative.TryXuGet(
+        if (!KsExtensionUnitNative.TryXuSetViaOutput(handle, nodeId, XuGuid, AtPayloadSelector, requestFrame, out var sendWin32))
+        {
+            Logger.Log($"NATIVEXU_AT_FAILED cmd={name} code=0x{cmdCode:X2} stage=send win32={FormatWin32Code(sendWin32)}");
+            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, sendWin32, "send");
+        }
+
+        if (!KsExtensionUnitNative.TryXuGetDirect(
                 handle,
                 nodeId,
                 XuGuid,
-                AtCommandSelector,
-                MaxResponseSize,
-                out var response,
-                out var responseBytes,
-                out var getWin32Code))
+                AtTriggerSelector,
+                2,
+                out var lengthData,
+                out var lengthBytes,
+                out var lengthWin32))
         {
-            Logger.Log($"NATIVEXU_AT_FAILED cmd={name} cmdCode=0x{cmdCode:X2} stage=get win32={FormatWin32Code(getWin32Code)}");
-            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), responseBytes, getWin32Code, "get");
+            Logger.Log($"NATIVEXU_AT_FAILED cmd={name} code=0x{cmdCode:X2} stage=getlength win32={FormatWin32Code(lengthWin32)}");
+            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, lengthWin32, "getlength");
         }
 
+        var responseFrameLen = lengthBytes >= 2
+            ? (int)BitConverter.ToUInt16(lengthData, 0)
+            : 0;
+
+        if (responseFrameLen <= 0 || responseFrameLen > MaxAtResponseFrameSize)
+        {
+            Logger.Log($"NATIVEXU_AT_FAILED cmd={name} code=0x{cmdCode:X2} stage=framelen len={responseFrameLen}");
+            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, null, "framelen");
+        }
+
+        if (!KsExtensionUnitNative.TryXuGetDirect(
+                handle,
+                nodeId,
+                XuGuid,
+                AtPayloadSelector,
+                responseFrameLen,
+                out var responseFrame,
+                out var responseBytes,
+                out var responseWin32))
+        {
+            Logger.Log($"NATIVEXU_AT_FAILED cmd={name} code=0x{cmdCode:X2} stage=getresponse win32={FormatWin32Code(responseWin32)}");
+            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, responseWin32, "getresponse");
+        }
+
+        var rawData = StripAtFrameEnvelope(responseFrame, responseBytes);
         Logger.Log(
-            $"NATIVEXU_AT cmd={name} cmdCode=0x{cmdCode:X2} bytes={responseBytes} preview={GetHexPreview(response, responseBytes, 32)}");
-        return new AtCommandResult(name, cmdCode, true, response, responseBytes, null, null);
+            $"NATIVEXU_AT cmd={name} code=0x{cmdCode:X2} frameLen={responseFrameLen} " +
+            $"rawBytes={rawData.Length} preview={GetHexPreview(rawData, rawData.Length, 32)}");
+        return new AtCommandResult(name, cmdCode, true, rawData, rawData.Length, null, null);
     }
 
-    private static int? ExtractVicCodeFromAviInfoFrame(byte[] buffer)
+    private static byte ComputeLrc(ReadOnlySpan<byte> data)
     {
-        if (buffer.Length <= 7 || !HasNonZeroData(buffer) || buffer[0] != 0x82)
+        byte sum = 0;
+        foreach (var value in data)
+        {
+            sum = (byte)(sum + value);
+        }
+
+        return (byte)(~sum + 1);
+    }
+
+    private static byte[] BuildAtReadFrame(int cmdCode)
+    {
+        var frame = new byte[9];
+        frame[0] = 0xA1;
+        frame[1] = 0x06;
+        frame[4] = (byte)(cmdCode & 0xFF);
+        frame[5] = (byte)((cmdCode >> 8) & 0xFF);
+        frame[6] = (byte)((cmdCode >> 16) & 0xFF);
+        frame[7] = (byte)((cmdCode >> 24) & 0xFF);
+        frame[8] = ComputeLrc(frame.AsSpan(0, 8));
+        return frame;
+    }
+
+    private static byte[] StripAtFrameEnvelope(byte[] responseFrame, int frameLength)
+    {
+        var effectiveLength = Math.Min(Math.Max(frameLength, 0), responseFrame.Length);
+        if (effectiveLength <= AtFrameHeaderSize + AtFrameLrcSize)
+        {
+            return Array.Empty<byte>();
+        }
+
+        var dataLength = effectiveLength - AtFrameHeaderSize - AtFrameLrcSize;
+        var result = new byte[dataLength];
+        Array.Copy(responseFrame, AtFrameHeaderSize, result, 0, dataLength);
+        return result;
+    }
+
+    private static int? ExtractInt32AsVicCode(byte[] buffer)
+    {
+        if (buffer.Length < 4 || !HasNonZeroData(buffer))
         {
             return null;
         }
 
-        return buffer[7] > 0 ? buffer[7] : null;
+        var value = BitConverter.ToInt32(buffer, 0);
+        return value > 0 ? value : null;
+    }
+
+    private static int? TryReadInt32Value(byte[] buffer)
+    {
+        if (buffer.Length < 4)
+        {
+            return null;
+        }
+
+        return BitConverter.ToInt32(buffer, 0);
     }
 
     private static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)
@@ -533,6 +666,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         double? frameRateExact,
         HdrMetadataInfo hdrInfo,
         AviInfoFrameInfo aviInfoFrame,
+        int? vfreqHz100,
         byte? hdr2SdrState,
         string? systemInfo)
     {
@@ -555,6 +689,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 false => "sdr",
                 _ => "unknown"
             },
+            $"vfreq={(vfreqHz100.HasValue ? vfreqHz100.Value.ToString(CultureInfo.InvariantCulture) : "unknown")}",
             aviInfoFrame.ColorSpace ?? "unknown-space",
             aviInfoFrame.Colorimetry ?? "unknown-color",
             $"quant={aviInfoFrame.Quantization ?? "unknown"}",
@@ -563,15 +698,15 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"fw={systemInfo ?? "unknown"}");
     }
 
-    private static bool TryReadByte(byte[] buffer, out byte value)
+    private static bool TryReadInt32(byte[] buffer, out int value)
     {
         value = 0;
-        if (buffer.Length == 0)
+        if (buffer.Length < 4)
         {
             return false;
         }
 
-        value = buffer[0];
+        value = BitConverter.ToInt32(buffer, 0);
         return true;
     }
 
@@ -631,7 +766,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 
     private readonly record struct AtCommandResult(
         string Name,
-        byte CommandCode,
+        int CommandCode,
         bool Success,
         byte[] Response,
         int BytesReturned,

@@ -15,10 +15,7 @@ public enum SourceTelemetryAvailability
 public enum SourceTelemetryOrigin
 {
     Unknown,
-    Egav,
     DeviceFormatFallback,
-    KsXu,
-    Rtice,
     NativeXu
 }
 

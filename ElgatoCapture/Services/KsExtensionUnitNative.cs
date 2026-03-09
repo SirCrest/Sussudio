@@ -252,6 +252,55 @@ internal static class KsExtensionUnitNative
             out win32Code,
             out _);
 
+    internal static bool TryXuGetDirect(
+        SafeFileHandle handle,
+        int nodeId,
+        Guid propertySet,
+        int selector,
+        int bufferSize,
+        out byte[] data,
+        out int bytesReturned,
+        out int? win32Code)
+    {
+        data = Array.Empty<byte>();
+        bytesReturned = 0;
+        win32Code = null;
+
+        var request = new KSP_NODE
+        {
+            Property = new KSPROPERTY
+            {
+                Set = propertySet,
+                Id = (uint)selector,
+                Flags = KsPropertyTypeGet | KsPropertyTypeTopology
+            },
+            NodeId = (uint)nodeId,
+            Reserved = 0
+        };
+
+        var input = StructureToBytes(request);
+        var output = new byte[bufferSize];
+        if (DeviceIoControl(
+                handle,
+                IoctlKsProperty,
+                input,
+                input.Length,
+                output,
+                output.Length,
+                out bytesReturned,
+                IntPtr.Zero))
+        {
+            var copiedLength = Math.Min(Math.Max(bytesReturned, 0), output.Length);
+            data = copiedLength > 0
+                ? output.AsSpan(0, copiedLength).ToArray()
+                : Array.Empty<byte>();
+            return true;
+        }
+
+        win32Code = Marshal.GetLastWin32Error();
+        return false;
+    }
+
     internal static bool TryXuSetViaOutput(
         SafeFileHandle handle,
         int nodeId,
