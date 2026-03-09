@@ -98,7 +98,6 @@ static class Program
 
         await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
 
-        SetPrivateField(captureService, "_videoFramesArrived", 5L);
         SetPrivateField(captureService, "_firstObservedFramePixelFormat", "NV12");
         SetPrivateField(captureService, "_latestObservedFramePixelFormat", "BGRA8");
         SetPrivateField(captureService, "_latestObservedSurfaceFormat", "BGRA8");

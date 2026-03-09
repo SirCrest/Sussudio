@@ -564,17 +564,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }, cancellationToken);
     }
 
-    internal static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)
-    {
-        var rawValue = Environment.GetEnvironmentVariable(variableName);
-        if (int.TryParse(rawValue, out var parsedValue))
-        {
-            return Math.Clamp(parsedValue, minValue, maxValue);
-        }
-
-        return defaultValue;
-    }
-
     private static async Task AwaitWithTimeoutAsync(Task task, int timeoutMs, string operationName)
     {
         var completed = await Task.WhenAny(task, Task.Delay(timeoutMs)).ConfigureAwait(false);
@@ -4122,7 +4111,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.FrameCaptured -= OnFrameCaptured;
         _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
         _captureService.SourceTelemetryUpdated -= OnSourceTelemetryUpdated;
-        var stepTimeoutMs = GetIntFromEnv(
+        var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "ELGATOCAPTURE_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,
             1000,
@@ -4162,7 +4151,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public void Dispose()
     {
-        var disposeTimeoutMs = GetIntFromEnv(
+        var disposeTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "ELGATOCAPTURE_VIEWMODEL_DISPOSE_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,
             1000,
@@ -4187,7 +4176,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public async ValueTask DisposeAsync()
     {
-        var disposeTimeoutMs = GetIntFromEnv(
+        var disposeTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "ELGATOCAPTURE_VIEWMODEL_DISPOSE_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,
             1000,

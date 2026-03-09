@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -20,6 +21,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     private readonly string? _authToken;
     private readonly object _closeArmLock = new();
     private bool _closeArmed;
+
+    private static readonly ConcurrentDictionary<string, PropertyInfo?> SnapshotPropertyCache = new(StringComparer.OrdinalIgnoreCase);
 
     private const int DefaultWaitTimeoutMs = 10_000;
     private const int DefaultWaitPollMs = 250;
@@ -238,10 +241,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                                 success: false,
                                 status: "error");
                         }
-                    }
 
-                    if (action == AutomationWindowAction.Close)
-                    {
                         _ = ExecuteWindowActionAsync(action, CancellationToken.None).ContinueWith(
                             closeTask =>
                             {
@@ -565,8 +565,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         int pollMs,
         CancellationToken cancellationToken)
     {
-        var started = DateTimeOffset.UtcNow;
-        while ((DateTimeOffset.UtcNow - started).TotalMilliseconds < timeoutMs)
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started).TotalMilliseconds < timeoutMs)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var snapshot = _diagnosticsHub.GetLatestSnapshot();
@@ -665,9 +665,11 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         SnapshotAssertion assertion,
         out string? failure)
     {
-        var property = typeof(AutomationSnapshot).GetProperty(
+        var property = SnapshotPropertyCache.GetOrAdd(
             assertion.Field,
-            BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            field => typeof(AutomationSnapshot).GetProperty(
+                field,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase));
         if (property == null)
         {
             failure = $"field-not-found({assertion.Field})";

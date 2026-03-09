@@ -53,9 +53,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private uint? _actualFrameRateDenominator;
     private string? _actualPixelFormat;
     private string _activeVideoInputPixelFormat = "nv12";
-#pragma warning disable CS0649 // Field is never assigned â€” kept for telemetry reflection compatibility
-    private long _videoFramesArrived;
-#pragma warning restore CS0649
     private long _videoFramesDropped;
     private string? _firstObservedFramePixelFormat;
     private string? _latestObservedFramePixelFormat;
@@ -150,12 +147,19 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             var path = _recordingContext?.VideoOutputPath ?? _lastOutputPath;
-            if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            if (string.IsNullOrWhiteSpace(path))
             {
                 return new RecordingStats(0, 0);
             }
 
-            return new RecordingStats(new FileInfo(path).Length, 0);
+            try
+            {
+                return new RecordingStats(new FileInfo(path).Length, 0);
+            }
+            catch (FileNotFoundException)
+            {
+                return new RecordingStats(0, 0);
+            }
         }
         catch
         {
@@ -940,7 +944,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceTelemetryCircuitState = ResolveSourceTelemetryCircuitState(
                 _latestSourceTelemetry.Availability,
                 sourceTelemetrySuppressed),
-            VideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? Interlocked.Read(ref _videoFramesArrived),
+            VideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? 0,
             VideoFramesDropped = videoFramesDropped,
             VideoDropsQueueSaturated = encoder?.VideoDropsQueueSaturated ?? 0,
             VideoDropsBacklogEviction = encoder?.VideoDropsBacklogEviction ?? 0,

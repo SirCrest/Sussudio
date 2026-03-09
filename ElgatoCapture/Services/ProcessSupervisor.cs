@@ -91,10 +91,11 @@ public sealed class ProcessSupervisor : IProcessSupervisor
             try
             {
                 var exitTask = process.WaitForExitAsync(cancellationToken);
-                var timeoutTask = Task.Delay(spec.TimeoutMs);
-                var completed = await Task.WhenAny(exitTask, timeoutTask);
-
-                if (completed == timeoutTask)
+                try
+                {
+                    await exitTask.WaitAsync(TimeSpan.FromMilliseconds(spec.TimeoutMs), cancellationToken);
+                }
+                catch (TimeoutException)
                 {
                     timedOut = true;
                     Logger.LogEvent("CAP-PROC-TIMEOUT", $"{spec.FileName} timeoutMs={spec.TimeoutMs}");
@@ -104,10 +105,6 @@ public sealed class ProcessSupervisor : IProcessSupervisor
                     {
                         Logger.LogEvent("CAP-PROC-STILL-ALIVE", $"{spec.FileName} reason=timeout pid={processId}");
                     }
-                }
-                else
-                {
-                    await exitTask;
                 }
             }
             catch (OperationCanceledException)
@@ -154,14 +151,11 @@ public sealed class ProcessSupervisor : IProcessSupervisor
     {
         try
         {
-            if (!process.HasExited)
-            {
-                process.Kill(entireProcessTree: true);
-            }
+            process.Kill(entireProcessTree: true);
         }
         catch
         {
-            // Best-effort process termination.
+            // Best-effort — process may have already exited.
         }
     }
 
@@ -195,28 +189,22 @@ public sealed class ProcessSupervisor : IProcessSupervisor
             return true;
         }
 
-        var exitTask = process.WaitForExitAsync();
-        var completed = await Task.WhenAny(exitTask, Task.Delay(timeoutMs));
-        if (completed != exitTask)
+        try
+        {
+            await process.WaitForExitAsync().WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
+            return true;
+        }
+        catch (TimeoutException)
         {
             return false;
         }
-
-        await exitTask;
-        return process.HasExited;
     }
 
     private static async Task<string> TryReadWithTimeoutAsync(Task<string> readTask, int timeoutMs)
     {
         try
         {
-            var completed = await Task.WhenAny(readTask, Task.Delay(timeoutMs));
-            if (completed != readTask)
-            {
-                return string.Empty;
-            }
-
-            return await readTask;
+            return await readTask.WaitAsync(TimeSpan.FromMilliseconds(timeoutMs));
         }
         catch
         {

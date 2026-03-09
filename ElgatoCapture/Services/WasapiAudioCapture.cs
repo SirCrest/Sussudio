@@ -15,8 +15,6 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private const int OutputBlockAlign = OutputChannels * BytesPerFloatSample;
     private const int AudioLevelFireIntervalMs = 66;
     private const uint WaitTimeoutMs = 100;
-    private const uint WaitObject0 = 0;
-    private const uint WaitTimeout = 0x00000102;
 
     private IMMDeviceEnumerator? _deviceEnumerator;
     private IMMDevice? _device;
@@ -46,9 +44,6 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private int _stopRequested;
     private int _disposed;
     private bool _fastPathCopy;
-
-    [DllImport("kernel32.dll")]
-    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
 
     public event EventHandler<AudioLevelEventArgs>? AudioLevelUpdated;
     public event EventHandler<Exception>? CaptureFailed;
@@ -108,7 +103,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                     $"WASAPI audio capture device '{audioDeviceId}' was not found (hr=0x{hrGetDevice:X8}).");
             }
 
-            audioClient = ActivateAudioClient(device, out audioClient3);
+            audioClient = WasapiComInterop.ActivateAudioClient(device, out audioClient3);
             WasapiComInterop.ThrowIfFailed(
                 audioClient.GetMixFormat(out mixFormat),
                 "IAudioClient.GetMixFormat(capture)");
@@ -127,7 +122,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
             selectedFormat = useDesiredFormat ? desiredFormat : mixFormat;
             _captureFormat = WasapiComInterop.ReadAudioFormat(selectedFormat);
 
-            if (!TryInitializeSharedStreamWithAudioClient3(audioClient3, selectedFormat))
+            if (!WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, selectedFormat))
             {
                 WasapiComInterop.ThrowIfFailed(
                     audioClient.Initialize(
@@ -321,21 +316,22 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
     private void CaptureThreadMain()
     {
+        var captureEvent = _captureEvent;
+        if (captureEvent == null)
+        {
+            return;
+        }
+
+        var waitHandle = captureEvent.SafeWaitHandle.DangerousGetHandle();
         while (Volatile.Read(ref _stopRequested) == 0)
         {
-            var captureEvent = _captureEvent;
-            if (captureEvent == null)
-            {
-                return;
-            }
-
-            var waitResult = WaitForSingleObject(captureEvent.SafeWaitHandle.DangerousGetHandle(), WaitTimeoutMs);
-            if (waitResult == WaitTimeout)
+            var waitResult = WasapiComInterop.WaitForSingleObject(waitHandle, WaitTimeoutMs);
+            if (waitResult == WasapiComInterop.WaitTimeout)
             {
                 continue;
             }
 
-            if (waitResult != WaitObject0)
+            if (waitResult != WasapiComInterop.WaitObject0)
             {
                 continue;
             }
@@ -750,50 +746,6 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         {
             // Never throw from capture thread event fan-out.
         }
-    }
-
-    private static IAudioClient ActivateAudioClient(IMMDevice device, out IAudioClient3? audioClient3)
-    {
-        var iidAudioClient3 = typeof(IAudioClient3).GUID;
-        var hr3 = device.Activate(ref iidAudioClient3, WasapiComInterop.CLSCTX_ALL, IntPtr.Zero, out var audioClient3Object);
-        if (hr3 >= 0 && audioClient3Object is IAudioClient3 client3)
-        {
-            audioClient3 = client3;
-            return client3;
-        }
-
-        var iidAudioClient = typeof(IAudioClient).GUID;
-        WasapiComInterop.ThrowIfFailed(
-            device.Activate(ref iidAudioClient, WasapiComInterop.CLSCTX_ALL, IntPtr.Zero, out var audioClientObject),
-            "IMMDevice.Activate(IAudioClient)");
-        audioClient3 = audioClientObject as IAudioClient3;
-        return (IAudioClient)audioClientObject;
-    }
-
-    private static bool TryInitializeSharedStreamWithAudioClient3(IAudioClient3? audioClient3, IntPtr format)
-    {
-        if (audioClient3 == null)
-        {
-            return false;
-        }
-
-        var hr = audioClient3.GetSharedModeEnginePeriod(
-            format,
-            out var defaultPeriod,
-            out _,
-            out _,
-            out _);
-        if (hr < 0)
-        {
-            return false;
-        }
-
-        hr = audioClient3.InitializeSharedAudioStream(
-            WasapiComInterop.AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-            defaultPeriod,
-            format,
-            IntPtr.Zero);
-        return hr >= 0;
     }
 
     private readonly struct ConvertedAudioPacket

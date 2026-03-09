@@ -13,8 +13,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private const int BytesPerSample = 4;
     private const int OutputBlockAlign = OutputChannels * BytesPerSample;
     private const uint WaitTimeoutMs = 100;
-    private const uint WaitObject0 = 0;
-    private const uint WaitTimeout = 0x00000102;
 
     private readonly Channel<PlaybackChunk> _sampleQueue = Channel.CreateBounded<PlaybackChunk>(
         new BoundedChannelOptions(128)
@@ -45,9 +43,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _renderSilenceCount;
     private int _playbackQueueDropCount;
     private long _lastRenderCallbackTickMs;
-
-    [DllImport("kernel32.dll")]
-    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
 
     public long RenderCallbackCount => Interlocked.Read(ref _renderCallbackCount);
 
@@ -83,7 +78,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 enumerator.GetDefaultAudioEndpoint(EDataFlow.eRender, ERole.eConsole, out device),
                 "IMMDeviceEnumerator.GetDefaultAudioEndpoint");
 
-            audioClient = ActivateAudioClient(device, out audioClient3);
+            audioClient = WasapiComInterop.ActivateAudioClient(device, out audioClient3);
             desiredFormat = WasapiComInterop.AllocFloatStereo48kFormat();
 
             var hr = audioClient.IsFormatSupported(
@@ -101,7 +96,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                     "Default render endpoint does not support f32le 48kHz stereo monitoring playback.");
             }
 
-            if (!TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat))
+            if (!WasapiComInterop.TryInitializeSharedStreamWithAudioClient3(audioClient3, desiredFormat))
             {
                 WasapiComInterop.ThrowIfFailed(
                     audioClient.Initialize(
@@ -201,24 +196,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
         _targetVolume = Math.Clamp(volume, 0f, 1f);
     }
 
-    public void EnqueueSamples(ReadOnlySpan<byte> f32leSamples)
-    {
-        if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _initialized) == 0 || f32leSamples.IsEmpty)
-        {
-            return;
-        }
-
-        var frameAlignedLength = f32leSamples.Length - (f32leSamples.Length % OutputBlockAlign);
-        if (frameAlignedLength <= 0)
-        {
-            return;
-        }
-
-        var rented = ArrayPool<byte>.Shared.Rent(frameAlignedLength);
-        f32leSamples[..frameAlignedLength].CopyTo(rented);
-        EnqueueChunk(new PlaybackChunk(rented, frameAlignedLength, isPooled: true));
-    }
-
     internal void EnqueuePooledSamples(byte[] pooledBuffer, int validLength)
     {
         if (pooledBuffer == null)
@@ -240,7 +217,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             return;
         }
 
-        EnqueueChunk(new PlaybackChunk(pooledBuffer, safeLength, isPooled: true));
+        EnqueueChunk(new PlaybackChunk(pooledBuffer, safeLength, IsPooled: true));
     }
 
     public void Stop()
@@ -315,21 +292,22 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     private void RenderThreadMain()
     {
+        var renderEvent = _renderEvent;
+        if (renderEvent == null)
+        {
+            return;
+        }
+
+        var waitHandle = renderEvent.SafeWaitHandle.DangerousGetHandle();
         while (Volatile.Read(ref _started) != 0)
         {
-            var renderEvent = _renderEvent;
-            if (renderEvent == null)
-            {
-                return;
-            }
-
-            var waitResult = WaitForSingleObject(renderEvent.SafeWaitHandle.DangerousGetHandle(), WaitTimeoutMs);
-            if (waitResult == WaitTimeout)
+            var waitResult = WasapiComInterop.WaitForSingleObject(waitHandle, WaitTimeoutMs);
+            if (waitResult == WasapiComInterop.WaitTimeout)
             {
                 continue;
             }
 
-            if (waitResult != WaitObject0)
+            if (waitResult != WasapiComInterop.WaitObject0)
             {
                 continue;
             }
@@ -510,64 +488,5 @@ internal sealed class WasapiAudioPlayback : IDisposable
         ArrayPool<byte>.Shared.Return(chunk.Buffer);
     }
 
-    private static IAudioClient ActivateAudioClient(IMMDevice device, out IAudioClient3? audioClient3)
-    {
-        var iidAudioClient3 = typeof(IAudioClient3).GUID;
-        var hr = device.Activate(ref iidAudioClient3, WasapiComInterop.CLSCTX_ALL, IntPtr.Zero, out var client3Object);
-        if (hr >= 0 && client3Object is IAudioClient3 client3)
-        {
-            audioClient3 = client3;
-            return client3;
-        }
-
-        var iidAudioClient = typeof(IAudioClient).GUID;
-        WasapiComInterop.ThrowIfFailed(
-            device.Activate(ref iidAudioClient, WasapiComInterop.CLSCTX_ALL, IntPtr.Zero, out var clientObject),
-            "IMMDevice.Activate(IAudioClient)");
-
-        audioClient3 = clientObject as IAudioClient3;
-        return (IAudioClient)clientObject;
-    }
-
-    private static bool TryInitializeSharedStreamWithAudioClient3(IAudioClient3? audioClient3, IntPtr format)
-    {
-        if (audioClient3 == null)
-        {
-            return false;
-        }
-
-        var hr = audioClient3.GetSharedModeEnginePeriod(
-            format,
-            out var defaultPeriodInFrames,
-            out _,
-            out _,
-            out _);
-        if (hr < 0)
-        {
-            return false;
-        }
-
-        hr = audioClient3.InitializeSharedAudioStream(
-            WasapiComInterop.AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
-            defaultPeriodInFrames,
-            format,
-            IntPtr.Zero);
-        return hr >= 0;
-    }
-
-    private readonly struct PlaybackChunk
-    {
-        public PlaybackChunk(byte[] buffer, int length, bool isPooled)
-        {
-            Buffer = buffer;
-            Length = length;
-            IsPooled = isPooled;
-        }
-
-        public byte[]? Buffer { get; }
-
-        public int Length { get; }
-
-        public bool IsPooled { get; }
-    }
+    private readonly record struct PlaybackChunk(byte[]? Buffer, int Length, bool IsPooled);
 }

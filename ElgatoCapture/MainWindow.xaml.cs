@@ -40,7 +40,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const int PreviewStartupMinVisualTimeoutMs = 1000;
     private const int PreviewStartupMaxVisualTimeoutMs = 15000;
     private static readonly TimeSpan PreviewStartupPlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);
-    private static readonly int PreviewStartupVisualTimeoutMs = ResolveStartupSetting(
+    private static readonly int PreviewStartupVisualTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
         "ELGATOCAPTURE_PREVIEW_START_TIMEOUT_MS",
         PreviewStartupDefaultVisualTimeoutMs,
         PreviewStartupMinVisualTimeoutMs,
@@ -67,14 +67,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private int _automationServicesStarted;
-    private int _deviceSelectionSyncQueued;
-    private int _audioSelectionSyncQueued;
-    private int _resolutionSelectionSyncQueued;
-    private int _frameRateSelectionSyncQueued;
-    private int _formatSelectionSyncQueued;
-    private int _qualitySelectionSyncQueued;
-    private int _presetSelectionSyncQueued;
-    private int _splitEncodeSelectionSyncQueued;
+    private readonly int[] _selectionSyncQueued = new int[8];
+    private const int SyncDevice = 0, SyncAudio = 1, SyncResolution = 2, SyncFrameRate = 3,
+                       SyncFormat = 4, SyncQuality = 5, SyncPreset = 6, SyncSplitEncode = 7;
     private readonly string _windowTitleBase;
     private DispatcherQueueTimer? _previewStartupWatchdogTimer;
     private DispatcherQueueTimer? _previewStartupTelemetryTimer;
@@ -148,15 +143,19 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
            !_previewFirstVisualConfirmed &&
            _previewStartupState is PreviewStartupState.StartingSession or PreviewStartupState.RendererAttaching or PreviewStartupState.WaitingForFirstVisual;
 
-    private static int ResolveStartupSetting(string envName, int fallbackValue, int minValue, int maxValue)
-    {
-        var raw = Environment.GetEnvironmentVariable(envName);
-        if (!int.TryParse(raw, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
-        {
-            return fallbackValue;
-        }
 
-        return Math.Clamp(parsed, minValue, maxValue);
+    private void ResetPreviewSignalState()
+    {
+        _previewStartupExpectGpuDualSignals = false;
+        _previewGpuSignalMediaOpened = false;
+        _previewGpuSignalFirstFrame = false;
+        _previewGpuSignalPlaybackAdvancing = false;
+        _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
+        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
+        _previewStartupStrategy = PreviewStartupStrategy.None;
+        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
+        _previewStartupPositionEventCount = 0;
+        _previewStartupPlaybackPositionInitialized = false;
     }
 
     private void SetPreviewStartupState(PreviewStartupState state, string? reason = null)
@@ -187,16 +186,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewLastFailureReason = null;
         _previewStartupMissingSignals = null;
         _previewFirstVisualConfirmed = false;
-        _previewStartupExpectGpuDualSignals = false;
-        _previewGpuSignalMediaOpened = false;
-        _previewGpuSignalFirstFrame = false;
-        _previewGpuSignalPlaybackAdvancing = false;
-        _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
-        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
-        _previewStartupStrategy = PreviewStartupStrategy.None;
-        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
-        _previewStartupPositionEventCount = 0;
-        _previewStartupPlaybackPositionInitialized = false;
+        ResetPreviewSignalState();
         Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
         Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, 0);
 
@@ -208,15 +198,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void ConfigurePreviewStartupSignals(PreviewStartupStrategy strategy, PreviewStartupSignalFlags requiredSignals)
     {
+        ResetPreviewSignalState();
         _previewStartupStrategy = strategy;
         _previewStartupRequiredSignals = requiredSignals;
-        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
-        _previewGpuSignalMediaOpened = false;
-        _previewGpuSignalFirstFrame = false;
-        _previewGpuSignalPlaybackAdvancing = false;
-        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
-        _previewStartupPositionEventCount = 0;
-        _previewStartupPlaybackPositionInitialized = false;
         _previewStartupMissingSignals = BuildPreviewStartupMissingSignals();
         Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, 0);
 
@@ -668,16 +652,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _previewLastFailureReason = null;
         _previewStartupMissingSignals = null;
         _previewFirstVisualConfirmed = false;
-        _previewStartupExpectGpuDualSignals = false;
-        _previewGpuSignalMediaOpened = false;
-        _previewGpuSignalFirstFrame = false;
-        _previewGpuSignalPlaybackAdvancing = false;
-        _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
-        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
-        _previewStartupStrategy = PreviewStartupStrategy.None;
-        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
-        _previewStartupPositionEventCount = 0;
-        _previewStartupPlaybackPositionInitialized = false;
+        ResetPreviewSignalState();
         Interlocked.Exchange(ref _previewStartupFailureStopScheduled, 0);
         Interlocked.Exchange(ref _previewStartupLastPositionDispatchTick, 0);
 
@@ -968,6 +943,37 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
     }
 
+    private static void EnsureStringComboBoxSelection(
+        ComboBox comboBox,
+        System.Collections.ObjectModel.ObservableCollection<string> items,
+        Func<string?> getVmProp,
+        Action<string> setVmProp)
+    {
+        if (items.Count == 0)
+        {
+            comboBox.SelectedItem = null;
+            return;
+        }
+
+        var vmValue = getVmProp();
+        var match = items.FirstOrDefault(item => string.Equals(item, vmValue, StringComparison.OrdinalIgnoreCase))
+            ?? items.FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(match))
+        {
+            return;
+        }
+
+        if (!string.Equals(match, vmValue, StringComparison.OrdinalIgnoreCase))
+        {
+            setVmProp(match);
+        }
+
+        if (!string.Equals(comboBox.SelectedItem as string, match, StringComparison.OrdinalIgnoreCase))
+        {
+            comboBox.SelectedItem = match;
+        }
+    }
+
     private void EnsureFormatSelection()
     {
         if (ViewModel.AvailableRecordingFormats.Count == 0)
@@ -980,109 +986,40 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             return;
         }
 
-        var matchingFormat = ViewModel.AvailableRecordingFormats
-            .FirstOrDefault(format => string.Equals(format, ViewModel.SelectedRecordingFormat, StringComparison.OrdinalIgnoreCase))
-            ?? ViewModel.AvailableRecordingFormats.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(matchingFormat))
-        {
-            return;
-        }
-
-        if (!string.Equals(matchingFormat, ViewModel.SelectedRecordingFormat, StringComparison.OrdinalIgnoreCase))
-        {
-            ViewModel.SelectedRecordingFormat = matchingFormat;
-        }
-
-        if (!string.Equals(FormatComboBox.SelectedItem as string, matchingFormat, StringComparison.OrdinalIgnoreCase))
-        {
-            FormatComboBox.SelectedItem = matchingFormat;
-        }
+        EnsureStringComboBoxSelection(FormatComboBox, ViewModel.AvailableRecordingFormats,
+            () => ViewModel.SelectedRecordingFormat, v => ViewModel.SelectedRecordingFormat = v);
     }
 
-    private void EnsureQualitySelection()
+    private void EnsureQualitySelection() =>
+        EnsureStringComboBoxSelection(QualityComboBox, ViewModel.AvailableQualities,
+            () => ViewModel.SelectedQuality, v => ViewModel.SelectedQuality = v);
+
+    private void EnsurePresetSelection() =>
+        EnsureStringComboBoxSelection(PresetComboBox, ViewModel.AvailablePresets,
+            () => ViewModel.SelectedPreset, v => ViewModel.SelectedPreset = v);
+
+    private void EnsureSplitEncodeModeSelection() =>
+        EnsureStringComboBoxSelection(SplitEncodeComboBox, ViewModel.AvailableSplitEncodeModes,
+            () => ViewModel.SelectedSplitEncodeMode, v => ViewModel.SelectedSplitEncodeMode = v);
+
+    private static void AttachCollectionSync(
+        System.Collections.Specialized.INotifyCollectionChanged collection,
+        Action queueSync)
     {
-        if (ViewModel.AvailableQualities.Count == 0)
+        collection.CollectionChanged += (s, e) =>
         {
-            QualityComboBox.SelectedItem = null;
-            return;
-        }
-
-        var matchingQuality = ViewModel.AvailableQualities
-            .FirstOrDefault(quality => string.Equals(quality, ViewModel.SelectedQuality, StringComparison.OrdinalIgnoreCase))
-            ?? ViewModel.AvailableQualities.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(matchingQuality))
-        {
-            return;
-        }
-
-        if (!string.Equals(matchingQuality, ViewModel.SelectedQuality, StringComparison.OrdinalIgnoreCase))
-        {
-            ViewModel.SelectedQuality = matchingQuality;
-        }
-
-        if (!string.Equals(QualityComboBox.SelectedItem as string, matchingQuality, StringComparison.OrdinalIgnoreCase))
-        {
-            QualityComboBox.SelectedItem = matchingQuality;
-        }
+            if (e.Action is System.Collections.Specialized.NotifyCollectionChangedAction.Add
+                or System.Collections.Specialized.NotifyCollectionChangedAction.Reset
+                or System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
+            {
+                queueSync();
+            }
+        };
     }
 
-    private void EnsurePresetSelection()
+    private void QueueSelectionSync(int syncIndex, Action ensureMethod)
     {
-        if (ViewModel.AvailablePresets.Count == 0)
-        {
-            PresetComboBox.SelectedItem = null;
-            return;
-        }
-
-        var matchingPreset = ViewModel.AvailablePresets
-            .FirstOrDefault(preset => string.Equals(preset, ViewModel.SelectedPreset, StringComparison.OrdinalIgnoreCase))
-            ?? ViewModel.AvailablePresets.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(matchingPreset))
-        {
-            return;
-        }
-
-        if (!string.Equals(matchingPreset, ViewModel.SelectedPreset, StringComparison.OrdinalIgnoreCase))
-        {
-            ViewModel.SelectedPreset = matchingPreset;
-        }
-
-        if (!string.Equals(PresetComboBox.SelectedItem as string, matchingPreset, StringComparison.OrdinalIgnoreCase))
-        {
-            PresetComboBox.SelectedItem = matchingPreset;
-        }
-    }
-
-    private void EnsureSplitEncodeModeSelection()
-    {
-        if (ViewModel.AvailableSplitEncodeModes.Count == 0)
-        {
-            SplitEncodeComboBox.SelectedItem = null;
-            return;
-        }
-
-        var matchingMode = ViewModel.AvailableSplitEncodeModes
-            .FirstOrDefault(mode => string.Equals(mode, ViewModel.SelectedSplitEncodeMode, StringComparison.OrdinalIgnoreCase))
-            ?? ViewModel.AvailableSplitEncodeModes.FirstOrDefault();
-        if (string.IsNullOrWhiteSpace(matchingMode))
-        {
-            return;
-        }
-
-        if (!string.Equals(matchingMode, ViewModel.SelectedSplitEncodeMode, StringComparison.OrdinalIgnoreCase))
-        {
-            ViewModel.SelectedSplitEncodeMode = matchingMode;
-        }
-
-        if (!string.Equals(SplitEncodeComboBox.SelectedItem as string, matchingMode, StringComparison.OrdinalIgnoreCase))
-        {
-            SplitEncodeComboBox.SelectedItem = matchingMode;
-        }
-    }
-
-    private void QueueDeviceSelectionSync()
-    {
-        if (Interlocked.Exchange(ref _deviceSelectionSyncQueued, 1) != 0)
+        if (Interlocked.Exchange(ref _selectionSyncQueued[syncIndex], 1) != 0)
         {
             return;
         }
@@ -1091,154 +1028,23 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             try
             {
-                EnsureDeviceSelection();
+                ensureMethod();
             }
             finally
             {
-                Interlocked.Exchange(ref _deviceSelectionSyncQueued, 0);
+                Interlocked.Exchange(ref _selectionSyncQueued[syncIndex], 0);
             }
         });
     }
 
-    private void QueueAudioSelectionSync()
-    {
-        if (Interlocked.Exchange(ref _audioSelectionSyncQueued, 1) != 0)
-        {
-            return;
-        }
-
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            try
-            {
-                EnsureAudioInputSelection();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _audioSelectionSyncQueued, 0);
-            }
-        });
-    }
-
-    private void QueueResolutionSelectionSync()
-    {
-        if (Interlocked.Exchange(ref _resolutionSelectionSyncQueued, 1) != 0)
-        {
-            return;
-        }
-
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            try
-            {
-                EnsureResolutionSelection();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _resolutionSelectionSyncQueued, 0);
-            }
-        });
-    }
-
-    private void QueueFrameRateSelectionSync()
-    {
-        if (Interlocked.Exchange(ref _frameRateSelectionSyncQueued, 1) != 0)
-        {
-            return;
-        }
-
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            try
-            {
-                EnsureFrameRateSelection();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _frameRateSelectionSyncQueued, 0);
-            }
-        });
-    }
-
-    private void QueueFormatSelectionSync()
-    {
-        if (Interlocked.Exchange(ref _formatSelectionSyncQueued, 1) != 0)
-        {
-            return;
-        }
-
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            try
-            {
-                EnsureFormatSelection();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _formatSelectionSyncQueued, 0);
-            }
-        });
-    }
-
-    private void QueueQualitySelectionSync()
-    {
-        if (Interlocked.Exchange(ref _qualitySelectionSyncQueued, 1) != 0)
-        {
-            return;
-        }
-
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            try
-            {
-                EnsureQualitySelection();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _qualitySelectionSyncQueued, 0);
-            }
-        });
-    }
-
-    private void QueuePresetSelectionSync()
-    {
-        if (Interlocked.Exchange(ref _presetSelectionSyncQueued, 1) != 0)
-        {
-            return;
-        }
-
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            try
-            {
-                EnsurePresetSelection();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _presetSelectionSyncQueued, 0);
-            }
-        });
-    }
-
-    private void QueueSplitEncodeModeSelectionSync()
-    {
-        if (Interlocked.Exchange(ref _splitEncodeSelectionSyncQueued, 1) != 0)
-        {
-            return;
-        }
-
-        _dispatcherQueue.TryEnqueue(() =>
-        {
-            try
-            {
-                EnsureSplitEncodeModeSelection();
-            }
-            finally
-            {
-                Interlocked.Exchange(ref _splitEncodeSelectionSyncQueued, 0);
-            }
-        });
-    }
+    private void QueueDeviceSelectionSync() => QueueSelectionSync(SyncDevice, EnsureDeviceSelection);
+    private void QueueAudioSelectionSync() => QueueSelectionSync(SyncAudio, EnsureAudioInputSelection);
+    private void QueueResolutionSelectionSync() => QueueSelectionSync(SyncResolution, EnsureResolutionSelection);
+    private void QueueFrameRateSelectionSync() => QueueSelectionSync(SyncFrameRate, EnsureFrameRateSelection);
+    private void QueueFormatSelectionSync() => QueueSelectionSync(SyncFormat, EnsureFormatSelection);
+    private void QueueQualitySelectionSync() => QueueSelectionSync(SyncQuality, EnsureQualitySelection);
+    private void QueuePresetSelectionSync() => QueueSelectionSync(SyncPreset, EnsurePresetSelection);
+    private void QueueSplitEncodeModeSelectionSync() => QueueSelectionSync(SyncSplitEncode, EnsureSplitEncodeModeSelection);
 
     private long ResolvePreviewExpectedIntervalMs()
     {
@@ -1412,101 +1218,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         PresetComboBox.ItemsSource = ViewModel.AvailablePresets;
         SplitEncodeComboBox.ItemsSource = ViewModel.AvailableSplitEncodeModes;
 
-        ViewModel.Devices.CollectionChanged += (s, e) =>
-        {
-            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
-            {
-                return;
-            }
-
-            QueueDeviceSelectionSync();
-        };
-
-        ViewModel.AudioInputDevices.CollectionChanged += (s, e) =>
-        {
-            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
-            {
-                return;
-            }
-
-            QueueAudioSelectionSync();
-        };
-
-        ViewModel.AvailableResolutions.CollectionChanged += (s, e) =>
-        {
-            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
-            {
-                return;
-            }
-
-            QueueResolutionSelectionSync();
-        };
-
-        // Subscribe to collection changes to sync SelectedItem after items are added
-        ViewModel.AvailableFrameRates.CollectionChanged += (s, e) =>
-        {
-            // After items are added, sync the selected frame rate
-            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add ||
-                e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Reset ||
-                e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
-            {
-                QueueFrameRateSelectionSync();
-            }
-        };
-
-        ViewModel.AvailableRecordingFormats.CollectionChanged += (s, e) =>
-        {
-            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
-            {
-                return;
-            }
-
-            QueueFormatSelectionSync();
-        };
-
-        ViewModel.AvailableQualities.CollectionChanged += (s, e) =>
-        {
-            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
-            {
-                return;
-            }
-
-            QueueQualitySelectionSync();
-        };
-
-        ViewModel.AvailablePresets.CollectionChanged += (s, e) =>
-        {
-            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
-            {
-                return;
-            }
-
-            QueuePresetSelectionSync();
-        };
-
-        ViewModel.AvailableSplitEncodeModes.CollectionChanged += (s, e) =>
-        {
-            if (e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Add &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Reset &&
-                e.Action != System.Collections.Specialized.NotifyCollectionChangedAction.Remove)
-            {
-                return;
-            }
-
-            QueueSplitEncodeModeSelectionSync();
-        };
+        AttachCollectionSync(ViewModel.Devices, QueueDeviceSelectionSync);
+        AttachCollectionSync(ViewModel.AudioInputDevices, QueueAudioSelectionSync);
+        AttachCollectionSync(ViewModel.AvailableResolutions, QueueResolutionSelectionSync);
+        AttachCollectionSync(ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);
+        AttachCollectionSync(ViewModel.AvailableRecordingFormats, QueueFormatSelectionSync);
+        AttachCollectionSync(ViewModel.AvailableQualities, QueueQualitySelectionSync);
+        AttachCollectionSync(ViewModel.AvailablePresets, QueuePresetSelectionSync);
+        AttachCollectionSync(ViewModel.AvailableSplitEncodeModes, QueueSplitEncodeModeSelectionSync);
 
         // Set initial values
         OutputPathTextBox.Text = ViewModel.OutputPath;
@@ -1679,23 +1398,23 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         CaptureSettingsGrid.SizeChanged += CaptureSettingsGrid_SizeChanged;
     }
 
+    private FrameworkElement[] GetControlBarButtons() => new FrameworkElement[]
+    {
+        SettingsToggleButton,
+        OpenRecordingsButton,
+        ScreenshotButton,
+        RecordButton,
+        PreviewButton,
+        HdrToggle,
+        AudioRecordToggle,
+        TrueHdrPreviewToggle,
+        AudioPreviewToggle,
+        StatsToggle
+    };
+
     private void SetupButtonHoverAnimations()
     {
-        var buttons = new FrameworkElement[]
-        {
-            SettingsToggleButton,
-            OpenRecordingsButton,
-            ScreenshotButton,
-            RecordButton,
-            PreviewButton,
-            HdrToggle,
-            AudioRecordToggle,
-            TrueHdrPreviewToggle,
-            AudioPreviewToggle,
-            StatsToggle
-        };
-
-        foreach (var button in buttons)
+        foreach (var button in GetControlBarButtons())
         {
             var isHovered = false;
             button.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 0.5);
@@ -1737,22 +1456,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
     }
 
-    private FrameworkElement[] GetEntranceButtons()
-    {
-        return new FrameworkElement[]
-        {
-            SettingsToggleButton,
-            OpenRecordingsButton,
-            ScreenshotButton,
-            RecordButton,
-            PreviewButton,
-            HdrToggle,
-            AudioRecordToggle,
-            TrueHdrPreviewToggle,
-            AudioPreviewToggle,
-            StatsToggle
-        };
-    }
+    private FrameworkElement[] GetEntranceButtons() => GetControlBarButtons();
 
     private void UpdateToggleLabelVisibility(double controlBarWidth)
     {
@@ -2298,6 +2002,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
 
         _isWindowClosing = true;
+        _audioMeterAnimationTimer?.Stop();
+        _audioMeterAnimationTimer = null;
         StopStatsDockPolling();
         HideStatsDockPanel(immediate: true);
         RecordingGlowPulseStoryboard.Stop();
@@ -2855,12 +2561,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         throw new InvalidOperationException("Failed to enqueue preview snapshot operation.");
     }
 
-    private void StopPreviewForShutdown()
+    private void CleanupPreviewResources()
     {
-        _isPreviewReinitAnimating = false;
-        StopPreviewFadeInTimer();
-        ResetPreviewContentTransform();
-
         // Clean up composition shadow
         _videoShadowVisual = null;
         ElementCompositionPreview.SetElementChildVisual(VideoShadowHost, null);
@@ -2878,21 +2580,20 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
         ViewModel.SetPreviewFrameSink(null);
         SetGpuPreviewVisibility(Visibility.Collapsed);
-        _previewStartupExpectGpuDualSignals = false;
-        _previewGpuSignalMediaOpened = false;
-        _previewGpuSignalFirstFrame = false;
-        _previewGpuSignalPlaybackAdvancing = false;
-        _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
-        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
-        _previewStartupStrategy = PreviewStartupStrategy.None;
-        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
-        _previewStartupPositionEventCount = 0;
-        _previewStartupPlaybackPositionInitialized = false;
+        ResetPreviewSignalState();
 
         // Clean up CPU preview
         PreviewImage.Source = null;
         PreviewImage.Visibility = Visibility.Collapsed;
         _previewSource = null;
+    }
+
+    private void StopPreviewForShutdown()
+    {
+        _isPreviewReinitAnimating = false;
+        StopPreviewFadeInTimer();
+        ResetPreviewContentTransform();
+        CleanupPreviewResources();
     }
 
     private void ViewModel_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
@@ -3420,41 +3121,26 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         return Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
     }
 
-    public Task MinimizeAsync(CancellationToken cancellationToken = default)
+    private Task PresenterActionAsync(Action<Microsoft.UI.Windowing.OverlappedPresenter> action, CancellationToken cancellationToken = default)
     {
         return InvokeOnUiThreadAsync(() =>
         {
             var appWindow = GetAppWindow();
             if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
             {
-                presenter.Minimize();
+                action(presenter);
             }
         }, cancellationToken);
     }
 
-    public Task MaximizeAsync(CancellationToken cancellationToken = default)
-    {
-        return InvokeOnUiThreadAsync(() =>
-        {
-            var appWindow = GetAppWindow();
-            if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
-            {
-                presenter.Maximize();
-            }
-        }, cancellationToken);
-    }
+    public Task MinimizeAsync(CancellationToken cancellationToken = default) =>
+        PresenterActionAsync(p => p.Minimize(), cancellationToken);
 
-    public Task RestoreAsync(CancellationToken cancellationToken = default)
-    {
-        return InvokeOnUiThreadAsync(() =>
-        {
-            var appWindow = GetAppWindow();
-            if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)
-            {
-                presenter.Restore();
-            }
-        }, cancellationToken);
-    }
+    public Task MaximizeAsync(CancellationToken cancellationToken = default) =>
+        PresenterActionAsync(p => p.Maximize(), cancellationToken);
+
+    public Task RestoreAsync(CancellationToken cancellationToken = default) =>
+        PresenterActionAsync(p => p.Restore(), cancellationToken);
 
     public Task MoveToAsync(int x, int y, CancellationToken cancellationToken = default)
     {
@@ -4001,38 +3687,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private Task StopPreviewRendererAsync()
     {
-        // Clean up composition shadow
-        _videoShadowVisual = null;
-        ElementCompositionPreview.SetElementChildVisual(VideoShadowHost, null);
-
-        // Clean up D3D11 preview path
-        PreviewContentGrid.SizeChanged -= OnPreviewContentGridSizeChanged;
-        var renderer = _d3dRenderer;
-        _d3dRenderer = null;
-        if (renderer != null)
-        {
-            PreviewSwapChainPanel.SizeChanged -= OnPreviewSwapChainPanelSizeChanged;
-            renderer.FirstFrameRendered -= OnD3DRendererFirstFrameRendered;
-            renderer.Stop();
-            renderer.Dispose();
-        }
-        ViewModel.SetPreviewFrameSink(null);
-        SetGpuPreviewVisibility(Visibility.Collapsed);
-        _previewStartupExpectGpuDualSignals = false;
-        _previewGpuSignalMediaOpened = false;
-        _previewGpuSignalFirstFrame = false;
-        _previewGpuSignalPlaybackAdvancing = false;
-        _previewStartupRequiredSignals = PreviewStartupSignalFlags.None;
-        _previewStartupReceivedSignals = PreviewStartupSignalFlags.None;
-        _previewStartupStrategy = PreviewStartupStrategy.None;
-        _previewStartupLastPlaybackPosition = TimeSpan.Zero;
-        _previewStartupPlaybackPositionInitialized = false;
-
-        // Clean up CPU preview path
-        PreviewImage.Source = null;
-        PreviewImage.Visibility = Visibility.Collapsed;
-        _previewSource = null;
-
+        CleanupPreviewResources();
         _previewLastPresentedTick = 0;
         _previewMinPresentationIntervalMs = Math.Max(1L, (long)Math.Round(1000.0 / 60.0));
         Logger.Log("Preview renderer stopped.");
@@ -4111,7 +3766,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioRangeMinTranslate.X = 0;
         AudioRangeMaxTranslate.X = 0;
         _audioMeterTargetLevel = 0;
-        _audioMeterDisplayLevel = 0;
     }
 
     private void InitializeAudioMeterBrushes()
@@ -4256,88 +3910,40 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         return tcs.Task;
     }
 
-    private Task AnimatePreviewOutAsync()
+    private Task AnimatePreviewTransitionAsync(double opacityTarget, double scaleTarget, int durationMs, EasingMode easingMode)
     {
-        var duration = TimeSpan.FromMilliseconds(200);
+        var duration = TimeSpan.FromMilliseconds(durationMs);
+        var easing = new CubicEase { EasingMode = easingMode };
 
-        var fadeOut = new DoubleAnimation
-        {
-            To = 0.0,
-            Duration = new Duration(duration),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
-        Storyboard.SetTarget(fadeOut, PreviewContentGrid);
-        Storyboard.SetTargetProperty(fadeOut, "Opacity");
+        var fade = new DoubleAnimation { To = opacityTarget, Duration = new Duration(duration), EasingFunction = easing };
+        Storyboard.SetTarget(fade, PreviewContentGrid);
+        Storyboard.SetTargetProperty(fade, "Opacity");
 
-        var scaleX = new DoubleAnimation
-        {
-            To = 0.97,
-            Duration = new Duration(duration),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
+        var scaleX = new DoubleAnimation { To = scaleTarget, Duration = new Duration(duration), EasingFunction = easing };
         Storyboard.SetTarget(scaleX, PreviewContentScale);
         Storyboard.SetTargetProperty(scaleX, "ScaleX");
 
-        var scaleY = new DoubleAnimation
-        {
-            To = 0.97,
-            Duration = new Duration(duration),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        };
+        var scaleY = new DoubleAnimation { To = scaleTarget, Duration = new Duration(duration), EasingFunction = easing };
         Storyboard.SetTarget(scaleY, PreviewContentScale);
         Storyboard.SetTargetProperty(scaleY, "ScaleY");
 
         var storyboard = new Storyboard();
-        storyboard.Children.Add(fadeOut);
+        storyboard.Children.Add(fade);
         storyboard.Children.Add(scaleX);
         storyboard.Children.Add(scaleY);
-
-        // Fade out the video shadow first (shorter duration so it recedes before the preview)
-        FadeOutShadow(_videoShadowVisual, durationMs: 150);
-
         return BeginStoryboardAsync(storyboard);
+    }
+
+    private Task AnimatePreviewOutAsync()
+    {
+        FadeOutShadow(_videoShadowVisual, durationMs: 150);
+        return AnimatePreviewTransitionAsync(0.0, 0.97, 200, EasingMode.EaseIn);
     }
 
     private Task AnimatePreviewInAsync()
     {
-        var duration = TimeSpan.FromMilliseconds(250);
-
-        var fadeIn = new DoubleAnimation
-        {
-            To = 1.0,
-            Duration = new Duration(duration),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(fadeIn, PreviewContentGrid);
-        Storyboard.SetTargetProperty(fadeIn, "Opacity");
-
-        var scaleX = new DoubleAnimation
-        {
-            To = 1.0,
-            Duration = new Duration(duration),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(scaleX, PreviewContentScale);
-        Storyboard.SetTargetProperty(scaleX, "ScaleX");
-
-        var scaleY = new DoubleAnimation
-        {
-            To = 1.0,
-            Duration = new Duration(duration),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(scaleY, PreviewContentScale);
-        Storyboard.SetTargetProperty(scaleY, "ScaleY");
-
-        var storyboard = new Storyboard();
-        storyboard.Children.Add(fadeIn);
-        storyboard.Children.Add(scaleX);
-        storyboard.Children.Add(scaleY);
-
-        // Video shadow gains depth alongside the preview
         FadeInShadow(_videoShadowVisual, delayMs: 0, durationMs: 400);
-
-        return BeginStoryboardAsync(storyboard);
+        return AnimatePreviewTransitionAsync(1.0, 1.0, 250, EasingMode.EaseOut);
     }
 
 
@@ -4527,70 +4133,57 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
     }
 
-    private void ShowSettingsShelf()
+    private void AnimateSettingsShelf(bool show)
     {
         _isSettingsShelfAnimating = true;
-        SettingsOverlayPanel.Opacity = 0;
-        SettingsOverlayPanel.Visibility = Visibility.Visible;
-        SettingsShelfTranslate.Y = 40;
-        var storyboard = new Storyboard();
-        var fade = new DoubleAnimation
-        {
-            From = 0,
-            To = 1,
-            Duration = TimeSpan.FromMilliseconds(250),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(fade, SettingsOverlayPanel);
-        Storyboard.SetTargetProperty(fade, "Opacity");
-        var slide = new DoubleAnimation
-        {
-            From = 40,
-            To = 0,
-            Duration = TimeSpan.FromMilliseconds(250),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-        };
-        Storyboard.SetTarget(slide, SettingsShelfTranslate);
-        Storyboard.SetTargetProperty(slide, "Y");
-        storyboard.Children.Add(fade);
-        storyboard.Children.Add(slide);
-        storyboard.Completed += (_, _) => _isSettingsShelfAnimating = false;
-        storyboard.Begin();
-    }
+        var durationMs = show ? 250 : 200;
+        var easing = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn };
 
-    private void HideSettingsShelf()
-    {
-        _isSettingsShelfAnimating = true;
-        var storyboard = new Storyboard();
+        if (show)
+        {
+            SettingsOverlayPanel.Opacity = 0;
+            SettingsOverlayPanel.Visibility = Visibility.Visible;
+            SettingsShelfTranslate.Y = 40;
+        }
+
         var fade = new DoubleAnimation
         {
-            From = 1,
-            To = 0,
-            Duration = TimeSpan.FromMilliseconds(200),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+            From = show ? 0 : 1,
+            To = show ? 1 : 0,
+            Duration = TimeSpan.FromMilliseconds(durationMs),
+            EasingFunction = easing
         };
         Storyboard.SetTarget(fade, SettingsOverlayPanel);
         Storyboard.SetTargetProperty(fade, "Opacity");
+
         var slide = new DoubleAnimation
         {
-            From = 0,
-            To = 40,
-            Duration = TimeSpan.FromMilliseconds(200),
-            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+            From = show ? 40 : 0,
+            To = show ? 0 : 40,
+            Duration = TimeSpan.FromMilliseconds(durationMs),
+            EasingFunction = easing
         };
         Storyboard.SetTarget(slide, SettingsShelfTranslate);
         Storyboard.SetTargetProperty(slide, "Y");
+
+        var storyboard = new Storyboard();
         storyboard.Children.Add(fade);
         storyboard.Children.Add(slide);
         storyboard.Completed += (_, _) =>
         {
-            SettingsOverlayPanel.Visibility = Visibility.Collapsed;
-            SettingsOverlayPanel.Opacity = 1;
-            SettingsShelfTranslate.Y = 0;
+            if (!show)
+            {
+                SettingsOverlayPanel.Visibility = Visibility.Collapsed;
+                SettingsOverlayPanel.Opacity = 1;
+                SettingsShelfTranslate.Y = 0;
+            }
             _isSettingsShelfAnimating = false;
         };
         storyboard.Begin();
     }
+
+    private void ShowSettingsShelf() => AnimateSettingsShelf(show: true);
+    private void HideSettingsShelf() => AnimateSettingsShelf(show: false);
 
     #region Minimum window size (Win32 interop)
 

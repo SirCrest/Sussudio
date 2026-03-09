@@ -12,6 +12,7 @@ namespace ElgatoCapture.Services;
 
 public sealed class RecordingVerifier : IRecordingVerifier
 {
+    private static readonly Lazy<string> CachedFfprobePath = new(FindFfprobePath);
     private readonly IProcessSupervisor _processSupervisor;
     private readonly string _ffprobePath;
     private readonly record struct CadenceMetrics(
@@ -35,7 +36,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
         bool? MetadataPresent,
         IReadOnlyList<string> SideDataTypes);
 
-    public RecordingVerifier() : this(new ProcessSupervisor(), FindFfprobePath())
+    public RecordingVerifier() : this(new ProcessSupervisor(), CachedFfprobePath.Value)
     {
     }
 
@@ -52,59 +53,23 @@ public sealed class RecordingVerifier : IRecordingVerifier
     {
         if (string.IsNullOrWhiteSpace(outputPath))
         {
-            return new RecordingVerificationResult
-            {
-                Succeeded = false,
-                Message = "No output file path is available for verification.",
-                OutputPath = outputPath,
-                VerificationMode = "none",
-                PrimaryMismatchCode = "missing-output-path",
-                Mismatches = new[] { "missing-output-path" }
-            };
+            return CreateEarlyFailure(outputPath, "No output file path is available for verification.", "missing-output-path");
         }
 
         if (!File.Exists(outputPath))
         {
-            return new RecordingVerificationResult
-            {
-                Succeeded = false,
-                Message = $"Output file does not exist: {outputPath}",
-                OutputPath = outputPath,
-                VerificationMode = "none",
-                PrimaryMismatchCode = "output-not-found",
-                Mismatches = new[] { "output-not-found" }
-            };
+            return CreateEarlyFailure(outputPath, $"Output file does not exist: {outputPath}", "output-not-found");
         }
 
         var fileSize = new FileInfo(outputPath).Length;
         if (fileSize <= 0)
         {
-            return new RecordingVerificationResult
-            {
-                Succeeded = false,
-                Message = $"Output file is empty: {outputPath}",
-                OutputPath = outputPath,
-                FileExists = true,
-                FileSizeBytes = fileSize,
-                VerificationMode = "none",
-                PrimaryMismatchCode = "output-empty",
-                Mismatches = new[] { "output-empty" }
-            };
+            return CreateEarlyFailure(outputPath, $"Output file is empty: {outputPath}", "output-empty", fileExists: true, fileSizeBytes: fileSize);
         }
 
         if (!await CanRunFfprobeAsync(cancellationToken).ConfigureAwait(false))
         {
-            return new RecordingVerificationResult
-            {
-                Succeeded = false,
-                Message = "Strict verification failed: ffprobe is not accessible.",
-                OutputPath = outputPath,
-                FileExists = true,
-                FileSizeBytes = fileSize,
-                VerificationMode = "none",
-                PrimaryMismatchCode = "ffprobe-unavailable",
-                Mismatches = new[] { "ffprobe-unavailable" }
-            };
+            return CreateEarlyFailure(outputPath, "Strict verification failed: ffprobe is not accessible.", "ffprobe-unavailable", fileExists: true, fileSizeBytes: fileSize);
         }
 
         var ffprobeArgs =
@@ -159,14 +124,17 @@ public sealed class RecordingVerifier : IRecordingVerifier
         var detectedWidth = TryParseUInt(widthRaw);
         var detectedHeight = TryParseUInt(heightRaw);
         var detectedFrameRate = TryParseRational(avgFpsRaw) ?? TryParseRational(rFpsRaw);
-        var hdrSideDataProbe = runtimeSnapshot.RequestedHdrEnabled ?? false
-            ? await ProbeHdrSideDataAsync(outputPath, cancellationToken).ConfigureAwait(false)
-            : new HdrSideDataProbeResult(null, Array.Empty<string>());
         var expectedFrameRate = ResolveExpectedFrameRate(runtimeSnapshot);
-        var cadenceMetrics = await AnalyzeCadenceMetricsAsync(
+        var hdrSideDataTask = (runtimeSnapshot.RequestedHdrEnabled ?? false)
+            ? ProbeHdrSideDataAsync(outputPath, cancellationToken)
+            : Task.FromResult(new HdrSideDataProbeResult(null, Array.Empty<string>()));
+        var cadenceTask = AnalyzeCadenceMetricsAsync(
             outputPath,
             expectedFrameRate ?? detectedFrameRate,
-            cancellationToken).ConfigureAwait(false);
+            cancellationToken);
+        await Task.WhenAll(hdrSideDataTask, cadenceTask).ConfigureAwait(false);
+        var hdrSideDataProbe = await hdrSideDataTask.ConfigureAwait(false);
+        var cadenceMetrics = await cadenceTask.ConfigureAwait(false);
         if ((!detectedFrameRate.HasValue || detectedFrameRate.Value <= 0) &&
             cadenceMetrics.HasValue &&
             cadenceMetrics.Value.ObservedFps > 0)
@@ -685,9 +653,9 @@ public sealed class RecordingVerifier : IRecordingVerifier
                    (double)runtimeSnapshot.RequestedFrameRateDenominator.Value;
         }
 
-        if (TryParseRational(runtimeSnapshot.RequestedFrameRateArg).HasValue)
+        if (TryParseRational(runtimeSnapshot.RequestedFrameRateArg) is { } parsedArg)
         {
-            return TryParseRational(runtimeSnapshot.RequestedFrameRateArg);
+            return parsedArg;
         }
 
         return runtimeSnapshot.RequestedFrameRate;
@@ -880,19 +848,16 @@ public sealed class RecordingVerifier : IRecordingVerifier
         {
             var (code, expected, actual) = ParsePrimaryMismatch(new[] { mismatch });
             var normalizedCode = code ?? mismatch;
-            var category = normalizedCode.StartsWith("pixfmt", StringComparison.OrdinalIgnoreCase)
-                ? "HDR"
-                : normalizedCode.StartsWith("colorimetry", StringComparison.OrdinalIgnoreCase)
-                    ? "Colorimetry"
-                    : normalizedCode.StartsWith("hdr-metadata", StringComparison.OrdinalIgnoreCase)
-                        ? "HDR"
-                        : normalizedCode.StartsWith("cadence", StringComparison.OrdinalIgnoreCase)
-                            ? "Cadence"
-                            : normalizedCode.StartsWith("fps", StringComparison.OrdinalIgnoreCase)
-                                ? "Timing"
-                                : normalizedCode.StartsWith("resolution", StringComparison.OrdinalIgnoreCase)
-                                    ? "Geometry"
-                                    : "General";
+            var category = normalizedCode switch
+            {
+                var c when c.StartsWith("pixfmt", StringComparison.OrdinalIgnoreCase) => "HDR",
+                var c when c.StartsWith("colorimetry", StringComparison.OrdinalIgnoreCase) => "Colorimetry",
+                var c when c.StartsWith("hdr-metadata", StringComparison.OrdinalIgnoreCase) => "HDR",
+                var c when c.StartsWith("cadence", StringComparison.OrdinalIgnoreCase) => "Cadence",
+                var c when c.StartsWith("fps", StringComparison.OrdinalIgnoreCase) => "Timing",
+                var c when c.StartsWith("resolution", StringComparison.OrdinalIgnoreCase) => "Geometry",
+                _ => "General"
+            };
             var severity = category is "HDR" or "Colorimetry"
                 ? "Error"
                 : category == "Cadence"
@@ -934,6 +899,21 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
         return detail[start..end].Trim();
     }
+
+    private static RecordingVerificationResult CreateEarlyFailure(
+        string? outputPath, string message, string mismatchCode,
+        bool fileExists = false, long? fileSizeBytes = null)
+        => new()
+        {
+            Succeeded = false,
+            Message = message,
+            OutputPath = outputPath,
+            FileExists = fileExists,
+            FileSizeBytes = fileSizeBytes ?? 0,
+            VerificationMode = "none",
+            PrimaryMismatchCode = mismatchCode,
+            Mismatches = new[] { mismatchCode }
+        };
 
     private static string FindFfprobePath()
     {

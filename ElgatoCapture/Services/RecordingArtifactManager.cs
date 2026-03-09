@@ -31,6 +31,8 @@ public sealed class RecordingArtifactManager
             settings.GetOutputFileName(),
             CreationCollisionOption.GenerateUniqueName);
 
+        var hdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
+
         if (!usePostMuxAudio)
         {
             return new RecordingContext
@@ -46,7 +48,7 @@ public sealed class RecordingArtifactManager
                 EffectiveWidth = effectiveWidth,
                 EffectiveHeight = effectiveHeight,
                 VideoInputPixelFormat = videoInputPixelFormat,
-                HdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
+                HdrPipelineActive = hdrPipelineActive
             };
         }
 
@@ -74,7 +76,7 @@ public sealed class RecordingArtifactManager
             EffectiveWidth = effectiveWidth,
             EffectiveHeight = effectiveHeight,
             VideoInputPixelFormat = videoInputPixelFormat,
-            HdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
+            HdrPipelineActive = hdrPipelineActive
         };
     }
 

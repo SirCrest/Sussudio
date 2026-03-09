@@ -393,10 +393,5 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     }
 
     private void ThrowIfDisposed()
-    {
-        if (_disposed)
-        {
-            throw new ObjectDisposedException(nameof(UnifiedVideoCapture));
-        }
-    }
+        => ObjectDisposedException.ThrowIf(_disposed, this);
 }

@@ -325,19 +325,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         if (TryReadInt32(cable.Response, out var cableState) && cableState == 0)
         {
             Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=no-cable");
-            return new NodeReadAttempt(
-                new SourceSignalTelemetrySnapshot
-                {
-                    TimestampUtc = DateTimeOffset.UtcNow,
-                    Availability = SourceTelemetryAvailability.Unavailable,
-                    Origin = SourceTelemetryOrigin.NativeXu,
-                    OriginDetail = $"NativeXu:{interfacePath}",
-                    Confidence = SourceTelemetryConfidence.Unknown,
-                    DiagnosticSummary = "nativexu-no-cable"
-                },
-                false,
-                "nativexu-no-cable",
-                interfacePath);
+            return CreateUnavailableNodeResult(interfacePath, "nativexu-no-cable");
         }
 
         var videoStable = SendAtCommand(handle, nodeId, "VideoStable", CmdVideoStable);
@@ -349,19 +337,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         if (TryReadInt32(videoStable.Response, out var stableValue) && stableValue == 0)
         {
             Logger.Log($"NATIVEXU_SIGNAL_UNAVAILABLE path='{interfacePath}' node={nodeId} reason=signal-unstable");
-            return new NodeReadAttempt(
-                new SourceSignalTelemetrySnapshot
-                {
-                    TimestampUtc = DateTimeOffset.UtcNow,
-                    Availability = SourceTelemetryAvailability.Unavailable,
-                    Origin = SourceTelemetryOrigin.NativeXu,
-                    OriginDetail = $"NativeXu:{interfacePath}",
-                    Confidence = SourceTelemetryConfidence.Unknown,
-                    DiagnosticSummary = "nativexu-signal-unstable"
-                },
-                false,
-                "nativexu-signal-unstable",
-                interfacePath);
+            return CreateUnavailableNodeResult(interfacePath, "nativexu-signal-unstable");
         }
 
         var vicResult = SendAtCommand(handle, nodeId, "VIC", CmdVic);
@@ -400,7 +376,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         }
         var systemInfo = systemInfoResult.Success ? DecodeCString(systemInfoResult.Response) : null;
         var vicCode = vicResult.Success ? ExtractInt32AsVicCode(vicResult.Response) : null;
-        var vfreqHz100 = vfreqResult.Success ? TryReadInt32Value(vfreqResult.Response) : null;
+        var vfreqHz100 = vfreqResult.Success && TryReadInt32(vfreqResult.Response, out var vfreqRaw) ? (int?)vfreqRaw : null;
         var timing = vicCode.HasValue && VicTimingMap.TryGetValue(vicCode.Value, out var mappedTiming)
             ? mappedTiming
             : (VicTiming?)null;
@@ -504,6 +480,9 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             null);
     }
 
+    private static NodeReadAttempt CreateUnavailableNodeResult(string interfacePath, string reason)
+        => new(null, false, reason, interfacePath);
+
     private static NodeReadAttempt HandleFailedCommand(string reason, string interfacePath, AtCommandResult result)
     {
         if (IsUnsupportedNodeFailure(result.Win32Code))
@@ -531,13 +510,13 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         if (!KsExtensionUnitNative.TryXuSetViaOutput(handle, nodeId, XuGuid, AtTriggerSelector, triggerData, out var triggerWin32))
         {
             Logger.Log($"NATIVEXU_AT_FAILED cmd={name} code=0x{cmdCode:X2} stage=trigger win32={FormatWin32Code(triggerWin32)}");
-            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, triggerWin32, "trigger");
+            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), triggerWin32, "trigger");
         }
 
         if (!KsExtensionUnitNative.TryXuSetViaOutput(handle, nodeId, XuGuid, AtPayloadSelector, requestFrame, out var sendWin32))
         {
             Logger.Log($"NATIVEXU_AT_FAILED cmd={name} code=0x{cmdCode:X2} stage=send win32={FormatWin32Code(sendWin32)}");
-            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, sendWin32, "send");
+            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), sendWin32, "send");
         }
 
         if (!KsExtensionUnitNative.TryXuGetDirect(
@@ -551,7 +530,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 out var lengthWin32))
         {
             Logger.Log($"NATIVEXU_AT_FAILED cmd={name} code=0x{cmdCode:X2} stage=getlength win32={FormatWin32Code(lengthWin32)}");
-            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, lengthWin32, "getlength");
+            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), lengthWin32, "getlength");
         }
 
         var responseFrameLen = lengthBytes >= 2
@@ -561,7 +540,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         if (responseFrameLen <= 0 || responseFrameLen > MaxAtResponseFrameSize)
         {
             Logger.Log($"NATIVEXU_AT_FAILED cmd={name} code=0x{cmdCode:X2} stage=framelen len={responseFrameLen}");
-            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, null, "framelen");
+            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), null, "framelen");
         }
 
         if (!KsExtensionUnitNative.TryXuGetDirect(
@@ -575,14 +554,14 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 out var responseWin32))
         {
             Logger.Log($"NATIVEXU_AT_FAILED cmd={name} code=0x{cmdCode:X2} stage=getresponse win32={FormatWin32Code(responseWin32)}");
-            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), 0, responseWin32, "getresponse");
+            return new AtCommandResult(name, cmdCode, false, Array.Empty<byte>(), responseWin32, "getresponse");
         }
 
         var rawData = StripAtFrameEnvelope(responseFrame, responseBytes);
         Logger.Log(
             $"NATIVEXU_AT cmd={name} code=0x{cmdCode:X2} frameLen={responseFrameLen} " +
             $"rawBytes={rawData.Length} preview={GetHexPreview(rawData, rawData.Length, 32)}");
-        return new AtCommandResult(name, cmdCode, true, rawData, rawData.Length, null, null);
+        return new AtCommandResult(name, cmdCode, true, rawData, null, null);
     }
 
     private static bool SendAtSetCommand(SafeFileHandle handle, int nodeId, int cmdCode, byte[] inputData)
@@ -677,16 +656,6 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 
         var value = BitConverter.ToInt32(buffer, 0);
         return value > 0 ? value : null;
-    }
-
-    private static int? TryReadInt32Value(byte[] buffer)
-    {
-        if (buffer.Length < 4)
-        {
-            return null;
-        }
-
-        return BitConverter.ToInt32(buffer, 0);
     }
 
     private static AviInfoFrameInfo DecodeAviInfoFrame(byte[] buffer)
@@ -999,7 +968,10 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     }
 
     private static bool IsUnsupportedNodeFailure(int? win32Code)
-        => win32Code is 1168 or 1170 or 87 or 1;
+        => win32Code is KsExtensionUnitNative.ErrorNotFound
+            or KsExtensionUnitNative.ErrorSetNotFound
+            or KsExtensionUnitNative.ErrorInvalidParameter
+            or KsExtensionUnitNative.ErrorInvalidFunction;
 
     private static string DescribeCommandFailure(string interfacePath, AtCommandResult result)
         => $"{interfacePath}: {result.Name}:{result.FailureStage ?? "unknown"} win32={FormatWin32Code(result.Win32Code)}";
@@ -1057,7 +1029,6 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         int CommandCode,
         bool Success,
         byte[] Response,
-        int BytesReturned,
         int? Win32Code,
         string? FailureStage);
 

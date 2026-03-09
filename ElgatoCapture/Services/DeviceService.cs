@@ -75,13 +75,7 @@ public class DeviceService
         "pro"
     };
 
-    private static readonly Regex DshowMinMaxRegex = new(
-        @"(?:pixel_format|vcodec)=(?<pix>[^\s,]+).*?min s=(?<minw>\d+)x(?<minh>\d+) fps=(?<minfps>[\d\.]+).*?max s=(?<maxw>\d+)x(?<maxh>\d+) fps=(?<maxfps>[\d\.]+)",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
-
-    private static readonly Regex DshowSingleRegex = new(
-        @"(?:pixel_format|vcodec)=(?<pix>[^\s,]+).*?s=(?<w>\d+)x(?<h>\d+).*?fps=(?<fps>[\d\.]+)",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+    private static readonly Regex TokenizeRegex = new("[A-Za-z0-9\\+]+", RegexOptions.Compiled);
 
     public string LastDiscoverySummary { get; private set; } = "No discovery run yet";
     public event EventHandler<DeviceFormatProbeCompletedEventArgs>? FormatProbeCompleted;
@@ -95,8 +89,11 @@ public class DeviceService
         List<AudioInputDevice> audioDevices;
         try
         {
-            videoDevices = await MfDeviceEnumerator.EnumerateVideoDevicesAsync().ConfigureAwait(false);
-            audioDevices = await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync().ConfigureAwait(false);
+            var videoTask = MfDeviceEnumerator.EnumerateVideoDevicesAsync();
+            var audioTask = MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();
+            await Task.WhenAll(videoTask, audioTask).ConfigureAwait(false);
+            videoDevices = videoTask.Result;
+            audioDevices = audioTask.Result;
         }
         catch (Exception ex)
         {
@@ -208,7 +205,7 @@ public class DeviceService
                     probeDevice.IsHdrCapable,
                     hasEnumeratedFormats,
                     requestId,
-                    error: null));
+                    Error: null));
         }
         catch (Exception ex)
         {
@@ -219,10 +216,10 @@ public class DeviceService
                     deviceId,
                     deviceName,
                     Array.Empty<MediaFormat>(),
-                    isHdrCapable: false,
-                    hasEnumeratedFormats: false,
+                    IsHdrCapable: false,
+                    HasEnumeratedFormats: false,
                     requestId,
-                    error: ex.Message));
+                    Error: ex.Message));
         }
         finally
         {
@@ -231,24 +228,16 @@ public class DeviceService
     }
 
     private static IReadOnlyList<MediaFormat> CloneFormats(IEnumerable<MediaFormat> formats)
-    {
-        var clone = new List<MediaFormat>();
-        foreach (var format in formats)
+        => formats.Select(f => new MediaFormat
         {
-            clone.Add(new MediaFormat
-            {
-                Width = format.Width,
-                Height = format.Height,
-                FrameRate = format.FrameRate,
-                FrameRateNumerator = format.FrameRateNumerator,
-                FrameRateDenominator = format.FrameRateDenominator,
-                PixelFormat = format.PixelFormat,
-                IsHdr = format.IsHdr
-            });
-        }
-
-        return clone;
-    }
+            Width = f.Width,
+            Height = f.Height,
+            FrameRate = f.FrameRate,
+            FrameRateNumerator = f.FrameRateNumerator,
+            FrameRateDenominator = f.FrameRateDenominator,
+            PixelFormat = f.PixelFormat,
+            IsHdr = f.IsHdr
+        }).ToList();
 
     private static readonly string FormatCacheDirectory =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElgatoCapture");
@@ -472,7 +461,7 @@ public class DeviceService
     private static HashSet<string> Tokenize(string text)
     {
         var tokens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (Match match in Regex.Matches(text, "[A-Za-z0-9\\+]+"))
+        foreach (Match match in TokenizeRegex.Matches(text))
         {
             var token = match.Value.Trim();
             if (token.Length >= 2)
@@ -488,9 +477,8 @@ public class DeviceService
     {
         try
         {
-            var uniqueFormats = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var uniqueFormats = new HashSet<MediaFormat>();
             device.IsHdrCapable = false;
-            device.SupportedFormats.Clear();
 
             var nativeFormats = await MfDeviceEnumerator.ProbeVideoFormatsAsync(device.Id).ConfigureAwait(false);
             foreach (var nativeFormat in nativeFormats)
@@ -523,13 +511,7 @@ public class DeviceService
                     device.IsHdrCapable = true;
                 }
 
-                var key = $"{width}x{height}@{numerator}/{denominator}_{pixelFormat}_{(isHdr ? "HDR" : "SDR")}";
-                if (!uniqueFormats.Add(key))
-                {
-                    continue;
-                }
-
-                device.SupportedFormats.Add(new MediaFormat
+                uniqueFormats.Add(new MediaFormat
                 {
                     Width = width,
                     Height = height,
@@ -541,7 +523,7 @@ public class DeviceService
                 });
             }
 
-            var sortedFormats = device.SupportedFormats
+            var sortedFormats = uniqueFormats
                 .OrderByDescending(f => (long)f.Width * f.Height)
                 .ThenByDescending(f => f.FrameRate)
                 .ThenBy(f => MediaFormat.GetPixelFormatPriority(f.PixelFormat))
@@ -567,83 +549,6 @@ public class DeviceService
             device.IsHdrCapable = false;
             return false;
         }
-    }
-
-    private static void ParseDshowOptions(CaptureDevice device, string output, HashSet<string> uniqueFormats)
-    {
-        if (string.IsNullOrWhiteSpace(output))
-        {
-            return;
-        }
-
-        foreach (var rawLine in output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
-        {
-            var line = rawLine.Trim();
-            if (!line.Contains("fps=", StringComparison.OrdinalIgnoreCase) ||
-                !line.Contains("s=", StringComparison.OrdinalIgnoreCase))
-            {
-                continue;
-            }
-
-            var minMax = DshowMinMaxRegex.Match(line);
-            if (minMax.Success)
-            {
-                var pixelFormat = NormalizePixelFormat(minMax.Groups["pix"].Value);
-                AddFormatFromMatch(device, uniqueFormats, pixelFormat, minMax.Groups["minw"].Value, minMax.Groups["minh"].Value, minMax.Groups["minfps"].Value);
-                AddFormatFromMatch(device, uniqueFormats, pixelFormat, minMax.Groups["maxw"].Value, minMax.Groups["maxh"].Value, minMax.Groups["maxfps"].Value);
-                continue;
-            }
-
-            var single = DshowSingleRegex.Match(line);
-            if (single.Success)
-            {
-                var pixelFormat = NormalizePixelFormat(single.Groups["pix"].Value);
-                AddFormatFromMatch(device, uniqueFormats, pixelFormat, single.Groups["w"].Value, single.Groups["h"].Value, single.Groups["fps"].Value);
-            }
-        }
-    }
-
-    private static void AddFormatFromMatch(
-        CaptureDevice device,
-        HashSet<string> uniqueFormats,
-        string pixelFormat,
-        string widthRaw,
-        string heightRaw,
-        string fpsRaw)
-    {
-        if (!uint.TryParse(widthRaw, out var width) ||
-            !uint.TryParse(heightRaw, out var height) ||
-            !double.TryParse(fpsRaw, out var fps) ||
-            width == 0 ||
-            height == 0 ||
-            fps <= 0)
-        {
-            return;
-        }
-
-        var (numerator, denominator, normalizedFps) = NormalizeFrameRate(fps);
-        var isHdr = MediaFormat.IsHdrPixelFormat(pixelFormat) || MediaFormat.IsTrue10BitPixelFormat(pixelFormat);
-        if (isHdr)
-        {
-            device.IsHdrCapable = true;
-        }
-
-        var key = $"{width}x{height}@{numerator}/{denominator}_{pixelFormat}_{(isHdr ? "HDR" : "SDR")}";
-        if (!uniqueFormats.Add(key))
-        {
-            return;
-        }
-
-        device.SupportedFormats.Add(new MediaFormat
-        {
-            Width = width,
-            Height = height,
-            FrameRate = normalizedFps,
-            FrameRateNumerator = numerator,
-            FrameRateDenominator = denominator,
-            PixelFormat = pixelFormat,
-            IsHdr = isHdr
-        });
     }
 
     private static (uint Numerator, uint Denominator, double Fps) NormalizeFrameRate(double fps)
@@ -696,49 +601,6 @@ public class DeviceService
         return token.ToUpperInvariant();
     }
 
-    private static async Task<string> RunProbeAsync(string fileName, string arguments)
-    {
-        var startInfo = new ProcessStartInfo
-        {
-            FileName = fileName,
-            Arguments = arguments,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true
-        };
-
-        using var process = Process.Start(startInfo);
-        if (process == null)
-        {
-            throw new InvalidOperationException("Failed to launch FFmpeg for DirectShow format discovery.");
-        }
-
-        var stdoutTask = process.StandardOutput.ReadToEndAsync();
-        var stderrTask = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync().ConfigureAwait(false);
-        var stdout = await stdoutTask.ConfigureAwait(false);
-        var stderr = await stderrTask.ConfigureAwait(false);
-        return $"{stdout}{Environment.NewLine}{stderr}";
-    }
-
-    private static string EscapeDshowDeviceName(string deviceName)
-    {
-        var escaped = new StringBuilder(deviceName.Length);
-        foreach (var ch in deviceName)
-        {
-            if (ch == '"')
-            {
-                escaped.Append("\\\"");
-                continue;
-            }
-
-            escaped.Append(ch);
-        }
-
-        return escaped.ToString();
-    }
-
     public async Task<List<AudioInputDevice>> EnumerateAudioCaptureDevicesAsync()
     {
         return await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync().ConfigureAwait(false);
@@ -753,33 +615,15 @@ public class DeviceService
         bool LikelyByCapability,
         bool LikelyByName);
 
-    public sealed class DeviceFormatProbeCompletedEventArgs : EventArgs
+    public sealed record DeviceFormatProbeCompletedEventArgs(
+        string DeviceId,
+        string DeviceName,
+        IReadOnlyList<MediaFormat> Formats,
+        bool IsHdrCapable,
+        bool HasEnumeratedFormats,
+        long RequestId,
+        string? Error)
     {
-        public DeviceFormatProbeCompletedEventArgs(
-            string deviceId,
-            string deviceName,
-            IReadOnlyList<MediaFormat> formats,
-            bool isHdrCapable,
-            bool hasEnumeratedFormats,
-            long requestId,
-            string? error)
-        {
-            DeviceId = deviceId;
-            DeviceName = deviceName;
-            Formats = formats;
-            IsHdrCapable = isHdrCapable;
-            HasEnumeratedFormats = hasEnumeratedFormats;
-            RequestId = requestId;
-            Error = error;
-        }
-
-        public string DeviceId { get; }
-        public string DeviceName { get; }
-        public IReadOnlyList<MediaFormat> Formats { get; }
-        public bool IsHdrCapable { get; }
-        public bool HasEnumeratedFormats { get; }
-        public long RequestId { get; }
-        public string? Error { get; }
         public bool Succeeded => string.IsNullOrWhiteSpace(Error);
     }
 }
