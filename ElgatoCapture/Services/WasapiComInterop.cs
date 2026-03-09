@@ -156,7 +156,10 @@ internal static class WasapiComInterop
 
         try
         {
-            Marshal.ReleaseComObject(comObject);
+            if (Marshal.IsComObject(comObject))
+            {
+                Marshal.ReleaseComObject(comObject);
+            }
         }
         catch
         {

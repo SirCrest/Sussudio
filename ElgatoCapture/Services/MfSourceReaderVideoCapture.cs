@@ -150,8 +150,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     $"stage=CreateSourceReader hr=0x{createSourceReaderHr:X8} " +
                     "fallback=cpu_only");
 
-                ReleaseComObject(ref sourceReader);
-                ReleaseComObject(ref readerAttributes);
+                WasapiComInterop.ReleaseComObject(ref sourceReader);
+                WasapiComInterop.ReleaseComObject(ref readerAttributes);
 
                 ThrowIfFailed(
                     MfInterop.MFCreateAttributes(out readerAttributes, 1),
@@ -237,10 +237,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            ReleaseComObject(ref selectedMediaType);
-            ReleaseComObject(ref readerAttributes);
-            ReleaseComObject(ref sourceReader);
-            ReleaseComObject(ref mediaSource);
+            WasapiComInterop.ReleaseComObject(ref selectedMediaType);
+            WasapiComInterop.ReleaseComObject(ref readerAttributes);
+            WasapiComInterop.ReleaseComObject(ref sourceReader);
+            WasapiComInterop.ReleaseComObject(ref mediaSource);
 
             if (startupHeld)
             {
@@ -455,7 +455,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
             finally
             {
-                ReleaseComObject(ref sample);
+                WasapiComInterop.ReleaseComObject(ref sample);
             }
         }
     }
@@ -723,7 +723,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            ReleaseComObject(ref buffer);
+            WasapiComInterop.ReleaseComObject(ref buffer);
         }
     }
 
@@ -1088,7 +1088,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
         finally
         {
-            ReleaseComObject(ref attrs);
+            WasapiComInterop.ReleaseComObject(ref attrs);
         }
     }
 
@@ -1159,7 +1159,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 }
                 finally
                 {
-                    ReleaseComObject(ref activate);
+                    WasapiComInterop.ReleaseComObject(ref activate);
                 }
             }
 
@@ -1178,7 +1178,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 Marshal.FreeCoTaskMem(activateArrayPtr);
             }
 
-            ReleaseComObject(ref attrs);
+            WasapiComInterop.ReleaseComObject(ref attrs);
         }
     }
 
@@ -1261,7 +1261,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
                 if (delta < bestFpsDelta)
                 {
-                    ReleaseComObject(ref bestType);
+                    WasapiComInterop.ReleaseComObject(ref bestType);
                     bestType = nativeType;
                     nativeType = null;
                     bestFpsDelta = delta;
@@ -1276,7 +1276,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             }
             finally
             {
-                ReleaseComObject(ref nativeType);
+                WasapiComInterop.ReleaseComObject(ref nativeType);
             }
         }
 
@@ -1295,7 +1295,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         if (bestFpsDelta > 0.5)
         {
-            ReleaseComObject(ref bestType);
+            WasapiComInterop.ReleaseComObject(ref bestType);
             throw new InvalidOperationException(
                 $"No {requestedSubtypeName} media type matched requested frame rate {requestedFps:0.###}fps " +
                 $"for {requestedWidth}x{requestedHeight}.");
@@ -1485,8 +1485,8 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             _dxgiDeviceManagerPtr = IntPtr.Zero;
         }
 
-        ReleaseComObject(ref sourceReader);
-        ReleaseComObject(ref mediaSource);
+        WasapiComInterop.ReleaseComObject(ref sourceReader);
+        WasapiComInterop.ReleaseComObject(ref mediaSource);
     }
 
     private static string SubtypeGuidToName(Guid subtype)
@@ -1522,31 +1522,6 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         }
 
         throw new InvalidOperationException($"{operation} failed (hr=0x{hr:X8}).");
-    }
-
-    private static void ReleaseComObject<T>(ref T? comObject)
-        where T : class
-    {
-        if (comObject == null)
-        {
-            return;
-        }
-
-        try
-        {
-            if (Marshal.IsComObject(comObject))
-            {
-                _ = Marshal.ReleaseComObject(comObject);
-            }
-        }
-        catch
-        {
-            // Best effort during cleanup.
-        }
-        finally
-        {
-            comObject = null;
-        }
     }
 
     private static class MfInterop

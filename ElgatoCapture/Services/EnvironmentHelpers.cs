@@ -25,4 +25,28 @@ internal static class EnvironmentHelpers
 
         return defaultValue;
     }
+
+    public static bool TryGetBoolFromEnv(string variableName, out bool value)
+    {
+        value = false;
+        var raw = Environment.GetEnvironmentVariable(variableName);
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return false;
+        }
+
+        if (bool.TryParse(raw, out var boolValue))
+        {
+            value = boolValue;
+            return true;
+        }
+
+        if (int.TryParse(raw, out var intValue))
+        {
+            value = intValue != 0;
+            return true;
+        }
+
+        return false;
+    }
 }
