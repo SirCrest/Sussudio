@@ -1247,3 +1247,88 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (telemetry/diagnostics-only change)
 - Conclusion: The diagnostics panel can now surface the extra chip telemetry fields while preserving the existing `nativexu:` grammar and non-NativeXu fallback behavior. Hardware-backed runs are still needed to confirm live values for the newly added AT commands.
+
+## E66 - CUDA-D3D11 NV12 bridge uses separate Y/UV interop textures
+- Timestamp (UTC): 2026-03-09T16:25:32.8445572Z
+- Commit Hash: uncommitted (base 68bca4844a49029cb2610f0c11835c33c19be064)
+- What Changed (single change): Rewrote `CudaD3D11InteropBridge` to stop registering a `DXGI_FORMAT_NV12` texture with CUDA. The bridge now registers `R8_UNORM` Y and `R8G8_UNORM` UV textures as CUDA resources, copies each NVDEC plane into its own CUDA-mappable array, then assembles the final `NV12` preview texture with `ID3D11DeviceContext.CopySubresourceRegion`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 220`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` snapshot token; this repo-local verification pass did not exercise live `CUDA_D3D11_*` runtime interop on NVIDIA hardware.
+- ffprobe Evidence:
+  - N/A (preview interop change only; no recording artifact generated in this verification pass)
+- Conclusion: The bridge now matches CUDA’s D3D11 interop constraints by using single-plane standard formats for CUDA mapping and assembling `NV12` only after CUDA unmaps. Build, regression tests, and log inspection are clean; live NVIDIA validation is still required to prove `CUDA_D3D11_INTEROP_OK` plus first-frame `CUDA_D3D11_COPY_DIAG` on-device.
+
+## E66 - CUDA-D3D11 MJPG preview bridge uses single-plane interop textures plus assembled NV12 output
+- Timestamp (UTC): 2026-03-09T16:25:24Z
+- Commit Hash: uncommitted (base 68bca4844a49029cb2610f0c11835c33c19be064)
+- What Changed (single change): Rewrote `CudaD3D11InteropBridge` so CUDA registers two standard single-plane D3D11 textures (`R8_UNORM` for Y and `R8G8_UNORM` for UV), copies the NVDEC CUDA NV12 planes into those arrays, then assembles the final preview texture into an unregistered `DXGI_FORMAT_NV12` texture via D3D11 `CopySubresourceRegion`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 250`
+  4. On NVIDIA hardware, run the SDR `MJPG` 3840x2160@120 preview path and confirm `CUDA_D3D11_COPY_DIAG` appears without repeated `CUDA_D3D11_PREVIEW_FAIL ... cuGraphicsSubResourceGetMappedArray failed with CUDA error 1`.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` for the regression run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` snapshot token; no new `CUDA_D3D11_*`, `WARN`, or `FAIL` tokens were emitted in this non-hardware verification pass.
+- ffprobe Evidence:
+  - N/A (preview interop change only; no recording artifact generated in this verification pass)
+- Conclusion: The bridge now matches CUDA's D3D11 interop constraints by mapping only single-plane array-compatible formats and assembling NV12 afterward on the shared D3D11 device. Repo-local build/test/log verification is clean; live NVIDIA hardware validation is still required to prove that MJPG preview now renders without the former `cuGraphicsSubResourceGetMappedArray` error.
+
+## E67 - Experiment log correction for duplicate E66 CUDA-D3D11 bridge entry
+- Timestamp (UTC): 2026-03-09T16:27:09Z
+- Commit Hash: uncommitted (base 68bca4844a49029cb2610f0c11835c33c19be064)
+- What Changed (single change): Corrected append-only bookkeeping after a duplicate `E66` heading was added for the same CUDA-D3D11 bridge rewrite; treat `E66 - CUDA-D3D11 NV12 bridge uses separate Y/UV interop textures` as the canonical record for this fix and the later `E66` entry as a duplicate.
+- How To Run:
+  1. Read the `E66` and `E67` headings in `docs/experiment_log.md`.
+  2. Use the earlier `E66` entry as the authoritative validation record for the CUDA-D3D11 bridge rewrite.
+- Validator Output:
+  - N/A (experiment-log correction only)
+- ffprobe Evidence:
+  - N/A (documentation correction only)
+- Conclusion: The duplicate heading is explicitly corrected without rewriting prior append-only history.
+
+## E67 - Experiment log correction for duplicate E66 CUDA-D3D11 bridge entry
+- Timestamp (UTC): 2026-03-09T16:25:32.8445572Z
+- Commit Hash: uncommitted (base 68bca4844a49029cb2610f0c11835c33c19be064)
+- What Changed (single change): Corrected append-only bookkeeping after a duplicate `E66` heading was present in the working tree for the same CUDA-D3D11 bridge rewrite; treat the later `E66 - CUDA-D3D11 MJPG preview bridge uses single-plane interop textures plus assembled NV12 output` entry as the canonical record for this change.
+- How To Run:
+  1. Read the `E66` and `E67` headings at the end of `docs/experiment_log.md`.
+  2. Use the later `E66` entry as the authoritative validation record for the CUDA-D3D11 bridge rewrite.
+- Validator Output:
+  - N/A (experiment-log correction only)
+- ffprobe Evidence:
+  - N/A (documentation correction only)
+- Conclusion: The duplicate heading is now explicitly corrected without rewriting prior append-only history.
+
+## E68 - Experiment log correction for duplicate E67 CUDA-D3D11 bridge corrections
+- Timestamp (UTC): 2026-03-09T16:28:21.6198648Z
+- Commit Hash: uncommitted (base 68bca4844a49029cb2610f0c11835c33c19be064)
+- What Changed (single change): Corrected append-only bookkeeping after duplicate `E67` correction headings were present in the working tree for the same CUDA-D3D11 bridge rewrite. Treat `E66 - CUDA-D3D11 NV12 bridge uses separate Y/UV interop textures` as the canonical fix record and `E67 - Experiment log correction for duplicate E66 CUDA-D3D11 bridge entry` with timestamp `2026-03-09T16:27:09Z` as the canonical correction record.
+- How To Run:
+  1. Read the `E66`, `E67`, and `E68` headings at the end of `docs/experiment_log.md`.
+  2. Use the earlier `E66` entry as the authoritative validation record for the bridge rewrite and the `E67` entry timestamped `2026-03-09T16:27:09Z` as the authoritative duplicate-heading correction.
+- Validator Output:
+  - N/A (experiment-log correction only)
+- ffprobe Evidence:
+  - N/A (documentation correction only)
+- Conclusion: The canonical CUDA bridge experiment record and its correction are now explicit without rewriting prior append-only history.
+
+## E68 - Final experiment log correction for duplicate E66/E67 CUDA-D3D11 entries
+- Timestamp (UTC): 2026-03-09T16:27:09Z
+- Commit Hash: uncommitted (base 68bca4844a49029cb2610f0c11835c33c19be064)
+- What Changed (single change): Finalized append-only bookkeeping after duplicate `E66` fix entries and duplicate `E67` correction entries were already present in the working tree; treat the earliest `E66 - CUDA-D3D11 NV12 bridge uses separate Y/UV interop textures` entry as the canonical validation record for the CUDA-D3D11 bridge rewrite, and treat both later `E66`/`E67` entries as duplicate bookkeeping artifacts.
+- How To Run:
+  1. Read the `E66`, `E67`, and `E68` headings at the end of `docs/experiment_log.md`.
+  2. Use the earliest `E66` entry as the authoritative validation record for the CUDA-D3D11 bridge rewrite.
+- Validator Output:
+  - N/A (experiment-log correction only)
+- ffprobe Evidence:
+  - N/A (documentation correction only)
+- Conclusion: The append-only history now ends with an explicit canonical-record rule, so the duplicate headings do not create ambiguity for this fix.
