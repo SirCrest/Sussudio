@@ -1410,6 +1410,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         QualityComboBox.ItemsSource = ViewModel.AvailableQualities;
         PresetComboBox.ItemsSource = ViewModel.AvailablePresets;
         SplitEncodeComboBox.ItemsSource = ViewModel.AvailableSplitEncodeModes;
+        VideoFormatComboBox.ItemsSource = ViewModel.AvailableVideoFormats;
 
         ViewModel.Devices.CollectionChanged += (s, e) =>
         {
@@ -1551,6 +1552,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         QualityComboBox.SelectedItem = ViewModel.SelectedQuality;
         PresetComboBox.SelectedItem = ViewModel.SelectedPreset;
         SplitEncodeComboBox.SelectedItem = ViewModel.SelectedSplitEncodeMode;
+        VideoFormatComboBox.SelectedItem = ViewModel.SelectedVideoFormat;
         CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
         CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
         HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
@@ -1651,6 +1653,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             if (SplitEncodeComboBox.SelectedItem is string splitMode)
             {
                 ViewModel.SelectedSplitEncodeMode = splitMode;
+            }
+        };
+
+        VideoFormatComboBox.SelectionChanged += (s, e) =>
+        {
+            if (VideoFormatComboBox.SelectedItem is string videoFormat)
+            {
+                ViewModel.SelectedVideoFormat = videoFormat;
             }
         };
 

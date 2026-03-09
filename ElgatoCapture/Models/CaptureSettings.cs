@@ -61,26 +61,30 @@ public class CaptureSettings
     public string? AudioDeviceName { get; set; }
     public AudioPathMode AudioPathMode { get; set; } = AudioPathMode.PostMuxDefault;
     public RecordingPipelineOptions PipelineOptions { get; set; } = new();
+    public bool ForceMjpegDecode { get; set; }
 
     public bool UseMjpegHighFrameRateMode =>
-        IsMjpegHighFrameRateMode(RequestedPixelFormat, Width, Height, FrameRate, HdrEnabled);
+        IsMjpegHighFrameRateMode(RequestedPixelFormat, Width, Height, FrameRate, HdrEnabled, ForceMjpegDecode);
 
     public static bool IsMjpegHighFrameRateMode(
         string? requestedPixelFormat,
         uint width,
         uint height,
         double frameRate,
-        bool hdrEnabled)
+        bool hdrEnabled,
+        bool force = false)
     {
         if (hdrEnabled)
         {
             return false;
         }
 
-        return string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase) &&
-               width >= 3840 &&
-               height >= 2160 &&
-               frameRate >= 100;
+        if (!string.Equals(requestedPixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return force || (width >= 3840 && height >= 2160 && frameRate >= 100);
     }
 
     /// <summary>

@@ -160,6 +160,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial string SelectedSplitEncodeMode { get; set; } = "Auto";
 
     [ObservableProperty]
+    public partial ObservableCollection<string> AvailableVideoFormats { get; set; } = new()
+    {
+        "Auto", "MJPG", "NV12", "P010"
+    };
+
+    [ObservableProperty]
+    public partial string SelectedVideoFormat { get; set; } = "Auto";
+
+    [ObservableProperty]
     public partial double CustomBitrateMbps { get; set; } = 50;
 
     [ObservableProperty]
@@ -3110,6 +3119,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
+    partial void OnSelectedVideoFormatChanged(string value)
+    {
+        if (!_isChangingDevice && IsPreviewing && IsInitialized)
+        {
+            Logger.Log($"=== Video format override changed to {value} - reinitializing device ===");
+            EnqueueUiOperation(() => ReinitializeDeviceAsync("video format override"), "video format override reinitialize");
+        }
+    }
+
     private async Task ReinitializeDeviceAsync(string reason)
     {
         if (SelectedDevice == null || SelectedFormat == null)
@@ -4120,7 +4138,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             RequestedFrameRateArg = requestedFrameRateArg,
             RequestedFrameRateNumerator = requestedFrameRateNumerator,
             RequestedFrameRateDenominator = requestedFrameRateDenominator,
-            RequestedPixelFormat = SelectedFormat?.PixelFormat,
+            RequestedPixelFormat = string.Equals(SelectedVideoFormat, "Auto", StringComparison.OrdinalIgnoreCase)
+                ? SelectedFormat?.PixelFormat
+                : SelectedVideoFormat,
+            ForceMjpegDecode = string.Equals(SelectedVideoFormat, "MJPG", StringComparison.OrdinalIgnoreCase),
             Format = format,
             Quality = quality,
             NvencPreset = SelectedPreset,
