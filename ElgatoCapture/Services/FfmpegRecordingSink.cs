@@ -329,7 +329,14 @@ public sealed class FfmpegRecordingSink : IRecordingSink
     public void Dispose()
     {
         if (_disposed) return;
-        DisposeAsync().AsTask().GetAwaiter().GetResult();
+
+        _disposed = true;
+        _started = false;
+        _audioStdinStream?.Dispose();
+        _audioStdinStream = null;
+        _audioEncoderProcess?.Dispose();
+        _audioEncoderProcess = null;
+        _encoder.Dispose();
     }
 
     public async ValueTask DisposeAsync()

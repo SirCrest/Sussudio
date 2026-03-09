@@ -128,6 +128,12 @@ internal static class WasapiComInterop
             throw new InvalidOperationException("WASAPI format has invalid block alignment.");
         }
 
+        var bytesPerSample = blockAlign / channels;
+        if (bytesPerSample <= 0)
+        {
+            throw new InvalidOperationException("WASAPI format has invalid bytes-per-sample.");
+        }
+
         return new WasapiAudioFormat(
             (int)sampleRate,
             channels,
