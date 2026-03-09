@@ -567,6 +567,18 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             return;
         }
 
+        // CPU fallback (clone → download → SubmitRawFrame) is not viable at HFR.
+        // Hard-fail so the user sees an error instead of a silently broken preview.
+        if (Volatile.Read(ref _isHighFrameRateMjpegMode))
+        {
+            Interlocked.Increment(ref _videoFramesDropped);
+            SignalFatalError(
+                new InvalidOperationException(
+                    "CUDA-D3D11 interop unavailable — CPU preview fallback is not viable for HFR MJPG mode."),
+                "MJPEG_HFR_NO_GPU_PREVIEW");
+            return;
+        }
+
         AVFrame* clonedFrame = null;
         lock (_sync)
         {

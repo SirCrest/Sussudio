@@ -927,6 +927,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             ThrowIfFailed(
                 buffer.Lock(out var compressedDataPtr, out _, out var compressedLength),
                 "IMFMediaBuffer.Lock");
+
+            byte[]? rentedBuffer = null;
+            int jpegLength = 0;
             try
             {
                 if (compressedDataPtr == IntPtr.Zero || compressedLength <= 0)
@@ -935,11 +938,26 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     return;
                 }
 
-                onFrame(new ReadOnlySpan<byte>((void*)compressedDataPtr, compressedLength), _width, _height, arrivalTick);
+                // Copy MJPG bytes out so we release the source reader's USB buffer slot
+                // before running the decode + preview + recording pipeline.
+                rentedBuffer = ArrayPool<byte>.Shared.Rent(compressedLength);
+                jpegLength = compressedLength;
+                new ReadOnlySpan<byte>((void*)compressedDataPtr, compressedLength)
+                    .CopyTo(rentedBuffer);
             }
             finally
             {
                 _ = buffer.Unlock();
+            }
+
+            try
+            {
+                onFrame(new ReadOnlySpan<byte>(rentedBuffer, 0, jpegLength), _width, _height, arrivalTick);
+            }
+            finally
+            {
+                if (rentedBuffer != null)
+                    ArrayPool<byte>.Shared.Return(rentedBuffer);
             }
 
             return;
