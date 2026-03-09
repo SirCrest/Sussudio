@@ -13,6 +13,7 @@ using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -1787,6 +1788,35 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         HideStatsDockPanel();
     }
 
+    private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)
+    {
+        if (sender is not Grid header || header.Tag is not string contentName)
+        {
+            return;
+        }
+
+        var content = StatsDockPanel.FindName(contentName) as StackPanel;
+        if (content == null)
+        {
+            return;
+        }
+
+        var collapsing = content.Visibility == Visibility.Visible;
+        content.Visibility = collapsing ? Visibility.Collapsed : Visibility.Visible;
+
+        var chevronName = contentName.Replace("_Content", "_Chevron", StringComparison.Ordinal);
+        if (StatsDockPanel.FindName(chevronName) is FontIcon chevron &&
+            chevron.RenderTransform is RotateTransform rotate)
+        {
+            rotate.Angle = collapsing ? -90 : 0;
+        }
+
+        if (!collapsing && ReferenceEquals(content, Diagnostics_Content))
+        {
+            UpdateDiagnosticsSection(GetStatsSnapshot().DiagnosticSummary);
+        }
+    }
+
     private void StartStatsDockPolling()
     {
         _statsPollTimer ??= _dispatcherQueue.CreateTimer();
@@ -2523,6 +2553,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         SetTextIfChanged(Stats_RendererRenderedValue, rendererRendered);
         SetTextIfChanged(Stats_RendererDroppedValue, rendererDropped);
         SetTextIfChanged(Stats_PerfScoreValue, perfScore);
+        UpdateDiagnosticsSection(snapshot.DiagnosticSummary);
     }
 
     private StatsSnapshot GetStatsSnapshot()
@@ -2567,7 +2598,131 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             SourceIsHdr: health.SourceIsHdr,
             NegotiatedPixelFormat: health.NegotiatedPixelFormat,
             TelemetryOrigin: health.SourceTelemetryOrigin.ToString(),
-            TelemetryConfidence: health.SourceTelemetryConfidence.ToString());
+            TelemetryConfidence: health.SourceTelemetryConfidence.ToString(),
+            DiagnosticSummary: health.SourceTelemetryDiagnosticSummary);
+    }
+
+    private void UpdateDiagnosticsSection(string? diagnosticSummary)
+    {
+        if (Diagnostics_Content.Visibility != Visibility.Visible)
+        {
+            return;
+        }
+
+        var currentTag = Diagnostics_Content.Tag as string;
+        if (currentTag == diagnosticSummary && Diagnostics_Content.Children.Count > 0)
+        {
+            return;
+        }
+
+        Diagnostics_Content.Tag = diagnosticSummary;
+        Diagnostics_Content.Children.Clear();
+
+        if (string.IsNullOrWhiteSpace(diagnosticSummary))
+        {
+            var empty = new TextBlock
+            {
+                Text = "No diagnostics available",
+                Style = (Style)StatsDockPanel.Resources["DockStatsLabelStyle"]
+            };
+            Diagnostics_Content.Children.Add(empty);
+            return;
+        }
+
+        var entries = ParseDiagnosticSummary(diagnosticSummary);
+        var alt = true;
+        foreach (var (label, value) in entries)
+        {
+            var row = CreateDiagnosticRow(label, value, alt);
+            Diagnostics_Content.Children.Add(row);
+            alt = !alt;
+        }
+    }
+
+    private static List<(string Label, string Value)> ParseDiagnosticSummary(string summary)
+    {
+        if (!summary.StartsWith("nativexu:", StringComparison.OrdinalIgnoreCase))
+        {
+            return new List<(string Label, string Value)>
+            {
+                ("Summary", summary.Trim())
+            };
+        }
+
+        var result = new List<(string Label, string Value)>();
+        var parts = summary.Split(':');
+
+        foreach (var part in parts)
+        {
+            if (string.IsNullOrWhiteSpace(part))
+            {
+                continue;
+            }
+
+            var eqIndex = part.IndexOf('=');
+            if (eqIndex > 0)
+            {
+                var key = part[..eqIndex].Trim();
+                var val = part[(eqIndex + 1)..].Trim();
+                var label = key switch
+                {
+                    "vic" => "VIC Code",
+                    "vfreq" => "Vert Freq",
+                    "quant" => "Quantization",
+                    "hdr2sdr" => "HDR to SDR",
+                    "eotf" => "EOTF",
+                    "fw" => "Firmware",
+                    _ => key
+                };
+                result.Add((label, val));
+                continue;
+            }
+
+            var entry = part switch
+            {
+                "nativexu" => ("Origin", "NativeXu"),
+                "hdr" => ("HDR", "Yes"),
+                "sdr" => ("HDR", "No"),
+                "unknown" => ("HDR", "Unknown"),
+                _ when part.Contains('x') && part.Length > 3 && char.IsDigit(part[0]) => ("Resolution", part),
+                _ when double.TryParse(part, NumberStyles.Float, CultureInfo.InvariantCulture, out var fps) && fps > 0 =>
+                    ("Frame Rate", $"{fps:0.##} Hz"),
+                _ => ("Info", part)
+            };
+            result.Add(entry);
+        }
+
+        return result;
+    }
+
+    private Border CreateDiagnosticRow(string label, string value, bool alt)
+    {
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var labelBlock = new TextBlock
+        {
+            Text = label,
+            Style = (Style)StatsDockPanel.Resources["DockStatsLabelStyle"]
+        };
+
+        var valueBlock = new TextBlock
+        {
+            Text = value,
+            Style = (Style)StatsDockPanel.Resources["DockStatsValueStyle"],
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
+        Grid.SetColumn(valueBlock, 1);
+
+        grid.Children.Add(labelBlock);
+        grid.Children.Add(valueBlock);
+
+        return new Border
+        {
+            Style = (Style)StatsDockPanel.Resources[alt ? "DockStatsRowAltStyle" : "DockStatsRowStyle"],
+            Child = grid
+        };
     }
 
     private static string FormatFps(double value)
