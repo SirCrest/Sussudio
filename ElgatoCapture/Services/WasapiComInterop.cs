@@ -43,6 +43,12 @@ internal static class WasapiComInterop
     [DllImport("ole32.dll")]
     internal static extern void CoTaskMemFree(IntPtr ptr);
 
+    internal const uint WaitObject0 = 0;
+    internal const uint WaitTimeout = 0x00000102;
+
+    [DllImport("kernel32.dll")]
+    internal static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
+
     internal static IMMDeviceEnumerator CreateDeviceEnumerator()
     {
         var clsid = CLSID_MMDeviceEnumerator;
@@ -117,8 +123,7 @@ internal static class WasapiComInterop
             throw new InvalidOperationException("WASAPI format has invalid sample rate.");
         }
 
-        var bytesPerSample = blockAlign > 0 ? blockAlign / channels : bitsPerSample / 8;
-        if (bytesPerSample <= 0)
+        if (blockAlign <= 0)
         {
             throw new InvalidOperationException("WASAPI format has invalid block alignment.");
         }
@@ -128,7 +133,6 @@ internal static class WasapiComInterop
             channels,
             bitsPerSample,
             blockAlign,
-            bytesPerSample,
             sampleType);
     }
 
@@ -162,6 +166,50 @@ internal static class WasapiComInterop
         {
             comObject = null;
         }
+    }
+
+    internal static IAudioClient ActivateAudioClient(IMMDevice device, out IAudioClient3? audioClient3)
+    {
+        var iidAudioClient3 = typeof(IAudioClient3).GUID;
+        var hr = device.Activate(ref iidAudioClient3, CLSCTX_ALL, IntPtr.Zero, out var client3Object);
+        if (hr >= 0 && client3Object is IAudioClient3 client3)
+        {
+            audioClient3 = client3;
+            return client3;
+        }
+
+        var iidAudioClient = typeof(IAudioClient).GUID;
+        ThrowIfFailed(
+            device.Activate(ref iidAudioClient, CLSCTX_ALL, IntPtr.Zero, out var clientObject),
+            "IMMDevice.Activate(IAudioClient)");
+        audioClient3 = clientObject as IAudioClient3;
+        return (IAudioClient)clientObject;
+    }
+
+    internal static bool TryInitializeSharedStreamWithAudioClient3(IAudioClient3? audioClient3, IntPtr format)
+    {
+        if (audioClient3 == null)
+        {
+            return false;
+        }
+
+        var hr = audioClient3.GetSharedModeEnginePeriod(
+            format,
+            out var defaultPeriodInFrames,
+            out _,
+            out _,
+            out _);
+        if (hr < 0)
+        {
+            return false;
+        }
+
+        hr = audioClient3.InitializeSharedAudioStream(
+            AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+            defaultPeriodInFrames,
+            format,
+            IntPtr.Zero);
+        return hr >= 0;
     }
 
     private static WasapiSampleType ResolveSampleType(int formatTag, Guid subFormat, int bitsPerSample)
@@ -222,8 +270,10 @@ internal readonly record struct WasapiAudioFormat(
     int Channels,
     int BitsPerSample,
     int BlockAlign,
-    int BytesPerSample,
-    WasapiSampleType SampleType);
+    WasapiSampleType SampleType)
+{
+    public int BytesPerSample => BlockAlign / Channels;
+}
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 internal struct WAVEFORMATEX
@@ -512,3 +562,4 @@ internal interface IPropertyStore
 internal interface IMMNotificationClient
 {
 }
+

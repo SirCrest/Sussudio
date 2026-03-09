@@ -45,7 +45,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         {
             PropertyNameCaseInsensitive = true
         };
-        _requestTimeoutMs = GetIntFromEnv(
+        _requestTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "ELGATOCAPTURE_AUTOMATION_REQUEST_TIMEOUT_MS",
             defaultValue: 300000,
             minValue: 1000,
@@ -85,7 +85,11 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
         try
         {
-            await Task.WhenAny(serverTask, Task.Delay(5000, cancellationToken)).ConfigureAwait(false);
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            // Server loop didn't stop within 5s — proceed with cleanup.
         }
         catch (OperationCanceledException)
         {
@@ -197,14 +201,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
             if (request == null)
             {
-                response = new AutomationCommandResponse
-                {
-                    Success = false,
-                    CorrelationId = Guid.NewGuid().ToString("N"),
-                    Status = "error",
-                    Message = "Request payload was empty.",
-                    ErrorCode = "invalid-request"
-                };
+                response = CreateErrorResponse("Request payload was empty.", "invalid-request");
             }
             else
             {
@@ -213,39 +210,18 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
         catch (JsonException ex)
         {
-            response = new AutomationCommandResponse
-            {
-                Success = false,
-                CorrelationId = Guid.NewGuid().ToString("N"),
-                Status = "error",
-                Message = $"Invalid JSON request: {ex.Message}",
-                ErrorCode = "invalid-json"
-            };
+            response = CreateErrorResponse($"Invalid JSON request: {ex.Message}", "invalid-json");
         }
         catch (OperationCanceledException)
         {
             var timedOut = requestTimeout.IsCancellationRequested;
-            response = new AutomationCommandResponse
-            {
-                Success = false,
-                CorrelationId = Guid.NewGuid().ToString("N"),
-                Status = "error",
-                Message = timedOut
-                    ? $"Request timed out after {_requestTimeoutMs} ms."
-                    : "Request canceled.",
-                ErrorCode = timedOut ? "request-timeout" : "canceled"
-            };
+            response = CreateErrorResponse(
+                timedOut ? $"Request timed out after {_requestTimeoutMs} ms." : "Request canceled.",
+                timedOut ? "request-timeout" : "canceled");
         }
         catch (Exception ex)
         {
-            response = new AutomationCommandResponse
-            {
-                Success = false,
-                CorrelationId = Guid.NewGuid().ToString("N"),
-                Status = "error",
-                Message = $"Request execution failed: {ex.Message}",
-                ErrorCode = "execution-failed"
-            };
+            response = CreateErrorResponse($"Request execution failed: {ex.Message}", "execution-failed");
         }
 
         var responseLine = JsonSerializer.Serialize(response, _jsonOptions);
@@ -480,16 +456,14 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     [DllImport("kernel32.dll", SetLastError = true)]
     private static extern bool CloseHandle(IntPtr handle);
 
-    private static int GetIntFromEnv(string variableName, int defaultValue, int minValue, int maxValue)
+    private static AutomationCommandResponse CreateErrorResponse(string message, string errorCode) => new()
     {
-        var rawValue = Environment.GetEnvironmentVariable(variableName);
-        if (int.TryParse(rawValue, out var parsedValue))
-        {
-            return Math.Clamp(parsedValue, minValue, maxValue);
-        }
-
-        return defaultValue;
-    }
+        Success = false,
+        CorrelationId = Guid.NewGuid().ToString("N"),
+        Status = "error",
+        Message = message,
+        ErrorCode = errorCode
+    };
 
     private static void TraceFallback(string line)
     {

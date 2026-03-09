@@ -28,10 +28,11 @@ internal static class KsExtensionUnitNative
     private const uint KsPropertyTopologyNodes = 1;
     private const int ErrorInsufficientBuffer = 122;
     private const int ErrorMoreData = 234;
-    private const int ErrorNotFound = 1168;
-    private const int ErrorSetNotFound = 1170;
-    private const int ErrorInvalidParameter = 87;
-    private const int ErrorInvalidFunction = 1;
+    internal const int ErrorNotFound = 1168;
+    internal const int ErrorSetNotFound = 1170;
+    internal const int ErrorInvalidParameter = 87;
+    internal const int ErrorInvalidFunction = 1;
+    private const int ErrorNoMoreItems = 259;
 
     internal readonly record struct KsInterfacePath(string Path, Guid CategoryGuid);
 
@@ -66,7 +67,7 @@ internal static class KsExtensionUnitNative
                     if (!SetupDiEnumDeviceInterfaces(deviceInfoSet, IntPtr.Zero, ref categoryGuid, index, ref interfaceData))
                     {
                         var error = Marshal.GetLastWin32Error();
-                        if (error == 259)
+                        if (error == ErrorNoMoreItems)
                         {
                             break;
                         }
@@ -232,26 +233,6 @@ internal static class KsExtensionUnitNative
         return true;
     }
 
-    internal static bool TryXuGet(
-        SafeFileHandle handle,
-        int nodeId,
-        Guid propertySet,
-        int selector,
-        int maxBuffer,
-        out byte[] data,
-        out int bytesReturned,
-        out int? win32Code)
-        => TryReadNodePropertyBytes(
-            handle,
-            nodeId,
-            propertySet,
-            selector,
-            maxBuffer,
-            out data,
-            out bytesReturned,
-            out win32Code,
-            out _);
-
     internal static bool TryXuGetDirect(
         SafeFileHandle handle,
         int nodeId,
@@ -341,34 +322,6 @@ internal static class KsExtensionUnitNative
         return false;
     }
 
-    internal static bool TryReadPropertyValue(
-        SafeFileHandle handle,
-        int nodeId,
-        Guid propertySet,
-        int propertyId,
-        int maxBufferSize,
-        out int bytesReturned,
-        out string? valueHexPreview,
-        out int? win32Code,
-        out string? error)
-    {
-        var succeeded = TryReadNodePropertyBytes(
-            handle,
-            nodeId,
-            propertySet,
-            propertyId,
-            maxBufferSize,
-            out var data,
-            out bytesReturned,
-            out win32Code,
-            out error);
-
-        valueHexPreview = succeeded
-            ? (data.Length > 0 ? Convert.ToHexString(data) : string.Empty)
-            : null;
-        return succeeded;
-    }
-
     private static bool TryReadNodePropertyBytes(
         SafeFileHandle handle,
         int nodeId,
@@ -398,7 +351,7 @@ internal static class KsExtensionUnitNative
         };
 
         var input = StructureToBytes(request);
-        var bufferSize = 1;
+        var bufferSize = Math.Min(256, maxBufferSize);
 
         while (bufferSize <= maxBufferSize)
         {
@@ -443,21 +396,11 @@ internal static class KsExtensionUnitNative
     }
 
     private static byte[] StructureToBytes<T>(T value)
-        where T : struct
+        where T : unmanaged
     {
-        var size = Marshal.SizeOf<T>();
-        var bytes = new byte[size];
-        var ptr = Marshal.AllocHGlobal(size);
-        try
-        {
-            Marshal.StructureToPtr(value, ptr, false);
-            Marshal.Copy(ptr, bytes, 0, size);
-            return bytes;
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(ptr);
-        }
+        var bytes = new byte[Marshal.SizeOf<T>()];
+        MemoryMarshal.Write(bytes, in value);
+        return bytes;
     }
 
     [DllImport("setupapi.dll", SetLastError = true)]
