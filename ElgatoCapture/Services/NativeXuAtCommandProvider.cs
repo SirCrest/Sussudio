@@ -270,6 +270,10 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 
         var aviInfo = aviInfoResult.Success ? DecodeAviInfoFrame(aviInfoResult.Response) : AviInfoFrameInfo.Empty;
         var hdrInfo = hdrMetadataResult.Success ? DecodeHdrMetadata(hdrMetadataResult.Response) : new HdrMetadataInfo(false, null, null);
+        if (hdrMetadataResult.Success && !hdrInfo.HasMetadata)
+        {
+            hdrInfo = new HdrMetadataInfo(true, 0, false);
+        }
         var systemInfo = systemInfoResult.Success ? DecodeCString(systemInfoResult.Response) : null;
         var vicCode = vicResult.Success ? ExtractInt32AsVicCode(vicResult.Response) : null;
         var vfreqHz100 = vfreqResult.Success ? TryReadInt32Value(vfreqResult.Response) : null;
