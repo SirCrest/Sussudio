@@ -57,10 +57,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         _previewSnapshotProvider = previewSnapshotProvider ?? throw new ArgumentNullException(nameof(previewSnapshotProvider));
         _recordingVerifier = recordingVerifier ?? throw new ArgumentNullException(nameof(recordingVerifier));
-        _perfectionCaptureDropPercentThreshold = GetDoubleFromEnv("ELGATOCAPTURE_PERF_CAPTURE_DROP_PCT", 0.10, 0.0, 50.0);
-        _perfectionCaptureP95MultiplierThreshold = GetDoubleFromEnv("ELGATOCAPTURE_PERF_CAPTURE_P95_MULT", 1.30, 1.0, 10.0);
-        _perfectionPreviewSlowPercentThreshold = GetDoubleFromEnv("ELGATOCAPTURE_PERF_PREVIEW_SLOW_PCT", 2.00, 0.0, 100.0);
-        _perfectionVerificationDropPercentThreshold = GetDoubleFromEnv("ELGATOCAPTURE_PERF_VERIFY_DROP_PCT", 0.25, 0.0, 100.0);
+        _perfectionCaptureDropPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PERF_CAPTURE_DROP_PCT", 0.10, 0.0, 50.0);
+        _perfectionCaptureP95MultiplierThreshold = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PERF_CAPTURE_P95_MULT", 1.30, 1.0, 10.0);
+        _perfectionPreviewSlowPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PERF_PREVIEW_SLOW_PCT", 2.00, 0.0, 100.0);
+        _perfectionVerificationDropPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PERF_VERIFY_DROP_PCT", 0.25, 0.0, 100.0);
     }
 
     public void Start()
@@ -347,16 +347,16 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         bool lastOutputExists = false;
         long? lastOutputSize = null;
-        if (!string.IsNullOrWhiteSpace(captureRuntime.LastOutputPath) && File.Exists(captureRuntime.LastOutputPath))
+        if (!string.IsNullOrWhiteSpace(captureRuntime.LastOutputPath))
         {
-            lastOutputExists = true;
             try
             {
                 lastOutputSize = new FileInfo(captureRuntime.LastOutputPath).Length;
+                lastOutputExists = true;
             }
             catch
             {
-                lastOutputSize = null;
+                // File doesn't exist or is inaccessible
             }
         }
 
@@ -1147,14 +1147,4 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         return (int)Math.Floor(age.TotalSeconds);
     }
 
-    private static double GetDoubleFromEnv(string variableName, double defaultValue, double minValue, double maxValue)
-    {
-        var rawValue = Environment.GetEnvironmentVariable(variableName);
-        if (double.TryParse(rawValue, out var parsed))
-        {
-            return Math.Clamp(parsed, minValue, maxValue);
-        }
-
-        return defaultValue;
-    }
 }

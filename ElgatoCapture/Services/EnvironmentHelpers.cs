@@ -14,4 +14,15 @@ internal static class EnvironmentHelpers
 
         return defaultValue;
     }
+
+    public static double GetDoubleFromEnv(string variableName, double defaultValue, double minValue, double maxValue)
+    {
+        var rawValue = Environment.GetEnvironmentVariable(variableName);
+        if (double.TryParse(rawValue, out var parsed))
+        {
+            return Math.Clamp(parsed, minValue, maxValue);
+        }
+
+        return defaultValue;
+    }
 }

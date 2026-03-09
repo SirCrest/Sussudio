@@ -410,19 +410,13 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     break;
                 }
 
-                if (hr == MfHResults.MF_E_SHUTDOWN || hr == MfHResults.MF_E_INVALIDREQUEST)
+                if ((hr == MfHResults.MF_E_SHUTDOWN || hr == MfHResults.MF_E_INVALIDREQUEST)
+                    && ct.IsCancellationRequested)
                 {
-                    if (ct.IsCancellationRequested)
-                    {
-                        break;
-                    }
+                    break;
+                }
 
-                    ThrowIfFailed(hr, "IMFSourceReader.ReadSample");
-                }
-                else
-                {
-                    ThrowIfFailed(hr, "IMFSourceReader.ReadSample");
-                }
+                ThrowIfFailed(hr, "IMFSourceReader.ReadSample");
 
                 if ((flags & MfConstants.MF_SOURCE_READERF_ENDOFSTREAM) != 0)
                 {
@@ -555,15 +549,15 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
     private void TrackSourceCadence(long mfTimestamp100ns)
     {
-        var previousTimestamp = Interlocked.Read(ref _prevMfTimestamp100ns);
+        var previousTimestamp = Volatile.Read(ref _prevMfTimestamp100ns);
         if (previousTimestamp < 0)
         {
-            Interlocked.Exchange(ref _prevMfTimestamp100ns, mfTimestamp100ns);
+            Volatile.Write(ref _prevMfTimestamp100ns, mfTimestamp100ns);
             return;
         }
 
         var intervalMs = (mfTimestamp100ns - previousTimestamp) / 10_000.0;
-        Interlocked.Exchange(ref _prevMfTimestamp100ns, mfTimestamp100ns);
+        Volatile.Write(ref _prevMfTimestamp100ns, mfTimestamp100ns);
         if (intervalMs <= 0 || intervalMs > 5000)
         {
             return;
@@ -716,12 +710,6 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 return;
             }
 
-            if (buffer == null)
-            {
-                Interlocked.Increment(ref _framesDropped);
-                return;
-            }
-
             if (onDualFrame != null)
             {
                 DeliverDualFrameFromBuffer(buffer, onDualFrame, onFrame, arrivalTick);
@@ -777,14 +765,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 try
                 {
                     var packedSpan = packed.AsSpan(0, packedFrameBytes);
-                    if (_isP010)
-                    {
-                        CopyP010WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
-                    }
-                    else
-                    {
-                        CopyNV12WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
-                    }
+                    CopyYuvWithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height, _isP010);
 
                     onFrame(packedSpan, _width, _height, arrivalTick);
                 }
@@ -855,23 +836,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     try
                     {
                         var packedSpan = packed.AsSpan(0, packedFrameBytes);
-                        if (_isP010)
-                        {
-                            CopyP010WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
-                        }
-                        else
-                        {
-                            CopyNV12WithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height);
-                        }
+                        CopyYuvWithStride((byte*)dataPtr, inferredStride, packedSpan, _width, _height, _isP010);
 
-                        InvokeDualFrameCallback(
-                            onDualFrame,
-                            gpuTexture,
-                            gpuSubresource,
-                            packedSpan,
-                            _width,
-                            _height,
-                            arrivalTick);
+                        onDualFrame(gpuTexture, gpuSubresource, packedSpan, _width, _height, arrivalTick);
                     }
                     finally
                     {
@@ -880,14 +847,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                 }
                 else
                 {
-                    InvokeDualFrameCallback(
-                        onDualFrame,
-                        gpuTexture,
-                        gpuSubresource,
-                        new ReadOnlySpan<byte>((void*)dataPtr, packedFrameBytes),
-                        _width,
-                        _height,
-                        arrivalTick);
+                    onDualFrame(gpuTexture, gpuSubresource, new ReadOnlySpan<byte>((void*)dataPtr, packedFrameBytes), _width, _height, arrivalTick);
                 }
             }
             finally
@@ -939,14 +899,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             try
             {
                 var packedSpan = packed.AsSpan(0, packedFrameBytes);
-                if (_isP010)
-                {
-                    CopyP010WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
-                }
-                else
-                {
-                    CopyNV12WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
-                }
+                CopyYuvWithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height, _isP010);
 
                 onFrame(packedSpan, _width, _height, arrivalTick);
             }
@@ -995,14 +948,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             var expectedStride = GetRowBytes(_width, _isP010);
             if (pitch == expectedStride)
             {
-                InvokeDualFrameCallback(
-                    onFrame,
-                    gpuTexture,
-                    gpuSubresource,
-                    new ReadOnlySpan<byte>((void*)scanlinePtr, packedFrameBytes),
-                    _width,
-                    _height,
-                    arrivalTick);
+                onFrame(gpuTexture, gpuSubresource, new ReadOnlySpan<byte>((void*)scanlinePtr, packedFrameBytes), _width, _height, arrivalTick);
                 return true;
             }
 
@@ -1010,16 +956,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             try
             {
                 var packedSpan = packed.AsSpan(0, packedFrameBytes);
-                if (_isP010)
-                {
-                    CopyP010WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
-                }
-                else
-                {
-                    CopyNV12WithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height);
-                }
+                CopyYuvWithStride((byte*)scanlinePtr, pitch, packedSpan, _width, _height, _isP010);
 
-                InvokeDualFrameCallback(onFrame, gpuTexture, gpuSubresource, packedSpan, _width, _height, arrivalTick);
+                onFrame(gpuTexture, gpuSubresource, packedSpan, _width, _height, arrivalTick);
             }
             finally
             {
@@ -1089,18 +1028,6 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 
         gpuSubresource = unchecked((int)subresource);
         return true;
-    }
-
-    private static void InvokeDualFrameCallback(
-        DualFrameCallback callback,
-        IntPtr gpuTexture,
-        int gpuSubresource,
-        ReadOnlySpan<byte> cpuData,
-        int width,
-        int height,
-        long arrivalTick)
-    {
-        callback(gpuTexture, gpuSubresource, cpuData, width, height, arrivalTick);
     }
 
     private bool TrySetSourceReaderD3DManager(IMFAttributes attributes, IntPtr dxgiDeviceManager)
@@ -1330,10 +1257,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     continue;
                 }
 
-                var frameRate = TryGetFrameRate(nativeType, out var fpsNumerator, out var fpsDenominator)
-                    ? (double)fpsNumerator / fpsDenominator
-                    : 0;
-                var delta = Math.Abs(frameRate - requestedFps);
+                var delta = Math.Abs(nFps - requestedFps);
 
                 if (delta < bestFpsDelta)
                 {
@@ -1343,10 +1267,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     bestFpsDelta = delta;
                     selectedWidth = width;
                     selectedHeight = height;
-                    selectedFps = frameRate > 0 ? frameRate : requestedFps;
+                    selectedFps = nFps > 0 ? nFps : requestedFps;
                     selectedSubtype = subtype;
-                    negotiatedDescription = frameRate > 0
-                        ? $"{requestedSubtypeName} {width}x{height}@{frameRate:0.###}"
+                    negotiatedDescription = nFps > 0
+                        ? $"{requestedSubtypeName} {width}x{height}@{nFps:0.###}"
                         : $"{requestedSubtypeName} {width}x{height}";
                 }
             }
@@ -1480,73 +1404,21 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private static int GetRowBytes(int width, bool isP010)
         => isP010 ? width * 2 : width;
 
-    private unsafe static void CopyP010WithStride(
+    private unsafe static void CopyYuvWithStride(
         byte* sourceStart,
         int stride,
         Span<byte> destination,
         int width,
-        int height)
+        int height,
+        bool isP010)
     {
-        var rowBytes = width * 2;
+        var rowBytes = GetRowBytes(width, isP010);
         var uvHeight = height / 2;
         var yBytes = rowBytes * height;
         var uvBytes = rowBytes * uvHeight;
         if (destination.Length < yBytes + uvBytes)
         {
-            throw new ArgumentException("Destination span is too small for packed P010 frame.");
-        }
-
-        var strideAbs = Math.Abs(stride);
-        if (strideAbs < rowBytes)
-        {
-            throw new InvalidOperationException(
-                $"Source stride ({stride}) is smaller than packed row width ({rowBytes}).");
-        }
-
-        var yDest = destination[..yBytes];
-        var uvDest = destination.Slice(yBytes, uvBytes);
-        var yStart = sourceStart;
-        var uvStart = sourceStart + (stride * height);
-
-        if (stride < 0)
-        {
-            yStart = sourceStart + (stride * (height - 1));
-            uvStart = sourceStart + (stride * (height + uvHeight - 1));
-        }
-
-        for (var row = 0; row < height; row++)
-        {
-            var src = stride >= 0
-                ? yStart + (row * stride)
-                : yStart - (row * strideAbs);
-            var dst = yDest.Slice(row * rowBytes, rowBytes);
-            new ReadOnlySpan<byte>(src, rowBytes).CopyTo(dst);
-        }
-
-        for (var row = 0; row < uvHeight; row++)
-        {
-            var src = stride >= 0
-                ? uvStart + (row * stride)
-                : uvStart - (row * strideAbs);
-            var dst = uvDest.Slice(row * rowBytes, rowBytes);
-            new ReadOnlySpan<byte>(src, rowBytes).CopyTo(dst);
-        }
-    }
-
-    private unsafe static void CopyNV12WithStride(
-        byte* sourceStart,
-        int stride,
-        Span<byte> destination,
-        int width,
-        int height)
-    {
-        var rowBytes = width;
-        var uvHeight = height / 2;
-        var yBytes = rowBytes * height;
-        var uvBytes = rowBytes * uvHeight;
-        if (destination.Length < yBytes + uvBytes)
-        {
-            throw new ArgumentException("Destination span is too small for packed NV12 frame.");
+            throw new ArgumentException("Destination span is too small for packed frame.");
         }
 
         var strideAbs = Math.Abs(stride);
