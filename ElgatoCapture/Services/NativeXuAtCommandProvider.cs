@@ -65,6 +65,27 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     private const int CmdVfreq = 0x86;
     private const int CmdHdr2Sdr = 0x90;
     private const int CmdAviInfoFrame = 0x92;
+    private const int CmdAudioFormat = 0x04;
+    private const int CmdAudioSamplingRate = 0x06;
+    private const int CmdInputSource = 0x35;
+    private const int CmdRawTiming = 0x37;
+    private const int CmdUsbHostProtocol = 0x40;
+    private const int CmdTxHpdStatus = 0x41;
+    private const int CmdTxVrr = 0x42;
+    private const int CmdUvcOutputTiming = 0x44;
+    private const int CmdUvcVideoFormat = 0x45;
+    private const int CmdUvcErrStatus = 0x46;
+    private const int CmdHdcpMode = 0x72;
+    private const int CmdHdr2SdrExtended = 0x76;
+    private const int CmdVtem = 0x7D;
+    private const int CmdHdcpVersion = 0x7E;
+    private const int CmdRxTxHdcpVersion = 0x8A;
+    private const int CmdUsbCdcOnOff = 0x8B;
+    private const int CmdUsbLinkState = 0x8C;
+    private const int CmdUsbForceSpeed = 0x8D;
+    private const int CmdColorRangeSetting = 0x91;
+    private const int CmdBitError = 0x93;
+    private const int CmdHdr2SdrColorParam = 0x9B;
 
     public async Task<SourceSignalTelemetrySnapshot> ReadAsync(
         CaptureDevice? device,
@@ -208,6 +229,88 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         }
     }
 
+    /// <summary>
+    /// Sends an AT SET command to the Realtek chip. Opens its own KS handle.
+    /// </summary>
+    public static async Task<bool> SendAtSetCommandAsync(
+        CaptureDevice? device,
+        int cmdCode,
+        byte[] inputData,
+        CancellationToken cancellationToken = default)
+    {
+        if (device == null || string.IsNullOrWhiteSpace(device.Id))
+        {
+            return false;
+        }
+
+        if (!TryParseVendorProductIds(device.Id, out var vendorId, out var productId) ||
+            vendorId != Elgato4kXVendorId ||
+            productId != Elgato4kXProductId)
+        {
+            return false;
+        }
+
+        var gateAcquired = false;
+        try
+        {
+            gateAcquired = await CallGate.WaitAsync(GateTimeoutMs, cancellationToken).ConfigureAwait(false);
+            if (!gateAcquired)
+            {
+                return false;
+            }
+
+            var interfaces = KsExtensionUnitNative.EnumerateKsInterfaces(vendorId, productId);
+            foreach (var ksInterface in interfaces)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+                if (handle is null)
+                {
+                    continue;
+                }
+
+                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+                {
+                    continue;
+                }
+
+                var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+                foreach (var node in nodeList)
+                {
+                    if (!node.IsDevSpecific)
+                    {
+                        continue;
+                    }
+
+                    var result = SendAtSetCommand(handle, node.NodeId, cmdCode, inputData);
+                    if (result)
+                    {
+                        Logger.Log($"NATIVEXU_SET_OK cmd=0x{cmdCode:X2} inputLen={inputData.Length}");
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"NATIVEXU_SET_EXCEPTION cmd=0x{cmdCode:X2} type={ex.GetType().Name} msg={ex.Message}");
+            return false;
+        }
+        finally
+        {
+            if (gateAcquired)
+            {
+                CallGate.Release();
+            }
+        }
+    }
+
     private static NodeReadAttempt TryReadSnapshot(
         SafeFileHandle handle,
         int nodeId,
@@ -267,6 +370,27 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         var hdrMetadataResult = SendAtCommand(handle, nodeId, "HdrMetadata", CmdHdrMetadata);
         var systemInfoResult = SendAtCommand(handle, nodeId, "SystemInfo", CmdSystemInfo);
         var hdr2SdrResult = SendAtCommand(handle, nodeId, "Hdr2Sdr", CmdHdr2Sdr);
+        var audioFormatResult = SendAtCommand(handle, nodeId, "AudioFormat", CmdAudioFormat);
+        var audioSamplingRateResult = SendAtCommand(handle, nodeId, "AudioSamplingRate", CmdAudioSamplingRate);
+        var inputSourceResult = SendAtCommand(handle, nodeId, "InputSource", CmdInputSource);
+        var usbHostProtocolResult = SendAtCommand(handle, nodeId, "UsbHostProtocol", CmdUsbHostProtocol);
+        var usbCdcResult = SendAtCommand(handle, nodeId, "UsbCdc", CmdUsbCdcOnOff);
+        var usbLinkStateResult = SendAtCommand(handle, nodeId, "UsbLinkState", CmdUsbLinkState);
+        var usbForceSpeedResult = SendAtCommand(handle, nodeId, "UsbForceSpeed", CmdUsbForceSpeed);
+        var txHpdResult = SendAtCommand(handle, nodeId, "TxHpd", CmdTxHpdStatus);
+        var txVrrResult = SendAtCommand(handle, nodeId, "TxVrr", CmdTxVrr);
+        var uvcOutputTimingResult = SendAtCommand(handle, nodeId, "UvcOutputTiming", CmdUvcOutputTiming);
+        var uvcVideoFormatResult = SendAtCommand(handle, nodeId, "UvcVideoFormat", CmdUvcVideoFormat);
+        var uvcErrStatusResult = SendAtCommand(handle, nodeId, "UvcErrStatus", CmdUvcErrStatus);
+        var hdcpModeResult = SendAtCommand(handle, nodeId, "HdcpMode", CmdHdcpMode);
+        var hdcpVersionResult = SendAtCommand(handle, nodeId, "HdcpVersion", CmdHdcpVersion);
+        var rxTxHdcpVersionResult = SendAtCommand(handle, nodeId, "RxTxHdcpVersion", CmdRxTxHdcpVersion);
+        var hdr2SdrExtendedResult = SendAtCommand(handle, nodeId, "Hdr2SdrExtended", CmdHdr2SdrExtended);
+        var hdr2SdrColorParamResult = SendAtCommand(handle, nodeId, "Hdr2SdrColorParam", CmdHdr2SdrColorParam);
+        var colorRangeSettingResult = SendAtCommand(handle, nodeId, "ColorRangeSetting", CmdColorRangeSetting);
+        var vtemResult = SendAtCommand(handle, nodeId, "Vtem", CmdVtem);
+        var bitErrorResult = SendAtCommand(handle, nodeId, "BitError", CmdBitError);
+        var rawTimingResult = SendAtCommand(handle, nodeId, "RawTiming", CmdRawTiming);
 
         var aviInfo = aviInfoResult.Success ? DecodeAviInfoFrame(aviInfoResult.Response) : AviInfoFrameInfo.Empty;
         var hdrInfo = hdrMetadataResult.Success ? DecodeHdrMetadata(hdrMetadataResult.Response) : new HdrMetadataInfo(false, null, null);
@@ -316,6 +440,39 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"hdr={BoolToToken(hdrInfo.IsHdr)} colorspace={aviInfo.ColorSpace ?? "unknown"} " +
             $"colorimetry={aviInfo.Colorimetry ?? "unknown"} firmware={systemInfo ?? "unknown"}");
 
+        var baseDiagnosticSummary = BuildDiagnosticSummary(
+            vicCode,
+            timing,
+            frameRateExact,
+            hdrInfo,
+            aviInfo,
+            vfreqHz100,
+            hdr2SdrState,
+            systemInfo);
+        var fullDiagnosticSummary = AppendExtendedDiagnostics(
+            baseDiagnosticSummary,
+            audioFormatResult,
+            audioSamplingRateResult,
+            inputSourceResult,
+            usbHostProtocolResult,
+            usbCdcResult,
+            usbLinkStateResult,
+            usbForceSpeedResult,
+            txHpdResult,
+            txVrrResult,
+            uvcOutputTimingResult,
+            uvcVideoFormatResult,
+            uvcErrStatusResult,
+            hdcpModeResult,
+            hdcpVersionResult,
+            rxTxHdcpVersionResult,
+            hdr2SdrExtendedResult,
+            hdr2SdrColorParamResult,
+            colorRangeSettingResult,
+            vtemResult,
+            bitErrorResult,
+            rawTimingResult);
+
         return new NodeReadAttempt(
             new SourceSignalTelemetrySnapshot
             {
@@ -329,17 +486,18 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 FrameRateExact = frameRateExact,
                 FrameRateArg = InferFrameRateRational(frameRateExact),
                 IsHdr = hdrInfo.IsHdr,
-                DiagnosticSummary = BuildDiagnosticSummary(
-                    vicCode,
-                    timing,
-                    frameRateExact,
-                    hdrInfo,
-                    aviInfo,
-                    vfreqHz100,
-                    hdr2SdrState,
-                    systemInfo),
-                AudioInputAvailability = SourceAudioInputAvailability.Unavailable,
-                AudioInputOrigin = "not-implemented"
+                DiagnosticSummary = fullDiagnosticSummary,
+                AudioInputAvailability = inputSourceResult.Success
+                    ? SourceAudioInputAvailability.Available
+                    : SourceAudioInputAvailability.Unavailable,
+                AudioInputMode = inputSourceResult.Success && inputSourceResult.Response.Length >= 1
+                    ? (inputSourceResult.Response[0] == 0 ? SourceAudioInputMode.Hdmi : SourceAudioInputMode.Analog)
+                    : null,
+                AudioInputOrigin = inputSourceResult.Success
+                    ? (inputSourceResult.Response.Length >= 1
+                        ? $"NativeXu:InputSource={inputSourceResult.Response[0]}"
+                        : "NativeXu:InputSource=missing")
+                    : "not-implemented"
             },
             false,
             null,
@@ -427,6 +585,31 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         return new AtCommandResult(name, cmdCode, true, rawData, rawData.Length, null, null);
     }
 
+    private static bool SendAtSetCommand(SafeFileHandle handle, int nodeId, int cmdCode, byte[] inputData)
+    {
+        var requestFrame = BuildAtWriteFrame(cmdCode, inputData);
+        var triggerData = new byte[]
+        {
+            (byte)(requestFrame.Length & 0xFF),
+            (byte)((requestFrame.Length >> 8) & 0xFF)
+        };
+
+        if (!KsExtensionUnitNative.TryXuSetViaOutput(handle, nodeId, XuGuid, AtTriggerSelector, triggerData, out var triggerWin32))
+        {
+            Logger.Log($"NATIVEXU_SET_FAILED cmd=0x{cmdCode:X2} stage=trigger win32={FormatWin32Code(triggerWin32)}");
+            return false;
+        }
+
+        if (!KsExtensionUnitNative.TryXuSetViaOutput(handle, nodeId, XuGuid, AtPayloadSelector, requestFrame, out var sendWin32))
+        {
+            Logger.Log($"NATIVEXU_SET_FAILED cmd=0x{cmdCode:X2} stage=send win32={FormatWin32Code(sendWin32)}");
+            return false;
+        }
+
+        KsExtensionUnitNative.TryXuGetDirect(handle, nodeId, XuGuid, AtTriggerSelector, 2, out _, out _, out _);
+        return true;
+    }
+
     private static byte ComputeLrc(ReadOnlySpan<byte> data)
     {
         byte sum = 0;
@@ -448,6 +631,26 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         frame[6] = (byte)((cmdCode >> 16) & 0xFF);
         frame[7] = (byte)((cmdCode >> 24) & 0xFF);
         frame[8] = ComputeLrc(frame.AsSpan(0, 8));
+        return frame;
+    }
+
+    private static byte[] BuildAtWriteFrame(int cmdCode, byte[] inputData)
+    {
+        var dataLen = 4 + inputData.Length;
+        var frameLen = AtFrameHeaderSize + dataLen + AtFrameLrcSize;
+        var frame = new byte[frameLen];
+        frame[0] = 0xA1;
+        frame[1] = (byte)((dataLen + 2) & 0x7F);
+        frame[4] = (byte)(cmdCode & 0xFF);
+        frame[5] = (byte)((cmdCode >> 8) & 0xFF);
+        frame[6] = (byte)((cmdCode >> 16) & 0xFF);
+        frame[7] = (byte)((cmdCode >> 24) & 0xFF);
+        if (inputData.Length > 0)
+        {
+            Array.Copy(inputData, 0, frame, 8, inputData.Length);
+        }
+
+        frame[frameLen - 1] = ComputeLrc(frame.AsSpan(0, frameLen - 1));
         return frame;
     }
 
@@ -701,6 +904,87 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             $"eotf={(hdrInfo.Eotf.HasValue ? hdrInfo.Eotf.Value.ToString(CultureInfo.InvariantCulture) : "unknown")}",
             $"fw={systemInfo ?? "unknown"}");
     }
+
+    private static string AppendExtendedDiagnostics(
+        string baseSummary,
+        AtCommandResult audioFormat,
+        AtCommandResult audioSamplingRate,
+        AtCommandResult inputSource,
+        AtCommandResult usbHostProtocol,
+        AtCommandResult usbCdc,
+        AtCommandResult usbLinkState,
+        AtCommandResult usbForceSpeed,
+        AtCommandResult txHpd,
+        AtCommandResult txVrr,
+        AtCommandResult uvcOutputTiming,
+        AtCommandResult uvcVideoFormat,
+        AtCommandResult uvcErrStatus,
+        AtCommandResult hdcpMode,
+        AtCommandResult hdcpVersion,
+        AtCommandResult rxTxHdcpVersion,
+        AtCommandResult hdr2SdrExtended,
+        AtCommandResult hdr2SdrColorParam,
+        AtCommandResult colorRangeSetting,
+        AtCommandResult vtem,
+        AtCommandResult bitError,
+        AtCommandResult rawTiming)
+    {
+        var sb = new StringBuilder(baseSummary);
+
+        AppendResultField(sb, "audiofmt", audioFormat, FormatByte);
+        AppendResultField(sb, "audiosrate", audioSamplingRate, FormatByte);
+        AppendResultField(sb, "inputsrc", inputSource, FormatByte);
+        AppendResultField(sb, "usbproto", usbHostProtocol, FormatInt32);
+        AppendResultField(sb, "usbcdc", usbCdc, FormatByte);
+        AppendResultField(sb, "usblinkst", usbLinkState, FormatByte);
+        AppendResultField(sb, "usbspeed", usbForceSpeed, FormatByte);
+        AppendResultField(sb, "txhpd", txHpd, FormatInt32);
+        AppendResultField(sb, "txvrr", txVrr, FormatInt32);
+        AppendResultField(sb, "uvctiming", uvcOutputTiming, FormatHex);
+        AppendResultField(sb, "uvcfmt", uvcVideoFormat, FormatByte);
+        AppendResultField(sb, "uvcerr", uvcErrStatus, FormatByte);
+        AppendResultField(sb, "hdcpmode", hdcpMode, FormatByte);
+        AppendResultField(sb, "hdcpver", hdcpVersion, FormatHex);
+        AppendResultField(sb, "rxtxhdcp", rxTxHdcpVersion, FormatInt16);
+        AppendResultField(sb, "hdr2sdrext", hdr2SdrExtended, FormatInt32);
+        AppendResultField(sb, "hdr2sdrcolor", hdr2SdrColorParam, FormatInt32);
+        AppendResultField(sb, "colorrangesetting", colorRangeSetting, FormatByte);
+        AppendResultField(sb, "vtem", vtem, FormatInt16);
+        AppendResultField(sb, "biterr", bitError, FormatInt64);
+        AppendResultField(sb, "rawtiming", rawTiming, FormatHex);
+
+        return sb.ToString();
+    }
+
+    private static void AppendResultField(StringBuilder sb, string key, AtCommandResult result, Func<byte[], string> formatter)
+    {
+        sb.Append(':');
+        sb.Append(key);
+        sb.Append('=');
+        if (result.Success && result.Response.Length > 0)
+        {
+            sb.Append(formatter(result.Response));
+        }
+        else
+        {
+            sb.Append("n/a");
+        }
+    }
+
+    private static string FormatByte(byte[] data)
+        => data.Length >= 1 ? data[0].ToString(CultureInfo.InvariantCulture) : "n/a";
+
+    private static string FormatInt16(byte[] data)
+        => data.Length >= 2 ? BitConverter.ToInt16(data, 0).ToString(CultureInfo.InvariantCulture) : "n/a";
+
+    private static string FormatInt32(byte[] data)
+        => data.Length >= 4 ? BitConverter.ToInt32(data, 0).ToString(CultureInfo.InvariantCulture) : "n/a";
+
+    private static string FormatInt64(byte[] data)
+        => data.Length >= 8 ? BitConverter.ToInt64(data, 0).ToString(CultureInfo.InvariantCulture) : "n/a";
+
+    private static string FormatHex(byte[] data)
+        => data.Length > 0 ? Convert.ToHexString(data) : "n/a";
 
     private static bool TryReadInt32(byte[] buffer, out int value)
     {
