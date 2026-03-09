@@ -16,6 +16,7 @@ internal sealed unsafe class NvdecMjpegDecoder : IDisposable
     private AVBufferRef* _hwDeviceCtx;
     private AVBufferRef* _hwFramesCtx;
     private AVFrame* _decodedFrame;
+    private AVFrame* _drainFrame;
     private AVFrame* _cpuFrame;
     private AVPacket* _packet;
     private IntPtr _packedCpuBuffer;
@@ -88,7 +89,7 @@ internal sealed unsafe class NvdecMjpegDecoder : IDisposable
             framesCtx->sw_format = AVPixelFormat.AV_PIX_FMT_NV12;
             framesCtx->width = width;
             framesCtx->height = height;
-            framesCtx->initial_pool_size = 20;
+            framesCtx->initial_pool_size = 40;
 
             var framesInitResult = ffmpeg.av_hwframe_ctx_init(hwFramesRef);
             if (framesInitResult < 0)
@@ -117,7 +118,7 @@ internal sealed unsafe class NvdecMjpegDecoder : IDisposable
                 throw new InvalidOperationException("Failed to reference CUDA frames context for decoder.");
             }
 
-            decoderCtx->extra_hw_frames = 8;
+            decoderCtx->extra_hw_frames = 16;
 
             var openResult = ffmpeg.avcodec_open2(decoderCtx, codec, null);
             if (openResult < 0)
@@ -225,6 +226,21 @@ internal sealed unsafe class NvdecMjpegDecoder : IDisposable
                 }
 
                 return null;
+            }
+
+            // Drain any additional buffered frames — keep the latest.
+            // MJPEG is intra-only so typically 1:1, but NVDEC may buffer briefly.
+            if (_drainFrame == null)
+                _drainFrame = ffmpeg.av_frame_alloc();
+
+            while (true)
+            {
+                ffmpeg.av_frame_unref(_drainFrame);
+                var drainResult = ffmpeg.avcodec_receive_frame(_decoderCtx, _drainFrame);
+                if (drainResult < 0)
+                    break;
+                ffmpeg.av_frame_unref(_decodedFrame);
+                ffmpeg.av_frame_move_ref(_decodedFrame, _drainFrame);
             }
 
             return _decodedFrame;
@@ -343,6 +359,13 @@ internal sealed unsafe class NvdecMjpegDecoder : IDisposable
             var decodedFrame = _decodedFrame;
             ffmpeg.av_frame_free(&decodedFrame);
             _decodedFrame = null;
+        }
+
+        if (_drainFrame != null)
+        {
+            var drainFrame = _drainFrame;
+            ffmpeg.av_frame_free(&drainFrame);
+            _drainFrame = null;
         }
 
         if (_cpuFrame != null)

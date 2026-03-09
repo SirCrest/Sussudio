@@ -16,7 +16,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private const int VideoQueueCapacity = 360;
     private const int AudioQueueCapacity = 3600;
     private const int GpuQueueCapacity = 4;
-    private const int CudaQueueCapacity = 4;
+    private const int CudaQueueCapacity = 12;
     private const int StopTimeoutMs = 30_000;
 
     private readonly object _sync = new();
