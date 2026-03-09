@@ -1407,3 +1407,19 @@ Do not rewrite or delete prior entries. Append new entries only.
   - Frame budget at 120fps is 8.33ms; complex scenes blow this by 50-70%
   - Interop copy (CUDA staging → D3D11) is fast enough at 1.5-2.7ms avg
 - Conclusion: The decode stage is the bottleneck, not the interop copy or D3D11 contention. CPU multi-threaded MJPEG decode (FFmpeg `mjpeg` with AVX2, 2-3 threads) is the leading candidate for improvement since MJPEG frames are independent and can be decoded in parallel.
+
+## E72 - Dual MJPEG decoder experiment with bounded decoder-1 worker lane
+- Timestamp (UTC): 2026-03-09T21:01:14.3627007Z
+- Commit Hash: uncommitted (base 19b2d8e04696aba58d627b642b1f911c1dffccbf)
+- What Changed (single change): Added a second `NvdecMjpegDecoder` plus second `CudaD3D11InteropBridge` in `UnifiedVideoCapture`, routed odd MJPG frames to decoder slot 1 through a bounded single-reader worker lane, kept decoder 0 as the public `MjpegDecoder`, logged `MJPEG_DUAL_DECODER_*` diagnostics, and disposed/drained both decoder/interop instances during stop and teardown.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 250`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the repo-local verification run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` snapshot token; this pass did not exercise live MJPG/NVDEC hardware.
+- ffprobe Evidence:
+  - N/A (preview/capture-path experiment only; no recording artifact generated in this verification pass)
+- Conclusion: The dual-decoder experiment now has two decoder/interop slots, bounded background dispatch for slot 1, and explicit stop/dispose draining in the repo-local verified build. Live 4K120 hardware validation is still required to confirm whether the second lane materially reduces complex-scene drops.

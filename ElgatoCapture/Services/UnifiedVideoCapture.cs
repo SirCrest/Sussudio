@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using FFmpeg.AutoGen;
 
@@ -18,7 +19,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private IGpuVideoFrameEncoder? _gpuRecordingEncoder;
     private ICudaVideoFrameEncoder? _cudaRecordingEncoder;
     private NvdecMjpegDecoder? _mjpegDecoder;
+    private NvdecMjpegDecoder? _mjpegDecoder1;
     private CudaD3D11InteropBridge? _cudaD3D11Interop;
+    private CudaD3D11InteropBridge? _cudaD3D11Interop1;
     private bool _started;
     private bool _recordingActive;
     private bool _disposed;
@@ -37,8 +40,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private long _recordingFramesDelivered;
     private long _recordingFramesEnqueued;
     private long _lastVideoFrameArrivedTick;
+    private long _mjpegFrameSequence;
     private Task? _mjpegPreviewTask;
     private int _mjpegPreviewInFlight;
+    private ChannelWriter<MjpegDecodeWorkItem>? _mjpegDecoder1WorkWriter;
+    private Task? _mjpegDecoder1WorkerTask;
     private Action<string>? _observedPixelFormatObserver;
     private readonly double[] _mjpegDecodeTimeMs = new double[300];
     private int _mjpegDecodeTimeCount;
@@ -78,6 +84,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     public long SourceReaderLastFrameTickMs => _capture?.LastFrameDeliveredTickMs ?? 0;
     public SharedD3DDeviceManager? D3DManager => Volatile.Read(ref _d3dManager);
     public NvdecMjpegDecoder? MjpegDecoder => Volatile.Read(ref _mjpegDecoder);
+    private readonly record struct MjpegDecodeWorkItem(byte[] JpegData, int Width, int Height, long ArrivalTick);
     public readonly record struct MjpegPipelineTimingMetrics(
         int DecodeSampleCount,
         double DecodeAvgMs,
@@ -159,6 +166,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         var d3dManager = new SharedD3DDeviceManager();
         var dxgiDeviceManagerPtr = d3dManager.DxgiDeviceManagerPtr;
         NvdecMjpegDecoder? mjpegDecoder = null;
+        NvdecMjpegDecoder? mjpegDecoder1 = null;
         var useExternalMjpegDecode =
             useMjpegHighFrameRateMode &&
             !requireP010 &&
@@ -181,6 +189,22 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             }
         }
 
+        if (mjpegDecoder != null)
+        {
+            try
+            {
+                mjpegDecoder1 = new NvdecMjpegDecoder();
+                mjpegDecoder1.Initialize(width, height);
+                Logger.Log($"NVDEC_MJPEG_DECODER1_AVAILABLE width={width} height={height}");
+            }
+            catch (Exception ex)
+            {
+                mjpegDecoder1?.Dispose();
+                mjpegDecoder1 = null;
+                Logger.Log($"NVDEC_MJPEG_DECODER1_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            }
+        }
+
         var capture = new MfSourceReaderVideoCapture();
         try
         {
@@ -197,6 +221,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         }
         catch
         {
+            mjpegDecoder1?.Dispose();
             mjpegDecoder?.Dispose();
             d3dManager.Dispose();
             throw;
@@ -208,6 +233,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         }
 
         CudaD3D11InteropBridge? cudaD3D11Interop = null;
+        CudaD3D11InteropBridge? cudaD3D11Interop1 = null;
         if (mjpegDecoder != null)
         {
             try
@@ -224,12 +250,30 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             }
         }
 
+        if (mjpegDecoder1 != null)
+        {
+            try
+            {
+                var cudaCtx1 = mjpegDecoder1.GetCudaContext();
+                cudaD3D11Interop1 = new CudaD3D11InteropBridge(cudaCtx1, d3dManager.Device, capture.Width, capture.Height);
+                Logger.Log($"CUDA_D3D11_INTEROP1_OK width={capture.Width} height={capture.Height}");
+            }
+            catch (Exception ex)
+            {
+                cudaD3D11Interop1?.Dispose();
+                cudaD3D11Interop1 = null;
+                Logger.Log($"CUDA_D3D11_INTEROP1_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            }
+        }
+
         lock (_sync)
         {
             _capture = capture;
             _d3dManager = d3dManager;
             _mjpegDecoder = mjpegDecoder;
+            _mjpegDecoder1 = mjpegDecoder1;
             _cudaD3D11Interop = cudaD3D11Interop;
+            _cudaD3D11Interop1 = cudaD3D11Interop1;
             _isP010 = capture.IsP010;
             _isHighFrameRateMjpegMode = capture.IsHighFrameRateMjpegMode;
             _strictPreviewTextureRequired =
@@ -246,8 +290,14 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
             Interlocked.Exchange(ref _lastVideoFrameArrivedTick, 0);
             Interlocked.Exchange(ref _fatalErrorSignaled, 0);
+            Interlocked.Exchange(ref _mjpegFrameSequence, 0);
+            _mjpegDecoder1WorkWriter = null;
+            _mjpegDecoder1WorkerTask = null;
             ResetMjpegTimingMetrics();
         }
+
+        var decoderCount = 1 + (mjpegDecoder1 != null && cudaD3D11Interop1 != null ? 1 : 0);
+        Logger.Log($"MJPEG_DUAL_DECODER_CONFIG count={decoderCount}");
 
         capture.FatalErrorOccurred += OnCaptureFatalError;
     }
@@ -258,6 +308,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
         MfSourceReaderVideoCapture? capture;
         CancellationTokenSource readCts;
+        ChannelWriter<MjpegDecodeWorkItem>? mjpegDecoder1WorkWriter = null;
+        Task? mjpegDecoder1WorkerTask = null;
 
         lock (_sync)
         {
@@ -270,6 +322,21 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             _started = true;
             readCts = new CancellationTokenSource();
             _readCts = readCts;
+
+            if (_mjpegDecoder1 != null && _cudaD3D11Interop1 != null)
+            {
+                var channel = Channel.CreateBounded<MjpegDecodeWorkItem>(new BoundedChannelOptions(2)
+                {
+                    SingleReader = true,
+                    SingleWriter = true,
+                    FullMode = BoundedChannelFullMode.Wait
+                });
+
+                _mjpegDecoder1WorkWriter = channel.Writer;
+                _mjpegDecoder1WorkerTask = RunMjpegDecoder1WorkerAsync(channel.Reader, _mjpegDecoder1, _cudaD3D11Interop1);
+                mjpegDecoder1WorkWriter = _mjpegDecoder1WorkWriter;
+                mjpegDecoder1WorkerTask = _mjpegDecoder1WorkerTask;
+            }
         }
 
         try
@@ -290,8 +357,12 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             {
                 _started = false;
                 _readCts = null;
+                _mjpegDecoder1WorkWriter = null;
+                _mjpegDecoder1WorkerTask = null;
             }
 
+            mjpegDecoder1WorkWriter?.TryComplete();
+            mjpegDecoder1WorkerTask?.GetAwaiter().GetResult();
             readCts.Dispose();
             throw;
         }
@@ -391,6 +462,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             Interlocked.Exchange(ref _videoFramesDropped, Math.Max(captureDrops, localDrops));
         }
 
+        await DrainMjpegDecoder1WorkItemsAsync().ConfigureAwait(false);
         await DrainMjpegPreviewAsync().ConfigureAwait(false);
         ResetMjpegTimingMetrics();
 
@@ -410,7 +482,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         MfSourceReaderVideoCapture? capture;
         SharedD3DDeviceManager? d3dManager;
         NvdecMjpegDecoder? mjpegDecoder;
+        NvdecMjpegDecoder? mjpegDecoder1;
         CudaD3D11InteropBridge? cudaD3D11Interop;
+        CudaD3D11InteropBridge? cudaD3D11Interop1;
         lock (_sync)
         {
             capture = _capture;
@@ -419,8 +493,14 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             _d3dManager = null;
             mjpegDecoder = _mjpegDecoder;
             _mjpegDecoder = null;
+            mjpegDecoder1 = _mjpegDecoder1;
+            _mjpegDecoder1 = null;
             cudaD3D11Interop = _cudaD3D11Interop;
             _cudaD3D11Interop = null;
+            cudaD3D11Interop1 = _cudaD3D11Interop1;
+            _cudaD3D11Interop1 = null;
+            _mjpegDecoder1WorkWriter = null;
+            _mjpegDecoder1WorkerTask = null;
             _isHighFrameRateMjpegMode = false;
             _strictPreviewTextureRequired = false;
             _previewSink = null;
@@ -433,7 +513,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             await capture.DisposeAsync().ConfigureAwait(false);
         }
 
+        cudaD3D11Interop1?.Dispose();
         cudaD3D11Interop?.Dispose();
+        mjpegDecoder1?.Dispose();
         mjpegDecoder?.Dispose();
         d3dManager?.Dispose();
     }
@@ -595,9 +677,55 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         long arrivalTick)
     {
         const bool isP010 = false;
-        var callbackStart = Stopwatch.GetTimestamp();
         Volatile.Read(ref _observedPixelFormatObserver)?.Invoke("MJPG");
 
+        var seq = Interlocked.Increment(ref _mjpegFrameSequence);
+        var decoder1 = Volatile.Read(ref _mjpegDecoder1);
+        var interop1 = Volatile.Read(ref _cudaD3D11Interop1);
+        if (seq == 300)
+        {
+            Logger.Log($"MJPEG_DUAL_DECODER_SEQ seq={seq} dual={(decoder1 != null && interop1 != null ? "active" : "single")}");
+        }
+
+        if (decoder1 != null &&
+            interop1 != null &&
+            (seq & 1) == 1)
+        {
+            var workWriter = Volatile.Read(ref _mjpegDecoder1WorkWriter);
+            if (workWriter != null &&
+                workWriter.TryWrite(new MjpegDecodeWorkItem(
+                    jpegData.ToArray(),
+                    width,
+                    height,
+                    arrivalTick)))
+            {
+                return;
+            }
+        }
+
+        DecodeMjpegFrame(
+            decoder,
+            Volatile.Read(ref _cudaD3D11Interop),
+            jpegData,
+            width,
+            height,
+            isP010,
+            arrivalTick,
+            Stopwatch.GetTimestamp(),
+            0);
+    }
+
+    private unsafe void DecodeMjpegFrame(
+        NvdecMjpegDecoder decoder,
+        CudaD3D11InteropBridge? interop,
+        ReadOnlySpan<byte> jpegData,
+        int width,
+        int height,
+        bool isP010,
+        long arrivalTick,
+        long callbackStart,
+        int slot)
+    {
         AVFrame* cudaFrame;
         var decodeStart = Stopwatch.GetTimestamp();
         try
@@ -627,7 +755,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
                 ref _mjpegDecodeTimeIndex,
                 GetElapsedMilliseconds(decodeStart, Stopwatch.GetTimestamp()));
             Interlocked.Increment(ref _videoFramesDropped);
-            Logger.Log($"NVDEC_MJPEG_DECODE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            Logger.Log($"NVDEC_MJPEG_DECODE_FAIL slot={slot} type={ex.GetType().Name} msg={ex.Message}");
             RecordTimingSample(
                 _mjpegCallbackTimeMs,
                 ref _mjpegCallbackTimeCount,
@@ -638,7 +766,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
         EnqueueCudaRecordingFrame(cudaFrame);
 
-        var interop = Volatile.Read(ref _cudaD3D11Interop);
         var previewSink = Volatile.Read(ref _previewSink);
         if (interop != null && previewSink != null)
         {
@@ -663,7 +790,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             catch (Exception ex)
             {
                 Interlocked.Increment(ref _videoFramesDropped);
-                Logger.Log($"CUDA_D3D11_PREVIEW_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                Logger.Log($"CUDA_D3D11_PREVIEW_FAIL slot={slot} type={ex.GetType().Name} msg={ex.Message}");
             }
 
             RecordTimingSample(
@@ -682,7 +809,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             SignalFatalError(
                 new InvalidOperationException(
                     "CUDA-D3D11 interop unavailable — CPU preview fallback is not viable for HFR MJPG mode."),
-                "MJPEG_HFR_NO_GPU_PREVIEW");
+                $"MJPEG_HFR_NO_GPU_PREVIEW slot={slot}");
             RecordTimingSample(
                 _mjpegCallbackTimeMs,
                 ref _mjpegCallbackTimeCount,
@@ -719,7 +846,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             {
                 Interlocked.Exchange(ref _mjpegPreviewInFlight, 0);
                 Interlocked.Increment(ref _videoFramesDropped);
-                Logger.Log("NVDEC_PREVIEW_CLONE_FAIL");
+                Logger.Log($"NVDEC_PREVIEW_CLONE_FAIL slot={slot}");
                 RecordTimingSample(
                     _mjpegCallbackTimeMs,
                     ref _mjpegCallbackTimeCount,
@@ -747,7 +874,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
                 catch (Exception ex)
                 {
                     Interlocked.Increment(ref _videoFramesDropped);
-                    Logger.Log($"NVDEC_PREVIEW_DOWNLOAD_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                    Logger.Log($"NVDEC_PREVIEW_DOWNLOAD_FAIL slot={slot} type={ex.GetType().Name} msg={ex.Message}");
                 }
                 finally
                 {
@@ -762,6 +889,57 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             ref _mjpegCallbackTimeCount,
             ref _mjpegCallbackTimeIndex,
             GetElapsedMilliseconds(callbackStart, Stopwatch.GetTimestamp()));
+    }
+
+    private async Task RunMjpegDecoder1WorkerAsync(
+        ChannelReader<MjpegDecodeWorkItem> reader,
+        NvdecMjpegDecoder decoder,
+        CudaD3D11InteropBridge interop)
+    {
+        try
+        {
+            while (await reader.WaitToReadAsync().ConfigureAwait(false))
+            {
+                while (reader.TryRead(out var workItem))
+                {
+                    DecodeMjpegFrame(
+                        decoder,
+                        interop,
+                        workItem.JpegData,
+                        workItem.Width,
+                        workItem.Height,
+                        isP010: false,
+                        workItem.ArrivalTick,
+                        Stopwatch.GetTimestamp(),
+                        1);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            SignalFatalError(
+                ex,
+                $"MJPEG_DUAL_DECODER_WORKER_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private async Task DrainMjpegDecoder1WorkItemsAsync()
+    {
+        ChannelWriter<MjpegDecodeWorkItem>? mjpegDecoder1WorkWriter;
+        Task? mjpegDecoder1WorkerTask;
+        lock (_sync)
+        {
+            mjpegDecoder1WorkWriter = _mjpegDecoder1WorkWriter;
+            _mjpegDecoder1WorkWriter = null;
+            mjpegDecoder1WorkerTask = _mjpegDecoder1WorkerTask;
+            _mjpegDecoder1WorkerTask = null;
+        }
+
+        mjpegDecoder1WorkWriter?.TryComplete();
+        if (mjpegDecoder1WorkerTask != null)
+        {
+            await mjpegDecoder1WorkerTask.ConfigureAwait(false);
+        }
     }
 
     private async Task DrainMjpegPreviewAsync()
