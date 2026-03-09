@@ -897,3 +897,18 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (telemetry-provider migration only; no recording artifact generated in this verification pass)
 - Conclusion: The direct RTK_IO provider compiles, the runtime snapshot regression harness stays green, and the caller-facing telemetry origin surface is updated. A live hardware run is still required to confirm the new `RTKIO_*` runtime path is the one being exercised in the app log.
+
+## E55 - Pure C# source signal telemetry — eliminate all proprietary DLLs
+- Timestamp (UTC): 2026-03-09T09:00:00Z
+- Commit Hash: 83b1204 (explore/source-signal-re, merged to main)
+- What Changed (single change): Rewrote `NativeXuAtCommandProvider` to use the verified two-packet UVC AT protocol (selectors 1+2, 0xa1 framing with LRC checksum), added `TryXuGetDirect` for fixed-size one-shot GETs, added VIC/Vfreq/VideoStable commands with 120Hz VIC codes, removed all fallback providers (KsXu, Egav, Rtice, Composite), and simplified the telemetry stack to a single pure C# provider with zero proprietary DLL dependencies.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for `NATIVEXU_AT` / `NATIVEXU_AT_FAILED` after a device-backed app run.
+- Validator Output:
+  - Build succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - All runtime snapshot regression checks passed.
+- ffprobe Evidence:
+  - N/A (telemetry-provider rewrite only).
+- Conclusion: The NativeXu provider uses the reverse-engineered two-packet UVC AT protocol (from elgato4k-linux RE work) to communicate directly with the Realtek chipset firmware via Win32 KS property sets. RTICE_SDK, RTK_IO, EGAV SDK, and KsXu heuristic providers are all eliminated. Hardware-backed runtime confirmation is the next validation step.

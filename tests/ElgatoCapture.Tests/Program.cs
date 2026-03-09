@@ -126,7 +126,7 @@ static class Program
 
         var sourceTelemetry = CreateInstance("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
         SetPropertyOrBackingField(sourceTelemetry, "Availability", ParseEnum("ElgatoCapture.Models.SourceTelemetryAvailability", "Available"));
-        SetPropertyOrBackingField(sourceTelemetry, "Origin", ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "Egav"));
+        SetPropertyOrBackingField(sourceTelemetry, "Origin", ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "NativeXu"));
         SetPropertyOrBackingField(sourceTelemetry, "OriginDetail", "RegressionHarness");
         SetPropertyOrBackingField(sourceTelemetry, "Confidence", ParseEnum("ElgatoCapture.Models.SourceTelemetryConfidence", "High"));
         SetPropertyOrBackingField(sourceTelemetry, "Width", 1280);
