@@ -321,13 +321,14 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private long _framesSubmitted;
     private long _framesRendered;
     private long _framesDropped;
+    private const int CadenceWindowSeconds = 20;
     private readonly object _presentCadenceLock = new();
-    private readonly double[] _presentIntervalWindowMs = new double[300];
+    private double[] _presentIntervalWindowMs = new double[1200];
     private int _presentIntervalCount;
     private int _presentIntervalIndex;
     private long _lastPresentTick;
     private readonly object _pipelineLatencyLock = new();
-    private readonly double[] _pipelineLatencyWindowMs = new double[300];
+    private double[] _pipelineLatencyWindowMs = new double[1200];
     private int _pipelineLatencyCount;
     private int _pipelineLatencyIndex;
 
@@ -910,6 +911,31 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             if (_pipelineLatencyCount < _pipelineLatencyWindowMs.Length)
             {
                 _pipelineLatencyCount++;
+            }
+        }
+    }
+
+    public void SetExpectedFrameRate(double fps)
+    {
+        if (fps <= 0) return;
+        var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));
+        lock (_presentCadenceLock)
+        {
+            if (_presentIntervalWindowMs.Length != targetSize)
+            {
+                _presentIntervalWindowMs = new double[targetSize];
+                _presentIntervalCount = 0;
+                _presentIntervalIndex = 0;
+            }
+        }
+
+        lock (_pipelineLatencyLock)
+        {
+            if (_pipelineLatencyWindowMs.Length != targetSize)
+            {
+                _pipelineLatencyWindowMs = new double[targetSize];
+                _pipelineLatencyCount = 0;
+                _pipelineLatencyIndex = 0;
             }
         }
     }

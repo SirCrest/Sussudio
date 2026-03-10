@@ -47,8 +47,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
     private int _dxgiBufferProbeDone;
     private int _dxgiResourceFailureCount;
     private bool _skipCpuReadback;
+    private const int CadenceWindowSeconds = 20;
     private readonly object _cadenceLock = new();
-    private readonly double[] _sourceIntervalWindowMs = new double[300];
+    private double[] _sourceIntervalWindowMs = new double[1200];
     private int _sourceIntervalCount;
     private int _sourceIntervalIndex;
     private long _prevMfTimestamp100ns = -1;
@@ -451,6 +452,16 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         if (fps > 0)
         {
             _expectedIntervalMs = 1000.0 / fps;
+            var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));
+            lock (_cadenceLock)
+            {
+                if (_sourceIntervalWindowMs.Length != targetSize)
+                {
+                    _sourceIntervalWindowMs = new double[targetSize];
+                    _sourceIntervalCount = 0;
+                    _sourceIntervalIndex = 0;
+                }
+            }
         }
     }
 

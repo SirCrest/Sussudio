@@ -1189,10 +1189,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
                 _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
                 _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
-                _actualFrameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
+                _actualFrameRateNumerator = settings.RequestedFrameRateNumerator;
+                _actualFrameRateDenominator = settings.RequestedFrameRateDenominator;
+                _actualFrameRate = _actualFrameRateNumerator.HasValue && _actualFrameRateDenominator is > 0
+                    ? (double)_actualFrameRateNumerator.Value / _actualFrameRateDenominator.Value
+                    : unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
                 _actualFrameRateArg = ResolveFrameRateArg(settings, _actualFrameRate ?? settings.FrameRate);
                 _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
                 _activeVideoInputPixelFormat = unifiedVideoCapture.IsP010 ? "p010le" : "nv12";
+                TryCorrectFrameRateFromTelemetry();
 
                 if (settings.AudioEnabled)
                 {
@@ -1444,9 +1449,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
                 _actualWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
                 _actualHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
-                _actualFrameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate;
+                _actualFrameRateNumerator = settings.RequestedFrameRateNumerator;
+                _actualFrameRateDenominator = settings.RequestedFrameRateDenominator;
+                _actualFrameRate = _actualFrameRateNumerator.HasValue && _actualFrameRateDenominator is > 0
+                    ? (double)_actualFrameRateNumerator.Value / _actualFrameRateDenominator.Value
+                    : unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : effectiveFrameRate;
                 _actualFrameRateArg = ResolveFrameRateArg(settings, _actualFrameRate ?? effectiveFrameRate);
                 _actualPixelFormat = unifiedVideoCapture.NativeInputFormat ?? (unifiedVideoCapture.IsP010 ? "P010" : "NV12");
+                TryCorrectFrameRateFromTelemetry();
 
                 if (_wasapiAudioCapture == null && settings.AudioEnabled)
                 {
@@ -2073,7 +2083,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     /// </summary>
     private void TryCorrectFrameRateFromTelemetry()
     {
-        if (_actualFrameRateDenominator is not 1)
+        if (_actualFrameRateDenominator is not null and not 1)
             return; // Already fractional — no correction needed.
 
         var telemetry = _latestSourceTelemetry;

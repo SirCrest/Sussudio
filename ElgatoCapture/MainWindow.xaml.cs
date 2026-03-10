@@ -3770,6 +3770,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             var rendererHeight = negotiatedHeight > 0 ? negotiatedHeight : height;
             var rendererFps = negotiatedFps > 0 ? negotiatedFps : fps;
             _previewMinPresentationIntervalMs = Math.Max(1L, (long)Math.Round(1000.0 / rendererFps));
+            renderer.SetExpectedFrameRate(rendererFps);
 
             // Wire SizeChanged and make panel visible BEFORE starting the render
             // thread so the renderer has the panel's pixel dimensions from the start.
