@@ -50,6 +50,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly DispatcherQueue _dispatcherQueue;
     private SoftwareBitmapSource? _previewSource;
     private D3D11PreviewRenderer? _d3dRenderer;
+    private NvmlMonitor? _nvmlMonitor;
     private SpriteVisual? _videoShadowVisual;
     private SpriteVisual? _controlBarShadowVisual;
     private DispatcherQueueTimer? _statsPollTimer;
@@ -1103,6 +1104,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             automationPipeName = "ElgatoCaptureAutomation";
         }
 
+        _nvmlMonitor = new NvmlMonitor();
+
         _automationDiagnosticsHub = new AutomationDiagnosticsHub(
             ViewModel,
             GetPreviewRuntimeSnapshotAsync,
@@ -2074,6 +2077,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             Logger.Log($"Automation shutdown cleanup failed: {ex.Message}");
         }
 
+        _nvmlMonitor?.Dispose();
+
         try
         {
             await ViewModel.DisposeAsync();
@@ -2270,6 +2275,35 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         SetTextIfChanged(Stats_RendererDroppedValue, rendererDropped);
         SetTextIfChanged(Stats_PerfScoreValue, perfScore);
         UpdateDiagnosticsSection(snapshot.DiagnosticSummary);
+        UpdateGpuSection();
+    }
+
+    private void UpdateGpuSection()
+    {
+        var nvml = _nvmlMonitor?.GetLatestSnapshot();
+        var gpuContent = GPU_Content;
+        gpuContent.Children.Clear();
+
+        if (nvml == null)
+        {
+            gpuContent.Children.Add(CreateDiagnosticRow("Status", "NVML not available", false));
+            return;
+        }
+
+        var alt = false;
+        void AddRow(string label, string value) { gpuContent.Children.Add(CreateDiagnosticRow(label, value, alt)); alt = !alt; }
+
+        if (!string.IsNullOrEmpty(nvml.GpuName))
+            AddRow("GPU", nvml.GpuName);
+        AddRow("Utilization", $"{nvml.GpuUtilizationPercent ?? 0}% (Mem: {nvml.GpuMemoryUtilizationPercent ?? 0}%)");
+        AddRow("NVDEC", $"{nvml.NvdecUtilizationPercent ?? 0}%");
+        AddRow("NVENC", $"{nvml.NvencUtilizationPercent ?? 0}%");
+        AddRow("PCIe TX", $"{nvml.PcieTxMBps ?? 0:0.0} MB/s");
+        AddRow("PCIe RX", $"{nvml.PcieRxMBps ?? 0:0.0} MB/s");
+        AddRow("VRAM", $"{nvml.VramUsedMB ?? 0} / {nvml.VramTotalMB ?? 0} MB");
+        AddRow("Temperature", $"{nvml.GpuTemperatureC ?? 0}°C");
+        AddRow("Power", $"{nvml.GpuPowerW ?? 0:0.0}W");
+        AddRow("Clocks", $"{nvml.GpuClockMHz ?? 0} MHz (Mem: {nvml.GpuMemClockMHz ?? 0} MHz)");
     }
 
     private StatsSnapshot GetStatsSnapshot()

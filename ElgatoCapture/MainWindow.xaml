@@ -527,6 +527,24 @@
                             </Grid>
                             <StackPanel x:Name="Diagnostics_Content" Spacing="2" Visibility="Collapsed" />
                         </StackPanel>
+
+                        <StackPanel Spacing="2">
+                            <Grid x:Name="GPU_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="GPU_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="GPU" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="GPU_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="0" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
+                            <StackPanel x:Name="GPU_Content" Spacing="2" />
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </Border>

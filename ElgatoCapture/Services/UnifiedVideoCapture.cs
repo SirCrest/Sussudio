@@ -289,60 +289,23 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
     private static unsafe (NvdecMjpegDecoder Decoder0, NvdecMjpegDecoder? Decoder1) InitializeSharedMjpegDecoders(int width, int height)
     {
-        const int sharedPoolSize = 100;
-        AVBufferRef* sharedHwDeviceCtx = null;
-        AVBufferRef* sharedHwFramesCtx = null;
+        const int poolSize = 100;
         NvdecMjpegDecoder? mjpegDecoder = null;
         NvdecMjpegDecoder? mjpegDecoder1 = null;
 
         try
         {
-            var createDeviceResult = ffmpeg.av_hwdevice_ctx_create(
-                &sharedHwDeviceCtx,
-                AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA,
-                null,
-                null,
-                0);
-            if (createDeviceResult < 0)
-            {
-                throw new InvalidOperationException(
-                    $"av_hwdevice_ctx_create(CUDA) failed: code={createDeviceResult} msg='{GetErrorString(createDeviceResult)}'");
-            }
-
-            Logger.Log($"UNIFIED_CUDA_DEVICE_CTX_OK width={width} height={height}");
-
-            var hwFramesRef = ffmpeg.av_hwframe_ctx_alloc(sharedHwDeviceCtx);
-            if (hwFramesRef == null)
-            {
-                throw new InvalidOperationException("Failed to allocate shared CUDA frames context.");
-            }
-
-            var framesCtx = (AVHWFramesContext*)hwFramesRef->data;
-            framesCtx->format = AVPixelFormat.AV_PIX_FMT_CUDA;
-            framesCtx->sw_format = AVPixelFormat.AV_PIX_FMT_NV12;
-            framesCtx->width = width;
-            framesCtx->height = height;
-            framesCtx->initial_pool_size = sharedPoolSize;
-
-            var framesInitResult = ffmpeg.av_hwframe_ctx_init(hwFramesRef);
-            if (framesInitResult < 0)
-            {
-                ffmpeg.av_buffer_unref(&hwFramesRef);
-                throw new InvalidOperationException(
-                    $"av_hwframe_ctx_init(CUDA) failed: code={framesInitResult} msg='{GetErrorString(framesInitResult)}'");
-            }
-
-            sharedHwFramesCtx = hwFramesRef;
-            Logger.Log($"UNIFIED_CUDA_FRAMES_CTX_OK pool={sharedPoolSize} w={width} h={height}");
-
+            // Each decoder gets its own CUDA context — non-primary CUDA contexts
+            // are NOT thread-safe, so concurrent decode from two threads on a shared
+            // context causes CUDA_ERROR_UNKNOWN (999) after sustained load.
             mjpegDecoder = new NvdecMjpegDecoder();
-            mjpegDecoder.Initialize(width, height, sharedHwDeviceCtx, sharedHwFramesCtx);
+            InitializeDecoderWithOwnContext(mjpegDecoder, width, height, poolSize, 0);
             Logger.Log($"NVDEC_MJPEG_DECODER_AVAILABLE width={width} height={height}");
 
             try
             {
                 mjpegDecoder1 = new NvdecMjpegDecoder();
-                mjpegDecoder1.Initialize(width, height, sharedHwDeviceCtx, sharedHwFramesCtx);
+                InitializeDecoderWithOwnContext(mjpegDecoder1, width, height, poolSize, 1);
                 Logger.Log($"NVDEC_MJPEG_DECODER1_AVAILABLE width={width} height={height}");
             }
             catch (Exception ex)
@@ -360,17 +323,50 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             mjpegDecoder?.Dispose();
             throw;
         }
+    }
+
+    private static unsafe void InitializeDecoderWithOwnContext(
+        NvdecMjpegDecoder decoder, int width, int height, int poolSize, int index)
+    {
+        AVBufferRef* hwDeviceCtx = null;
+        AVBufferRef* hwFramesCtx = null;
+        try
+        {
+            var createResult = ffmpeg.av_hwdevice_ctx_create(
+                &hwDeviceCtx,
+                AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA,
+                null, null, 0);
+            if (createResult < 0)
+                throw new InvalidOperationException(
+                    $"av_hwdevice_ctx_create(CUDA) [{index}] failed: code={createResult} msg='{GetErrorString(createResult)}'");
+
+            Logger.Log($"CUDA_DEVICE_CTX_{index}_OK width={width} height={height}");
+
+            hwFramesCtx = ffmpeg.av_hwframe_ctx_alloc(hwDeviceCtx);
+            if (hwFramesCtx == null)
+                throw new InvalidOperationException($"av_hwframe_ctx_alloc [{index}] failed.");
+
+            var framesCtx = (AVHWFramesContext*)hwFramesCtx->data;
+            framesCtx->format = AVPixelFormat.AV_PIX_FMT_CUDA;
+            framesCtx->sw_format = AVPixelFormat.AV_PIX_FMT_NV12;
+            framesCtx->width = width;
+            framesCtx->height = height;
+            framesCtx->initial_pool_size = poolSize;
+
+            var initResult = ffmpeg.av_hwframe_ctx_init(hwFramesCtx);
+            if (initResult < 0)
+                throw new InvalidOperationException(
+                    $"av_hwframe_ctx_init(CUDA) [{index}] failed: code={initResult} msg='{GetErrorString(initResult)}'");
+
+            Logger.Log($"CUDA_FRAMES_CTX_{index}_OK pool={poolSize} w={width} h={height}");
+
+            decoder.Initialize(width, height, hwDeviceCtx, hwFramesCtx);
+        }
         finally
         {
-            if (sharedHwFramesCtx != null)
-            {
-                ffmpeg.av_buffer_unref(&sharedHwFramesCtx);
-            }
-
-            if (sharedHwDeviceCtx != null)
-            {
-                ffmpeg.av_buffer_unref(&sharedHwDeviceCtx);
-            }
+            // Decoder.Initialize takes av_buffer_ref copies, so we unref our local refs
+            if (hwFramesCtx != null) ffmpeg.av_buffer_unref(&hwFramesCtx);
+            if (hwDeviceCtx != null) ffmpeg.av_buffer_unref(&hwDeviceCtx);
         }
     }
 

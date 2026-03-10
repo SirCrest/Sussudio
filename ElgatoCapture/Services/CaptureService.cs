@@ -1087,6 +1087,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             ResetCachedMjpegTimingMetrics();
             _latestSourceTelemetry = BuildFallbackTelemetry();
             await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);
+            TryCorrectFrameRateFromTelemetry();
             _isInitialized = true;
             StatusChanged?.Invoke(this, "Initialized");
         }, cancellationToken);
@@ -1309,6 +1310,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 var effectiveHeight = _actualHeight ?? settings.Height;
                 var effectiveFrameRate = _actualFrameRate ?? settings.FrameRate;
                 await RefreshSourceTelemetryAsync(transitionToken).ConfigureAwait(false);
+                TryCorrectFrameRateFromTelemetry();
                 var hdrPipelineRequested = HdrOutputPolicy.IsEnabled(settings);
                 if (hdrPipelineRequested && _latestSourceTelemetry.IsHdr == false)
                 {
@@ -2039,6 +2041,46 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         _latestSourceTelemetry = MergeTelemetryWithFallback(telemetry, fallback);
         SourceTelemetryUpdated?.Invoke(this, _latestSourceTelemetry);
+    }
+
+    /// <summary>
+    /// When the driver reports integer frame rates (e.g. 120/1 for MJPG) but source
+    /// telemetry confirms NTSC timing (e.g. vfreq=11987 → 119.88fps), override the
+    /// actual frame rate to the correct NTSC rational. This affects recording metadata,
+    /// cadence tracking, and UI display.
+    /// </summary>
+    private void TryCorrectFrameRateFromTelemetry()
+    {
+        if (_actualFrameRateDenominator is not 1)
+            return; // Already fractional — no correction needed.
+
+        var telemetry = _latestSourceTelemetry;
+        if (!telemetry.HasFrameRate || !telemetry.FrameRateExact.HasValue)
+            return;
+
+        // Check if telemetry reports an NTSC rate (x000/1001 family).
+        // NativeXu vfreq is in 0.01Hz: 11987 → 119.87Hz ≈ 120000/1001.
+        var telemetryFps = telemetry.FrameRateExact.Value;
+        var friendlyBucket = (int)Math.Round(_actualFrameRate ?? 0, MidpointRounding.AwayFromZero);
+        if (friendlyBucket <= 0)
+            return;
+
+        var expectedNtscFps = friendlyBucket * 1000.0 / 1001.0;
+        if (Math.Abs(telemetryFps - expectedNtscFps) > 0.5)
+            return; // Telemetry doesn't match NTSC pattern for this bucket.
+
+        var ntscNumerator = (uint)(friendlyBucket * 1000);
+        const uint ntscDenominator = 1001;
+        var correctedFps = (double)ntscNumerator / ntscDenominator;
+
+        Logger.Log(
+            $"FRAMERATE_NTSC_CORRECTION driver={_actualFrameRateNumerator}/{_actualFrameRateDenominator} " +
+            $"telemetry={telemetryFps:0.###} corrected={ntscNumerator}/{ntscDenominator} ({correctedFps:0.######})");
+
+        _actualFrameRate = correctedFps;
+        _actualFrameRateNumerator = ntscNumerator;
+        _actualFrameRateDenominator = ntscDenominator;
+        _actualFrameRateArg = $"{ntscNumerator}/{ntscDenominator}";
     }
 
     private void StartTelemetryPoll()

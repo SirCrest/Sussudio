@@ -1501,3 +1501,19 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (preview pipeline change only; no recording artifact generated in this verification pass)
 - Conclusion: The preview path no longer depends on invalid `R8G8_UNorm -> NV12 plane` copies. Repo-local build, regression tests, and log inspection are clean; live NVIDIA MJPG/HFR validation is still required to confirm the green-preview fix on hardware.
+
+## E77 - CUDA-D3D11 interop now retains the CUDA primary context per bridge
+- Timestamp (UTC): 2026-03-10T07:08:54.8343586Z
+- Commit Hash: uncommitted (base 0856ce8c83565fe01b450c98b52fb6052d7c36b1)
+- What Changed (single change): Updated `CudaD3D11InteropBridge` to retain device 0's CUDA primary context, log caller-vs-primary context pointers, switch per-frame copy paths from `cuCtxPushCurrent`/`cuCtxPopCurrent` to `cuCtxSetCurrent`, and removed the worker-thread `EnsureCudaContextCurrent()` pre-set call so the bridge owns CUDA context management internally.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from this repo-local harness pass contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` token; the harness did not exercise live CUDA/NVDEC interop, so the new `CUDA_D3D11_INTEROP_CTX*`, `CUDA_D3D11_CTX_PRE_PUSH`, and `CUDA_D3D11_ZEROCOPY_REGISTER_OK` tokens were not emitted here.
+- ffprobe Evidence:
+  - N/A (preview interop ownership change only; no recording artifact generated in this verification pass)
+- Conclusion: The bridge now owns a CUDA-level primary-context retain/release pair and no longer relies on worker-thread preconditioning for per-frame context setup. Repo-local build/test verification is clean, but a live NVIDIA MJPG run is still required to confirm the new diagnostics and the absence of runtime `cuCtxPushCurrent`/`cuCtxSetCurrent` failures on hardware.
