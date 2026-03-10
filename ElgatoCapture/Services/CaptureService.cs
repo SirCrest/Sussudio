@@ -578,7 +578,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     ? "NV12"
                     : "unknown";
         var videoNegotiatedSubtype = unifiedVideoCapture != null
-            ? (unifiedVideoCapture.IsP010 ? "P010" : "NV12")
+            ? (unifiedVideoCapture.IsHighFrameRateMjpegMode ? "MJPG"
+                : unifiedVideoCapture.IsP010 ? "P010" : "NV12")
             : negotiatedSubtypeFromSourceReader;
         var hasD3DManager = unifiedVideoCapture?.D3DManager != null;
         var memoryPreference = hasD3DManager ? "Gpu" : "Cpu";
