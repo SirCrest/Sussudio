@@ -1423,3 +1423,19 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (preview/capture-path experiment only; no recording artifact generated in this verification pass)
 - Conclusion: The dual-decoder experiment now has two decoder/interop slots, bounded background dispatch for slot 1, and explicit stop/dispose draining in the repo-local verified build. Live 4K120 hardware validation is still required to confirm whether the second lane materially reduces complex-scene drops.
+
+## E73 - CUDA-D3D11 bridge now uses Y/UV helper textures for zero-copy NV12 assembly
+- Timestamp (UTC): 2026-03-09T22:09:28.1465119Z
+- Commit Hash: uncommitted (base 4cb30cb84f9a4d39258c705846dc3de4874ed4ac)
+- What Changed (single change): Reworked `CudaD3D11InteropBridge` so zero-copy no longer registers the `DXGI_FORMAT_NV12` preview texture directly with CUDA. The bridge now creates `R8_UNORM` Y and `R8G8_UNORM` UV helper textures, registers both with CUDA, copies the NVDEC CUDA planes into those arrays, then assembles the final `NV12` preview texture with `CopySubresourceRegion`. If either helper texture setup or registration fails, the bridge falls back to the existing staging-texture path.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 250`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from this verification run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` snapshot token; this repo-local pass did not exercise live CUDA-D3D11 interop on NVIDIA hardware.
+- ffprobe Evidence:
+  - N/A (preview interop change only; no recording artifact generated in this verification pass)
+- Conclusion: The bridge now matches CUDA's D3D11 interop limits by mapping only standard single-plane textures and assembling `NV12` after CUDA unmaps. Repo-local build/test/log verification is clean; live NVIDIA validation is still required to confirm `CUDA_D3D11_ZEROCOPY_REGISTER_OK` and first-frame `CUDA_D3D11_ZEROCOPY_DIAG` on hardware.
