@@ -1439,3 +1439,49 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (preview interop change only; no recording artifact generated in this verification pass)
 - Conclusion: The bridge now matches CUDA's D3D11 interop limits by mapping only standard single-plane textures and assembling `NV12` after CUDA unmaps. Repo-local build/test/log verification is clean; live NVIDIA validation is still required to confirm `CUDA_D3D11_ZEROCOPY_REGISTER_OK` and first-frame `CUDA_D3D11_ZEROCOPY_DIAG` on hardware.
+
+## E74 - Dual MJPEG decoders now share one CUDA device/frames context
+- Timestamp (UTC): 2026-03-10T01:47:24.9218734Z
+- Commit Hash: uncommitted (base f3f3fdb9d2275ecfba24901c67f8daaeaaa0945f)
+- What Changed (single change): Added a shared-context `NvdecMjpegDecoder.Initialize(...)` overload and updated `UnifiedVideoCapture` to create one shared CUDA `AVHWDeviceContext` plus one shared CUDA `AVHWFramesContext` (`initial_pool_size=100`) for both MJPEG decoders, so decoder 0, decoder 1, and the CUDA encoder all reference the same underlying FFmpeg hardware context objects.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 250`
+  4. `rg -n "UNIFIED_CUDA_DEVICE_CTX_OK|UNIFIED_CUDA_FRAMES_CTX_OK|NVDEC_MJPEG_DECODER_INIT_SHARED|LIBAV_ENCODER_HW_FRAMES|avcodec_send_frame\\(cuda\\)|LIBAV_ENCODER_CLOSE" temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the regression run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` snapshot token; the repo-local harness did not initialize the live MJPG/NVDEC record path, so the new `UNIFIED_CUDA_*`, `NVDEC_MJPEG_DECODER_INIT_SHARED`, `LIBAV_ENCODER_HW_FRAMES mode=cuda`, and `LIBAV_ENCODER_CLOSE frames=...` tokens were not exercised here.
+- ffprobe Evidence:
+  - N/A (no recording artifact generated in this verification pass)
+- Conclusion: The code now shares one CUDA device/frames context across both MJPEG decoders and the encoder path, with repo-local build/test verification clean. Live NVIDIA recording validation is still required to prove the runtime tokens and confirm that `avcodec_send_frame(cuda)` no longer fails during dual-decoder recording.
+
+## E74 - Dual NVDEC decoders now share one CUDA device/frames context
+- Timestamp (UTC): 2026-03-10T01:47:07.6173348Z
+- Commit Hash: f3f3fdb9d2275ecfba24901c67f8daaeaaa0945f
+- What Changed (single change): Added a shared-context `NvdecMjpegDecoder.Initialize` overload and changed `UnifiedVideoCapture` to create one shared CUDA `AVHWDeviceContext` plus one shared CUDA `AVHWFramesContext` (pool size 100) for both MJPEG decoders, so every decoded frame and the NVENC encoder use the same FFmpeg `hw_frames_ctx`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from this repo-local verification run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` snapshot token; this pass did not exercise live MJPG/NVDEC/NVENC recording, so `UNIFIED_CUDA_*`, `NVDEC_MJPEG_DECODER_INIT_SHARED`, and `LIBAV_ENCODER_HW_FRAMES mode=cuda` were not emitted here.
+- ffprobe Evidence:
+  - N/A (no recording artifact generated in this verification pass)
+- Conclusion: The code path now shares one CUDA device/frames context across decoder 0, decoder 1, and the encoder, eliminating the prior per-decoder FFmpeg context split in the implementation. Repo-local build/test verification is clean, but live hardware recording validation is still required to prove `frames>0` and the absence of `avcodec_send_frame(cuda)` failures.
+
+## E75 - Experiment log correction for duplicate E74 shared-CUDA-context entries
+- Timestamp (UTC): 2026-03-10T01:48:26.7617967Z
+- Commit Hash: f3f3fdb9d2275ecfba24901c67f8daaeaaa0945f
+- What Changed (single change): Corrected append-only bookkeeping after two `E74` headings were present for the same shared-CUDA-context implementation. Treat `E74 - Dual MJPEG decoders now share one CUDA device/frames context` with timestamp `2026-03-10T01:47:24.9218734Z` as the canonical experiment record for this change.
+- How To Run:
+  1. Read the `E74` and `E75` headings at the end of `docs/experiment_log.md`.
+  2. Use the later `E74` entry timestamped `2026-03-10T01:47:24.9218734Z` as the authoritative validation record for the shared-CUDA-context implementation.
+- Validator Output:
+  - N/A (experiment-log correction only)
+- ffprobe Evidence:
+  - N/A (documentation correction only)
+- Conclusion: The append-only history now ends with an explicit canonical-record rule, so the duplicate `E74` headings do not create ambiguity for this fix.

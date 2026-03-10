@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -176,32 +177,16 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         {
             try
             {
-                mjpegDecoder = new NvdecMjpegDecoder();
-                mjpegDecoder.Initialize(width, height);
-                Logger.Log($"NVDEC_MJPEG_DECODER_AVAILABLE width={width} height={height}");
-            }
-            catch (Exception ex)
-            {
-                mjpegDecoder?.Dispose();
-                mjpegDecoder = null;
-                useExternalMjpegDecode = false;
-                Logger.Log($"NVDEC_MJPEG_DECODER_FAIL type={ex.GetType().Name} msg={ex.Message} fallback=mf_hardware_transform");
-            }
-        }
-
-        if (mjpegDecoder != null)
-        {
-            try
-            {
-                mjpegDecoder1 = new NvdecMjpegDecoder();
-                mjpegDecoder1.Initialize(width, height);
-                Logger.Log($"NVDEC_MJPEG_DECODER1_AVAILABLE width={width} height={height}");
+                (mjpegDecoder, mjpegDecoder1) = InitializeSharedMjpegDecoders(width, height);
             }
             catch (Exception ex)
             {
                 mjpegDecoder1?.Dispose();
                 mjpegDecoder1 = null;
-                Logger.Log($"NVDEC_MJPEG_DECODER1_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                mjpegDecoder?.Dispose();
+                mjpegDecoder = null;
+                useExternalMjpegDecode = false;
+                Logger.Log($"NVDEC_MJPEG_DECODER_FAIL type={ex.GetType().Name} msg={ex.Message} fallback=mf_hardware_transform");
             }
         }
 
@@ -300,6 +285,93 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         Logger.Log($"MJPEG_DUAL_DECODER_CONFIG count={decoderCount}");
 
         capture.FatalErrorOccurred += OnCaptureFatalError;
+    }
+
+    private static unsafe (NvdecMjpegDecoder Decoder0, NvdecMjpegDecoder? Decoder1) InitializeSharedMjpegDecoders(int width, int height)
+    {
+        const int sharedPoolSize = 100;
+        AVBufferRef* sharedHwDeviceCtx = null;
+        AVBufferRef* sharedHwFramesCtx = null;
+        NvdecMjpegDecoder? mjpegDecoder = null;
+        NvdecMjpegDecoder? mjpegDecoder1 = null;
+
+        try
+        {
+            var createDeviceResult = ffmpeg.av_hwdevice_ctx_create(
+                &sharedHwDeviceCtx,
+                AVHWDeviceType.AV_HWDEVICE_TYPE_CUDA,
+                null,
+                null,
+                0);
+            if (createDeviceResult < 0)
+            {
+                throw new InvalidOperationException(
+                    $"av_hwdevice_ctx_create(CUDA) failed: code={createDeviceResult} msg='{GetErrorString(createDeviceResult)}'");
+            }
+
+            Logger.Log($"UNIFIED_CUDA_DEVICE_CTX_OK width={width} height={height}");
+
+            var hwFramesRef = ffmpeg.av_hwframe_ctx_alloc(sharedHwDeviceCtx);
+            if (hwFramesRef == null)
+            {
+                throw new InvalidOperationException("Failed to allocate shared CUDA frames context.");
+            }
+
+            var framesCtx = (AVHWFramesContext*)hwFramesRef->data;
+            framesCtx->format = AVPixelFormat.AV_PIX_FMT_CUDA;
+            framesCtx->sw_format = AVPixelFormat.AV_PIX_FMT_NV12;
+            framesCtx->width = width;
+            framesCtx->height = height;
+            framesCtx->initial_pool_size = sharedPoolSize;
+
+            var framesInitResult = ffmpeg.av_hwframe_ctx_init(hwFramesRef);
+            if (framesInitResult < 0)
+            {
+                ffmpeg.av_buffer_unref(&hwFramesRef);
+                throw new InvalidOperationException(
+                    $"av_hwframe_ctx_init(CUDA) failed: code={framesInitResult} msg='{GetErrorString(framesInitResult)}'");
+            }
+
+            sharedHwFramesCtx = hwFramesRef;
+            Logger.Log($"UNIFIED_CUDA_FRAMES_CTX_OK pool={sharedPoolSize} w={width} h={height}");
+
+            mjpegDecoder = new NvdecMjpegDecoder();
+            mjpegDecoder.Initialize(width, height, sharedHwDeviceCtx, sharedHwFramesCtx);
+            Logger.Log($"NVDEC_MJPEG_DECODER_AVAILABLE width={width} height={height}");
+
+            try
+            {
+                mjpegDecoder1 = new NvdecMjpegDecoder();
+                mjpegDecoder1.Initialize(width, height, sharedHwDeviceCtx, sharedHwFramesCtx);
+                Logger.Log($"NVDEC_MJPEG_DECODER1_AVAILABLE width={width} height={height}");
+            }
+            catch (Exception ex)
+            {
+                mjpegDecoder1?.Dispose();
+                mjpegDecoder1 = null;
+                Logger.Log($"NVDEC_MJPEG_DECODER1_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            }
+
+            return (mjpegDecoder, mjpegDecoder1);
+        }
+        catch
+        {
+            mjpegDecoder1?.Dispose();
+            mjpegDecoder?.Dispose();
+            throw;
+        }
+        finally
+        {
+            if (sharedHwFramesCtx != null)
+            {
+                ffmpeg.av_buffer_unref(&sharedHwFramesCtx);
+            }
+
+            if (sharedHwDeviceCtx != null)
+            {
+                ffmpeg.av_buffer_unref(&sharedHwDeviceCtx);
+            }
+        }
     }
 
     public void Start()
@@ -1092,6 +1164,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
     private static double GetElapsedMilliseconds(long startTimestamp, long endTimestamp)
         => (endTimestamp - startTimestamp) * 1000.0 / Stopwatch.Frequency;
+
+    private static unsafe string GetErrorString(int errorCode)
+    {
+        var buffer = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE];
+        ffmpeg.av_strerror(errorCode, buffer, (ulong)ffmpeg.AV_ERROR_MAX_STRING_SIZE);
+        return Marshal.PtrToStringAnsi((IntPtr)buffer) ?? $"unknown error {errorCode}";
+    }
 
     private void ThrowIfDisposed()
         => ObjectDisposedException.ThrowIf(_disposed, this);
