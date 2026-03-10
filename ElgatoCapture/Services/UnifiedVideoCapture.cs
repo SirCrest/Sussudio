@@ -857,7 +857,19 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
             try
             {
-                previewSink.SubmitTexture(interop.TextureNativePointer, 0, width, height, isP010, arrivalTick);
+                if (interop.ZeroCopyAvailable)
+                {
+                    previewSink.SubmitNv12PlaneTextures(
+                        interop.HelperYTextureNativePointer,
+                        interop.HelperUVTextureNativePointer,
+                        width,
+                        height,
+                        arrivalTick);
+                }
+                else
+                {
+                    previewSink.SubmitTexture(interop.TextureNativePointer, 0, width, height, isP010, arrivalTick);
+                }
             }
             catch (Exception ex)
             {

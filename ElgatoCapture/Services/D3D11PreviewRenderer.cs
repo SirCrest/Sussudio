@@ -23,6 +23,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private const int FrameCaptureTimeoutMs = 5000;
     private const string RendererModeNone = "None";
     private const string RendererModeVideoProcessor = "D3D11VideoProcessor";
+    private const string RendererModeNv12Shader = "Nv12Shader";
     private const string RendererModeHdrShader = "HdrShader";
     private const string RendererModeHdrPassthrough = "HdrPassthrough";
     private static readonly uint[] PngCrc32Table = InitPngCrc32Table();
@@ -173,6 +174,33 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
         """;
 
+    private const string Nv12PixelShaderSource = """
+        cbuffer ViewportInfo : register(b0)
+        {
+            float2 vpOrigin;
+            float2 vpSize;
+        };
+
+        Texture2D<float> yPlane : register(t0);
+        Texture2D<float2> uvPlane : register(t1);
+        SamplerState bilinear : register(s0);
+
+        float4 main(float4 pos : SV_Position) : SV_Target
+        {
+            float2 uv = (pos.xy - vpOrigin) / vpSize;
+
+            float y = yPlane.Sample(bilinear, uv).r;
+            float2 uv2 = uvPlane.Sample(bilinear, uv);
+            float cb = uv2.r - 0.501960784f;
+            float cr = uv2.g - 0.501960784f;
+
+            float r = saturate(y + 1.57480f * cr);
+            float g = saturate(y - 0.18732f * cb - 0.46812f * cr);
+            float b = saturate(y + 1.85560f * cb);
+            return float4(r, g, b, 1.0f);
+        }
+        """;
+
     private sealed class PendingFrame : IDisposable
     {
         public PendingFrame(
@@ -183,7 +211,11 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             int width,
             int height,
             bool isHdr,
-            long arrivalTick)
+            long arrivalTick,
+            IntPtr d3dTextureY = default,
+            IntPtr d3dTextureUV = default,
+            ID3D11Texture2D? d3dTextureYObject = null,
+            ID3D11Texture2D? d3dTextureUVObject = null)
         {
             D3DTexture = d3dTexture;
             D3DSubresourceIndex = Math.Max(0, d3dSubresourceIndex);
@@ -193,10 +225,18 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             Height = height;
             IsHdr = isHdr;
             ArrivalTick = arrivalTick;
+            D3DTextureY = d3dTextureY;
+            D3DTextureUV = d3dTextureUV;
+            D3DTextureYObject = d3dTextureYObject;
+            D3DTextureUVObject = d3dTextureUVObject;
         }
 
         public ID3D11Texture2D? D3DTexture { get; private set; }
         public int D3DSubresourceIndex { get; }
+        public IntPtr D3DTextureY { get; private set; }
+        public IntPtr D3DTextureUV { get; private set; }
+        public ID3D11Texture2D? D3DTextureYObject { get; private set; }
+        public ID3D11Texture2D? D3DTextureUVObject { get; private set; }
         public byte[]? RawData { get; private set; }
         public int RawDataLength { get; private set; }
         public int Width { get; }
@@ -208,6 +248,30 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         {
             D3DTexture?.Dispose();
             D3DTexture = null;
+            if (D3DTextureYObject != null)
+            {
+                D3DTextureYObject.Dispose();
+                D3DTextureYObject = null;
+                D3DTextureY = IntPtr.Zero;
+            }
+            else if (D3DTextureY != IntPtr.Zero)
+            {
+                Marshal.Release(D3DTextureY);
+                D3DTextureY = IntPtr.Zero;
+            }
+
+            if (D3DTextureUVObject != null)
+            {
+                D3DTextureUVObject.Dispose();
+                D3DTextureUVObject = null;
+                D3DTextureUV = IntPtr.Zero;
+            }
+            else if (D3DTextureUV != IntPtr.Zero)
+            {
+                Marshal.Release(D3DTextureUV);
+                D3DTextureUV = IntPtr.Zero;
+            }
+
             if (RawData != null)
             {
                 ArrayPool<byte>.Shared.Return(RawData);
@@ -298,6 +362,11 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private ID3D11ShaderResourceView? _hdrYPlaneSRV;
     private ID3D11ShaderResourceView? _hdrUVPlaneSRV;
     private ID3D11VertexShader? _fullscreenVS;
+    private ID3D11PixelShader? _nv12PS;
+    private ID3D11ShaderResourceView? _nv12YSRV;
+    private ID3D11ShaderResourceView? _nv12UVSRV;
+    private IntPtr _nv12LastYPtr;
+    private IntPtr _nv12LastUVPtr;
     private ID3D11PixelShader? _hdrTonemapPS;
     private ID3D11PixelShader? _hdrPassthroughPS;
     private ID3D11SamplerState? _linearSampler;
@@ -593,6 +662,82 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
 
         var frame = new PendingFrame(texture, subresourceIndex, null, 0, width, height, isHdr, arrivalTick);
+        EnqueuePendingFrame(frame);
+    }
+
+    public void SubmitNv12PlaneTextures(IntPtr yTexturePtr, IntPtr uvTexturePtr, int width, int height, long arrivalTick = 0)
+    {
+        if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
+        {
+            return;
+        }
+
+        if (yTexturePtr == IntPtr.Zero || uvTexturePtr == IntPtr.Zero || width <= 0 || height <= 0 || _nv12PS == null)
+        {
+            return;
+        }
+
+        if (Volatile.Read(ref _sharedDeviceActive) == 0)
+        {
+            throw new InvalidOperationException("Shared D3D11 device is not active for NV12 texture submission.");
+        }
+
+        IntPtr ownedYTexturePtr = IntPtr.Zero;
+        IntPtr ownedUvTexturePtr = IntPtr.Zero;
+        ID3D11Texture2D? yTexture = null;
+        ID3D11Texture2D? uvTexture = null;
+        try
+        {
+            Marshal.AddRef(yTexturePtr);
+            ownedYTexturePtr = yTexturePtr;
+            yTexture = new ID3D11Texture2D(ownedYTexturePtr);
+
+            Marshal.AddRef(uvTexturePtr);
+            ownedUvTexturePtr = uvTexturePtr;
+            uvTexture = new ID3D11Texture2D(ownedUvTexturePtr);
+
+            EnqueueNv12Frame(ownedYTexturePtr, yTexture, ownedUvTexturePtr, uvTexture, width, height, arrivalTick);
+        }
+        catch
+        {
+            uvTexture?.Dispose();
+            if (uvTexture == null && ownedUvTexturePtr != IntPtr.Zero)
+            {
+                Marshal.Release(ownedUvTexturePtr);
+            }
+
+            yTexture?.Dispose();
+            if (yTexture == null && ownedYTexturePtr != IntPtr.Zero)
+            {
+                Marshal.Release(ownedYTexturePtr);
+            }
+
+            throw;
+        }
+    }
+
+    private void EnqueueNv12Frame(
+        IntPtr yTexturePtr,
+        ID3D11Texture2D yTexture,
+        IntPtr uvTexturePtr,
+        ID3D11Texture2D uvTexture,
+        int width,
+        int height,
+        long arrivalTick)
+    {
+        var frame = new PendingFrame(
+            d3dTexture: null,
+            d3dSubresourceIndex: 0,
+            rawData: null,
+            rawDataLength: 0,
+            width: width,
+            height: height,
+            isHdr: false,
+            arrivalTick: arrivalTick,
+            d3dTextureY: yTexturePtr,
+            d3dTextureUV: uvTexturePtr,
+            d3dTextureYObject: yTexture,
+            d3dTextureUVObject: uvTexture);
         EnqueuePendingFrame(frame);
     }
 
@@ -894,6 +1039,13 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     {
         ApplySwapChainColorSpaceIfDirty();
 
+        if (frame.D3DTextureY != IntPtr.Zero && frame.D3DTextureUV != IntPtr.Zero)
+        {
+            Volatile.Write(ref _rendererMode, RendererModeNv12Shader);
+            RenderNv12WithShader(frame);
+            return;
+        }
+
         if (frame.IsHdr && _fullscreenVS != null)
         {
             var usePassthrough = Volatile.Read(ref _hdrPassthroughEnabled) != 0 &&
@@ -993,6 +1145,67 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
     }
 
+    private void RenderNv12WithShader(PendingFrame frame)
+    {
+        if (_device == null || _deviceContext == null || _swapChain == null)
+        {
+            return;
+        }
+
+        if (_fullscreenVS == null ||
+            _nv12PS == null ||
+            _linearSampler == null ||
+            frame.D3DTextureYObject == null ||
+            frame.D3DTextureUVObject == null)
+        {
+            return;
+        }
+
+        if (!TryEnsureNv12ShaderResources(frame))
+        {
+            return;
+        }
+
+        EnsureSwapChainRTV();
+        if (_swapChainRTV == null || _nv12YSRV == null || _nv12UVSRV == null)
+        {
+            return;
+        }
+
+        var viewport = ComputeLetterboxViewport(frame.Width, frame.Height);
+
+        _deviceContext.OMSetRenderTargets(1, new[] { _swapChainRTV }, null);
+        _deviceContext.ClearRenderTargetView(_swapChainRTV, new Color4(0.0f, 0.0f, 0.0f, 1.0f));
+        _deviceContext.RSSetViewports(1, new[] { viewport });
+        _deviceContext.IASetInputLayout(null);
+        _deviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+        _deviceContext.VSSetShader(_fullscreenVS, Array.Empty<ID3D11ClassInstance>(), 0);
+        _deviceContext.PSSetShader(_nv12PS, Array.Empty<ID3D11ClassInstance>(), 0);
+        _deviceContext.PSSetSamplers(0, 1, new[] { _linearSampler });
+        _deviceContext.PSSetShaderResources(0, 2, new[] { _nv12YSRV, _nv12UVSRV });
+        UpdateViewportConstantBuffer(viewport);
+
+        _deviceContext.Draw(3, 0);
+        _deviceContext.PSSetShaderResources(0, 2, new ID3D11ShaderResourceView[] { null!, null! });
+
+        TryCaptureFrameBeforePresent(RendererModeNv12Shader);
+        var presentResult = _swapChain.Present(1, PresentFlags.None);
+        if (presentResult.Failure)
+        {
+            throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
+        }
+
+        if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
+        {
+            Logger.Log("D3D11 preview first SDR frame rendered via NV12 shader.");
+            _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
+        }
+
+        Interlocked.Increment(ref _framesRendered);
+        TrackPresentCadence();
+        TrackPipelineLatency(frame.ArrivalTick);
+    }
+
     private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)
     {
         if (_device == null || _deviceContext == null || _swapChain == null)
@@ -1048,20 +1261,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             return;
         }
 
-        var outputWidth = _configuredOutputWidth > 0
-            ? _configuredOutputWidth
-            : Math.Max(1, Volatile.Read(ref _startupWidth));
-        var outputHeight = _configuredOutputHeight > 0
-            ? _configuredOutputHeight
-            : Math.Max(1, Volatile.Read(ref _startupHeight));
-        var destinationRect = ComputeLetterboxRect(frame.Width, frame.Height, outputWidth, outputHeight);
-        var viewport = new Viewport(
-            destinationRect.Left,
-            destinationRect.Top,
-            Math.Max(1, destinationRect.Right - destinationRect.Left),
-            Math.Max(1, destinationRect.Bottom - destinationRect.Top),
-            0.0f,
-            1.0f);
+        var viewport = ComputeLetterboxViewport(frame.Width, frame.Height);
 
         _deviceContext.OMSetRenderTargets(1, new[] { _swapChainRTV }, null);
         _deviceContext.ClearRenderTargetView(_swapChainRTV, new Color4(0.0f, 0.0f, 0.0f, 1.0f));
@@ -1073,20 +1273,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _deviceContext.PSSetSamplers(0, 1, new[] { _linearSampler });
         _deviceContext.PSSetShaderResources(0, 2, new[] { _hdrYPlaneSRV!, _hdrUVPlaneSRV! });
 
-        if (_viewportCB != null)
-        {
-            var mapped = _deviceContext.Map(_viewportCB, 0, MapMode.WriteDiscard);
-            unsafe
-            {
-                var data = (float*)mapped.DataPointer;
-                data[0] = viewport.X;
-                data[1] = viewport.Y;
-                data[2] = viewport.Width;
-                data[3] = viewport.Height;
-            }
-            _deviceContext.Unmap(_viewportCB, 0);
-            _deviceContext.PSSetConstantBuffers(0, 1, new[] { _viewportCB });
-        }
+        UpdateViewportConstantBuffer(viewport);
 
         _deviceContext.Draw(3, 0);
         _deviceContext.PSSetShaderResources(0, 2, new ID3D11ShaderResourceView[] { null!, null! });
@@ -1113,6 +1300,100 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         Interlocked.Increment(ref _framesRendered);
         TrackPresentCadence();
         TrackPipelineLatency(frame.ArrivalTick);
+    }
+
+    private bool TryEnsureNv12ShaderResources(PendingFrame frame)
+    {
+        if (_device == null)
+        {
+            return false;
+        }
+
+        if (frame.D3DTextureY == _nv12LastYPtr &&
+            frame.D3DTextureUV == _nv12LastUVPtr &&
+            _nv12YSRV != null &&
+            _nv12UVSRV != null)
+        {
+            return true;
+        }
+
+        _nv12YSRV?.Dispose();
+        _nv12YSRV = null;
+        _nv12UVSRV?.Dispose();
+        _nv12UVSRV = null;
+        _nv12LastYPtr = IntPtr.Zero;
+        _nv12LastUVPtr = IntPtr.Zero;
+
+        try
+        {
+            var yTexture = frame.D3DTextureYObject;
+            var uvTexture = frame.D3DTextureUVObject;
+            if (yTexture == null || uvTexture == null)
+            {
+                return false;
+            }
+
+            _nv12YSRV = _device.CreateShaderResourceView(
+                yTexture,
+                new ShaderResourceViewDescription(yTexture, ShaderResourceViewDimension.Texture2D, Format.R8_UNorm, 0, 1));
+            _nv12UVSRV = _device.CreateShaderResourceView(
+                uvTexture,
+                new ShaderResourceViewDescription(uvTexture, ShaderResourceViewDimension.Texture2D, Format.R8G8_UNorm, 0, 1));
+
+            _nv12LastYPtr = frame.D3DTextureY;
+            _nv12LastUVPtr = frame.D3DTextureUV;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _nv12YSRV?.Dispose();
+            _nv12YSRV = null;
+            _nv12UVSRV?.Dispose();
+            _nv12UVSRV = null;
+            _nv12LastYPtr = IntPtr.Zero;
+            _nv12LastUVPtr = IntPtr.Zero;
+            Logger.Log($"D3D11 preview NV12 SRV creation failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            return false;
+        }
+    }
+
+    private Viewport ComputeLetterboxViewport(int sourceWidth, int sourceHeight)
+    {
+        var outputWidth = _configuredOutputWidth > 0
+            ? _configuredOutputWidth
+            : Math.Max(1, Volatile.Read(ref _startupWidth));
+        var outputHeight = _configuredOutputHeight > 0
+            ? _configuredOutputHeight
+            : Math.Max(1, Volatile.Read(ref _startupHeight));
+        var destinationRect = ComputeLetterboxRect(sourceWidth, sourceHeight, outputWidth, outputHeight);
+        return new Viewport(
+            destinationRect.Left,
+            destinationRect.Top,
+            Math.Max(1, destinationRect.Right - destinationRect.Left),
+            Math.Max(1, destinationRect.Bottom - destinationRect.Top),
+            0.0f,
+            1.0f);
+    }
+
+    private void UpdateViewportConstantBuffer(Viewport viewport)
+    {
+        if (_viewportCB == null || _deviceContext == null)
+        {
+            return;
+        }
+
+        var mapped = _deviceContext.Map(_viewportCB, 0, MapMode.WriteDiscard);
+        unsafe
+        {
+            var data = (float*)mapped.DataPointer;
+            data[0] = viewport.X;
+            data[1] = viewport.Y;
+            data[2] = viewport.Width;
+            data[3] = viewport.Height;
+        }
+
+        _deviceContext.Unmap(_viewportCB, 0);
+        _deviceContext.PSSetConstantBuffers(0, 1, new[] { _viewportCB });
     }
 
     private void TryCaptureFrameBeforePresent(string rendererMode)
@@ -2144,6 +2425,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     {
         _fullscreenVS?.Dispose();
         _fullscreenVS = null;
+        _nv12PS?.Dispose();
+        _nv12PS = null;
         _hdrTonemapPS?.Dispose();
         _hdrTonemapPS = null;
         _hdrPassthroughPS?.Dispose();
@@ -2179,6 +2462,21 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
                 _hdrPassthroughPS = _device.CreatePixelShader(passthroughPtr, (nuint)passthroughBytecode.Length, null);
             }
 
+            try
+            {
+                var nv12Bytecode = CompileShader(Nv12PixelShaderSource, "main", "ps_5_0");
+                fixed (byte* nv12Ptr = nv12Bytecode)
+                {
+                    _nv12PS = _device.CreatePixelShader(nv12Ptr, (nuint)nv12Bytecode.Length, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                _nv12PS?.Dispose();
+                _nv12PS = null;
+                Logger.Log($"D3D11 preview NV12 shader compile failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            }
+
             var samplerDescription = new SamplerDescription
             {
                 Filter = Filter.MinMagMipLinear,
@@ -2198,12 +2496,15 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             _viewportCB = _device.CreateBuffer(new BufferDescription(
                 16, BindFlags.ConstantBuffer, ResourceUsage.Dynamic, CpuAccessFlags.Write));
 
-            Logger.Log($"D3D11 HDR shaders compiled (VS={vertexShaderBytecode.Length}b TonemapPS={pixelShaderBytecode.Length}b PassthroughPS={passthroughBytecode.Length}b).");
+            Logger.Log(
+                $"D3D11 HDR shaders compiled (VS={vertexShaderBytecode.Length}b TonemapPS={pixelShaderBytecode.Length}b PassthroughPS={passthroughBytecode.Length}b Nv12PS={(_nv12PS != null ? "ok" : "unavailable")}).");
         }
         catch (Exception ex)
         {
             _fullscreenVS?.Dispose();
             _fullscreenVS = null;
+            _nv12PS?.Dispose();
+            _nv12PS = null;
             _hdrTonemapPS?.Dispose();
             _hdrTonemapPS = null;
             _hdrPassthroughPS?.Dispose();
@@ -2708,6 +3009,12 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _hdrYPlaneSRV = null;
         _hdrUVPlaneSRV?.Dispose();
         _hdrUVPlaneSRV = null;
+        _nv12YSRV?.Dispose();
+        _nv12YSRV = null;
+        _nv12UVSRV?.Dispose();
+        _nv12UVSRV = null;
+        _nv12LastYPtr = IntPtr.Zero;
+        _nv12LastUVPtr = IntPtr.Zero;
         _hdrStagingTexture?.Dispose();
         _hdrStagingTexture = null;
         _hdrInputTexture?.Dispose();
@@ -2744,6 +3051,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _linearSampler = null;
         _viewportCB?.Dispose();
         _viewportCB = null;
+        _nv12PS?.Dispose();
+        _nv12PS = null;
         _hdrTonemapPS?.Dispose();
         _hdrTonemapPS = null;
         _hdrPassthroughPS?.Dispose();

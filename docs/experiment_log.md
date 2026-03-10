@@ -1485,3 +1485,19 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (documentation correction only)
 - Conclusion: The append-only history now ends with an explicit canonical-record rule, so the duplicate `E74` headings do not create ambiguity for this fix.
+
+## E76 - NV12 preview now samples CUDA helper textures directly in the renderer
+- Timestamp (UTC): 2026-03-10T04:49:17.7157612Z
+- Commit Hash: uncommitted (base 0a56eef0ba6cd7c0c8921fb07fb629e049bbc251)
+- What Changed (single change): Removed zero-copy NV12 assembly via `CopySubresourceRegion` in `CudaD3D11InteropBridge`, exposed the CUDA-filled Y/UV helper textures to `D3D11PreviewRenderer`, added an NV12 pixel-shader preview path that samples those helper textures directly, and routed MJPEG preview submission through `SubmitNv12PlaneTextures` when zero-copy interop is active.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content -Tail 220 temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the repo-local verification run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token; no shader compilation failures, null-reference failures, or D3D11/HRESULT failure tokens were emitted by this change in the harness pass.
+- ffprobe Evidence:
+  - N/A (preview pipeline change only; no recording artifact generated in this verification pass)
+- Conclusion: The preview path no longer depends on invalid `R8G8_UNorm -> NV12 plane` copies. Repo-local build, regression tests, and log inspection are clean; live NVIDIA MJPG/HFR validation is still required to confirm the green-preview fix on hardware.

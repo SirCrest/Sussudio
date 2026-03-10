@@ -140,6 +140,14 @@ internal sealed unsafe class CudaD3D11InteropBridge : IDisposable
     public IntPtr TextureNativePointer
         => (_defaultTexture ?? throw new ObjectDisposedException(nameof(CudaD3D11InteropBridge))).NativePointer;
 
+    public bool ZeroCopyAvailable => _zeroCopyAvailable;
+
+    public IntPtr HelperYTextureNativePointer
+        => _zeroCopyAvailable ? (_helperTextureY?.NativePointer ?? IntPtr.Zero) : IntPtr.Zero;
+
+    public IntPtr HelperUVTextureNativePointer
+        => _zeroCopyAvailable ? (_helperTextureUV?.NativePointer ?? IntPtr.Zero) : IntPtr.Zero;
+
     public void CopyFrameToTexture(AVFrame* cudaFrame)
     {
         if (Volatile.Read(ref _disposed) != 0)
@@ -169,9 +177,8 @@ internal sealed unsafe class CudaD3D11InteropBridge : IDisposable
 
     private void CopyFrameZeroCopy(AVFrame* cudaFrame)
     {
-        var helperTextureY = _helperTextureY ?? throw new InvalidOperationException("Y helper texture is unavailable.");
-        var helperTextureUV = _helperTextureUV ?? throw new InvalidOperationException("UV helper texture is unavailable.");
-        var defaultTexture = _defaultTexture ?? throw new InvalidOperationException("Default interop texture is unavailable.");
+        _ = _helperTextureY ?? throw new InvalidOperationException("Y helper texture is unavailable.");
+        _ = _helperTextureUV ?? throw new InvalidOperationException("UV helper texture is unavailable.");
         if (_registeredResourceY == IntPtr.Zero || _registeredResourceUV == IntPtr.Zero)
             throw new InvalidOperationException("Zero-copy interop resource is unavailable.");
 
@@ -243,17 +250,6 @@ internal sealed unsafe class CudaD3D11InteropBridge : IDisposable
 
             if (ctxPushed)
                 cuCtxPopCurrent(out _);
-        }
-
-        _multithread.Enter();
-        try
-        {
-            _deviceContext.CopySubresourceRegion(defaultTexture, 0, 0, 0, 0, helperTextureY, 0u);
-            _deviceContext.CopySubresourceRegion(defaultTexture, 1, 0, 0, 0, helperTextureUV, 0u);
-        }
-        finally
-        {
-            _multithread.Leave();
         }
 
         if (Interlocked.Exchange(ref _diagDone, 1) == 0)
@@ -420,12 +416,12 @@ internal sealed unsafe class CudaD3D11InteropBridge : IDisposable
         {
             helperTextureY = d3dDevice.CreateTexture2D(new Texture2DDescription(
                 Format.R8_UNorm, (uint)_width, (uint)_height, 1, 1,
-                BindFlags.None, ResourceUsage.Default, CpuAccessFlags.None,
+                BindFlags.ShaderResource, ResourceUsage.Default, CpuAccessFlags.None,
                 1, 0, ResourceOptionFlags.None));
 
             helperTextureUV = d3dDevice.CreateTexture2D(new Texture2DDescription(
                 Format.R8G8_UNorm, (uint)(_width / 2), (uint)(_height / 2), 1, 1,
-                BindFlags.None, ResourceUsage.Default, CpuAccessFlags.None,
+                BindFlags.ShaderResource, ResourceUsage.Default, CpuAccessFlags.None,
                 1, 0, ResourceOptionFlags.None));
 
             var ctxPushed = false;
