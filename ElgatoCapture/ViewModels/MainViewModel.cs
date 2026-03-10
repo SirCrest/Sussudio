@@ -169,6 +169,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial string SelectedVideoFormat { get; set; } = "Auto";
 
     [ObservableProperty]
+    public partial int MjpegDecoderCount { get; set; } = 4;
+
+    [ObservableProperty]
     public partial double CustomBitrateMbps { get; set; } = 50;
 
     [ObservableProperty]
@@ -316,6 +319,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public CaptureHealthSnapshot GetCaptureHealthSnapshot() => _captureService.GetHealthSnapshot();
     public CaptureDiagnosticsSnapshot GetCaptureDiagnosticsSnapshot() => _captureService.GetDiagnosticsSnapshot();
     public RecordingStats GetRecordingStatsSnapshot() => _captureService.GetRecordingStats();
+    internal ParallelMjpegDecodePipeline.PipelineTimingMetrics? GetMjpegPipelineTimingDetails()
+        => _captureService.GetMjpegPipelineTimingDetails();
     public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
         => InvokeOnUiThreadAsync(() => _captureService.GetRuntimeSnapshot(), cancellationToken);
     public Task<CaptureHealthSnapshot> GetCaptureHealthSnapshotAsync(CancellationToken cancellationToken = default)
@@ -3117,6 +3122,25 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
+    partial void OnMjpegDecoderCountChanged(int value)
+    {
+        var clamped = Math.Clamp(value, 1, 8);
+        if (clamped != value)
+        {
+            MjpegDecoderCount = clamped;
+            return;
+        }
+
+        if (!_isChangingDevice &&
+            IsPreviewing &&
+            IsInitialized &&
+            BuildCaptureSettings().UseMjpegHighFrameRateMode)
+        {
+            Logger.Log($"=== MJPEG decoder count changed to {value} - reinitializing device ===");
+            EnqueueUiOperation(() => ReinitializeDeviceAsync("mjpeg decoder count"), "mjpeg decoder count reinitialize");
+        }
+    }
+
     private async Task ReinitializeDeviceAsync(string reason)
     {
         if (SelectedDevice == null || SelectedFormat == null)
@@ -4140,7 +4164,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             HdrOutputMode = IsHdrEnabled ? HdrOutputMode.Hdr10Pq : HdrOutputMode.Off,
             PreviewMode = IsTrueHdrPreviewEnabled ? PreviewMode.TrueHdr : PreviewMode.GpuFast,
             OutputPath = OutputPath,
-            AudioEnabled = IsAudioEnabled
+            AudioEnabled = IsAudioEnabled,
+            MjpegDecoderCount = Math.Clamp(MjpegDecoderCount, 1, 8)
         };
 
         settings.UseCustomAudioInput = IsCustomAudioInputEnabled;

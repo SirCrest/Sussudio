@@ -348,6 +348,20 @@
                             </StackPanel>
                         </StackPanel>
 
+                        <StackPanel x:Name="DecodeSection" Spacing="2" Visibility="Collapsed">
+                            <Grid x:Name="Decode_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="Decode_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Decode" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="Decode_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" />
+                            </Grid>
+                            <StackPanel x:Name="Decode_Content" Spacing="2" />
+                        </StackPanel>
+
                         <StackPanel Spacing="2">
                             <Grid x:Name="PreviewCadence_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="PreviewCadence_Content">
                                 <Grid.ColumnDefinitions>
@@ -777,6 +791,15 @@
                         <ComboBox x:Name="VideoFormatComboBox"
                                   AutomationProperties.AutomationId="VideoFormatComboBox"
                                   HorizontalAlignment="Stretch"/>
+                    </StackPanel>
+
+                    <StackPanel x:Name="DecoderCountPanel" Grid.Row="1" Grid.Column="1" Spacing="2" Visibility="Collapsed">
+                        <TextBlock Text="MJPEG Threads"
+                                   Style="{StaticResource SecondaryLabelStyle}"/>
+                        <ComboBox x:Name="DecoderCountComboBox"
+                                  AutomationProperties.AutomationId="DecoderCountComboBox"
+                                  HorizontalAlignment="Stretch"
+                                  SelectionChanged="DecoderCountComboBox_SelectionChanged"/>
                     </StackPanel>
                 </Grid>
 

@@ -65,6 +65,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private long _lastMfSourceReaderFramesDropped;
     private string? _lastMfSourceReaderNegotiatedFormat;
     private UnifiedVideoCapture.MjpegPipelineTimingMetrics _lastMjpegPipelineTimingMetrics;
+    private ParallelMjpegDecodePipeline.PipelineTimingMetrics? _lastFullMjpegPipelineTimingMetrics;
     private CancellationTokenSource? _telemetryPollCts;
     private Task? _telemetryPollTask;
     private const int TelemetryPollIntervalMs = 2000;
@@ -135,11 +136,18 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         _lastMjpegPipelineTimingMetrics = unifiedVideoCapture.GetMjpegPipelineTimingMetrics();
+        _lastFullMjpegPipelineTimingMetrics = unifiedVideoCapture.GetFullMjpegPipelineTimingMetrics();
     }
 
     private void ResetCachedMjpegTimingMetrics()
     {
         _lastMjpegPipelineTimingMetrics = default;
+        _lastFullMjpegPipelineTimingMetrics = null;
+    }
+
+    internal ParallelMjpegDecodePipeline.PipelineTimingMetrics? GetMjpegPipelineTimingDetails()
+    {
+        return _unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics() ?? _lastFullMjpegPipelineTimingMetrics;
     }
 
     private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)
@@ -987,6 +995,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
             ?? default(MfSourceReaderVideoCapture.SourceCadenceMetrics);
         var mjpegTiming = unifiedVideoCapture?.GetMjpegPipelineTimingMetrics()
             ?? _lastMjpegPipelineTimingMetrics;
+        var mjpegFullTiming = unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics()
+            ?? _lastFullMjpegPipelineTimingMetrics;
 
         return new CaptureHealthSnapshot
         {
@@ -1062,7 +1072,31 @@ public class CaptureService : IDisposable, IAsyncDisposable
             MjpegCallbackSampleCount = mjpegTiming.CallbackSampleCount,
             MjpegCallbackAvgMs = mjpegTiming.CallbackAvgMs,
             MjpegCallbackP95Ms = mjpegTiming.CallbackP95Ms,
-            MjpegCallbackMaxMs = mjpegTiming.CallbackMaxMs
+            MjpegCallbackMaxMs = mjpegTiming.CallbackMaxMs,
+            MjpegDecoderCount = mjpegFullTiming?.DecoderCount ?? 0,
+            MjpegReorderSampleCount = mjpegFullTiming?.ReorderSampleCount ?? 0,
+            MjpegReorderAvgMs = mjpegFullTiming?.ReorderAvgMs ?? 0,
+            MjpegReorderP95Ms = mjpegFullTiming?.ReorderP95Ms ?? 0,
+            MjpegReorderMaxMs = mjpegFullTiming?.ReorderMaxMs ?? 0,
+            MjpegPipelineSampleCount = mjpegFullTiming?.PipelineSampleCount ?? 0,
+            MjpegPipelineAvgMs = mjpegFullTiming?.PipelineAvgMs ?? 0,
+            MjpegPipelineP95Ms = mjpegFullTiming?.PipelineP95Ms ?? 0,
+            MjpegPipelineMaxMs = mjpegFullTiming?.PipelineMaxMs ?? 0,
+            MjpegTotalDecoded = mjpegFullTiming?.TotalDecoded ?? 0,
+            MjpegTotalEmitted = mjpegFullTiming?.TotalEmitted ?? 0,
+            MjpegTotalDropped = mjpegFullTiming?.TotalDropped ?? 0,
+            MjpegReorderSkips = mjpegFullTiming?.ReorderSkips ?? 0,
+            MjpegReorderBufferDepth = mjpegFullTiming?.ReorderBufferDepth ?? 0,
+            MjpegPerDecoder = mjpegFullTiming?.PerDecoder is { Length: > 0 } perDecoder
+                ? Array.ConvertAll(
+                    perDecoder,
+                    worker => new MjpegDecoderHealthSnapshot(
+                        worker.WorkerIndex,
+                        worker.SampleCount,
+                        worker.AvgMs,
+                        worker.P95Ms,
+                        worker.MaxMs))
+                : Array.Empty<MjpegDecoderHealthSnapshot>()
         };
     }
 
@@ -1135,7 +1169,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     settings.FrameRate,
                     requireP010,
                     settings.RequestedPixelFormat,
-                    useMjpegHighFrameRateMode).ConfigureAwait(false);
+                    useMjpegHighFrameRateMode,
+                    settings.MjpegDecoderCount).ConfigureAwait(false);
                 unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
                 TryApplySharedPreviewDevice(unifiedVideoCapture, _previewFrameSink);
                 unifiedVideoCapture.Start();
@@ -1339,7 +1374,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                         effectiveFrameRate,
                         requireP010,
                         settings.RequestedPixelFormat,
-                        useMjpegHighFrameRateMode).ConfigureAwait(false);
+                        useMjpegHighFrameRateMode,
+                        settings.MjpegDecoderCount).ConfigureAwait(false);
                     ownedUnifiedVideoCapture.SetPreviewSink(_isVideoPreviewActive ? _previewFrameSink : null);
                     TryApplySharedPreviewDevice(ownedUnifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
                     unifiedVideoCapture = ownedUnifiedVideoCapture;
@@ -1359,7 +1395,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 recordingVideoCapture = unifiedVideoCapture;
                 TryApplySharedPreviewDevice(unifiedVideoCapture, _isVideoPreviewActive ? _previewFrameSink : null);
 
-                var mjpegDecoder = recordingVideoCapture.MjpegDecoder;
+                var isMjpegMode = recordingVideoCapture.IsSoftwareMjpegPipelineActive;
                 var d3dManager = unifiedVideoCapture.D3DManager;
                 var recordingWidth = (uint)Math.Max(1, unifiedVideoCapture.Width);
                 var recordingHeight = (uint)Math.Max(1, unifiedVideoCapture.Height);
@@ -1367,14 +1403,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 var frameRateArg = ResolveFrameRateArg(settings, recordingFrameRate);
                 IntPtr cudaHwDeviceCtxPtr = IntPtr.Zero;
                 IntPtr cudaHwFramesCtxPtr = IntPtr.Zero;
-                if (mjpegDecoder != null)
-                {
-                    unsafe
-                    {
-                        cudaHwDeviceCtxPtr = (IntPtr)(void*)mjpegDecoder.HwDeviceCtx;
-                        cudaHwFramesCtxPtr = (IntPtr)(void*)mjpegDecoder.HwFramesCtx;
-                    }
-                }
 
                 recordingContext = await _artifactManager.CreateContextAsync(
                     outputFolder,
@@ -1386,13 +1414,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     recordingWidth,
                     recordingHeight,
                     videoInputPixelFormat,
-                    mjpegDecoder != null ? IntPtr.Zero : (d3dManager?.Device.NativePointer ?? IntPtr.Zero),
-                    mjpegDecoder != null ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero),
+                    isMjpegMode ? IntPtr.Zero : (d3dManager?.Device.NativePointer ?? IntPtr.Zero),
+                    isMjpegMode ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero),
                     cudaHwDeviceCtxPtr,
                     cudaHwFramesCtxPtr).ConfigureAwait(false);
 
                 transitionToken.ThrowIfCancellationRequested();
-                _mfReadwriteDisableConverters = requireP010 || mjpegDecoder != null;
+                _mfReadwriteDisableConverters = requireP010 || isMjpegMode;
                 Logger.Log(
                     "HDR_NEGOTIATION " +
                     $"requested_hdr={hdrPipelineRequested} " +
@@ -1442,19 +1470,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     }
                 }
 
-                ICudaVideoFrameEncoder? cudaEncoder = libAvSink.CudaEncodingEnabled ? libAvSink : null;
-                IGpuVideoFrameEncoder? gpuEncoder = (cudaEncoder == null && libAvSink.GpuEncodingEnabled) ? libAvSink : null;
-                if (mjpegDecoder != null && cudaEncoder == null)
-                {
-                    throw new InvalidOperationException("NVDEC MJPEG decode is active, but the recording sink did not initialize CUDA hardware frames.");
-                }
+                IGpuVideoFrameEncoder? gpuEncoder =
+                    (!isMjpegMode && libAvSink.GpuEncodingEnabled)
+                        ? libAvSink
+                        : null;
 
-                await unifiedVideoCapture.StartRecordingAsync(recordingSink, libAvSink, gpuEncoder, cudaEncoder).ConfigureAwait(false);
-                if (cudaEncoder != null)
-                {
-                    Logger.Log("CUDA_RECORDING_ACTIVE cuda_encoder=active");
-                }
-                else if (gpuEncoder != null)
+                await unifiedVideoCapture.StartRecordingAsync(recordingSink, libAvSink, gpuEncoder).ConfigureAwait(false);
+                if (gpuEncoder != null)
                 {
                     Logger.Log("GPU_RECORDING_ACTIVE gpu_encoder=active");
                 }
@@ -1868,7 +1890,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         // MJPEG (JPEG) uses full-range YCbCr (0-255). Tell the VP to use
         // YcbcrFullG22LeftP709 instead of the default studio-range color space.
-        renderer.FullRangeInput = capture.MjpegDecoder != null;
+        renderer.FullRangeInput = capture.IsHighFrameRateMjpegMode;
 
         var sharedDevice = capture.D3DManager?.Device;
         if (sharedDevice == null)

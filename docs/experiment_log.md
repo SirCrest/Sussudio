@@ -1517,3 +1517,37 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (preview interop ownership change only; no recording artifact generated in this verification pass)
 - Conclusion: The bridge now owns a CUDA-level primary-context retain/release pair and no longer relies on worker-thread preconditioning for per-frame context setup. Repo-local build/test verification is clean, but a live NVIDIA MJPG run is still required to confirm the new diagnostics and the absence of runtime `cuCtxPushCurrent`/`cuCtxSetCurrent` failures on hardware.
+
+## E78 - MJPEG HFR now uses a CPU parallel decode pipeline with configurable worker count
+- Timestamp (UTC): 2026-03-10T16:27:24.9885241Z
+- Commit Hash: uncommitted (base e8104debbccf8240635a8caf4a0a79ca8bfa9514)
+- What Changed (single change): Replaced the NVDEC/CUDA MJPEG high-frame-rate path with a software FFmpeg `mjpeg` decode pipeline (`SoftwareMjpegDecoder` + `ParallelMjpegDecodePipeline`), routed MJPEG preview/recording through raw NV12 emission, removed the CUDA-only recording requirement from `UnifiedVideoCapture`/`CaptureService`, added configurable MJPEG decoder count to capture settings + UI, and surfaced reorder/per-decoder timing stats.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 160`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the repo-local verification run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token; this pass did not exercise live MJPEG decode hardware or record-path throughput.
+- ffprobe Evidence:
+  - N/A (capture/preview/record-path change only; no recording artifact generated in this verification pass)
+- Conclusion: The repo now builds and the runtime snapshot harness stays green with the CPU MJPEG pipeline, decoder-count setting, and expanded timing surface in place. Live 4K120 MJPG validation is still required to measure decode throughput and confirm end-to-end recording behavior on hardware.
+
+## E79 - CPU MJPEG pipeline verification pass with decoder-count UI and reliability gate
+- Timestamp (UTC): 2026-03-10T16:29:10.3313114Z
+- Commit Hash: uncommitted (base e8104debbccf8240635a8caf4a0a79ca8bfa9514)
+- What Changed (single change): Verified the software MJPEG pipeline integration end to end after fixing the final worker-drain teardown issue, with decoder-count settings flowing from UI -> `CaptureSettings` -> `CaptureService` -> `UnifiedVideoCapture` and per-decoder/reorder metrics surfaced in health + stats.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  4. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 160`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` from the final verification run contained only the existing intentional `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token from the synthetic harness; no new MJPEG pipeline warnings or teardown failures were emitted by this repo-local pass.
+- ffprobe Evidence:
+  - N/A (no recording artifact generated in this verification pass)
+- Conclusion: The CPU MJPEG pipeline, decoder-count UI flow, and expanded timing surface now pass build, regression harness, and reliability gate checks in-repo. Live 4K120 MJPG hardware validation remains the next step for throughput and real recording confirmation.

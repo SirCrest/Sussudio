@@ -119,6 +119,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _audioRangeResetTimestamp;
     private double _audioMeterDisplayLevel;
     private double _audioMeterTargetLevel;
+    private int _selectedDecoderCount = 4;
     private LinearGradientBrush? _audioMeterColorBrush;
     private LinearGradientBrush? _audioMeterGreyBrush;
     private DispatcherTimer? _audioMeterAnimationTimer;
@@ -1221,6 +1222,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         PresetComboBox.ItemsSource = ViewModel.AvailablePresets;
         SplitEncodeComboBox.ItemsSource = ViewModel.AvailableSplitEncodeModes;
         VideoFormatComboBox.ItemsSource = ViewModel.AvailableVideoFormats;
+        DecoderCountComboBox.Items.Clear();
+        for (var i = 1; i <= 8; i++)
+        {
+            DecoderCountComboBox.Items.Add(i);
+        }
 
         AttachCollectionSync(ViewModel.Devices, QueueDeviceSelectionSync);
         AttachCollectionSync(ViewModel.AudioInputDevices, QueueAudioSelectionSync);
@@ -1276,6 +1282,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         PresetComboBox.SelectedItem = ViewModel.SelectedPreset;
         SplitEncodeComboBox.SelectedItem = ViewModel.SelectedSplitEncodeMode;
         VideoFormatComboBox.SelectedItem = ViewModel.SelectedVideoFormat;
+        _selectedDecoderCount = Math.Clamp(ViewModel.MjpegDecoderCount, 1, 8);
+        DecoderCountComboBox.SelectedItem = _selectedDecoderCount;
         CustomBitrateNumberBox.Value = ViewModel.CustomBitrateMbps;
         CustomBitratePanel.Visibility = ViewModel.IsCustomBitrateVisible ? Visibility.Visible : Visibility.Collapsed;
         HdrToggle.IsChecked = ViewModel.IsHdrEnabled;
@@ -1298,6 +1306,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         EnsureQualitySelection();
         EnsurePresetSelection();
         EnsureSplitEncodeModeSelection();
+        UpdateDecoderCountVisibility();
 
         // Wire up selection changes with loop prevention
         DeviceComboBox.SelectionChanged += (s, e) =>
@@ -1345,6 +1354,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                     ViewModel.SelectedFrameRate = frameRate.Value;
                 }
             }
+
+            UpdateDecoderCountVisibility();
         };
 
         FormatComboBox.SelectionChanged += (s, e) =>
@@ -1385,6 +1396,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             {
                 ViewModel.SelectedVideoFormat = videoFormat;
             }
+
+            UpdateDecoderCountVisibility();
         };
 
         CustomBitrateNumberBox.ValueChanged += (s, e) =>
@@ -2275,7 +2288,47 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         SetTextIfChanged(Stats_RendererDroppedValue, rendererDropped);
         SetTextIfChanged(Stats_PerfScoreValue, perfScore);
         UpdateDiagnosticsSection(snapshot.DiagnosticSummary);
+        UpdateDecodeSection();
         UpdateGpuSection();
+    }
+
+    private void UpdateDecodeSection()
+    {
+        var mjpegMetrics = ViewModel.GetMjpegPipelineTimingDetails();
+        if (mjpegMetrics is not { DecoderCount: > 0 } mjpeg)
+        {
+            DecodeSection.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        DecodeSection.Visibility = Visibility.Visible;
+        var content = Decode_Content;
+        content.Children.Clear();
+
+        var alt = false;
+        void AddRow(string label, string value)
+        {
+            content.Children.Add(CreateDiagnosticRow(label, value, alt));
+            alt = !alt;
+        }
+
+        var effectiveFrameTimeMs = mjpeg.DecodeAvgMs / mjpeg.DecoderCount;
+        var effectiveFps = effectiveFrameTimeMs > 0 ? 1000.0 / effectiveFrameTimeMs : 0;
+
+        AddRow("Throughput", $"{effectiveFrameTimeMs:0.00}ms ({effectiveFps:0}fps peak)");
+        AddRow("Decode", $"{mjpeg.DecodeAvgMs:0.00}ms avg ({mjpeg.DecoderCount} threads)");
+        AddRow("Reorder", $"{mjpeg.ReorderAvgMs:0.00}ms avg");
+        AddRow("Pipeline", $"{mjpeg.PipelineAvgMs:0.00}ms avg");
+        AddRow("Frames", $"{mjpeg.TotalEmitted:N0} emitted / {mjpeg.TotalDropped:N0} dropped");
+        if (mjpeg.ReorderSkips > 0)
+        {
+            AddRow("Skips", $"{mjpeg.ReorderSkips:N0}");
+        }
+
+        foreach (var worker in mjpeg.PerDecoder)
+        {
+            AddRow($"Thread {worker.WorkerIndex}", $"{worker.AvgMs:0.00}ms");
+        }
     }
 
     private void UpdateGpuSection()
@@ -2284,14 +2337,22 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var gpuContent = GPU_Content;
         gpuContent.Children.Clear();
 
-        if (nvml == null)
+        var alt = false;
+        void AddRow(string label, string value)
         {
-            gpuContent.Children.Add(CreateDiagnosticRow("Status", "NVML not available", false));
-            return;
+            gpuContent.Children.Add(CreateDiagnosticRow(label, value, alt));
+            alt = !alt;
         }
 
-        var alt = false;
-        void AddRow(string label, string value) { gpuContent.Children.Add(CreateDiagnosticRow(label, value, alt)); alt = !alt; }
+        if (nvml == null)
+        {
+            if (gpuContent.Children.Count == 0)
+            {
+                AddRow("Status", "NVML not available");
+            }
+
+            return;
+        }
 
         if (!string.IsNullOrEmpty(nvml.GpuName))
             AddRow("GPU", nvml.GpuName);
@@ -2526,6 +2587,46 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         if (!string.Equals(target.Text, value, StringComparison.Ordinal))
         {
             target.Text = value;
+        }
+    }
+
+    private void UpdateDecoderCountVisibility()
+    {
+        var selectedFormat = VideoFormatComboBox.SelectedItem as string ?? ViewModel.SelectedVideoFormat;
+        var selectedFrameRate = GetSelectedFriendlyFrameRate();
+        DecoderCountPanel.Visibility =
+            string.Equals(selectedFormat, "MJPG", StringComparison.OrdinalIgnoreCase) && selectedFrameRate >= 90
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+    }
+
+    private double GetSelectedFriendlyFrameRate()
+    {
+        if (FrameRateComboBox.SelectedItem is FrameRateOption option)
+        {
+            if (option.FriendlyValue > 0)
+            {
+                return option.FriendlyValue;
+            }
+
+            if (option.Value > 0)
+            {
+                return option.Value;
+            }
+        }
+
+        return ViewModel.SelectedFrameRate;
+    }
+
+    private void DecoderCountComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (DecoderCountComboBox.SelectedItem is int count)
+        {
+            _selectedDecoderCount = count;
+            if (ViewModel.MjpegDecoderCount != count)
+            {
+                ViewModel.MjpegDecoderCount = count;
+            }
         }
     }
 
