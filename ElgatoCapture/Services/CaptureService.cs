@@ -701,7 +701,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             NegotiatedPixelFormat = _actualPixelFormat,
             RequestedReaderSubtype = requestedReaderSubtype,
             ReaderSourceStreamType = readerSourceStreamType,
-            ReaderSourceSubtype = observedTelemetry.LatestObservedFramePixelFormat ?? _actualPixelFormat,
+            ReaderSourceSubtype = _actualPixelFormat,
             FirstObservedFramePixelFormat = observedTelemetry.FirstObservedFramePixelFormat,
             LatestObservedFramePixelFormat = observedTelemetry.LatestObservedFramePixelFormat,
             LatestObservedSurfaceFormat = observedTelemetry.LatestObservedSurfaceFormat,
@@ -1032,7 +1032,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             ReaderSourceStreamType = (_isRecording || _isVideoPreviewActive) && unifiedVideoCapture != null
                 ? "MfSourceReader"
                 : null,
-            ReaderSourceSubtype = observedTelemetry.LatestObservedFramePixelFormat ?? _actualPixelFormat,
+            ReaderSourceSubtype = _actualPixelFormat,
             FirstObservedFramePixelFormat = observedTelemetry.FirstObservedFramePixelFormat,
             LatestObservedFramePixelFormat = observedTelemetry.LatestObservedFramePixelFormat,
             ObservedP010FrameCount = observedTelemetry.ObservedP010FrameCount,

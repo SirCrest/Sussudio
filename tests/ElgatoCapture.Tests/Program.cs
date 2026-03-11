@@ -27,6 +27,9 @@ static class Program
                 "Observed telemetry uses explicit counters",
                 GetRuntimeSnapshot_UsesObservedTelemetryStateInsteadOfInferredCounts),
             await RunCheckAsync(
+                "Runtime snapshot preserves MJPG source subtype when observed frames are NV12",
+                GetRuntimeSnapshot_PreservesReaderSourceSubtype_WhenObservedFramesAreDecoded),
+            await RunCheckAsync(
                 "Telemetry alignment mismatch surfaces reason",
                 GetRuntimeSnapshot_TelemetryAlignment_Mismatch_WhenSourceModeDiffersFromRequest),
             await RunCheckAsync(
@@ -74,6 +77,9 @@ static class Program
             await RunCheckAsync(
                 "Diagnostics loop does not rebuild automation options each poll",
                 DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll),
+            await RunCheckAsync(
+                "Live pixel format surfaces prefer source subtype over decoded output",
+                LivePixelFormatSurfaces_PreferReaderSourceSubtype),
             await RunCheckAsync(
                 "MCP tool surface exposes raw state options and UI control",
                 McpToolSurface_ExposesRawStateOptionsAndUiControl),
@@ -162,6 +168,24 @@ static class Program
         AssertEqual(3L, GetLongProperty(snapshot, "ObservedOtherFrameCount"), "ObservedOtherFrameCount");
         AssertEqual("NV12", GetStringProperty(snapshot, "FirstObservedFramePixelFormat"), "FirstObservedFramePixelFormat");
         AssertEqual("BGRA8", GetStringProperty(snapshot, "LatestObservedFramePixelFormat"), "LatestObservedFramePixelFormat");
+
+        await DisposeAsync(captureService).ConfigureAwait(false);
+    }
+
+    private static async Task GetRuntimeSnapshot_PreservesReaderSourceSubtype_WhenObservedFramesAreDecoded()
+    {
+        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var device = BuildDevice();
+        var settings = BuildSettings(hdrEnabled: false);
+
+        await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
+
+        SetPrivateField(captureService, "_actualPixelFormat", "MJPG");
+        SetPrivateField(captureService, "_latestObservedFramePixelFormat", "NV12");
+
+        var snapshot = InvokeInstanceMethod(captureService, "GetRuntimeSnapshot");
+        AssertEqual("MJPG", GetStringProperty(snapshot, "ReaderSourceSubtype"), "ReaderSourceSubtype");
+        AssertEqual("NV12", GetStringProperty(snapshot, "LatestObservedFramePixelFormat"), "LatestObservedFramePixelFormat");
 
         await DisposeAsync(captureService).ConfigureAwait(false);
     }
@@ -729,6 +753,25 @@ static class Program
         AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
         AssertDoesNotContain(diagnosticsHubText, "Options = optionsSnapshot");
         AssertContains(mainViewModelText, "GetAutomationOptionsSnapshotAsync");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task LivePixelFormatSurfaces_PreferReaderSourceSubtype()
+    {
+        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs").Replace("\r\n", "\n");
+
+        AssertContains(mainViewModelText, "runtime.ReaderSourceSubtype ??");
+        AssertContains(mainViewModelText, "runtime.LatestObservedFramePixelFormat ??");
+        AssertContains(mainWindowText, "snapshot.ReaderSourceSubtype ??");
+        AssertContains(mainWindowText, "snapshot.NegotiatedPixelFormat ??");
+
+        if (mainViewModelText.IndexOf("runtime.ReaderSourceSubtype ??", StringComparison.Ordinal) >
+            mainViewModelText.IndexOf("runtime.LatestObservedFramePixelFormat ??", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException("MainViewModel.LivePixelFormat should prefer ReaderSourceSubtype before LatestObservedFramePixelFormat.");
+        }
 
         return Task.CompletedTask;
     }

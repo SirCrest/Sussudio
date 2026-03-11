@@ -2272,7 +2272,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             false => "Off",
             _ => "\u2014"
         };
-        var sourceFormat = snapshot.NegotiatedPixelFormat ?? "\u2014";
+        var sourceFormat =
+            snapshot.ReaderSourceSubtype ??
+            snapshot.NegotiatedPixelFormat ??
+            "\u2014";
         var telemetryOrigin = snapshot.TelemetryOrigin is not null and not "Unknown"
             ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
             : "\u2014";
@@ -2420,6 +2423,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             SourceHeight: health.SourceHeight,
             SourceFrameRateExact: health.SourceFrameRateExact,
             SourceIsHdr: health.SourceIsHdr,
+            ReaderSourceSubtype: health.ReaderSourceSubtype,
             NegotiatedPixelFormat: health.NegotiatedPixelFormat,
             TelemetryOrigin: health.SourceTelemetryOrigin.ToString(),
             TelemetryConfidence: health.SourceTelemetryConfidence.ToString(),

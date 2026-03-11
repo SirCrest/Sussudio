@@ -941,9 +941,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         var pixelFormat =
-            runtime.LatestObservedFramePixelFormat ??
-            runtime.NegotiatedPixelFormat ??
+            runtime.ReaderSourceSubtype ??
             runtime.VideoNegotiatedSubtype ??
+            runtime.NegotiatedPixelFormat ??
+            runtime.LatestObservedFramePixelFormat ??
+            runtime.RequestedReaderSubtype ??
             runtime.RequestedPixelFormat;
         LivePixelFormat = string.IsNullOrWhiteSpace(pixelFormat) ? LiveInfoUnavailable : pixelFormat;
     }

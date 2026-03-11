@@ -155,7 +155,10 @@ public sealed partial class StatsWindow : Window
             false => "Off",
             _ => "\u2014"
         };
-        SourceFormatValue.Text = snapshot.NegotiatedPixelFormat ?? "\u2014";
+        SourceFormatValue.Text =
+            snapshot.ReaderSourceSubtype ??
+            snapshot.NegotiatedPixelFormat ??
+            "\u2014";
         TelemetryOriginValue.Text = snapshot.TelemetryOrigin is not null and not "Unknown"
             ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
             : "\u2014";
@@ -249,6 +252,7 @@ public sealed record StatsSnapshot(
     int? SourceHeight = null,
     double? SourceFrameRateExact = null,
     bool? SourceIsHdr = null,
+    string? ReaderSourceSubtype = null,
     string? NegotiatedPixelFormat = null,
     string? TelemetryOrigin = null,
     string? TelemetryConfidence = null,
