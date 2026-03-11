@@ -3972,22 +3972,6 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }, cancellationToken);
     }
 
-    public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)
-    {
-        return InvokeOnUiThreadAsync(() =>
-        {
-            var matched = AvailableVideoFormats.FirstOrDefault(value =>
-                string.Equals(value, videoFormat, StringComparison.OrdinalIgnoreCase));
-            if (matched == null)
-            {
-                throw new InvalidOperationException($"Video format '{videoFormat}' is not available.");
-            }
-
-            SelectedVideoFormat = matched;
-            return Task.CompletedTask;
-        }, cancellationToken);
-    }
-
     public Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)
     {
         return InvokeOnUiThreadAsync(() =>

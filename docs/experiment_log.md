@@ -1860,3 +1860,24 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (packaging-only change)
 - Conclusion: The English-only locale cleanup now works for publish output as intended, including WinUI satellite folders whose primary language tag uses three letters.
+
+## E91 - Merge cleanup removed the duplicate SetVideoFormatAsync definition
+- Timestamp (UTC): 2026-03-11T22:43:00.0000000Z
+- Commit Hash: uncommitted
+- What Changed (single change): Removed the later duplicate `MainViewModel.SetVideoFormatAsync(string, CancellationToken)` method left behind by the `main` + bugfix branch merge so the original UI-threaded implementation remains the single automation entry point.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64`
+  3. `dotnet build tools/McpServer/McpServer.csproj -c Debug`
+  4. `dotnet build tools/AutomationClient/AutomationClient.csproj -c Debug`
+  5. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  6. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+  7. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+- Validator Output:
+  - All listed builds succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` contained only the expected synthetic regression tokens (`UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='emitter_self_join'` and `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure`) plus the usual `FRAMERATE_NTSC_CORRECTION` lines.
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+- ffprobe Evidence:
+  - N/A (merge/build cleanup only)
+- Conclusion: The merged `main` worktree now builds cleanly again after removing the duplicate automation method, and the full repo-local validation set stayed green.
