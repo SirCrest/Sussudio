@@ -52,6 +52,13 @@ function Resolve-CommandValue {
         "capturepreviewframe" { return 26 }
         "capturewindowscreenshot" { return 27 }
         "setvideoformat" { return 28 }
+        "getcaptureoptions" { return 29 }
+        "setpreset" { return 30 }
+        "setsplitencodemode" { return 31 }
+        "setmjpegdecodercount" { return 32 }
+        "setshowallcaptureoptions" { return 33 }
+        "setpreviewvolume" { return 34 }
+        "setstatsvisible" { return 35 }
         default { throw "Unknown automation command '$Value'." }
     }
 }

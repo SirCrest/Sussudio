@@ -283,59 +283,11 @@ public class FFmpegEncoderService : IDisposable, IAsyncDisposable, IRawVideoFram
         });
     }
 
-    private static readonly Lazy<string> CachedFfmpegPath = new(FindFFmpegPath);
+    private static readonly Lazy<string> CachedFfmpegPath = new(() => FfmpegRuntimeLocator.FindToolPath("ffmpeg.exe"));
 
     private static string FindFFmpegPath()
     {
-        // Check application directory first
-        var appDir = AppContext.BaseDirectory;
-        var paths = new[]
-        {
-            Path.Combine(appDir, "ffmpeg", "ffmpeg.exe"),
-            Path.Combine(appDir, "ffmpeg.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "ffmpeg", "bin", "ffmpeg.exe"),
-            "ffmpeg.exe" // PATH lookup
-        };
-
-        foreach (var path in paths)
-        {
-            if (path == "ffmpeg.exe")
-            {
-                // Check if ffmpeg is in PATH
-                try
-                {
-                    var psi = new ProcessStartInfo
-                    {
-                        FileName = "where",
-                        Arguments = "ffmpeg.exe",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        CreateNoWindow = true
-                    };
-                    using var proc = Process.Start(psi);
-                    if (proc != null)
-                    {
-                        var output = proc.StandardOutput.ReadToEnd();
-                        proc.WaitForExit();
-                        if (proc.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-                        {
-                            return output.Split('\n')[0].Trim();
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    // PATH lookup failed - this is expected on some systems
-                    System.Diagnostics.Debug.WriteLine($"FFmpeg PATH lookup failed: {ex.Message}");
-                }
-            }
-            else if (File.Exists(path))
-            {
-                return path;
-            }
-        }
-
-        return "ffmpeg.exe"; // Fallback, will fail gracefully if not found
+        return FfmpegRuntimeLocator.FindToolPath("ffmpeg.exe");
     }
 
     public static Task<EncoderSupport> GetEncoderSupportAsync()

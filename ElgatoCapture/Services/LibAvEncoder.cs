@@ -18,7 +18,8 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         @"^G\((\d+),(\d+)\)B\((\d+),(\d+)\)R\((\d+),(\d+)\)WP\((\d+),(\d+)\)L\((\d+),(\d+)\)$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
-    private static int _ffmpegInitialized;
+    private static readonly object FfmpegInitSync = new();
+    private static bool _ffmpegInitialized;
 
     private AVFormatContext* _formatCtx;
     private AVCodecContext* _videoCodecCtx;
@@ -67,22 +68,45 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     public bool UseHardwareFrames => _useHardwareFrames;
     public bool UseCudaHardwareFrames => _useCudaHardwareFrames;
 
-    public static void InitializeFFmpeg()
+    public static void InitializeFFmpeg(bool requireNativeRuntime = false)
     {
-        if (Interlocked.Exchange(ref _ffmpegInitialized, 1) != 0)
+        lock (FfmpegInitSync)
         {
-            return;
-        }
+            if (_ffmpegInitialized)
+            {
+                return;
+            }
 
-        ffmpeg.RootPath = AppContext.BaseDirectory;
+            if (!FfmpegRuntimeLocator.TryResolveNativeRuntimeRoot(out var runtimeRoot))
+            {
+                var message =
+                    $"FFmpeg native runtime not found. assembly_dir='{FfmpegRuntimeLocator.GetAssemblyBaseDirectory()}'";
+                Logger.Log($"LIBAV_RUNTIME_MISSING {message}");
+                if (requireNativeRuntime)
+                {
+                    throw new InvalidOperationException(message);
+                }
 
-        try
-        {
-            Logger.Log($"LIBAV_INIT root_path='{ffmpeg.RootPath}' avcodec_version={ffmpeg.avcodec_version()}");
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"LIBAV_INIT_ERROR root_path='{ffmpeg.RootPath}' type={ex.GetType().Name} msg={ex.Message}");
+                return;
+            }
+
+            ffmpeg.RootPath = runtimeRoot;
+
+            try
+            {
+                Logger.Log($"LIBAV_INIT root_path='{ffmpeg.RootPath}' avcodec_version={ffmpeg.avcodec_version()}");
+                _ffmpegInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"LIBAV_INIT_ERROR root_path='{ffmpeg.RootPath}' type={ex.GetType().Name} msg={ex.Message}");
+                if (requireNativeRuntime)
+                {
+                    throw new InvalidOperationException(
+                        $"FFmpeg native runtime failed to initialize from '{ffmpeg.RootPath}': {ex.Message}",
+                        ex);
+                }
+            }
         }
     }
 

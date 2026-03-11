@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -19,6 +20,35 @@ public static class AppStateTool
         return ResponseFormatter.FormatSnapshot(response);
     }
 
+    [McpServerTool(UseStructuredContent = true), Description("Get the raw structured application state snapshot for agent consumption.")]
+    public static async Task<object> get_app_state_raw(PipeClient pipeClient)
+    {
+        var response = await pipeClient.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+        if (!IsSuccess(response))
+        {
+            return CreateError(response);
+        }
+
+        if (response.TryGetProperty("Snapshot", out var snapshot))
+        {
+            var snapshotNode = JsonNode.Parse(snapshot.GetRawText()) as JsonObject ?? new JsonObject();
+            var optionsResponse = await pipeClient.SendCommandAsync("GetCaptureOptions").ConfigureAwait(false);
+            if (IsSuccess(optionsResponse) &&
+                optionsResponse.TryGetProperty("Data", out var options))
+            {
+                snapshotNode["Options"] = JsonNode.Parse(options.GetRawText());
+            }
+
+            return snapshotNode;
+        }
+
+        return new
+        {
+            success = false,
+            message = "Snapshot data was not available."
+        };
+    }
+
     private static bool IsSuccess(JsonElement response)
     {
         return response.ValueKind == JsonValueKind.Object &&
@@ -29,5 +59,16 @@ public static class AppStateTool
     private static string GetMessage(JsonElement response)
     {
         return ResponseFormatter.Get(response, "Message", "Command failed.");
+    }
+
+    private static object CreateError(JsonElement response)
+    {
+        return new
+        {
+            success = false,
+            message = GetMessage(response),
+            errorCode = ResponseFormatter.Get(response, "ErrorCode", string.Empty),
+            status = ResponseFormatter.Get(response, "Status", "error")
+        };
     }
 }

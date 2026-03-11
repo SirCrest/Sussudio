@@ -147,6 +147,58 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateAcknowledgedResponse(correlationId, $"Video format change requested: {videoFormat}.");
                 }
 
+                case AutomationCommandKind.GetCaptureOptions:
+                {
+                    var options = await _viewModel.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);
+                    return CreateSuccessResponse(correlationId, "Capture options retrieved.", data: options);
+                }
+
+                case AutomationCommandKind.SetPreset:
+                {
+                    var preset = RequireString(payload, "preset");
+                    await _viewModel.SetPresetAsync(preset, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Preset change requested: {preset}.");
+                }
+
+                case AutomationCommandKind.SetSplitEncodeMode:
+                {
+                    var splitEncodeMode = RequireString(payload, "splitEncodeMode");
+                    await _viewModel.SetSplitEncodeModeAsync(splitEncodeMode, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Split encode mode change requested: {splitEncodeMode}.");
+                }
+
+                case AutomationCommandKind.SetMjpegDecoderCount:
+                {
+                    var decoderCount = GetInt(payload, "decoderCount");
+                    if (!decoderCount.HasValue)
+                    {
+                        throw new InvalidOperationException("Missing required integer property 'decoderCount'.");
+                    }
+
+                    await _viewModel.SetMjpegDecoderCountAsync(decoderCount.Value, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"MJPEG decoder count change requested: {decoderCount.Value}.");
+                }
+
+                case AutomationCommandKind.SetShowAllCaptureOptions:
+                {
+                    var enabled = RequireBool(payload, "enabled");
+                    await _viewModel.SetShowAllCaptureOptionsAsync(enabled, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Show-all capture options {(enabled ? "enable" : "disable")} requested.");
+                }
+
+                case AutomationCommandKind.SetPreviewVolume:
+                {
+                    var previewVolumePercent = RequireDouble(payload, "previewVolumePercent");
+                    await _viewModel.SetPreviewVolumeAsync(previewVolumePercent, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Preview volume change requested: {previewVolumePercent:0.###}%.");
+                }
+
+                case AutomationCommandKind.SetStatsVisible:
+                {
+                    var visible = RequireBool(payload, "visible");
+                    await _viewModel.SetStatsVisibleAsync(visible, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Stats visibility {(visible ? "show" : "hide")} requested.");
+                }
                 case AutomationCommandKind.SetRecordingFormat:
                 {
                     var format = RequireString(payload, "format");
@@ -483,6 +535,9 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             AutomationCommandKind.SetResolution => true,
             AutomationCommandKind.SetFrameRate => true,
             AutomationCommandKind.SetVideoFormat => true,
+            AutomationCommandKind.SetPreset => true,
+            AutomationCommandKind.SetSplitEncodeMode => true,
+            AutomationCommandKind.SetMjpegDecoderCount => true,
             AutomationCommandKind.SetRecordingFormat => true,
             AutomationCommandKind.SetQuality => true,
             AutomationCommandKind.SetCustomBitrate => true,

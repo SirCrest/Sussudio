@@ -34,7 +34,14 @@ public enum AutomationCommandKind
     ProbePreviewColor,
     CapturePreviewFrame,
     CaptureWindowScreenshot,
-    SetVideoFormat
+    SetVideoFormat,
+    GetCaptureOptions,
+    SetPreset,
+    SetSplitEncodeMode,
+    SetMjpegDecoderCount,
+    SetShowAllCaptureOptions,
+    SetPreviewVolume,
+    SetStatsVisible
 }
 
 public enum AutomationWindowAction
@@ -112,6 +119,84 @@ public sealed class AutomationCommandResponse
     public AutomationSnapshot? Snapshot { get; init; }
 }
 
+public sealed record MjpegDecoderAutomationSnapshot(
+    int WorkerIndex,
+    int SampleCount,
+    double AvgMs,
+    double P95Ms,
+    double MaxMs);
+
+public sealed class AutomationDeviceOption
+{
+    public string Id { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public bool IsSelected { get; init; }
+}
+
+public sealed class AutomationStringOption
+{
+    public string Value { get; init; } = string.Empty;
+    public string Label { get; init; } = string.Empty;
+    public bool IsEnabled { get; init; } = true;
+    public string DisableReason { get; init; } = string.Empty;
+    public bool IsSelected { get; init; }
+}
+
+public sealed class AutomationResolutionOption
+{
+    public string Value { get; init; } = string.Empty;
+    public int Width { get; init; }
+    public int Height { get; init; }
+    public bool IsEnabled { get; init; } = true;
+    public string DisableReason { get; init; } = string.Empty;
+    public bool IsSelected { get; init; }
+}
+
+public sealed class AutomationFrameRateOption
+{
+    public double Value { get; init; }
+    public double FriendlyValue { get; init; }
+    public string ExactValueArg { get; init; } = string.Empty;
+    public bool IsEnabled { get; init; } = true;
+    public string DisableReason { get; init; } = string.Empty;
+    public bool IsSelected { get; init; }
+}
+
+public sealed class AutomationIntOption
+{
+    public int Value { get; init; }
+    public bool IsEnabled { get; init; } = true;
+    public bool IsSelected { get; init; }
+}
+
+public sealed class AutomationOptionsSnapshot
+{
+    public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
+    public AutomationDeviceOption[] Devices { get; init; } = Array.Empty<AutomationDeviceOption>();
+    public AutomationDeviceOption[] AudioInputDevices { get; init; } = Array.Empty<AutomationDeviceOption>();
+    public AutomationResolutionOption[] Resolutions { get; init; } = Array.Empty<AutomationResolutionOption>();
+    public AutomationFrameRateOption[] FrameRates { get; init; } = Array.Empty<AutomationFrameRateOption>();
+    public AutomationStringOption[] RecordingFormats { get; init; } = Array.Empty<AutomationStringOption>();
+    public AutomationStringOption[] Qualities { get; init; } = Array.Empty<AutomationStringOption>();
+    public AutomationStringOption[] Presets { get; init; } = Array.Empty<AutomationStringOption>();
+    public AutomationStringOption[] SplitEncodeModes { get; init; } = Array.Empty<AutomationStringOption>();
+    public AutomationStringOption[] VideoFormats { get; init; } = Array.Empty<AutomationStringOption>();
+    public AutomationIntOption[] MjpegDecoderCounts { get; init; } = Array.Empty<AutomationIntOption>();
+    public string? SelectedDeviceId { get; init; }
+    public string? SelectedAudioInputDeviceId { get; init; }
+    public string? SelectedResolution { get; init; }
+    public double SelectedFrameRate { get; init; }
+    public string SelectedRecordingFormat { get; init; } = string.Empty;
+    public string SelectedQuality { get; init; } = string.Empty;
+    public string SelectedPreset { get; init; } = string.Empty;
+    public string SelectedSplitEncodeMode { get; init; } = string.Empty;
+    public string SelectedVideoFormat { get; init; } = string.Empty;
+    public int MjpegDecoderCount { get; init; }
+    public bool ShowAllCaptureOptions { get; init; }
+    public double PreviewVolumePercent { get; init; }
+    public bool IsStatsVisible { get; init; }
+}
+
 public sealed class AutomationSnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
@@ -150,7 +235,11 @@ public sealed class AutomationSnapshot
     public string SelectedQuality { get; init; } = string.Empty;
     public string SelectedPreset { get; init; } = string.Empty;
     public string SelectedSplitEncodeMode { get; init; } = string.Empty;
+    public string SelectedVideoFormat { get; init; } = string.Empty;
     public double CustomBitrateMbps { get; init; }
+    public bool ShowAllCaptureOptions { get; init; }
+    public double PreviewVolumePercent { get; init; }
+    public bool IsStatsVisible { get; init; }
     public bool IsHdrAvailable { get; init; }
     public bool IsHdrEnabled { get; init; }
     public bool HdrOutputActive { get; init; }
@@ -380,6 +469,21 @@ public sealed class AutomationSnapshot
     public double MjpegCallbackAvgMs { get; init; }
     public double MjpegCallbackP95Ms { get; init; }
     public double MjpegCallbackMaxMs { get; init; }
+    public int MjpegDecoderCount { get; init; }
+    public int MjpegReorderSampleCount { get; init; }
+    public double MjpegReorderAvgMs { get; init; }
+    public double MjpegReorderP95Ms { get; init; }
+    public double MjpegReorderMaxMs { get; init; }
+    public int MjpegPipelineSampleCount { get; init; }
+    public double MjpegPipelineAvgMs { get; init; }
+    public double MjpegPipelineP95Ms { get; init; }
+    public double MjpegPipelineMaxMs { get; init; }
+    public long MjpegTotalDecoded { get; init; }
+    public long MjpegTotalEmitted { get; init; }
+    public long MjpegTotalDropped { get; init; }
+    public long MjpegReorderSkips { get; init; }
+    public int MjpegReorderBufferDepth { get; init; }
+    public MjpegDecoderAutomationSnapshot[] MjpegPerDecoder { get; init; } = Array.Empty<MjpegDecoderAutomationSnapshot>();
 
     public long RecordingVideoBytes { get; init; }
     public long RecordingAudioBytes { get; init; }
@@ -394,6 +498,7 @@ public sealed class AutomationSnapshot
 
     public RecordingVerificationResult? LastVerification { get; init; }
     public HdrTruthVerdict? HdrTruthVerdict { get; init; }
+    public AutomationOptionsSnapshot? Options { get; init; }
 }
 
 public enum DiagnosticsSeverity
@@ -727,7 +832,11 @@ public sealed class ViewModelRuntimeSnapshot
     public string SelectedQuality { get; init; } = string.Empty;
     public string SelectedPreset { get; init; } = string.Empty;
     public string SelectedSplitEncodeMode { get; init; } = string.Empty;
+    public string SelectedVideoFormat { get; init; } = string.Empty;
     public double CustomBitrateMbps { get; init; }
+    public bool ShowAllCaptureOptions { get; init; }
+    public double PreviewVolumePercent { get; init; }
+    public bool IsStatsVisible { get; init; }
     public bool IsHdrAvailable { get; init; }
     public bool IsHdrEnabled { get; init; }
     public string HdrRuntimeState { get; init; } = "Inactive";

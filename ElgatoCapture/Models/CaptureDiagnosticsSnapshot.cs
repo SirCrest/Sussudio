@@ -69,6 +69,21 @@ public sealed class CaptureDiagnosticsSnapshot
     public double MjpegCallbackAvgMs { get; init; }
     public double MjpegCallbackP95Ms { get; init; }
     public double MjpegCallbackMaxMs { get; init; }
+    public int MjpegDecoderCount { get; init; }
+    public int MjpegReorderSampleCount { get; init; }
+    public double MjpegReorderAvgMs { get; init; }
+    public double MjpegReorderP95Ms { get; init; }
+    public double MjpegReorderMaxMs { get; init; }
+    public int MjpegPipelineSampleCount { get; init; }
+    public double MjpegPipelineAvgMs { get; init; }
+    public double MjpegPipelineP95Ms { get; init; }
+    public double MjpegPipelineMaxMs { get; init; }
+    public long MjpegTotalDecoded { get; init; }
+    public long MjpegTotalEmitted { get; init; }
+    public long MjpegTotalDropped { get; init; }
+    public long MjpegReorderSkips { get; init; }
+    public int MjpegReorderBufferDepth { get; init; }
+    public MjpegDecoderHealthSnapshot[] MjpegPerDecoder { get; init; } = Array.Empty<MjpegDecoderHealthSnapshot>();
 
     public int ConversionQueueDepth { get; init; }
     public int FfmpegVideoQueueDepth { get; init; }

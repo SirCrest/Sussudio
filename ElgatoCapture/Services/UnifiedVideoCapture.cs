@@ -19,6 +19,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private bool _started;
     private bool _recordingActive;
     private bool _disposed;
+    private int _disposeStarted;
     private bool _isP010;
     private bool _isHighFrameRateMjpegMode;
     private bool _strictPreviewTextureRequired;
@@ -148,7 +149,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
                     mjpegDecoderCount,
                     width,
                     height,
-                    OnMjpegPipelineFrameEmitted);
+                    OnMjpegPipelineFrameEmitted,
+                    OnMjpegPipelineFatalError);
             }
             catch (Exception ex)
             {
@@ -323,6 +325,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     {
         CancellationTokenSource? readCts;
         MfSourceReaderVideoCapture? capture;
+        ParallelMjpegDecodePipeline? mjpegPipelineToStop = null;
 
         lock (_sync)
         {
@@ -350,18 +353,58 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             Interlocked.Exchange(ref _videoFramesDropped, Math.Max(captureDrops, localDrops));
         }
 
+        lock (_sync)
+        {
+            mjpegPipelineToStop = _mjpegPipeline;
+            if (mjpegPipelineToStop != null)
+            {
+                _previewSink = null;
+                _observedPixelFormatObserver = null;
+            }
+        }
+
+        if (mjpegPipelineToStop != null)
+        {
+            if (!mjpegPipelineToStop.TryStop(TimeSpan.FromSeconds(5), out var failureReason))
+            {
+                var stopException = new InvalidOperationException(
+                    $"CPU MJPEG pipeline stop did not quiesce cleanly: {failureReason ?? "unknown"}");
+                SignalFatalError(
+                    stopException,
+                    $"UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='{failureReason ?? "unknown"}'");
+                throw stopException;
+            }
+
+            lock (_sync)
+            {
+                if (ReferenceEquals(_mjpegPipeline, mjpegPipelineToStop))
+                {
+                    _mjpegPipeline = null;
+                }
+            }
+
+            mjpegPipelineToStop.Dispose();
+        }
+
         readCts?.Dispose();
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_disposed)
+        if (Interlocked.Exchange(ref _disposeStarted, 1) != 0)
         {
             return;
         }
 
-        _disposed = true;
-        await StopAsync().ConfigureAwait(false);
+        Exception? stopException = null;
+        try
+        {
+            await StopAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            stopException = ex;
+        }
 
         MfSourceReaderVideoCapture? capture;
         SharedD3DDeviceManager? d3dManager;
@@ -378,6 +421,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             _strictPreviewTextureRequired = false;
             _previewSink = null;
             _observedPixelFormatObserver = null;
+            _disposed = true;
         }
 
         if (capture != null)
@@ -388,6 +432,11 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
         mjpegPipeline?.Dispose();
         d3dManager?.Dispose();
+
+        if (stopException != null)
+        {
+            throw stopException;
+        }
     }
 
     private void OnFrameArrived(ReadOnlySpan<byte> frameData, int width, int height, long arrivalTick)
@@ -417,7 +466,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private void OnMjpegPipelineFrameEmitted(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)
     {
         const bool isP010 = false;
-        Volatile.Read(ref _observedPixelFormatObserver)?.Invoke("MJPG");
+        Volatile.Read(ref _observedPixelFormatObserver)?.Invoke("NV12");
 
         EnqueueRecordingFrame(nv12Data, width, height, isP010);
 
@@ -575,6 +624,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         SignalFatalError(
             ex,
             $"UNIFIED_VIDEO_FATAL_CAPTURE_ERROR type={ex.GetType().Name} msg={ex.Message}");
+    }
+
+    private void OnMjpegPipelineFatalError(Exception ex)
+    {
+        SignalFatalError(
+            ex,
+            $"UNIFIED_VIDEO_FATAL_MJPEG_ERROR type={ex.GetType().Name} msg={ex.Message}");
     }
 
     private void SignalFatalError(Exception ex, string logMessage)

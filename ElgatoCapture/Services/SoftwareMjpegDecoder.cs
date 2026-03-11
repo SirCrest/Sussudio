@@ -5,6 +5,14 @@ using FFmpeg.AutoGen;
 
 namespace ElgatoCapture.Services;
 
+internal sealed class SoftwareMjpegDecoderPermanentException : InvalidOperationException
+{
+    public SoftwareMjpegDecoderPermanentException(string message)
+        : base(message)
+    {
+    }
+}
+
 /// <summary>
 /// FFmpeg software MJPEG decoder with YUVJ420P->NV12 conversion.
 /// Each instance owns its own AVCodecContext and is NOT thread-safe.
@@ -37,7 +45,7 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
             throw new ArgumentOutOfRangeException(nameof(width), "Width and height must be positive.");
         }
 
-        LibAvEncoder.InitializeFFmpeg();
+        LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
         var codec = ffmpeg.avcodec_find_decoder_by_name("mjpeg");
         if (codec == null)
@@ -160,15 +168,17 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
             if (format != AVPixelFormat.AV_PIX_FMT_YUVJ420P &&
                 format != AVPixelFormat.AV_PIX_FMT_YUV420P)
             {
-                Logger.Log($"SW_MJPEG_UNSUPPORTED_FMT fmt={format} w={_decodedFrame->width} h={_decodedFrame->height}");
-                return false;
+                var message = $"SW_MJPEG_UNSUPPORTED_FMT fmt={format} w={_decodedFrame->width} h={_decodedFrame->height}";
+                Logger.Log(message);
+                throw new SoftwareMjpegDecoderPermanentException(message);
             }
 
             if (_decodedFrame->width != _width || _decodedFrame->height != _height)
             {
-                Logger.Log(
-                    $"SW_MJPEG_DIM_MISMATCH expected={_width}x{_height} actual={_decodedFrame->width}x{_decodedFrame->height}");
-                return false;
+                var message =
+                    $"SW_MJPEG_DIM_MISMATCH expected={_width}x{_height} actual={_decodedFrame->width}x{_decodedFrame->height}";
+                Logger.Log(message);
+                throw new SoftwareMjpegDecoderPermanentException(message);
             }
 
             if (Interlocked.Exchange(ref _diagDone, 1) == 0)

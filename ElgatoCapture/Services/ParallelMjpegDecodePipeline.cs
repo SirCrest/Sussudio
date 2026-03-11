@@ -66,6 +66,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private Thread? _emitThread;
     private readonly ManualResetEventSlim _emitSignal = new(false);
     private readonly EmitFrameCallback _emitCallback;
+    private readonly Action<Exception>? _fatalErrorCallback;
     private volatile bool _stopped;
     private readonly int _decoderCount;
     private readonly int _width;
@@ -85,6 +86,10 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private long _totalFramesDropped;
     private long _reorderSkips;
     private long _missingSeqSinceTickMs = -1;
+    private int _stopRequested;
+    private int _threadsStopped;
+    private int _fatalErrorSignaled;
+    private int _resourcesDisposed;
     private int _disposed;
 
     public int DecoderCount => _decoderCount;
@@ -93,7 +98,8 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         int decoderCount,
         int width,
         int height,
-        EmitFrameCallback emitCallback)
+        EmitFrameCallback emitCallback,
+        Action<Exception>? fatalErrorCallback = null)
     {
         ArgumentNullException.ThrowIfNull(emitCallback);
         if (width <= 0 || height <= 0)
@@ -105,6 +111,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         _width = width;
         _height = height;
         _emitCallback = emitCallback;
+        _fatalErrorCallback = fatalErrorCallback;
         _decoders = new SoftwareMjpegDecoder[_decoderCount];
         _workers = new Thread[_decoderCount];
         _workerQueues = new Channel<MjpegWorkItem>[_decoderCount];
@@ -252,41 +259,39 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     public void Dispose()
     {
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            return;
+        }
+
+        BeginStop();
+        if (!TryWaitForShutdown(TimeSpan.FromSeconds(5), out var failureReason))
+        {
+            Logger.Log(
+                $"PARALLEL_MJPEG_PIPELINE_DISPOSE_TIMEOUT reason='{failureReason ?? "unknown"}' " +
+                $"decoded={_totalFramesDecoded} emitted={_totalFramesEmitted} dropped={_totalFramesDropped} skips={_reorderSkips}");
+            return;
+        }
+
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
         {
             return;
         }
 
-        _stopped = true;
+        CleanupResources();
+    }
 
-        foreach (var queue in _workerQueues)
+    public bool TryStop(TimeSpan timeout, out string? failureReason)
+    {
+        failureReason = null;
+
+        if (Volatile.Read(ref _threadsStopped) != 0)
         {
-            queue?.Writer.TryComplete();
+            return true;
         }
 
-        foreach (var worker in _workers)
-        {
-            worker?.Join(TimeSpan.FromSeconds(2));
-        }
-
-        _emitSignal.Set();
-        _emitThread?.Join(TimeSpan.FromSeconds(2));
-
-        foreach (var decoder in _decoders)
-        {
-            decoder?.Dispose();
-        }
-
-        foreach (var entry in _reorderBuffer)
-        {
-            ArrayPool<byte>.Shared.Return(entry.Value.Nv12Buffer);
-        }
-
-        _reorderBuffer.Clear();
-        _emitSignal.Dispose();
-
-        Logger.Log(
-            $"PARALLEL_MJPEG_PIPELINE_DISPOSED decoded={_totalFramesDecoded} emitted={_totalFramesEmitted} dropped={_totalFramesDropped} skips={_reorderSkips}");
+        BeginStop();
+        return TryWaitForShutdown(timeout, out failureReason);
     }
 
     private void WorkerLoop(int workerIndex)
@@ -338,6 +343,14 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                     _emitSignal.Set();
                     Interlocked.Increment(ref _totalFramesDecoded);
                 }
+                catch (SoftwareMjpegDecoderPermanentException ex)
+                {
+                    RecordPerDecoderTiming(workerIndex, GetElapsedMilliseconds(decodeStart, Stopwatch.GetTimestamp()));
+                    Interlocked.Increment(ref _totalFramesDropped);
+                    Logger.Log($"MJPEG_WORKER_FATAL worker={workerIndex} type={ex.GetType().Name} msg={ex.Message}");
+                    SignalFatalError(ex);
+                    break;
+                }
                 catch (Exception ex)
                 {
                     RecordPerDecoderTiming(workerIndex, GetElapsedMilliseconds(decodeStart, Stopwatch.GetTimestamp()));
@@ -386,10 +399,17 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             emittedAny = true;
             RecordTimingSample(_reorderLatencyMs, ref _reorderLatencyCount, ref _reorderLatencyIndex, GetElapsedMilliseconds(frame.DecodedTick, Stopwatch.GetTimestamp()));
             RecordTimingSample(_pipelineLatencyMs, ref _pipelineLatencyCount, ref _pipelineLatencyIndex, GetElapsedMilliseconds(frame.ArrivalTick, Stopwatch.GetTimestamp()));
+            var emitted = false;
 
             try
             {
                 _emitCallback(new ReadOnlySpan<byte>(frame.Nv12Buffer, 0, frame.Nv12Size), frame.Width, frame.Height, frame.ArrivalTick);
+                emitted = true;
+            }
+            catch (Exception ex)
+            {
+                Interlocked.Increment(ref _totalFramesDropped);
+                Logger.Log($"MJPEG_EMIT_FAIL seq={frame.SeqNo} type={ex.GetType().Name} msg={ex.Message}");
             }
             finally
             {
@@ -397,7 +417,10 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             }
 
             _nextEmitSeq++;
-            Interlocked.Increment(ref _totalFramesEmitted);
+            if (emitted)
+            {
+                Interlocked.Increment(ref _totalFramesEmitted);
+            }
         }
 
         if (emittedAny)
@@ -447,6 +470,12 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             try
             {
                 _emitCallback(new ReadOnlySpan<byte>(frame.Nv12Buffer, 0, frame.Nv12Size), frame.Width, frame.Height, frame.ArrivalTick);
+                Interlocked.Increment(ref _totalFramesEmitted);
+            }
+            catch (Exception ex)
+            {
+                Interlocked.Increment(ref _totalFramesDropped);
+                Logger.Log($"MJPEG_EMIT_FAIL seq={frame.SeqNo} type={ex.GetType().Name} msg={ex.Message}");
             }
             finally
             {
@@ -537,4 +566,139 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     private static double GetElapsedMilliseconds(long startTimestamp, long endTimestamp)
         => (endTimestamp - startTimestamp) * 1000.0 / Stopwatch.Frequency;
+
+    private void BeginStop()
+    {
+        if (Interlocked.Exchange(ref _stopRequested, 1) != 0)
+        {
+            _emitSignal.Set();
+            return;
+        }
+
+        _stopped = true;
+        foreach (var queue in _workerQueues)
+        {
+            queue?.Writer.TryComplete();
+        }
+
+        _emitSignal.Set();
+    }
+
+    private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)
+    {
+        failureReason = null;
+
+        if (Volatile.Read(ref _threadsStopped) != 0)
+        {
+            return true;
+        }
+
+        var deadline = Stopwatch.GetTimestamp() + (long)(timeout.TotalSeconds * Stopwatch.Frequency);
+        for (var i = 0; i < _workers.Length; i++)
+        {
+            var worker = _workers[i];
+            if (worker == null || !worker.IsAlive)
+            {
+                continue;
+            }
+
+            if (ReferenceEquals(Thread.CurrentThread, worker))
+            {
+                failureReason = $"worker_self_join index={i}";
+                return false;
+            }
+
+            var remaining = GetRemainingTimeout(deadline);
+            if (remaining <= TimeSpan.Zero || !worker.Join(remaining))
+            {
+                failureReason = $"worker_timeout index={i}";
+                return false;
+            }
+        }
+
+        _emitSignal.Set();
+        if (_emitThread is { IsAlive: true } emitThread)
+        {
+            if (ReferenceEquals(Thread.CurrentThread, emitThread))
+            {
+                failureReason = "emitter_self_join";
+                return false;
+            }
+
+            var remaining = GetRemainingTimeout(deadline);
+            if (remaining <= TimeSpan.Zero || !emitThread.Join(remaining))
+            {
+                failureReason = "emitter_timeout";
+                return false;
+            }
+        }
+
+        Interlocked.Exchange(ref _threadsStopped, 1);
+        return true;
+    }
+
+    private void CleanupResources()
+    {
+        if (Interlocked.Exchange(ref _resourcesDisposed, 1) != 0)
+        {
+            return;
+        }
+
+        foreach (var decoder in _decoders)
+        {
+            decoder?.Dispose();
+        }
+
+        foreach (var entry in _reorderBuffer)
+        {
+            ArrayPool<byte>.Shared.Return(entry.Value.Nv12Buffer);
+        }
+
+        _reorderBuffer.Clear();
+        _emitSignal.Dispose();
+
+        Logger.Log(
+            $"PARALLEL_MJPEG_PIPELINE_DISPOSED decoded={_totalFramesDecoded} emitted={_totalFramesEmitted} dropped={_totalFramesDropped} skips={_reorderSkips}");
+    }
+
+    private void SignalFatalError(Exception ex)
+    {
+        BeginStop();
+
+        if (Interlocked.Exchange(ref _fatalErrorSignaled, 1) != 0)
+        {
+            return;
+        }
+
+        if (_fatalErrorCallback == null)
+        {
+            return;
+        }
+
+        ThreadPool.UnsafeQueueUserWorkItem(
+            static state =>
+            {
+                var (callback, exception) = ((Action<Exception>, Exception))state!;
+                try
+                {
+                    callback(exception);
+                }
+                catch (Exception callbackEx)
+                {
+                    Logger.Log($"MJPEG_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
+                }
+            },
+            (_fatalErrorCallback, ex));
+    }
+
+    private static TimeSpan GetRemainingTimeout(long deadlineTimestamp)
+    {
+        var remainingTicks = deadlineTimestamp - Stopwatch.GetTimestamp();
+        if (remainingTicks <= 0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        return TimeSpan.FromSeconds(remainingTicks / (double)Stopwatch.Frequency);
+    }
 }

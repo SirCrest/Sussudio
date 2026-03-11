@@ -917,58 +917,6 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
     private static string FindFfprobePath()
     {
-        var appDir = AppContext.BaseDirectory;
-        var paths = new[]
-        {
-            Path.Combine(appDir, "ffmpeg", "ffprobe.exe"),
-            Path.Combine(appDir, "ffprobe.exe"),
-            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "ffmpeg", "bin", "ffprobe.exe"),
-            "ffprobe.exe"
-        };
-
-        foreach (var path in paths)
-        {
-            if (path.Equals("ffprobe.exe", StringComparison.OrdinalIgnoreCase))
-            {
-                try
-                {
-                    var process = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = "where",
-                        Arguments = "ffprobe.exe",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        CreateNoWindow = true
-                    });
-                    if (process == null)
-                    {
-                        continue;
-                    }
-
-                    using (process)
-                    {
-                        var output = process.StandardOutput.ReadToEnd();
-                        process.WaitForExit();
-                        if (process.ExitCode == 0 && !string.IsNullOrWhiteSpace(output))
-                        {
-                            return output.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
-                        }
-                    }
-                }
-                catch
-                {
-                    // Best effort path discovery.
-                }
-
-                continue;
-            }
-
-            if (File.Exists(path))
-            {
-                return path;
-            }
-        }
-
-        return "ffprobe.exe";
+        return FfmpegRuntimeLocator.FindToolPath("ffprobe.exe");
     }
 }

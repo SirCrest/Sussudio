@@ -244,7 +244,22 @@ public class CaptureService : IDisposable, IAsyncDisposable
             MjpegCallbackSampleCount = health.MjpegCallbackSampleCount,
             MjpegCallbackAvgMs = health.MjpegCallbackAvgMs,
             MjpegCallbackP95Ms = health.MjpegCallbackP95Ms,
-            MjpegCallbackMaxMs = health.MjpegCallbackMaxMs
+            MjpegCallbackMaxMs = health.MjpegCallbackMaxMs,
+            MjpegDecoderCount = health.MjpegDecoderCount,
+            MjpegReorderSampleCount = health.MjpegReorderSampleCount,
+            MjpegReorderAvgMs = health.MjpegReorderAvgMs,
+            MjpegReorderP95Ms = health.MjpegReorderP95Ms,
+            MjpegReorderMaxMs = health.MjpegReorderMaxMs,
+            MjpegPipelineSampleCount = health.MjpegPipelineSampleCount,
+            MjpegPipelineAvgMs = health.MjpegPipelineAvgMs,
+            MjpegPipelineP95Ms = health.MjpegPipelineP95Ms,
+            MjpegPipelineMaxMs = health.MjpegPipelineMaxMs,
+            MjpegTotalDecoded = health.MjpegTotalDecoded,
+            MjpegTotalEmitted = health.MjpegTotalEmitted,
+            MjpegTotalDropped = health.MjpegTotalDropped,
+            MjpegReorderSkips = health.MjpegReorderSkips,
+            MjpegReorderBufferDepth = health.MjpegReorderBufferDepth,
+            MjpegPerDecoder = health.MjpegPerDecoder
         };
     }
 

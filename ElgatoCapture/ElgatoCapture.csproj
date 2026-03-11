@@ -53,7 +53,7 @@
 
   <!-- FFmpeg shared libraries (downloaded separately, gitignored) -->
   <ItemGroup>
-    <Content Include="ffmpeg\*.dll" Condition="Exists('ffmpeg')" CopyToOutputDirectory="PreserveNewest" Link="%(Filename)%(Extension)" />
+    <Content Include="ffmpeg\**\*" Condition="Exists('ffmpeg')" CopyToOutputDirectory="PreserveNewest" Link="ffmpeg\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

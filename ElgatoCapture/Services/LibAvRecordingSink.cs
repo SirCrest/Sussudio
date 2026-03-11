@@ -96,7 +96,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         try
         {
-            LibAvEncoder.InitializeFFmpeg();
+            LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
             var options = CreateOptions(context);
             _encoder.Initialize(options);

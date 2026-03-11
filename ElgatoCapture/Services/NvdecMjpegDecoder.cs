@@ -41,7 +41,7 @@ internal sealed unsafe class NvdecMjpegDecoder : IDisposable
             throw new ArgumentOutOfRangeException(nameof(width), "Width and height must be positive.");
         }
 
-        LibAvEncoder.InitializeFFmpeg();
+        LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
         var codec = ffmpeg.avcodec_find_decoder_by_name("mjpeg_cuvid");
         if (codec == null)
@@ -214,7 +214,7 @@ internal sealed unsafe class NvdecMjpegDecoder : IDisposable
             throw new ArgumentNullException(nameof(sharedHwFramesCtx));
         }
 
-        LibAvEncoder.InitializeFFmpeg();
+        LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
         var codec = ffmpeg.avcodec_find_decoder_by_name("mjpeg_cuvid");
         if (codec == null)

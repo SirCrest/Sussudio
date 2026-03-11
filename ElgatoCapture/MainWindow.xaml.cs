@@ -1272,6 +1272,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         CustomAudioToggle.IsOn = ViewModel.IsCustomAudioInputEnabled;
         CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
         ShowAllCaptureOptionsToggle.IsOn = ViewModel.ShowAllCaptureOptions;
+        StatsToggle.IsChecked = ViewModel.IsStatsVisible;
         var customAudioVisible = ViewModel.IsCustomAudioInputEnabled ? Visibility.Visible : Visibility.Collapsed;
         AudioInputLabel.Visibility = customAudioVisible;
         AudioInputComboBox.Visibility = customAudioVisible;
@@ -1422,6 +1423,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
         ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
         CaptureSettingsGrid.SizeChanged += CaptureSettingsGrid_SizeChanged;
+        ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);
     }
 
     private FrameworkElement[] GetControlBarButtons() => new FrameworkElement[]
@@ -1507,15 +1509,26 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             return;
         }
 
-        ShowStatsDockPanel();
-        UpdateStatsDock();
-        StartStatsDockPolling();
+        ViewModel.IsStatsVisible = true;
     }
 
     private void StatsToggle_Unchecked(object sender, RoutedEventArgs e)
     {
+        ViewModel.IsStatsVisible = false;
+    }
+
+    private void ApplyStatsVisibility(bool visible, bool immediate = false)
+    {
+        if (visible)
+        {
+            ShowStatsDockPanel();
+            UpdateStatsDock();
+            StartStatsDockPolling();
+            return;
+        }
+
         StopStatsDockPolling();
-        HideStatsDockPanel();
+        HideStatsDockPanel(immediate);
     }
 
     private void StatsSectionHeader_Tapped(object sender, TappedRoutedEventArgs e)
@@ -3062,6 +3075,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 {
                     ShowAllCaptureOptionsToggle.IsOn = ViewModel.ShowAllCaptureOptions;
                 }
+                break;
+
+            case nameof(MainViewModel.IsStatsVisible):
+                if (StatsToggle.IsChecked != ViewModel.IsStatsVisible)
+                {
+                    StatsToggle.IsChecked = ViewModel.IsStatsVisible;
+                }
+                ApplyStatsVisibility(ViewModel.IsStatsVisible);
                 break;
 
             case nameof(MainViewModel.SelectedAudioInputDevice):

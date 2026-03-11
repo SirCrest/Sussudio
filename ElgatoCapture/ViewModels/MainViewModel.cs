@@ -187,6 +187,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial bool IsTrueHdrPreviewEnabled { get; set; }
 
     [ObservableProperty]
+    public partial bool IsStatsVisible { get; set; }
+
+    [ObservableProperty]
     public partial string HdrResolutionSupportHint { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -561,7 +564,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             SelectedQuality = SelectedQuality,
             SelectedPreset = SelectedPreset,
             SelectedSplitEncodeMode = SelectedSplitEncodeMode,
+            SelectedVideoFormat = SelectedVideoFormat,
             CustomBitrateMbps = CustomBitrateMbps,
+            ShowAllCaptureOptions = ShowAllCaptureOptions,
+            PreviewVolumePercent = PreviewVolume * 100.0,
+            IsStatsVisible = IsStatsVisible,
             IsHdrAvailable = IsHdrAvailable,
             IsHdrEnabled = IsHdrEnabled,
             HdrRuntimeState = HdrRuntimeState,
@@ -575,6 +582,77 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             RecordingBitrateInfo = RecordingBitrateInfo,
             AudioPeak = AudioPeak,
             AudioClipping = AudioClipping
+        }, cancellationToken);
+    }
+
+    public Task<AutomationOptionsSnapshot> GetAutomationOptionsSnapshotAsync(CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() => new AutomationOptionsSnapshot
+        {
+            TimestampUtc = DateTimeOffset.UtcNow,
+            Devices = Devices
+                .Select(device => new AutomationDeviceOption
+                {
+                    Id = device.Id,
+                    Name = device.Name,
+                    IsSelected = string.Equals(device.Id, SelectedDevice?.Id, StringComparison.OrdinalIgnoreCase)
+                })
+                .ToArray(),
+            AudioInputDevices = AudioInputDevices
+                .Select(device => new AutomationDeviceOption
+                {
+                    Id = device.Id,
+                    Name = device.Name,
+                    IsSelected = string.Equals(device.Id, SelectedAudioInputDevice?.Id, StringComparison.OrdinalIgnoreCase)
+                })
+                .ToArray(),
+            Resolutions = AvailableResolutions
+                .Select(option => new AutomationResolutionOption
+                {
+                    Value = option.Value,
+                    Width = (int)option.Width,
+                    Height = (int)option.Height,
+                    IsEnabled = option.IsEnabled,
+                    DisableReason = option.DisableReason ?? string.Empty,
+                    IsSelected = string.Equals(option.Value, SelectedResolution, StringComparison.OrdinalIgnoreCase)
+                })
+                .ToArray(),
+            FrameRates = AvailableFrameRates
+                .Select(option => new AutomationFrameRateOption
+                {
+                    Value = option.Value,
+                    FriendlyValue = option.FriendlyValue,
+                    ExactValueArg = option.Rational ?? string.Empty,
+                    IsEnabled = option.IsEnabled,
+                    DisableReason = option.DisableReason ?? string.Empty,
+                    IsSelected = IsFrameRateMatch(option.Value, SelectedFrameRate)
+                })
+                .ToArray(),
+            RecordingFormats = BuildStringOptions(AvailableRecordingFormats, SelectedRecordingFormat),
+            Qualities = BuildStringOptions(AvailableQualities, SelectedQuality),
+            Presets = BuildStringOptions(AvailablePresets, SelectedPreset),
+            SplitEncodeModes = BuildStringOptions(AvailableSplitEncodeModes, SelectedSplitEncodeMode),
+            VideoFormats = BuildStringOptions(AvailableVideoFormats, SelectedVideoFormat),
+            MjpegDecoderCounts = Enumerable.Range(1, 8)
+                .Select(value => new AutomationIntOption
+                {
+                    Value = value,
+                    IsSelected = value == Math.Clamp(MjpegDecoderCount, 1, 8)
+                })
+                .ToArray(),
+            SelectedDeviceId = SelectedDevice?.Id,
+            SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,
+            SelectedResolution = SelectedResolution,
+            SelectedFrameRate = SelectedFrameRate,
+            SelectedRecordingFormat = SelectedRecordingFormat,
+            SelectedQuality = SelectedQuality,
+            SelectedPreset = SelectedPreset,
+            SelectedSplitEncodeMode = SelectedSplitEncodeMode,
+            SelectedVideoFormat = SelectedVideoFormat,
+            MjpegDecoderCount = Math.Clamp(MjpegDecoderCount, 1, 8),
+            ShowAllCaptureOptions = ShowAllCaptureOptions,
+            PreviewVolumePercent = PreviewVolume * 100.0,
+            IsStatsVisible = IsStatsVisible
         }, cancellationToken);
     }
 
@@ -3293,6 +3371,22 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     /// </summary>
     internal void SavePreviewVolume() => SaveSettings();
 
+    private static AutomationStringOption[] BuildStringOptions(
+        IEnumerable<string> values,
+        string selectedValue)
+    {
+        return values
+            .Select(value => new AutomationStringOption
+            {
+                Value = value,
+                Label = value,
+                IsEnabled = true,
+                DisableReason = string.Empty,
+                IsSelected = string.Equals(value, selectedValue, StringComparison.OrdinalIgnoreCase)
+            })
+            .ToArray();
+    }
+
     partial void OnIsAudioPreviewEnabledChanged(bool value)
     {
         if (value && !IsAudioEnabled)
@@ -3874,6 +3968,91 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
 
             SelectedRecordingFormat = matched;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var matched = AvailableVideoFormats.FirstOrDefault(value =>
+                string.Equals(value, videoFormat, StringComparison.OrdinalIgnoreCase));
+            if (matched == null)
+            {
+                throw new InvalidOperationException($"Video format '{videoFormat}' is not available.");
+            }
+
+            SelectedVideoFormat = matched;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var matched = AvailablePresets.FirstOrDefault(value =>
+                string.Equals(value, preset, StringComparison.OrdinalIgnoreCase));
+            if (matched == null)
+            {
+                throw new InvalidOperationException($"Preset '{preset}' is not available.");
+            }
+
+            SelectedPreset = matched;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            var matched = AvailableSplitEncodeModes.FirstOrDefault(value =>
+                string.Equals(value, splitEncodeMode, StringComparison.OrdinalIgnoreCase));
+            if (matched == null)
+            {
+                throw new InvalidOperationException($"Split encode mode '{splitEncodeMode}' is not available.");
+            }
+
+            SelectedSplitEncodeMode = matched;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            MjpegDecoderCount = Math.Clamp(decoderCount, 1, 8);
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetShowAllCaptureOptionsAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            ShowAllCaptureOptions = enabled;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetPreviewVolumeAsync(double previewVolumePercent, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);
+            SavePreviewVolume();
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetStatsVisibleAsync(bool visible, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            IsStatsVisible = visible;
             return Task.CompletedTask;
         }, cancellationToken);
     }

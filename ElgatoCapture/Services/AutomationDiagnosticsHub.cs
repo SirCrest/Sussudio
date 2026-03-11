@@ -243,7 +243,6 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var viewModelSnapshot = await _viewModel
             .GetViewModelRuntimeSnapshotAsync(cancellationToken)
             .ConfigureAwait(false);
-
         var captureRuntime = await _viewModel
             .GetCaptureRuntimeSnapshotAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -427,7 +426,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             SelectedQuality = viewModelSnapshot.SelectedQuality,
             SelectedPreset = viewModelSnapshot.SelectedPreset,
             SelectedSplitEncodeMode = viewModelSnapshot.SelectedSplitEncodeMode,
+            SelectedVideoFormat = viewModelSnapshot.SelectedVideoFormat,
             CustomBitrateMbps = viewModelSnapshot.CustomBitrateMbps,
+            ShowAllCaptureOptions = viewModelSnapshot.ShowAllCaptureOptions,
+            PreviewVolumePercent = viewModelSnapshot.PreviewVolumePercent,
+            IsStatsVisible = viewModelSnapshot.IsStatsVisible,
             IsHdrAvailable = viewModelSnapshot.IsHdrAvailable,
             IsHdrEnabled = viewModelSnapshot.IsHdrEnabled,
             HdrOutputActive = captureRuntime.HdrOutputActive,
@@ -631,6 +634,30 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             MjpegCallbackAvgMs = health.MjpegCallbackAvgMs,
             MjpegCallbackP95Ms = health.MjpegCallbackP95Ms,
             MjpegCallbackMaxMs = health.MjpegCallbackMaxMs,
+            MjpegDecoderCount = health.MjpegDecoderCount,
+            MjpegReorderSampleCount = health.MjpegReorderSampleCount,
+            MjpegReorderAvgMs = health.MjpegReorderAvgMs,
+            MjpegReorderP95Ms = health.MjpegReorderP95Ms,
+            MjpegReorderMaxMs = health.MjpegReorderMaxMs,
+            MjpegPipelineSampleCount = health.MjpegPipelineSampleCount,
+            MjpegPipelineAvgMs = health.MjpegPipelineAvgMs,
+            MjpegPipelineP95Ms = health.MjpegPipelineP95Ms,
+            MjpegPipelineMaxMs = health.MjpegPipelineMaxMs,
+            MjpegTotalDecoded = health.MjpegTotalDecoded,
+            MjpegTotalEmitted = health.MjpegTotalEmitted,
+            MjpegTotalDropped = health.MjpegTotalDropped,
+            MjpegReorderSkips = health.MjpegReorderSkips,
+            MjpegReorderBufferDepth = health.MjpegReorderBufferDepth,
+            MjpegPerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder
+                ? Array.ConvertAll(
+                    perDecoder,
+                    worker => new MjpegDecoderAutomationSnapshot(
+                        worker.WorkerIndex,
+                        worker.SampleCount,
+                        worker.AvgMs,
+                        worker.P95Ms,
+                        worker.MaxMs))
+                : Array.Empty<MjpegDecoderAutomationSnapshot>(),
             RecordingVideoBytes = recordingStats.VideoBytes,
             RecordingAudioBytes = recordingStats.AudioBytes,
             RecordingTotalBytes = recordingStats.TotalBytes,

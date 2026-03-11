@@ -1,4 +1,4 @@
-# HDR Experiment Log (Append-Only)
+﻿# HDR Experiment Log (Append-Only)
 
 Do not rewrite or delete prior entries. Append new entries only.
 
@@ -1402,10 +1402,10 @@ Do not rewrite or delete prior entries. Append new entries only.
   - **Budget analysis**: Decode = 82% of callback time, interop copy = 18%
 - Key Findings:
   - `mjpeg_cuvid` is a hybrid CPU (Huffman) + CUDA (IDCT) decoder, NOT the NVDEC ASIC (nvidia-smi shows 0% NVDEC)
-  - Pipeline is strictly single-threaded: one frame at a time through decode → interop copy
+  - Pipeline is strictly single-threaded: one frame at a time through decode ? interop copy
   - Performance is entirely scene-complexity-dependent (JPEG compressed size varies with content)
   - Frame budget at 120fps is 8.33ms; complex scenes blow this by 50-70%
-  - Interop copy (CUDA staging → D3D11) is fast enough at 1.5-2.7ms avg
+  - Interop copy (CUDA staging ? D3D11) is fast enough at 1.5-2.7ms avg
 - Conclusion: The decode stage is the bottleneck, not the interop copy or D3D11 contention. CPU multi-threaded MJPEG decode (FFmpeg `mjpeg` with AVX2, 2-3 threads) is the leading candidate for improvement since MJPEG frames are independent and can be decoded in parallel.
 
 ## E72 - Dual MJPEG decoder experiment with bounded decoder-1 worker lane
@@ -1552,10 +1552,220 @@ Do not rewrite or delete prior entries. Append new entries only.
   - N/A (no recording artifact generated in this verification pass)
 - Conclusion: The CPU MJPEG pipeline, decoder-count UI flow, and expanded timing surface now pass build, regression harness, and reliability gate checks in-repo. Live 4K120 MJPG hardware validation remains the next step for throughput and real recording confirmation.
 
+## E80 - CPU MJPEG pipeline shutdown now waits for worker/emitter quiescence and contains emit callback faults
+- Timestamp (UTC): 2026-03-11T04:35:44.5241385Z
+- Commit Hash: uncommitted (base 259518bd417260e4d3042ff2ecf3dd818ab5c116)
+- What Changed (single change): Hardened `ParallelMjpegDecodePipeline` so shutdown uses an explicit stop/quiesce path, only frees decoder/pool resources after worker and emitter thread exit is confirmed, surfaces a bounded stop failure instead of freeing live resources, and logs/drops emit-callback exceptions without letting them terminate the emitter thread.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 160`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` from the repo-local validation run contained only the existing synthetic `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token; no new `MJPEG_EMIT_FAIL`, `PARALLEL_MJPEG_PIPELINE_DISPOSE_TIMEOUT`, or teardown-failure tokens were emitted by this pass.
+- ffprobe Evidence:
+  - N/A (capture-path hardening only; no recording artifact generated in this verification pass)
+- Conclusion: The CPU MJPEG pipeline no longer uses the old timed-join-then-free teardown pattern, and emitter callback faults no longer threaten emitter-thread survival in the repo-local validation set. Live MJPG hardware traffic is still required to exercise the stop/quiesce path under real decode load.
+
+## E81 - UnifiedVideoCapture stop now drains the CPU MJPEG path before return and reports decoded payload telemetry as NV12
+- Timestamp (UTC): 2026-03-11T04:35:44.6241385Z
+- Commit Hash: uncommitted (base 259518bd417260e4d3042ff2ecf3dd818ab5c116)
+- What Changed (single change): Updated `UnifiedVideoCapture` so the CPU MJPEG pipeline is detached and drained during `StopAsync()` before the stop call returns, and corrected the CPU MJPEG emitted-payload observer token from `MJPG` to `NV12` without changing source/negotiated subtype reporting.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  4. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 160`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Unified video capture CPU MJPEG emit reports NV12` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` from the repo-local validation run contained only the existing synthetic `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure` regression token; no new stop-quiesce failure tokens were emitted by this pass.
+- ffprobe Evidence:
+  - N/A (capture-path behavior change only; no recording artifact generated in this verification pass)
+- Conclusion: `UnifiedVideoCapture.StopAsync()` now owns CPU MJPEG drain/teardown instead of leaving it for later disposal, and observed-frame telemetry now reflects the decoded payload format correctly as `NV12`. Real MJPG preview/record stop validation is still required to prove the late-callback window is closed under live traffic.
+
+## E82 - Permanent CPU MJPEG decoder incompatibility now faults loudly instead of degrading into silent drops
+- Timestamp (UTC): 2026-03-11T04:35:44.7241385Z
+- Commit Hash: uncommitted (base 259518bd417260e4d3042ff2ecf3dd818ab5c116)
+- What Changed (single change): Changed `SoftwareMjpegDecoder` so unsupported decoded pixel formats and decoded-dimension mismatches throw a dedicated permanent-incompatibility exception, and updated the MJPEG pipeline / unified capture path to surface that condition through the existing fatal capture channel instead of treating it as an ordinary dropped frame.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 160`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Strict HFR fatal handler faults the capture session` and `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` from the repo-local validation run contained the existing synthetic `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure` token from the regression harness and no new repeated decoder-drop-loop tokens.
+- ffprobe Evidence:
+  - N/A (fatal-path hardening only; no recording artifact generated in this verification pass)
+- Conclusion: Structural CPU MJPEG decode incompatibility is now classified as a permanent failure and routed through the existing loud-fail capture path instead of being left as an endless drop scenario. Live hardware is still required to exercise the dedicated permanent-incompatibility branch directly.
+
+## E83 - Automation and MCP now expose the full CPU MJPEG metrics surface with regression coverage
+- Timestamp (UTC): 2026-03-11T04:35:44.8241385Z
+- Commit Hash: uncommitted (base 259518bd417260e4d3042ff2ecf3dd818ab5c116)
+- What Changed (single change): Extended the diagnostics/automation/MCP surface to carry the full CPU MJPEG metrics already present in `CaptureHealthSnapshot` (decoder count, reorder stats, pipeline stats, totals, and per-decoder metrics), updated `CaptureDiagnosticsSnapshot` / `AutomationDiagnosticsHub` / `ResponseFormatter`, and expanded the runtime regression harness to assert the new contract and formatter output.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  4. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 160`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Health snapshot uses cached MJPEG timing metrics when capture is gone`, `PASS: Diagnostics snapshot mirrors MJPEG timing metrics`, `PASS: Automation snapshot contract exposes full CPU MJPEG metrics`, `PASS: MCP formatter renders MJPEG timing section when fields exist`, and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` from the repo-local validation run contained only the existing synthetic `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure` regression token; no diagnostics-surface failures were emitted by this pass.
+- ffprobe Evidence:
+  - N/A (observability contract change only; no recording artifact generated in this verification pass)
+- Conclusion: The richer CPU MJPEG timing/health data is now externally visible through diagnostics, automation, and MCP, and the repo-local regression harness guards that additive contract. Live MJPG sessions are still required to populate those fields with real throughput data in practice.
+
+## E84 - CPU MJPEG shutdown now fails fast on pipeline self-join instead of deadlocking
+- Timestamp (UTC): 2026-03-11T05:18:20.0000000Z
+- Commit Hash: uncommitted (base 259518bd417260e4d3042ff2ecf3dd818ab5c116)
+- What Changed (single change): Hardened `ParallelMjpegDecodePipeline.TryWaitForShutdown()` so shutdown detects reentrant calls from a pipeline worker or the emitter thread and returns a bounded self-join failure instead of attempting to `Join()` the current thread.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 160`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` from the final verification run contained the existing synthetic `UNIFIED_VIDEO_CAPTURE_FATAL type=InvalidOperationException msg=synthetic hfr failure` regression token and repeated `FRAMERATE_NTSC_CORRECTION` lines, but no new MJPEG pipeline shutdown timeout or self-join failure tokens were emitted by this repo-local pass.
+- ffprobe Evidence:
+  - N/A (capture-path hardening only; no recording artifact generated in this verification pass)
+- Conclusion: The CPU MJPEG stop path now rejects reentrant self-join shutdown attempts deterministically instead of risking a deadlock inside `Join()`, and the repo-local build/test/gate set remained clean after the guard was added. Live MJPG traffic is still required to exercise the reentrant stop path directly under real callback load.
+
+## E85 - UnifiedVideoCapture now retains the CPU MJPEG pipeline instance when stop fails
+- Timestamp (UTC): 2026-03-11T05:22:40.0000000Z
+- Commit Hash: uncommitted (base 259518bd417260e4d3042ff2ecf3dd818ab5c116)
+- What Changed (single change): Updated `UnifiedVideoCapture.StopAsync()` so it only clears `_mjpegPipeline` after `TryStop()` succeeds, allowing later cleanup/disposal to retry against the same pipeline instance when stop fails, and added a focused runtime regression that forces the `emitter_self_join` path and asserts the pipeline reference is retained.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 160`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Unified video capture retains MJPEG pipeline on stop failure` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` from the final verification run showed the forced `UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='emitter_self_join'` token from the new regression followed by `PARALLEL_MJPEG_PIPELINE_DISPOSED ...`, confirming the retained pipeline could still be cleaned up after the stop failure path.
+- ffprobe Evidence:
+  - N/A (capture-path hardening only; no recording artifact generated in this verification pass)
+- Conclusion: The CPU MJPEG stop-failure path no longer strands the pipeline by dropping the only strong reference before cleanup can happen, and the targeted runtime regression now proves the retained-instance behavior on the forced `emitter_self_join` branch.
+
+## E86 - In-process FFmpeg now resolves app-local runtime folders instead of assuming AppContext.BaseDirectory
+- Timestamp (UTC): 2026-03-11T14:16:30.0000000Z
+- Commit Hash: uncommitted (base 259518bd417260e4d3042ff2ecf3dd818ab5c116)
+- What Changed (single change): Added a shared `FfmpegRuntimeLocator` used by in-process libav startup and subprocess tool discovery, changed `LibAvEncoder.InitializeFFmpeg()` to retry until native runtime initialization actually succeeds instead of latching the first failed probe forever, switched in-process FFmpeg callers to require a real native runtime, and updated local staging so `ElgatoCapture\\ffmpeg\\**\\*` is preserved in app output.
+- How To Run:
+  1. Copy the local FFmpeg runtime payload into `ElgatoCapture\\ffmpeg\\` in the target worktree if that gitignored folder is missing.
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  3. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64`
+  4. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  5. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  6. Launch `ElgatoCapture/bin/x64/Release/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.exe`, wait for startup, then inspect `temp/logs/ElgatoCapture_Debug.log`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: FFmpeg runtime locator prefers app-local ffmpeg folder` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+- The rebuilt Debug output contained `win-x64\\ffmpeg\\avcodec-62.dll`, `avformat-62.dll`, `avutil-60.dll`, and `swresample-6.dll`.
+- A live Release startup produced `LIBAV_INIT root_path='...\\win-x64\\ffmpeg' avcodec_version=4069477` at the top of `temp/logs/ElgatoCapture_Debug.log` instead of the previous `LIBAV_INIT_ERROR ... Specified method is not supported.`
+- ffprobe Evidence:
+  - N/A (runtime-location/capture-startup fix only; no recording artifact generated in this verification pass)
+- Conclusion: The worktree no longer depends on `AppContext.BaseDirectory` coincidentally containing FFmpeg native DLLs, and in-process FFmpeg startup now binds successfully against the staged app-local `ffmpeg` folder. This removes the root-cause startup failure that was blocking live CPU MJPEG pipeline construction in the 4K120 `MJPG` path.
+
+## E87 - Automation and MCP now expose advanced capture controls plus structured options/raw state
+- Timestamp (UTC): 2026-03-11T17:27:15.2141917Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added the missing advanced automation/MCP surface for preset, split encode mode, MJPEG decoder count, show-all capture options, preview volume, stats visibility, a structured `GetCaptureOptions` payload, and a raw `get_app_state_raw` MCP endpoint while keeping the existing human-readable `get_app_state` tool intact.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64`
+  3. `dotnet build tools/McpServer/McpServer.csproj -c Debug`
+  4. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  5. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  6. Launch `ElgatoCapture/bin/x64/Release/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.exe`, register `tools/McpServer/bin/Debug/net8.0/McpServer.exe` with the local `codex` MCP client, then call `get_capture_options`, `get_app_state_raw`, and `configure_ui`.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build tools/McpServer/McpServer.csproj -c Debug` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - Live MCP smoke via `codex exec` reported `Options tool: succeeded. Raw state: succeeded before and after.` and verified `PreviewVolumePercent: 88 -> 37` and `IsStatsVisible: false -> true`, then restored the temporary values.
+- ffprobe Evidence:
+  - N/A (automation/MCP surface change only; no recording artifact generated in this verification pass)
+- Conclusion: Agents can now enumerate valid capture choices without guessing, read the raw structured app snapshot directly, and drive the missing advanced capture/UI controls through MCP. A regression check now also guards the automation command-id alignment across the app enum, CLI, script, and MCP bridge.
+
+## E88 - Automation preview-volume control now persists through the same settings path as the UI
+- Timestamp (UTC): 2026-03-11T21:18:55.3691440Z
+- Commit Hash: uncommitted
+- What Changed (single change): Updated `MainViewModel.SetPreviewVolumeAsync()` to call `SavePreviewVolume()` after applying the new automation/MCP preview volume value so remote `configure_ui` changes persist across app restarts just like the UI slider path.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Automation preview volume persists through the settings path` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+- ffprobe Evidence:
+  - N/A (automation/settings persistence change only)
+- Conclusion: Remote preview-volume changes now use the same persisted settings path as the UI slider instead of being transient in-memory updates.
+
+## E89 - GetCaptureOptions no longer blocks on device-readiness gating
+- Timestamp (UTC): 2026-03-11T21:18:55.3691440Z
+- Commit Hash: uncommitted
+- What Changed (single change): Removed `AutomationCommandKind.GetCaptureOptions` from `AutomationCommandDispatcher.RequiresReadyDevices()` so MCP/automation can enumerate current or empty option state during startup and no-device scenarios instead of receiving `not_ready`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet build tools/McpServer/McpServer.csproj -c Debug`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build tools/McpServer/McpServer.csproj -c Debug` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: UI automation commands are not blocked on device readiness` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+- ffprobe Evidence:
+  - N/A (automation readiness-gating change only)
+- Conclusion: The new capture-options MCP surface now remains available during initialization and no-device states, which matches its purpose as an options-discovery endpoint.
+
+## E90 - Bugfix worktree now keeps main's English-only locale cleanup while preserving app-local FFmpeg staging
+- Timestamp (UTC): 2026-03-11T21:18:55.3691440Z
+- Commit Hash: uncommitted
+- What Changed (single change): Reconciled `ElgatoCapture.csproj` with current `main` by restoring `SatelliteResourceLanguages` to English-only, keeping `StripUnwantedLocales` on both `Build` and `Publish`, broadening the locale regex to catch three-letter language tags, and preserving the bugfix worktree's recursive `ffmpeg\**\*` staging for the app-local native runtime.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `dotnet publish ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  6. `Get-ChildItem ElgatoCapture/bin/Debug/net8.0-windows10.0.19041.0/win-x64/publish -Directory | Select-Object Name`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` and `-c Release -p:Platform=x64` both succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Project file preserves main's English-only publish locale policy` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `dotnet publish ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded, and the fresh publish directory contained only `en-us`, `ffmpeg`, `Microsoft.UI.Xaml`, and `NpuDetect` folders.
+- ffprobe Evidence:
+  - N/A (project-file merge-alignment change only)
+- Conclusion: The bugfix worktree now carries forward main's English-only publish policy instead of reverting it, while still staging the app-local FFmpeg runtime needed by the bugfix branch.
+
 ## E80 - Automation and MCP now expose video format override control
 - Timestamp (UTC): 2026-03-11T13:46:11.2226402Z
 - Commit Hash: uncommitted (base 259518b)
-- What Changed (single change): Added append-only `SetVideoFormat` automation support end to end so the named-pipe API, `AutomationClient`, PowerShell helper, and MCP `configure_capture` tool can switch the app’s video format override to values like `MJPG`.
+- What Changed (single change): Added append-only `SetVideoFormat` automation support end to end so the named-pipe API, `AutomationClient`, PowerShell helper, and MCP `configure_capture` tool can switch the appâ€™s video format override to values like `MJPG`.
 - How To Run:
   1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
   2. `dotnet build tools/McpServer/McpServer.csproj -c Debug`

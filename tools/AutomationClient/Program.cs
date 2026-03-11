@@ -41,7 +41,14 @@ internal static class Program
         ["ProbePreviewColor"] = 25,
         ["CapturePreviewFrame"] = 26,
         ["CaptureWindowScreenshot"] = 27,
-        ["SetVideoFormat"] = 28
+        ["SetVideoFormat"] = 28,
+        ["GetCaptureOptions"] = 29,
+        ["SetPreset"] = 30,
+        ["SetSplitEncodeMode"] = 31,
+        ["SetMjpegDecoderCount"] = 32,
+        ["SetShowAllCaptureOptions"] = 33,
+        ["SetPreviewVolume"] = 34,
+        ["SetStatsVisible"] = 35
     };
 
     public static async Task<int> Main(string[] args)
