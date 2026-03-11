@@ -36,7 +36,12 @@ internal static class Program
         ["WaitForCondition"] = 20,
         ["VerifyLastRecording"] = 21,
         ["AssertSnapshot"] = 22,
-        ["SetTrueHdrPreviewEnabled"] = 23
+        ["SetTrueHdrPreviewEnabled"] = 23,
+        ["ProbeVideoSource"] = 24,
+        ["ProbePreviewColor"] = 25,
+        ["CapturePreviewFrame"] = 26,
+        ["CaptureWindowScreenshot"] = 27,
+        ["SetVideoFormat"] = 28
     };
 
     public static async Task<int> Main(string[] args)

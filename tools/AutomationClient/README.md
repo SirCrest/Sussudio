@@ -24,6 +24,10 @@ dotnet build tools/AutomationClient/AutomationClient.csproj -c Debug
 .\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command SetFrameRate --token codex-local --payload-kv frameRate=60
 ```
 
+```powershell
+.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command SetVideoFormat --token codex-local --payload-kv videoFormat=MJPG
+```
+
 ## Notes
 
 - Commands can be passed by name (`GetSnapshot`) or numeric id.

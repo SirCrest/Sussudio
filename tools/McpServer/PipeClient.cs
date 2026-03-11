@@ -43,7 +43,8 @@ public sealed class PipeClient
         ["ProbeVideoSource"] = 24,
         ["ProbePreviewColor"] = 25,
         ["CapturePreviewFrame"] = 26,
-        ["CaptureWindowScreenshot"] = 27
+        ["CaptureWindowScreenshot"] = 27,
+        ["SetVideoFormat"] = 28
     };
 
     public async Task<JsonElement> SendCommandAsync(

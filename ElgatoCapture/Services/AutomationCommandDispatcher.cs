@@ -140,6 +140,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateAcknowledgedResponse(correlationId, $"Frame rate change requested: {frameRate:0.###}.");
                 }
 
+                case AutomationCommandKind.SetVideoFormat:
+                {
+                    var videoFormat = RequireString(payload, "videoFormat");
+                    await _viewModel.SetVideoFormatAsync(videoFormat, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Video format change requested: {videoFormat}.");
+                }
+
                 case AutomationCommandKind.SetRecordingFormat:
                 {
                     var format = RequireString(payload, "format");
@@ -475,6 +482,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             AutomationCommandKind.SetCustomAudioInput => true,
             AutomationCommandKind.SetResolution => true,
             AutomationCommandKind.SetFrameRate => true,
+            AutomationCommandKind.SetVideoFormat => true,
             AutomationCommandKind.SetRecordingFormat => true,
             AutomationCommandKind.SetQuality => true,
             AutomationCommandKind.SetCustomBitrate => true,

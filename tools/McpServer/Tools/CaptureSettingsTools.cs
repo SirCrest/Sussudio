@@ -7,11 +7,12 @@ namespace McpServer.Tools;
 [McpServerToolType]
 public static class CaptureSettingsTools
 {
-    [McpServerTool, Description("Configure capture settings: resolution, frame rate, recording format, quality, and custom bitrate. Only provided parameters are changed.")]
+    [McpServerTool, Description("Configure capture settings: resolution, frame rate, video format override, recording format, quality, and custom bitrate. Only provided parameters are changed.")]
     public static async Task<string> configure_capture(
         PipeClient pipeClient,
         [Description("Recording resolution, for example 3840x2160")] string? resolution = null,
         [Description("Frame rate in fps, for example 60")] double? frameRate = null,
+        [Description("Video format override, for example Auto or MJPG")] string? videoFormat = null,
         [Description("Recording format, for example Hevc")] string? format = null,
         [Description("Quality preset, for example High")] string? quality = null,
         [Description("Custom bitrate in Mbps")] double? bitrateMbps = null)
@@ -28,6 +29,12 @@ public static class CaptureSettingsTools
         {
             var payload = new Dictionary<string, object?> { ["frameRate"] = frameRate.Value };
             results.Add(await ExecuteAndFormatAsync(pipeClient, "SetFrameRate", "SetFrameRate", payload).ConfigureAwait(false));
+        }
+
+        if (!string.IsNullOrWhiteSpace(videoFormat))
+        {
+            var payload = new Dictionary<string, object?> { ["videoFormat"] = videoFormat };
+            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetVideoFormat", "SetVideoFormat", payload).ConfigureAwait(false));
         }
 
         if (!string.IsNullOrWhiteSpace(format))

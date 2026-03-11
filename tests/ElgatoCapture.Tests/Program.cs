@@ -50,6 +50,12 @@ static class Program
                 "MCP formatter renders MJPEG timing section when fields exist",
                 McpFormatter_RendersMjpegTimingSection_WhenFieldsExist),
             await RunCheckAsync(
+                "Automation surface exposes SetVideoFormat for MCP control",
+                AutomationSurface_ExposesSetVideoFormat),
+            await RunCheckAsync(
+                "SetVideoFormat stays on the UI thread and locale stripping preserves en-us",
+                SetVideoFormat_UsesUiThread_And_LocaleStrip_PreservesEnglishSatellite),
+            await RunCheckAsync(
                 "MJPG HFR mode only activates for SDR 4K120-style settings",
                 CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest),
             await RunCheckAsync(
@@ -394,6 +400,46 @@ static class Program
         return Task.CompletedTask;
     }
 
+    private static Task AutomationSurface_ExposesSetVideoFormat()
+    {
+        var commandKindType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        if (!Enum.IsDefined(commandKindType, "SetVideoFormat"))
+        {
+            throw new InvalidOperationException("AutomationCommandKind.SetVideoFormat is missing.");
+        }
+
+        var commandValue = Convert.ToInt32(Enum.Parse(commandKindType, "SetVideoFormat"));
+        AssertEqual(28, commandValue, "AutomationCommandKind.SetVideoFormat");
+
+        var mainViewModelType = RequireType("ElgatoCapture.ViewModels.MainViewModel");
+        var setVideoFormatAsync = mainViewModelType.GetMethod(
+            "SetVideoFormatAsync",
+            BindingFlags.Public | BindingFlags.Instance,
+            binder: null,
+            types: new[] { typeof(string), typeof(CancellationToken) },
+            modifiers: null);
+        if (setVideoFormatAsync == null)
+        {
+            throw new InvalidOperationException("MainViewModel.SetVideoFormatAsync(string, CancellationToken) was not found.");
+        }
+
+        var repoRoot = GetRepoRoot();
+        AssertFileContains(Path.Combine(repoRoot, "tools", "McpServer", "PipeClient.cs"), "[\"SetVideoFormat\"] = 28");
+        AssertFileContains(Path.Combine(repoRoot, "tools", "McpServer", "Tools", "CaptureSettingsTools.cs"), "string? videoFormat = null");
+        AssertFileContains(Path.Combine(repoRoot, "tools", "AutomationClient", "Program.cs"), "[\"SetVideoFormat\"] = 28");
+        AssertFileContains(Path.Combine(repoRoot, "tools", "send-automation-command.ps1"), "\"setvideoformat\" { return 28 }");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task SetVideoFormat_UsesUiThread_And_LocaleStrip_PreservesEnglishSatellite()
+    {
+        var repoRoot = GetRepoRoot();
+        AssertFileContains(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.cs"), "return InvokeOnUiThreadAsync(() =>");
+        AssertFileContains(Path.Combine(repoRoot, "ElgatoCapture", "ElgatoCapture.csproj"), "$_.Name.ToLowerInvariant() -ne 'en-us'");
+        return Task.CompletedTask;
+    }
+
     private static async Task CaptureService_StrictHfrFatalHandler_FaultsSession()
     {
         var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
@@ -619,6 +665,25 @@ static class Program
             throw new InvalidOperationException(
                 $"Assertion failed: expected '{value}' to contain '{token}'.");
         }
+    }
+
+    private static void AssertFileContains(string path, string token)
+    {
+        if (!File.Exists(path))
+        {
+            throw new InvalidOperationException($"Expected file '{path}' to exist.");
+        }
+
+        var content = File.ReadAllText(path);
+        if (content.IndexOf(token, StringComparison.Ordinal) < 0)
+        {
+            throw new InvalidOperationException($"Expected file '{path}' to contain '{token}'.");
+        }
+    }
+
+    private static string GetRepoRoot()
+    {
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
     }
 
     private static object CreateMjpegTimingMetrics(

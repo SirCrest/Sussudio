@@ -1551,3 +1551,69 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (no recording artifact generated in this verification pass)
 - Conclusion: The CPU MJPEG pipeline, decoder-count UI flow, and expanded timing surface now pass build, regression harness, and reliability gate checks in-repo. Live 4K120 MJPG hardware validation remains the next step for throughput and real recording confirmation.
+
+## E80 - Automation and MCP now expose video format override control
+- Timestamp (UTC): 2026-03-11T13:46:11.2226402Z
+- Commit Hash: uncommitted (base 259518b)
+- What Changed (single change): Added append-only `SetVideoFormat` automation support end to end so the named-pipe API, `AutomationClient`, PowerShell helper, and MCP `configure_capture` tool can switch the app’s video format override to values like `MJPG`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet build tools/McpServer/McpServer.csproj -c Debug`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. Launch the app, then run `.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command SetVideoFormat --token codex-local --payload-kv videoFormat=MJPG`
+  5. Run `.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command GetSnapshot --token codex-local --pretty`
+- Validator Output:
+  - Pending this session's validation run.
+- ffprobe Evidence:
+  - N/A (automation/MCP control change only)
+- Conclusion: Pending this session's validation run.
+
+## E81 - Live automation validation for SetVideoFormat MJPG control
+- Timestamp (UTC): 2026-03-11T13:49:01.8247263Z
+- Commit Hash: uncommitted (base 259518b)
+- What Changed (single change): Validated the new `SetVideoFormat` automation/MCP seam against a live app session by switching the running capture pipeline to explicit `MJPG` request and confirming the requested subtype flipped in the runtime snapshot.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet build tools/McpServer/McpServer.csproj -c Debug`
+  3. Launch `ElgatoCapture\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ElgatoCapture.exe`
+  4. `.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command GetSnapshot --token codex-local --pretty`
+  5. `.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command SetVideoFormat --token codex-local --payload-kv videoFormat=MJPG --pretty`
+  6. `.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command GetSnapshot --token codex-local --pretty`
+  7. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - Initial live snapshot before the command showed `VideoRequestedSubtype="P010"` and `RequestedPixelFormat="P010"` while preview was already active.
+  - `SetVideoFormat` returned success with message `Video format change requested: MJPG.`
+  - Follow-up live snapshot showed `VideoRequestedSubtype="MJPG"`, `RequestedPixelFormat="MJPG"`, `RequestedReaderSubtype="MJPG"`, `RequestedWidth=3840`, `RequestedHeight=2160`, `RequestedFrameRateArg="120000/1001"`, and `PreviewFramesDropped=0`.
+  - `temp/logs/ElgatoCapture_Debug.log` from the live run showed normal MJPEG activity and reorder-skip telemetry; no new automation command failures or preview restart failures were emitted.
+- ffprobe Evidence:
+  - N/A (automation/MCP control change only)
+- Conclusion: The live app now accepts remote `SetVideoFormat=MJPG` commands through the shared automation/MCP backend and applies them to the active preview session with the expected requested-subtype change.
+
+## E82 - Corrected SetVideoFormat thread affinity and English satellite preservation
+- Timestamp (UTC): 2026-03-11T14:44:09.6719706Z
+- Commit Hash: uncommitted (base 259518b)
+- What Changed (single change): Fixed two regressions in the new MCP/automation video-format work by routing `MainViewModel.SetVideoFormatAsync` through `InvokeOnUiThreadAsync` and by making `StripUnwantedLocales` preserve the English satellite folder case-insensitively (`en-US`/`en-us`) in both build and publish outputs.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet build tools/McpServer/McpServer.csproj -c Debug`
+  3. `dotnet build tools/AutomationClient/AutomationClient.csproj -c Debug`
+  4. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  5. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  6. Confirm `ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/en-us` exists after build.
+  7. Launch `ElgatoCapture\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ElgatoCapture.exe`
+  8. `.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command SetVideoFormat --token codex-local --payload-kv videoFormat=MJPG --pretty`
+  9. `.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe --command GetSnapshot --token codex-local --pretty`
+  10. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - All three Debug builds succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - The build output still contained `en-us` after `StripUnwantedLocales` ran.
+  - Live `SetVideoFormat` returned success with message `Video format change requested: MJPG.`
+  - Follow-up live snapshot showed `VideoRequestedSubtype="MJPG"`, `RequestedPixelFormat="MJPG"`, and `RequestedReaderSubtype="MJPG"` with preview still active.
+  - `temp/logs/ElgatoCapture_Debug.log` from the live run showed no new automation-thread or cross-thread failures; only the existing synthetic harness fatal token and normal telemetry activity were present.
+- ffprobe Evidence:
+  - N/A (UI-thread and packaging fix only)
+- Conclusion: The automation/MCP video-format path now preserves WinUI thread affinity correctly, and the locale-strip target no longer deletes the retained English satellite folder due to `en-US`/`en-us` casing differences.

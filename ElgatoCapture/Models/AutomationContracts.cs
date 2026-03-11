@@ -33,7 +33,8 @@ public enum AutomationCommandKind
     ProbeVideoSource,
     ProbePreviewColor,
     CapturePreviewFrame,
-    CaptureWindowScreenshot
+    CaptureWindowScreenshot,
+    SetVideoFormat
 }
 
 public enum AutomationWindowAction

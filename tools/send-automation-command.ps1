@@ -45,6 +45,13 @@ function Resolve-CommandValue {
         "windowaction" { return 19 }
         "waitforcondition" { return 20 }
         "verifylastrecording" { return 21 }
+        "assertsnapshot" { return 22 }
+        "settruehdrpreviewenabled" { return 23 }
+        "probevideosource" { return 24 }
+        "probepreviewcolor" { return 25 }
+        "capturepreviewframe" { return 26 }
+        "capturewindowscreenshot" { return 27 }
+        "setvideoformat" { return 28 }
         default { throw "Unknown automation command '$Value'." }
     }
 }

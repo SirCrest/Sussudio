@@ -13,7 +13,7 @@
     <WinUISDKReferences>false</WinUISDKReferences>
     <EnableMsixTooling>true</EnableMsixTooling>
     <Nullable>enable</Nullable>
-    <SatelliteResourceLanguages>en-US;de-DE;fr-FR;es-ES</SatelliteResourceLanguages>
+    <SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>preview</LangVersion>
   </PropertyGroup>
@@ -101,11 +101,14 @@
   </ItemGroup>
 
   <!-- Strip WinUI satellite locale folders that SatelliteResourceLanguages doesn't cover.
-       Keep: en-us, en-GB, de-DE, es-ES, fr-FR. Remove all other ??-?? directories. -->
+       English-only: keep en-US/en-us. Remove all other ??-?? directories. -->
   <Target Name="StripUnwantedLocales"
-          AfterTargets="Build"
+          AfterTargets="Build;Publish"
           Condition="'$(DesignTimeBuild)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
-    <Exec Command="powershell -NoProfile -Command &quot;Get-ChildItem '$(TargetDir)' -Directory | Where-Object { $_.Name -match '^[a-z]{2}(-[A-Za-z]{2,})$' -and $_.Name -notin @('en-us','en-GB','de-DE','es-ES','fr-FR') } | Remove-Item -Recurse -Force&quot;"
+    <Exec Command="powershell -NoProfile -Command &quot;Get-ChildItem '$(TargetDir)' -Directory | Where-Object { $_.Name -match '^[a-z]{2}(-[A-Za-z]+)+$' -and $_.Name.ToLowerInvariant() -ne 'en-us' } | Remove-Item -Recurse -Force&quot;"
+          ContinueOnError="WarnAndContinue" />
+    <Exec Command="powershell -NoProfile -Command &quot;if (Test-Path '$(PublishDir)') { Get-ChildItem '$(PublishDir)' -Directory | Where-Object { $_.Name -match '^[a-z]{2}(-[A-Za-z]+)+$' -and $_.Name.ToLowerInvariant() -ne 'en-us' } | Remove-Item -Recurse -Force }&quot;"
+          Condition="'$(PublishDir)' != ''"
           ContinueOnError="WarnAndContinue" />
   </Target>
 
