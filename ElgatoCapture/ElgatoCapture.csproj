@@ -105,9 +105,9 @@
   <Target Name="StripUnwantedLocales"
           AfterTargets="Build;Publish"
           Condition="'$(DesignTimeBuild)' != 'true' and '$(IsCrossTargetingBuild)' != 'true'">
-    <Exec Command="powershell -NoProfile -Command &quot;Get-ChildItem '$(TargetDir)' -Directory | Where-Object { $_.Name -match '^[a-z]{2}(-[A-Za-z]+)+$' -and $_.Name.ToLowerInvariant() -ne 'en-us' } | Remove-Item -Recurse -Force&quot;"
+    <Exec Command="powershell -NoProfile -Command &quot;Get-ChildItem '$(TargetDir)' -Directory | Where-Object { $_.Name -match '^[A-Za-z]{2,3}(-[A-Za-z]+)+$' -and $_.Name.ToLowerInvariant() -ne 'en-us' } | Remove-Item -Recurse -Force&quot;"
           ContinueOnError="WarnAndContinue" />
-    <Exec Command="powershell -NoProfile -Command &quot;if (Test-Path '$(PublishDir)') { Get-ChildItem '$(PublishDir)' -Directory | Where-Object { $_.Name -match '^[a-z]{2}(-[A-Za-z]+)+$' -and $_.Name.ToLowerInvariant() -ne 'en-us' } | Remove-Item -Recurse -Force }&quot;"
+    <Exec Command="powershell -NoProfile -Command &quot;if (Test-Path '$(PublishDir)') { Get-ChildItem '$(PublishDir)' -Directory | Where-Object { $_.Name -match '^[A-Za-z]{2,3}(-[A-Za-z]+)+$' -and $_.Name.ToLowerInvariant() -ne 'en-us' } | Remove-Item -Recurse -Force }&quot;"
           Condition="'$(PublishDir)' != ''"
           ContinueOnError="WarnAndContinue" />
   </Target>

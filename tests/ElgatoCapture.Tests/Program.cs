@@ -436,6 +436,7 @@ static class Program
     {
         var repoRoot = GetRepoRoot();
         AssertFileContains(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.cs"), "return InvokeOnUiThreadAsync(() =>");
+        AssertFileContains(Path.Combine(repoRoot, "ElgatoCapture", "ElgatoCapture.csproj"), "^[A-Za-z]{2,3}(-[A-Za-z]+)+$");
         AssertFileContains(Path.Combine(repoRoot, "ElgatoCapture", "ElgatoCapture.csproj"), "$_.Name.ToLowerInvariant() -ne 'en-us'");
         return Task.CompletedTask;
     }

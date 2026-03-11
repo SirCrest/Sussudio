@@ -1617,3 +1617,36 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (UI-thread and packaging fix only)
 - Conclusion: The automation/MCP video-format path now preserves WinUI thread affinity correctly, and the locale-strip target no longer deletes the retained English satellite folder due to `en-US`/`en-us` casing differences.
+
+## E83 - Locale stripping now removes three-letter WinUI satellite folders
+- Timestamp (UTC): 2026-03-11T22:20:00.0000000Z
+- Commit Hash: uncommitted (base 7629415)
+- What Changed (single change): Broadened `StripUnwantedLocales` in `ElgatoCapture.csproj` from a two-letter primary-language regex to a two-or-three-letter regex so English-only build/publish cleanup also removes WinUI satellite folders like `fil-PH`, `kok-IN`, and `quz-PE`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet publish ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  3. `Get-ChildItem ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64 -Directory | Select-Object Name`
+  4. `Get-ChildItem publish-output -Directory | Select-Object Name`
+- Validator Output:
+  - Pending this session's validation run.
+- ffprobe Evidence:
+  - N/A (packaging-only change)
+- Conclusion: Pending this session's validation run.
+
+## E84 - Validation pass for three-letter locale stripping fix
+- Timestamp (UTC): 2026-03-11T20:54:48.8255379Z
+- Commit Hash: uncommitted (base 7629415)
+- What Changed (single change): Validated the broadened locale-strip regex by rebuilding, running the regression harness, publishing, and inspecting the fresh publish directory for remaining locale folders.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `dotnet publish ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  4. `Get-ChildItem ElgatoCapture/bin/Debug/net8.0-windows10.0.19041.0/win-x64/publish -Directory | Select-Object Name`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `dotnet publish ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` succeeded.
+  - The fresh publish directory contained only `en-us` plus non-locale folders (`Microsoft.UI.Xaml`, `NpuDetect`); the previously observed three-letter locale folders were no longer present.
+- ffprobe Evidence:
+  - N/A (packaging-only change)
+- Conclusion: The English-only locale cleanup now works for publish output as intended, including WinUI satellite folders whose primary language tag uses three letters.
