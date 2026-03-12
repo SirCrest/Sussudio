@@ -2131,6 +2131,26 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         options = ShowAllCaptureOptions
             ? cappedOptions
+                .Select(option =>
+                {
+                    if (option.IsEnabled || !IsSourceFilteredFrameRateDisableReason(option.DisableReason))
+                    {
+                        return option;
+                    }
+
+                    return new FrameRateOption
+                    {
+                        FriendlyValue = option.FriendlyValue,
+                        Value = option.Value,
+                        Rational = option.Rational,
+                        Numerator = option.Numerator,
+                        Denominator = option.Denominator,
+                        IsEnabled = true,
+                        DisableReason = string.Empty,
+                        DisplayTextOverride = option.DisplayTextOverride
+                    };
+                })
+                .ToList()
             : cappedOptions
                 .Where(option => option.IsEnabled || !IsSourceFilteredFrameRateDisableReason(option.DisableReason))
                 .ToList();

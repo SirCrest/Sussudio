@@ -1916,4 +1916,42 @@ Do not rewrite or delete prior entries. Append new entries only.
   - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
 - ffprobe Evidence:
   - N/A (device-identification / telemetry gate change only)
-- Conclusion: Pending.
+- Conclusion: The built-in NativeXu telemetry gate now accepts both observed 4K X USB product revisions without regressing the existing runtime harness or reliability gate.
+
+## E94 - Show-all capture options now unlock telemetry-filtered frame-rate overrides
+- Timestamp (UTC): 2026-03-12T03:18:58.3107710Z
+- Commit Hash: uncommitted
+- What Changed (single change): Updated the frame-rate option rebuild path so `ShowAllCaptureOptions` re-enables frame-rate entries that were only disabled by source-telemetry cadence filtering, allowing demo/manual overrides while preserving other disable reasons such as HDR incompatibility.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - Both Debug and Release builds succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Show all capture options unlocks source-filtered frame rates` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` contained normal `NATIVEXU_*` polling plus the expected synthetic regression tokens (`UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='emitter_self_join'`, `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure`) and no new warning/error lines tied to this UI-mode change.
+- ffprobe Evidence:
+  - N/A (option-selection / UI-state change only)
+- Conclusion: Demo mode now exposes telemetry-filtered frame-rate overrides as selectable options instead of merely showing them as disabled.
+
+## E95 - Preview startup now degrades to video-only when no audio capture endpoint exists
+- Timestamp (UTC): 2026-03-12T03:18:58.3107710Z
+- Commit Hash: uncommitted
+- What Changed (single change): Changed preview startup so `CaptureService.StartVideoPreviewAsync()` no longer throws when audio is enabled but the selected device has no resolved audio capture endpoint; it now keeps the video preview alive and logs a video-only fallback for preview only.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - Both Debug and Release builds succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Preview startup tolerates missing audio capture devices` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` contained normal `NATIVEXU_*` polling plus the expected synthetic regression tokens and no new preview-start failure lines from missing audio-device resolution during this validation pass.
+- ffprobe Evidence:
+  - N/A (preview startup behavior change only)
+- Conclusion: Devices that lack a paired audio endpoint can now still start video preview when audio remains enabled, while recording-path strictness remains unchanged.

@@ -1214,16 +1214,18 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _activeVideoInputPixelFormat = unifiedVideoCapture.IsP010 ? "p010le" : "nv12";
                 TryCorrectFrameRateFromTelemetry();
 
-                if (settings.AudioEnabled)
+                if (settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId))
                 {
-                    var resolvedAudioDeviceId = audioDeviceId
-                        ?? throw new InvalidOperationException("Audio preview is enabled but no audio capture device is available.");
                     wasapiCapture = new WasapiAudioCapture();
-                    await wasapiCapture.InitializeAsync(resolvedAudioDeviceId, transitionToken).ConfigureAwait(false);
+                    await wasapiCapture.InitializeAsync(audioDeviceId, transitionToken).ConfigureAwait(false);
                     wasapiCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
                     wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
                     wasapiCapture.Start();
                     _wasapiAudioCapture = wasapiCapture;
+                }
+                else if (settings.AudioEnabled)
+                {
+                    Logger.Log("Audio preview requested but no audio capture device is available; continuing with video-only preview.");
                 }
 
                 if (_isAudioPreviewActive && _wasapiAudioCapture != null)

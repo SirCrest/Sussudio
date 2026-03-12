@@ -78,8 +78,14 @@ static class Program
                 "Project file preserves main's English-only publish locale policy",
                 ProjectFile_PreservesEnglishOnlyPublishLocalePolicy),
             await RunCheckAsync(
+                "Show all capture options unlocks source-filtered frame rates",
+                ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates),
+            await RunCheckAsync(
                 "Diagnostics loop does not rebuild automation options each poll",
                 DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll),
+            await RunCheckAsync(
+                "Preview startup tolerates missing audio capture devices",
+                PreviewStartup_ToleratesMissingAudioCaptureDevices),
             await RunCheckAsync(
                 "Live pixel format surfaces prefer source subtype over decoded output",
                 LivePixelFormatSurfaces_PreferReaderSourceSubtype),
@@ -786,6 +792,18 @@ static class Program
         return Task.CompletedTask;
     }
 
+    private static Task ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates()
+    {
+        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+
+        AssertContains(mainViewModelText, "options = ShowAllCaptureOptions");
+        AssertContains(mainViewModelText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");
+        AssertContains(mainViewModelText, "IsEnabled = true");
+        AssertContains(mainViewModelText, "DisableReason = string.Empty");
+
+        return Task.CompletedTask;
+    }
+
     private static Task DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll()
     {
         var diagnosticsHubText = ReadRepoFile("ElgatoCapture/Services/AutomationDiagnosticsHub.cs");
@@ -794,6 +812,17 @@ static class Program
         AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
         AssertDoesNotContain(diagnosticsHubText, "Options = optionsSnapshot");
         AssertContains(mainViewModelText, "GetAutomationOptionsSnapshotAsync");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewStartup_ToleratesMissingAudioCaptureDevices()
+    {
+        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/CaptureService.cs").Replace("\r\n", "\n");
+
+        AssertContains(captureServiceText, "if (settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId))");
+        AssertContains(captureServiceText, "Audio preview requested but no audio capture device is available; continuing with video-only preview.");
+        AssertDoesNotContain(captureServiceText, "Audio preview is enabled but no audio capture device is available.");
 
         return Task.CompletedTask;
     }
