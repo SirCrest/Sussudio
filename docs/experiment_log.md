@@ -1899,3 +1899,21 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (UI/runtime-snapshot fix only)
 - Conclusion: MJPG sessions can continue decoding to NV12 internally for preview/record, while the user-facing “live/source format” surfaces once again identify the source-reader subtype correctly as `MJPG`.
+
+## E93 - NativeXu telemetry now accepts both known 4K X product revisions
+- Timestamp (UTC): 2026-03-12T02:28:25.8702113Z
+- Commit Hash: uncommitted
+- What Changed (single change): Broadened the NativeXu 4K X device gate to accept both `VID_0FD9&PID_009B` and `VID_0FD9&PID_009C`, and added a runtime harness regression that proves neither revision is rejected as `nativexu-device-unsupported`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+  4. `dotnet publish ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64 -p:PublishProfile=win-x64 -p:PublishDir=C:\Users\crest\source\repos\ElgatoCapture\artifacts\portable-win-x64\publish\`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64` first hit a transient WinUI XAML compiler lock on `obj\...\intermediatexaml\ElgatoCapture.dll`; the repo's single-threaded debug gate build then succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: NativeXu telemetry accepts known 4K X product revisions` and `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed normal `NATIVEXU_*` telemetry reads on the development machine plus the expected synthetic regression tokens (`UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='emitter_self_join'` and `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure`).
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+- ffprobe Evidence:
+  - N/A (device-identification / telemetry gate change only)
+- Conclusion: Pending.

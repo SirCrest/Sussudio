@@ -36,6 +36,9 @@ static class Program
                 "Telemetry unavailable maps to unavailable state",
                 GetRuntimeSnapshot_TelemetryAlignment_Unavailable_WhenTelemetryUnavailable),
             await RunCheckAsync(
+                "NativeXu telemetry accepts known 4K X product revisions",
+                NativeXuTelemetry_AcceptsKnown4kXProductRevisions),
+            await RunCheckAsync(
                 "HDR idle snapshot reports ready pipeline parity",
                 GetRuntimeSnapshot_PipelineParity_Ready_WhenHdrRequestedAndIdle),
             await RunCheckAsync(
@@ -246,6 +249,44 @@ static class Program
         AssertContains(GetStringProperty(snapshot, "TelemetryAlignmentReason"), "unavailable");
 
         await DisposeAsync(captureService).ConfigureAwait(false);
+    }
+
+    private static async Task NativeXuTelemetry_AcceptsKnown4kXProductRevisions()
+    {
+        var provider = CreateInstance("ElgatoCapture.Services.NativeXuAtCommandProvider");
+
+        foreach (var productId in new[] { "009b", "009c" })
+        {
+            var device = BuildDevice($"\\\\?\\usb#vid_0fd9&pid_{productId}&mi_00#synthetic#{Guid.NewGuid():N}\\global");
+            var readAsync = provider.GetType().GetMethod(
+                "ReadAsync",
+                BindingFlags.Public | BindingFlags.Instance,
+                binder: null,
+                types: new[] { device.GetType(), typeof(CancellationToken) },
+                modifiers: null);
+            if (readAsync == null)
+            {
+                throw new InvalidOperationException("NativeXuAtCommandProvider.ReadAsync method not found.");
+            }
+
+            if (readAsync.Invoke(provider, new[] { device, CancellationToken.None }) is not Task task)
+            {
+                throw new InvalidOperationException("NativeXuAtCommandProvider.ReadAsync did not return a Task.");
+            }
+
+            await task.ConfigureAwait(false);
+
+            var resultProperty = task.GetType().GetProperty("Result", BindingFlags.Public | BindingFlags.Instance)
+                ?? throw new InvalidOperationException("NativeXuAtCommandProvider.ReadAsync task result not found.");
+            var snapshot = resultProperty.GetValue(task)
+                ?? throw new InvalidOperationException("NativeXuAtCommandProvider.ReadAsync returned null snapshot.");
+            var diagnostic = GetStringProperty(snapshot, "DiagnosticSummary");
+            if (string.Equals(diagnostic, "nativexu-device-unsupported", StringComparison.Ordinal) ||
+                diagnostic.StartsWith("nativexu-device-unsupported:", StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException($"NativeXu provider rejected 4K X product revision {productId} as unsupported.");
+            }
+        }
     }
 
     private static async Task GetRuntimeSnapshot_PipelineParity_Ready_WhenHdrRequestedAndIdle()
@@ -878,10 +919,10 @@ static class Program
         await DisposeAsync(captureService).ConfigureAwait(false);
     }
 
-    private static object BuildDevice()
+    private static object BuildDevice(string id = "device-1")
     {
         var device = CreateInstance("ElgatoCapture.Models.CaptureDevice");
-        SetPropertyOrBackingField(device, "Id", "device-1");
+        SetPropertyOrBackingField(device, "Id", id);
         SetPropertyOrBackingField(device, "Name", "Synthetic Capture Device");
         SetPropertyOrBackingField(device, "AudioDeviceId", "audio-1");
         SetPropertyOrBackingField(device, "AudioDeviceName", "Synthetic Audio");

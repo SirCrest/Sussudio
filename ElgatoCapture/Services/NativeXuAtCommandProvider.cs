@@ -55,7 +55,8 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     private const int AtFrameLrcSize = 1;
     private const int MaxAtResponseFrameSize = 128;
     private const ushort Elgato4kXVendorId = 0x0FD9;
-    private const ushort Elgato4kXProductId = 0x009B;
+    private const ushort Elgato4kXProductIdOriginal = 0x009B;
+    private const ushort Elgato4kXProductIdRevision = 0x009C;
 
     private const int CmdCableConnect = 0x36;
     private const int CmdVideoStable = 0x38;
@@ -98,8 +99,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         }
 
         if (!TryParseVendorProductIds(device.Id, out var vendorId, out var productId) ||
-            vendorId != Elgato4kXVendorId ||
-            productId != Elgato4kXProductId)
+            !IsSupported4kXDevice(vendorId, productId))
         {
             return SourceSignalTelemetrySnapshot.CreateUnavailable("nativexu-device-unsupported");
         }
@@ -244,8 +244,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         }
 
         if (!TryParseVendorProductIds(device.Id, out var vendorId, out var productId) ||
-            vendorId != Elgato4kXVendorId ||
-            productId != Elgato4kXProductId)
+            !IsSupported4kXDevice(vendorId, productId))
         {
             return false;
         }
@@ -966,6 +965,10 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         value = BitConverter.ToInt32(buffer, 0);
         return true;
     }
+
+    private static bool IsSupported4kXDevice(ushort vendorId, ushort productId)
+        => vendorId == Elgato4kXVendorId &&
+           (productId == Elgato4kXProductIdOriginal || productId == Elgato4kXProductIdRevision);
 
     private static bool IsUnsupportedNodeFailure(int? win32Code)
         => win32Code is KsExtensionUnitNative.ErrorNotFound
