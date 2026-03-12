@@ -1975,3 +1975,43 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (audio-preview state fix only)
 - Conclusion: No-audio devices can still keep video preview running without falsely reporting audio preview as active.
+
+## E97 - Audio monitoring visuals now track runtime preview activity instead of only user preference
+- Timestamp (UTC): 2026-03-12T11:28:01.1702671Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added a ViewModel-level `IsAudioPreviewActive` runtime property sourced from `CaptureService.GetRuntimeSnapshot()`, and updated the main window audio-meter visuals to follow that runtime state rather than only the persisted `IsAudioPreviewEnabled` preference.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Audio monitoring visuals follow runtime preview activity` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` contained the expected no-audio status token `Audio preview requested but no audio capture device is available.` plus the existing synthetic regression tokens and no new runtime/UI mismatch errors during this validation pass.
+- ffprobe Evidence:
+  - N/A (UI/runtime-state alignment change only)
+- Conclusion: The monitor toggle can remain the user's preference while the audio meter now reflects whether audio preview is actually active.
+
+## E98 - Preview backend summary log now reflects video-only fallback accurately
+- Timestamp (UTC): 2026-03-12T11:28:01.1702671Z
+- Commit Hash: uncommitted
+- What Changed (single change): Updated the preview-backend summary log in `CaptureService.StartVideoPreviewAsync()` so it reports `IMFSourceReader video only (no audio capture endpoint)` when preview starts without WASAPI capture, instead of always claiming `WASAPI audio ingest`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Preview backend log reflects video-only fallback` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` still showed the expected no-audio status token and existing synthetic regression tokens; no new preview-backend warning/error lines were introduced by this observability fix.
+- ffprobe Evidence:
+  - N/A (logging / diagnostics contract change only)
+- Conclusion: The debug log now distinguishes true audio-backed preview from the intentional video-only fallback, keeping the repo's log-first debugging workflow trustworthy.

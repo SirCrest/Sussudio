@@ -1233,7 +1233,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
                 }
 
-                Logger.Log("Preview backend active: IMFSourceReader video + WASAPI audio ingest.");
+                Logger.Log(
+                    _wasapiAudioCapture != null
+                        ? "Preview backend active: IMFSourceReader video + WASAPI audio ingest."
+                        : "Preview backend active: IMFSourceReader video only (no audio capture endpoint).");
             }
             catch (Exception ex)
             {

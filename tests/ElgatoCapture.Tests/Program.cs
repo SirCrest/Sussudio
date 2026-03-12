@@ -90,6 +90,12 @@ static class Program
                 "Audio preview stays inactive when no audio capture device exists",
                 AudioPreview_RemainsInactive_WhenNoAudioCaptureDeviceExists),
             await RunCheckAsync(
+                "Audio monitoring visuals follow runtime preview activity",
+                AudioMonitoringVisuals_FollowRuntimePreviewActivity),
+            await RunCheckAsync(
+                "Preview backend log reflects video-only fallback",
+                PreviewBackendLog_ReflectsVideoOnlyFallback),
+            await RunCheckAsync(
                 "Live pixel format surfaces prefer source subtype over decoded output",
                 LivePixelFormatSurfaces_PreferReaderSourceSubtype),
             await RunCheckAsync(
@@ -874,6 +880,31 @@ static class Program
             statusChanged.RemoveEventHandler(captureService, handler);
             await DisposeAsync(captureService).ConfigureAwait(false);
         }
+    }
+
+    private static Task AudioMonitoringVisuals_FollowRuntimePreviewActivity()
+    {
+        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs").Replace("\r\n", "\n");
+
+        AssertContains(mainViewModelText, "public partial bool IsAudioPreviewActive { get; set; }");
+        AssertContains(mainViewModelText, "IsAudioPreviewActive = runtime.IsAudioPreviewActive;");
+        AssertContains(mainViewModelText, "IsAudioPreviewActive = false;");
+        AssertContains(mainWindowText, "case nameof(MainViewModel.IsAudioPreviewActive):");
+        AssertContains(mainWindowText, "SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PreviewBackendLog_ReflectsVideoOnlyFallback()
+    {
+        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/CaptureService.cs").Replace("\r\n", "\n");
+
+        AssertContains(captureServiceText, "_wasapiAudioCapture != null");
+        AssertContains(captureServiceText, "\"Preview backend active: IMFSourceReader video + WASAPI audio ingest.\"");
+        AssertContains(captureServiceText, "\"Preview backend active: IMFSourceReader video only (no audio capture endpoint).\"");
+
+        return Task.CompletedTask;
     }
 
     private static Task LivePixelFormatSurfaces_PreferReaderSourceSubtype()

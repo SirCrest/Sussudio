@@ -259,6 +259,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial bool IsAudioPreviewEnabled { get; set; } = true;
 
     [ObservableProperty]
+    public partial bool IsAudioPreviewActive { get; set; }
+
+    [ObservableProperty]
     public partial double PreviewVolume { get; set; } = 1.0;
 
     [ObservableProperty]
@@ -365,6 +368,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _latestSourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();
         ApplySourceTelemetrySnapshot(_latestSourceTelemetry, allowAutoRetarget: false);
         UpdateHdrRuntimeStatusFromCapture();
+        UpdateLiveCaptureInfo();
 
         SetupTimer();
         UpdateDiskSpace();
@@ -923,6 +927,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private void UpdateLiveCaptureInfo(CaptureRuntimeSnapshot? runtimeSnapshot = null)
     {
         var runtime = runtimeSnapshot ?? _captureService.GetRuntimeSnapshot();
+        IsAudioPreviewActive = runtime.IsAudioPreviewActive;
 
         var width = runtime.ActualWidth ?? runtime.NegotiatedWidth ?? runtime.RequestedWidth;
         var height = runtime.ActualHeight ?? runtime.NegotiatedHeight ?? runtime.RequestedHeight;
@@ -952,6 +957,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void ResetLiveCaptureInfo()
     {
+        IsAudioPreviewActive = false;
         LiveResolution = LiveInfoUnavailable;
         LiveFrameRate = LiveInfoUnavailable;
         LivePixelFormat = LiveInfoUnavailable;
@@ -995,8 +1001,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         _dispatcherQueue.TryEnqueue(() =>
         {
+            var runtimeSnapshot = _captureService.GetRuntimeSnapshot();
             StatusText = status;
-            UpdateHdrRuntimeStatusFromCapture();
+            UpdateLiveCaptureInfo(runtimeSnapshot);
+            UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
         });
     }
 

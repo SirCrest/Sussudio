@@ -1248,6 +1248,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioRecordToggle.IsChecked = ViewModel.IsAudioEnabled;
         AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
         AudioPreviewToggle.IsEnabled = ViewModel.IsAudioEnabled;
+        SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);
         // Save the user's preferred volume, start at 0 for fade-in
         _savedPreviewVolume = ViewModel.PreviewVolume;
         _isVolumeFadingIn = true;
@@ -3149,7 +3150,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 {
                     AudioPreviewToggle.IsChecked = ViewModel.IsAudioPreviewEnabled;
                 }
-                SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewEnabled);
+                break;
+
+            case nameof(MainViewModel.IsAudioPreviewActive):
+                SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);
                 break;
 
             case nameof(MainViewModel.PreviewVolume):
@@ -3998,7 +4002,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             storyboard.Completed += (_, _) =>
             {
-                SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewEnabled);
+                SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);
             };
         }
 
