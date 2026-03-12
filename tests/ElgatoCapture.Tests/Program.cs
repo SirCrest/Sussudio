@@ -87,6 +87,9 @@ static class Program
                 "Preview startup tolerates missing audio capture devices",
                 PreviewStartup_ToleratesMissingAudioCaptureDevices),
             await RunCheckAsync(
+                "Audio preview stays inactive when no audio capture device exists",
+                AudioPreview_RemainsInactive_WhenNoAudioCaptureDeviceExists),
+            await RunCheckAsync(
                 "Live pixel format surfaces prefer source subtype over decoded output",
                 LivePixelFormatSurfaces_PreferReaderSourceSubtype),
             await RunCheckAsync(
@@ -825,6 +828,52 @@ static class Program
         AssertDoesNotContain(captureServiceText, "Audio preview is enabled but no audio capture device is available.");
 
         return Task.CompletedTask;
+    }
+
+    private static async Task AudioPreview_RemainsInactive_WhenNoAudioCaptureDeviceExists()
+    {
+        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var device = BuildDevice();
+        SetPropertyOrBackingField(device, "AudioDeviceId", null);
+        SetPropertyOrBackingField(device, "AudioDeviceName", null);
+        var settings = BuildSettings(hdrEnabled: false);
+
+        await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
+
+        string? lastStatus = null;
+        var handler = new EventHandler<string>((_, status) => lastStatus = status);
+        var statusChanged = captureService.GetType().GetEvent("StatusChanged", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("CaptureService.StatusChanged event not found.");
+        statusChanged.AddEventHandler(captureService, handler);
+
+        try
+        {
+            var startAudioPreview = captureService.GetType().GetMethod(
+                "StartAudioPreviewAsync",
+                BindingFlags.Public | BindingFlags.Instance,
+                binder: null,
+                types: new[] { typeof(CancellationToken) },
+                modifiers: null);
+            if (startAudioPreview == null)
+            {
+                throw new InvalidOperationException("CaptureService.StartAudioPreviewAsync method not found.");
+            }
+
+            if (startAudioPreview.Invoke(captureService, new object?[] { CancellationToken.None }) is not Task task)
+            {
+                throw new InvalidOperationException("CaptureService.StartAudioPreviewAsync did not return a Task.");
+            }
+
+            await task.ConfigureAwait(false);
+
+            AssertEqual(false, GetBoolProperty(captureService, "IsAudioPreviewActive"), "IsAudioPreviewActive");
+            AssertEqual("Audio preview unavailable", lastStatus, "StatusChanged");
+        }
+        finally
+        {
+            statusChanged.RemoveEventHandler(captureService, handler);
+            await DisposeAsync(captureService).ConfigureAwait(false);
+        }
     }
 
     private static Task LivePixelFormatSurfaces_PreferReaderSourceSubtype()

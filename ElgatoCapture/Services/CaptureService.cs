@@ -1600,7 +1600,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
         {
             EnsureInitialized();
             transitionToken.ThrowIfCancellationRequested();
-            _isAudioPreviewActive = true;
 
             // Create WASAPI capture if it wasn't started with the preview (audio was disabled at start)
             if (_wasapiAudioCapture == null && _currentDevice != null)
@@ -1618,8 +1617,20 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
                     Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
                 }
+                else
+                {
+                    Logger.Log("Audio preview requested but no audio capture device is available.");
+                }
             }
 
+            if (_wasapiAudioCapture == null)
+            {
+                _isAudioPreviewActive = false;
+                StatusChanged?.Invoke(this, "Audio preview unavailable");
+                return;
+            }
+
+            _isAudioPreviewActive = true;
             if (_wasapiAudioCapture != null)
             {
                 await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);

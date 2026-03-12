@@ -1955,3 +1955,23 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (preview startup behavior change only)
 - Conclusion: Devices that lack a paired audio endpoint can now still start video preview when audio remains enabled, while recording-path strictness remains unchanged.
+
+## E96 - Audio preview no longer reports active when no capture endpoint exists
+- Timestamp (UTC): 2026-03-12T11:13:05.2541112Z
+- Commit Hash: uncommitted
+- What Changed (single change): Updated `CaptureService.StartAudioPreviewAsync()` so it leaves audio preview inactive and reports `Audio preview unavailable` when no audio capture endpoint exists, instead of marking audio preview active and emitting a false success status.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64` first hit a transient WinUI XAML compiler lock on `obj\...\intermediatexaml\ElgatoCapture.dll`; the repo's single-threaded debug gate build then succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Audio preview stays inactive when no audio capture device exists` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` contained normal `NATIVEXU_*` polling plus the expected synthetic regression tokens and no new audio-preview failure lines during this validation pass.
+- ffprobe Evidence:
+  - N/A (audio-preview state fix only)
+- Conclusion: No-audio devices can still keep video preview running without falsely reporting audio preview as active.
