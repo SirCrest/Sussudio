@@ -125,6 +125,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private string? _pendingSavedDeviceAudioMode;
     private double? _pendingSavedAnalogAudioGainPercent;
     private bool _isRefreshingDeviceAudioControls;
+    private CancellationTokenSource? _gainFlashDebounceCts;
     [ObservableProperty]
     public partial bool IsRecordingTransitioning { get; set; }
 
@@ -3699,7 +3700,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         // GPIO prep (0x5B) → Flash read (0x52) → Flash write (0x51).
         // This is seamless — no USB re-enumeration, no preview interruption.
         var isAnalog = string.Equals(mode, "Analog", StringComparison.OrdinalIgnoreCase);
-        var applied = await NativeXuAtCommandProvider.SwitchAudioInputAsync(device, isAnalog).ConfigureAwait(false);
+        var gainByte = MapPercentToGainByte(AnalogAudioGainPercent);
+        var applied = await NativeXuAtCommandProvider.SwitchAudioInputAsync(device, isAnalog, gainByte).ConfigureAwait(false);
 
         if (!applied)
         {
@@ -3745,11 +3747,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         var gainPercent = Math.Clamp(explicitPercent ?? AnalogAudioGainPercent, 0.0, 100.0);
+        var gainByte = MapPercentToGainByte(gainPercent);
         Logger.Log($"=== Updating analog audio gain ({reason}) ===");
-        Logger.Log($"  GainPercent: {gainPercent:0}");
+        Logger.Log($"  GainPercent: {gainPercent:0} GainByte: 0x{gainByte:X2}");
 
-        // AT SET commands disabled — they crash the 4K X firmware.
-        var applied = await _deviceAudioControlService.SetAnalogGainPercentAsync(device, gainPercent).ConfigureAwait(false);
+        // Send I2C-only (no flash) for fast slider response.
+        // Flash persistence is debounced — only written after slider settles.
+        var applied = await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false).ConfigureAwait(false);
 
         if (!applied)
         {
@@ -3758,17 +3762,35 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         StatusText = $"Analog audio gain set to {gainPercent:0}%";
-        var state = await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
         _isRefreshingDeviceAudioControls = true;
         try
         {
-            IsDeviceAudioControlSupported = state.IsSupported;
-            AnalogAudioGainPercent = Math.Clamp(state.AnalogGainPercent ?? gainPercent, 0.0, 100.0);
+            AnalogAudioGainPercent = gainPercent;
         }
         finally
         {
             _isRefreshingDeviceAudioControls = false;
         }
+
+        // Debounce flash persistence: cancel any pending write, schedule a new one after 300ms
+        _gainFlashDebounceCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        _gainFlashDebounceCts = cts;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(300, cts.Token).ConfigureAwait(false);
+                if (!cts.Token.IsCancellationRequested)
+                {
+                    await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, cts.Token).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Superseded by a newer gain change — expected
+            }
+        }, cts.Token);
 
         if (persistSettings)
         {
@@ -3839,8 +3861,28 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         return inputApplied;
     }
 
-    private static int MapAnalogGainPercentToAtGain(double gainPercent)
-        => (int)Math.Round(Math.Clamp(gainPercent, 0.0, 100.0), MidpointRounding.AwayFromZero);
+    /// <summary>
+    /// Maps a 0-100% slider position to a 0-255 gain byte using a log audio taper.
+    /// Standard audio curve: gain = (e^(k*x) - 1) / (e^k - 1), where k controls steepness.
+    /// k=4 gives a natural audio-fader feel across the full 0-255 range.
+    /// </summary>
+    private const double GainCurveK = 4.0;
+
+    private static byte MapPercentToGainByte(double percent)
+    {
+        var x = Math.Clamp(percent / 100.0, 0.0, 1.0);
+        // Log curve: moves quickly through quiet low bytes, more resolution at top
+        var curved = Math.Log(1.0 + x * (Math.Exp(GainCurveK) - 1.0)) / GainCurveK;
+        return (byte)Math.Clamp(Math.Round(curved * 255.0), 0, 255);
+    }
+
+    private static double MapGainByteToPercent(byte gainByte)
+    {
+        var y = gainByte / 255.0;
+        // Inverse: exponential
+        var x = (Math.Exp(GainCurveK * y) - 1.0) / (Math.Exp(GainCurveK) - 1.0);
+        return Math.Clamp(x * 100.0, 0.0, 100.0);
+    }
 
     partial void OnIsAudioEnabledChanged(bool value)
     {

@@ -72,6 +72,7 @@ public sealed record SourceSignalTelemetrySnapshot
     public string? InputSource { get; init; }
     public bool? AdcOnOff { get; init; }
     public int? AdcVolumeGain { get; init; }
+    public int? AnalogGainByte { get; init; }
     public int? UacVolumeGain { get; init; }
     public bool? UacOut1Mute { get; init; }
     public bool? UacOut2Mute { get; init; }

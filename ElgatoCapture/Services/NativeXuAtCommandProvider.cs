@@ -379,10 +379,11 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     public static async Task<bool> SwitchAudioInputAsync(
         CaptureDevice? device,
         bool analog,
+        byte gainByte = 0xFF,
         CancellationToken ct = default)
     {
         var sourceLabel = analog ? "Analog" : "HDMI";
-        Logger.Log($"NATIVEXU_SWITCH_AUDIO begin source={sourceLabel}");
+        Logger.Log($"NATIVEXU_SWITCH_AUDIO begin source={sourceLabel} gain=0x{gainByte:X2}");
 
         if (device == null || string.IsNullOrWhiteSpace(device.Id))
         {
@@ -428,7 +429,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                         continue;
                     }
 
-                    var ok = ExecuteAudioSwitch(handle, node.NodeId, analog, sourceLabel);
+                    var ok = ExecuteAudioSwitch(handle, node.NodeId, analog, gainByte, sourceLabel);
                     if (ok)
                     {
                         Logger.Log($"NATIVEXU_SWITCH_AUDIO OK source={sourceLabel}");
@@ -458,7 +459,186 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         }
     }
 
-    private static bool ExecuteAudioSwitch(SafeFileHandle handle, int nodeId, bool analog, string sourceLabel)
+    /// <summary>
+    /// Sets the analog input gain via I2C codec register writes + flash persistence.
+    /// The gain byte maps 0x00-0xFF (0-100%) to a 3-zone codec register configuration:
+    ///   Zone 1 (0x00-0x7F): Digital attenuation only — regs 0x0C/0x0D = 0x80 + gain
+    ///   Zone 2 (0x80-0x97): PGA gain — regs 0x0A/0x0B = gain - 0x80
+    ///   Zone 3 (0x98-0xAF): PGA maxed + output gain — regs 0x0E/0x0F = gain - 0x98
+    ///   Zone 4 (0xB0-0xFF): All stages maxed (PGA=0x18, OutGain=0x18)
+    /// </summary>
+    public static async Task<bool> SetAnalogGainAsync(
+        CaptureDevice? device,
+        byte gainByte,
+        bool persistFlash = true,
+        CancellationToken ct = default)
+    {
+        Logger.Log($"NATIVEXU_SET_GAIN begin gain=0x{gainByte:X2} ({gainByte / 255.0 * 100:0}%) flash={persistFlash}");
+
+        if (device == null || string.IsNullOrWhiteSpace(device.Id))
+        {
+            return false;
+        }
+
+        if (!TryParseVendorProductIds(device.Id, out var vendorId, out var productId) ||
+            !IsSupported4kXDevice(vendorId, productId))
+        {
+            return false;
+        }
+
+        var gateAcquired = false;
+        try
+        {
+            gateAcquired = await CallGate.WaitAsync(GateTimeoutMs * 4, ct).ConfigureAwait(false);
+            if (!gateAcquired)
+            {
+                Logger.Log("NATIVEXU_SET_GAIN FAILED stage=gate_timeout");
+                return false;
+            }
+
+            var interfaces = KsExtensionUnitNative.EnumerateKsInterfaces(vendorId, productId);
+            foreach (var ksInterface in interfaces)
+            {
+                ct.ThrowIfCancellationRequested();
+                using var handle = KsExtensionUnitNative.TryOpen(ksInterface.Path, out _);
+                if (handle is null)
+                {
+                    continue;
+                }
+
+                if (!KsExtensionUnitNative.TryReadTopologyNodes(handle, out var nodes, out _))
+                {
+                    continue;
+                }
+
+                var nodeList = nodes ?? Array.Empty<KsExtensionUnitNative.KsTopologyNode>();
+                foreach (var node in nodeList)
+                {
+                    if (!node.IsDevSpecific)
+                    {
+                        continue;
+                    }
+
+                    var ok = ExecuteGainChange(handle, node.NodeId, gainByte, persistFlash);
+                    if (ok)
+                    {
+                        Logger.Log($"NATIVEXU_SET_GAIN OK gain=0x{gainByte:X2} flash={persistFlash}");
+                        return true;
+                    }
+                }
+            }
+
+            Logger.Log("NATIVEXU_SET_GAIN FAILED stage=no_device");
+            return false;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"NATIVEXU_SET_GAIN EXCEPTION type={ex.GetType().Name} msg={ex.Message}");
+            return false;
+        }
+        finally
+        {
+            if (gateAcquired)
+            {
+                CallGate.Release();
+            }
+        }
+    }
+
+    private static bool ExecuteGainChange(SafeFileHandle handle, int nodeId, byte gainByte, bool persistFlash = true)
+    {
+        // Compute 3-zone codec register values
+        ComputeGainRegisters(gainByte, out var pga, out var digAtt, out var outGain);
+
+        Logger.Log($"NATIVEXU_SET_GAIN regs gain=0x{gainByte:X2} PGA=0x{pga:X2} DigAtt=0x{digAtt:X2} OutGain=0x{outGain:X2} flash={persistFlash}");
+
+        // I2C codec register writes (immediate hardware effect)
+        // Write 6 registers: 0x0A, 0x0B (PGA), 0x0E, 0x0F (OutGain), 0x0C, 0x0D (DigAtt)
+        var i2cWrites = new (byte reg, byte val)[]
+        {
+            (0x0A, pga),
+            (0x0B, pga),
+            (0x0E, outGain),
+            (0x0F, outGain),
+            (0x0C, digAtt),
+            (0x0D, digAtt),
+        };
+
+        foreach (var (reg, val) in i2cWrites)
+        {
+            if (!SendSelector4Command(handle, nodeId, CmdI2cWrite,
+                new byte[] { 0x00, 0x4A, 0x02, 0x00, reg, val }))
+            {
+                Logger.Log($"NATIVEXU_SET_GAIN FAILED stage=i2c_write_r{reg:X2}");
+                return false;
+            }
+        }
+
+        if (!persistFlash)
+        {
+            return true;
+        }
+
+        // Flash persistence (deferred during rapid slider changes)
+        if (!SendAtSetCommand(handle, nodeId, CmdFlashGetCustomerProprietary, Array.Empty<byte>()))
+        {
+            Logger.Log("NATIVEXU_SET_GAIN FAILED stage=flash_read");
+            return false;
+        }
+
+        var flashData = new byte[32];
+        flashData[0] = 0x01; // Analog
+        flashData[1] = 0x80;
+        flashData[2] = gainByte;
+        flashData[3] = 0xAA;
+        flashData[4] = 0x55;
+
+        if (!SendAtSetCommand(handle, nodeId, CmdFlashSetCustomerProprietary, flashData))
+        {
+            Logger.Log("NATIVEXU_SET_GAIN FAILED stage=flash_write");
+            return false;
+        }
+
+        return true;
+    }
+
+    internal static void ComputeGainRegisters(byte gainByte, out byte pga, out byte digAtt, out byte outGain)
+    {
+        if (gainByte < 0x80)
+        {
+            // Zone 1: Digital attenuation only
+            pga = 0x00;
+            digAtt = (byte)(0x80 + gainByte);
+            outGain = 0x00;
+        }
+        else if (gainByte < 0x98)
+        {
+            // Zone 2: PGA gain ramp (0-23)
+            pga = (byte)(gainByte - 0x80);
+            digAtt = 0x00;
+            outGain = 0x00;
+        }
+        else if (gainByte < 0xB0)
+        {
+            // Zone 3: PGA maxed + output gain ramp (0-23)
+            pga = 0x18;
+            digAtt = 0x00;
+            outGain = (byte)(gainByte - 0x98);
+        }
+        else
+        {
+            // Zone 4: All stages maxed
+            pga = 0x18;
+            digAtt = 0x00;
+            outGain = 0x18;
+        }
+    }
+
+    private static bool ExecuteAudioSwitch(SafeFileHandle handle, int nodeId, bool analog, byte gainByte, string sourceLabel)
     {
         // Phase 1: Flash persistence (selector 1 AT commands)
         // 1a. GPIO prep
@@ -475,11 +655,11 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             return false;
         }
 
-        // 1c. Flash write new source
+        // 1c. Flash write new source (preserve current gain byte)
         var flashData = new byte[32];
         flashData[0] = analog ? (byte)0x01 : (byte)0x00;
         flashData[1] = 0x80;
-        flashData[2] = 0xFF;
+        flashData[2] = gainByte;
         flashData[3] = 0xAA;
         flashData[4] = 0x55;
 
@@ -900,10 +1080,9 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             rawTimingResult);
         // Use flash proprietary state (AT 0x52) for input source display if available,
         // since AT 0x35 doesn't reflect I2C-based audio switches.
+        // Flash format: [source(0/1), 0x80, gainByte(0-255), 0xAA, 0x55, ...zeros...]
         var effectiveInputSource = inputSourceResult;
-        if (flashAudioResult.Success && flashAudioResult.Response.Length >= 5 &&
-            flashAudioResult.Response[1] == 0x80 && flashAudioResult.Response[2] == 0xFF &&
-            flashAudioResult.Response[3] == 0xAA && flashAudioResult.Response[4] == 0x55)
+        if (IsValidFlashAudioData(flashAudioResult))
         {
             effectiveInputSource = new AtCommandResult(
                 "InputSource", CmdInputSource, true,
@@ -970,6 +1149,9 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
                 InputSource = ResolveAudioInputSource(flashAudioResult, sourceInputSource),
                 AdcOnOff = adcOnOff,
                 AdcVolumeGain = adcVolumeGain,
+                AnalogGainByte = IsValidFlashAudioData(flashAudioResult)
+                    ? (int?)flashAudioResult.Response[2]
+                    : null,
                 UacVolumeGain = uacVolumeGain,
                 UacOut1Mute = uacOut1Mute,
                 UacOut2Mute = uacOut2Mute,
@@ -1420,11 +1602,18 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     /// and the source byte at offset 0: 0x00=HDMI, 0x01=Analog.
     /// Falls back to the AT 0x35 telemetry value if flash read fails.
     /// </summary>
+    /// <summary>
+    /// Validates flash audio data: [source, 0x80, gainByte, 0xAA, 0x55, ...].
+    /// Byte[2] is the gain value (0x00-0xFF), NOT part of the magic signature.
+    /// </summary>
+    private static bool IsValidFlashAudioData(AtCommandResult flashResult)
+        => flashResult.Success && flashResult.Response.Length >= 5 &&
+           flashResult.Response[1] == 0x80 &&
+           flashResult.Response[3] == 0xAA && flashResult.Response[4] == 0x55;
+
     private static string? ResolveAudioInputSource(AtCommandResult flashResult, string? fallback)
     {
-        if (flashResult.Success && flashResult.Response.Length >= 5 &&
-            flashResult.Response[1] == 0x80 && flashResult.Response[2] == 0xFF &&
-            flashResult.Response[3] == 0xAA && flashResult.Response[4] == 0x55)
+        if (IsValidFlashAudioData(flashResult))
         {
             return flashResult.Response[0] == 0 ? "HDMI" : "Analog";
         }
@@ -1434,9 +1623,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 
     private static SourceAudioInputMode? ResolveAudioInputMode(AtCommandResult flashResult, AtCommandResult inputSourceResult)
     {
-        if (flashResult.Success && flashResult.Response.Length >= 5 &&
-            flashResult.Response[1] == 0x80 && flashResult.Response[2] == 0xFF &&
-            flashResult.Response[3] == 0xAA && flashResult.Response[4] == 0x55)
+        if (IsValidFlashAudioData(flashResult))
         {
             return flashResult.Response[0] == 0 ? SourceAudioInputMode.Hdmi : SourceAudioInputMode.Analog;
         }
