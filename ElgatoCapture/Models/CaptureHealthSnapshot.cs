@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace ElgatoCapture.Models;
 
@@ -52,6 +53,21 @@ public sealed class CaptureHealthSnapshot
     public double? SourceFrameRateExact { get; init; }
     public string? SourceFrameRateArg { get; init; }
     public bool? SourceIsHdr { get; init; }
+    public string? SourceVideoFormat { get; init; }
+    public string? SourceColorimetry { get; init; }
+    public string? SourceQuantization { get; init; }
+    public string? SourceHdrTransferFunction { get; init; }
+    public int? SourceHdrTransferCode { get; init; }
+    public string? SourceFirmware { get; init; }
+    public string? SourceAudioFormat { get; init; }
+    public string? SourceAudioSampleRate { get; init; }
+    public string? SourceInputSource { get; init; }
+    public string? SourceUsbHostProtocol { get; init; }
+    public string? SourceHdcpMode { get; init; }
+    public string? SourceHdcpVersion { get; init; }
+    public string? SourceRxTxHdcpVersion { get; init; }
+    public string? SourceRawTimingHex { get; init; }
+    public IReadOnlyList<SourceTelemetryDetailEntry> SourceTelemetryDetails { get; init; } = Array.Empty<SourceTelemetryDetailEntry>();
     public bool HdrAutoDowngraded { get; init; }
     public string HdrAutoDowngradeReason { get; init; } = string.Empty;
     public int CaptureCadenceSampleCount { get; init; }

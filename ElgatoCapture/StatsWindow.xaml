@@ -12,7 +12,7 @@
         <MicaBackdrop />
     </Window.SystemBackdrop>
 
-    <Grid Padding="12">
+    <Grid x:Name="RootGrid" Padding="12">
         <Grid.Resources>
             <Style x:Key="StatsLabelStyle" TargetType="TextBlock">
                 <Setter Property="FontSize" Value="12" />
@@ -99,7 +99,7 @@
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Text="Format" Style="{StaticResource StatsLabelStyle}" />
+                            <TextBlock Text="Video Format" Style="{StaticResource StatsLabelStyle}" />
                             <TextBlock x:Name="SourceFormatValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource StatsValueStyle}" HorizontalAlignment="Right" />
                         </Grid>
 
@@ -163,6 +163,12 @@
                                 <TextBlock x:Name="SourceDropsValue" Text="0 drops (0.0%)" Style="{StaticResource StatsValueStyle}" />
                             </StackPanel>
                         </Grid>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Telemetry Details" Style="{StaticResource StatsSectionHeaderStyle}" />
+                        <Rectangle Height="1" Fill="{ThemeResource CardStrokeColorDefaultBrush}" />
+                        <StackPanel x:Name="TelemetryDetailsContent" Spacing="6" />
                     </StackPanel>
 
                     <StackPanel Spacing="6">

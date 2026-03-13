@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 
 namespace ElgatoCapture.Models;
@@ -41,6 +42,12 @@ public enum SourceAudioInputMode
     Analog
 }
 
+public sealed record SourceTelemetryDetailEntry(
+    string Group,
+    string Label,
+    string DisplayValue,
+    string? RawValue = null);
+
 public sealed record SourceSignalTelemetrySnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
@@ -54,6 +61,30 @@ public sealed record SourceSignalTelemetrySnapshot
     public double? FrameRateExact { get; init; }
     public string? FrameRateArg { get; init; }
     public bool? IsHdr { get; init; }
+    public string? VideoFormat { get; init; }
+    public string? Colorimetry { get; init; }
+    public string? Quantization { get; init; }
+    public string? HdrTransferFunction { get; init; }
+    public int? HdrTransferCode { get; init; }
+    public string? Firmware { get; init; }
+    public string? AudioFormat { get; init; }
+    public string? AudioSampleRate { get; init; }
+    public string? InputSource { get; init; }
+    public bool? AdcOnOff { get; init; }
+    public int? AdcVolumeGain { get; init; }
+    public int? UacVolumeGain { get; init; }
+    public bool? UacOut1Mute { get; init; }
+    public bool? UacOut2Mute { get; init; }
+    public int? UacOut2MixerSource { get; init; }
+    public string? UsbHostProtocol { get; init; }
+    public bool? TxEdidValid { get; init; }
+    public string? HdcpMode { get; init; }
+    public string? HdcpVersion { get; init; }
+    public string? RxTxHdcpVersion { get; init; }
+    public string? CustomerVersion { get; init; }
+    public int? RescueVersion { get; init; }
+    public string? RawTimingHex { get; init; }
+    public IReadOnlyList<SourceTelemetryDetailEntry> DetailEntries { get; init; } = Array.Empty<SourceTelemetryDetailEntry>();
 
     public string? DiagnosticSummary { get; init; }
     public string? EgavInitializeResultName { get; init; }

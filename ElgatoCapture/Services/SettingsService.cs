@@ -20,6 +20,10 @@ public class UserSettings
     public bool? IsCustomAudioInputEnabled { get; set; }
     public string? SelectedAudioInputDeviceId { get; set; }
     public double? PreviewVolume { get; set; }
+    public bool? ShowAllCaptureOptions { get; set; }
+    public bool? IsStatsVisible { get; set; }
+    public string? SelectedDeviceAudioMode { get; set; }
+    public double? AnalogAudioGainPercent { get; set; }
 }
 
 [JsonSerializable(typeof(UserSettings))]

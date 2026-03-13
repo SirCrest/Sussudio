@@ -199,6 +199,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     await _viewModel.SetStatsVisibleAsync(visible, cancellationToken).ConfigureAwait(false);
                     return CreateAcknowledgedResponse(correlationId, $"Stats visibility {(visible ? "show" : "hide")} requested.");
                 }
+
+                case AutomationCommandKind.SetDeviceAudioMode:
+                {
+                    var mode = RequireString(payload, "mode");
+                    await _viewModel.SetDeviceAudioModeAsync(mode, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Device audio mode change requested: {mode}.");
+                }
                 case AutomationCommandKind.SetRecordingFormat:
                 {
                     var format = RequireString(payload, "format");

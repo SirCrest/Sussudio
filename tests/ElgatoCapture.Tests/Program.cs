@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.CompilerServices;
@@ -39,6 +40,12 @@ static class Program
                 "NativeXu telemetry accepts known 4K X product revisions",
                 NativeXuTelemetry_AcceptsKnown4kXProductRevisions),
             await RunCheckAsync(
+                "Health snapshot propagates structured source telemetry details",
+                CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails),
+            await RunCheckAsync(
+                "Automation snapshots expose high-confidence source telemetry fields",
+                AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields),
+            await RunCheckAsync(
                 "HDR idle snapshot reports ready pipeline parity",
                 GetRuntimeSnapshot_PipelineParity_Ready_WhenHdrRequestedAndIdle),
             await RunCheckAsync(
@@ -75,6 +82,9 @@ static class Program
                 "Automation preview volume persists through the settings path",
                 AutomationPreviewVolume_PersistsThroughSettingsPath),
             await RunCheckAsync(
+                "Automation UI settings persist through the settings path",
+                AutomationUiSettings_PersistThroughSettingsPath),
+            await RunCheckAsync(
                 "Project file preserves main's English-only publish locale policy",
                 ProjectFile_PreservesEnglishOnlyPublishLocalePolicy),
             await RunCheckAsync(
@@ -99,8 +109,11 @@ static class Program
                 "Live pixel format surfaces prefer source subtype over decoded output",
                 LivePixelFormatSurfaces_PreferReaderSourceSubtype),
             await RunCheckAsync(
-                "MCP tool surface exposes raw state options and UI control",
-                McpToolSurface_ExposesRawStateOptionsAndUiControl),
+                "Stats panels use source telemetry for HDMI input format and HDR",
+                StatsPanels_UseSourceTelemetry_ForHdmiInput),
+            await RunCheckAsync(
+                "MCP raw app state keeps capture options separate",
+                McpToolSurface_KeepsCaptureOptionsSeparateFromRawState),
             await RunCheckAsync(
                 "Unified video capture CPU MJPEG emit reports NV12",
                 UnifiedVideoCapture_CpuMjpegEmitReportsNv12),
@@ -111,8 +124,11 @@ static class Program
                 "MJPG HFR mode only activates for SDR 4K120-style settings",
                 CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest),
             await RunCheckAsync(
-                "Strict HFR fatal handler faults the capture session",
-                CaptureService_StrictHfrFatalHandler_FaultsSession)
+                "Strict HFR fatal handler clears active session state",
+                CaptureService_StrictHfrFatalHandler_ClearsActiveSessionState),
+            await RunCheckAsync(
+                "Capture errors refresh ViewModel runtime flags",
+                CaptureErrors_RefreshViewModelRuntimeFlags)
         };
 
         var failed = results.Where(r => !r.Passed).ToList();
@@ -302,6 +318,99 @@ static class Program
                 throw new InvalidOperationException($"NativeXu provider rejected 4K X product revision {productId} as unsupported.");
             }
         }
+    }
+
+    private static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
+    {
+        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var device = BuildDevice();
+        var settings = BuildSettings(hdrEnabled: false);
+
+        await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
+
+        var sourceTelemetry = CreateInstance("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
+        SetPropertyOrBackingField(sourceTelemetry, "Availability", ParseEnum("ElgatoCapture.Models.SourceTelemetryAvailability", "Available"));
+        SetPropertyOrBackingField(sourceTelemetry, "Origin", ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "NativeXu"));
+        SetPropertyOrBackingField(sourceTelemetry, "Confidence", ParseEnum("ElgatoCapture.Models.SourceTelemetryConfidence", "High"));
+        SetPropertyOrBackingField(sourceTelemetry, "Width", 3840);
+        SetPropertyOrBackingField(sourceTelemetry, "Height", 2160);
+        SetPropertyOrBackingField(sourceTelemetry, "FrameRateExact", 119.88d);
+        SetPropertyOrBackingField(sourceTelemetry, "IsHdr", true);
+        SetPropertyOrBackingField(sourceTelemetry, "VideoFormat", "YCbCr422");
+        SetPropertyOrBackingField(sourceTelemetry, "Colorimetry", "BT.2020");
+        SetPropertyOrBackingField(sourceTelemetry, "Quantization", "Limited");
+        SetPropertyOrBackingField(sourceTelemetry, "HdrTransferFunction", "HDR10 / PQ");
+        SetPropertyOrBackingField(sourceTelemetry, "HdrTransferCode", 2);
+        SetPropertyOrBackingField(sourceTelemetry, "AudioFormat", "Unknown (2)");
+        SetPropertyOrBackingField(sourceTelemetry, "AudioSampleRate", "Unknown (7)");
+        SetPropertyOrBackingField(sourceTelemetry, "InputSource", "HDMI (0)");
+        SetPropertyOrBackingField(sourceTelemetry, "UsbHostProtocol", "Isochronous (2)");
+        SetPropertyOrBackingField(sourceTelemetry, "HdcpMode", "Unknown (1)");
+        SetPropertyOrBackingField(sourceTelemetry, "HdcpVersion", "0200");
+        SetPropertyOrBackingField(sourceTelemetry, "RxTxHdcpVersion", "Unknown (3)");
+        SetPropertyOrBackingField(sourceTelemetry, "RawTimingHex", "3000CA0830117008");
+
+        var detailEntryType = RequireType("ElgatoCapture.Models.SourceTelemetryDetailEntry");
+        var detailEntry = Activator.CreateInstance(detailEntryType, "Signal Details", "Quantization", "Limited", "Limited")
+            ?? throw new InvalidOperationException("SourceTelemetryDetailEntry instance creation failed.");
+        var detailArray = Array.CreateInstance(detailEntryType, 1);
+        detailArray.SetValue(detailEntry, 0);
+        SetPropertyOrBackingField(sourceTelemetry, "DetailEntries", detailArray);
+
+        SetPrivateField(captureService, "_latestSourceTelemetry", sourceTelemetry);
+
+        var health = InvokeInstanceMethod(captureService, "GetHealthSnapshot");
+        AssertEqual("YCbCr422", GetStringProperty(health, "SourceVideoFormat"), "SourceVideoFormat");
+        AssertEqual("BT.2020", GetStringProperty(health, "SourceColorimetry"), "SourceColorimetry");
+        AssertEqual("Limited", GetStringProperty(health, "SourceQuantization"), "SourceQuantization");
+        AssertEqual("HDR10 / PQ", GetStringProperty(health, "SourceHdrTransferFunction"), "SourceHdrTransferFunction");
+        AssertEqual("Unknown (2)", GetStringProperty(health, "SourceAudioFormat"), "SourceAudioFormat");
+        AssertEqual("Unknown (7)", GetStringProperty(health, "SourceAudioSampleRate"), "SourceAudioSampleRate");
+        AssertEqual("HDMI (0)", GetStringProperty(health, "SourceInputSource"), "SourceInputSource");
+        AssertEqual("Isochronous (2)", GetStringProperty(health, "SourceUsbHostProtocol"), "SourceUsbHostProtocol");
+        AssertEqual("Unknown (1)", GetStringProperty(health, "SourceHdcpMode"), "SourceHdcpMode");
+        AssertEqual("0200", GetStringProperty(health, "SourceHdcpVersion"), "SourceHdcpVersion");
+        AssertEqual("Unknown (3)", GetStringProperty(health, "SourceRxTxHdcpVersion"), "SourceRxTxHdcpVersion");
+        AssertEqual("3000CA0830117008", GetStringProperty(health, "SourceRawTimingHex"), "SourceRawTimingHex");
+
+        var details = GetPropertyValue(health, "SourceTelemetryDetails") as System.Collections.IEnumerable
+            ?? throw new InvalidOperationException("SourceTelemetryDetails should be enumerable.");
+        var detailCount = 0;
+        foreach (var _ in details)
+        {
+            detailCount++;
+        }
+
+        AssertEqual(1, detailCount, "SourceTelemetryDetails.Count");
+        await DisposeAsync(captureService).ConfigureAwait(false);
+    }
+
+    private static Task AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields()
+    {
+        var contractsText = ReadRepoFile("ElgatoCapture/Models/AutomationContracts.cs").Replace("\r\n", "\n");
+        var diagnosticsHubText = ReadRepoFile("ElgatoCapture/Services/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n");
+
+        AssertContains(contractsText, "public string? SourceFirmware { get; init; }");
+        AssertContains(contractsText, "public string? SourceAudioFormat { get; init; }");
+        AssertContains(contractsText, "public string? SourceAudioSampleRate { get; init; }");
+        AssertContains(contractsText, "public string? SourceInputSource { get; init; }");
+        AssertContains(contractsText, "public string? SourceUsbHostProtocol { get; init; }");
+        AssertContains(contractsText, "public string? SourceHdcpMode { get; init; }");
+        AssertContains(contractsText, "public string? SourceHdcpVersion { get; init; }");
+        AssertContains(contractsText, "public string? SourceRxTxHdcpVersion { get; init; }");
+        AssertContains(contractsText, "public string? SourceRawTimingHex { get; init; }");
+
+        AssertContains(diagnosticsHubText, "SourceFirmware = captureRuntime.SourceFirmware,");
+        AssertContains(diagnosticsHubText, "SourceAudioFormat = captureRuntime.SourceAudioFormat,");
+        AssertContains(diagnosticsHubText, "SourceAudioSampleRate = captureRuntime.SourceAudioSampleRate,");
+        AssertContains(diagnosticsHubText, "SourceInputSource = captureRuntime.SourceInputSource,");
+        AssertContains(diagnosticsHubText, "SourceUsbHostProtocol = captureRuntime.SourceUsbHostProtocol,");
+        AssertContains(diagnosticsHubText, "SourceHdcpMode = captureRuntime.SourceHdcpMode,");
+        AssertContains(diagnosticsHubText, "SourceHdcpVersion = captureRuntime.SourceHdcpVersion,");
+        AssertContains(diagnosticsHubText, "SourceRxTxHdcpVersion = captureRuntime.SourceRxTxHdcpVersion,");
+        AssertContains(diagnosticsHubText, "SourceRawTimingHex = captureRuntime.SourceRawTimingHex,");
+
+        return Task.CompletedTask;
     }
 
     private static async Task GetRuntimeSnapshot_PipelineParity_Ready_WhenHdrRequestedAndIdle()
@@ -743,12 +852,13 @@ static class Program
         return Task.CompletedTask;
     }
 
-    private static Task McpToolSurface_ExposesRawStateOptionsAndUiControl()
+    private static Task McpToolSurface_KeepsCaptureOptionsSeparateFromRawState()
     {
         var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
         var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTool.cs");
         var captureOptionsToolText = ReadRepoFile("tools/McpServer/Tools/CaptureOptionsTool.cs");
         var uiSettingsToolText = ReadRepoFile("tools/McpServer/Tools/UiSettingsTools.cs");
+        var snapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
 
         AssertContains(captureSettingsToolsText, "string? preset = null");
         AssertContains(captureSettingsToolsText, "string? splitEncodeMode = null");
@@ -759,7 +869,7 @@ static class Program
 
         AssertContains(appStateToolText, "get_app_state_raw");
         AssertContains(appStateToolText, "UseStructuredContent = true");
-        AssertContains(appStateToolText, "SendCommandAsync(\"GetCaptureOptions\")");
+        AssertDoesNotContain(appStateToolText, "SendCommandAsync(\"GetCaptureOptions\")");
         AssertContains(captureOptionsToolText, "get_capture_options");
         AssertContains(captureOptionsToolText, "\"GetCaptureOptions\"");
         AssertContains(captureOptionsToolText, "UseStructuredContent = true");
@@ -767,6 +877,10 @@ static class Program
         AssertContains(uiSettingsToolText, "\"SetShowAllCaptureOptions\"");
         AssertContains(uiSettingsToolText, "\"SetPreviewVolume\"");
         AssertContains(uiSettingsToolText, "\"SetStatsVisible\"");
+        if (snapshotType.GetProperty("Options") != null)
+        {
+            throw new InvalidOperationException("AutomationSnapshot.Options should not be present when capture options are a separate surface.");
+        }
 
         return Task.CompletedTask;
     }
@@ -787,6 +901,24 @@ static class Program
     {
         var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
         AssertContains(mainViewModelText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
+        return Task.CompletedTask;
+    }
+
+    private static Task AutomationUiSettings_PersistThroughSettingsPath()
+    {
+        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var settingsServiceText = ReadRepoFile("ElgatoCapture/Services/SettingsService.cs").Replace("\r\n", "\n");
+
+        AssertContains(settingsServiceText, "public bool? ShowAllCaptureOptions { get; set; }");
+        AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
+        AssertContains(mainViewModelText, "if (settings.ShowAllCaptureOptions.HasValue)");
+        AssertContains(mainViewModelText, "if (settings.IsStatsVisible.HasValue)");
+        AssertContains(mainViewModelText, "ShowAllCaptureOptions = ShowAllCaptureOptions,");
+        AssertContains(mainViewModelText, "IsStatsVisible = IsStatsVisible,");
+        AssertContains(mainViewModelText, "partial void OnIsStatsVisibleChanged(bool value)");
+        AssertContains(mainViewModelText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
+        AssertContains(mainViewModelText, "RebuildResolutionOptions();\n        SaveSettings();");
+
         return Task.CompletedTask;
     }
 
@@ -910,18 +1042,40 @@ static class Program
     private static Task LivePixelFormatSurfaces_PreferReaderSourceSubtype()
     {
         var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var mainWindowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "runtime.ReaderSourceSubtype ??");
         AssertContains(mainViewModelText, "runtime.LatestObservedFramePixelFormat ??");
-        AssertContains(mainWindowText, "snapshot.ReaderSourceSubtype ??");
-        AssertContains(mainWindowText, "snapshot.NegotiatedPixelFormat ??");
 
         if (mainViewModelText.IndexOf("runtime.ReaderSourceSubtype ??", StringComparison.Ordinal) >
             mainViewModelText.IndexOf("runtime.LatestObservedFramePixelFormat ??", StringComparison.Ordinal))
         {
             throw new InvalidOperationException("MainViewModel.LivePixelFormat should prefer ReaderSourceSubtype before LatestObservedFramePixelFormat.");
         }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task StatsPanels_UseSourceTelemetry_ForHdmiInput()
+    {
+        var mainWindowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var mainWindowXaml = ReadRepoFile("ElgatoCapture/MainWindow.xaml").Replace("\r\n", "\n");
+        var statsWindowText = ReadRepoFile("ElgatoCapture/StatsWindow.xaml.cs").Replace("\r\n", "\n");
+        var statsWindowXaml = ReadRepoFile("ElgatoCapture/StatsWindow.xaml").Replace("\r\n", "\n");
+        var nativeXuText = ReadRepoFile("ElgatoCapture/Services/NativeXuAtCommandProvider.cs").Replace("\r\n", "\n");
+
+        AssertContains(mainWindowText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
+        AssertContains(mainWindowText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
+        AssertDoesNotContain(mainWindowText, "var sourceFormat =\n            snapshot.ReaderSourceSubtype ??");
+        AssertContains(statsWindowText, "SourceHdrValue.Text = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
+        AssertContains(statsWindowText, "SourceFormatValue.Text = snapshot.SourceVideoFormat ?? \"\\u2014\";");
+        AssertContains(mainWindowXaml, "Text=\"Video Format\"");
+        AssertContains(mainWindowXaml, "Text=\"Telemetry Details\"");
+        AssertContains(statsWindowXaml, "Text=\"Video Format\"");
+        AssertContains(statsWindowXaml, "Text=\"Telemetry Details\"");
+        AssertContains(nativeXuText, "VideoFormat = aviInfo.ColorSpace,");
+        AssertContains(nativeXuText, "Colorimetry = aviInfo.Colorimetry,");
+        AssertContains(nativeXuText, "Quantization = aviInfo.Quantization,");
+        AssertContains(nativeXuText, "HdrTransferFunction = ResolveHdrTransferFunction(hdrInfo.Eotf),");
 
         return Task.CompletedTask;
     }
@@ -1010,22 +1164,51 @@ static class Program
         }
     }
 
-    private static async Task CaptureService_StrictHfrFatalHandler_FaultsSession()
+    private static async Task CaptureService_StrictHfrFatalHandler_ClearsActiveSessionState()
     {
         var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
         await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
+        SetPrivateField(captureService, "_isVideoPreviewActive", true);
+        SetPrivateField(captureService, "_isAudioPreviewActive", true);
+        SetPrivateField(captureService, "_isRecording", true);
 
         InvokeNonPublicInstanceMethod(
             captureService,
             "OnUnifiedVideoCaptureFatalError",
             new object?[] { null, new InvalidOperationException("synthetic hfr failure") });
 
+        await WaitForConditionAsync(
+            () =>
+                string.Equals(GetPropertyValue(captureService, "SessionState")?.ToString(), "Faulted", StringComparison.Ordinal) &&
+                !GetBoolProperty(captureService, "IsInitialized") &&
+                !GetBoolProperty(captureService, "IsVideoPreviewActive") &&
+                !GetBoolProperty(captureService, "IsAudioPreviewActive") &&
+                !GetBoolProperty(captureService, "IsRecording"),
+            "CaptureService fatal cleanup").ConfigureAwait(false);
+
         AssertEqual("Faulted", GetPropertyValue(captureService, "SessionState")?.ToString(), "SessionState");
+        AssertEqual(false, GetBoolProperty(captureService, "IsInitialized"), "IsInitialized");
+        AssertEqual(false, GetBoolProperty(captureService, "IsVideoPreviewActive"), "IsVideoPreviewActive");
+        AssertEqual(false, GetBoolProperty(captureService, "IsAudioPreviewActive"), "IsAudioPreviewActive");
+        AssertEqual(false, GetBoolProperty(captureService, "IsRecording"), "IsRecording");
 
         await DisposeAsync(captureService).ConfigureAwait(false);
+    }
+
+    private static Task CaptureErrors_RefreshViewModelRuntimeFlags()
+    {
+        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+
+        AssertContains(mainViewModelText, "IsInitialized = _captureService.IsInitialized;");
+        AssertContains(mainViewModelText, "IsPreviewing = _captureService.IsVideoPreviewActive;");
+        AssertContains(mainViewModelText, "IsRecording = _captureService.IsRecording;");
+        AssertContains(mainViewModelText, "UpdateLiveCaptureInfo(runtimeSnapshot);");
+        AssertContains(mainViewModelText, "UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);");
+
+        return Task.CompletedTask;
     }
 
     private static object BuildDevice(string id = "device-1")
@@ -1103,6 +1286,22 @@ static class Program
         {
             await task.ConfigureAwait(false);
         }
+    }
+
+    private static async Task WaitForConditionAsync(Func<bool> condition, string description, int timeoutMs = 2000, int pollMs = 25)
+    {
+        var sw = Stopwatch.StartNew();
+        while (sw.ElapsedMilliseconds < timeoutMs)
+        {
+            if (condition())
+            {
+                return;
+            }
+
+            await Task.Delay(pollMs).ConfigureAwait(false);
+        }
+
+        throw new InvalidOperationException($"Timed out waiting for condition: {description}");
     }
 
     private static object CreateInstance(string typeName)

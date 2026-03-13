@@ -1,8 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using ElgatoCapture.Models;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using WinRT.Interop;
 using Windows.Graphics;
 
@@ -149,16 +152,8 @@ public sealed partial class StatsWindow : Window
         SourceFrameRateValue.Text = snapshot.SourceFrameRateExact.HasValue
             ? $"{snapshot.SourceFrameRateExact.Value:0.##} fps"
             : "\u2014";
-        SourceHdrValue.Text = snapshot.SourceIsHdr switch
-        {
-            true => "On",
-            false => "Off",
-            _ => "\u2014"
-        };
-        SourceFormatValue.Text =
-            snapshot.ReaderSourceSubtype ??
-            snapshot.NegotiatedPixelFormat ??
-            "\u2014";
+        SourceHdrValue.Text = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);
+        SourceFormatValue.Text = snapshot.SourceVideoFormat ?? "\u2014";
         TelemetryOriginValue.Text = snapshot.TelemetryOrigin is not null and not "Unknown"
             ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
             : "\u2014";
@@ -184,6 +179,66 @@ public sealed partial class StatsWindow : Window
         RendererDroppedValue.Text = $"{FormatCount(snapshot.RendererFramesDropped)} dropped";
 
         PerfScoreValue.Text = $"{FormatScore(snapshot.PerformanceScore)} / 100";
+        UpdateTelemetryDetails(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
+    }
+
+    private void UpdateTelemetryDetails(IReadOnlyList<SourceTelemetryDetailEntry> details, string? diagnosticSummary)
+    {
+        TelemetryDetailsContent.Children.Clear();
+
+        if (details.Count > 0)
+        {
+            var currentGroup = string.Empty;
+            foreach (var detail in details)
+            {
+                if (!string.Equals(currentGroup, detail.Group, StringComparison.Ordinal))
+                {
+                    currentGroup = detail.Group;
+                    TelemetryDetailsContent.Children.Add(new TextBlock
+                    {
+                        Text = currentGroup,
+                        Margin = new Thickness(0, 8, 0, 2),
+                        Style = (Style)RootGrid.Resources["StatsSectionHeaderStyle"]
+                    });
+                }
+
+                TelemetryDetailsContent.Children.Add(CreateTelemetryDetailRow(detail.Label, detail.DisplayValue));
+            }
+
+            return;
+        }
+
+        TelemetryDetailsContent.Children.Add(new TextBlock
+        {
+            Text = string.IsNullOrWhiteSpace(diagnosticSummary) ? "No telemetry details available" : diagnosticSummary,
+            Style = (Style)RootGrid.Resources["StatsLabelStyle"],
+            TextWrapping = TextWrapping.Wrap
+        });
+    }
+
+    private Grid CreateTelemetryDetailRow(string label, string value)
+    {
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var labelBlock = new TextBlock
+        {
+            Text = label,
+            Style = (Style)RootGrid.Resources["StatsLabelStyle"]
+        };
+        var valueBlock = new TextBlock
+        {
+            Text = value,
+            Style = (Style)RootGrid.Resources["StatsValueStyle"],
+            HorizontalAlignment = HorizontalAlignment.Right,
+            TextWrapping = TextWrapping.Wrap
+        };
+        Grid.SetColumn(valueBlock, 1);
+
+        grid.Children.Add(labelBlock);
+        grid.Children.Add(valueBlock);
+        return grid;
     }
 
     private static string FormatFps(double value)
@@ -209,6 +264,17 @@ public sealed partial class StatsWindow : Window
     private static string FormatCount(long value)
     {
         return Math.Max(0, value).ToString("N0");
+    }
+
+    private static string FormatSourceHdr(bool? isHdr, string? colorimetry)
+    {
+        return isHdr switch
+        {
+            true when !string.IsNullOrWhiteSpace(colorimetry) => $"On ({colorimetry})",
+            true => "On",
+            false => "Off",
+            _ => "\u2014"
+        };
     }
 
     private static double Sanitize(double value)
@@ -252,8 +318,11 @@ public sealed record StatsSnapshot(
     int? SourceHeight = null,
     double? SourceFrameRateExact = null,
     bool? SourceIsHdr = null,
+    string? SourceVideoFormat = null,
+    string? SourceColorimetry = null,
     string? ReaderSourceSubtype = null,
     string? NegotiatedPixelFormat = null,
     string? TelemetryOrigin = null,
     string? TelemetryConfidence = null,
+    IReadOnlyList<SourceTelemetryDetailEntry>? SourceTelemetryDetails = null,
     string? DiagnosticSummary = null);

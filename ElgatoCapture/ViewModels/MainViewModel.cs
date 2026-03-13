@@ -20,6 +20,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly DeviceService _deviceService;
     private readonly CaptureService _captureService;
     private readonly ICaptureSessionCoordinator _sessionCoordinator;
+    private readonly NativeXuAudioControlService _deviceAudioControlService;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly Stopwatch _recordingStopwatch = new();
     private DispatcherQueueTimer? _timer;
@@ -121,7 +122,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _isLoadingSettings;
     private string? _pendingSavedDeviceId;
     private string? _pendingSavedAudioDeviceId;
-
+    private string? _pendingSavedDeviceAudioMode;
+    private double? _pendingSavedAnalogAudioGainPercent;
+    private bool _isRefreshingDeviceAudioControls;
     [ObservableProperty]
     public partial bool IsRecordingTransitioning { get; set; }
 
@@ -265,6 +268,22 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial double PreviewVolume { get; set; } = 1.0;
 
     [ObservableProperty]
+    public partial ObservableCollection<string> AvailableDeviceAudioModes { get; set; } = new()
+    {
+        "HDMI",
+        "Analog"
+    };
+
+    [ObservableProperty]
+    public partial bool IsDeviceAudioControlSupported { get; set; }
+
+    [ObservableProperty]
+    public partial string SelectedDeviceAudioMode { get; set; } = "HDMI";
+
+    [ObservableProperty]
+    public partial double AnalogAudioGainPercent { get; set; } = 50;
+
+    [ObservableProperty]
     public partial string OutputPath { get; set; } = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
 
     [ObservableProperty]
@@ -358,6 +377,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _deviceService.FormatProbeCompleted += OnDeviceFormatProbeCompleted;
         _captureService = new CaptureService();
         _sessionCoordinator = new CaptureSessionCoordinator(_captureService);
+        _deviceAudioControlService = new NativeXuAudioControlService();
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
 
         _captureService.StatusChanged += OnCaptureStatusChanged;
@@ -764,9 +784,32 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 PreviewVolume = Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0);
             }
 
+            if (settings.ShowAllCaptureOptions.HasValue)
+            {
+                ShowAllCaptureOptions = settings.ShowAllCaptureOptions.Value;
+            }
+
+            if (settings.IsStatsVisible.HasValue)
+            {
+                IsStatsVisible = settings.IsStatsVisible.Value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(settings.SelectedDeviceAudioMode) &&
+                AvailableDeviceAudioModes.Contains(settings.SelectedDeviceAudioMode, StringComparer.OrdinalIgnoreCase))
+            {
+                SelectedDeviceAudioMode = settings.SelectedDeviceAudioMode;
+            }
+
+            if (settings.AnalogAudioGainPercent.HasValue)
+            {
+                AnalogAudioGainPercent = Math.Clamp(settings.AnalogAudioGainPercent.Value, 0.0, 100.0);
+            }
+
             // Defer device selection until RefreshDevicesAsync populates the device list
             _pendingSavedDeviceId = settings.SelectedDeviceId;
             _pendingSavedAudioDeviceId = settings.SelectedAudioInputDeviceId;
+            _pendingSavedDeviceAudioMode = settings.SelectedDeviceAudioMode;
+            _pendingSavedAnalogAudioGainPercent = settings.AnalogAudioGainPercent;
         }
         catch (Exception ex)
         {
@@ -802,6 +845,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 IsCustomAudioInputEnabled = IsCustomAudioInputEnabled,
                 SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,
                 PreviewVolume = VolumeSaveOverride ?? PreviewVolume,
+                ShowAllCaptureOptions = ShowAllCaptureOptions,
+                IsStatsVisible = IsStatsVisible,
+                SelectedDeviceAudioMode = SelectedDeviceAudioMode,
+                AnalogAudioGainPercent = AnalogAudioGainPercent,
             };
 
             SettingsService.Save(settings);
@@ -1012,7 +1059,18 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         _dispatcherQueue.TryEnqueue(() =>
         {
+            var runtimeSnapshot = _captureService.GetRuntimeSnapshot();
             StatusText = $"Error: {ex.Message}";
+            IsInitialized = _captureService.IsInitialized;
+            IsPreviewing = _captureService.IsVideoPreviewActive;
+            IsRecording = _captureService.IsRecording;
+            if (!IsPreviewing && !IsRecording)
+            {
+                ResetAudioMeter();
+            }
+
+            UpdateLiveCaptureInfo(runtimeSnapshot);
+            UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
         });
     }
 
@@ -1258,6 +1316,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     partial void OnSelectedDeviceChanged(CaptureDevice? value)
     {
         RebuildSelectedDeviceCapabilities(value, resetTelemetryState: true);
+        EnqueueUiOperation(() => RefreshDeviceAudioControlsAsync(applySavedState: true), "device audio controls refresh");
         SaveSettings();
     }
 
@@ -1756,11 +1815,18 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (IsRecording)
         {
             _pendingModeOptionsRefresh = true;
+            SaveSettings();
             return;
         }
 
         _pendingModeOptionsRefresh = false;
         RebuildResolutionOptions();
+        SaveSettings();
+    }
+
+    partial void OnIsStatsVisibleChanged(bool value)
+    {
+        SaveSettings();
     }
 
     private void RebuildResolutionOptions()
@@ -3381,6 +3447,52 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         SaveSettings();
     }
 
+    partial void OnSelectedDeviceAudioModeChanged(string value)
+    {
+        if (_isLoadingSettings || _isRefreshingDeviceAudioControls || !IsDeviceAudioControlSupported)
+        {
+            return;
+        }
+
+        if (IsRecording)
+        {
+            Logger.Log("Device audio mode change ignored while recording");
+            return;
+        }
+
+        EnqueueUiOperation(() => ApplyDeviceAudioModeAsync("device audio mode change"), "device audio mode change");
+        SaveSettings();
+    }
+
+    public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)
+    {
+        SelectedDeviceAudioMode = mode;
+        return Task.CompletedTask;
+    }
+
+    partial void OnAnalogAudioGainPercentChanged(double value)
+    {
+        if (_isLoadingSettings || _isRefreshingDeviceAudioControls || !IsDeviceAudioControlSupported)
+        {
+            return;
+        }
+
+        if (IsRecording)
+        {
+            Logger.Log("Analog audio gain change ignored while recording");
+            return;
+        }
+
+        if (!string.Equals(SelectedDeviceAudioMode, "Analog", StringComparison.OrdinalIgnoreCase))
+        {
+            SaveSettings();
+            return;
+        }
+
+        EnqueueUiOperation(() => ApplyAnalogAudioGainAsync("analog audio gain change"), "analog audio gain change");
+        SaveSettings();
+    }
+
     internal bool SuppressVolumeSave { get; set; }
 
     /// <summary>
@@ -3478,6 +3590,257 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);
     }
+
+    private async Task RefreshDeviceAudioControlsAsync(bool applySavedState)
+    {
+        var device = SelectedDevice;
+        if (device == null)
+        {
+            _isRefreshingDeviceAudioControls = true;
+            try
+            {
+                IsDeviceAudioControlSupported = false;
+                SelectedDeviceAudioMode = "HDMI";
+                AnalogAudioGainPercent = 50;
+            }
+            finally
+            {
+                _isRefreshingDeviceAudioControls = false;
+            }
+
+            return;
+        }
+
+        // Always show device audio controls for supported 4K X devices,
+        // even if the payload-mutation service can't read selector 3.
+        if (NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out _, out _))
+        {
+            _isRefreshingDeviceAudioControls = true;
+            try
+            {
+                IsDeviceAudioControlSupported = true;
+            }
+            finally
+            {
+                _isRefreshingDeviceAudioControls = false;
+            }
+        }
+
+        var state = await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
+        _isRefreshingDeviceAudioControls = true;
+        try
+        {
+            IsDeviceAudioControlSupported = state.IsSupported;
+            if (state.IsSupported)
+            {
+                SelectedDeviceAudioMode = NormalizeDeviceAudioMode(state.Mode ?? _pendingSavedDeviceAudioMode ?? SelectedDeviceAudioMode);
+                AnalogAudioGainPercent = Math.Clamp(
+                    state.AnalogGainPercent ?? _pendingSavedAnalogAudioGainPercent ?? AnalogAudioGainPercent,
+                    0.0,
+                    100.0);
+            }
+            else
+            {
+                SelectedDeviceAudioMode = NormalizeDeviceAudioMode(_pendingSavedDeviceAudioMode ?? SelectedDeviceAudioMode);
+                AnalogAudioGainPercent = Math.Clamp(_pendingSavedAnalogAudioGainPercent ?? AnalogAudioGainPercent, 0.0, 100.0);
+            }
+        }
+        finally
+        {
+            _isRefreshingDeviceAudioControls = false;
+        }
+
+        if (!applySavedState || !state.IsSupported)
+        {
+            return;
+        }
+
+        var desiredMode = NormalizeDeviceAudioMode(_pendingSavedDeviceAudioMode ?? SelectedDeviceAudioMode);
+        var desiredGain = Math.Clamp(_pendingSavedAnalogAudioGainPercent ?? AnalogAudioGainPercent, 0.0, 100.0);
+        _pendingSavedDeviceAudioMode = null;
+        _pendingSavedAnalogAudioGainPercent = null;
+
+        // Do NOT apply saved audio mode on restore. The AT SET command crashes the
+        // 4K X USB link, and the payload mutation path doesn't work reliably.
+        // Just sync the UI to the saved setting — the user can switch manually.
+        Logger.Log($"NATIVEXU_AUDIO_RESTORE_READ_ONLY desired='{desiredMode}' device='{state.Mode}'");
+
+        var refreshedState = await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
+        _isRefreshingDeviceAudioControls = true;
+        try
+        {
+            IsDeviceAudioControlSupported = refreshedState.IsSupported;
+            SelectedDeviceAudioMode = NormalizeDeviceAudioMode(refreshedState.Mode ?? desiredMode);
+            AnalogAudioGainPercent = Math.Clamp(refreshedState.AnalogGainPercent ?? desiredGain, 0.0, 100.0);
+        }
+        finally
+        {
+            _isRefreshingDeviceAudioControls = false;
+        }
+    }
+
+    private async Task ApplyDeviceAudioModeAsync(
+        string reason,
+        string? explicitMode = null,
+        bool reapplyAnalogGain = true,
+        bool persistSettings = true)
+    {
+        var device = SelectedDevice;
+        if (device == null || !IsDeviceAudioControlSupported)
+        {
+            return;
+        }
+
+        var mode = NormalizeDeviceAudioMode(explicitMode ?? SelectedDeviceAudioMode);
+        Logger.Log($"=== Updating device audio mode ({reason}) ===");
+        Logger.Log($"  Mode: {mode}");
+
+        // Use the same three-command flash-based sequence that Elgato Studio uses:
+        // GPIO prep (0x5B) → Flash read (0x52) → Flash write (0x51).
+        // This is seamless — no USB re-enumeration, no preview interruption.
+        var isAnalog = string.Equals(mode, "Analog", StringComparison.OrdinalIgnoreCase);
+        var applied = await NativeXuAtCommandProvider.SwitchAudioInputAsync(device, isAnalog).ConfigureAwait(false);
+
+        if (!applied)
+        {
+            // Still read state for diagnostics even on failure
+            await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
+            StatusText = $"Device audio mode change failed ({mode})";
+            return;
+        }
+
+        StatusText = $"Device audio mode set to {mode}";
+        if (reapplyAnalogGain && string.Equals(mode, "Analog", StringComparison.OrdinalIgnoreCase))
+        {
+            await ApplyAnalogAudioGainAsync("analog gain after mode switch", AnalogAudioGainPercent, persistSettings: false).ConfigureAwait(false);
+        }
+
+        // Trust the mode we just set — don't read back from the old selector 3 service,
+        // which doesn't reflect the new AT+I2C switch mechanism.
+        _isRefreshingDeviceAudioControls = true;
+        try
+        {
+            SelectedDeviceAudioMode = mode;
+        }
+        finally
+        {
+            _isRefreshingDeviceAudioControls = false;
+        }
+
+        if (persistSettings)
+        {
+            SaveSettings();
+        }
+    }
+
+    private async Task ApplyAnalogAudioGainAsync(
+        string reason,
+        double? explicitPercent = null,
+        bool persistSettings = true)
+    {
+        var device = SelectedDevice;
+        if (device == null || !IsDeviceAudioControlSupported)
+        {
+            return;
+        }
+
+        var gainPercent = Math.Clamp(explicitPercent ?? AnalogAudioGainPercent, 0.0, 100.0);
+        Logger.Log($"=== Updating analog audio gain ({reason}) ===");
+        Logger.Log($"  GainPercent: {gainPercent:0}");
+
+        // AT SET commands disabled — they crash the 4K X firmware.
+        var applied = await _deviceAudioControlService.SetAnalogGainPercentAsync(device, gainPercent).ConfigureAwait(false);
+
+        if (!applied)
+        {
+            StatusText = $"Analog audio gain change failed ({gainPercent:0}%)";
+            return;
+        }
+
+        StatusText = $"Analog audio gain set to {gainPercent:0}%";
+        var state = await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
+        _isRefreshingDeviceAudioControls = true;
+        try
+        {
+            IsDeviceAudioControlSupported = state.IsSupported;
+            AnalogAudioGainPercent = Math.Clamp(state.AnalogGainPercent ?? gainPercent, 0.0, 100.0);
+        }
+        finally
+        {
+            _isRefreshingDeviceAudioControls = false;
+        }
+
+        if (persistSettings)
+        {
+            SaveSettings();
+        }
+    }
+
+    private string NormalizeDeviceAudioMode(string? mode)
+        => string.Equals(mode, "Analog", StringComparison.OrdinalIgnoreCase) ? "Analog" : "HDMI";
+
+    private async Task<bool> TryApplyAtDeviceAudioModeAsync(CaptureDevice device, string mode)
+    {
+        var analogMode = string.Equals(mode, "Analog", StringComparison.OrdinalIgnoreCase);
+        var desiredSource = analogMode ? 1 : 0;
+
+        // Read current input source to avoid redundant firmware switches
+        var currentSource = await NativeXuAtCommandProvider.ReadAtCommandAsync(device, 0x35, "InputSourceCheck").ConfigureAwait(false);
+        if (currentSource is { Length: >= 1 } && currentSource[0] == desiredSource)
+        {
+            Logger.Log($"NATIVEXU_AUDIO_MODE_AT_SKIP mode='{mode}' already={desiredSource}");
+            return true;
+        }
+
+        // Switching input source while the source reader is streaming crashes the USB link.
+        // Stop the preview first, send the command, wait for the firmware to settle, restart.
+        var wasPreviewing = IsPreviewing;
+        if (wasPreviewing)
+        {
+            Logger.Log($"NATIVEXU_AUDIO_MODE_AT_STOP_PREVIEW mode='{mode}'");
+            try
+            {
+                await StopPreviewAsync(userInitiated: false).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"NATIVEXU_AUDIO_MODE_AT_STOP_PREVIEW_WARN error={ex.Message}");
+            }
+
+            await Task.Delay(500).ConfigureAwait(false);
+        }
+
+        var inputApplied = await NativeXuAtCommandProvider.SetInputSourceAsync(device, desiredSource).ConfigureAwait(false);
+        Logger.Log($"NATIVEXU_AUDIO_MODE_AT mode='{mode}' inputApplied={inputApplied}");
+
+        if (wasPreviewing)
+        {
+            // The firmware re-enumerates the USB device with a new PID after input source
+            // switch. We must re-discover devices to get the new symbolic link, then restart.
+            for (var attempt = 1; attempt <= 5; attempt++)
+            {
+                var delayMs = attempt * 1000;
+                Logger.Log($"NATIVEXU_AUDIO_MODE_AT_RESTART_PREVIEW mode='{mode}' attempt={attempt} delayMs={delayMs}");
+                await Task.Delay(delayMs).ConfigureAwait(false);
+                try
+                {
+                    await RefreshDevicesAsync().ConfigureAwait(false);
+                    await StartPreviewAsync(userInitiated: false).ConfigureAwait(false);
+                    Logger.Log($"NATIVEXU_AUDIO_MODE_AT_RESTART_OK attempt={attempt}");
+                    break;
+                }
+                catch (Exception ex) when (attempt < 5)
+                {
+                    Logger.Log($"NATIVEXU_AUDIO_MODE_AT_RESTART_RETRY attempt={attempt} error={ex.Message}");
+                }
+            }
+        }
+
+        return inputApplied;
+    }
+
+    private static int MapAnalogGainPercentToAtGain(double gainPercent)
+        => (int)Math.Round(Math.Clamp(gainPercent, 0.0, 100.0), MidpointRounding.AwayFromZero);
 
     partial void OnIsAudioEnabledChanged(bool value)
     {

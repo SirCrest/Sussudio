@@ -398,6 +398,20 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             SourceWidth = viewModelSnapshot.SourceWidth ?? captureRuntime.SourceWidth,
             SourceHeight = viewModelSnapshot.SourceHeight ?? captureRuntime.SourceHeight,
             SourceIsHdr = viewModelSnapshot.SourceIsHdr ?? captureRuntime.SourceIsHdr,
+            SourceVideoFormat = captureRuntime.SourceVideoFormat,
+            SourceColorimetry = captureRuntime.SourceColorimetry,
+            SourceQuantization = captureRuntime.SourceQuantization,
+            SourceHdrTransferFunction = captureRuntime.SourceHdrTransferFunction,
+            SourceHdrTransferCode = captureRuntime.SourceHdrTransferCode,
+            SourceFirmware = captureRuntime.SourceFirmware,
+            SourceAudioFormat = captureRuntime.SourceAudioFormat,
+            SourceAudioSampleRate = captureRuntime.SourceAudioSampleRate,
+            SourceInputSource = captureRuntime.SourceInputSource,
+            SourceUsbHostProtocol = captureRuntime.SourceUsbHostProtocol,
+            SourceHdcpMode = captureRuntime.SourceHdcpMode,
+            SourceHdcpVersion = captureRuntime.SourceHdcpVersion,
+            SourceRxTxHdcpVersion = captureRuntime.SourceRxTxHdcpVersion,
+            SourceRawTimingHex = captureRuntime.SourceRawTimingHex,
             SourceTelemetryAvailability = !string.IsNullOrWhiteSpace(viewModelSnapshot.SourceTelemetryAvailability) &&
                                           !string.Equals(viewModelSnapshot.SourceTelemetryAvailability, "Unknown", StringComparison.OrdinalIgnoreCase)
                 ? viewModelSnapshot.SourceTelemetryAvailability
@@ -411,6 +425,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 ? viewModelSnapshot.SourceTelemetryConfidence
                 : captureRuntime.SourceTelemetryConfidence,
             SourceTelemetryDiagnosticSummary = viewModelSnapshot.SourceTelemetryDiagnosticSummary ?? captureRuntime.SourceTelemetryDiagnosticSummary,
+            SourceTelemetryDetails = captureRuntime.SourceTelemetryDetails,
             SourceTelemetryTimestampUtc = viewModelSnapshot.SourceTelemetryTimestampUtc ?? captureRuntime.SourceTelemetryTimestampUtc,
             SourceTelemetryAgeSeconds = ResolveTelemetryAgeSeconds(
                 viewModelSnapshot.SourceTelemetryAgeSeconds,

@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -31,15 +30,7 @@ public static class AppStateTool
 
         if (response.TryGetProperty("Snapshot", out var snapshot))
         {
-            var snapshotNode = JsonNode.Parse(snapshot.GetRawText()) as JsonObject ?? new JsonObject();
-            var optionsResponse = await pipeClient.SendCommandAsync("GetCaptureOptions").ConfigureAwait(false);
-            if (IsSuccess(optionsResponse) &&
-                optionsResponse.TryGetProperty("Data", out var options))
-            {
-                snapshotNode["Options"] = JsonNode.Parse(options.GetRawText());
-            }
-
-            return snapshotNode;
+            return snapshot.Clone();
         }
 
         return new

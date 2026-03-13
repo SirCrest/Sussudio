@@ -256,7 +256,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Format" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Video Format" Style="{StaticResource DockStatsLabelStyle}" />
                                     <TextBlock x:Name="Stats_SourceFormatValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
@@ -530,7 +530,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Diagnostics" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Telemetry Details" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="Diagnostics_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -664,23 +664,60 @@
                     <StackPanel Spacing="2">
                         <TextBlock Text="Audio Input"
                                    Style="{StaticResource SecondaryLabelStyle}"/>
-                        <StackPanel Orientation="Horizontal" Spacing="8">
-                            <ToggleSwitch x:Name="CustomAudioToggle"
-                                          AutomationProperties.AutomationId="CustomAudioToggle"
-                                          OnContent="On" OffContent="Off"
-                                          MinWidth="0"
-                                          VerticalAlignment="Center"/>
-                            <ComboBox x:Name="AudioInputComboBox"
-                                      AutomationProperties.AutomationId="AudioInputComboBox"
-                                      HorizontalAlignment="Stretch"
-                                      VerticalAlignment="Center"
-                                      DisplayMemberPath="Name"
-                                      PlaceholderText="Select audio input"
-                                      Visibility="Collapsed"/>
-                            <TextBlock x:Name="AudioInputLabel"
-                                       Text="Audio Input"
-                                       Style="{StaticResource SecondaryLabelStyle}"
-                                       Visibility="Collapsed"/>
+                        <StackPanel Spacing="6">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <ToggleSwitch x:Name="CustomAudioToggle"
+                                              AutomationProperties.AutomationId="CustomAudioToggle"
+                                              OnContent="On" OffContent="Off"
+                                              MinWidth="0"
+                                              VerticalAlignment="Center"/>
+                                <ComboBox x:Name="AudioInputComboBox"
+                                          AutomationProperties.AutomationId="AudioInputComboBox"
+                                          HorizontalAlignment="Stretch"
+                                          VerticalAlignment="Center"
+                                          DisplayMemberPath="Name"
+                                          PlaceholderText="Select audio input"
+                                          Visibility="Collapsed"/>
+                                <TextBlock x:Name="AudioInputLabel"
+                                           Text="Audio Input"
+                                           Style="{StaticResource SecondaryLabelStyle}"
+                                           Visibility="Collapsed"/>
+                            </StackPanel>
+
+                            <StackPanel x:Name="DeviceAudioControlPanel"
+                                        Spacing="6"
+                                        Visibility="Collapsed">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="HDMI"
+                                               Style="{StaticResource SecondaryLabelStyle}"
+                                               VerticalAlignment="Center"/>
+                                    <ToggleSwitch x:Name="DeviceAudioModeToggle"
+                                                  AutomationProperties.AutomationId="DeviceAudioModeComboBox"
+                                                  OnContent="Analog" OffContent=""
+                                                  MinWidth="0"
+                                                  VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <StackPanel x:Name="AnalogAudioGainPanel" Spacing="2">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Analog Gain"
+                                                   Style="{StaticResource SecondaryLabelStyle}"/>
+                                        <TextBlock x:Name="AnalogAudioGainValueTextBlock"
+                                                   Grid.Column="1"
+                                                   Style="{StaticResource SecondaryLabelStyle}"
+                                                   Text="50%"/>
+                                    </Grid>
+                                    <Slider x:Name="AnalogAudioGainSlider"
+                                            AutomationProperties.AutomationId="AnalogAudioGainSlider"
+                                            Minimum="0"
+                                            Maximum="100"
+                                            StepFrequency="1"
+                                            TickFrequency="10"/>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>

@@ -2015,3 +2015,517 @@ Do not rewrite or delete prior entries. Append new entries only.
 - ffprobe Evidence:
   - N/A (logging / diagnostics contract change only)
 - Conclusion: The debug log now distinguishes true audio-backed preview from the intentional video-only fallback, keeping the repo's log-first debugging workflow trustworthy.
+
+## E99 - Fatal MJPEG capture faults now clear active session state before leaving the session faulted
+- Timestamp (UTC): 2026-03-12T16:18:38.3274298Z
+- Commit Hash: uncommitted
+- What Changed (single change): Routed `OnUnifiedVideoCaptureFatalError()` through a best-effort cleanup pass so permanent capture faults stop preview/record backends, clear active runtime flags, and then leave the session in `Faulted` instead of preserving stale active state.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Strict HFR fatal handler clears active session state` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` still contained the expected synthetic fatal token `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure`, and the runtime harness no longer left preview/record/audio-preview active after that fault path.
+- ffprobe Evidence:
+  - N/A (fault-cleanup / runtime-state change only)
+- Conclusion: Permanent capture faults now unwind the live session cleanly before preserving the terminal `Faulted` state for user recovery.
+
+## E100 - Raw automation app state no longer embeds capture options
+- Timestamp (UTC): 2026-03-12T16:18:38.3274298Z
+- Commit Hash: uncommitted
+- What Changed (single change): Removed the dead `AutomationSnapshot.Options` contract and stopped `get_app_state_raw` from splicing `GetCaptureOptions` into the raw snapshot, keeping capture options as a separate on-demand automation surface.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: MCP raw app state keeps capture options separate` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` contained only the expected synthetic regression tokens and no new automation-snapshot failure lines during this contract cleanup.
+- ffprobe Evidence:
+  - N/A (automation contract / token-efficiency change only)
+- Conclusion: Runtime state and selectable capture options are now intentionally separate automation payloads instead of an inconsistent hybrid contract.
+
+## E101 - Show-all capture options and stats visibility now persist through the settings path
+- Timestamp (UTC): 2026-03-12T16:18:38.3274298Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added `ShowAllCaptureOptions` and `IsStatsVisible` to the persisted `UserSettings` model and wired both UI/automation setters through the existing save/load path so those preferences survive relaunch like preview volume already does.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Automation UI settings persist through the settings path` and `PASS: Capture errors refresh ViewModel runtime flags`, then `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` contained only the expected synthetic regression tokens and no new settings-load or settings-save warnings during this validation pass.
+- ffprobe Evidence:
+  - N/A (settings persistence / UI-state change only)
+- Conclusion: The demo-oriented capture-options toggle and stats-panel visibility now behave like real user preferences instead of reverting on the next launch.
+
+## E102 - NativeXu source telemetry now exposes structured signal details instead of only a summary string
+- Timestamp (UTC): 2026-03-12T17:05:52.6251382Z
+- Commit Hash: uncommitted
+- What Changed (single change): Promoted NativeXu HDMI-source fields into structured telemetry properties and grouped detail entries, covering source video format, colorimetry, quantization, HDR transfer, and the reverse-engineered AT command diagnostics with friendly-plus-raw fallback values.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Health snapshot propagates structured source telemetry details` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` showed live NativeXu reads with `AviInfoFrame`, `HdrMetadata`, `AudioFormat`, `AudioSamplingRate`, `InputSource`, `UsbHostProtocol`, `HdcpMode`, `Hdr2Sdr`, and `RawTiming`, followed by `NATIVEXU_DECODE ... colorspace=YCbCr422 colorimetry=BT.2020`.
+- ffprobe Evidence:
+  - N/A (telemetry model / diagnostics-surface change only)
+- Conclusion: NativeXu now produces reusable structured source telemetry instead of forcing the UI to reverse-parse the diagnostic summary string.
+
+## E103 - Stats views now keep HDMI Input source-only and move richer telemetry into details
+- Timestamp (UTC): 2026-03-12T17:05:52.6251382Z
+- Commit Hash: uncommitted
+- What Changed (single change): Updated the docked stats panel and standalone Stats window so `HDMI Input` uses source telemetry for `Video Format` and HDR formatting, while the expanded details area renders grouped reverse-engineered telemetry rows instead of card-side negotiated subtype data.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `& '.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe' --command GetSnapshot --token codex-local`
+- Validator Output:
+  - Both Debug and Release builds succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Stats panels use source telemetry for HDMI input format and HDR` and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - Live automation against the launched Debug app returned `SourceVideoFormat":"YCbCr422"`, `SourceColorimetry":"BT.2020"`, `SourceHdrTransferFunction":"HDR10 / PQ"`, and grouped `SourceTelemetryDetails` entries while preview was active on the 4K120 source.
+- ffprobe Evidence:
+  - N/A (stats UI / telemetry presentation change only)
+- Conclusion: The Stats surfaces now distinguish HDMI-source telemetry from capture-card negotiation, showing `Video Format = YCbCr422` and HDR as source-derived information instead of the card’s negotiated subtype.
+
+## E104 - Automation snapshots now expose the new structured source telemetry fields
+- Timestamp (UTC): 2026-03-12T17:05:52.6251382Z
+- Commit Hash: uncommitted
+- What Changed (single change): Propagated the new structured source telemetry fields and grouped detail entries through the capture-runtime and automation snapshot contracts so MCP and automation consumers can validate the same source-vs-capture distinction the Stats UI now shows.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `& '.\tools\AutomationClient\bin\Debug\net8.0\AutomationClient.exe' --command GetSnapshot --token codex-local`
+  4. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Health snapshot propagates structured source telemetry details` and `PASS: Stats panels use source telemetry for HDMI input format and HDR`.
+  - Live automation returned `SourceTelemetryDetails` with grouped entries such as `Input Source = HDMI (0)`, `Audio Format = Code 2 (2)`, `USB Protocol = Mode 2 (2)`, `HDCP Mode = Code 1 (1)`, and `Raw Timing = ...hex...`.
+  - `temp/logs/ElgatoCapture_Debug.log` still showed the same underlying AT command reads that back those structured automation fields.
+- ffprobe Evidence:
+  - N/A (automation contract / diagnostics-surface change only)
+- Conclusion: Automation clients can now inspect the richer source telemetry directly instead of scraping the old colon-delimited diagnostic summary.
+
+## E105 - NativeXu now promotes high-confidence source telemetry fields into structured snapshots
+- Timestamp (UTC): 2026-03-12T19:10:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): Promoted the high-confidence NativeXu fields into first-class structured telemetry (`Firmware`, audio format/sample rate, input source, USB host protocol, HDCP fields, and raw timing hex) and propagated them through capture-health and automation snapshots while keeping uncertain decodes conservative.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - Both Debug and Release builds succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Health snapshot propagates structured source telemetry details`, `PASS: Automation snapshots expose high-confidence source telemetry fields`, and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` showed the live NativeXu reads backing the new structured fields, including `SystemInfo code=0x23 preview=444232303539233130393700`, `AudioFormat code=0x04 preview=02000000`, `AudioSamplingRate code=0x06 preview=07000000`, `InputSource code=0x35 preview=00000000`, `UsbHostProtocol code=0x40 preview=02000000`, `HdcpMode code=0x72 preview=01000000`, `RxTxHdcpVersion code=0x8A preview=03000000`, and `RawTiming code=0x37 preview=3000CA0830117008000F52008001D32E5D69100A00580001010101090603401F`.
+- ffprobe Evidence:
+  - N/A (telemetry model / diagnostics-surface change only)
+- Conclusion: High-confidence NativeXu telemetry is now available as structured source fields across the app and automation surfaces, while still leaving medium- and low-confidence decodes explicit rather than guessed.
+
+## E106 - Control shelf now exposes device audio mode and analog gain controls
+- Timestamp (UTC): 2026-03-12T18:18:03.0691138Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added EGAV-backed device audio controls to the control shelf so supported devices can switch HDMI vs analog input mode and adjust analog line-in gain, with persisted mode/gain preferences restored through the existing settings path.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. Launch the app and verify `DeviceAudioModeComboBox` and `AnalogGainNumberBox` appear for a supported Elgato device.
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `PASS: Device audio controls are exposed in the control shelf`, `PASS: Device audio control settings persist through the settings path`, and `All runtime snapshot regression checks passed.`
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - A direct `dotnet build ... -c Debug` retry hit the known transient `Microsoft.UI.Xaml.Markup.Compiler` file-lock on `obj\\...\\intermediatexaml\\ElgatoCapture.dll`, but the repo’s single-threaded reliability gate rerun immediately built the same tree successfully with no code changes.
+- ffprobe Evidence:
+  - N/A (device-control/UI change only)
+- Conclusion: The control shelf can now drive supported device-side audio input mode and analog gain, and those preferences persist across relaunch without introducing a parallel settings path.
+
+## E107 - Stop surfacing NativeXu `SystemInfo` as user-facing firmware
+- Timestamp (UTC): 2026-03-12T18:18:03.0691138Z
+- Commit Hash: uncommitted
+- What Changed (single change): Suppressed the NativeXu `SystemInfo` string (`DB2059#1097`) from the structured telemetry/UI surface so the app no longer presents it as meaningful product firmware while deeper EGAV firmware/version decoding remains unresolved.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  4. Open the Stats details panel and confirm no firmware row is rendered from NativeXu `SystemInfo`.
+- Validator Output:
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` still reported `PASS: Health snapshot propagates structured source telemetry details` and `All runtime snapshot regression checks passed.` after removing the firmware assertion.
+  - `powershell -File tools/reliability-gates.ps1 -Configuration Debug` reported `Gate result: PASS`.
+  - `temp/logs/ElgatoCapture_Debug.log` still showed `SystemInfo code=0x23 preview=444232303539233130393700`, proving the raw AT read remains available for reverse-engineering even though the UI-facing structured telemetry no longer surfaces it as firmware.
+- ffprobe Evidence:
+  - N/A (telemetry presentation change only)
+- Conclusion: The misleading `DB2059#1097` system-info string is retained only as raw diagnostic evidence and is no longer presented as user-facing firmware.
+
+## E108 - Reverted the proprietary EGAV audio-control experiment from the Stats branch
+- Timestamp (UTC): 2026-03-12T18:29:33.4175252Z
+- Commit Hash: uncommitted
+- What Changed (single change): Removed the uncommitted EGAV-backed device audio mode and analog gain control integration from the `Stats` branch so the worktree returns to the project’s custom-code-only reverse-engineering direction while preserving the NativeXu telemetry work.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64`
+  2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. `powershell -File tools/reliability-gates.ps1 -Configuration Debug`
+  5. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -m:1 -p:Platform=x64` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.` after the device-audio-control assertions were removed.
+  - The first `powershell -File tools/reliability-gates.ps1 -Configuration Debug` retry hit the repo’s known transient WinUI XAML compiler failure, and an immediate rerun reported `Gate result: PASS` with no code changes in between.
+  - `temp/logs/ElgatoCapture_Debug.log` still showed the expected NativeXu-only telemetry reads (`AudioFormat`, `AudioSamplingRate`, `InputSource`, `UsbHostProtocol`, `HdcpMode`, `RxTxHdcpVersion`, `RawTiming`) and no new EGAV-specific app dependency path.
+- ffprobe Evidence:
+  - N/A (dependency rollback / UI cleanup only)
+- Conclusion: The proprietary audio-control experiment is fully backed out, and the `Stats` branch is back on a custom NativeXu telemetry path only.
+
+## E109 - Added a NativeXu-only audio control probe and mapped the first working AT setters on 4K X
+- Timestamp (UTC): 2026-03-12T18:50:03.7105593Z
+- Commit Hash: uncommitted
+- What Changed (single change): Added a repo-local `tools/NativeXuAudioProbe` console plus a small raw AT-read helper in `NativeXuAtCommandProvider` so the 4K X could be probed through the custom KS/XU path only, then ran live write/readback sweeps across candidate audio routing, on/off, mute, and gain opcodes.
+- How To Run:
+  1. `dotnet build tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj -c Debug`
+  2. `dotnet run --project tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj -c Debug`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 120`
+- Validator Output:
+  - `dotnet build tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj -c Debug` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - The live probe found these stable baseline AT getter values on the connected 4K X: `AdcOnOff=0`, `DacHpOnOff=1`, `AdcVolumeGain=0`, `HdmiDprxVolumeGain=-1`, `UacVolumeGain=0`, `AuxInVolume=127`, `AuxOutVolume=129`, `UacOut2MixerSource=2`, `DacHpMixerSource=0`, `I2sOutMixerSource=4`, and all mute getters at `0`.
+  - The probe confirmed working custom readback loops for these setters:
+    - `0x26 -> 0x27` (`SetUacOut2MixerSource` / `GetUacOut2MixerSource`): non-baseline writes collapsed getter `2 -> 0`
+    - `0x2A -> 0x2B` (`SetI2SOut_MixerSource` / `GetI2SOut_MixerSource`): non-baseline writes collapsed getter `4 -> 0`
+    - `0x09 -> 0x75` (`SetDacHpOnOff` / `GetDacHpOnOff`): `1 -> 0`
+    - `0x2C -> 0x2D`, `0x2E -> 0x2F`, `0x30 -> 0x31`, `0x32 -> 0x33` (mute setters/getters): `0 -> 1`
+    - `0x0C -> 0x0D` (`SetHdmiDprxVolumeGain` / `GetHdmiDprxVolumeGain`): baseline `-1` moved to `0` or saturated at `30`
+    - `0x10 -> 0x11` (`SetUacVolumeGain` / `GetUacVolumeGain`): baseline `0` moved to saturated `30`
+  - The same probe did **not** produce getter-visible changes for `0x08 -> 0x74` (`ADC OnOff`), `0x0A -> 0x0B` (`ADC VolumeGain`), `0x28 -> 0x29` (`DACHP MixerSource`), `0x7F/0x80` (`Aux In Volume`), or `0x81/0x82` (`Aux Out Volume`) under the current HDMI-source session.
+  - Across all tested writes, `CurrentInputSource (0x35)` remained `0`, and the NativeXu source snapshot still reported `Input source: HDMI (0)` at the end of the sweep.
+  - `temp/logs/ElgatoCapture_Debug.log` showed successful `NATIVEXU_SET_OK` entries for the tested opcodes, confirming the results came from the custom KS/XU transport rather than any proprietary DLL path.
+- ffprobe Evidence:
+  - N/A (live device-control reverse-engineering only)
+- Conclusion: The custom NativeXu path already supports several real audio control surfaces with reliable readback, but the true HDMI-vs-analog input switch was not isolated yet; it appears to require a multi-command sequence beyond the single-AT writes tested here.
+
+## E110 - NativeXu AT phase 2 adds audio telemetry and AT-first input/gain control
+- Timestamp (UTC): 2026-03-12T20:50:59.5769195Z
+- Commit Hash: uncommitted
+- What Changed (single change): Extended the custom NativeXu AT path with the phase-2 audio/headphone/USB/firmware getters plus typed AT setter helpers, then updated `MainViewModel` to try AT-based input-source and ADC-gain writes first while keeping the existing payload-mutation service as fallback/readback.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. `Get-Content temp/logs/ElgatoCapture_Debug.log -Tail 200`
+- Validator Output:
+  - `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with `0 Warning(s)` and `0 Error(s)`.
+  - `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"` reported `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed the new live AT reads without failure tokens, including `AdcOnOff code=0x74 preview=00000000`, `AdcVolumeGain code=0x0B preview=00000000`, `DacHpOnOff code=0x75 preview=01000000`, `DacHpMute code=0x31 preview=00000000`, `HpOutGain code=0x67 preview=E1FF0000`, `UacVolumeGain code=0x11 preview=00000000`, `TxEdidValid code=0x43 preview=00000000`, and `CustomerVersion code=0x77 frameLen=133 rawBytes=128 preview=323530323130...`.
+- ffprobe Evidence:
+  - N/A (telemetry/control-path change only)
+- Conclusion: The NativeXu provider now surfaces the phase-2 audio/headphone/USB/factory telemetry in the dynamic details list and can issue AT-first input-source plus ADC-gain writes while preserving the existing payload mutation path as fallback.
+
+## E111 - EGAVDS audio probe: confirmed audio input switching works via proprietary DLL
+- Timestamp (UTC): 2026-03-12T22:00:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): Built `tools/EgavdsAudioProbe` — a standalone P/Invoke probe that calls Elgato Studio's EGAVDeviceSupport.dll (v0.1.0.622) directly via SWIG entry points.
+- How To Run:
+  1. Copy `RTICE_SDK_x64.dll` and `RTK_IO_x64.dll` from Elgato Studio's `EGAVDeviceSupport/` to the probe's output directory
+  2. `dotnet build tools/EgavdsAudioProbe/EgavdsAudioProbe.csproj`
+  3. `cd tools/EgavdsAudioProbe/bin/x64/Debug/net8.0-windows10.0.19041.0 && EgavdsAudioProbe.exe` (reads current state)
+  4. `EgavdsAudioProbe.exe --set hdmi` or `EgavdsAudioProbe.exe --set analog` (switches audio input)
+- Validator Output:
+  - EGAVDS successfully queries and switches audio input between HDMI (1) and Analog (2)
+  - `SupportsAudioInputSelection` = true, `SupportsLineInAudioGainControl` = true
+  - Gain range: min=0, max=255, default=128, observed current=255
+  - Audio input enum: `EGAVDS_AUDIO_INPUT_INVALID=0, EGAVDS_AUDIO_INPUT_HDMI=1, EGAVDS_AUDIO_INPUT_ANALOG=2`
+- Key Findings:
+  - EGAVDeviceSupport.dll depends on `RTICE_SDK_x64.dll` and `RTK_IO_x64.dll` (Realtek libraries)
+  - Studio version (0.1.0.622, 1.5MB) is much newer/larger than Elgato Capture version (0.0.2.46, 982KB) and has audio input functions the Capture version lacks
+  - SWIG P/Invoke requires registering exception callbacks before any other call
+  - Studio init params differ from Capture: has `edidDirectoryPath` and `firmwareDirectoryPath`, no `initializeSentry`
+- Conclusion: EGAVDS successfully controls audio input switching. This serves as ground-truth reference for protocol reverse-engineering.
+
+## E112 - AT commands (0x34/0x35) do NOT control audio input switching
+- Timestamp (UTC): 2026-03-12T23:00:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): Used NativeXuAudioProbe to test AT SetInputSource (0x34) and GetInputSource (0x35) before/after EGAVDS audio switches.
+- How To Run:
+  1. `tools/NativeXuAudioProbe/bin/.../NativeXuAudioProbe.exe at-set-input 1` (try AT-based switch to Analog)
+  2. Then verify via `EgavdsAudioProbe.exe` (EGAVDS ground truth)
+  3. Or use `temp/sniff-audio-switch.ps1` to read AT before/after EGAVDS switch
+- Validator Output:
+  - AT SetInputSource (0x34) returns success but has NO effect on actual audio routing
+  - AT GetInputSource (0x35) reads `00-00-00-00` regardless of HDMI or Analog mode
+  - EGAVDS switches confirmed to work independently of AT state
+- Conclusion: AT commands 0x34/0x35 (`SetInputSource`/`GetInputSource`) are NOT the mechanism EGAVDS uses for audio input switching. The AT layer and the actual audio switching operate through different XU/register pathways.
+
+## E113 - XU Selector 3 blob does NOT encode audio input state
+- Timestamp (UTC): 2026-03-12T23:30:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): Used NativeXuAudioProbe's `dump-s3` mode to capture XU selector 3 (150 bytes) in both HDMI and Analog modes, then diffed.
+- How To Run:
+  1. Set audio to HDMI via `EgavdsAudioProbe.exe --set hdmi`
+  2. `NativeXuAudioProbe.exe dump-s3 --out temp/s3-hdmi.hex`
+  3. Set audio to Analog via `EgavdsAudioProbe.exe --set analog`
+  4. `NativeXuAudioProbe.exe dump-s3 --out temp/s3-analog.hex`
+  5. Diff the two files
+- Validator Output:
+  - Only 1 byte difference at offset 7: `0x6A` (HDMI) vs `0x6B` (Analog)
+  - Reading Analog twice without switching produced identical results → offset 7 is a monotonic counter, not a mode flag
+  - All other 149 bytes identical across modes
+- Key Findings:
+  - XU Selector 3 on PID 009B does NOT contain audio input state
+  - The sole varying byte is an incrementing counter (likely a read-sequence or telemetry revision counter)
+  - This rules out Selector 3 as the audio control mechanism
+- Conclusion: Audio input switching on the 4K X uses a mechanism outside both the AT command layer and XU Selector 3. Evidence points to direct I2C register access via RTICE_SDK's `SetValue`/`GetValue` functions, which bypass the AT/S1/S2 protocol entirely.
+
+## E114 - EGAVDS uses RTICE_SDK SetValue/GetValue for audio, not AT commands
+- Timestamp (UTC): 2026-03-12T23:45:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): ILSpy analysis of EGAVDeviceSupport.dll import table and RTICE_SDK_x64.dll export table.
+- How To Run:
+  - Static analysis only — examine DLL import/export tables
+- Key Findings:
+  - EGAVDeviceSupport.dll imports from RTICE_SDK: `SetValue`, `GetValue`, `Audio_Set_UacOut2MixerSource`, `Audio_Set_ADC_OnOff`, `Audio_Set_DACHP_MixerSource`, `HdmiRX_*` functions
+  - RTICE_SDK_x64.dll exports 96+ functions including `Input_Source`, `Audio_*`, `HdmiRX_*`, `SetValue`, `GetValue`
+  - These are direct register-level controls that communicate with the Realtek chip via a different XU protocol than our AT commands
+  - 4K X has NO HID interface (only Camera MI_00 and MEDIA MI_02) — HID I2C path in EGAVDeviceSupport is for other Elgato products
+  - `availableAudioInputs: 3` in ElgatoDeviceCapabilities.json = bitmask 0b11 = two inputs (HDMI + Analog)
+- Conclusion: To implement proprietary-DLL-free audio input switching, we need to intercept the actual USB traffic RTICE_SDK sends during an EGAVDS audio switch. Two approaches: (1) USB packet capture with USBPcap/Wireshark filtering for XU control transfers, or (2) build a shim/proxy DLL for RTK_IO_x64.dll to log all function calls and parameters. The shim approach is more targeted.
+
+## E115 - RTK_IO_x64.dll export analysis: only 28 exports, all AT commands route through rtk_sendATCommand
+- Timestamp (UTC): 2026-03-13T00:00:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): Parsed PE export tables of both RTK_IO_x64.dll (28 exports) and RTICE_SDK_x64.dll (123 exports) using custom Python PE parser.
+- How To Run:
+  - Static analysis only — custom Python script parsing PE export/import directories
+- Key Findings:
+  - **RTK_IO_x64.dll exports (28)**: `rtk_initialize`, `rtk_uninitialize`, `rtk_uninitialize_ex`, `rtk_openPort`, `rtk_closePort`, `rtk_isOpen`, `rtk_setDevice`, `rtk_setCurrentDevice`, `rtk_getCurrentDeviceName`, `rtk_enableLog`, `rtk_readRbus`, `rtk_writeRbus`, `rtk_rescueReadRbus`, `rtk_rescueWriteRbus`, `rtk_sendATCommand`, `rtk_sendI2CATCommand`, `rtk_setUVCExtension`, `rtk_enterDebugMode`, `rtk_exitDebugMode`, `rtk_Get_Customer_version`, plus burn/flash/EDID utilities
+  - **RTICE_SDK_x64.dll exports (123)**: ALL prefixed with `AT_*` — e.g., `AT_Input_Source_Switch`, `AT_Audio_Set_ADC_OnOff`, `AT_Audio_Set_UacOut2_MixerSource`, `AT_Get_Current_Input_Source`, etc.
+  - **RTICE_SDK imports 23 functions from RTK_IO** — notably `rtk_sendATCommand`, `rtk_sendI2CATCommand`, `rtk_readRbus`, `rtk_writeRbus`, `rtk_setUVCExtension`, `rtk_openPort`, `rtk_closePort`, `rtk_setDevice`, `rtk_setCurrentDevice`, `rtk_getCurrentDeviceName`, `rtk_isOpen`, `rtk_initialize`, `rtk_uninitialize`, `rtk_uninitialize_ex`, `rtk_enableLog`, `rtk_Get_Customer_version`, plus burn functions
+  - **Key insight**: `AT_Input_Source_Switch` (the SET command) is a separate RTICE_SDK export from `AT_Get_Current_Input_Source` (the GET). Both route through `rtk_sendATCommand` in RTK_IO.
+  - Previous E112 tested AT opcodes 0x34/0x35 from our independent opcode catalog — but EGAVDS actually uses `AT_Input_Source_Switch` and `AT_Get_Current_Input_Source` which may map to DIFFERENT opcodes
+- Conclusion: All RTICE_SDK functions ultimately call `rtk_sendATCommand` or `rtk_readRbus`/`rtk_writeRbus` in RTK_IO. A shim DLL at the RTK_IO layer captures everything.
+
+## E116 - RTK_IO shim DLL: intercepted EGAVDS init + GetAudioInputSelection AT traffic
+- Timestamp (UTC): 2026-03-13T00:30:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): Built `tools/RtkIoShim/` — a C++ proxy DLL that intercepts all RTK_IO_x64.dll calls, logging function names and raw argument bytes. Deployed by renaming real DLL to `RTK_IO_x64_real.dll` and placing shim as `RTK_IO_x64.dll`.
+- How To Run:
+  1. Build: `cl /LD /EHsc /O2 rtk_io_shim.cpp /Fe:RTK_IO_x64.dll /link /DEF:rtk_io_shim.def` (requires VS dev shell)
+  2. In EgavdsAudioProbe output dir: rename `RTK_IO_x64.dll` → `RTK_IO_x64_real.dll`, copy shim as `RTK_IO_x64.dll`
+  3. Run `EgavdsAudioProbe.exe` — log written to `rtk_io_shim.log` in same directory
+- Validator Output:
+  - Shim successfully intercepts and forwards all RTK_IO calls
+  - EgavdsAudioProbe runs normally with shim in place (read-only queries work)
+  - `SetAudioInputSelection` crashes with AccessViolationException (calling convention mismatch in P/Invoke for SET — GET works fine)
+- **BREAKTHROUGH — rtk_sendATCommand true signature and AT opcode discovery**:
+  - `rtk_sendATCommand` signature: `(opcode_byte, ???, cmdStruct, responseBuffer, ???, ...)`
+  - `a1` = AT opcode as a raw byte (NOT a handle)
+  - `a4` = response buffer pointer (zeroed before call, filled after)
+  - Return value = response byte count
+  - **Intercepted AT calls during EGAVDS GetAudioInputSelection**:
+
+  | Call | a1 (opcode) | Response (a4 AFTER) | Decoded |
+  |------|-------------|---------------------|---------|
+  | 1 | 0x52 | `01 80 FF AA 55` | AT_Get_System_Info — system status |
+  | 2 | 0x52 | `01 80 FF AA 55` | (repeated) |
+  | 3 | 0x65 | `87 01 1A 02` | AT_Audio_Get_HPOUTgain — headphone out gain |
+  | 4 | **0x40** | **`02 00 00 00`** | **AT_Get_Current_Input_Source — value 2 = Analog** |
+  | 5 | 0x4B | `83 01 19 53 43 45 49 00 00 00 00 50 53 35` | AT_HdmiRX_Get_Cable_Connect — "SCEI" "PS5" |
+
+- **CRITICAL FINDING**: EGAVDS uses AT opcode **0x40** for `GetCurrentInputSource`, NOT 0x35 (which we tested in E112). Our earlier test used the wrong opcode!
+  - 0x40 = `AT_Get_Current_Input_Source` — returns actual audio input state (HDMI=1, Analog=2)
+  - 0x35 = `GetInputSource` (from our independent opcode catalog) — returns 0 always, appears to be a different/unused function
+  - Response byte 0 directly encodes the EGAVDS enum: 1=HDMI, 2=Analog
+- **EGAVDS init sequence via RTK_IO**:
+  1. `rtk_initialize()` → 0
+  2. `rtk_setUVCExtension(a1=2, ...)` — sets UVC extension unit node ID
+  3. `rtk_setCurrentDevice("A7SNB346101346")` — serial number of device
+  4. `rtk_openPort(...)` → 0
+  5. Series of `rtk_sendATCommand` calls (0x52, 0x65, 0x40, 0x4B)
+  6. `rtk_closePort(...)` / `rtk_uninitialize_ex()`
+- **SetAudioInputSelection crash**: The P/Invoke for EGAVDS_SetAudioInputSelection causes AccessViolationException when called through the shim. The shim's generic forwarding works for GET calls but the SET call's stack layout or calling convention differs. This doesn't block discovery — we just need to capture the SET traffic.
+- **Correction**: AT opcode 0x40 returns the SAME value (2) regardless of whether EGAVDS is in HDMI or Analog mode. It is NOT the audio input source — it is `AT_USB_Get_Host_Protocol` as our catalog said. The coincidence confused the initial analysis.
+- Conclusion: The GET response data during EGAVDS init was misleading — opcode 0x40 is USB Host Protocol, not audio input. The actual audio switching mechanism is via `rtk_sendI2CATCommand`, not `rtk_sendATCommand`.
+
+## E117 - BREAKTHROUGH: Full EGAVDS audio switch sequence captured via RTK_IO shim
+- Timestamp (UTC): 2026-03-13T01:00:00Z
+- Commit Hash: uncommitted
+- What Changed (single change): Fixed shim crash (was trying to dereference `a3` as byte count when it was a pointer), reran EGAVDS `SetAudioInputSelection(Analog)` with shim active. Captured complete traffic.
+- How To Run:
+  1. Build shim: `cl /LD /EHsc /O2 rtk_io_shim.cpp /Fe:RTK_IO_x64.dll /link /DEF:rtk_io_shim.def`
+  2. Deploy shim to EgavdsAudioProbe output dir (rename real → `RTK_IO_x64_real.dll`)
+  3. `EgavdsAudioProbe.exe --set analog` (or `--set hdmi`)
+  4. Read `rtk_io_shim.log`
+- **CRITICAL DISCOVERY: Audio switching uses `rtk_sendI2CATCommand`, NOT `rtk_sendATCommand`**:
+  - `rtk_sendATCommand` = UVC Extension Unit XU commands (what our NativeXu path uses)
+  - `rtk_sendI2CATCommand` = I2C-based AT commands (a DIFFERENT transport layer!)
+  - Both use AT command opcodes but over different USB transports
+  - Audio input switching goes through the I2C path exclusively
+- **`rtk_sendI2CATCommand` wire format**:
+  - `a1` = transport opcode: `0x1B` = I2C SET, `0x1C` = I2C GET
+  - `a3` = command buffer with format: `00 4A [01=SET|02=GET] 00 [AT_opcode] [value_bytes...]`
+  - `a4` = response buffer (zeroed before, filled after)
+  - Return value = response byte count
+- **Complete SET sequence for switching HDMI→Analog**:
+  1. I2C GET (0x1C): `00 4A 02 00 09 42` — read opcode 0x09 (ADC state?) → response `01`
+  2. I2C SET (0x1B): `00 4A 01 00 04 01` — **set opcode 0x04 = 1** (audio input = HDMI? routing config)
+  3. I2C GET (0x1C): `00 4A 02 00 03 A0` — read opcode 0x03 (validation?) → response `01`
+  4. I2C SET (0x1B): `00 4A 01 00 0E 01` — set opcode 0x0E = 1 (mixer/routing)
+  5. I2C SET (0x1B): `00 4A 01 00 10 01` — set opcode 0x10 = 1 (UAC volume gain?)
+  6. UVC AT (0x5B): `00 05 00 00` — opcode 0x5B with value 5 → response `01` (trigger commit?)
+  7. More I2C SET/GET calls with opcodes 0x04, 0x0E, 0x07, 0x0F, 0x10, 0x11 (multi-register sequence)
+  8. Final readback via UVC AT: 0x52 (system info), 0x51 (input source switch ack?), 0x65 (HP gain), 0x40 (USB host), 0x4B (cable connect)
+- **Key opcodes in the I2C AT buffer** (byte at position 4):
+  - 0x04 = audio routing/input select
+  - 0x09 = ADC state readback
+  - 0x0E = mixer source configuration
+  - 0x10 = UAC volume gain
+  - 0x03 = validation/status
+  - 0x07, 0x0F, 0x11 = additional routing registers
+- **AT opcode 0x40 is NOT audio input** — confirmed by direct test: AT 0x40 returns `02` regardless of HDMI or Analog mode. It is `AT_USB_Get_Host_Protocol` as our catalog maps.
+- Conclusion: Audio input switching on the 4K X requires I2C AT commands (`rtk_sendI2CATCommand`) which use a different USB transport than our existing UVC XU path. The switch is a multi-step sequence of ~10 I2C register writes/reads. To implement this natively, we need to either: (1) discover how `rtk_sendI2CATCommand` maps to USB control transfers (likely still UVC XU but with different selector/format), or (2) find if our existing `SetViaOutput` XU protocol can carry I2C AT frames with the `00 4A` prefix.
+
+## E-AudioSwitch - Disassembly + Pure C# Audio Input Switching
+- Timestamp (UTC): 2026-03-12T12:00:00Z
+- Branch: Stats
+
+### RTK_IO_x64.dll Disassembly (capstone)
+- `rtk_sendI2CATCommand` (RVA 0xC34D0): thin 10-instruction wrapper. Loads RTICE_SDK context object from global, shuffles args, calls `[vtable + 0x610]`. ALL logic is in RTICE_SDK, not RTK_IO.
+- `rtk_sendATCommand` (RVA 0xC3400): calls internal function at 0xCB570, checks magic 0x94B.
+- `rtk_openPort` (RVA 0xC3320): calls `[vtable + 0xE0]`.
+- RTK_IO is a dispatch shim — zero protocol logic.
+
+### EGAVDeviceSupport.dll Disassembly (capstone)
+- `SetAudioInputSelection` (RVA 0x2883 → thunks → 0x5D880):
+  - Validates device handle, loads RTICE_SDK context from `[rip + 0x108587]`
+  - Analog: `mov edx, 2` → HDMI: `mov edx, 1`
+  - Calls `[vtable + 0x150]` on RTICE_SDK device object
+  - This is a DIFFERENT vtable method from `rtk_sendI2CATCommand` (0x610) and `rtk_sendATCommand`
+  - EGAVDS does NOT use AT commands for audio switching — uses RBUS or vendor path
+
+### I2C AT wrapping via AT opcodes 0x1B/0x1C — DEAD END
+- Wrapping I2C frames `[00 4A ...]` inside AT commands with opcodes 0x1B/0x1C returns generic ACKs
+- Scanning ALL I2C opcodes 0x00-0x20 returns `01-00-00-00` for every single one
+- The firmware accepts the AT command but does not dispatch real I2C operations
+- Confirmed: this mechanism does not work
+
+### AT opcode diff: EGAVDS switch changes ZERO readable AT opcodes
+- Read 68 AT opcodes before EGAVDS SetAudioInputSelection(HDMI), then after SetAudioInputSelection(Analog)
+- Only AT 0x52 changed (buffer contamination with serial number string, not meaningful)
+- All audio-relevant opcodes (0x04, 0x35, 0x40, 0x74, 0x75) identical in both states
+- Confirms EGAVDS vtable[0x150] uses a non-AT mechanism (RBUS or direct register writes)
+
+### BREAKTHROUGH: AT SET 0x34 IS the correct input source control
+- `NativeXuAtCommandProvider.SetInputSourceAsync` sends AT SET with opcode 0x34
+- Sending `AT SET 0x34 = 1` changes multiple registers: 0x35 (0→1), 0x40 (2→0), 0x04 (2→0)
+- Stats panel in ElgatoCapture app correctly shows "analog" after the command
+- **HOWEVER**: sending AT 0x34 raw causes the USB device to disconnect/reconnect (Windows disconnect sound). The capture card resets.
+- Root cause hypothesis: AT 0x34 changes the audio routing while audio is actively streaming, causing the USB audio device to re-enumerate. Need to either:
+  1. Stop WASAPI capture before switching, then restart after
+  2. Send additional bracketing commands (ADC on/off via 0x08, DAC via 0x09)
+  3. Use the same timing/sequencing that EGAVDS's vtable[0x150] uses internally
+- The AT path and the RBUS path are two different ways to reach the same hardware — EGAVDS uses RBUS (stable), we use AT (causes reset). The difference is likely in how gracefully the transition is handled.
+
+## E-AUDIO-3 - USB Packet Capture: Elgato Studio Audio Switch Protocol Discovery
+- Timestamp (UTC): 2026-03-12T22:00:00Z
+- Branch: Stats
+
+### Discovery
+Used USBPcap6 + custom Python parser to capture ALL USB traffic during Elgato Studio audio input switch. Previous captures only looked at UVC class-specific transfers and found only telemetry polling. This time parsed ALL transfer types including vendor-specific and bulk/interrupt.
+
+### Key Finding: Three-Command Flash-Based Switch Sequence
+Elgato Studio sends exactly three AT commands to switch audio input, appearing ONLY at the switch moments (not in baseline polling):
+
+**Switch 1 (HDMI → Analog) at t≈3.7-3.9s:**
+```
+t=3.727  AT SET 0x5B (AT_GPIO_Set_Param)               raw=A10900005B000000000500F6
+t=3.875  AT SET 0x52 (AT_Flash_Get_CustomerProprietary) raw=A10600005200000007
+t=3.900  AT SET 0x51 (AT_Flash_Set_CustomerProprietary) raw=A1260000510000000180FFAA5500000000000000000000000000000000000000000000000000000069
+```
+
+**Switch 2 (Analog → HDMI) at t≈14.9-15.1s:**
+```
+t=14.969 AT SET 0x5B  raw=A10900005B000000000500F6
+t=15.090 AT SET 0x52  raw=A10600005200000007
+t=15.115 AT SET 0x51  raw=A1260000510000000080FFAA550000000000000000000000000000000000000000000000000000006A
+```
+
+### Protocol Details
+- **0x5B** (GPIO): data=`00 05 00` — preps hardware audio mux
+- **0x52** (Flash GET): no data — reads current flash proprietary state
+- **0x51** (Flash SET): 32-byte payload, byte 0 = source (0x00=HDMI, 0x01=Analog), bytes 1-4 = magic `80 FF AA 55`, bytes 5-31 = zeros
+
+### Implementation Result
+- All three AT commands execute successfully via `NativeXuAtCommandProvider.SwitchAudioInputAsync()`
+- Logs confirm: `NATIVEXU_SET_OK cmd=0x5B`, `NATIVEXU_SET_OK cmd=0x52`, `NATIVEXU_SET_OK cmd=0x51`
+- **However**: AT GET 0x35 (InputSource) telemetry still reports HDMI after sending Analog switch
+- Audio metering still shows signal on unconnected Analog port
+- Hypothesis: the 32-byte payload to 0x51 may need to be a read-modify-write (read via 0x52 response, modify byte 0, write back) rather than hardcoded. Elgato Studio reads 0x52 first before writing 0x51.
+
+### BREAKTHROUGH: Selector 4 I2C Register Writes
+The flash commands (0x5B/0x52/0x51) only persist the preference. The ACTUAL hardware audio
+reconfiguration is done via **14 I2C register writes** to audio codec at **I2C address 0x4A**,
+sent on **XU selector 4** (525-byte payloads) using AT opcodes 0x1C (I2C write) and 0x1B (I2C read).
+
+Both switch directions send the identical 14-command sequence. Only 4 register values differ:
+
+| # | Codec Reg | HDMI→Analog | Analog→HDMI | Meaning |
+|---|-----------|-------------|-------------|---------|
+| 8 | page2:0x0E | 0x18 | 0x98 | bit 7 = HDMI mixer select |
+| 9 | page2:0x0F | 0x18 | 0x98 | bit 7 = HDMI mixer select |
+|10 | page2:0x10 | 0x80 | 0x00 | bit 7 = Analog mixer select |
+|11 | page2:0x11 | 0x80 | 0x00 | bit 7 = Analog mixer select |
+
+The other 10 commands handle page select, status reads, unmute, and finalize — identical both ways.
+
+Full decoded sequence per switch:
+```
+I2C_WR 0x4A reg=0x0200 val=[09 42]   (page select / init)
+I2C_RD 0x4A reg=0x0100 val=[04 01 00] (read status)
+I2C_WR 0x4A reg=0x0200 val=[03 A0]   (mixer config)
+I2C_RD 0x4A reg=0x0100 val=[0E 01 00] (read reg 0E)
+I2C_RD 0x4A reg=0x0100 val=[10 01 00] (read reg 10)
+I2C_RD 0x4A reg=0x0100 val=[04 01 00] (read status)
+I2C_WR 0x4A reg=0x0200 val=[04 0E]   (unmute/prep)
+I2C_WR 0x4A reg=0x0200 val=[07 00]   (mixer enable)
+I2C_WR 0x4A reg=0x0200 val=[0E {18|98}] (INPUT-DEPENDENT)
+I2C_WR 0x4A reg=0x0200 val=[0F {18|98}] (INPUT-DEPENDENT)
+I2C_WR 0x4A reg=0x0200 val=[10 {80|00}] (INPUT-DEPENDENT)
+I2C_WR 0x4A reg=0x0200 val=[11 {80|00}] (INPUT-DEPENDENT)
+I2C_WR 0x4A reg=0x0200 val=[04 0E]   (finalize)
+I2C_WR 0x4A reg=0x0200 val=[07 00]   (finalize)
+```
+
+### Capture artifacts
+- `temp/elgato_audio_switch_7.pcap` — raw USBPcap capture (565K packets)
+- `temp/find-switch-commands.py` — AT opcode extraction with time-windowed analysis
+- `temp/decode-sel4-commands.py` — selector 4 I2C command decode
+- `temp/deep-switch-analysis.py` — full transaction log with selector 4 discovery
+- `temp/parse-all-transfers.py` — full USB traffic parser (all transfer types)

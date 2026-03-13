@@ -34,6 +34,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private bool _isMonitoringMuted;
     private bool _wasapiAudioCaptureFaulted;
     private string? _wasapiAudioCaptureFaultMessage;
+    private int _fatalCleanupInProgress;
     private UnifiedVideoCapture? _unifiedVideoCapture;
     private IPreviewFrameSink? _previewFrameSink;
     private RecordingContext? _recordingContext;
@@ -175,9 +176,34 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private void OnUnifiedVideoCaptureFatalError(object? sender, Exception ex)
     {
         Logger.Log($"UNIFIED_VIDEO_CAPTURE_FATAL type={ex.GetType().Name} msg={ex.Message}");
-        _sessionState = CaptureSessionState.Faulted;
-        StatusChanged?.Invoke(this, $"Video capture error: {ex.Message}");
-        ErrorOccurred?.Invoke(this, ex);
+        BeginFatalCaptureCleanup(ex);
+    }
+
+    private void BeginFatalCaptureCleanup(Exception ex)
+    {
+        if (Interlocked.Exchange(ref _fatalCleanupInProgress, 1) != 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await CleanupAsync(CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception cleanupEx)
+            {
+                Logger.Log($"Fatal capture cleanup warning: {cleanupEx.Message}");
+            }
+            finally
+            {
+                _sessionState = CaptureSessionState.Faulted;
+                StatusChanged?.Invoke(this, $"Video capture error: {ex.Message}");
+                ErrorOccurred?.Invoke(this, ex);
+                Interlocked.Exchange(ref _fatalCleanupInProgress, 0);
+            }
+        });
     }
 
     public RecordingStats GetRecordingStats()
@@ -724,6 +750,20 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceWidth = _latestSourceTelemetry.Width,
             SourceHeight = _latestSourceTelemetry.Height,
             SourceIsHdr = _latestSourceTelemetry.IsHdr,
+            SourceVideoFormat = _latestSourceTelemetry.VideoFormat,
+            SourceColorimetry = _latestSourceTelemetry.Colorimetry,
+            SourceQuantization = _latestSourceTelemetry.Quantization,
+            SourceHdrTransferFunction = _latestSourceTelemetry.HdrTransferFunction,
+            SourceHdrTransferCode = _latestSourceTelemetry.HdrTransferCode,
+            SourceFirmware = _latestSourceTelemetry.Firmware,
+            SourceAudioFormat = _latestSourceTelemetry.AudioFormat,
+            SourceAudioSampleRate = _latestSourceTelemetry.AudioSampleRate,
+            SourceInputSource = _latestSourceTelemetry.InputSource,
+            SourceUsbHostProtocol = _latestSourceTelemetry.UsbHostProtocol,
+            SourceHdcpMode = _latestSourceTelemetry.HdcpMode,
+            SourceHdcpVersion = _latestSourceTelemetry.HdcpVersion,
+            SourceRxTxHdcpVersion = _latestSourceTelemetry.RxTxHdcpVersion,
+            SourceRawTimingHex = _latestSourceTelemetry.RawTimingHex,
             RecordingBackend = _isRecording ? "LibAv" : "None",
             AudioPathMode = requestedSettings?.AudioPathMode.ToString() ?? "None",
             MuxAttempted = muxAttempted,
@@ -736,6 +776,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceTelemetryOriginDetail = _latestSourceTelemetry.OriginDetail,
             SourceTelemetryConfidence = _latestSourceTelemetry.Confidence.ToString(),
             SourceTelemetryDiagnosticSummary = _latestSourceTelemetry.DiagnosticSummary,
+            SourceTelemetryDetails = _latestSourceTelemetry.DetailEntries,
             SourceTelemetryTimestampUtc = sourceTelemetryTimestampUtc,
             SourceTelemetryAgeSeconds = sourceTelemetryAgeSeconds,
             SourceTelemetryBackend = sourceTelemetryBackend,
@@ -1049,6 +1090,21 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceFrameRateExact = _latestSourceTelemetry.FrameRateExact,
             SourceFrameRateArg = _latestSourceTelemetry.FrameRateArg,
             SourceIsHdr = _latestSourceTelemetry.IsHdr,
+            SourceVideoFormat = _latestSourceTelemetry.VideoFormat,
+            SourceColorimetry = _latestSourceTelemetry.Colorimetry,
+            SourceQuantization = _latestSourceTelemetry.Quantization,
+            SourceHdrTransferFunction = _latestSourceTelemetry.HdrTransferFunction,
+            SourceHdrTransferCode = _latestSourceTelemetry.HdrTransferCode,
+            SourceFirmware = _latestSourceTelemetry.Firmware,
+            SourceAudioFormat = _latestSourceTelemetry.AudioFormat,
+            SourceAudioSampleRate = _latestSourceTelemetry.AudioSampleRate,
+            SourceInputSource = _latestSourceTelemetry.InputSource,
+            SourceUsbHostProtocol = _latestSourceTelemetry.UsbHostProtocol,
+            SourceHdcpMode = _latestSourceTelemetry.HdcpMode,
+            SourceHdcpVersion = _latestSourceTelemetry.HdcpVersion,
+            SourceRxTxHdcpVersion = _latestSourceTelemetry.RxTxHdcpVersion,
+            SourceRawTimingHex = _latestSourceTelemetry.RawTimingHex,
+            SourceTelemetryDetails = _latestSourceTelemetry.DetailEntries,
             SourceTelemetryBackend = ResolveSourceTelemetryBackend(_latestSourceTelemetry),
             SourceTelemetrySuppressedReason = sourceTelemetrySuppressedReason,
             SourceTelemetrySuppressed = sourceTelemetrySuppressed,
@@ -2205,6 +2261,23 @@ public class CaptureService : IDisposable, IAsyncDisposable
             Confidence = telemetry.Confidence == SourceTelemetryConfidence.Unknown
                 ? fallback.Confidence
                 : telemetry.Confidence,
+            VideoFormat = telemetry.VideoFormat ?? fallback.VideoFormat,
+            Colorimetry = telemetry.Colorimetry ?? fallback.Colorimetry,
+            Quantization = telemetry.Quantization ?? fallback.Quantization,
+            HdrTransferFunction = telemetry.HdrTransferFunction ?? fallback.HdrTransferFunction,
+            HdrTransferCode = telemetry.HdrTransferCode ?? fallback.HdrTransferCode,
+            Firmware = telemetry.Firmware ?? fallback.Firmware,
+            AudioFormat = telemetry.AudioFormat ?? fallback.AudioFormat,
+            AudioSampleRate = telemetry.AudioSampleRate ?? fallback.AudioSampleRate,
+            InputSource = telemetry.InputSource ?? fallback.InputSource,
+            UsbHostProtocol = telemetry.UsbHostProtocol ?? fallback.UsbHostProtocol,
+            HdcpMode = telemetry.HdcpMode ?? fallback.HdcpMode,
+            HdcpVersion = telemetry.HdcpVersion ?? fallback.HdcpVersion,
+            RxTxHdcpVersion = telemetry.RxTxHdcpVersion ?? fallback.RxTxHdcpVersion,
+            RawTimingHex = telemetry.RawTimingHex ?? fallback.RawTimingHex,
+            DetailEntries = telemetry.DetailEntries.Count > 0
+                ? telemetry.DetailEntries
+                : fallback.DetailEntries,
             DiagnosticSummary = string.IsNullOrWhiteSpace(telemetry.DiagnosticSummary)
                 ? fallback.DiagnosticSummary
                 : telemetry.DiagnosticSummary

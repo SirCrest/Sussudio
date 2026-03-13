@@ -864,6 +864,51 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
     }
 
+    private void EnsureDeviceAudioModeSelection()
+    {
+        if (ViewModel.AvailableDeviceAudioModes.Count == 0)
+        {
+            return;
+        }
+
+        var selectedMode = ViewModel.SelectedDeviceAudioMode;
+        var matchingMode = ViewModel.AvailableDeviceAudioModes.FirstOrDefault(mode =>
+            string.Equals(mode, selectedMode, StringComparison.OrdinalIgnoreCase))
+            ?? ViewModel.AvailableDeviceAudioModes.FirstOrDefault();
+        if (matchingMode == null)
+        {
+            return;
+        }
+
+        if (!string.Equals(ViewModel.SelectedDeviceAudioMode, matchingMode, StringComparison.OrdinalIgnoreCase))
+        {
+            ViewModel.SelectedDeviceAudioMode = matchingMode;
+        }
+
+        var shouldBeOn = string.Equals(matchingMode, "Analog", StringComparison.OrdinalIgnoreCase);
+        if (DeviceAudioModeToggle.IsOn != shouldBeOn)
+        {
+            DeviceAudioModeToggle.IsOn = shouldBeOn;
+        }
+    }
+
+    private void ApplyDeviceAudioControlState()
+    {
+        DeviceAudioControlPanel.Visibility = ViewModel.IsDeviceAudioControlSupported ? Visibility.Visible : Visibility.Collapsed;
+        EnsureDeviceAudioModeSelection();
+
+        var analogGain = Math.Clamp(ViewModel.AnalogAudioGainPercent, 0.0, 100.0);
+        if (Math.Abs(AnalogAudioGainSlider.Value - analogGain) > 0.1)
+        {
+            AnalogAudioGainSlider.Value = analogGain;
+        }
+
+        AnalogAudioGainValueTextBlock.Text = $"{(int)Math.Round(analogGain)}%";
+        var analogModeActive = string.Equals(ViewModel.SelectedDeviceAudioMode, "Analog", StringComparison.OrdinalIgnoreCase);
+        AnalogAudioGainPanel.Visibility = ViewModel.IsDeviceAudioControlSupported ? Visibility.Visible : Visibility.Collapsed;
+        AnalogAudioGainSlider.IsEnabled = ViewModel.IsDeviceAudioControlSupported && analogModeActive && !ViewModel.IsRecording;
+    }
+
     private void EnsureResolutionSelection()
     {
         if (ViewModel.AvailableResolutions.Count == 0)
@@ -1279,6 +1324,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioInputComboBox.Visibility = customAudioVisible;
         AudioInputComboBox.SelectedItem = ViewModel.SelectedAudioInputDevice;
         AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+        ApplyDeviceAudioControlState();
         FormatComboBox.SelectedItem = ViewModel.SelectedRecordingFormat;
         QualityComboBox.SelectedItem = ViewModel.SelectedQuality;
         PresetComboBox.SelectedItem = ViewModel.SelectedPreset;
@@ -1302,6 +1348,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         UpdateFpsTelemetryTooltip();
         EnsureDeviceSelection();
         EnsureAudioInputSelection();
+        EnsureDeviceAudioModeSelection();
         EnsureResolutionSelection();
         EnsureFrameRateSelection();
         EnsureFormatSelection();
@@ -1326,6 +1373,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 device != ViewModel.SelectedAudioInputDevice)
             {
                 ViewModel.SelectedAudioInputDevice = device;
+            }
+        };
+
+        DeviceAudioModeToggle.Toggled += (s, e) =>
+        {
+            var mode = DeviceAudioModeToggle.IsOn ? "Analog" : "HDMI";
+            if (!string.Equals(mode, ViewModel.SelectedDeviceAudioMode, StringComparison.OrdinalIgnoreCase))
+            {
+                ViewModel.SelectedDeviceAudioMode = mode;
             }
         };
 
@@ -1409,7 +1465,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 ViewModel.CustomBitrateMbps = CustomBitrateNumberBox.Value;
             }
         };
-
         HdrToggle.Click += (s, e) => ViewModel.IsHdrEnabled = HdrToggle.IsChecked == true;
         TrueHdrPreviewToggle.Click += (s, e) =>
             ViewModel.IsTrueHdrPreviewEnabled = TrueHdrPreviewToggle.IsChecked == true;
@@ -1421,6 +1476,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         StatsToggle.Unchecked += StatsToggle_Unchecked;
         CustomAudioToggle.Toggled += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsOn;
         ShowAllCaptureOptionsToggle.Toggled += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsOn;
+        AnalogAudioGainSlider.ValueChanged += (s, e) =>
+        {
+            ViewModel.AnalogAudioGainPercent = e.NewValue;
+            AnalogAudioGainValueTextBlock.Text = $"{(int)Math.Round(e.NewValue)}%";
+        };
         AudioMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
         ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
         CaptureSettingsGrid.SizeChanged += CaptureSettingsGrid_SizeChanged;
@@ -1557,7 +1617,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         if (!collapsing && ReferenceEquals(content, Diagnostics_Content))
         {
-            UpdateDiagnosticsSection(GetStatsSnapshot().DiagnosticSummary);
+            var snapshot = GetStatsSnapshot();
+            UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
         }
     }
 
@@ -2267,16 +2328,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var sourceFrameRate = snapshot.SourceFrameRateExact.HasValue
             ? $"{snapshot.SourceFrameRateExact.Value:0.##} fps"
             : "\u2014";
-        var sourceHdr = snapshot.SourceIsHdr switch
-        {
-            true => "On",
-            false => "Off",
-            _ => "\u2014"
-        };
-        var sourceFormat =
-            snapshot.ReaderSourceSubtype ??
-            snapshot.NegotiatedPixelFormat ??
-            "\u2014";
+        var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);
+        var sourceFormat = snapshot.SourceVideoFormat ?? "\u2014";
         var telemetryOrigin = snapshot.TelemetryOrigin is not null and not "Unknown"
             ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
             : "\u2014";
@@ -2304,7 +2357,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         SetTextIfChanged(Stats_RendererRenderedValue, rendererRendered);
         SetTextIfChanged(Stats_RendererDroppedValue, rendererDropped);
         SetTextIfChanged(Stats_PerfScoreValue, perfScore);
-        UpdateDiagnosticsSection(snapshot.DiagnosticSummary);
+        UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
         UpdateDecodeSection();
         UpdateGpuSection();
     }
@@ -2393,6 +2446,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var sourceDropPercent = Sanitize(health.CaptureCadenceEstimatedDropPercent);
         var previewSlowPercent = Sanitize(presentCadence?.SlowFramePercent ?? 0);
         var performanceScore = Math.Clamp(100.0 - sourceDropPercent - previewSlowPercent, 0.0, 100.0);
+        var telemetryDetails = new List<SourceTelemetryDetailEntry>(health.SourceTelemetryDetails);
+        var captureCardFormat = health.ReaderSourceSubtype ?? health.NegotiatedPixelFormat;
+        if (!string.IsNullOrWhiteSpace(captureCardFormat))
+        {
+            telemetryDetails.Add(new SourceTelemetryDetailEntry("Capture Card / UVC", "Capture Format", captureCardFormat));
+        }
 
         return new StatsSnapshot(
             SourceCadenceSamples: health.CaptureCadenceSampleCount,
@@ -2424,28 +2483,44 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             SourceHeight: health.SourceHeight,
             SourceFrameRateExact: health.SourceFrameRateExact,
             SourceIsHdr: health.SourceIsHdr,
+            SourceVideoFormat: health.SourceVideoFormat,
+            SourceColorimetry: health.SourceColorimetry,
             ReaderSourceSubtype: health.ReaderSourceSubtype,
             NegotiatedPixelFormat: health.NegotiatedPixelFormat,
             TelemetryOrigin: health.SourceTelemetryOrigin.ToString(),
             TelemetryConfidence: health.SourceTelemetryConfidence.ToString(),
+            SourceTelemetryDetails: telemetryDetails,
             DiagnosticSummary: health.SourceTelemetryDiagnosticSummary);
     }
 
-    private void UpdateDiagnosticsSection(string? diagnosticSummary)
+    private void UpdateDiagnosticsSection(IReadOnlyList<SourceTelemetryDetailEntry> telemetryDetails, string? diagnosticSummary)
     {
         if (Diagnostics_Content.Visibility != Visibility.Visible)
         {
             return;
         }
 
-        var currentTag = Diagnostics_Content.Tag as string;
-        if (currentTag == diagnosticSummary && Diagnostics_Content.Children.Count > 0)
+        Diagnostics_Content.Children.Clear();
+
+        if (telemetryDetails.Count > 0)
         {
+            var currentGroup = string.Empty;
+            var alt = true;
+            foreach (var detail in telemetryDetails)
+            {
+                if (!string.Equals(currentGroup, detail.Group, StringComparison.Ordinal))
+                {
+                    currentGroup = detail.Group;
+                    Diagnostics_Content.Children.Add(CreateDiagnosticGroupHeader(currentGroup));
+                    alt = true;
+                }
+
+                Diagnostics_Content.Children.Add(CreateDiagnosticRow(detail.Label, detail.DisplayValue, alt));
+                alt = !alt;
+            }
+
             return;
         }
-
-        Diagnostics_Content.Tag = diagnosticSummary;
-        Diagnostics_Content.Children.Clear();
 
         if (string.IsNullOrWhiteSpace(diagnosticSummary))
         {
@@ -2459,13 +2534,23 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
 
         var entries = ParseDiagnosticSummary(diagnosticSummary);
-        var alt = true;
+        var fallbackAlt = true;
         foreach (var (label, value) in entries)
         {
-            var row = CreateDiagnosticRow(label, value, alt);
+            var row = CreateDiagnosticRow(label, value, fallbackAlt);
             Diagnostics_Content.Children.Add(row);
-            alt = !alt;
+            fallbackAlt = !fallbackAlt;
         }
+    }
+
+    private TextBlock CreateDiagnosticGroupHeader(string title)
+    {
+        return new TextBlock
+        {
+            Text = title,
+            Margin = new Thickness(0, 8, 0, 2),
+            Style = (Style)StatsDockPanel.Resources["DockStatsSectionHeaderStyle"]
+        };
     }
 
     private static List<(string Label, string Value)> ParseDiagnosticSummary(string summary)
@@ -2578,6 +2663,17 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private static string FormatFps(double value)
     {
         return Sanitize(value).ToString("0.00");
+    }
+
+    private static string FormatSourceHdr(bool? isHdr, string? colorimetry)
+    {
+        return isHdr switch
+        {
+            true when !string.IsNullOrWhiteSpace(colorimetry) => $"On ({colorimetry})",
+            true => "On",
+            false => "Off",
+            _ => "\u2014"
+        };
     }
 
     private static string FormatMs(double value)
@@ -2935,6 +3031,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 AudioRecordToggle.IsEnabled = !ViewModel.IsRecording;
                 CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+                DeviceAudioModeToggle.IsEnabled = ViewModel.IsDeviceAudioControlSupported && !ViewModel.IsRecording;
+                AnalogAudioGainSlider.IsEnabled = ViewModel.IsDeviceAudioControlSupported &&
+                                                  string.Equals(ViewModel.SelectedDeviceAudioMode, "Analog", StringComparison.OrdinalIgnoreCase) &&
+                                                  !ViewModel.IsRecording;
                 HdrToggle.IsEnabled = ViewModel.IsHdrAvailable &&
                                       !ViewModel.IsRecording &&
                                       ViewModel.SourceIsHdr != false;
@@ -3073,6 +3173,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 AudioInputLabel.Visibility = isVisible;
                 AudioInputComboBox.Visibility = isVisible;
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+                break;
+
+            case nameof(MainViewModel.IsDeviceAudioControlSupported):
+            case nameof(MainViewModel.SelectedDeviceAudioMode):
+            case nameof(MainViewModel.AnalogAudioGainPercent):
+            case nameof(MainViewModel.AvailableDeviceAudioModes):
+                ApplyDeviceAudioControlState();
                 break;
 
             case nameof(MainViewModel.ShowAllCaptureOptions):

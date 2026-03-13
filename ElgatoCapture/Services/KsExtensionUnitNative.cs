@@ -395,6 +395,54 @@ internal static class KsExtensionUnitNative
         return false;
     }
 
+    /// <summary>
+    /// Alternative XU SET that appends data to KSP_NODE in the input buffer.
+    /// Standard UVC SET_CUR typically uses this layout.
+    /// </summary>
+    internal static bool TryXuSetViaInput(
+        SafeFileHandle handle,
+        int nodeId,
+        Guid propertySet,
+        int selector,
+        byte[] valueData,
+        out int? win32Code)
+    {
+        win32Code = null;
+
+        var request = new KSP_NODE
+        {
+            Property = new KSPROPERTY
+            {
+                Set = propertySet,
+                Id = (uint)selector,
+                Flags = KsPropertyTypeSet | KsPropertyTypeTopology
+            },
+            NodeId = (uint)nodeId,
+            Reserved = 0
+        };
+
+        var headerBytes = StructureToBytes(request);
+        var input = new byte[headerBytes.Length + valueData.Length];
+        Array.Copy(headerBytes, input, headerBytes.Length);
+        Array.Copy(valueData, 0, input, headerBytes.Length, valueData.Length);
+
+        if (DeviceIoControl(
+                handle,
+                IoctlKsProperty,
+                input,
+                input.Length,
+                Array.Empty<byte>(),
+                0,
+                out _,
+                IntPtr.Zero))
+        {
+            return true;
+        }
+
+        win32Code = Marshal.GetLastWin32Error();
+        return false;
+    }
+
     private static byte[] StructureToBytes<T>(T value)
         where T : unmanaged
     {
