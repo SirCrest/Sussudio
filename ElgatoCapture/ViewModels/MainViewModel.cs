@@ -271,15 +271,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     [ObservableProperty]
     public partial ObservableCollection<string> AvailableDeviceAudioModes { get; set; } = new()
     {
-        "HDMI",
-        "Analog"
+        DeviceAudioMode.Hdmi,
+        DeviceAudioMode.Analog
     };
 
     [ObservableProperty]
     public partial bool IsDeviceAudioControlSupported { get; set; }
 
     [ObservableProperty]
-    public partial string SelectedDeviceAudioMode { get; set; } = "HDMI";
+    public partial string SelectedDeviceAudioMode { get; set; } = DeviceAudioMode.Hdmi;
 
     [ObservableProperty]
     public partial double AnalogAudioGainPercent { get; set; } = 50;
@@ -3484,7 +3484,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             return;
         }
 
-        if (!string.Equals(SelectedDeviceAudioMode, "Analog", StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(SelectedDeviceAudioMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase))
         {
             SaveSettings();
             return;
@@ -3597,17 +3597,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         var device = SelectedDevice;
         if (device == null)
         {
-            _isRefreshingDeviceAudioControls = true;
-            try
+            WithAudioControlRefreshSuppressed(() =>
             {
                 IsDeviceAudioControlSupported = false;
-                SelectedDeviceAudioMode = "HDMI";
+                SelectedDeviceAudioMode = DeviceAudioMode.Hdmi;
                 AnalogAudioGainPercent = 50;
-            }
-            finally
-            {
-                _isRefreshingDeviceAudioControls = false;
-            }
+            });
 
             return;
         }
@@ -3616,20 +3611,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         // even if the payload-mutation service can't read selector 3.
         if (NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out _, out _))
         {
-            _isRefreshingDeviceAudioControls = true;
-            try
-            {
-                IsDeviceAudioControlSupported = true;
-            }
-            finally
-            {
-                _isRefreshingDeviceAudioControls = false;
-            }
+            WithAudioControlRefreshSuppressed(() => IsDeviceAudioControlSupported = true);
         }
 
         var state = await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
-        _isRefreshingDeviceAudioControls = true;
-        try
+        WithAudioControlRefreshSuppressed(() =>
         {
             IsDeviceAudioControlSupported = state.IsSupported;
             if (state.IsSupported)
@@ -3645,11 +3631,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 SelectedDeviceAudioMode = NormalizeDeviceAudioMode(_pendingSavedDeviceAudioMode ?? SelectedDeviceAudioMode);
                 AnalogAudioGainPercent = Math.Clamp(_pendingSavedAnalogAudioGainPercent ?? AnalogAudioGainPercent, 0.0, 100.0);
             }
-        }
-        finally
-        {
-            _isRefreshingDeviceAudioControls = false;
-        }
+        });
 
         if (!applySavedState || !state.IsSupported)
         {
@@ -3667,17 +3649,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         Logger.Log($"NATIVEXU_AUDIO_RESTORE_READ_ONLY desired='{desiredMode}' device='{state.Mode}'");
 
         var refreshedState = await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
-        _isRefreshingDeviceAudioControls = true;
-        try
+        WithAudioControlRefreshSuppressed(() =>
         {
             IsDeviceAudioControlSupported = refreshedState.IsSupported;
             SelectedDeviceAudioMode = NormalizeDeviceAudioMode(refreshedState.Mode ?? desiredMode);
             AnalogAudioGainPercent = Math.Clamp(refreshedState.AnalogGainPercent ?? desiredGain, 0.0, 100.0);
-        }
-        finally
-        {
-            _isRefreshingDeviceAudioControls = false;
-        }
+        });
     }
 
     private async Task ApplyDeviceAudioModeAsync(
@@ -3699,7 +3676,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         // Use the same three-command flash-based sequence that Elgato Studio uses:
         // GPIO prep (0x5B) → Flash read (0x52) → Flash write (0x51).
         // This is seamless — no USB re-enumeration, no preview interruption.
-        var isAnalog = string.Equals(mode, "Analog", StringComparison.OrdinalIgnoreCase);
+        var isAnalog = string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase);
         var gainByte = MapPercentToGainByte(AnalogAudioGainPercent);
         var applied = await NativeXuAtCommandProvider.SwitchAudioInputAsync(device, isAnalog, gainByte).ConfigureAwait(false);
 
@@ -3707,27 +3684,24 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             // Still read state for diagnostics even on failure
             await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
+            // Revert the UI toggle — hardware is still on the previous mode.
+            // Selector 3 read-back doesn't reflect I2C state, so just flip back.
+            var revertMode = string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase) ? DeviceAudioMode.Hdmi : DeviceAudioMode.Analog;
+            WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = revertMode);
+
             StatusText = $"Device audio mode change failed ({mode})";
             return;
         }
 
         StatusText = $"Device audio mode set to {mode}";
-        if (reapplyAnalogGain && string.Equals(mode, "Analog", StringComparison.OrdinalIgnoreCase))
+        if (reapplyAnalogGain && string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase))
         {
             await ApplyAnalogAudioGainAsync("analog gain after mode switch", AnalogAudioGainPercent, persistSettings: false).ConfigureAwait(false);
         }
 
         // Trust the mode we just set — don't read back from the old selector 3 service,
         // which doesn't reflect the new AT+I2C switch mechanism.
-        _isRefreshingDeviceAudioControls = true;
-        try
-        {
-            SelectedDeviceAudioMode = mode;
-        }
-        finally
-        {
-            _isRefreshingDeviceAudioControls = false;
-        }
+        WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = mode);
 
         if (persistSettings)
         {
@@ -3762,15 +3736,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         StatusText = $"Analog audio gain set to {gainPercent:0}%";
-        _isRefreshingDeviceAudioControls = true;
-        try
-        {
-            AnalogAudioGainPercent = gainPercent;
-        }
-        finally
-        {
-            _isRefreshingDeviceAudioControls = false;
-        }
+        WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = gainPercent);
 
         // Debounce flash persistence: cancel any pending write, schedule a new one after 300ms
         _gainFlashDebounceCts?.Cancel();
@@ -3798,12 +3764,19 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
+    private void WithAudioControlRefreshSuppressed(Action action)
+    {
+        _isRefreshingDeviceAudioControls = true;
+        try { action(); }
+        finally { _isRefreshingDeviceAudioControls = false; }
+    }
+
     private string NormalizeDeviceAudioMode(string? mode)
-        => string.Equals(mode, "Analog", StringComparison.OrdinalIgnoreCase) ? "Analog" : "HDMI";
+        => string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase) ? DeviceAudioMode.Analog : DeviceAudioMode.Hdmi;
 
     private async Task<bool> TryApplyAtDeviceAudioModeAsync(CaptureDevice device, string mode)
     {
-        var analogMode = string.Equals(mode, "Analog", StringComparison.OrdinalIgnoreCase);
+        var analogMode = string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase);
         var desiredSource = analogMode ? 1 : 0;
 
         // Read current input source to avoid redundant firmware switches
@@ -4804,6 +4777,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             return;
         }
 
+        _gainFlashDebounceCts?.Cancel();
+        _gainFlashDebounceCts?.Dispose();
         _timer?.Stop();
         _deviceService.FormatProbeCompleted -= OnDeviceFormatProbeCompleted;
         _captureService.StatusChanged -= OnCaptureStatusChanged;

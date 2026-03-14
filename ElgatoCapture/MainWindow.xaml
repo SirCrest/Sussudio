@@ -34,17 +34,17 @@
                 </DoubleAnimation>
             </Storyboard>
         </Grid.Resources>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition x:Name="StatsDockColumn" Width="Auto"/>
+        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- Row 0: Preview Area + Settings Overlay -->
-        <Grid Grid.Row="0" ColumnSpacing="0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition x:Name="StatsDockColumn" Width="Auto"/>
-            </Grid.ColumnDefinitions>
+        <Grid Grid.Row="0" Grid.Column="0" ColumnSpacing="0">
             <!-- Composition DropShadow — behind PreviewBorder, casts onto app background -->
             <Border x:Name="VideoShadowHost" Grid.Column="0"
                     Background="Transparent"
@@ -146,13 +146,16 @@
                 </Grid>
             </Border>
 
-            <!-- Stats Dock Panel (keep layout/names in sync with StatsWindow.xaml while StatsSnapshot remains there) -->
-            <Border x:Name="StatsDockPanel"
-                    Grid.Column="1"
-                    Visibility="Collapsed"
-                    Width="0"
-                    MaxWidth="300"
-                    Margin="8,8,12,0"
+        </Grid>
+
+        <!-- Stats Dock Panel — full-height right column, outside preview grid -->
+        <Border x:Name="StatsDockPanel"
+                Grid.Column="1"
+                Grid.RowSpan="2"
+                Visibility="Collapsed"
+                Width="0"
+                MaxWidth="300"
+                Margin="0,8,12,16"
                     Padding="12"
                     BorderThickness="0"
                     CornerRadius="8">
@@ -269,6 +272,28 @@
                                     </Grid.ColumnDefinitions>
                                     <TextBlock Text="Telemetry" Style="{StaticResource DockStatsLabelStyle}" />
                                     <TextBlock x:Name="Stats_TelemetryOriginValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="ADC" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_AdcOnOffValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Analog Gain" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_AdcGainValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
                             </StackPanel>
@@ -563,12 +588,10 @@
                 </ScrollViewer>
             </Border>
 
-        </Grid>
-
         <!-- Settings Overlay Panel (anchored above control bar) -->
         <Border x:Name="SettingsOverlayPanel"
                 Grid.Row="0"
-                Grid.ColumnSpan="2"
+                Grid.Column="0"
                 Visibility="Collapsed"
                 HorizontalAlignment="Stretch"
                 VerticalAlignment="Bottom"
@@ -661,7 +684,7 @@
                         </Grid>
                     </StackPanel>
 
-                    <StackPanel Spacing="2">
+                    <StackPanel Spacing="2" MinWidth="260">
                         <TextBlock Text="Audio Input"
                                    Style="{StaticResource SecondaryLabelStyle}"/>
                         <StackPanel Spacing="6">
@@ -715,7 +738,14 @@
                                             Minimum="0"
                                             Maximum="100"
                                             StepFrequency="1"
-                                            TickFrequency="10"/>
+                                            TickFrequency="10">
+                                        <Slider.Resources>
+                                            <Style TargetType="ToolTip">
+                                                <Setter Property="Opacity" Value="0"/>
+                                                <Setter Property="IsHitTestVisible" Value="False"/>
+                                            </Style>
+                                        </Slider.Resources>
+                                    </Slider>
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
@@ -855,10 +885,10 @@
         </Border>
 
         <!-- Row 1: Two-Tier Control Bar -->
-        <Border x:Name="ControlBarShadowHost" Grid.Row="1"
+        <Border x:Name="ControlBarShadowHost" Grid.Row="1" Grid.Column="0"
                 Background="Transparent"
                 IsHitTestVisible="False"/>
-        <Border x:Name="ControlBarBorder" Grid.Row="1"
+        <Border x:Name="ControlBarBorder" Grid.Row="1" Grid.Column="0"
                 Margin="16,8,16,16"
                 BorderBrush="#10FFFFFF" BorderThickness="1"
                 CornerRadius="12" Padding="16,12">
@@ -1245,7 +1275,7 @@
         </Border>
 
         <!-- Startup Splash Overlay -->
-        <Grid x:Name="SplashOverlay" Grid.RowSpan="2"
+        <Grid x:Name="SplashOverlay" Grid.RowSpan="2" Grid.ColumnSpan="2"
               Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
               RenderTransformOrigin="0.5,0.5">
             <Grid.RenderTransform>

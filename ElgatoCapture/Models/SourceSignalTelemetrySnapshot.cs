@@ -42,6 +42,19 @@ public enum SourceAudioInputMode
     Analog
 }
 
+public static class DeviceAudioMode
+{
+    public const string Hdmi = "HDMI";
+    public const string Analog = "Analog";
+}
+
+public static class TelemetryLabels
+{
+    public const string GroupAudioInput = "Audio / Input";
+    public const string AdcAnalog = "ADC (Analog)";
+    public const string AnalogGain = "Analog Gain";
+}
+
 public sealed record SourceTelemetryDetailEntry(
     string Group,
     string Label,

@@ -885,7 +885,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ViewModel.SelectedDeviceAudioMode = matchingMode;
         }
 
-        var shouldBeOn = string.Equals(matchingMode, "Analog", StringComparison.OrdinalIgnoreCase);
+        var shouldBeOn = string.Equals(matchingMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase);
         if (DeviceAudioModeToggle.IsOn != shouldBeOn)
         {
             DeviceAudioModeToggle.IsOn = shouldBeOn;
@@ -904,7 +904,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
 
         AnalogAudioGainValueTextBlock.Text = $"{(int)Math.Round(analogGain)}%";
-        var analogModeActive = string.Equals(ViewModel.SelectedDeviceAudioMode, "Analog", StringComparison.OrdinalIgnoreCase);
+        var analogModeActive = string.Equals(ViewModel.SelectedDeviceAudioMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase);
         AnalogAudioGainPanel.Visibility = ViewModel.IsDeviceAudioControlSupported ? Visibility.Visible : Visibility.Collapsed;
         AnalogAudioGainSlider.IsEnabled = ViewModel.IsDeviceAudioControlSupported && analogModeActive && !ViewModel.IsRecording;
     }
@@ -1378,7 +1378,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         DeviceAudioModeToggle.Toggled += (s, e) =>
         {
-            var mode = DeviceAudioModeToggle.IsOn ? "Analog" : "HDMI";
+            var mode = DeviceAudioModeToggle.IsOn ? DeviceAudioMode.Analog : DeviceAudioMode.Hdmi;
             if (!string.Equals(mode, ViewModel.SelectedDeviceAudioMode, StringComparison.OrdinalIgnoreCase))
             {
                 ViewModel.SelectedDeviceAudioMode = mode;
@@ -2334,12 +2334,25 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             ? $"{snapshot.TelemetryOrigin} ({snapshot.TelemetryConfidence ?? "?"})"
             : "\u2014";
 
+        var adcOnOff = "\u2014";
+        var adcGain = "\u2014";
+        if (snapshot.SourceTelemetryDetails is { } details)
+        {
+            foreach (var d in details)
+            {
+                if (d.Label == TelemetryLabels.AdcAnalog) adcOnOff = d.DisplayValue;
+                else if (d.Label == TelemetryLabels.AnalogGain) adcGain = d.DisplayValue;
+            }
+        }
+
         SetTextIfChanged(Stats_SessionStateValue, sessionState);
         SetTextIfChanged(Stats_SourceResolutionValue, sourceResolution);
         SetTextIfChanged(Stats_SourceFrameRateValue, sourceFrameRate);
         SetTextIfChanged(Stats_SourceHdrValue, sourceHdr);
         SetTextIfChanged(Stats_SourceFormatValue, sourceFormat);
         SetTextIfChanged(Stats_TelemetryOriginValue, telemetryOrigin);
+        SetTextIfChanged(Stats_AdcOnOffValue, adcOnOff);
+        SetTextIfChanged(Stats_AdcGainValue, adcGain);
         SetTextIfChanged(Stats_SourceFpsValue, sourceFps);
         SetTextIfChanged(Stats_SourceExpectedFpsValue, sourceExpectedFps);
         SetTextIfChanged(Stats_SourceAvgValue, sourceAvg);
@@ -3033,7 +3046,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
                 DeviceAudioModeToggle.IsEnabled = ViewModel.IsDeviceAudioControlSupported && !ViewModel.IsRecording;
                 AnalogAudioGainSlider.IsEnabled = ViewModel.IsDeviceAudioControlSupported &&
-                                                  string.Equals(ViewModel.SelectedDeviceAudioMode, "Analog", StringComparison.OrdinalIgnoreCase) &&
+                                                  string.Equals(ViewModel.SelectedDeviceAudioMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase) &&
                                                   !ViewModel.IsRecording;
                 HdrToggle.IsEnabled = ViewModel.IsHdrAvailable &&
                                       !ViewModel.IsRecording &&

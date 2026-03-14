@@ -382,7 +382,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         byte gainByte = 0xFF,
         CancellationToken ct = default)
     {
-        var sourceLabel = analog ? "Analog" : "HDMI";
+        var sourceLabel = analog ? DeviceAudioMode.Analog : DeviceAudioMode.Hdmi;
         Logger.Log($"NATIVEXU_SWITCH_AUDIO begin source={sourceLabel} gain=0x{gainByte:X2}");
 
         if (device == null || string.IsNullOrWhiteSpace(device.Id))
@@ -473,7 +473,8 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         bool persistFlash = true,
         CancellationToken ct = default)
     {
-        Logger.Log($"NATIVEXU_SET_GAIN begin gain=0x{gainByte:X2} ({gainByte / 255.0 * 100:0}%) flash={persistFlash}");
+        var logPct = (Math.Exp(4.0 * (gainByte / 255.0)) - 1.0) / (Math.Exp(4.0) - 1.0) * 100.0;
+        Logger.Log($"NATIVEXU_SET_GAIN begin gain=0x{gainByte:X2} ({logPct:0}%) flash={persistFlash}");
 
         if (device == null || string.IsNullOrWhiteSpace(device.Id))
         {
@@ -1125,6 +1126,22 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
             vicCode,
             vfreqHz100);
 
+        if (IsValidFlashAudioData(flashAudioResult))
+        {
+            var gainByte = flashAudioResult.Response[2];
+            // Inverse of the log-taper curve used by MapPercentToGainByte (k=4.0)
+            var y = gainByte / 255.0;
+            var gainPct = (Math.Exp(4.0 * y) - 1.0) / (Math.Exp(4.0) - 1.0) * 100.0;
+            var mutable = new List<SourceTelemetryDetailEntry>(detailEntries);
+            // Insert after the last "Audio / Input" entry to keep group contiguous
+            var lastAudioIdx = mutable.FindLastIndex(d => d.Group == TelemetryLabels.GroupAudioInput);
+            var insertIdx = lastAudioIdx >= 0 ? lastAudioIdx + 1 : mutable.Count;
+            mutable.Insert(insertIdx,
+                new SourceTelemetryDetailEntry(TelemetryLabels.GroupAudioInput, TelemetryLabels.AnalogGain,
+                    $"0x{gainByte:X2} ({gainPct:0}%)", gainByte.ToString(CultureInfo.InvariantCulture)));
+            detailEntries = mutable;
+        }
+
         return new NodeReadAttempt(
             new SourceSignalTelemetrySnapshot
             {
@@ -1488,11 +1505,11 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         AddDetail(details, "Signal Details", "VIC", vicCode?.ToString(CultureInfo.InvariantCulture));
         AddDetail(details, "Signal Details", "Vert Freq", vfreqHz100.HasValue ? $"{vfreqHz100.Value / 100.0:0.##} Hz" : null, vfreqHz100?.ToString(CultureInfo.InvariantCulture));
 
-        AddAtDetail(details, "Audio / Input", "Input Source", inputSource, FormatInputSourceDetail);
-        AddAtDetail(details, "Audio / Input", "Audio Format", audioFormat, FormatAudioFormatDetail);
-        AddAtDetail(details, "Audio / Input", "Audio Sample Rate", audioSamplingRate, FormatAudioSampleRateDetail);
-        AddAtDetail(details, "Audio / Input", "ADC (Analog)", adcOnOff, FormatOnOffByteDetail);
-        AddAtDetail(details, "Audio / Input", "ADC Gain", adcVolumeGain, FormatDecimalInt16Detail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Input Source", inputSource, FormatInputSourceDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Format", audioFormat, FormatAudioFormatDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "Audio Sample Rate", audioSamplingRate, FormatAudioSampleRateDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, TelemetryLabels.AdcAnalog, adcOnOff, FormatOnOffByteDetail);
+        AddAtDetail(details, TelemetryLabels.GroupAudioInput, "ADC Gain", adcVolumeGain, FormatDecimalInt16Detail);
 
 
         AddAtDetail(details, "Audio / USB", "UAC Volume", uacVolumeGain, FormatDecimalInt16Detail);
@@ -1615,7 +1632,7 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
     {
         if (IsValidFlashAudioData(flashResult))
         {
-            return flashResult.Response[0] == 0 ? "HDMI" : "Analog";
+            return flashResult.Response[0] == 0 ? DeviceAudioMode.Hdmi : DeviceAudioMode.Analog;
         }
 
         return fallback;
@@ -1641,8 +1658,8 @@ public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
         var raw = data[0].ToString(CultureInfo.InvariantCulture);
         var value = data[0] switch
         {
-            0 => "HDMI",
-            1 => "Analog",
+            0 => DeviceAudioMode.Hdmi,
+            1 => DeviceAudioMode.Analog,
             _ => "Unknown"
         };
         return (value, raw);
