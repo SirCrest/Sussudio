@@ -741,17 +741,21 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             return;
         }
 
-        lock (_cadenceLock)
+        // Lock-free ring buffer write — single writer (MF read thread), reader snapshots under lock.
+        // Capture array ref locally in case SetExpectedFrameRate replaces it.
+        var window = Volatile.Read(ref _sourceIntervalWindowMs);
+        var idx = Volatile.Read(ref _sourceIntervalIndex);
+        if (idx >= window.Length) return; // Array was replaced; skip this sample.
+        window[idx] = intervalMs;
+        Volatile.Write(ref _sourceIntervalIndex, (idx + 1) % window.Length);
+        var count = Volatile.Read(ref _sourceIntervalCount);
+        if (count < window.Length)
         {
-            _sourceIntervalWindowMs[_sourceIntervalIndex] = intervalMs;
-            _sourceIntervalIndex = (_sourceIntervalIndex + 1) % _sourceIntervalWindowMs.Length;
-            if (_sourceIntervalCount < _sourceIntervalWindowMs.Length)
-            {
-                _sourceIntervalCount++;
-            }
+            Volatile.Write(ref _sourceIntervalCount, count + 1);
         }
     }
 
+#if DEBUG
     /// <summary>
     /// One-shot diagnostic: compares raw COM vtable dispatch with managed interface dispatch
     /// to detect vtable misalignment in the IMFSample COM interop definition.
@@ -859,6 +863,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             Log($"VTABLE_DIAG EXCEPTION type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
         }
     }
+#endif
 
     private unsafe void DeliverFrame(
         IMFSample sample,
@@ -866,6 +871,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         DualFrameCallback? onDualFrame,
         long arrivalTick)
     {
+#if DEBUG
         // One-shot vtable diagnostic — runs on the very first sample to compare
         // raw vtable dispatch vs managed COM interop dispatch. This definitively
         // reveals whether .NET's vtable slot calculation for IMFSample is correct.
@@ -873,6 +879,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         {
             DiagnoseVtable(sample);
         }
+#endif
 
         IMFMediaBuffer? buffer = null;
         try

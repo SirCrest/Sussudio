@@ -325,4 +325,8 @@ public sealed record StatsSnapshot(
     string? TelemetryOrigin = null,
     string? TelemetryConfidence = null,
     IReadOnlyList<SourceTelemetryDetailEntry>? SourceTelemetryDetails = null,
-    string? DiagnosticSummary = null);
+    string? DiagnosticSummary = null,
+    double? AvSyncCaptureDriftMs = null,
+    double? AvSyncCaptureDriftRateMsPerSec = null,
+    double? AvSyncEncoderDriftMs = null,
+    long? AvSyncEncoderCorrectionSamples = null);

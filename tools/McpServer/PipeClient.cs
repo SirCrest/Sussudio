@@ -51,7 +51,12 @@ public sealed class PipeClient
         ["SetMjpegDecoderCount"] = 32,
         ["SetShowAllCaptureOptions"] = 33,
         ["SetPreviewVolume"] = 34,
-        ["SetStatsVisible"] = 35
+        ["SetStatsVisible"] = 35,
+        ["SetDeviceAudioMode"] = 36,
+        ["GetPerformanceTimeline"] = 37,
+        ["SetStatsSectionVisible"] = 38,
+        ["SetAnalogAudioGain"] = 39,
+        ["SetSettingsVisible"] = 40
     };
 
     public async Task<JsonElement> SendCommandAsync(

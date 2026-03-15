@@ -200,12 +200,35 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateAcknowledgedResponse(correlationId, $"Stats visibility {(visible ? "show" : "hide")} requested.");
                 }
 
+                case AutomationCommandKind.SetStatsSectionVisible:
+                {
+                    var section = RequireString(payload, "section");
+                    var visible = RequireBool(payload, "visible");
+                    await _viewModel.SetStatsSectionVisibleAsync(section, visible, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Stats section '{section}' {(visible ? "expanded" : "collapsed")}.");
+                }
+
                 case AutomationCommandKind.SetDeviceAudioMode:
                 {
                     var mode = RequireString(payload, "mode");
                     await _viewModel.SetDeviceAudioModeAsync(mode, cancellationToken).ConfigureAwait(false);
                     return CreateAcknowledgedResponse(correlationId, $"Device audio mode change requested: {mode}.");
                 }
+
+                case AutomationCommandKind.SetAnalogAudioGain:
+                {
+                    var gain = RequireDouble(payload, "gain");
+                    await _viewModel.SetAnalogAudioGainAsync(gain, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Analog audio gain set to {gain:0.###}%.");
+                }
+
+                case AutomationCommandKind.SetSettingsVisible:
+                {
+                    var visible = RequireBool(payload, "visible");
+                    await _viewModel.SetSettingsVisibleAsync(visible, cancellationToken).ConfigureAwait(false);
+                    return CreateAcknowledgedResponse(correlationId, $"Settings panel {(visible ? "shown" : "hidden")}.");
+                }
+
                 case AutomationCommandKind.SetRecordingFormat:
                 {
                     var format = RequireString(payload, "format");
@@ -445,6 +468,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         errorCode: result.Succeeded ? null : "capture-failed");
                 }
 
+                case AutomationCommandKind.GetPerformanceTimeline:
+                {
+                    var maxEntries = GetInt(payload, "maxEntries") ?? 240;
+                    var timeline = _diagnosticsHub.GetPerformanceTimeline(maxEntries);
+                    return CreateSuccessResponse(correlationId, "Performance timeline retrieved.", data: timeline);
+                }
+
                 default:
                     return CreateSuccessResponse(
                         correlationId,
@@ -553,6 +583,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             AutomationCommandKind.SetAudioPreviewEnabled => true,
             AutomationCommandKind.SetPreviewEnabled => true,
             AutomationCommandKind.SetRecordingEnabled => true,
+            AutomationCommandKind.SetAnalogAudioGain => true,
             _ => false
         };
     }

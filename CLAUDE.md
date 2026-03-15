@@ -11,6 +11,14 @@ patterns that conflict with those goals.
 
 ## Workflow
 
+- **Always prefer MCP tools over PowerShell pipe scripts.** At the start of
+  every conversation, check if MCP tools are available (e.g. try
+  `get_app_state`). If they respond, use MCP for all app interaction:
+  `get_app_state`, `capture_window_screenshot`, `window_action`,
+  `control_preview`, `control_recording`, `get_diagnostics`, etc. Only fall
+  back to PowerShell pipe scripts when MCP is unavailable or for operations
+  MCP doesn't cover. Never manually construct pipe JSON or count enum values
+  when an MCP tool exists for the same action.
 - **Always read `temp/logs/ElgatoCapture_Debug.log` after build/test.** Don't
   wait for the user to paste logs.
 - **Trace the full data path end-to-end** before proposing any fix — not just

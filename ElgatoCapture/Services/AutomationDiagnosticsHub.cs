@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -32,6 +33,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private Task? _autoVerificationTask;
     private int _verificationInProgress;
     private int _autoVerificationScheduled;
+    private readonly PerformanceTimelineEntry[] _timelineBuffer = new PerformanceTimelineEntry[TimelineCapacity];
+    private int _timelineHead;
+    private int _timelineCount;
+    private readonly Process _currentProcess = Process.GetCurrentProcess();
 
     private const int MaxRecentEvents = 500;
     private const int PollIntervalMs = 500;
@@ -41,6 +46,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const int CapturePerfectionMinSamples = 180;
     private const int PreviewPerfectionMinSamples = 120;
     private const int VerificationPerfectionMinSamples = 120;
+    private const int TimelineCapacity = 240;
 
     private readonly double _perfectionCaptureDropPercentThreshold;
     private readonly double _perfectionCaptureP95MultiplierThreshold;
@@ -120,6 +126,30 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
     }
 
+    public IReadOnlyList<PerformanceTimelineEntry> GetPerformanceTimeline(int maxEntries = 240)
+    {
+        lock (_stateLock)
+        {
+            var count = Math.Min(_timelineCount, Math.Max(0, maxEntries));
+            if (count == 0)
+            {
+                return Array.Empty<PerformanceTimelineEntry>();
+            }
+
+            var result = new PerformanceTimelineEntry[count];
+            var oldest = (_timelineHead - _timelineCount + TimelineCapacity) % TimelineCapacity;
+            var skip = _timelineCount - count;
+            var readIndex = (oldest + skip) % TimelineCapacity;
+            for (var i = 0; i < count; i++)
+            {
+                result[i] = _timelineBuffer[readIndex];
+                readIndex = (readIndex + 1) % TimelineCapacity;
+            }
+
+            return result;
+        }
+    }
+
     public IReadOnlyList<DiagnosticsEvent> GetRecentEvents(int maxEvents = 100)
     {
         lock (_stateLock)
@@ -195,6 +225,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         _disposed = true;
         StopAsync().GetAwaiter().GetResult();
+        _currentProcess.Dispose();
     }
 
     public async ValueTask DisposeAsync()
@@ -206,6 +237,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         _disposed = true;
         await StopAsync().ConfigureAwait(false);
+        _currentProcess.Dispose();
     }
 
     private async Task RunLoopAsync(CancellationToken cancellationToken)
@@ -358,6 +390,24 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 // File doesn't exist or is inaccessible
             }
         }
+
+        // Memory & GC metrics (all APIs are thread-safe and microsecond-cheap)
+        _currentProcess.Refresh();
+        var memoryWorkingSetMb = _currentProcess.WorkingSet64 / (1024.0 * 1024.0);
+        var memoryPrivateBytesMb = _currentProcess.PrivateMemorySize64 / (1024.0 * 1024.0);
+        var memoryManagedHeapMb = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
+        var memoryTotalAllocatedMb = GC.GetTotalAllocatedBytes(precise: false) / (1024.0 * 1024.0);
+        var gcMemoryInfo = GC.GetGCMemoryInfo();
+        var memoryGcHeapSizeMb = gcMemoryInfo.HeapSizeBytes / (1024.0 * 1024.0);
+        var gcPauseTimePercent = gcMemoryInfo.PauseTimePercentage;
+        var gcFragmentationPercent = gcMemoryInfo.HeapSizeBytes > 0
+            ? gcMemoryInfo.FragmentedBytes * 100.0 / gcMemoryInfo.HeapSizeBytes
+            : 0.0;
+        var gcGen0 = GC.CollectionCount(0);
+        var gcGen1 = GC.CollectionCount(1);
+        var gcGen2 = GC.CollectionCount(2);
+        ThreadPool.GetAvailableThreads(out var tpWorkerAvailable, out var tpIoAvailable);
+        ThreadPool.GetMaxThreads(out var tpWorkerMax, out var tpIoMax);
 
         var snapshot = new AutomationSnapshot
         {
@@ -683,7 +733,25 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             LastOutputExists = lastOutputExists,
             LastOutputSizeBytes = lastOutputSize,
             LastVerification = lastVerification,
-            HdrTruthVerdict = hdrTruthVerdict
+            HdrTruthVerdict = hdrTruthVerdict,
+            MemoryWorkingSetMb = memoryWorkingSetMb,
+            MemoryPrivateBytesMb = memoryPrivateBytesMb,
+            MemoryManagedHeapMb = memoryManagedHeapMb,
+            MemoryTotalAllocatedMb = memoryTotalAllocatedMb,
+            MemoryGcHeapSizeMb = memoryGcHeapSizeMb,
+            MemoryGcGen0Collections = gcGen0,
+            MemoryGcGen1Collections = gcGen1,
+            MemoryGcGen2Collections = gcGen2,
+            MemoryGcPauseTimePercent = gcPauseTimePercent,
+            MemoryGcFragmentationPercent = gcFragmentationPercent,
+            ThreadPoolWorkerAvailable = tpWorkerAvailable,
+            ThreadPoolWorkerMax = tpWorkerMax,
+            ThreadPoolIoAvailable = tpIoAvailable,
+            ThreadPoolIoMax = tpIoMax,
+            AvSyncCaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,
+            AvSyncCaptureDriftRateMsPerSec = captureRuntime.AvSyncCaptureDriftRateMsPerSec,
+            AvSyncEncoderDriftMs = captureRuntime.AvSyncEncoderDriftMs,
+            AvSyncEncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples
         };
 
         var verificationIdle = Volatile.Read(ref _verificationInProgress) == 0 &&
@@ -698,6 +766,30 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         lock (_stateLock)
         {
             _latestSnapshot = snapshot;
+
+            _timelineBuffer[_timelineHead] = new PerformanceTimelineEntry
+            {
+                TimestampUtc = snapshot.TimestampUtc,
+                CaptureFps = snapshot.CaptureCadenceObservedFps,
+                PreviewFps = snapshot.PreviewCadenceObservedFps,
+                VideoQueueDepth = snapshot.FfmpegVideoQueueDepth,
+                VideoDrops = snapshot.VideoDropsQueueSaturated,
+                CaptureCadenceP95Ms = snapshot.CaptureCadenceP95IntervalMs,
+                PipelineLatencyMs = snapshot.EstimatedPipelineLatencyMs,
+                MemoryWorkingSetMb = snapshot.MemoryWorkingSetMb,
+                MemoryManagedHeapMb = snapshot.MemoryManagedHeapMb,
+                GcGen0Collections = snapshot.MemoryGcGen0Collections,
+                GcGen1Collections = snapshot.MemoryGcGen1Collections,
+                GcGen2Collections = snapshot.MemoryGcGen2Collections,
+                GcPauseTimePercent = snapshot.MemoryGcPauseTimePercent,
+                ThreadPoolWorkerAvailable = snapshot.ThreadPoolWorkerAvailable,
+                ThreadPoolIoAvailable = snapshot.ThreadPoolIoAvailable
+            };
+            _timelineHead = (_timelineHead + 1) % TimelineCapacity;
+            if (_timelineCount < TimelineCapacity)
+            {
+                _timelineCount++;
+            }
         }
 
         SnapshotUpdated?.Invoke(this, snapshot);

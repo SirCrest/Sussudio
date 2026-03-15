@@ -1381,8 +1381,9 @@ static class Program
         SetPrivateField(pipeline, "_workerQueues", CreateEmptyArrayFieldValue(pipelineType, "_workerQueues"));
         SetPrivateField(pipeline, "_workers", Array.Empty<Thread>());
         SetPrivateField(pipeline, "_decoders", CreateEmptyArrayFieldValue(pipelineType, "_decoders"));
-        SetPrivateField(pipeline, "_reorderBuffer", CreateFieldInstance(pipelineType, "_reorderBuffer"));
-        SetPrivateField(pipeline, "_emitSignal", new ManualResetEventSlim(false));
+        SetPrivateField(pipeline, "_reorderRing", CreateSizedArrayFieldValue(pipelineType, "_reorderRing", 16));
+        SetPrivateField(pipeline, "_reorderFlags", new int[16]);
+        SetPrivateField(pipeline, "_emitSignal", new AutoResetEvent(false));
     }
 
     private static object CreateEmptyArrayFieldValue(Type declaringType, string fieldName)
@@ -1392,6 +1393,15 @@ static class Program
         var elementType = field.FieldType.GetElementType()
             ?? throw new InvalidOperationException($"Field '{fieldName}' on '{declaringType.Name}' was not an array.");
         return Array.CreateInstance(elementType, 0);
+    }
+
+    private static object CreateSizedArrayFieldValue(Type declaringType, string fieldName, int length)
+    {
+        var field = declaringType.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"Missing private field '{fieldName}' on '{declaringType.Name}'.");
+        var elementType = field.FieldType.GetElementType()
+            ?? throw new InvalidOperationException($"Field '{fieldName}' on '{declaringType.Name}' was not an array.");
+        return Array.CreateInstance(elementType, length);
     }
 
     private static object CreateFieldInstance(Type declaringType, string fieldName)

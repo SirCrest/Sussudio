@@ -33,9 +33,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private long _videoFramesDropped;
     private long _videoFramesWrittenToSink;
     private long _recordingFramesDelivered;
-    private long _recordingFramesEnqueued;
     private long _lastVideoFrameArrivedTick;
     private Action<string>? _observedPixelFormatObserver;
+    private int _pixelFormatObserverFired;
 
     public readonly record struct MjpegPipelineTimingMetrics(
         int DecodeSampleCount,
@@ -70,7 +70,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     }
     public long VideoFramesWrittenToSink => Interlocked.Read(ref _videoFramesWrittenToSink);
     public long RecordingFramesDelivered => Interlocked.Read(ref _recordingFramesDelivered);
-    public long RecordingFramesEnqueued => Interlocked.Read(ref _recordingFramesEnqueued);
     public long LastVideoFrameArrivedTick => Interlocked.Read(ref _lastVideoFrameArrivedTick);
     public event EventHandler<Exception>? FatalErrorOccurred;
     public bool SourceReaderReadOutstanding => _capture?.IsReadSampleOutstanding ?? false;
@@ -207,9 +206,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             Interlocked.Exchange(ref _videoFramesDropped, 0);
             Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
             Interlocked.Exchange(ref _recordingFramesDelivered, 0);
-            Interlocked.Exchange(ref _recordingFramesEnqueued, 0);
             Interlocked.Exchange(ref _lastVideoFrameArrivedTick, 0);
             Interlocked.Exchange(ref _fatalErrorSignaled, 0);
+            Interlocked.Exchange(ref _pixelFormatObserverFired, 0);
         }
 
         Logger.Log($"MJPEG_CPU_PIPELINE_CONFIG decoders={mjpegDecoderCount} enabled={mjpegPipeline != null}");
@@ -289,11 +288,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             }
 
             _recordingSink = sink;
-            _recordingEncoder = encoder;
-            _gpuRecordingEncoder = gpuEncoder;
+            Volatile.Write(ref _recordingEncoder, encoder);
+            Volatile.Write(ref _gpuRecordingEncoder, gpuEncoder);
             Interlocked.Exchange(ref _recordingFramesDelivered, 0);
-            Interlocked.Exchange(ref _recordingFramesEnqueued, 0);
-            _recordingActive = true;
+            Volatile.Write(ref _recordingActive, true);
         }
 
         return Task.CompletedTask;
@@ -303,10 +301,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     {
         lock (_sync)
         {
-            _recordingActive = false;
+            Volatile.Write(ref _recordingActive, false);
             _recordingSink = null;
-            _recordingEncoder = null;
-            _gpuRecordingEncoder = null;
+            Volatile.Write(ref _recordingEncoder, null);
+            Volatile.Write(ref _gpuRecordingEncoder, null);
         }
 
         return Task.CompletedTask;
@@ -452,7 +450,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         }
 
         var isP010 = Volatile.Read(ref _isP010);
-        Volatile.Read(ref _observedPixelFormatObserver)?.Invoke(isP010 ? "P010" : "NV12");
+        FirePixelFormatObserverOnce(isP010 ? "P010" : "NV12");
 
         EnqueueRecordingFrame(frameData, width, height, isP010);
 
@@ -466,7 +464,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private void OnMjpegPipelineFrameEmitted(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)
     {
         const bool isP010 = false;
-        Volatile.Read(ref _observedPixelFormatObserver)?.Invoke("NV12");
+        FirePixelFormatObserverOnce("NV12");
 
         EnqueueRecordingFrame(nv12Data, width, height, isP010);
 
@@ -489,7 +487,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         Interlocked.Exchange(ref _lastVideoFrameArrivedTick, Environment.TickCount64);
 
         var isP010 = Volatile.Read(ref _isP010);
-        Volatile.Read(ref _observedPixelFormatObserver)?.Invoke(isP010 ? "P010" : "NV12");
+        FirePixelFormatObserverOnce(isP010 ? "P010" : "NV12");
 
         var gpuEncoder = Volatile.Read(ref _gpuRecordingEncoder);
         if (gpuEncoder != null && gpuTexture != IntPtr.Zero)
@@ -559,18 +557,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
     private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010)
     {
-        IRawVideoFrameEncoder? encoder = null;
-        bool recordingActive;
-        lock (_sync)
+        if (!Volatile.Read(ref _recordingActive))
         {
-            recordingActive = _recordingActive;
-            if (recordingActive)
-            {
-                encoder = _recordingEncoder;
-            }
+            return;
         }
 
-        if (!recordingActive || encoder == null)
+        var encoder = Volatile.Read(ref _recordingEncoder);
+        if (encoder == null)
         {
             return;
         }
@@ -591,7 +584,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
 
             encoder.EnqueueRawVideoFrame(frameData, expectedSize);
             Interlocked.Increment(ref _videoFramesWrittenToSink);
-            Interlocked.Increment(ref _recordingFramesEnqueued);
         }
         catch (Exception ex)
         {
@@ -607,7 +599,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         {
             encoder.EnqueueGpuVideoFrame(texture, subresource);
             Interlocked.Increment(ref _videoFramesWrittenToSink);
-            Interlocked.Increment(ref _recordingFramesEnqueued);
         }
         catch (Exception ex)
         {
@@ -631,6 +622,16 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         SignalFatalError(
             ex,
             $"UNIFIED_VIDEO_FATAL_MJPEG_ERROR type={ex.GetType().Name} msg={ex.Message}");
+    }
+
+    private void FirePixelFormatObserverOnce(string format)
+    {
+        if (Interlocked.CompareExchange(ref _pixelFormatObserverFired, 1, 0) != 0)
+        {
+            return;
+        }
+
+        Volatile.Read(ref _observedPixelFormatObserver)?.Invoke(format);
     }
 
     private void SignalFatalError(Exception ex, string logMessage)

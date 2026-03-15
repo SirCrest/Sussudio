@@ -2529,3 +2529,165 @@ I2C_WR 0x4A reg=0x0200 val=[07 00]   (finalize)
 - `temp/decode-sel4-commands.py` — selector 4 I2C command decode
 - `temp/deep-switch-analysis.py` — full transaction log with selector 4 discovery
 - `temp/parse-all-transfers.py` — full USB traffic parser (all transfer types)
+
+## E119 - Recording verifier uses negotiated capture values
+- Timestamp (UTC): 2026-03-15T06:37:29.2842091Z
+- Commit Hash: 957f01c2b1d3b68d09f4c47728982aceb286d8f2
+- What Changed (single change): Updated `RecordingVerifier` to validate output resolution and frame rate against `CaptureRuntimeSnapshot.Negotiated*` values first, with `Requested*` values only as fallback when negotiation metadata is missing.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for warnings/errors after the run.
+- Validator Output:
+  - `Build succeeded.`
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` contained only pre-existing synthetic HFR-test warnings (`UNIFIED_VIDEO_MJPEG_STOP_FAIL`, `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure`); no new verifier warnings/errors were introduced by this change.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this validation pass)
+- Conclusion: Recording verification now tracks the device-negotiated geometry/timing that capture actually achieved, while still falling back to requested values if the snapshot is captured before negotiation completes.
+
+## E118 - MainViewModel now mirrors WASAPI peak samples into AudioPeak
+- Timestamp (UTC): 2026-03-15T06:36:07.3849032Z
+- Commit Hash: 957f01c2b1d3b68d09f4c47728982aceb286d8f2
+- What Changed (single change): Updated `MainViewModel.OnAudioLevelUpdated()` to assign `AudioPeak = e.Peak` after updating the animated meter target so automation snapshots and diagnostics hub audio-signal detection use live WASAPI peak data instead of a permanent zero.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Read `temp/logs/ElgatoCapture_Debug.log` and confirm there are no unexpected new warnings or errors beyond the harness's synthetic MJPEG HFR failure coverage.
+- Validator Output:
+  - `Build succeeded.`
+  - `All runtime snapshot regression checks passed.`
+- ffprobe Evidence:
+  - N/A (no recording artifact generated for this verification pass)
+- Conclusion: `AudioPeak` now tracks the same live peak value already flowing through `AudioLevelEventArgs.Peak`, so `GetViewModelRuntimeSnapshotAsync()` and `AutomationDiagnosticsHub.AudioSignalPresent` can observe real audio activity.
+
+## E120 - LibAvEncoder now corrects audio drift against the CFR video clock
+- Timestamp (UTC): 2026-03-15T06:40:17.4096771Z
+- Commit Hash: 957f01c2b1d3b68d09f4c47728982aceb286d8f2
+- What Changed (single change): Added encoder-local audio drift correction in `LibAvEncoder` that samples A/V drift every 300 video frames, trims or pads audio by up to 480 samples per pass, logs `LIBAV_AV_DRIFT_CORRECTION`, and includes cumulative correction in `LIBAV_AV_SYNC`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for new `LIBAV_AV_SYNC` / `LIBAV_AV_DRIFT_CORRECTION` lines during recording runs and confirm this verification pass did not add new `LIBAV_ENCODER_ERROR` entries.
+- Validator Output:
+  - `Build succeeded.` (warnings only: existing unused-field warnings in `LibAvEncoder`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` contained no new `LIBAV_ENCODER_ERROR` or `LIBAV_SINK_STOP_FAIL` lines from this verification pass.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: The drift-correction path compiles, passes the runtime regression harness, and preserves a clean libav log surface in this verification run; a live recording run should now show gradual capped correction instead of unbounded audio lag growth.
+
+## E121 - LibAvEncoder drift math now uses encoded audio PTS only
+- Timestamp (UTC): 2026-03-15T06:40:17.4096771Z
+- Commit Hash: 957f01c2b1d3b68d09f4c47728982aceb286d8f2
+- What Changed (single change): Updated the new `LibAvEncoder` drift-correction/logging helpers to measure against `_nextAudioPts` only, instead of counting buffered-but-not-yet-encoded audio samples as if they had already advanced the audio clock.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm there are still no new `LIBAV_ENCODER_ERROR` / `LIBAV_SINK_STOP_FAIL` lines in this verification pass.
+- Validator Output:
+  - `Build succeeded.` (0 warnings, 0 errors)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` contained no `LIBAV_ENCODER_ERROR`, `LIBAV_SINK_STOP_FAIL`, `LIBAV_AV_SYNC`, or `LIBAV_AV_DRIFT_CORRECTION` lines during this non-recording verification pass.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: Drift sampling and diagnostics now reference the authoritative encoded-audio clock rather than optimistic buffered samples, keeping the correction threshold and sync logs aligned with actual muxed audio progress.
+
+## E121 - LibAvEncoder AV-sync diagnostics now cover GPU and CUDA video sends
+- Timestamp (UTC): 2026-03-15T06:42:17.4027778Z
+- Commit Hash: 957f01c2b1d3b68d09f4c47728982aceb286d8f2
+- What Changed (single change): Added `LogAvSyncIfDue()` calls to `SendGpuVideoFrame()` and `SendCudaVideoFrame()` so the existing `LIBAV_AV_SYNC` cadence and cumulative drift-correction diagnostics stay active on every libav video path that advances `_nextVideoPts`.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` after the run; a live GPU/CUDA recording should now emit `LIBAV_AV_SYNC` on the same 300-frame cadence as the CPU path.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` contained only the harness's pre-existing synthetic HFR warnings (`UNIFIED_VIDEO_MJPEG_STOP_FAIL`, `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure`) and no `LIBAV_ENCODER_ERROR` / `LIBAV_SINK_STOP_FAIL` lines.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: AV-sync observability is now consistent across CPU, D3D11, and CUDA libav video sends, and the final build/test/log verification pass stayed clean.
+
+## E122 - Queued drift correction now commits against encoded audio PTS in the same pass
+- Timestamp (UTC): 2026-03-15T06:49:28.2331570Z
+- Commit Hash: 957f01c2b1d3b68d09f4c47728982aceb286d8f2
+- What Changed (single change): Refined the queued `LibAvEncoder` drift-correction path so drift sampling/logging use encoded audio PTS (`_nextAudioPts`) only, the 300-frame gate is only advanced after a zero-correction decision or a fully applied correction, and any applied trim/pad is drained immediately instead of waiting behind the next full AAC block.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log`; this non-recording pass should stay free of new `LIBAV_ENCODER_ERROR` / `LIBAV_SINK_STOP_FAIL` lines, and a live recording run should now show `LIBAV_AV_SYNC` / `LIBAV_AV_DRIFT_CORRECTION` based on encoded audio progress rather than buffered samples.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` contained only the harness's expected synthetic HFR warnings (`UNIFIED_VIDEO_MJPEG_STOP_FAIL`, `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure`) and no new `LIBAV_ENCODER_ERROR` / `LIBAV_SINK_STOP_FAIL` lines.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: The final queued drift-correction path now keys off actual encoded audio time and commits any capped correction in the same evaluation pass, while the build/test/log verification pass remained clean.
+
+## E123 - Final queued drift correction keeps fixed-size AAC frames and tracks queued correction debt
+- Timestamp (UTC): 2026-03-15T06:55:48.0703195Z
+- Commit Hash: 957f01c2b1d3b68d09f4c47728982aceb286d8f2
+- What Changed (single change): Finalized the queued `LibAvEncoder` drift-correction path so it keeps AAC on full-frame drains, samples drift against the full queued-audio timeline (`_nextAudioPts + queuedSamples`) to avoid counter-correcting buffered residue, keeps `LIBAV_AV_SYNC` on the queued timeline for observability, and still only advances the 300-frame correction gate after a zero-correction decision or a fully applied correction.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log`; this non-recording pass should stay free of new `LIBAV_ENCODER_ERROR` / `LIBAV_SINK_STOP_FAIL` lines, and a live recording run should now show `LIBAV_AV_SYNC` / `LIBAV_AV_DRIFT_CORRECTION` against the queued correction debt rather than only fully encoded AAC packets.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` contained no `LIBAV_ENCODER_ERROR`, `LIBAV_SINK_STOP_FAIL`, `LIBAV_AV_SYNC`, or `LIBAV_AV_DRIFT_CORRECTION` lines during this non-recording verification pass.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: The final drift-correction state keeps the AAC encoder on fixed-size frame drains while tracking queued trim/pad debt consistently enough to avoid self-canceling follow-up corrections in later 300-frame samples.
+
+## E124 - Automation pipe now supports analog audio gain changes end to end
+- Timestamp (UTC): 2026-03-15T20:41:17.5719011Z
+- Commit Hash: 957f01c2b1d3b68d09f4c47728982aceb286d8f2
+- What Changed (single change): Added the `SetAnalogAudioGain` automation command to the app contract/dispatcher, kept the `MainViewModel` automation mutators on the UI thread, and aligned every named-pipe command map consumer (`AutomationClient`, `McpServer`, and `send-automation-command.ps1`) to include ids 38-39.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet build tools/AutomationClient/AutomationClient.csproj`
+  3. `dotnet build tools/McpServer/McpServer.csproj`
+  4. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  5. Inspect `temp/logs/ElgatoCapture_Debug.log` for unexpected automation or command-dispatch failures.
+- Validator Output:
+  - `Build succeeded.` for the main app, `AutomationClient`, and `McpServer` (`0 Warning(s)`, `0 Error(s)` on the final green pass)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed only the harness's expected synthetic HFR warnings (`UNIFIED_VIDEO_MJPEG_STOP_FAIL`, `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure`) and no new automation command errors.
+- ffprobe Evidence:
+  - N/A (no recording artifact generated in this verification pass)
+- Conclusion: The named-pipe control surface now includes analog gain updates without regressing the existing automation/test contract, and the protocol consumers are back in sync on ids 0-39.
+
+## E125 - Capture health snapshots now surface queue, drop, encode, and freshness counters
+- Timestamp (UTC): 2026-03-15T20:41:17.5719011Z
+- Commit Hash: 957f01c2b1d3b68d09f4c47728982aceb286d8f2
+- What Changed (single change): Populated the previously defaulted `CaptureHealthSnapshot` fields for queue depth, backlog drops, encoded frame count, audio drop aggregation, conversion queue depth, and last-frame arrival age using the existing `LibAvRecordingSink` and `UnifiedVideoCapture` counters.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm the verification pass stays free of new capture-service failures.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed only the harness's pre-existing synthetic HFR warnings and no new `LIBAV_ENCODER_ERROR`, `LIBAV_SINK_STOP_FAIL`, or capture-service exceptions.
+- ffprobe Evidence:
+  - N/A (no recording artifact generated in this verification pass)
+- Conclusion: Health snapshots no longer leave the sink/ingest queue and freshness fields at zero defaults when the underlying counters already exist, and the runtime snapshot harness stayed green after the mapping change.
+
+## E126 - Added ecctl as a standalone named-pipe control CLI
+- Timestamp (UTC): 2026-03-15T20:41:17.5719011Z
+- Commit Hash: 957f01c2b1d3b68d09f4c47728982aceb286d8f2
+- What Changed (single change): Added `tools/ecctl/` as a .NET 8 console app with command parsing, named-pipe transport/retry logic, human-readable formatters for state/diagnostics/options/timeline/memory, and verb handlers covering the current automation command surface including analog gain.
+- How To Run:
+  1. `dotnet build tools/ecctl/ecctl.csproj`
+  2. `dotnet build tools/McpServer/McpServer.csproj`
+  3. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  4. Optionally, with the app running: `dotnet run --project tools/ecctl/ecctl.csproj -- --help`
+- Validator Output:
+  - `Build succeeded.` for `tools/ecctl/ecctl.csproj` and `tools/McpServer/McpServer.csproj` (`0 Warning(s)`, `0 Error(s)` on the final pass)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed no new pipe-client or formatter-related failures during the verification pass.
+- ffprobe Evidence:
+  - N/A (no recording artifact generated in this verification pass)
+- Conclusion: `ecctl` now provides a repo-local command-line entry point for the named-pipe automation surface while preserving the existing response/retry contract and passing the current regression suite.

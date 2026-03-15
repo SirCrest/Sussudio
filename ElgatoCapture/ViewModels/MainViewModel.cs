@@ -194,6 +194,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial bool IsStatsVisible { get; set; }
 
     [ObservableProperty]
+    public partial bool IsSettingsVisible { get; set; }
+
+    [ObservableProperty]
     public partial string HdrResolutionSupportHint { get; set; } = string.Empty;
 
     [ObservableProperty]
@@ -328,6 +331,19 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     [ObservableProperty]
     public partial bool AudioClipping { get; set; }
+
+    /// <summary>
+    /// Written by WASAPI callback thread via Volatile.Write, read by UI timer.
+    /// Bypasses PropertyChanged to avoid per-frame dispatch + 53-case switch overhead.
+    /// </summary>
+    public double AudioMeterTarget;
+    private int _audioMeterTimerNeeded;
+
+    /// <summary>
+    /// Fires once when audio transitions from silent to active, signaling MainWindow
+    /// to start the audio meter animation timer. Reset when the timer stops itself.
+    /// </summary>
+    public event Action? AudioMeterActivated;
 
     private const double MeterFloorDb = -60.0;
     private const double MeterDecayDbPerSecond = 40.0 / 1.7; // OBS-like PPM decay
@@ -1082,11 +1098,19 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void OnAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
     {
-        _dispatcherQueue.TryEnqueue(() =>
+        var level = UpdateMeterLevel(e.Peak);
+        Volatile.Write(ref AudioMeterTarget, level);
+        AudioPeak = e.Peak;
+
+        if (level > 0 && Interlocked.CompareExchange(ref _audioMeterTimerNeeded, 1, 0) == 0)
         {
-            AudioPeak = UpdateMeterLevel(e.Peak);
-            AudioClipping = e.Clipped;
-        });
+            _dispatcherQueue.TryEnqueue(() => AudioMeterActivated?.Invoke());
+        }
+
+        if (e.Clipped)
+        {
+            _dispatcherQueue.TryEnqueue(() => AudioClipping = true);
+        }
     }
 
     private void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)
@@ -3467,8 +3491,20 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)
     {
-        SelectedDeviceAudioMode = mode;
-        return Task.CompletedTask;
+        return InvokeOnUiThreadAsync(() =>
+        {
+            SelectedDeviceAudioMode = mode;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            AnalogAudioGainPercent = Math.Clamp(gainPercent, 0.0, 100.0);
+            return Task.CompletedTask;
+        }, cancellationToken);
     }
 
     partial void OnAnalogAudioGainPercentChanged(double value)
@@ -3920,7 +3956,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _audioMeterDb = MeterFloorDb;
         _audioMeterLastTick = 0;
         AudioPeak = 0;
+        Volatile.Write(ref AudioMeterTarget, 0.0);
+        Interlocked.Exchange(ref _audioMeterTimerNeeded, 0);
         AudioClipping = false;
+    }
+
+    public void ResetAudioMeterTimerFlag()
+    {
+        Interlocked.Exchange(ref _audioMeterTimerNeeded, 0);
     }
 
     private double UpdateMeterLevel(double peak)
@@ -4440,11 +4483,31 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }, cancellationToken);
     }
 
+    public Action<string, bool>? StatsSectionVisibilityHandler { get; set; }
+
+    public Task SetStatsSectionVisibleAsync(string section, bool visible, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            StatsSectionVisibilityHandler?.Invoke(section, visible);
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
     public Task SetStatsVisibleAsync(bool visible, CancellationToken cancellationToken = default)
     {
         return InvokeOnUiThreadAsync(() =>
         {
             IsStatsVisible = visible;
+            return Task.CompletedTask;
+        }, cancellationToken);
+    }
+
+    public Task SetSettingsVisibleAsync(bool visible, CancellationToken cancellationToken = default)
+    {
+        return InvokeOnUiThreadAsync(() =>
+        {
+            IsSettingsVisible = visible;
             return Task.CompletedTask;
         }, cancellationToken);
     }

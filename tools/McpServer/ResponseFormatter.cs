@@ -95,6 +95,13 @@ public static class ResponseFormatter
         builder.AppendLine($"Summary: {Get(snapshot, "PerformanceSummary")}");
         builder.AppendLine($"Pipeline Latency: {Get(snapshot, "EstimatedPipelineLatencyMs")}ms (source reader -> present)");
         builder.AppendLine();
+        builder.AppendLine("== Memory & GC ==");
+        builder.AppendLine($"Working Set: {Get(snapshot, "MemoryWorkingSetMb")} MB | Private: {Get(snapshot, "MemoryPrivateBytesMb")} MB | Managed Heap: {Get(snapshot, "MemoryManagedHeapMb")} MB");
+        builder.AppendLine($"Total Allocated: {Get(snapshot, "MemoryTotalAllocatedMb")} MB | GC Heap: {Get(snapshot, "MemoryGcHeapSizeMb")} MB");
+        builder.AppendLine($"GC Collections: Gen0={Get(snapshot, "MemoryGcGen0Collections")} Gen1={Get(snapshot, "MemoryGcGen1Collections")} Gen2={Get(snapshot, "MemoryGcGen2Collections")}");
+        builder.AppendLine($"GC Pause: {Get(snapshot, "MemoryGcPauseTimePercent")}% | Fragmentation: {Get(snapshot, "MemoryGcFragmentationPercent")}%");
+        builder.AppendLine($"ThreadPool Workers: {Get(snapshot, "ThreadPoolWorkerAvailable")}/{Get(snapshot, "ThreadPoolWorkerMax")} avail | IO: {Get(snapshot, "ThreadPoolIoAvailable")}/{Get(snapshot, "ThreadPoolIoMax")} avail");
+        builder.AppendLine();
         builder.AppendLine("== Capture Cadence ==");
         builder.AppendLine($"Source: {Get(snapshot, "CaptureCadenceObservedFps")} fps (expected {Get(snapshot, "ExpectedCaptureFrameRate")} fps) | Samples: {Get(snapshot, "CaptureCadenceSampleCount")}");
         builder.AppendLine($"Interval: avg={Get(snapshot, "CaptureCadenceAverageIntervalMs")}ms P95={Get(snapshot, "CaptureCadenceP95IntervalMs")}ms max={Get(snapshot, "CaptureCadenceMaxIntervalMs")}ms");
@@ -125,6 +132,24 @@ public static class ResponseFormatter
                             $"({Get(worker, "SampleCount")} samples)");
                     }
                 }
+            }
+        }
+        var avSyncDrift = Get(snapshot, "AvSyncCaptureDriftMs", string.Empty);
+        var avSyncRate = Get(snapshot, "AvSyncCaptureDriftRateMsPerSec", string.Empty);
+        var avSyncEncoder = Get(snapshot, "AvSyncEncoderDriftMs", string.Empty);
+        var avSyncCorr = Get(snapshot, "AvSyncEncoderCorrectionSamples", string.Empty);
+        if (!string.IsNullOrWhiteSpace(avSyncDrift) || !string.IsNullOrWhiteSpace(avSyncEncoder))
+        {
+            builder.AppendLine();
+            builder.AppendLine("== AV Sync ==");
+            builder.AppendLine(
+                $"Capture Drift: {(string.IsNullOrWhiteSpace(avSyncDrift) ? "N/A" : avSyncDrift + "ms")} | " +
+                $"Rate: {(string.IsNullOrWhiteSpace(avSyncRate) ? "N/A" : avSyncRate + "ms/s")}");
+            if (!string.IsNullOrWhiteSpace(avSyncEncoder))
+            {
+                builder.AppendLine(
+                    $"Encoder Drift: {avSyncEncoder}ms | " +
+                    $"Correction Samples: {(string.IsNullOrWhiteSpace(avSyncCorr) ? "N/A" : avSyncCorr)}");
             }
         }
         builder.AppendLine();

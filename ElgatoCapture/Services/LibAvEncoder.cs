@@ -14,6 +14,11 @@ namespace ElgatoCapture.Services;
 /// </summary>
 internal sealed unsafe class LibAvEncoder : IDisposable
 {
+    private const long AvSyncLogCadenceFrames = 300;
+    private const long MinimumAvSyncVideoFrames = 30;
+    private const double DriftCorrectionThresholdMs = 10.0;
+    private const int MaxDriftCorrectionSamplesPerPass = 480;
+
     private static readonly Regex MasterDisplayMetadataRegex = new(
         @"^G\((\d+),(\d+)\)B\((\d+),(\d+)\)R\((\d+),(\d+)\)WP\((\d+),(\d+)\)L\((\d+),(\d+)\)$",
         RegexOptions.Compiled | RegexOptions.CultureInvariant);
@@ -37,13 +42,21 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     private long _encodedFrameCount;
     private long _droppedFrameCount;
     private long _audioSamplesReceived;
+    private long _lastSyncLogVideoFrame;
+    private long _driftCorrectionAppliedSamples;
+    private long _lastDriftCorrectionVideoFrame;
     private long _totalBytesWritten;
     private byte* _resampleBuffer;
+    private byte* _audioSampleQueueBuffer;
     private int _audioFrameSize;
     private int _accumulatorCapacity;
+    private int _audioSampleQueueCapacity;
     private int _audioAccumulatorBytes;
+    private int _audioBufferedSamples;
     private bool _isOpen;
     private bool _headerWritten;
+    private AVRational _cachedVideoTimeBase;
+    private AVRational _cachedAudioTimeBase;
     private bool _flushSent;
     private AVBufferRef* _hwDeviceCtx;
     private AVBufferRef* _hwFramesCtx;
@@ -197,6 +210,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             }
 
             _videoStream->time_base = _videoCodecCtx->time_base;
+            _cachedVideoTimeBase = _videoCodecCtx->time_base;
             _videoStream->avg_frame_rate = _videoCodecCtx->framerate;
             _videoStream->r_frame_rate = _videoCodecCtx->framerate;
 
@@ -270,7 +284,11 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             _encodedFrameCount = 0;
             _droppedFrameCount = 0;
             _audioSamplesReceived = 0;
+            _lastSyncLogVideoFrame = 0;
+            _driftCorrectionAppliedSamples = 0;
+            _lastDriftCorrectionVideoFrame = 0;
             _audioAccumulatorBytes = 0;
+            _audioBufferedSamples = 0;
             _flushSent = false;
             _isOpen = true;
 
@@ -312,6 +330,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
         CopyPackedFrameToVideoFrame(frameData[..expectedSize], options);
         _videoFrame->pts = _nextVideoPts++;
+        LogAvSyncIfDue();
 
         var attachedHdrSideData = false;
         if (options.HdrEnabled && _encodedFrameCount == 0)
@@ -406,6 +425,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             (byte*)poolTexture, 0, _hwPoolTextureFree, null, 0);
 
         _hwFrame->pts = _nextVideoPts++;
+        LogAvSyncIfDue();
 
         var attachedHdrSideData = false;
         if (options.HdrEnabled && _encodedFrameCount == 0)
@@ -471,6 +491,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
 
         _hwFrame->pts = _nextVideoPts++;
+        LogAvSyncIfDue();
 
         var attachedHdrSideData = false;
         if (options.HdrEnabled && _encodedFrameCount == 0)
@@ -629,6 +650,16 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
         if (!options.HdrEnabled)
         {
+            // MJPEG sources decode to full-range YUV (0-255). Without this flag,
+            // NVENC treats the data as limited range (16-235), darkening the output.
+            if (options.IsFullRangeInput)
+            {
+                codecContext->color_range = AVColorRange.AVCOL_RANGE_JPEG;
+                codecContext->colorspace = AVColorSpace.AVCOL_SPC_BT709;
+                codecContext->color_primaries = AVColorPrimaries.AVCOL_PRI_BT709;
+                codecContext->color_trc = AVColorTransferCharacteristic.AVCOL_TRC_BT709;
+            }
+
             return;
         }
 
@@ -1039,6 +1070,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
 
         _audioStream->time_base = _audioCodecCtx->time_base;
+        _cachedAudioTimeBase = _audioCodecCtx->time_base;
 
         ThrowIfError(
             ffmpeg.avcodec_parameters_from_context(_audioStream->codecpar, _audioCodecCtx),
@@ -1047,6 +1079,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         InitializeAudioResampler(options);
         AllocateAudioFrame();
         AllocateAudioAccumulator(options);
+        AllocateAudioSampleQueue(options);
     }
 
     private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)
@@ -1190,6 +1223,18 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         {
             throw CreateLibAvException(
                 $"LIBAV_ENCODER_ERROR operation=av_malloc(audio_accumulator) msg=Allocation returned null size={_accumulatorCapacity}.");
+        }
+    }
+
+    private void AllocateAudioSampleQueue(LibAvEncoderOptions options)
+    {
+        _audioSampleQueueCapacity = checked((_audioFrameSize * 2) + MaxDriftCorrectionSamplesPerPass);
+        var queueBytes = checked(_audioSampleQueueCapacity * options.AudioChannels * sizeof(float));
+        _audioSampleQueueBuffer = (byte*)ffmpeg.av_malloc((ulong)queueBytes);
+        if (_audioSampleQueueBuffer == null)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=av_malloc(audio_sample_queue) msg=Allocation returned null size={queueBytes}.");
         }
     }
 
@@ -1390,15 +1435,38 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             return;
         }
 
-        ThrowIfError(ffmpeg.av_frame_make_writable(_audioFrame), "av_frame_make_writable(audio)");
+        var channelCount = GetAudioChannelCount();
+        if (_audioSampleQueueBuffer == null || _audioSampleQueueCapacity <= 0)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=EncodeAudioChunk msg=Audio sample queue is not allocated.");
+        }
+
+        if (_audioBufferedSamples < 0 || _audioBufferedSamples > _audioSampleQueueCapacity)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=EncodeAudioChunk msg=Audio queue sample count was out of range buffered={_audioBufferedSamples} capacity={_audioSampleQueueCapacity}.");
+        }
+
+        var availableSamples = _audioSampleQueueCapacity - _audioBufferedSamples;
+        if (availableSamples < inputSamples + MaxDriftCorrectionSamplesPerPass)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=EncodeAudioChunk msg=Audio queue capacity exhausted buffered={_audioBufferedSamples} available={availableSamples} requested={inputSamples}.");
+        }
 
         var inputData = stackalloc byte*[1];
         inputData[0] = inputPtr;
 
+        var outputData = stackalloc byte*[channelCount];
+        for (var channel = 0; channel < channelCount; channel++)
+        {
+            outputData[channel] = (byte*)(GetAudioQueuePlane(channel) + _audioBufferedSamples);
+        }
+
         var convertedSamples = ffmpeg.swr_convert(
             _swrCtx,
-            _audioFrame->extended_data,
-            inputSamples,
+            outputData,
+            availableSamples,
             inputData,
             inputSamples);
         if (convertedSamples < 0)
@@ -1412,9 +1480,66 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 $"LIBAV_ENCODER_ERROR operation=swr_convert msg=Unexpected sample count converted={convertedSamples} expected={inputSamples}");
         }
 
-        _audioFrame->nb_samples = convertedSamples;
-        _audioFrame->pts = _nextAudioPts;
-        _nextAudioPts += convertedSamples;
+        var queuedSamples = _audioBufferedSamples + convertedSamples;
+        var queuedAudioSamples = _nextAudioPts + queuedSamples;
+        var correctionSamples = GetDriftCorrectionSamples(queuedAudioSamples, out var correctionVideoFrame, out var driftMs);
+        var appliedCorrectionSamples = 0;
+
+        if (correctionSamples < 0)
+        {
+            var trimmedSamples = Math.Min(-correctionSamples, queuedSamples);
+            queuedSamples -= trimmedSamples;
+            appliedCorrectionSamples -= trimmedSamples;
+        }
+        else if (correctionSamples > 0)
+        {
+            AppendSilentSamples(queuedSamples, correctionSamples, channelCount);
+            queuedSamples += correctionSamples;
+            appliedCorrectionSamples += correctionSamples;
+        }
+
+        if (correctionSamples == 0 || appliedCorrectionSamples == correctionSamples)
+        {
+            _lastDriftCorrectionVideoFrame = correctionVideoFrame;
+        }
+
+        _audioBufferedSamples = queuedSamples;
+        DrainBufferedAudioFrames(flushPartialFrame: false);
+
+        if (appliedCorrectionSamples != 0)
+        {
+            _driftCorrectionAppliedSamples += appliedCorrectionSamples;
+            Logger.Log(
+                $"LIBAV_AV_DRIFT_CORRECTION videoFrame={_nextVideoPts} driftMs={driftMs:F1} " +
+                $"correctionSamples={appliedCorrectionSamples} totalCorrectionSamples={_driftCorrectionAppliedSamples}");
+        }
+    }
+
+    private void DrainBufferedAudioFrames(bool flushPartialFrame)
+    {
+        while (_audioBufferedSamples >= _audioFrameSize || (flushPartialFrame && _audioBufferedSamples > 0))
+        {
+            var sampleCount = _audioBufferedSamples >= _audioFrameSize
+                ? _audioFrameSize
+                : _audioBufferedSamples;
+            SendPreparedAudioFrame(sampleCount);
+            RemoveQueuedAudioSamples(sampleCount);
+        }
+    }
+
+    private void SendPreparedAudioFrame(int sampleCount)
+    {
+        if (_audioCodecCtx == null || _audioFrame == null || sampleCount <= 0)
+        {
+            return;
+        }
+
+        ThrowIfError(ffmpeg.av_frame_make_writable(_audioFrame), "av_frame_make_writable(audio)");
+        CopyQueuedSamplesToAudioFrame(sampleCount);
+
+        _audioFrame->nb_samples = sampleCount;
+        var nextPts = _nextAudioPts;
+        _audioFrame->pts = nextPts;
 
         var sendResult = ffmpeg.avcodec_send_frame(_audioCodecCtx, _audioFrame);
         if (sendResult == ffmpeg.AVERROR(ffmpeg.EAGAIN))
@@ -1424,31 +1549,136 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
 
         ThrowIfError(sendResult, "avcodec_send_frame(audio)");
+        _nextAudioPts = nextPts + sampleCount;
         DrainAudioEncoderPackets();
     }
 
-    private void FlushPendingAudioSamples()
+    private void CopyQueuedSamplesToAudioFrame(int sampleCount)
     {
-        if (_audioCodecCtx == null || _audioFrame == null || _audioAccumulatorBytes <= 0)
+        if (_audioCodecCtx == null || _audioFrame == null || _audioFrame->extended_data == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=CopyQueuedSamplesToAudioFrame msg=Audio frame storage was not initialized.");
+        }
+
+        var bytesPerSample = ffmpeg.av_get_bytes_per_sample(_audioCodecCtx->sample_fmt);
+        if (bytesPerSample <= 0)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=CopyQueuedSamplesToAudioFrame msg=Unsupported sample format '{_audioCodecCtx->sample_fmt}'.");
+        }
+
+        var channelCount = GetAudioChannelCount();
+        if (ffmpeg.av_sample_fmt_is_planar(_audioCodecCtx->sample_fmt) == 0)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=CopyQueuedSamplesToAudioFrame msg=Expected planar audio frame layout.");
+        }
+
+        var planeBytes = sampleCount * bytesPerSample;
+        for (var channel = 0; channel < channelCount; channel++)
+        {
+            var source = GetAudioQueuePlane(channel);
+            var destination = (float*)_audioFrame->extended_data[channel];
+            if (destination == null)
+            {
+                throw CreateLibAvException(
+                    $"LIBAV_ENCODER_ERROR operation=CopyQueuedSamplesToAudioFrame msg=Audio plane pointer was null channel={channel}.");
+            }
+
+            Buffer.MemoryCopy(source, destination, planeBytes, planeBytes);
+        }
+    }
+
+    private void RemoveQueuedAudioSamples(int sampleCount)
+    {
+        if (sampleCount <= 0)
         {
             return;
         }
 
-        var options = _options ?? throw new InvalidOperationException("Encoder options are not initialized.");
-        var inputBlockAlign = checked(options.AudioChannels * sizeof(float));
-        if (_audioAccumulatorBytes % inputBlockAlign != 0)
+        if (sampleCount > _audioBufferedSamples)
         {
             throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=FlushPendingAudioSamples msg=Accumulator is not sample-aligned bytes={_audioAccumulatorBytes} block_align={inputBlockAlign}");
+                $"LIBAV_ENCODER_ERROR operation=RemoveQueuedAudioSamples msg=Cannot remove more samples than buffered remove={sampleCount} buffered={_audioBufferedSamples}.");
         }
 
-        var pendingSamples = _audioAccumulatorBytes / inputBlockAlign;
-        if (pendingSamples > 0)
+        var remainingSamples = _audioBufferedSamples - sampleCount;
+        if (remainingSamples > 0)
         {
-            EncodeAudioChunk(_resampleBuffer, pendingSamples);
+            var channelCount = GetAudioChannelCount();
+            for (var channel = 0; channel < channelCount; channel++)
+            {
+                var plane = GetAudioQueuePlane(channel);
+                new ReadOnlySpan<float>(plane + sampleCount, remainingSamples)
+                    .CopyTo(new Span<float>(plane, remainingSamples));
+            }
         }
 
-        _audioAccumulatorBytes = 0;
+        _audioBufferedSamples = remainingSamples;
+    }
+
+    private void AppendSilentSamples(int startSample, int sampleCount, int channelCount)
+    {
+        if (sampleCount <= 0)
+        {
+            return;
+        }
+
+        for (var channel = 0; channel < channelCount; channel++)
+        {
+            new Span<float>(GetAudioQueuePlane(channel) + startSample, sampleCount).Clear();
+        }
+    }
+
+    private float* GetAudioQueuePlane(int channel)
+    {
+        if (_audioSampleQueueBuffer == null || _audioSampleQueueCapacity <= 0)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=GetAudioQueuePlane msg=Audio sample queue was not initialized.");
+        }
+
+        return (float*)(_audioSampleQueueBuffer + (channel * _audioSampleQueueCapacity * sizeof(float)));
+    }
+
+    private int GetAudioChannelCount()
+    {
+        var channelCount = (int)(_audioCodecCtx != null && _audioCodecCtx->ch_layout.nb_channels > 0
+            ? _audioCodecCtx->ch_layout.nb_channels
+            : _options?.AudioChannels ?? 0);
+        if (channelCount <= 0)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=GetAudioChannelCount msg=Audio channel count was not available.");
+        }
+
+        return channelCount;
+    }
+
+    private void FlushPendingAudioSamples()
+    {
+        if (_audioCodecCtx == null || _audioFrame == null)
+        {
+            return;
+        }
+
+        if (_audioAccumulatorBytes > 0)
+        {
+            var options = _options ?? throw new InvalidOperationException("Encoder options are not initialized.");
+            var inputBlockAlign = checked(options.AudioChannels * sizeof(float));
+            if (_audioAccumulatorBytes % inputBlockAlign != 0)
+            {
+                throw CreateLibAvException(
+                    $"LIBAV_ENCODER_ERROR operation=FlushPendingAudioSamples msg=Accumulator is not sample-aligned bytes={_audioAccumulatorBytes} block_align={inputBlockAlign}");
+            }
+
+            var pendingSamples = _audioAccumulatorBytes / inputBlockAlign;
+            if (pendingSamples > 0)
+            {
+                EncodeAudioChunk(_resampleBuffer, pendingSamples);
+            }
+
+            _audioAccumulatorBytes = 0;
+        }
+
+        DrainBufferedAudioFrames(flushPartialFrame: true);
     }
 
     private void CopyToAudioAccumulator(ReadOnlySpan<byte> source, int destinationOffset)
@@ -1598,6 +1828,12 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 _resampleBuffer = null;
             }
 
+            if (_audioSampleQueueBuffer != null)
+            {
+                ffmpeg.av_free(_audioSampleQueueBuffer);
+                _audioSampleQueueBuffer = null;
+            }
+
             if (_formatCtx != null)
             {
                 ffmpeg.avformat_free_context(_formatCtx);
@@ -1607,7 +1843,9 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             _videoStream = null;
             _audioStream = null;
             _audioFrameSize = 0;
+            _audioSampleQueueCapacity = 0;
             _audioAccumulatorBytes = 0;
+            _audioBufferedSamples = 0;
             _isOpen = false;
             _headerWritten = false;
             _flushSent = false;
@@ -1836,6 +2074,110 @@ ValidateHdrOptions:
             den = 10_000
         };
 
+    private int GetDriftCorrectionSamples(long audioSamples, out long correctionVideoFrame, out double driftMs)
+    {
+        correctionVideoFrame = 0;
+        driftMs = 0.0;
+
+        if (_options == null ||
+            !_options.AudioEnabled ||
+            _nextVideoPts < MinimumAvSyncVideoFrames ||
+            _nextVideoPts - _lastDriftCorrectionVideoFrame < AvSyncLogCadenceFrames)
+        {
+            return 0;
+        }
+
+        if (!TryGetAvSyncState(audioSamples, out var videoFrame, out _, out _, out _, out driftMs))
+        {
+            return 0;
+        }
+
+        correctionVideoFrame = videoFrame;
+        if (Math.Abs(driftMs) <= DriftCorrectionThresholdMs || _audioCodecCtx == null || _audioCodecCtx->sample_rate <= 0)
+        {
+            return 0;
+        }
+
+        var correctionSamples = (int)(-(driftMs / 1000.0) * _audioCodecCtx->sample_rate);
+        return Math.Clamp(correctionSamples, -MaxDriftCorrectionSamplesPerPass, MaxDriftCorrectionSamplesPerPass);
+    }
+
+    public bool TryGetCurrentAvSyncDrift(out double driftMs, out long correctionSamples)
+    {
+        driftMs = 0.0;
+        correctionSamples = _driftCorrectionAppliedSamples;
+
+        // Use cached time_base values instead of dereferencing codec context pointers.
+        // The codec contexts can be freed by FlushAndClose on the encoding thread,
+        // but the cached time_base structs are plain value types set once during open.
+        var vtb = _cachedVideoTimeBase;
+        var atb = _cachedAudioTimeBase;
+        if (vtb.num <= 0 || vtb.den <= 0 || atb.num <= 0 || atb.den <= 0)
+        {
+            return false;
+        }
+
+        var videoFrame = _nextVideoPts;
+        var audioSamples = _nextAudioPts + _audioBufferedSamples;
+        var videoTimeSec = videoFrame * vtb.num / (double)vtb.den;
+        var audioTimeSec = audioSamples * atb.num / (double)atb.den;
+        driftMs = (audioTimeSec - videoTimeSec) * 1000.0;
+        return true;
+    }
+
+    private void LogAvSyncIfDue()
+    {
+        if (_options == null ||
+            !_options.AudioEnabled ||
+            _nextVideoPts < MinimumAvSyncVideoFrames ||
+            _nextVideoPts - _lastSyncLogVideoFrame < AvSyncLogCadenceFrames)
+        {
+            return;
+        }
+
+        if (!TryGetAvSyncState(_nextAudioPts + _audioBufferedSamples, out var videoFrame, out var videoTimeSec, out var audioSamples, out var audioTimeSec, out var driftMs))
+        {
+            return;
+        }
+
+        _lastSyncLogVideoFrame = videoFrame;
+
+        Logger.Log(
+            $"LIBAV_AV_SYNC videoFrame={videoFrame} videoSec={videoTimeSec:F3} " +
+            $"audioSamples={audioSamples} audioSec={audioTimeSec:F3} driftMs={driftMs:F1} " +
+            $"totalCorrectionSamples={_driftCorrectionAppliedSamples}");
+    }
+
+    private bool TryGetAvSyncState(
+        long audioSamples,
+        out long videoFrame,
+        out double videoTimeSec,
+        out long reportedAudioSamples,
+        out double audioTimeSec,
+        out double driftMs)
+    {
+        videoFrame = _nextVideoPts;
+        videoTimeSec = 0.0;
+        reportedAudioSamples = audioSamples;
+        audioTimeSec = 0.0;
+        driftMs = 0.0;
+
+        if (_videoCodecCtx == null ||
+            _audioCodecCtx == null ||
+            _videoCodecCtx->time_base.num <= 0 ||
+            _videoCodecCtx->time_base.den <= 0 ||
+            _audioCodecCtx->time_base.num <= 0 ||
+            _audioCodecCtx->time_base.den <= 0)
+        {
+            return false;
+        }
+
+        videoTimeSec = videoFrame * _videoCodecCtx->time_base.num / (double)_videoCodecCtx->time_base.den;
+        audioTimeSec = reportedAudioSamples * _audioCodecCtx->time_base.num / (double)_audioCodecCtx->time_base.den;
+        driftMs = (audioTimeSec - videoTimeSec) * 1000.0;
+        return true;
+    }
+
     private static void ThrowIfError(int errorCode, string operation)
     {
         if (errorCode >= 0)
@@ -1880,6 +2222,7 @@ internal sealed record LibAvEncoderOptions
     public int AudioChannels { get; init; } = 2;
     public int AudioBitRate { get; init; } = 320_000;
     public bool HdrEnabled { get; init; }
+    public bool IsFullRangeInput { get; init; }
     public string? HdrMasterDisplayMetadata { get; init; }
     public int HdrMaxCll { get; init; }
     public int HdrMaxFall { get; init; }

@@ -39,8 +39,9 @@
             <ColumnDefinition x:Name="StatsDockColumn" Width="Auto"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>      <!-- Row 0: Preview -->
+            <RowDefinition Height="Auto"/>   <!-- Row 1: Settings Shelf -->
+            <RowDefinition Height="Auto"/>   <!-- Row 2: Control Bar -->
         </Grid.RowDefinitions>
 
         <!-- Row 0: Preview Area + Settings Overlay -->
@@ -56,7 +57,19 @@
                     BorderThickness="0"
                     CornerRadius="0"
                     Margin="12,6,12,6"
-                    RenderTransformOrigin="0.5,0.5">
+                    RenderTransformOrigin="0.5,0.5"
+                    DoubleTapped="PreviewBorder_DoubleTapped">
+                <Border.ContextFlyout>
+                    <MenuFlyout>
+                        <MenuFlyoutItem x:Name="FullScreenMenuItem"
+                                        Text="Enter Full Screen"
+                                        Click="FullScreenMenuItem_Click">
+                            <MenuFlyoutItem.Icon>
+                                <FontIcon Glyph="&#xE740;"/>
+                            </MenuFlyoutItem.Icon>
+                        </MenuFlyoutItem>
+                    </MenuFlyout>
+                </Border.ContextFlyout>
                 <Border.RenderTransform>
                     <ScaleTransform x:Name="PreviewBorderScale"
                                     ScaleX="1"
@@ -151,7 +164,7 @@
         <!-- Stats Dock Panel — full-height right column, outside preview grid -->
         <Border x:Name="StatsDockPanel"
                 Grid.Column="1"
-                Grid.RowSpan="2"
+                Grid.RowSpan="3"
                 Visibility="Collapsed"
                 Width="0"
                 MaxWidth="300"
@@ -214,12 +227,12 @@
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                                     <FontIcon.RenderTransform>
-                                        <RotateTransform Angle="0" />
+                                        <RotateTransform Angle="-90" />
                                     </FontIcon.RenderTransform>
                                 </FontIcon>
                             </Grid>
 
-                            <StackPanel x:Name="SourceSignal_Content" Spacing="2">
+                            <StackPanel x:Name="SourceSignal_Content" Spacing="2" Visibility="Collapsed">
                                 <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -310,12 +323,12 @@
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                                     <FontIcon.RenderTransform>
-                                        <RotateTransform Angle="0" />
+                                        <RotateTransform Angle="-90" />
                                     </FontIcon.RenderTransform>
                                 </FontIcon>
                             </Grid>
 
-                            <StackPanel x:Name="SourceCadence_Content" Spacing="2">
+                            <StackPanel x:Name="SourceCadence_Content" Spacing="2" Visibility="Collapsed">
                                 <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -398,12 +411,12 @@
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                                     <FontIcon.RenderTransform>
-                                        <RotateTransform Angle="0" />
+                                        <RotateTransform Angle="-90" />
                                     </FontIcon.RenderTransform>
                                 </FontIcon>
                             </Grid>
 
-                            <StackPanel x:Name="PreviewCadence_Content" Spacing="2">
+                            <StackPanel x:Name="PreviewCadence_Content" Spacing="2" Visibility="Collapsed">
                                 <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -453,12 +466,12 @@
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                                     <FontIcon.RenderTransform>
-                                        <RotateTransform Angle="0" />
+                                        <RotateTransform Angle="-90" />
                                     </FontIcon.RenderTransform>
                                 </FontIcon>
                             </Grid>
 
-                            <StackPanel x:Name="Pipeline_Content" Spacing="2">
+                            <StackPanel x:Name="Pipeline_Content" Spacing="2" Visibility="Collapsed">
                                 <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -483,12 +496,12 @@
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                                     <FontIcon.RenderTransform>
-                                        <RotateTransform Angle="0" />
+                                        <RotateTransform Angle="-90" />
                                     </FontIcon.RenderTransform>
                                 </FontIcon>
                             </Grid>
 
-                            <StackPanel x:Name="Frames_Content" Spacing="2">
+                            <StackPanel x:Name="Frames_Content" Spacing="2" Visibility="Collapsed">
                                 <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -530,12 +543,12 @@
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                                     <FontIcon.RenderTransform>
-                                        <RotateTransform Angle="0" />
+                                        <RotateTransform Angle="-90" />
                                     </FontIcon.RenderTransform>
                                 </FontIcon>
                             </Grid>
 
-                            <StackPanel x:Name="Performance_Content" Spacing="2">
+                            <StackPanel x:Name="Performance_Content" Spacing="2" Visibility="Collapsed">
                                 <Border Style="{StaticResource DockStatsRowAltStyle}">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
@@ -568,6 +581,55 @@
                         </StackPanel>
 
                         <StackPanel Spacing="2">
+                            <Grid x:Name="AvSync_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="AvSync_Content">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="AV Sync" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <FontIcon x:Name="AvSync_Chevron" Grid.Column="1" Glyph="&#xE70D;"
+                                          FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
+                                    <FontIcon.RenderTransform>
+                                        <RotateTransform Angle="-90" />
+                                    </FontIcon.RenderTransform>
+                                </FontIcon>
+                            </Grid>
+                            <StackPanel x:Name="AvSync_Content" Spacing="2" Visibility="Collapsed">
+                                <Border Padding="8,3" CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Drift" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_AvSyncDriftValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+                                <Border Padding="8,3" CornerRadius="4">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Drift Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_AvSyncDriftRateValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+                                <Border x:Name="Stats_AvSyncEncoderRow" Padding="8,3" CornerRadius="4" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" Visibility="Collapsed">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="Encoder" Style="{StaticResource DockStatsLabelStyle}" />
+                                        <TextBlock x:Name="Stats_AvSyncEncoderValue" Grid.Column="1" Text="&#x2014;" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </StackPanel>
+
+                        <StackPanel Spacing="2">
                             <Grid x:Name="GPU_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="GPU_Content">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -578,7 +640,7 @@
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                                     <FontIcon.RenderTransform>
-                                        <RotateTransform Angle="0" />
+                                        <RotateTransform Angle="-90" />
                                     </FontIcon.RenderTransform>
                                 </FontIcon>
                             </Grid>
@@ -588,13 +650,12 @@
                 </ScrollViewer>
             </Border>
 
-        <!-- Settings Overlay Panel (anchored above control bar) -->
+        <!-- Row 1: Settings Shelf (own grid row so preview resizes) -->
         <Border x:Name="SettingsOverlayPanel"
-                Grid.Row="0"
+                Grid.Row="1"
                 Grid.Column="0"
                 Visibility="Collapsed"
                 HorizontalAlignment="Stretch"
-                VerticalAlignment="Bottom"
                 Margin="0,0,0,0"
                 Padding="16,12"
                 CornerRadius="12,12,0,0"
@@ -604,9 +665,6 @@
                               TintOpacity="0.80"
                               FallbackColor="#141414"/>
             </Border.Background>
-            <Border.RenderTransform>
-                <TranslateTransform x:Name="SettingsShelfTranslate" Y="0"/>
-            </Border.RenderTransform>
             <Grid RowSpacing="10">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -885,10 +943,10 @@
         </Border>
 
         <!-- Row 1: Two-Tier Control Bar -->
-        <Border x:Name="ControlBarShadowHost" Grid.Row="1" Grid.Column="0"
+        <Border x:Name="ControlBarShadowHost" Grid.Row="2" Grid.Column="0"
                 Background="Transparent"
                 IsHitTestVisible="False"/>
-        <Border x:Name="ControlBarBorder" Grid.Row="1" Grid.Column="0"
+        <Border x:Name="ControlBarBorder" Grid.Row="2" Grid.Column="0"
                 Margin="16,8,16,16"
                 BorderBrush="#10FFFFFF" BorderThickness="1"
                 CornerRadius="12" Padding="16,12">
@@ -1264,6 +1322,15 @@
                                        Visibility="Collapsed"/>
                         </StackPanel>
                     </ToggleButton>
+                    <Border Width="1" Height="20" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
+                    <Button x:Name="FullScreenButton"
+                            Click="FullScreenButton_Click"
+                            VerticalAlignment="Center"
+                            Width="36" Height="36"
+                            Padding="0" CornerRadius="8"
+                            ToolTipService.ToolTip="Full screen">
+                        <FontIcon x:Name="FullScreenButtonIcon" Glyph="&#xE740;" FontSize="14"/>
+                    </Button>
                 </StackPanel>
 
                 <!-- StatusTextBlock: hidden but kept for code-behind compatibility -->
@@ -1275,7 +1342,7 @@
         </Border>
 
         <!-- Startup Splash Overlay -->
-        <Grid x:Name="SplashOverlay" Grid.RowSpan="2" Grid.ColumnSpan="2"
+        <Grid x:Name="SplashOverlay" Grid.RowSpan="3" Grid.ColumnSpan="2"
               Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
               RenderTransformOrigin="0.5,0.5">
             <Grid.RenderTransform>

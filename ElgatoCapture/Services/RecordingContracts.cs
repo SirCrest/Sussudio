@@ -24,6 +24,7 @@ public sealed class RecordingContext
     public uint EffectiveHeight { get; init; }
     public string VideoInputPixelFormat { get; init; } = "nv12";
     public bool HdrPipelineActive { get; init; }
+    public bool IsFullRangeInput { get; init; }
     public IntPtr D3D11DevicePtr { get; init; }
     public IntPtr D3D11DeviceContextPtr { get; init; }
     public IntPtr CudaHwDeviceCtxPtr { get; init; }

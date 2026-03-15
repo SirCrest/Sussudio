@@ -105,6 +105,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private double _savedPreviewVolume;
     private bool _isVolumeFadingIn;
     private bool _isSettingsShelfAnimating;
+    private bool _isFullScreen;
+    private bool _isFullScreenTransitioning;
+    private Windows.Graphics.RectInt32 _preFullScreenBounds;
+    private Windows.Graphics.PointInt32 _preFullScreenPosition;
+    private bool _preFullScreenSettingsVisible;
+    private bool _preFullScreenStatsDockVisible;
     private bool _captureSettingsNarrow;
     private const double ControlBarLabelThreshold = 900.0;
     private const int MinWindowWidth = 900;
@@ -123,10 +129,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private LinearGradientBrush? _audioMeterColorBrush;
     private LinearGradientBrush? _audioMeterGreyBrush;
     private DispatcherTimer? _audioMeterAnimationTimer;
+    private readonly List<DiagnosticRowSlot> _decodeRowPool = new();
+    private readonly List<DiagnosticRowSlot> _gpuRowPool = new();
+    private readonly List<DiagnosticsPoolSlot> _diagnosticsRowPool = new();
+    private TextBlock? _diagnosticsEmptyStateTextBlock;
 
     private const long AudioPeakHoldDurationMs = 1500;
     private const double AudioPeakHoldDecayPerSecond = 0.8;
     private const long AudioRangeWindowMs = 3000;
+    private const int MaxExpectedDecodeRowCount = 14;
+    private const int FixedGpuRowCount = 10;
 
     private static bool IsFrameRateMatch(double a, double b, double tolerance = 0.01)
         => Math.Abs(a - b) < tolerance;
@@ -1141,6 +1153,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         _dispatcherQueue = DispatcherQueue.GetForCurrentThread();
         ViewModel = new MainViewModel();
+        ViewModel.StatsSectionVisibilityHandler = SetStatsSectionVisible;
         _windowTitleBase = BuildWindowTitleBase();
         ApplyWindowTitle();
         var automationToken = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_TOKEN");
@@ -1212,6 +1225,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         SetupButtonHoverAnimations();
         SetupControlBarShadow();
 
+        // ESC key exits fullscreen
+        ((FrameworkElement)Content).KeyDown += OnContentKeyDown;
+
         // Entrance animation: hide everything initially
         ControlBarBorder.Opacity = 0;
         ControlBarBorder.RenderTransformOrigin = new Windows.Foundation.Point(0.5, 1.0);
@@ -1256,6 +1272,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void SetupBindings()
     {
         InitializeAudioMeterBrushes();
+        ViewModel.AudioMeterActivated += EnsureAudioMeterTimerRunning;
 
         // Bind all collections to ComboBoxes
         DeviceComboBox.ItemsSource = ViewModel.Devices;
@@ -1341,7 +1358,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         TrueHdrPreviewToggle.IsChecked = ViewModel.IsTrueHdrPreviewEnabled;
         TrueHdrPreviewToggle.IsEnabled = ViewModel.IsHdrEnabled && !ViewModel.IsRecording;
         ResetAudioMeterVisuals();
-        _audioMeterTargetLevel = Math.Clamp(ViewModel.AudioPeak, 0.0, 1.0);
+        _audioMeterTargetLevel = Math.Clamp(ViewModel.AudioMeterTarget, 0.0, 1.0);
         AudioClipText.Visibility = ViewModel.AudioClipping ? Visibility.Visible : Visibility.Collapsed;
         RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing;
         RefreshHdrHintText();
@@ -1616,6 +1633,31 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
 
         if (!collapsing && ReferenceEquals(content, Diagnostics_Content))
+        {
+            var snapshot = GetStatsSnapshot();
+            UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
+        }
+    }
+
+    private void SetStatsSectionVisible(string section, bool visible)
+    {
+        var contentName = section + "_Content";
+        var content = StatsDockPanel.FindName(contentName) as StackPanel;
+        if (content == null)
+        {
+            return;
+        }
+
+        content.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+
+        var chevronName = section + "_Chevron";
+        if (StatsDockPanel.FindName(chevronName) is FontIcon chevron &&
+            chevron.RenderTransform is RotateTransform rotate)
+        {
+            rotate.Angle = visible ? 0 : -90;
+        }
+
+        if (visible && contentName == "Diagnostics_Content")
         {
             var snapshot = GetStatsSnapshot();
             UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
@@ -2103,6 +2145,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
 
         _isWindowClosing = true;
+        ViewModel.AudioMeterActivated -= EnsureAudioMeterTimerRunning;
         _audioMeterAnimationTimer?.Stop();
         _audioMeterAnimationTimer = null;
         StopStatsDockPolling();
@@ -2370,6 +2413,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         SetTextIfChanged(Stats_RendererRenderedValue, rendererRendered);
         SetTextIfChanged(Stats_RendererDroppedValue, rendererDropped);
         SetTextIfChanged(Stats_PerfScoreValue, perfScore);
+        SetTextIfChanged(Stats_AvSyncDriftValue, FormatSignedMs(snapshot.AvSyncCaptureDriftMs));
+        SetTextIfChanged(Stats_AvSyncDriftRateValue, FormatSignedMsPerSec(snapshot.AvSyncCaptureDriftRateMsPerSec));
+        var encoderVisible = snapshot.Recording && snapshot.AvSyncEncoderDriftMs.HasValue;
+        SetVisibilityIfChanged(Stats_AvSyncEncoderRow, encoderVisible ? Visibility.Visible : Visibility.Collapsed);
+        if (encoderVisible)
+        {
+            var encoderText = $"{FormatSignedMs(snapshot.AvSyncEncoderDriftMs)} ({snapshot.AvSyncEncoderCorrectionSamples ?? 0} corr)";
+            SetTextIfChanged(Stats_AvSyncEncoderValue, encoderText);
+        }
         UpdateDiagnosticsSection(snapshot.SourceTelemetryDetails ?? Array.Empty<SourceTelemetryDetailEntry>(), snapshot.DiagnosticSummary);
         UpdateDecodeSection();
         UpdateGpuSection();
@@ -2381,73 +2433,72 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         if (mjpegMetrics is not { DecoderCount: > 0 } mjpeg)
         {
             DecodeSection.Visibility = Visibility.Collapsed;
+            CollapseDiagnosticRows(_decodeRowPool);
             return;
         }
 
         DecodeSection.Visibility = Visibility.Visible;
-        var content = Decode_Content;
-        content.Children.Clear();
+        EnsureDiagnosticRowPool(Decode_Content, _decodeRowPool, MaxExpectedDecodeRowCount);
 
-        var alt = false;
-        void AddRow(string label, string value)
+        var rowIndex = 0;
+        void SetRow(string label, string value)
         {
-            content.Children.Add(CreateDiagnosticRow(label, value, alt));
-            alt = !alt;
+            EnsureDiagnosticRowPool(Decode_Content, _decodeRowPool, rowIndex + 1);
+            UpdateDiagnosticRowSlot(_decodeRowPool[rowIndex], label, value, alt: (rowIndex % 2) != 0);
+            rowIndex++;
         }
 
         var effectiveFrameTimeMs = mjpeg.DecodeAvgMs / mjpeg.DecoderCount;
         var effectiveFps = effectiveFrameTimeMs > 0 ? 1000.0 / effectiveFrameTimeMs : 0;
 
-        AddRow("Throughput", $"{effectiveFrameTimeMs:0.00}ms ({effectiveFps:0}fps peak)");
-        AddRow("Decode", $"{mjpeg.DecodeAvgMs:0.00}ms avg ({mjpeg.DecoderCount} threads)");
-        AddRow("Reorder", $"{mjpeg.ReorderAvgMs:0.00}ms avg");
-        AddRow("Pipeline", $"{mjpeg.PipelineAvgMs:0.00}ms avg");
-        AddRow("Frames", $"{mjpeg.TotalEmitted:N0} emitted / {mjpeg.TotalDropped:N0} dropped");
+        SetRow("Throughput", $"{effectiveFrameTimeMs:0.00}ms ({effectiveFps:0}fps peak)");
+        SetRow("Decode", $"{mjpeg.DecodeAvgMs:0.00}ms avg ({mjpeg.DecoderCount} threads)");
+        SetRow("Reorder", $"{mjpeg.ReorderAvgMs:0.00}ms avg");
+        SetRow("Pipeline", $"{mjpeg.PipelineAvgMs:0.00}ms avg");
+        SetRow("Frames", $"{mjpeg.TotalEmitted:N0} emitted / {mjpeg.TotalDropped:N0} dropped");
         if (mjpeg.ReorderSkips > 0)
         {
-            AddRow("Skips", $"{mjpeg.ReorderSkips:N0}");
+            SetRow("Skips", $"{mjpeg.ReorderSkips:N0}");
         }
 
         foreach (var worker in mjpeg.PerDecoder)
         {
-            AddRow($"Thread {worker.WorkerIndex}", $"{worker.AvgMs:0.00}ms");
+            SetRow($"Thread {worker.WorkerIndex}", $"{worker.AvgMs:0.00}ms");
         }
+
+        CollapseDiagnosticRows(_decodeRowPool, startIndex: rowIndex);
     }
 
     private void UpdateGpuSection()
     {
         var nvml = _nvmlMonitor?.GetLatestSnapshot();
-        var gpuContent = GPU_Content;
-        gpuContent.Children.Clear();
+        EnsureDiagnosticRowPool(GPU_Content, _gpuRowPool, FixedGpuRowCount);
 
-        var alt = false;
-        void AddRow(string label, string value)
+        var rowIndex = 0;
+        void SetRow(string label, string value)
         {
-            gpuContent.Children.Add(CreateDiagnosticRow(label, value, alt));
-            alt = !alt;
+            UpdateDiagnosticRowSlot(_gpuRowPool[rowIndex], label, value, alt: (rowIndex % 2) != 0);
+            rowIndex++;
         }
 
         if (nvml == null)
         {
-            if (gpuContent.Children.Count == 0)
-            {
-                AddRow("Status", "NVML not available");
-            }
-
+            SetRow("Status", "NVML not available");
+            CollapseDiagnosticRows(_gpuRowPool, startIndex: rowIndex);
             return;
         }
 
-        if (!string.IsNullOrEmpty(nvml.GpuName))
-            AddRow("GPU", nvml.GpuName);
-        AddRow("Utilization", $"{nvml.GpuUtilizationPercent ?? 0}% (Mem: {nvml.GpuMemoryUtilizationPercent ?? 0}%)");
-        AddRow("NVDEC", $"{nvml.NvdecUtilizationPercent ?? 0}%");
-        AddRow("NVENC", $"{nvml.NvencUtilizationPercent ?? 0}%");
-        AddRow("PCIe TX", $"{nvml.PcieTxMBps ?? 0:0.0} MB/s");
-        AddRow("PCIe RX", $"{nvml.PcieRxMBps ?? 0:0.0} MB/s");
-        AddRow("VRAM", $"{nvml.VramUsedMB ?? 0} / {nvml.VramTotalMB ?? 0} MB");
-        AddRow("Temperature", $"{nvml.GpuTemperatureC ?? 0}°C");
-        AddRow("Power", $"{nvml.GpuPowerW ?? 0:0.0}W");
-        AddRow("Clocks", $"{nvml.GpuClockMHz ?? 0} MHz (Mem: {nvml.GpuMemClockMHz ?? 0} MHz)");
+        SetRow("GPU", string.IsNullOrWhiteSpace(nvml.GpuName) ? "\u2014" : nvml.GpuName);
+        SetRow("Utilization", $"{nvml.GpuUtilizationPercent ?? 0}% (Mem: {nvml.GpuMemoryUtilizationPercent ?? 0}%)");
+        SetRow("NVDEC", $"{nvml.NvdecUtilizationPercent ?? 0}%");
+        SetRow("NVENC", $"{nvml.NvencUtilizationPercent ?? 0}%");
+        SetRow("PCIe TX", $"{nvml.PcieTxMBps ?? 0:0.0} MB/s");
+        SetRow("PCIe RX", $"{nvml.PcieRxMBps ?? 0:0.0} MB/s");
+        SetRow("VRAM", $"{nvml.VramUsedMB ?? 0} / {nvml.VramTotalMB ?? 0} MB");
+        SetRow("Temperature", $"{nvml.GpuTemperatureC ?? 0}°C");
+        SetRow("Power", $"{nvml.GpuPowerW ?? 0:0.0}W");
+        SetRow("Clocks", $"{nvml.GpuClockMHz ?? 0} MHz (Mem: {nvml.GpuMemClockMHz ?? 0} MHz)");
+        CollapseDiagnosticRows(_gpuRowPool, startIndex: rowIndex);
     }
 
     private StatsSnapshot GetStatsSnapshot()
@@ -2503,7 +2554,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             TelemetryOrigin: health.SourceTelemetryOrigin.ToString(),
             TelemetryConfidence: health.SourceTelemetryConfidence.ToString(),
             SourceTelemetryDetails: telemetryDetails,
-            DiagnosticSummary: health.SourceTelemetryDiagnosticSummary);
+            DiagnosticSummary: health.SourceTelemetryDiagnosticSummary,
+            AvSyncCaptureDriftMs: health.AvSyncCaptureDriftMs,
+            AvSyncCaptureDriftRateMsPerSec: health.AvSyncCaptureDriftRateMsPerSec,
+            AvSyncEncoderDriftMs: health.AvSyncEncoderDriftMs,
+            AvSyncEncoderCorrectionSamples: health.AvSyncEncoderCorrectionSamples);
     }
 
     private void UpdateDiagnosticsSection(IReadOnlyList<SourceTelemetryDetailEntry> telemetryDetails, string? diagnosticSummary)
@@ -2513,36 +2568,42 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             return;
         }
 
-        Diagnostics_Content.Children.Clear();
+        EnsureDiagnosticsEmptyState();
 
+        var slotIndex = 0;
         if (telemetryDetails.Count > 0)
         {
             var currentGroup = string.Empty;
             var alt = true;
             foreach (var detail in telemetryDetails)
             {
-                if (!string.Equals(currentGroup, detail.Group, StringComparison.Ordinal))
+                EnsureDiagnosticsPoolCapacity(slotIndex + 1);
+                var showHeader = !string.Equals(currentGroup, detail.Group, StringComparison.Ordinal);
+                if (showHeader)
                 {
                     currentGroup = detail.Group;
-                    Diagnostics_Content.Children.Add(CreateDiagnosticGroupHeader(currentGroup));
                     alt = true;
                 }
 
-                Diagnostics_Content.Children.Add(CreateDiagnosticRow(detail.Label, detail.DisplayValue, alt));
+                UpdateDiagnosticsPoolSlot(
+                    _diagnosticsRowPool[slotIndex],
+                    showHeader ? currentGroup : null,
+                    detail.Label,
+                    detail.DisplayValue,
+                    alt);
                 alt = !alt;
+                slotIndex++;
             }
 
+            SetVisibilityIfChanged(_diagnosticsEmptyStateTextBlock!, Visibility.Collapsed);
+            CollapseDiagnosticsPoolSlots(startIndex: slotIndex);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(diagnosticSummary))
         {
-            var empty = new TextBlock
-            {
-                Text = "No diagnostics available",
-                Style = (Style)StatsDockPanel.Resources["DockStatsLabelStyle"]
-            };
-            Diagnostics_Content.Children.Add(empty);
+            SetVisibilityIfChanged(_diagnosticsEmptyStateTextBlock!, Visibility.Visible);
+            CollapseDiagnosticsPoolSlots();
             return;
         }
 
@@ -2550,10 +2611,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var fallbackAlt = true;
         foreach (var (label, value) in entries)
         {
-            var row = CreateDiagnosticRow(label, value, fallbackAlt);
-            Diagnostics_Content.Children.Add(row);
+            EnsureDiagnosticsPoolCapacity(slotIndex + 1);
+            UpdateDiagnosticsPoolSlot(_diagnosticsRowPool[slotIndex], null, label, value, fallbackAlt);
             fallbackAlt = !fallbackAlt;
+            slotIndex++;
         }
+
+        SetVisibilityIfChanged(_diagnosticsEmptyStateTextBlock!, Visibility.Collapsed);
+        CollapseDiagnosticsPoolSlots(startIndex: slotIndex);
     }
 
     private TextBlock CreateDiagnosticGroupHeader(string title)
@@ -2673,6 +2738,128 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         };
     }
 
+    private sealed record DiagnosticRowSlot(Border Row, TextBlock Label, TextBlock Value);
+
+    private sealed record DiagnosticsPoolSlot(
+        Border Row,
+        TextBlock? GroupHeader,
+        TextBlock Label,
+        TextBlock Value);
+
+    private static void SetVisibilityIfChanged(UIElement element, Visibility visibility)
+    {
+        if (element.Visibility != visibility)
+        {
+            element.Visibility = visibility;
+        }
+    }
+
+    private void EnsureDiagnosticRowPool(StackPanel container, List<DiagnosticRowSlot> pool, int requiredCount)
+    {
+        while (pool.Count < requiredCount)
+        {
+            var row = CreateDiagnosticRow("", "", alt: false);
+            var grid = (Grid)row.Child;
+            var labelBlock = (TextBlock)grid.Children[0];
+            var valueBlock = (TextBlock)grid.Children[1];
+            pool.Add(new DiagnosticRowSlot(row, labelBlock, valueBlock));
+            container.Children.Add(row);
+        }
+    }
+
+    private void UpdateDiagnosticRowSlot(DiagnosticRowSlot slot, string label, string value, bool alt)
+    {
+        SetTextIfChanged(slot.Label, label);
+        SetTextIfChanged(slot.Value, value);
+        var targetStyle = (Style)StatsDockPanel.Resources[alt ? "DockStatsRowAltStyle" : "DockStatsRowStyle"];
+        if (!ReferenceEquals(slot.Row.Style, targetStyle))
+        {
+            slot.Row.Style = targetStyle;
+        }
+
+        SetVisibilityIfChanged(slot.Row, Visibility.Visible);
+    }
+
+    private static void CollapseDiagnosticRows(List<DiagnosticRowSlot> pool, int startIndex = 0)
+    {
+        for (var i = startIndex; i < pool.Count; i++)
+        {
+            SetVisibilityIfChanged(pool[i].Row, Visibility.Collapsed);
+        }
+    }
+
+    private void EnsureDiagnosticsEmptyState()
+    {
+        if (_diagnosticsEmptyStateTextBlock != null) return;
+        _diagnosticsEmptyStateTextBlock = new TextBlock
+        {
+            Text = "No diagnostics available",
+            Style = (Style)StatsDockPanel.Resources["DockStatsLabelStyle"],
+            Visibility = Visibility.Collapsed
+        };
+        Diagnostics_Content.Children.Add(_diagnosticsEmptyStateTextBlock);
+    }
+
+    private void EnsureDiagnosticsPoolCapacity(int requiredCount)
+    {
+        while (_diagnosticsRowPool.Count < requiredCount)
+        {
+            var row = CreateDiagnosticRow("", "", alt: false);
+            var grid = (Grid)row.Child;
+            var labelBlock = (TextBlock)grid.Children[0];
+            var valueBlock = (TextBlock)grid.Children[1];
+            var header = CreateDiagnosticGroupHeader("");
+            header.Visibility = Visibility.Collapsed;
+            Diagnostics_Content.Children.Add(header);
+            Diagnostics_Content.Children.Add(row);
+            _diagnosticsRowPool.Add(new DiagnosticsPoolSlot(row, header, labelBlock, valueBlock));
+        }
+    }
+
+    private void UpdateDiagnosticsPoolSlot(
+        DiagnosticsPoolSlot slot,
+        string? groupHeader,
+        string label,
+        string value,
+        bool alt)
+    {
+        if (slot.GroupHeader != null)
+        {
+            if (groupHeader != null)
+            {
+                SetTextIfChanged(slot.GroupHeader, groupHeader);
+                SetVisibilityIfChanged(slot.GroupHeader, Visibility.Visible);
+            }
+            else
+            {
+                SetVisibilityIfChanged(slot.GroupHeader, Visibility.Collapsed);
+            }
+        }
+
+        SetTextIfChanged(slot.Label, label);
+        SetTextIfChanged(slot.Value, value);
+        var targetStyle = (Style)StatsDockPanel.Resources[alt ? "DockStatsRowAltStyle" : "DockStatsRowStyle"];
+        if (!ReferenceEquals(slot.Row.Style, targetStyle))
+        {
+            slot.Row.Style = targetStyle;
+        }
+
+        SetVisibilityIfChanged(slot.Row, Visibility.Visible);
+    }
+
+    private void CollapseDiagnosticsPoolSlots(int startIndex = 0)
+    {
+        for (var i = startIndex; i < _diagnosticsRowPool.Count; i++)
+        {
+            var slot = _diagnosticsRowPool[i];
+            SetVisibilityIfChanged(slot.Row, Visibility.Collapsed);
+            if (slot.GroupHeader != null)
+            {
+                SetVisibilityIfChanged(slot.GroupHeader, Visibility.Collapsed);
+            }
+        }
+    }
+
     private static string FormatFps(double value)
     {
         return Sanitize(value).ToString("0.00");
@@ -2707,6 +2894,26 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private static string FormatCount(long value)
     {
         return Math.Max(0, value).ToString("N0");
+    }
+
+    private static string FormatSignedMs(double? value)
+    {
+        if (!value.HasValue || double.IsNaN(value.Value))
+        {
+            return "\u2014";
+        }
+
+        return value.Value >= 0 ? $"+{value.Value:F1}ms" : $"{value.Value:F1}ms";
+    }
+
+    private static string FormatSignedMsPerSec(double? value)
+    {
+        if (!value.HasValue || double.IsNaN(value.Value))
+        {
+            return "\u2014";
+        }
+
+        return value.Value >= 0 ? $"+{value.Value:F2} ms/s" : $"{value.Value:F2} ms/s";
     }
 
     private static void SetTextIfChanged(TextBlock target, string value)
@@ -3013,7 +3220,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                     ResetAudioMeterVisuals();
                 }
 
-                UpdateVideoContentOverlays();
                 // Three-state button: hide spinner, show correct content, animated morph
                 RecordButtonStartingContent.IsActive = false;
                 RecordButtonStartingContent.Visibility = Visibility.Collapsed;
@@ -3083,10 +3289,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
             case nameof(MainViewModel.OutputPath):
                 OutputPathTextBox.Text = ViewModel.OutputPath;
-                break;
-
-            case nameof(MainViewModel.AudioPeak):
-                _audioMeterTargetLevel = Math.Clamp(ViewModel.AudioPeak, 0.0, 1.0);
                 break;
 
             case nameof(MainViewModel.AudioClipping):
@@ -3208,6 +3410,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                     StatsToggle.IsChecked = ViewModel.IsStatsVisible;
                 }
                 ApplyStatsVisibility(ViewModel.IsStatsVisible);
+                break;
+
+            case nameof(MainViewModel.IsSettingsVisible):
+                ApplySettingsVisibility(ViewModel.IsSettingsVisible);
                 break;
 
             case nameof(MainViewModel.SelectedAudioInputDevice):
@@ -3991,6 +4197,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void AnimateAudioMeterTick()
     {
+        _audioMeterTargetLevel = ViewModel.AudioMeterTarget;
         var target = _audioMeterTargetLevel;
         var nowMs = Environment.TickCount64;
 
@@ -4010,6 +4217,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         if (_audioMeterDisplayLevel < 0.001)
         {
             _audioMeterDisplayLevel = 0;
+        }
+
+        // Stop timer when fully idle (no active level, no decay, no peak hold)
+        if (_audioMeterDisplayLevel == 0 && _audioPeakHoldLevel == 0 && target == 0)
+        {
+            _audioMeterAnimationTimer?.Stop();
+            ViewModel.ResetAudioMeterTimerFlag();
+            return;
         }
 
         // Peak hold
@@ -4067,7 +4282,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         _audioMeterAnimationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
         _audioMeterAnimationTimer.Tick += (_, _) => AnimateAudioMeterTick();
-        _audioMeterAnimationTimer.Start();
 
         _audioMeterColorBrush = (LinearGradientBrush)AudioMeterFill.Background;
 
@@ -4081,6 +4295,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 140, 140, 140), Offset = 0.75 });
         _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 110, 110, 110), Offset = 0.90 });
         _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 90, 90, 90), Offset = 1 });
+    }
+
+    private void EnsureAudioMeterTimerRunning()
+    {
+        if (_audioMeterAnimationTimer is { IsEnabled: false })
+        {
+            _audioMeterAnimationTimer.Start();
+        }
     }
 
     private void SetAudioMeterMonitoringState(bool isMonitoring)
@@ -4411,6 +4633,29 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }, nameof(ScreenshotButton_Click));
     }
 
+    private void ApplySettingsVisibility(bool visible)
+    {
+        if (_isSettingsShelfAnimating)
+        {
+            return;
+        }
+
+        var isCurrentlyVisible = SettingsOverlayPanel.Visibility == Visibility.Visible;
+        if (visible == isCurrentlyVisible)
+        {
+            return;
+        }
+
+        if (visible)
+        {
+            ShowSettingsShelf();
+        }
+        else
+        {
+            HideSettingsShelf();
+        }
+    }
+
     private void SettingsToggleButton_Click(object sender, RoutedEventArgs e)
     {
         if (_isSettingsShelfAnimating)
@@ -4433,44 +4678,60 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _isSettingsShelfAnimating = true;
         var durationMs = show ? 250 : 200;
         var easing = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn };
+        var duration = TimeSpan.FromMilliseconds(durationMs);
 
+        double targetHeight;
         if (show)
         {
+            // Measure natural height without rendering (opacity 0, same sync block)
             SettingsOverlayPanel.Opacity = 0;
+            SettingsOverlayPanel.Height = double.NaN;
             SettingsOverlayPanel.Visibility = Visibility.Visible;
-            SettingsShelfTranslate.Y = 40;
+            SettingsOverlayPanel.UpdateLayout();
+            targetHeight = SettingsOverlayPanel.ActualHeight;
+            SettingsOverlayPanel.Height = 0;
         }
+        else
+        {
+            targetHeight = SettingsOverlayPanel.ActualHeight;
+            SettingsOverlayPanel.Height = targetHeight; // Pin to numeric value so animation can interpolate
+        }
+
+        var heightAnim = new DoubleAnimation
+        {
+            To = show ? targetHeight : 0,
+            Duration = duration,
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(heightAnim, SettingsOverlayPanel);
+        Storyboard.SetTargetProperty(heightAnim, "Height");
 
         var fade = new DoubleAnimation
         {
             From = show ? 0 : 1,
             To = show ? 1 : 0,
-            Duration = TimeSpan.FromMilliseconds(durationMs),
+            Duration = duration,
             EasingFunction = easing
         };
         Storyboard.SetTarget(fade, SettingsOverlayPanel);
         Storyboard.SetTargetProperty(fade, "Opacity");
 
-        var slide = new DoubleAnimation
-        {
-            From = show ? 40 : 0,
-            To = show ? 0 : 40,
-            Duration = TimeSpan.FromMilliseconds(durationMs),
-            EasingFunction = easing
-        };
-        Storyboard.SetTarget(slide, SettingsShelfTranslate);
-        Storyboard.SetTargetProperty(slide, "Y");
-
         var storyboard = new Storyboard();
+        storyboard.Children.Add(heightAnim);
         storyboard.Children.Add(fade);
-        storyboard.Children.Add(slide);
         storyboard.Completed += (_, _) =>
         {
-            if (!show)
+            if (show)
+            {
+                SettingsOverlayPanel.Height = double.NaN; // Return to Auto
+                SettingsOverlayPanel.Opacity = 1;
+            }
+            else
             {
                 SettingsOverlayPanel.Visibility = Visibility.Collapsed;
+                SettingsOverlayPanel.Height = double.NaN;
                 SettingsOverlayPanel.Opacity = 1;
-                SettingsShelfTranslate.Y = 0;
             }
             _isSettingsShelfAnimating = false;
         };
@@ -4479,6 +4740,296 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void ShowSettingsShelf() => AnimateSettingsShelf(show: true);
     private void HideSettingsShelf() => AnimateSettingsShelf(show: false);
+
+    #region Full screen mode
+
+    private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)
+    {
+        if (e.Key == Windows.System.VirtualKey.Escape && _isFullScreen)
+        {
+            e.Handled = true;
+            ExitFullScreen();
+        }
+    }
+
+    private void PreviewBorder_DoubleTapped(object sender, DoubleTappedRoutedEventArgs e)
+    {
+        ToggleFullScreen();
+    }
+
+    private void FullScreenMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleFullScreen();
+    }
+
+    private void FullScreenButton_Click(object sender, RoutedEventArgs e)
+    {
+        ToggleFullScreen();
+    }
+
+    private void ToggleFullScreen()
+    {
+        if (_isFullScreen)
+        {
+            ExitFullScreen();
+        }
+        else
+        {
+            EnterFullScreen();
+        }
+    }
+
+    private async void EnterFullScreen()
+    {
+        if (_isFullScreenTransitioning || _isFullScreen) return;
+        _isFullScreenTransitioning = true;
+
+        var appWindow = GetAppWindow();
+        _preFullScreenPosition = appWindow.Position;
+        _preFullScreenBounds = new Windows.Graphics.RectInt32(
+            appWindow.Position.X, appWindow.Position.Y,
+            appWindow.Size.Width, appWindow.Size.Height);
+        _preFullScreenSettingsVisible = SettingsOverlayPanel.Visibility == Visibility.Visible;
+        _preFullScreenStatsDockVisible = StatsDockPanel.Visibility == Visibility.Visible;
+
+        // Capture pre-transition preview rect
+        var transform = PreviewBorder.TransformToVisual((UIElement)Content);
+        var prePosition = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
+        var preW = PreviewBorder.ActualWidth;
+        var preH = PreviewBorder.ActualHeight;
+
+        // Commit layout instantly
+        ControlBarBorder.Visibility = Visibility.Collapsed;
+        ControlBarShadowHost.Visibility = Visibility.Collapsed;
+        if (_preFullScreenSettingsVisible)
+        {
+            SettingsOverlayPanel.Visibility = Visibility.Collapsed;
+            SettingsOverlayPanel.Height = double.NaN;
+            SettingsOverlayPanel.Opacity = 1;
+            _isSettingsShelfAnimating = false;
+        }
+        if (_preFullScreenStatsDockVisible)
+        {
+            HideStatsDockPanel(immediate: true);
+        }
+
+        PreviewBorder.Margin = new Thickness(0);
+        PreviewShadowHost.Margin = new Thickness(0);
+        PreviewShadowHost.CornerRadius = new CornerRadius(0);
+
+        ((Grid)Content).Background = new SolidColorBrush(Microsoft.UI.Colors.Black);
+        VideoShadowHost.Visibility = Visibility.Collapsed;
+
+        appWindow.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.FullScreen);
+
+        // Wait for layout, then animate
+        await WaitForSizeChangedAsync(PreviewContentGrid, 200);
+
+        var postTransform = PreviewBorder.TransformToVisual((UIElement)Content);
+        var postPosition = postTransform.TransformPoint(new Windows.Foundation.Point(0, 0));
+        var postW = PreviewBorder.ActualWidth;
+        var postH = PreviewBorder.ActualHeight;
+
+        if (postW > 0 && postH > 0)
+        {
+            AnimateFullScreenRect(
+                prePosition, preW, preH,
+                postPosition, postW, postH,
+                () =>
+                {
+                    _isFullScreen = true;
+                    _isFullScreenTransitioning = false;
+                    UpdateFullScreenButtonState();
+                });
+        }
+        else
+        {
+            _isFullScreen = true;
+            _isFullScreenTransitioning = false;
+            UpdateFullScreenButtonState();
+        }
+    }
+
+    private async void ExitFullScreen()
+    {
+        if (_isFullScreenTransitioning || !_isFullScreen) return;
+        _isFullScreenTransitioning = true;
+
+        var transform = PreviewBorder.TransformToVisual((UIElement)Content);
+        var prePosition = transform.TransformPoint(new Windows.Foundation.Point(0, 0));
+        var preW = PreviewBorder.ActualWidth;
+        var preH = PreviewBorder.ActualHeight;
+
+        // Commit layout restoration
+        var appWindow = GetAppWindow();
+        appWindow.SetPresenter(Microsoft.UI.Windowing.AppWindowPresenterKind.Overlapped);
+        appWindow.Move(_preFullScreenPosition);
+        appWindow.Resize(new Windows.Graphics.SizeInt32(_preFullScreenBounds.Width, _preFullScreenBounds.Height));
+
+        PreviewBorder.Margin = new Thickness(12, 6, 12, 6);
+        PreviewShadowHost.Margin = new Thickness(16);
+        PreviewShadowHost.CornerRadius = new CornerRadius(4);
+
+        ControlBarBorder.Visibility = Visibility.Visible;
+        ControlBarShadowHost.Visibility = Visibility.Visible;
+        if (_preFullScreenSettingsVisible)
+        {
+            SettingsOverlayPanel.Visibility = Visibility.Visible;
+        }
+        if (_preFullScreenStatsDockVisible)
+        {
+            ShowStatsDockPanel();
+        }
+
+        ((Grid)Content).Background = null;
+
+        await WaitForSizeChangedAsync(PreviewContentGrid, 200);
+
+        var postTransform = PreviewBorder.TransformToVisual((UIElement)Content);
+        var postPosition = postTransform.TransformPoint(new Windows.Foundation.Point(0, 0));
+        var postW = PreviewBorder.ActualWidth;
+        var postH = PreviewBorder.ActualHeight;
+
+        if (postW > 0 && postH > 0)
+        {
+            AnimateFullScreenRect(
+                prePosition, preW, preH,
+                postPosition, postW, postH,
+                () =>
+                {
+                    _isFullScreen = false;
+                    _isFullScreenTransitioning = false;
+                    UpdateFullScreenButtonState();
+                    UpdateVideoContentOverlays();
+                    VideoShadowHost.Visibility = Visibility.Visible;
+                    FadeInShadow(_videoShadowVisual, delayMs: 0, durationMs: 400);
+                });
+        }
+        else
+        {
+            _isFullScreen = false;
+            _isFullScreenTransitioning = false;
+            UpdateFullScreenButtonState();
+            UpdateVideoContentOverlays();
+            VideoShadowHost.Visibility = Visibility.Visible;
+            FadeInShadow(_videoShadowVisual, delayMs: 0, durationMs: 400);
+        }
+    }
+
+    /// <summary>
+    /// Animates PreviewBorder from one rect to another using a single
+    /// compositor-thread progress scalar driving both Scale and Offset
+    /// via ExpressionAnimations. This guarantees per-frame synchronization
+    /// (no arc) and runs at DWM refresh rate (120hz+).
+    /// </summary>
+    private void AnimateFullScreenRect(
+        Windows.Foundation.Point prePos, double preW, double preH,
+        Windows.Foundation.Point postPos, double postW, double postH,
+        Action onCompleted)
+    {
+        var scaleX = (float)(preW / postW);
+        var scaleY = (float)(preH / postH);
+        // Offset compensates for CenterPoint at element center:
+        // the scale-induced position shift is (postSize/2)*(1-scale),
+        // so offset = positionDelta + (preSize-postSize)/2.
+        var offsetX = (float)(prePos.X - postPos.X + (preW - postW) / 2);
+        var offsetY = (float)(prePos.Y - postPos.Y + (preH - postH) / 2);
+
+        var visual = ElementCompositionPreview.GetElementVisual(PreviewBorder);
+        var compositor = visual.Compositor;
+
+        visual.CenterPoint = new Vector3((float)(postW / 2), (float)(postH / 2), 0);
+
+        // Single progress scalar drives both properties — one timeline,
+        // one easing evaluation per frame, zero desync.
+        var props = compositor.CreatePropertySet();
+        props.InsertScalar("Progress", 0f);
+
+        var duration = TimeSpan.FromMilliseconds(350);
+        var easing = compositor.CreateCubicBezierEasingFunction(
+            new Vector2(0.2f, 0f), new Vector2(0f, 1f));
+
+        var progressAnim = compositor.CreateScalarKeyFrameAnimation();
+        progressAnim.InsertKeyFrame(1f, 1f, easing);
+        progressAnim.Duration = duration;
+
+        var scaleExpr = compositor.CreateExpressionAnimation(
+            "Vector3(s.X + (1 - s.X) * p.Progress, s.Y + (1 - s.Y) * p.Progress, 1)");
+        scaleExpr.SetVector3Parameter("s", new Vector3(scaleX, scaleY, 1));
+        scaleExpr.SetReferenceParameter("p", props);
+
+        var offsetExpr = compositor.CreateExpressionAnimation(
+            "Vector3(o.X * (1 - p.Progress), o.Y * (1 - p.Progress), 0)");
+        offsetExpr.SetVector3Parameter("o", new Vector3(offsetX, offsetY, 0));
+        offsetExpr.SetReferenceParameter("p", props);
+
+        // Batch tracks the finite-duration progress animation for Completed.
+        var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
+        props.StartAnimation("Progress", progressAnim);
+        batch.End();
+
+        // Expression animations run outside the batch (indefinite lifetime,
+        // stopped explicitly in Completed).
+        visual.StartAnimation("Scale", scaleExpr);
+        visual.StartAnimation("Offset", offsetExpr);
+
+        batch.Completed += (_, _) =>
+        {
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                visual.StopAnimation("Scale");
+                visual.StopAnimation("Offset");
+                visual.Scale = Vector3.One;
+                visual.Offset = Vector3.Zero;
+                visual.CenterPoint = Vector3.Zero;
+                onCompleted();
+            });
+        };
+    }
+
+    private static Task WaitForSizeChangedAsync(FrameworkElement element, int timeoutMs)
+    {
+        var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        SizeChangedEventHandler? handler = null;
+        handler = (_, _) =>
+        {
+            element.SizeChanged -= handler;
+            tcs.TrySetResult(true);
+        };
+        element.SizeChanged += handler;
+
+        // Timeout fallback
+        _ = Task.Delay(timeoutMs).ContinueWith(_ =>
+        {
+            element.DispatcherQueue.TryEnqueue(() =>
+            {
+                element.SizeChanged -= handler;
+                tcs.TrySetResult(false);
+            });
+        });
+
+        return tcs.Task;
+    }
+
+    private void UpdateFullScreenButtonState()
+    {
+        if (_isFullScreen)
+        {
+            FullScreenButtonIcon.Glyph = "\uE73F";
+            ToolTipService.SetToolTip(FullScreenButton, "Exit full screen");
+            FullScreenMenuItem.Text = "Exit Full Screen";
+            if (FullScreenMenuItem.Icon is FontIcon icon) icon.Glyph = "\uE73F";
+        }
+        else
+        {
+            FullScreenButtonIcon.Glyph = "\uE740";
+            ToolTipService.SetToolTip(FullScreenButton, "Full screen");
+            FullScreenMenuItem.Text = "Enter Full Screen";
+            if (FullScreenMenuItem.Icon is FontIcon icon) icon.Glyph = "\uE740";
+        }
+    }
+
+    #endregion
 
     #region Minimum window size (Win32 interop)
 

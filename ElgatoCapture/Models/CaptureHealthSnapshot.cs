@@ -127,4 +127,10 @@ public sealed class CaptureHealthSnapshot
     public long LastVideoWriteAgeMs { get; init; }
 
     public long AudioChunksDropped { get; init; }
+
+    // AV Sync diagnostics
+    public double? AvSyncCaptureDriftMs { get; init; }
+    public double? AvSyncCaptureDriftRateMsPerSec { get; init; }
+    public double? AvSyncEncoderDriftMs { get; init; }
+    public long? AvSyncEncoderCorrectionSamples { get; init; }
 }

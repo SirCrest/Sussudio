@@ -71,6 +71,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private Task? _telemetryPollTask;
     private const int TelemetryPollIntervalMs = 2000;
 
+    // AV sync drift diagnostics
+    private double _avSyncBaselineDriftMs = double.NaN;
+    private double _avSyncPrevDriftMs;
+    private long _avSyncPrevDriftTick;
+    private double _avSyncDriftRateMsPerSec;
+
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<Exception>? ErrorOccurred;
     public event EventHandler<ulong>? FrameCaptured;
@@ -638,6 +644,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var previewColorMetadata = (_previewFrameSink as D3D11PreviewRenderer)?.RendererMode ?? "None";
         const bool muxAttempted = false;
         bool? muxSucceeded = null;
+        var (runtimeAvSyncDriftMs, runtimeAvSyncDriftRate) = ComputeAvSyncDrift();
+        var (runtimeAvSyncEncoderDriftMs, runtimeAvSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
 
         return new CaptureRuntimeSnapshot
         {
@@ -784,7 +792,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceTelemetrySuppressedReason = sourceTelemetrySuppressedReason,
             SourceTelemetryCircuitState = sourceTelemetryCircuitState,
             TelemetryAlignmentStatus = telemetryAlignmentStatus,
-            TelemetryAlignmentReason = telemetryAlignmentReason
+            TelemetryAlignmentReason = telemetryAlignmentReason,
+            AvSyncCaptureDriftMs = runtimeAvSyncDriftMs,
+            AvSyncCaptureDriftRateMsPerSec = runtimeAvSyncDriftRate,
+            AvSyncEncoderDriftMs = runtimeAvSyncEncoderDriftMs,
+            AvSyncEncoderCorrectionSamples = runtimeAvSyncEncoderCorrectionSamples
         };
     }
 
@@ -1039,6 +1051,60 @@ public class CaptureService : IDisposable, IAsyncDisposable
         return isRecording ? "Degraded" : "Pending";
     }
 
+    private (double? DriftMs, double? RateMsPerSec) ComputeAvSyncDrift()
+    {
+        var unifiedVideoCapture = _unifiedVideoCapture;
+        var wasapiCapture = _wasapiAudioCapture;
+        if (unifiedVideoCapture == null || wasapiCapture == null)
+        {
+            return (null, null);
+        }
+
+        var videoFrames = unifiedVideoCapture.VideoFramesArrived;
+        var audioFrames = wasapiCapture.AudioFramesArrived;
+        var negotiatedFps = unifiedVideoCapture.Fps;
+
+        if (videoFrames <= 0 || audioFrames <= 0 || negotiatedFps <= 0)
+        {
+            return (null, null);
+        }
+
+        var rawDriftMs = (audioFrames / 48000.0 - videoFrames / negotiatedFps) * 1000.0;
+
+        if (double.IsNaN(_avSyncBaselineDriftMs))
+        {
+            _avSyncBaselineDriftMs = rawDriftMs;
+            _avSyncPrevDriftMs = 0.0;
+            _avSyncPrevDriftTick = Environment.TickCount64;
+            return (0.0, 0.0);
+        }
+
+        var correctedDrift = rawDriftMs - _avSyncBaselineDriftMs;
+        var now = Environment.TickCount64;
+        var elapsedMs = now - _avSyncPrevDriftTick;
+
+        if (elapsedMs >= 5000)
+        {
+            var elapsedSec = elapsedMs / 1000.0;
+            _avSyncDriftRateMsPerSec = (correctedDrift - _avSyncPrevDriftMs) / elapsedSec;
+            _avSyncPrevDriftMs = correctedDrift;
+            _avSyncPrevDriftTick = now;
+        }
+
+        return (correctedDrift, _avSyncDriftRateMsPerSec);
+    }
+
+    private (double? EncoderDriftMs, long? EncoderCorrectionSamples) GetEncoderAvSyncDrift()
+    {
+        var sink = _libavSink;
+        if (sink != null && sink.TryGetEncoderAvSyncDrift(out var driftMs, out var correctionSamples))
+        {
+            return (driftMs, correctionSamples);
+        }
+
+        return (null, null);
+    }
+
     public CaptureHealthSnapshot GetHealthSnapshot()
     {
         var sink = _libavSink;
@@ -1053,6 +1119,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
             ?? _lastMjpegPipelineTimingMetrics;
         var mjpegFullTiming = unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics()
             ?? _lastFullMjpegPipelineTimingMetrics;
+        var (avSyncDriftMs, avSyncDriftRate) = ComputeAvSyncDrift();
+        var (avSyncEncoderDriftMs, avSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
 
         return new CaptureHealthSnapshot
         {
@@ -1111,12 +1179,18 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SourceTelemetryCircuitState = ResolveSourceTelemetryCircuitState(
                 _latestSourceTelemetry.Availability,
                 sourceTelemetrySuppressed),
+            LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),
             VideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? 0,
+            VideoFramesQueued = sink?.VideoQueueCount ?? 0,
             VideoFramesDropped = videoFramesDropped,
+            VideoFramesDroppedBacklog = sink?.VideoDropsBacklogEviction ?? 0,
+            VideoFramesConverted = sink?.EncodedVideoFrames ?? 0,
             VideoDropsQueueSaturated = sink?.VideoDropsQueueSaturated ?? 0,
             VideoDropsBacklogEviction = sink?.VideoDropsBacklogEviction ?? 0,
             AudioDropsQueueSaturated = sink?.AudioDropsQueueSaturated ?? 0,
             AudioDropsBacklogEviction = sink?.AudioDropsBacklogEviction ?? 0,
+            AudioChunksDropped = (sink?.AudioDropsQueueSaturated ?? 0) + (sink?.AudioDropsBacklogEviction ?? 0),
+            ConversionQueueDepth = 0,
             FfmpegVideoQueueDepth = sink?.VideoQueueCount ?? 0,
             FfmpegAudioQueueDepth = sink?.AudioQueueCount ?? 0,
             VideoFramesEnqueued = sink?.VideoFramesEnqueuedCount ?? 0,
@@ -1167,7 +1241,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                         worker.AvgMs,
                         worker.P95Ms,
                         worker.MaxMs))
-                : Array.Empty<MjpegDecoderHealthSnapshot>()
+                : Array.Empty<MjpegDecoderHealthSnapshot>(),
+            AvSyncCaptureDriftMs = avSyncDriftMs,
+            AvSyncCaptureDriftRateMsPerSec = avSyncDriftRate,
+            AvSyncEncoderDriftMs = avSyncEncoderDriftMs,
+            AvSyncEncoderCorrectionSamples = avSyncEncoderCorrectionSamples
         };
     }
 
@@ -1188,6 +1266,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _activeVideoInputPixelFormat = settings.HdrEnabled ? "p010le" : "nv12";
             _lastUsePostMuxAudio = false;
             Interlocked.Exchange(ref _videoFramesDropped, 0);
+            _avSyncBaselineDriftMs = double.NaN;
             ResetObservedPixelTelemetry();
             ResetCachedMjpegTimingMetrics();
             _latestSourceTelemetry = BuildFallbackTelemetry();
@@ -1495,6 +1574,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     recordingWidth,
                     recordingHeight,
                     videoInputPixelFormat,
+                    isFullRangeInput: isMjpegMode,
                     isMjpegMode ? IntPtr.Zero : (d3dManager?.Device.NativePointer ?? IntPtr.Zero),
                     isMjpegMode ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero),
                     cudaHwDeviceCtxPtr,
@@ -1795,6 +1875,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _currentSettings = null;
             _activeRecordingSettings = null;
             _recordingContext = null;
+            _avSyncBaselineDriftMs = double.NaN;
             _sessionState = _isDisposed ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;
 
             if (cancellationRequested || transitionToken.IsCancellationRequested)
@@ -1841,7 +1922,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
             _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
             var recordingFramesDelivered = unifiedVideoCapture.RecordingFramesDelivered;
-            var recordingFramesEnqueued = unifiedVideoCapture.RecordingFramesEnqueued;
+            var recordingFramesEnqueued = unifiedVideoCapture.VideoFramesWrittenToSink;
             Logger.Log(
                 "VIDEO_DIAG mf_source_reader " +
                 $"frames_delivered={_lastMfSourceReaderFramesDelivered} " +

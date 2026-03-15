@@ -59,6 +59,10 @@ function Resolve-CommandValue {
         "setshowallcaptureoptions" { return 33 }
         "setpreviewvolume" { return 34 }
         "setstatsvisible" { return 35 }
+        "setdeviceaudiomode" { return 36 }
+        "getperformancetimeline" { return 37 }
+        "setstatssectionvisible" { return 38 }
+        "setanalogaudiogain" { return 39 }
         default { throw "Unknown automation command '$Value'." }
     }
 }

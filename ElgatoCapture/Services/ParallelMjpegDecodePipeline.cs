@@ -1,6 +1,6 @@
 using System;
 using System.Buffers;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -60,11 +60,14 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private readonly SoftwareMjpegDecoder[] _decoders;
     private readonly Thread[] _workers;
     private readonly Channel<MjpegWorkItem>[] _workerQueues;
-    private readonly ConcurrentDictionary<long, DecodedFrame> _reorderBuffer = new();
+    private readonly DecodedFrame[] _reorderRing;
+    private readonly int[] _reorderFlags;
+    private readonly int _reorderCapacity;
+    private int _reorderBufferDepth;
     private long _nextDispatchSeq;
     private long _nextEmitSeq;
     private Thread? _emitThread;
-    private readonly ManualResetEventSlim _emitSignal = new(false);
+    private readonly AutoResetEvent _emitSignal = new(false);
     private readonly EmitFrameCallback _emitCallback;
     private readonly Action<Exception>? _fatalErrorCallback;
     private volatile bool _stopped;
@@ -81,6 +84,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private int _pipelineLatencyCount;
     private int _pipelineLatencyIndex;
     private readonly object _timingLock = new();
+    private readonly object[] _perDecoderTimingLocks;
     private long _totalFramesDecoded;
     private long _totalFramesEmitted;
     private long _totalFramesDropped;
@@ -112,12 +116,20 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         _height = height;
         _emitCallback = emitCallback;
         _fatalErrorCallback = fatalErrorCallback;
+        _reorderCapacity = Math.Max(16, _decoderCount * 4);
+        _reorderRing = new DecodedFrame[_reorderCapacity];
+        _reorderFlags = new int[_reorderCapacity];
         _decoders = new SoftwareMjpegDecoder[_decoderCount];
         _workers = new Thread[_decoderCount];
         _workerQueues = new Channel<MjpegWorkItem>[_decoderCount];
         _perDecoderDecodeTimeMs = new double[_decoderCount][];
         _perDecoderDecodeTimeCount = new int[_decoderCount];
         _perDecoderDecodeTimeIndex = new int[_decoderCount];
+        _perDecoderTimingLocks = new object[_decoderCount];
+        for (var j = 0; j < _decoderCount; j++)
+        {
+            _perDecoderTimingLocks[j] = new object();
+        }
 
         try
         {
@@ -195,16 +207,23 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         int pipelineCount;
         int pipelineIndex;
 
-        lock (_timingLock)
+        // Snapshot per-decoder timing under individual locks to avoid contention.
+        decoderSamples = new double[_decoderCount][];
+        decoderCounts = new int[_decoderCount];
+        decoderIndexes = new int[_decoderCount];
+        for (var i = 0; i < _decoderCount; i++)
         {
-            decoderSamples = new double[_decoderCount][];
-            decoderCounts = (int[])_perDecoderDecodeTimeCount.Clone();
-            decoderIndexes = (int[])_perDecoderDecodeTimeIndex.Clone();
-            for (var i = 0; i < _decoderCount; i++)
+            lock (_perDecoderTimingLocks[i])
             {
                 decoderSamples[i] = (double[])_perDecoderDecodeTimeMs[i].Clone();
+                decoderCounts[i] = _perDecoderDecodeTimeCount[i];
+                decoderIndexes[i] = _perDecoderDecodeTimeIndex[i];
             }
+        }
 
+        // Reorder and pipeline latency are written by emit thread only — shared lock is fine.
+        lock (_timingLock)
+        {
             reorderSamples = (double[])_reorderLatencyMs.Clone();
             reorderCount = _reorderLatencyCount;
             reorderIndex = _reorderLatencyIndex;
@@ -253,7 +272,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             TotalEmitted: Interlocked.Read(ref _totalFramesEmitted),
             TotalDropped: Interlocked.Read(ref _totalFramesDropped),
             ReorderSkips: Interlocked.Read(ref _reorderSkips),
-            ReorderBufferDepth: _reorderBuffer.Count,
+            ReorderBufferDepth: Volatile.Read(ref _reorderBufferDepth),
             PerDecoder: perDecoder);
     }
 
@@ -316,30 +335,55 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                 var decodeStart = Stopwatch.GetTimestamp();
                 var decodeSucceeded = false;
 
+                // Pre-rent the output buffer so the decoder writes directly
+                // into it, eliminating a 10MB copy per frame.
+                var nv12Size = decoder.Nv12Size;
+                var nv12Buffer = ArrayPool<byte>.Shared.Rent(nv12Size);
+                var nv12Owned = true; // track ownership so we always return on exception
+
                 try
                 {
                     decodeSucceeded = decoder.DecodeToNv12(
                         item.JpegBuffer.AsSpan(0, item.JpegLength),
-                        out var nv12Data);
+                        nv12Buffer.AsSpan(0, nv12Size));
                     RecordPerDecoderTiming(workerIndex, GetElapsedMilliseconds(decodeStart, Stopwatch.GetTimestamp()));
 
-                    if (!decodeSucceeded || nv12Data.IsEmpty)
+                    if (!decodeSucceeded)
                     {
                         Interlocked.Increment(ref _totalFramesDropped);
                         continue;
                     }
 
-                    var nv12Copy = ArrayPool<byte>.Shared.Rent(nv12Data.Length);
-                    nv12Data.CopyTo(nv12Copy);
+                    var slot = (int)(item.SeqNo % (uint)_reorderCapacity);
 
-                    _reorderBuffer[item.SeqNo] = new DecodedFrame(
+                    // Guard against ring slot collision: if the emitter hasn't
+                    // consumed this slot yet, drop the new frame rather than
+                    // overwriting and leaking the old buffer.
+                    if (Volatile.Read(ref _reorderFlags[slot]) != 0)
+                    {
+                        var collisions = Interlocked.Increment(ref _totalFramesDropped);
+                        if (collisions == 1 || collisions % 120 == 0)
+                        {
+                            Logger.Log(
+                                $"MJPEG_REORDER_SLOT_COLLISION seq={item.SeqNo} slot={slot} " +
+                                $"depth={Volatile.Read(ref _reorderBufferDepth)} " +
+                                $"nextEmit={_nextEmitSeq} totalDropped={collisions}");
+                        }
+
+                        continue;
+                    }
+
+                    _reorderRing[slot] = new DecodedFrame(
                         item.SeqNo,
-                        nv12Copy,
-                        nv12Data.Length,
+                        nv12Buffer,
+                        nv12Size,
                         item.Width,
                         item.Height,
                         item.ArrivalTick,
                         Stopwatch.GetTimestamp());
+                    Volatile.Write(ref _reorderFlags[slot], 1);
+                    nv12Owned = false; // ownership transferred to reorder ring
+                    Interlocked.Increment(ref _reorderBufferDepth);
                     _emitSignal.Set();
                     Interlocked.Increment(ref _totalFramesDecoded);
                 }
@@ -359,6 +403,11 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                 }
                 finally
                 {
+                    if (nv12Owned)
+                    {
+                        ArrayPool<byte>.Shared.Return(nv12Buffer);
+                    }
+
                     ArrayPool<byte>.Shared.Return(item.JpegBuffer);
                 }
             }
@@ -371,17 +420,9 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     private void EmitLoop()
     {
-        while (!_stopped || HasAliveWorkers() || _reorderBuffer.Count > 0)
+        while (!_stopped || HasAliveWorkers() || Volatile.Read(ref _reorderBufferDepth) > 0)
         {
-            try
-            {
-                _emitSignal.Wait(50);
-                _emitSignal.Reset();
-            }
-            catch (ObjectDisposedException)
-            {
-                break;
-            }
+            _emitSignal.WaitOne(50);
 
             var emittedAny = DrainReadyFrames();
             DetectAndHandleStall(emittedAny);
@@ -394,9 +435,19 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private bool DrainReadyFrames()
     {
         var emittedAny = false;
-        while (_reorderBuffer.TryRemove(_nextEmitSeq, out var frame))
+        while (true)
         {
+            var slot = (int)(_nextEmitSeq % (uint)_reorderCapacity);
+            if (Volatile.Read(ref _reorderFlags[slot]) == 0)
+            {
+                break;
+            }
+
+            var frame = _reorderRing[slot];
+            Volatile.Write(ref _reorderFlags[slot], 0);
+            Interlocked.Decrement(ref _reorderBufferDepth);
             emittedAny = true;
+
             RecordTimingSample(_reorderLatencyMs, ref _reorderLatencyCount, ref _reorderLatencyIndex, GetElapsedMilliseconds(frame.DecodedTick, Stopwatch.GetTimestamp()));
             RecordTimingSample(_pipelineLatencyMs, ref _pipelineLatencyCount, ref _pipelineLatencyIndex, GetElapsedMilliseconds(frame.ArrivalTick, Stopwatch.GetTimestamp()));
             var emitted = false;
@@ -433,9 +484,10 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     private void DetectAndHandleStall(bool emittedAny)
     {
-        if (emittedAny || _reorderBuffer.Count <= _decoderCount * 2)
+        var depth = Volatile.Read(ref _reorderBufferDepth);
+        if (emittedAny || depth <= _decoderCount * 2)
         {
-            if (_reorderBuffer.Count == 0)
+            if (depth == 0)
             {
                 Interlocked.Exchange(ref _missingSeqSinceTickMs, -1);
             }
@@ -460,12 +512,26 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         _nextEmitSeq++;
         Interlocked.Increment(ref _reorderSkips);
         Interlocked.Exchange(ref _missingSeqSinceTickMs, nowTickMs);
-        Logger.Log($"MJPEG_REORDER_SKIP seq={skippedSeq} depth={_reorderBuffer.Count} threshold_ms=50");
+        Logger.Log($"MJPEG_REORDER_SKIP seq={skippedSeq} depth={Volatile.Read(ref _reorderBufferDepth)} threshold_ms=50");
     }
 
     private void DrainRemainingFramesInOrder()
     {
-        foreach (var frame in _reorderBuffer.Values.OrderBy(frame => frame.SeqNo))
+        // Collect remaining frames from the ring buffer.
+        var remaining = new List<DecodedFrame>();
+        for (var i = 0; i < _reorderCapacity; i++)
+        {
+            if (Volatile.Read(ref _reorderFlags[i]) != 0)
+            {
+                remaining.Add(_reorderRing[i]);
+                Volatile.Write(ref _reorderFlags[i], 0);
+            }
+        }
+
+        remaining.Sort((a, b) => a.SeqNo.CompareTo(b.SeqNo));
+        Volatile.Write(ref _reorderBufferDepth, 0);
+
+        foreach (var frame in remaining)
         {
             try
             {
@@ -482,8 +548,6 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                 ArrayPool<byte>.Shared.Return(frame.Nv12Buffer);
             }
         }
-
-        _reorderBuffer.Clear();
     }
 
     private bool HasAliveWorkers()
@@ -501,7 +565,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     private void RecordPerDecoderTiming(int workerIndex, double valueMs)
     {
-        lock (_timingLock)
+        lock (_perDecoderTimingLocks[workerIndex])
         {
             var window = _perDecoderDecodeTimeMs[workerIndex];
             var index = _perDecoderDecodeTimeIndex[workerIndex];
@@ -649,12 +713,16 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             decoder?.Dispose();
         }
 
-        foreach (var entry in _reorderBuffer)
+        for (var i = 0; i < _reorderCapacity; i++)
         {
-            ArrayPool<byte>.Shared.Return(entry.Value.Nv12Buffer);
+            if (Volatile.Read(ref _reorderFlags[i]) != 0)
+            {
+                ArrayPool<byte>.Shared.Return(_reorderRing[i].Nv12Buffer);
+                Volatile.Write(ref _reorderFlags[i], 0);
+            }
         }
 
-        _reorderBuffer.Clear();
+        Volatile.Write(ref _reorderBufferDepth, 0);
         _emitSignal.Dispose();
 
         Logger.Log(

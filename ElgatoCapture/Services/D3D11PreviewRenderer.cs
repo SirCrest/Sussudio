@@ -2980,6 +2980,41 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
     }
 
+    private void UnbindSwapChainFromPanel()
+    {
+        // Must run on UI thread since _panel is a XAML element.
+        // Called from render thread during cleanup, so marshal via dispatcher.
+        try
+        {
+            using var done = new ManualResetEventSlim(false);
+            var enqueued = _dispatcherQueue.TryEnqueue(() =>
+            {
+                try
+                {
+                    var panelNative = CastExtensions.As<ISwapChainPanelNative>(_panel);
+                    panelNative.SetSwapChain(IntPtr.Zero);
+                }
+                catch
+                {
+                    // Best-effort: panel may already be torn down during app shutdown.
+                }
+                finally
+                {
+                    done.Set();
+                }
+            });
+
+            if (enqueued)
+            {
+                done.Wait(TimeSpan.FromSeconds(2));
+            }
+        }
+        catch
+        {
+            // Dispatcher may be shut down — safe to ignore during cleanup.
+        }
+    }
+
     private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)
     {
         using var swapChain2 = swapChain.QueryInterfaceOrNull<IDXGISwapChain2>();
@@ -3061,6 +3096,16 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _stagingTexture = null;
         _inputTexture?.Dispose();
         _inputTexture = null;
+
+        // Unbind the swap chain from the panel BEFORE disposing it.
+        // The panel holds a native reference to the swap chain; if we dispose
+        // without unbinding, the panel's stale pointer causes an AV when a
+        // new renderer calls SetSwapChain on the same panel.
+        if (_swapChain != null)
+        {
+            UnbindSwapChainFromPanel();
+        }
+
         _swapChain3?.Dispose();
         _swapChain3 = null;
         _swapChain?.Dispose();

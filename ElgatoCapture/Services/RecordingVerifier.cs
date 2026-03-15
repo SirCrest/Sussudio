@@ -598,7 +598,11 @@ public sealed class RecordingVerifier : IRecordingVerifier
         uint? detectedHeight,
         List<string> mismatches)
     {
-        if (!runtimeSnapshot.RequestedWidth.HasValue || !runtimeSnapshot.RequestedHeight.HasValue)
+        // Verify the output file against the negotiated capture geometry when available;
+        // requested values are only a fallback if negotiation metadata is missing.
+        var expectedWidth = runtimeSnapshot.NegotiatedWidth ?? runtimeSnapshot.RequestedWidth;
+        var expectedHeight = runtimeSnapshot.NegotiatedHeight ?? runtimeSnapshot.RequestedHeight;
+        if (!expectedWidth.HasValue || !expectedHeight.HasValue)
         {
             return;
         }
@@ -609,11 +613,11 @@ public sealed class RecordingVerifier : IRecordingVerifier
             return;
         }
 
-        if (detectedWidth.Value != runtimeSnapshot.RequestedWidth.Value ||
-            detectedHeight.Value != runtimeSnapshot.RequestedHeight.Value)
+        if (detectedWidth.Value != expectedWidth.Value ||
+            detectedHeight.Value != expectedHeight.Value)
         {
             mismatches.Add(
-                $"resolution-mismatch(expected={runtimeSnapshot.RequestedWidth}x{runtimeSnapshot.RequestedHeight},actual={detectedWidth}x{detectedHeight})");
+                $"resolution-mismatch(expected={expectedWidth.Value}x{expectedHeight.Value},actual={detectedWidth}x{detectedHeight})");
         }
     }
 
@@ -645,20 +649,35 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
     private static double? ResolveExpectedFrameRate(CaptureRuntimeSnapshot runtimeSnapshot)
     {
-        if (runtimeSnapshot.RequestedFrameRateNumerator.HasValue &&
-            runtimeSnapshot.RequestedFrameRateDenominator.HasValue &&
-            runtimeSnapshot.RequestedFrameRateDenominator.Value > 0)
+        static double? ResolveFrameRate(uint? numerator, uint? denominator, string? rateArg, double? frameRate)
         {
-            return runtimeSnapshot.RequestedFrameRateNumerator.Value /
-                   (double)runtimeSnapshot.RequestedFrameRateDenominator.Value;
+            if (numerator.HasValue &&
+                denominator.HasValue &&
+                denominator.Value > 0)
+            {
+                return numerator.Value / (double)denominator.Value;
+            }
+
+            if (TryParseRational(rateArg) is { } parsedArg)
+            {
+                return parsedArg;
+            }
+
+            return frameRate;
         }
 
-        if (TryParseRational(runtimeSnapshot.RequestedFrameRateArg) is { } parsedArg)
-        {
-            return parsedArg;
-        }
-
-        return runtimeSnapshot.RequestedFrameRate;
+        // Verify the output file against the negotiated capture timing when available;
+        // requested values are only a fallback if negotiation metadata is missing.
+        return ResolveFrameRate(
+                   runtimeSnapshot.NegotiatedFrameRateNumerator,
+                   runtimeSnapshot.NegotiatedFrameRateDenominator,
+                   runtimeSnapshot.NegotiatedFrameRateArg,
+                   runtimeSnapshot.NegotiatedFrameRate)
+               ?? ResolveFrameRate(
+                   runtimeSnapshot.RequestedFrameRateNumerator,
+                   runtimeSnapshot.RequestedFrameRateDenominator,
+                   runtimeSnapshot.RequestedFrameRateArg,
+                   runtimeSnapshot.RequestedFrameRate);
     }
 
     private static HdrValidationResult ValidateHdrMetadata(

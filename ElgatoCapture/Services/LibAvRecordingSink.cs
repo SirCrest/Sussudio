@@ -52,6 +52,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private int _cudaQueueDepth;
     private long _lastVideoEnqueueTick;
     private long _lastVideoWriteTick;
+    private long _lastBurstEvictionTick;
     private bool _gpuEncodingEnabled;
     private bool _cudaEncodingEnabled;
 
@@ -79,6 +80,9 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public bool CudaEncodingEnabled => Volatile.Read(ref _cudaEncodingEnabled);
     public long CudaFramesEnqueued => Interlocked.Read(ref _cudaFramesEnqueued);
     public long CudaFramesDropped => Interlocked.Read(ref _cudaFramesDropped);
+
+    public bool TryGetEncoderAvSyncDrift(out double driftMs, out long correctionSamples)
+        => _encoder.TryGetCurrentAvSyncDrift(out driftMs, out correctionSamples);
 
     public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)
     {
@@ -298,7 +302,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
     public Task WriteVideoAsync(SoftwareBitmap frame, CancellationToken cancellationToken = default)
     {
-        return Task.CompletedTask;
+        throw new NotSupportedException("Use EnqueueRawVideoFrame, EnqueueGpuVideoFrame, or EnqueueCudaVideoFrame instead.");
     }
 
     public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
@@ -587,6 +591,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             IsP010 = context.HdrPipelineActive,
             NvencPreset = context.Settings.NvencPreset,
             HdrEnabled = context.HdrPipelineActive,
+            IsFullRangeInput = context.IsFullRangeInput,
             HdrMasterDisplayMetadata = context.Settings.HdrMasterDisplayMetadata,
             HdrMaxCll = context.Settings.HdrMaxCll,
             HdrMaxFall = context.Settings.HdrMaxFall,
@@ -819,8 +824,29 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         if (queue.Reader.TryRead(out var evictedPacket))
         {
             Interlocked.Decrement(ref _videoQueueDepth);
-            Interlocked.Increment(ref _videoDropsBacklogEviction);
             ReturnBuffer(evictedPacket.Buffer);
+            var evictedCount = 1;
+
+            // Burst eviction: under sustained overload, drain a burst to give the encoder headroom.
+            var now = Environment.TickCount64;
+            if (now - Interlocked.Read(ref _lastBurstEvictionTick) >= 1000)
+            {
+                Interlocked.Exchange(ref _lastBurstEvictionTick, now);
+                var burstSize = Math.Clamp(Volatile.Read(ref _videoQueueDepth) / 10, 1, 30);
+                for (var i = 1; i < burstSize && queue.Reader.TryRead(out var extra); i++)
+                {
+                    Interlocked.Decrement(ref _videoQueueDepth);
+                    ReturnBuffer(extra.Buffer);
+                    evictedCount++;
+                }
+
+                if (evictedCount > 1)
+                {
+                    Logger.Log($"LIBAV_SINK_BURST_EVICT count={evictedCount} queue_depth={Volatile.Read(ref _videoQueueDepth)}");
+                }
+            }
+
+            Interlocked.Add(ref _videoDropsBacklogEviction, evictedCount);
             if (queue.Writer.TryWrite(packet))
             {
                 Interlocked.Increment(ref _videoQueueDepth);

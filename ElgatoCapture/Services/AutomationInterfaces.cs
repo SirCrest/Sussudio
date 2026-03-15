@@ -29,6 +29,7 @@ public interface IRecordingVerifier
 public interface IAutomationDiagnosticsHub : IDisposable, IAsyncDisposable
 {
     AutomationSnapshot GetLatestSnapshot();
+    IReadOnlyList<PerformanceTimelineEntry> GetPerformanceTimeline(int maxEntries = 240);
     IReadOnlyList<DiagnosticsEvent> GetRecentEvents(int maxEvents = 100);
     Task<RecordingVerificationResult> VerifyLastRecordingAsync(CancellationToken cancellationToken = default);
     void Start();

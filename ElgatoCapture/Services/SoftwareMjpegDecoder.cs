@@ -23,7 +23,7 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
     private AVFrame* _decodedFrame;
     private AVFrame* _drainFrame;
     private AVPacket* _packet;
-    private byte[]? _nv12Buffer;
+    private int _nv12Size;
     private int _width;
     private int _height;
     private bool _initialized;
@@ -32,6 +32,7 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
 
     public int Width => _width;
     public int Height => _height;
+    public int Nv12Size => _nv12Size;
 
     public void Initialize(int width, int height)
     {
@@ -93,7 +94,7 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
             _decoderCtx = decoderCtx;
             _width = width;
             _height = height;
-            _nv12Buffer = new byte[checked(width * height * 3 / 2)];
+            _nv12Size = checked(width * height * 3 / 2);
             _initialized = true;
 
             decoderCtx = null;
@@ -112,11 +113,13 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
         }
     }
 
-    public bool DecodeToNv12(ReadOnlySpan<byte> jpegData, out ReadOnlySpan<byte> nv12Data)
+    /// <summary>
+    /// Decodes MJPEG data and writes NV12 output directly into the caller's buffer,
+    /// avoiding an intermediate copy through the decoder's own storage.
+    /// </summary>
+    public bool DecodeToNv12(ReadOnlySpan<byte> jpegData, Span<byte> nv12Destination)
     {
-        nv12Data = default;
-
-        if (!_initialized || _decoderCtx == null || _packet == null || _decodedFrame == null || _nv12Buffer == null)
+        if (!_initialized || _decoderCtx == null || _packet == null || _decodedFrame == null)
         {
             throw new InvalidOperationException("Decoder is not initialized.");
         }
@@ -124,6 +127,12 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
         if (jpegData.IsEmpty)
         {
             return false;
+        }
+
+        if (nv12Destination.Length < _nv12Size)
+        {
+            throw new ArgumentException(
+                $"NV12 destination too small: {nv12Destination.Length} < {_nv12Size}", nameof(nv12Destination));
         }
 
         fixed (byte* dataPtr = jpegData)
@@ -188,7 +197,7 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
                     $"y_stride={_decodedFrame->linesize[0]} u_stride={_decodedFrame->linesize[1]} v_stride={_decodedFrame->linesize[2]}");
             }
 
-            fixed (byte* nv12Ptr = _nv12Buffer)
+            fixed (byte* nv12Ptr = nv12Destination)
             {
                 var yBytes = _width * _height;
                 if (_decodedFrame->linesize[0] == _width)
@@ -223,7 +232,6 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
             }
         }
 
-        nv12Data = new ReadOnlySpan<byte>(_nv12Buffer, 0, checked(_width * _height * 3 / 2));
         return true;
     }
 
@@ -264,7 +272,6 @@ internal sealed unsafe class SoftwareMjpegDecoder : IDisposable
             _decoderCtx = null;
         }
 
-        _nv12Buffer = null;
         _initialized = false;
         Logger.Log("SW_MJPEG_DECODER_DISPOSED");
     }

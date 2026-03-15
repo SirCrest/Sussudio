@@ -42,7 +42,11 @@ public enum AutomationCommandKind
     SetShowAllCaptureOptions,
     SetPreviewVolume,
     SetStatsVisible,
-    SetDeviceAudioMode
+    SetDeviceAudioMode,
+    GetPerformanceTimeline,
+    SetStatsSectionVisible,
+    SetAnalogAudioGain,
+    SetSettingsVisible
 }
 
 public enum AutomationWindowAction
@@ -514,6 +518,47 @@ public sealed class AutomationSnapshot
 
     public RecordingVerificationResult? LastVerification { get; init; }
     public HdrTruthVerdict? HdrTruthVerdict { get; init; }
+
+    // === Memory & GC ===
+    public double MemoryWorkingSetMb { get; init; }
+    public double MemoryPrivateBytesMb { get; init; }
+    public double MemoryManagedHeapMb { get; init; }
+    public double MemoryTotalAllocatedMb { get; init; }
+    public double MemoryGcHeapSizeMb { get; init; }
+    public int MemoryGcGen0Collections { get; init; }
+    public int MemoryGcGen1Collections { get; init; }
+    public int MemoryGcGen2Collections { get; init; }
+    public double MemoryGcPauseTimePercent { get; init; }
+    public double MemoryGcFragmentationPercent { get; init; }
+    public int ThreadPoolWorkerAvailable { get; init; }
+    public int ThreadPoolWorkerMax { get; init; }
+    public int ThreadPoolIoAvailable { get; init; }
+    public int ThreadPoolIoMax { get; init; }
+
+    // === AV Sync ===
+    public double? AvSyncCaptureDriftMs { get; init; }
+    public double? AvSyncCaptureDriftRateMsPerSec { get; init; }
+    public double? AvSyncEncoderDriftMs { get; init; }
+    public long? AvSyncEncoderCorrectionSamples { get; init; }
+}
+
+public sealed class PerformanceTimelineEntry
+{
+    public DateTimeOffset TimestampUtc { get; init; }
+    public double CaptureFps { get; init; }
+    public double PreviewFps { get; init; }
+    public int VideoQueueDepth { get; init; }
+    public long VideoDrops { get; init; }
+    public double CaptureCadenceP95Ms { get; init; }
+    public long PipelineLatencyMs { get; init; }
+    public double MemoryWorkingSetMb { get; init; }
+    public double MemoryManagedHeapMb { get; init; }
+    public int GcGen0Collections { get; init; }
+    public int GcGen1Collections { get; init; }
+    public int GcGen2Collections { get; init; }
+    public double GcPauseTimePercent { get; init; }
+    public int ThreadPoolWorkerAvailable { get; init; }
+    public int ThreadPoolIoAvailable { get; init; }
 }
 
 public enum DiagnosticsSeverity
@@ -810,6 +855,12 @@ public sealed class CaptureRuntimeSnapshot
     public string SourceTelemetryCircuitState { get; init; } = "Closed";
     public string TelemetryAlignmentStatus { get; init; } = "Unknown";
     public string TelemetryAlignmentReason { get; init; } = string.Empty;
+
+    // AV Sync diagnostics
+    public double? AvSyncCaptureDriftMs { get; init; }
+    public double? AvSyncCaptureDriftRateMsPerSec { get; init; }
+    public double? AvSyncEncoderDriftMs { get; init; }
+    public long? AvSyncEncoderCorrectionSamples { get; init; }
 
     public string RecordingBackend { get; init; } = "None";
     public string AudioPathMode { get; init; } = "None";

@@ -48,7 +48,12 @@ internal static class Program
         ["SetMjpegDecoderCount"] = 32,
         ["SetShowAllCaptureOptions"] = 33,
         ["SetPreviewVolume"] = 34,
-        ["SetStatsVisible"] = 35
+        ["SetStatsVisible"] = 35,
+        ["SetDeviceAudioMode"] = 36,
+        ["GetPerformanceTimeline"] = 37,
+        ["SetStatsSectionVisible"] = 38,
+        ["SetAnalogAudioGain"] = 39,
+        ["SetSettingsVisible"] = 40
     };
 
     public static async Task<int> Main(string[] args)
