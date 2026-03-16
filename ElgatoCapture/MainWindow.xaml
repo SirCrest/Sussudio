@@ -1064,11 +1064,26 @@
                                 Background="{ThemeResource AudioMeterTrackBrush}"
                                 BorderBrush="{ThemeResource AudioMeterBorderBrush}"
                                 BorderThickness="1"
-                                CornerRadius="6"
+                                CornerRadius="4"
                                 VerticalAlignment="Center">
-                            <Grid>
+                            <Grid x:Name="AudioMeterContent">
+                                <Border x:Name="AudioMeterRawFill"
+                                        HorizontalAlignment="Stretch">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                            <GradientStop Color="#FF606060" Offset="0"/>
+                                            <GradientStop Color="#FF787878" Offset="0.55"/>
+                                            <GradientStop Color="#FF8C8C8C" Offset="0.75"/>
+                                            <GradientStop Color="#FF6E6E6E" Offset="0.90"/>
+                                            <GradientStop Color="#FF5A5A5A" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Border.Clip>
+                                        <RectangleGeometry x:Name="AudioMeterRawClip" Rect="0,0,0,8"/>
+                                    </Border.Clip>
+                                </Border>
                                 <Border x:Name="AudioMeterFill"
-                                        CornerRadius="6">
+                                        HorizontalAlignment="Stretch">
                                     <Border.Background>
                                         <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
                                             <GradientStop Color="#00CED1" Offset="0"/>
@@ -1079,7 +1094,7 @@
                                         </LinearGradientBrush>
                                     </Border.Background>
                                     <Border.Clip>
-                                        <RectangleGeometry x:Name="AudioMeterClip" Rect="0,0,0,8"/>
+                                        <RectangleGeometry x:Name="AudioMeterColorClip" Rect="0,0,0,8"/>
                                     </Border.Clip>
                                 </Border>
 
@@ -1174,12 +1189,11 @@
                                         Background="{ThemeResource AudioMeterTrackBrush}"
                                         BorderBrush="{ThemeResource AudioMeterBorderBrush}"
                                         BorderThickness="1"
-                                        CornerRadius="6"
+                                        CornerRadius="4"
                                         VerticalAlignment="Center">
-                                    <Grid>
+                                    <Grid x:Name="MicMeterContent">
                                         <Border x:Name="MicMeterFill"
-                                                HorizontalAlignment="Stretch"
-                                                CornerRadius="5">
+                                                HorizontalAlignment="Stretch">
                                             <Border.Background>
                                                 <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
                                                     <GradientStop Color="#00CED1" Offset="0.0"/>

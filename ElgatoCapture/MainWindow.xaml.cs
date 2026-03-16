@@ -135,7 +135,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private bool _syncingMicrophoneVolumeControls;
     private int _selectedDecoderCount = 4;
     private LinearGradientBrush? _audioMeterColorBrush;
-    private LinearGradientBrush? _audioMeterGreyBrush;
     private DispatcherTimer? _audioMeterAnimationTimer;
     private readonly List<DiagnosticRowSlot> _decodeRowPool = new();
     private readonly List<DiagnosticRowSlot> _gpuRowPool = new();
@@ -4571,12 +4570,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             if (target > _audioRangeMax) _audioRangeMax = target;
         }
 
-        // Update visuals
+        // Update visuals — two-layer meter: raw (grey) + volume-adjusted (color)
         var trackWidth = AudioMeterTrack.ActualWidth;
         if (trackWidth > 0)
         {
-            var trackHeight = AudioMeterTrack.ActualHeight > 0 ? AudioMeterTrack.ActualHeight : 12;
-            AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * _audioMeterDisplayLevel, trackHeight);
+            var trackHeight = AudioMeterTrack.ActualHeight > 0 ? AudioMeterTrack.ActualHeight : 8;
+            var rawLevel = _audioMeterDisplayLevel;
+            var colorLevel = rawLevel * ViewModel.PreviewVolume;
+
+            AudioMeterRawClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * rawLevel, trackHeight);
+            AudioMeterColorClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * colorLevel, trackHeight);
+
+            // Peak hold + range markers track raw signal
             AudioPeakHoldTranslate.X = TranslateMarker(trackWidth, _audioPeakHoldLevel, AudioPeakHoldIndicator.Width);
             AudioRangeMinTranslate.X = TranslateMarker(trackWidth, _audioRangeMin, AudioRangeMinMarker.Width);
             AudioRangeMaxTranslate.X = TranslateMarker(trackWidth, _audioRangeMax, AudioRangeMaxMarker.Width);
@@ -4636,7 +4641,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioRangeMinTranslate.X = 0;
         AudioRangeMaxTranslate.X = 0;
         _audioMeterTargetLevel = 0;
-        AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
+        AudioMeterColorClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
+        AudioMeterRawClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
         _micMeterDisplayLevel = 0;
         _micMeterTargetLevel = 0;
         MicMeterClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
@@ -4649,16 +4655,21 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         _audioMeterColorBrush = (LinearGradientBrush)AudioMeterFill.Background;
 
-        _audioMeterGreyBrush = new LinearGradientBrush
+        // Clip content Grids to inner rounded rect (track CornerRadius=4, BorderThickness=1 → inner radius 3)
+        SetupRoundedContentClip(AudioMeterContent, 3f);
+        SetupRoundedContentClip(MicMeterContent, 3f);
+    }
+
+    private static void SetupRoundedContentClip(FrameworkElement element, float cornerRadius)
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(element);
+        var geo = visual.Compositor.CreateRoundedRectangleGeometry();
+        geo.CornerRadius = new Vector2(cornerRadius, cornerRadius);
+        visual.Clip = visual.Compositor.CreateGeometricClip(geo);
+        element.SizeChanged += (_, e) =>
         {
-            StartPoint = new Windows.Foundation.Point(0, 0.5),
-            EndPoint = new Windows.Foundation.Point(1, 0.5)
+            geo.Size = new Vector2((float)e.NewSize.Width, (float)e.NewSize.Height);
         };
-        _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 96, 96, 96), Offset = 0 });
-        _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 120, 120, 120), Offset = 0.55 });
-        _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 140, 140, 140), Offset = 0.75 });
-        _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 110, 110, 110), Offset = 0.90 });
-        _audioMeterGreyBrush.GradientStops.Add(new GradientStop { Color = Windows.UI.Color.FromArgb(255, 90, 90, 90), Offset = 1 });
     }
 
     private void EnsureAudioMeterTimerRunning()
@@ -4673,7 +4684,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         if (_audioMeterColorBrush == null) return;
 
-        AudioMeterFill.Background = isMonitoring ? _audioMeterColorBrush : _audioMeterGreyBrush;
+        // Color layer visible only when monitoring; grey raw layer always shows through
+        AudioMeterFill.Opacity = isMonitoring ? 1.0 : 0.0;
         AudioPeakHoldIndicator.Background = isMonitoring
             ? new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255))
             : new SolidColorBrush(Windows.UI.Color.FromArgb(255, 160, 160, 160));
@@ -4690,7 +4702,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         var storyboard = new Storyboard();
 
-        foreach (var element in new UIElement[] { AudioMeterFill, AudioPeakHoldIndicator, AudioRangeMinMarker, AudioRangeMaxMarker })
+        foreach (var element in new UIElement[] { AudioMeterRawFill, AudioMeterFill, AudioPeakHoldIndicator, AudioRangeMinMarker, AudioRangeMaxMarker })
         {
             var anim = new DoubleAnimation
             {
