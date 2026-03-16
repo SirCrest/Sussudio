@@ -18,6 +18,7 @@ public sealed class RecordingContext
     public string? AudioTempPath { get; init; }
     public bool UsePostMuxAudio { get; init; }
     public string? AudioDeviceName { get; init; }
+    public string? MicrophoneDeviceName { get; init; }
     public double EffectiveFrameRate { get; init; }
     public string FrameRateArg { get; init; } = "30";
     public uint EffectiveWidth { get; init; }

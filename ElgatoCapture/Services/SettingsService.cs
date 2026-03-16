@@ -19,6 +19,9 @@ public class UserSettings
     public bool? IsAudioPreviewEnabled { get; set; }
     public bool? IsCustomAudioInputEnabled { get; set; }
     public string? SelectedAudioInputDeviceId { get; set; }
+    public bool? IsMicrophoneEnabled { get; set; }
+    public string? SelectedMicrophoneDeviceId { get; set; }
+    public double? MicrophoneVolume { get; set; }
     public double? PreviewVolume { get; set; }
     public bool? ShowAllCaptureOptions { get; set; }
     public bool? IsStatsVisible { get; set; }

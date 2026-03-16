@@ -50,6 +50,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial bool IsCustomAudioInputEnabled { get; set; }
 
     [ObservableProperty]
+    public partial ObservableCollection<AudioInputDevice> MicrophoneDevices { get; set; } = new();
+
+    [ObservableProperty]
+    public partial bool IsMicrophoneEnabled { get; set; }
+
+    [ObservableProperty]
+    public partial AudioInputDevice? SelectedMicrophoneDevice { get; set; }
+
+    [ObservableProperty]
     public partial CaptureDevice? SelectedDevice { get; set; }
 
     [ObservableProperty]
@@ -123,6 +132,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _isLoadingSettings;
     private string? _pendingSavedDeviceId;
     private string? _pendingSavedAudioDeviceId;
+    private string? _pendingSavedMicrophoneDeviceId;
+    private double? _pendingSavedMicrophoneVolume;
+    private string? _pendingSavedMicrophoneVolumeDeviceId;
     private string? _pendingSavedDeviceAudioMode;
     private double? _pendingSavedAnalogAudioGainPercent;
     private bool _isRefreshingDeviceAudioControls;
@@ -273,6 +285,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial double PreviewVolume { get; set; } = 1.0;
 
     [ObservableProperty]
+    public partial double MicrophoneVolume { get; set; } = 100.0;
+
+    [ObservableProperty]
     public partial ObservableCollection<string> AvailableDeviceAudioModes { get; set; } = new()
     {
         DeviceAudioMode.Hdmi,
@@ -338,18 +353,24 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     /// Bypasses PropertyChanged to avoid per-frame dispatch + 53-case switch overhead.
     /// </summary>
     public double AudioMeterTarget;
+    public double MicrophoneMeterTarget;
+    public bool MicrophoneClipping { get; set; }
     private int _audioMeterTimerNeeded;
+    private int _microphoneMeterTimerNeeded;
 
     /// <summary>
     /// Fires once when audio transitions from silent to active, signaling MainWindow
     /// to start the audio meter animation timer. Reset when the timer stops itself.
     /// </summary>
     public event Action? AudioMeterActivated;
+    public event Action? MicrophoneMeterActivated;
 
     private const double MeterFloorDb = -60.0;
     private const double MeterDecayDbPerSecond = 40.0 / 1.7; // OBS-like PPM decay
     private double _audioMeterDb = MeterFloorDb;
     private long _audioMeterLastTick;
+    private double _micMeterDb = MeterFloorDb;
+    private long _micMeterLastTick;
     private int _disposeState;
     private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);
     private bool _cancelPreviewRestartAfterReinitialize;
@@ -402,6 +423,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.ErrorOccurred += OnCaptureError;
         _captureService.FrameCaptured += OnFrameCaptured;
         _captureService.AudioLevelUpdated += OnAudioLevelUpdated;
+        _captureService.MicrophoneAudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
         _captureService.SourceTelemetryUpdated += OnSourceTelemetryUpdated;
         _latestSourceTelemetry = _captureService.GetLatestSourceTelemetrySnapshot();
         ApplySourceTelemetrySnapshot(_latestSourceTelemetry, allowAutoRetarget: false);
@@ -800,6 +822,19 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 IsCustomAudioInputEnabled = settings.IsCustomAudioInputEnabled.Value;
             }
 
+            if (settings.IsMicrophoneEnabled.HasValue)
+            {
+                IsMicrophoneEnabled = settings.IsMicrophoneEnabled.Value;
+            }
+
+            if (settings.MicrophoneVolume.HasValue)
+            {
+                var savedMicrophoneVolume = Math.Clamp(settings.MicrophoneVolume.Value, 0.0, 100.0);
+                MicrophoneVolume = savedMicrophoneVolume;
+                _pendingSavedMicrophoneVolume = savedMicrophoneVolume;
+                _pendingSavedMicrophoneVolumeDeviceId = settings.SelectedMicrophoneDeviceId;
+            }
+
             if (settings.PreviewVolume.HasValue)
             {
                 PreviewVolume = Math.Clamp(settings.PreviewVolume.Value, 0.0, 1.0);
@@ -829,6 +864,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             // Defer device selection until RefreshDevicesAsync populates the device list
             _pendingSavedDeviceId = settings.SelectedDeviceId;
             _pendingSavedAudioDeviceId = settings.SelectedAudioInputDeviceId;
+            _pendingSavedMicrophoneDeviceId = settings.SelectedMicrophoneDeviceId;
             _pendingSavedDeviceAudioMode = settings.SelectedDeviceAudioMode;
             _pendingSavedAnalogAudioGainPercent = settings.AnalogAudioGainPercent;
         }
@@ -865,6 +901,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 IsAudioPreviewEnabled = IsAudioPreviewEnabled,
                 IsCustomAudioInputEnabled = IsCustomAudioInputEnabled,
                 SelectedAudioInputDeviceId = SelectedAudioInputDevice?.Id,
+                IsMicrophoneEnabled = IsMicrophoneEnabled,
+                SelectedMicrophoneDeviceId = SelectedMicrophoneDevice?.Id,
+                MicrophoneVolume = MicrophoneVolume,
                 PreviewVolume = VolumeSaveOverride ?? PreviewVolume,
                 ShowAllCaptureOptions = ShowAllCaptureOptions,
                 IsStatsVisible = IsStatsVisible,
@@ -1102,7 +1141,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void OnAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
     {
-        var level = UpdateMeterLevel(e.Peak);
+        var level = UpdateMeterLevel(e.Peak, ref _audioMeterDb, ref _audioMeterLastTick);
         Volatile.Write(ref AudioMeterTarget, level);
         AudioPeak = e.Peak;
 
@@ -1114,6 +1153,18 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (e.Clipped)
         {
             _dispatcherQueue.TryEnqueue(() => AudioClipping = true);
+        }
+    }
+
+    private void OnMicrophoneAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
+    {
+        var level = UpdateMeterLevel(e.Peak, ref _micMeterDb, ref _micMeterLastTick);
+        Volatile.Write(ref MicrophoneMeterTarget, level);
+        MicrophoneClipping = e.Clipped;
+
+        if (level > 0 && Interlocked.CompareExchange(ref _microphoneMeterTimerNeeded, 1, 0) == 0)
+        {
+            _dispatcherQueue.TryEnqueue(() => MicrophoneMeterActivated?.Invoke());
         }
     }
 
@@ -1280,13 +1331,20 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         try
         {
             var previousAudioId = SelectedAudioInputDevice?.Id;
+            var previousMicrophoneId = SelectedMicrophoneDevice?.Id;
             var audioDevices = FilterOutCaptureCardAudio(
                 (await _deviceService.EnumerateAudioCaptureDevicesAsync()).ToList());
 
             ReplaceCollection(AudioInputDevices, audioDevices);
+            ReplaceCollection(MicrophoneDevices, audioDevices);
+            var savedMicrophoneId = _pendingSavedMicrophoneDeviceId;
             SelectedAudioInputDevice =
                 AudioInputDevices.FirstOrDefault(d => d.Id == previousAudioId)
                 ?? AudioInputDevices.FirstOrDefault();
+            SelectedMicrophoneDevice =
+                MicrophoneDevices.FirstOrDefault(d => d.Id == previousMicrophoneId)
+                ?? (!string.IsNullOrWhiteSpace(savedMicrophoneId) ? MicrophoneDevices.FirstOrDefault(d => d.Id == savedMicrophoneId) : null)
+                ?? MicrophoneDevices.FirstOrDefault();
 
             Logger.Log($"Audio device list refreshed ({AudioInputDevices.Count} devices).");
         }
@@ -1305,6 +1363,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             var discoveryStopwatch = Stopwatch.StartNew();
             var scanGeneration = Interlocked.Increment(ref _deviceScanGeneration);
             var previousAudioId = SelectedAudioInputDevice?.Id;
+            var previousMicrophoneId = SelectedMicrophoneDevice?.Id;
             var previousDeviceId = SelectedDevice?.Id;
             var audioDevices = (await _deviceService.EnumerateAudioCaptureDevicesAsync()).ToList();
             var devices = await _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
@@ -1315,15 +1374,27 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 ? audioDevices
                 : audioDevices.Where(d => !string.Equals(d.Id, captureCardAudioId, StringComparison.OrdinalIgnoreCase)).ToList();
             ReplaceCollection(AudioInputDevices, filteredAudio);
+            ReplaceCollection(MicrophoneDevices, filteredAudio);
             var savedAudioId = _pendingSavedAudioDeviceId;
             _pendingSavedAudioDeviceId = null;
+            var savedMicrophoneId = _pendingSavedMicrophoneDeviceId;
+            _pendingSavedMicrophoneDeviceId = null;
             SelectedAudioInputDevice =
                 AudioInputDevices.FirstOrDefault(d => d.Id == previousAudioId)
                 ?? (!string.IsNullOrWhiteSpace(savedAudioId) ? AudioInputDevices.FirstOrDefault(d => d.Id == savedAudioId) : null)
                 ?? AudioInputDevices.FirstOrDefault();
+            SelectedMicrophoneDevice =
+                MicrophoneDevices.FirstOrDefault(d => d.Id == previousMicrophoneId)
+                ?? (!string.IsNullOrWhiteSpace(savedMicrophoneId) ? MicrophoneDevices.FirstOrDefault(d => d.Id == savedMicrophoneId) : null)
+                ?? MicrophoneDevices.FirstOrDefault();
             if (!string.IsNullOrWhiteSpace(savedAudioId) && SelectedAudioInputDevice?.Id != savedAudioId)
             {
                 Logger.Log($"SETTINGS_RESTORE: saved audio device '{savedAudioId}' not found, using fallback.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(savedMicrophoneId) && SelectedMicrophoneDevice?.Id != savedMicrophoneId)
+            {
+                Logger.Log($"SETTINGS_RESTORE: saved microphone device '{savedMicrophoneId}' not found, using fallback.");
             }
 
             ReplaceCollection(Devices, devices.ToList());
@@ -3477,6 +3548,18 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         SaveSettings();
     }
 
+    partial void OnIsMicrophoneEnabledChanged(bool value)
+    {
+        SaveSettings();
+        if (!IsRecording)
+        {
+            var device = SelectedMicrophoneDevice;
+            EnqueueUiOperation(
+                () => _sessionCoordinator.UpdateMicrophoneMonitorAsync(value, device?.Id, device?.Name),
+                "mic monitor toggle");
+        }
+    }
+
     partial void OnIsCustomAudioInputEnabledChanged(bool value)
     {
         if (IsRecording)
@@ -3518,6 +3601,57 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         EnqueueUiOperation(() => ApplyAudioInputSelectionAsync("custom audio device change"), "custom audio device change");
         SaveSettings();
+    }
+
+    partial void OnSelectedMicrophoneDeviceChanged(AudioInputDevice? value)
+    {
+        if (value != null)
+        {
+            try
+            {
+                var pendingSavedVolume = _pendingSavedMicrophoneVolume;
+                var pendingSavedVolumeDeviceId = _pendingSavedMicrophoneVolumeDeviceId;
+                if (pendingSavedVolume.HasValue &&
+                    string.Equals(value.Id, pendingSavedVolumeDeviceId, StringComparison.OrdinalIgnoreCase))
+                {
+                    _pendingSavedMicrophoneVolume = null;
+                    _pendingSavedMicrophoneVolumeDeviceId = null;
+                    var savedVolume = Math.Clamp(pendingSavedVolume.Value, 0.0, 100.0);
+                    if (Math.Abs(MicrophoneVolume - savedVolume) > 0.5)
+                    {
+                        MicrophoneVolume = savedVolume;
+                    }
+                    else
+                    {
+                        SetMicrophoneEndpointVolume(savedVolume);
+                    }
+                }
+                else
+                {
+                    _pendingSavedMicrophoneVolume = null;
+                    _pendingSavedMicrophoneVolumeDeviceId = null;
+                    var endpointVolume = GetMicrophoneEndpointVolume();
+                    if (Math.Abs(MicrophoneVolume - endpointVolume) > 0.5)
+                    {
+                        MicrophoneVolume = endpointVolume;
+                    }
+                }
+            }
+            catch
+            {
+                // Device may be unavailable or disconnected.
+            }
+        }
+
+        SaveSettings();
+
+        // Update mic monitoring when device changes
+        if (IsMicrophoneEnabled && !IsRecording && value != null)
+        {
+            EnqueueUiOperation(
+                () => _sessionCoordinator.UpdateMicrophoneMonitorAsync(true, value.Id, value.Name),
+                "mic monitor device switch");
+        }
     }
 
     partial void OnSelectedDeviceAudioModeChanged(string value)
@@ -3592,11 +3726,61 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.SetPreviewVolume((float)Math.Clamp(value, 0.0, 1.0));
     }
 
+    partial void OnMicrophoneVolumeChanged(double value)
+    {
+        try
+        {
+            SetMicrophoneEndpointVolume(value);
+        }
+        catch
+        {
+            // Device may be unavailable or disconnected.
+        }
+    }
+
     /// <summary>
     /// Persists the current preview volume to settings. Called by the UI on
     /// pointer release so the slider doesn't trigger disk I/O on every tick.
     /// </summary>
     internal void SavePreviewVolume() => SaveSettings();
+
+    internal void SaveMicrophoneVolume() => SaveSettings();
+
+    public void SetMicrophoneEndpointVolume(double volumePercent)
+    {
+        var deviceId = SelectedMicrophoneDevice?.Id;
+        if (string.IsNullOrWhiteSpace(deviceId))
+        {
+            return;
+        }
+
+        try
+        {
+            WasapiComInterop.SetEndpointVolume(deviceId, (float)(Math.Clamp(volumePercent, 0.0, 100.0) / 100.0));
+        }
+        catch
+        {
+            // Device may be unavailable or disconnected.
+        }
+    }
+
+    public double GetMicrophoneEndpointVolume()
+    {
+        var deviceId = SelectedMicrophoneDevice?.Id;
+        if (string.IsNullOrWhiteSpace(deviceId))
+        {
+            return 100.0;
+        }
+
+        try
+        {
+            return WasapiComInterop.GetEndpointVolume(deviceId) * 100.0;
+        }
+        catch
+        {
+            return 100.0;
+        }
+    }
 
     private static AutomationStringOption[] BuildStringOptions(
         IEnumerable<string> values,
@@ -4003,46 +4187,52 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         _audioMeterDb = MeterFloorDb;
         _audioMeterLastTick = 0;
+        _micMeterDb = MeterFloorDb;
+        _micMeterLastTick = 0;
         AudioPeak = 0;
         Volatile.Write(ref AudioMeterTarget, 0.0);
+        Volatile.Write(ref MicrophoneMeterTarget, 0.0);
         Interlocked.Exchange(ref _audioMeterTimerNeeded, 0);
+        Interlocked.Exchange(ref _microphoneMeterTimerNeeded, 0);
         AudioClipping = false;
+        MicrophoneClipping = false;
     }
 
     public void ResetAudioMeterTimerFlag()
     {
         Interlocked.Exchange(ref _audioMeterTimerNeeded, 0);
+        Interlocked.Exchange(ref _microphoneMeterTimerNeeded, 0);
     }
 
-    private double UpdateMeterLevel(double peak)
+    private double UpdateMeterLevel(double peak, ref double meterDb, ref long lastTick)
     {
         var targetDb = peak > 0 ? 20.0 * Math.Log10(peak) : MeterFloorDb;
         if (targetDb < MeterFloorDb) targetDb = MeterFloorDb;
         if (targetDb > 0) targetDb = 0;
 
         var nowTick = Environment.TickCount64;
-        if (_audioMeterLastTick == 0)
+        if (lastTick == 0)
         {
-            _audioMeterDb = targetDb;
-            _audioMeterLastTick = nowTick;
+            meterDb = targetDb;
+            lastTick = nowTick;
         }
         else
         {
-            var dtSeconds = Math.Max(0, (nowTick - _audioMeterLastTick) / 1000.0);
-            _audioMeterLastTick = nowTick;
+            var dtSeconds = Math.Max(0, (nowTick - lastTick) / 1000.0);
+            lastTick = nowTick;
 
-            if (targetDb >= _audioMeterDb)
+            if (targetDb >= meterDb)
             {
-                _audioMeterDb = targetDb;
+                meterDb = targetDb;
             }
             else
             {
                 var decay = MeterDecayDbPerSecond * dtSeconds;
-                _audioMeterDb = Math.Max(targetDb, _audioMeterDb - decay);
+                meterDb = Math.Max(targetDb, meterDb - decay);
             }
         }
 
-        var level = (_audioMeterDb - MeterFloorDb) / -MeterFloorDb;
+        var level = (meterDb - MeterFloorDb) / -MeterFloorDb;
         return Math.Clamp(level, 0, 1);
     }
 
@@ -4878,6 +5068,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             settings.AudioDeviceName = SelectedAudioInputDevice.Name;
         }
 
+        settings.MicrophoneEnabled = IsMicrophoneEnabled;
+        if (IsMicrophoneEnabled && SelectedMicrophoneDevice != null)
+        {
+            settings.MicrophoneDeviceId = SelectedMicrophoneDevice.Id;
+            settings.MicrophoneDeviceName = SelectedMicrophoneDevice.Name;
+        }
+
         return settings;
     }
 
@@ -4896,6 +5093,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.ErrorOccurred -= OnCaptureError;
         _captureService.FrameCaptured -= OnFrameCaptured;
         _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
+        _captureService.MicrophoneAudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
         _captureService.SourceTelemetryUpdated -= OnSourceTelemetryUpdated;
         _audioDeviceWatcher.DevicesChanged -= OnAudioDevicesChanged;
         _audioDeviceWatcher.Dispose();

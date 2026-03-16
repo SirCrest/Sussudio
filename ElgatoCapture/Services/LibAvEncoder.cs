@@ -16,7 +16,12 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 {
     private const long AvSyncLogCadenceFrames = 300;
     private const long MinimumAvSyncVideoFrames = 30;
-    private const double DriftCorrectionThresholdMs = 10.0;
+    // Drift correction disabled: capture card audio and video share the same USB bus
+    // clock, so there is no ongoing drift. The apparent drift at startup is a one-time
+    // offset from WASAPI pre-buffering. Correcting it causes audible pops because 480-
+    // sample block insertions/removals create hard discontinuities in the waveform.
+    // Players handle the small initial A/V offset in the container transparently.
+    private const double DriftCorrectionThresholdMs = 5000.0;
     private const int MaxDriftCorrectionSamplesPerPass = 480;
 
     private static readonly Regex MasterDisplayMetadataRegex = new(
@@ -29,34 +34,48 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     private AVFormatContext* _formatCtx;
     private AVCodecContext* _videoCodecCtx;
     private AVCodecContext* _audioCodecCtx;
+    private AVCodecContext* _micCodecCtx;
     private AVStream* _videoStream;
     private AVStream* _audioStream;
+    private AVStream* _micStream;
     private AVFrame* _videoFrame;
     private AVFrame* _audioFrame;
+    private AVFrame* _micFrame;
     private AVPacket* _packet;
     private AVBSFContext* _bsfCtx;
     private SwrContext* _swrCtx;
+    private SwrContext* _micSwrCtx;
     private LibAvEncoderOptions? _options;
     private long _nextVideoPts;
     private long _nextAudioPts;
+    private long _nextMicPts;
     private long _encodedFrameCount;
     private long _droppedFrameCount;
     private long _audioSamplesReceived;
+    private long _micSamplesReceived;
     private long _lastSyncLogVideoFrame;
     private long _driftCorrectionAppliedSamples;
     private long _lastDriftCorrectionVideoFrame;
     private long _totalBytesWritten;
     private byte* _resampleBuffer;
     private byte* _audioSampleQueueBuffer;
+    private byte* _micResampleBuffer;
+    private byte* _micSampleQueueBuffer;
     private int _audioFrameSize;
+    private int _micFrameSize;
     private int _accumulatorCapacity;
     private int _audioSampleQueueCapacity;
+    private int _micAccumulatorCapacity;
+    private int _micSampleQueueCapacity;
     private int _audioAccumulatorBytes;
     private int _audioBufferedSamples;
+    private int _micAccumulatorBytes;
+    private int _micBufferedSamples;
     private bool _isOpen;
     private bool _headerWritten;
     private AVRational _cachedVideoTimeBase;
     private AVRational _cachedAudioTimeBase;
+    private AVRational _cachedMicTimeBase;
     private bool _flushSent;
     private AVBufferRef* _hwDeviceCtx;
     private AVBufferRef* _hwFramesCtx;
@@ -73,9 +92,11 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     public long EncodedFrameCount => _encodedFrameCount;
     public long DroppedFrameCount => _droppedFrameCount;
     public long AudioSamplesReceived => _audioSamplesReceived;
+    public long MicrophoneSamplesReceived => _micSamplesReceived;
     public long TotalBytesWritten => _totalBytesWritten;
     public bool IsEncoding => _isOpen;
     public bool AudioEnabled => _options?.AudioEnabled == true && _audioCodecCtx != null && _audioStream != null;
+    public bool MicrophoneEnabled => _options?.MicrophoneEnabled == true && _micCodecCtx != null && _micStream != null;
     public string VideoCodecName => _options?.CodecName ?? string.Empty;
     public string OutputPath => _options?.OutputPath ?? string.Empty;
     public bool UseHardwareFrames => _useHardwareFrames;
@@ -220,6 +241,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
             InitializeHdrBitstreamFilterIfNeeded(options);
             InitializeAudioIfNeeded(options);
+            InitializeMicrophoneIfNeeded(options);
 
             ThrowIfError(ffmpeg.avio_open2(&_formatCtx->pb, options.OutputPath, ffmpeg.AVIO_FLAG_WRITE, null, null), "avio_open2");
 
@@ -281,14 +303,18 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
             _nextVideoPts = 0;
             _nextAudioPts = 0;
+            _nextMicPts = 0;
             _encodedFrameCount = 0;
             _droppedFrameCount = 0;
             _audioSamplesReceived = 0;
+            _micSamplesReceived = 0;
             _lastSyncLogVideoFrame = 0;
             _driftCorrectionAppliedSamples = 0;
             _lastDriftCorrectionVideoFrame = 0;
             _audioAccumulatorBytes = 0;
             _audioBufferedSamples = 0;
+            _micAccumulatorBytes = 0;
+            _micBufferedSamples = 0;
             _flushSent = false;
             _isOpen = true;
 
@@ -297,6 +323,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 $"width={options.Width} height={options.Height} fps={options.FrameRate.ToString("0.###", CultureInfo.InvariantCulture)} " +
                 $"bitrate={options.BitRate} pix_fmt='{(options.IsP010 ? "p010le" : "nv12")}' hdr={options.HdrEnabled} " +
                 $"audio={options.AudioEnabled} audio_rate={options.AudioSampleRate} audio_channels={options.AudioChannels} audio_bitrate={options.AudioBitRate} " +
+                $"microphone={options.MicrophoneEnabled} mic_rate={options.MicrophoneSampleRate} mic_channels={options.MicrophoneChannels} mic_bitrate={options.MicrophoneBitRate} " +
                 $"hw_frames={_useHardwareFrames}");
         }
         catch
@@ -584,9 +611,64 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
     }
 
+    public void SendMicrophoneSamples(ReadOnlySpan<byte> f32leSamples)
+    {
+        EnsureOpen();
+
+        if (_micCodecCtx == null || _micStream == null || _micFrame == null || _micSwrCtx == null || f32leSamples.IsEmpty)
+        {
+            return;
+        }
+
+        var options = _options ?? throw new InvalidOperationException("Encoder options are not initialized.");
+        var inputBlockAlign = checked(options.MicrophoneChannels * sizeof(float));
+        if (f32leSamples.Length % inputBlockAlign != 0)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=SendMicrophoneSamples msg=Audio payload length is not aligned actual={f32leSamples.Length} block_align={inputBlockAlign}");
+        }
+
+        _micSamplesReceived += f32leSamples.Length / inputBlockAlign;
+
+        var remaining = f32leSamples;
+        var frameBytes = checked(_micFrameSize * inputBlockAlign);
+
+        if (_micAccumulatorBytes > 0)
+        {
+            var bytesNeeded = frameBytes - _micAccumulatorBytes;
+            var copyBytes = Math.Min(bytesNeeded, remaining.Length);
+            CopyToMicAccumulator(remaining[..copyBytes], _micAccumulatorBytes);
+            _micAccumulatorBytes += copyBytes;
+            remaining = remaining[copyBytes..];
+
+            if (_micAccumulatorBytes == frameBytes)
+            {
+                EncodeMicChunk(_micResampleBuffer, _micFrameSize);
+                _micAccumulatorBytes = 0;
+            }
+        }
+
+        while (remaining.Length >= frameBytes)
+        {
+            var frameSlice = remaining[..frameBytes];
+            fixed (byte* inputPtr = frameSlice)
+            {
+                EncodeMicChunk(inputPtr, _micFrameSize);
+            }
+
+            remaining = remaining[frameBytes..];
+        }
+
+        if (!remaining.IsEmpty)
+        {
+            CopyToMicAccumulator(remaining, 0);
+            _micAccumulatorBytes = remaining.Length;
+        }
+    }
+
     public void FlushAndClose()
     {
-        if (!_isOpen && _formatCtx == null && _videoCodecCtx == null && _audioCodecCtx == null)
+        if (!_isOpen && _formatCtx == null && _videoCodecCtx == null && _audioCodecCtx == null && _micCodecCtx == null)
         {
             return;
         }
@@ -623,6 +705,19 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 }
 
                 DrainAudioEncoderPackets();
+            }
+
+            if (_micCodecCtx != null)
+            {
+                FlushPendingMicSamples();
+
+                var flushResult = ffmpeg.avcodec_send_frame(_micCodecCtx, null);
+                if (flushResult != ffmpeg.AVERROR_EOF)
+                {
+                    ThrowIfError(flushResult, "avcodec_send_frame(mic_flush)");
+                }
+
+                DrainMicEncoderPackets();
             }
         }
         finally
@@ -1082,6 +1177,128 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         AllocateAudioSampleQueue(options);
     }
 
+    private void InitializeMicrophoneIfNeeded(LibAvEncoderOptions options)
+    {
+        if (!options.MicrophoneEnabled)
+        {
+            return;
+        }
+
+        var codec = ffmpeg.avcodec_find_encoder(AVCodecID.AV_CODEC_ID_AAC);
+        if (codec == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avcodec_find_encoder(mic) codec='aac' msg=Encoder not available.");
+        }
+
+        _micStream = ffmpeg.avformat_new_stream(_formatCtx, codec);
+        if (_micStream == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avformat_new_stream(mic) msg=Stream allocation returned null.");
+        }
+
+        _micCodecCtx = ffmpeg.avcodec_alloc_context3(codec);
+        if (_micCodecCtx == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=avcodec_alloc_context3(mic) msg=Codec context allocation returned null.");
+        }
+
+        _micCodecCtx->codec_type = AVMediaType.AVMEDIA_TYPE_AUDIO;
+        _micCodecCtx->sample_rate = options.MicrophoneSampleRate;
+        _micCodecCtx->sample_fmt = AVSampleFormat.AV_SAMPLE_FMT_FLTP;
+        _micCodecCtx->bit_rate = options.MicrophoneBitRate;
+        _micCodecCtx->time_base = new AVRational { num = 1, den = options.MicrophoneSampleRate };
+        ffmpeg.av_channel_layout_default(&_micCodecCtx->ch_layout, options.MicrophoneChannels);
+
+        if (!IsSampleFormatSupported(codec, _micCodecCtx->sample_fmt))
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=InitializeMicrophoneIfNeeded msg=Requested sample format '{_micCodecCtx->sample_fmt}' is not supported by AAC encoder.");
+        }
+
+        if ((_formatCtx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+        {
+            _micCodecCtx->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
+        }
+
+        ThrowIfError(ffmpeg.avcodec_open2(_micCodecCtx, codec, null), "avcodec_open2(mic)");
+
+        _micFrameSize = _micCodecCtx->frame_size;
+        if (_micFrameSize <= 0)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=InitializeMicrophoneIfNeeded msg=Unexpected AAC frame size value={_micFrameSize}");
+        }
+
+        _micStream->time_base = _micCodecCtx->time_base;
+        _cachedMicTimeBase = _micCodecCtx->time_base;
+
+        ThrowIfError(
+            ffmpeg.avcodec_parameters_from_context(_micStream->codecpar, _micCodecCtx),
+            "avcodec_parameters_from_context(mic)");
+
+        AVChannelLayout inputLayout = default;
+        ffmpeg.av_channel_layout_default(&inputLayout, options.MicrophoneChannels);
+        var swrCtx = _micSwrCtx;
+        try
+        {
+            var result = ffmpeg.swr_alloc_set_opts2(
+                &swrCtx,
+                &_micCodecCtx->ch_layout,
+                _micCodecCtx->sample_fmt,
+                _micCodecCtx->sample_rate,
+                &inputLayout,
+                AVSampleFormat.AV_SAMPLE_FMT_FLT,
+                options.MicrophoneSampleRate,
+                0,
+                null);
+            _micSwrCtx = swrCtx;
+            ThrowIfError(result, "swr_alloc_set_opts2(mic)");
+            if (_micSwrCtx == null)
+            {
+                throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=swr_alloc_set_opts2(mic) msg=Resampler allocation returned null.");
+            }
+
+            ThrowIfError(ffmpeg.swr_init(_micSwrCtx), "swr_init(mic)");
+        }
+        finally
+        {
+            ffmpeg.av_channel_layout_uninit(&inputLayout);
+        }
+
+        _micFrame = ffmpeg.av_frame_alloc();
+        if (_micFrame == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_frame_alloc(mic) msg=Frame allocation returned null.");
+        }
+
+        _micFrame->format = (int)_micCodecCtx->sample_fmt;
+        _micFrame->nb_samples = _micFrameSize;
+        _micFrame->sample_rate = _micCodecCtx->sample_rate;
+        ThrowIfError(ffmpeg.av_channel_layout_copy(&_micFrame->ch_layout, &_micCodecCtx->ch_layout), "av_channel_layout_copy(mic_frame)");
+        ThrowIfError(ffmpeg.av_frame_get_buffer(_micFrame, 0), "av_frame_get_buffer(mic)");
+        if (_micFrame->extended_data == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=av_frame_get_buffer(mic) msg=extended_data was null.");
+        }
+
+        _micAccumulatorCapacity = checked(_micFrameSize * options.MicrophoneChannels * sizeof(float));
+        _micResampleBuffer = (byte*)ffmpeg.av_malloc((ulong)_micAccumulatorCapacity);
+        if (_micResampleBuffer == null)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=av_malloc(mic_accumulator) msg=Allocation returned null size={_micAccumulatorCapacity}.");
+        }
+
+        _micSampleQueueCapacity = checked((_micFrameSize * 2) + MaxDriftCorrectionSamplesPerPass);
+        var queueBytes = checked(_micSampleQueueCapacity * options.MicrophoneChannels * sizeof(float));
+        _micSampleQueueBuffer = (byte*)ffmpeg.av_malloc((ulong)queueBytes);
+        if (_micSampleQueueBuffer == null)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=av_malloc(mic_sample_queue) msg=Allocation returned null size={queueBytes}.");
+        }
+    }
+
     private bool AttachHdrFrameSideDataIfNeeded(LibAvEncoderOptions options)
     {
         var attached = false;
@@ -1328,6 +1545,29 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
     }
 
+    private void DrainMicEncoderPackets()
+    {
+        while (true)
+        {
+            var receiveResult = ffmpeg.avcodec_receive_packet(_micCodecCtx, _packet);
+            if (receiveResult == ffmpeg.AVERROR(ffmpeg.EAGAIN) || receiveResult == ffmpeg.AVERROR_EOF)
+            {
+                return;
+            }
+
+            ThrowIfError(receiveResult, "avcodec_receive_packet(mic)");
+
+            try
+            {
+                WriteMicPacket(_packet);
+            }
+            finally
+            {
+                ffmpeg.av_packet_unref(_packet);
+            }
+        }
+    }
+
     private void WriteFilteredPackets()
     {
         var sendResult = ffmpeg.av_bsf_send_packet(_bsfCtx, _packet);
@@ -1382,6 +1622,15 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         packet->stream_index = _audioStream->index;
         var packetSize = packet->size;
         ThrowIfError(ffmpeg.av_interleaved_write_frame(_formatCtx, packet), "av_interleaved_write_frame(audio)");
+        _totalBytesWritten += packetSize;
+    }
+
+    private void WriteMicPacket(AVPacket* packet)
+    {
+        ffmpeg.av_packet_rescale_ts(packet, _micCodecCtx->time_base, _micStream->time_base);
+        packet->stream_index = _micStream->index;
+        var packetSize = packet->size;
+        ThrowIfError(ffmpeg.av_interleaved_write_frame(_formatCtx, packet), "av_interleaved_write_frame(mic)");
         _totalBytesWritten += packetSize;
     }
 
@@ -1482,7 +1731,11 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
         var queuedSamples = _audioBufferedSamples + convertedSamples;
         var queuedAudioSamples = _nextAudioPts + queuedSamples;
-        var correctionSamples = GetDriftCorrectionSamples(queuedAudioSamples, out var correctionVideoFrame, out var driftMs);
+        var correctionSamples = GetDriftCorrectionSamples(
+            queuedAudioSamples,
+            _audioCodecCtx->sample_rate,
+            out var correctionVideoFrame,
+            out var driftMs);
         var appliedCorrectionSamples = 0;
 
         if (correctionSamples < 0)
@@ -1512,6 +1765,85 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             Logger.Log(
                 $"LIBAV_AV_DRIFT_CORRECTION videoFrame={_nextVideoPts} driftMs={driftMs:F1} " +
                 $"correctionSamples={appliedCorrectionSamples} totalCorrectionSamples={_driftCorrectionAppliedSamples}");
+        }
+    }
+
+    private void EncodeMicChunk(byte* inputPtr, int inputSamples)
+    {
+        if (_micCodecCtx == null || _micStream == null || _micFrame == null || _micSwrCtx == null || inputSamples <= 0)
+        {
+            return;
+        }
+
+        var channelCount = GetMicChannelCount();
+        if (_micSampleQueueBuffer == null || _micSampleQueueCapacity <= 0)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=EncodeMicChunk msg=Microphone sample queue is not allocated.");
+        }
+
+        if (_micBufferedSamples < 0 || _micBufferedSamples > _micSampleQueueCapacity)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=EncodeMicChunk msg=Microphone queue sample count was out of range buffered={_micBufferedSamples} capacity={_micSampleQueueCapacity}.");
+        }
+
+        var availableSamples = _micSampleQueueCapacity - _micBufferedSamples;
+        if (availableSamples < inputSamples + MaxDriftCorrectionSamplesPerPass)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=EncodeMicChunk msg=Microphone queue capacity exhausted buffered={_micBufferedSamples} available={availableSamples} requested={inputSamples}.");
+        }
+
+        var inputData = stackalloc byte*[1];
+        inputData[0] = inputPtr;
+
+        var outputData = stackalloc byte*[channelCount];
+        for (var channel = 0; channel < channelCount; channel++)
+        {
+            outputData[channel] = (byte*)(GetMicQueuePlane(channel) + _micBufferedSamples);
+        }
+
+        var convertedSamples = ffmpeg.swr_convert(
+            _micSwrCtx,
+            outputData,
+            availableSamples,
+            inputData,
+            inputSamples);
+        if (convertedSamples < 0)
+        {
+            ThrowIfError(convertedSamples, "swr_convert(mic)");
+        }
+
+        if (convertedSamples != inputSamples)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=swr_convert(mic) msg=Unexpected sample count converted={convertedSamples} expected={inputSamples}");
+        }
+
+        var queuedSamples = _micBufferedSamples + convertedSamples;
+        var queuedMicSamples = _nextMicPts + queuedSamples;
+        var correctionSamples = GetDriftCorrectionSamples(
+            queuedMicSamples,
+            _micCodecCtx->sample_rate,
+            out _,
+            out _);
+
+        if (correctionSamples < 0)
+        {
+            var trimmedSamples = Math.Min(-correctionSamples, queuedSamples);
+            queuedSamples -= trimmedSamples;
+        }
+        else if (correctionSamples > 0)
+        {
+            AppendSilentMicSamples(queuedSamples, correctionSamples, channelCount);
+            queuedSamples += correctionSamples;
+        }
+
+        _micBufferedSamples = queuedSamples;
+        while (_micBufferedSamples >= _micFrameSize)
+        {
+            SendPreparedMicFrame(_micFrameSize);
+            RemoveQueuedMicSamples(_micFrameSize);
         }
     }
 
@@ -1681,6 +2013,167 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         DrainBufferedAudioFrames(flushPartialFrame: true);
     }
 
+    private void SendPreparedMicFrame(int sampleCount)
+    {
+        if (_micCodecCtx == null || _micFrame == null || sampleCount <= 0)
+        {
+            return;
+        }
+
+        ThrowIfError(ffmpeg.av_frame_make_writable(_micFrame), "av_frame_make_writable(mic)");
+        CopyQueuedMicSamplesToFrame(sampleCount);
+
+        _micFrame->nb_samples = sampleCount;
+        var nextPts = _nextMicPts;
+        _micFrame->pts = nextPts;
+
+        var sendResult = ffmpeg.avcodec_send_frame(_micCodecCtx, _micFrame);
+        if (sendResult == ffmpeg.AVERROR(ffmpeg.EAGAIN))
+        {
+            DrainMicEncoderPackets();
+            sendResult = ffmpeg.avcodec_send_frame(_micCodecCtx, _micFrame);
+        }
+
+        ThrowIfError(sendResult, "avcodec_send_frame(mic)");
+        _nextMicPts = nextPts + sampleCount;
+        DrainMicEncoderPackets();
+    }
+
+    private void CopyQueuedMicSamplesToFrame(int sampleCount)
+    {
+        if (_micCodecCtx == null || _micFrame == null || _micFrame->extended_data == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=CopyQueuedMicSamplesToFrame msg=Microphone frame storage was not initialized.");
+        }
+
+        var bytesPerSample = ffmpeg.av_get_bytes_per_sample(_micCodecCtx->sample_fmt);
+        if (bytesPerSample <= 0)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=CopyQueuedMicSamplesToFrame msg=Unsupported sample format '{_micCodecCtx->sample_fmt}'.");
+        }
+
+        var channelCount = GetMicChannelCount();
+        if (ffmpeg.av_sample_fmt_is_planar(_micCodecCtx->sample_fmt) == 0)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=CopyQueuedMicSamplesToFrame msg=Expected planar audio frame layout.");
+        }
+
+        var planeBytes = sampleCount * bytesPerSample;
+        for (var channel = 0; channel < channelCount; channel++)
+        {
+            var source = GetMicQueuePlane(channel);
+            var destination = (float*)_micFrame->extended_data[channel];
+            if (destination == null)
+            {
+                throw CreateLibAvException(
+                    $"LIBAV_ENCODER_ERROR operation=CopyQueuedMicSamplesToFrame msg=Microphone plane pointer was null channel={channel}.");
+            }
+
+            Buffer.MemoryCopy(source, destination, planeBytes, planeBytes);
+        }
+    }
+
+    private void RemoveQueuedMicSamples(int sampleCount)
+    {
+        if (sampleCount <= 0)
+        {
+            return;
+        }
+
+        if (sampleCount > _micBufferedSamples)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_ERROR operation=RemoveQueuedMicSamples msg=Cannot remove more samples than buffered remove={sampleCount} buffered={_micBufferedSamples}.");
+        }
+
+        var remainingSamples = _micBufferedSamples - sampleCount;
+        if (remainingSamples > 0)
+        {
+            var channelCount = GetMicChannelCount();
+            for (var channel = 0; channel < channelCount; channel++)
+            {
+                var plane = GetMicQueuePlane(channel);
+                new ReadOnlySpan<float>(plane + sampleCount, remainingSamples)
+                    .CopyTo(new Span<float>(plane, remainingSamples));
+            }
+        }
+
+        _micBufferedSamples = remainingSamples;
+    }
+
+    private void AppendSilentMicSamples(int startSample, int sampleCount, int channelCount)
+    {
+        if (sampleCount <= 0)
+        {
+            return;
+        }
+
+        for (var channel = 0; channel < channelCount; channel++)
+        {
+            new Span<float>(GetMicQueuePlane(channel) + startSample, sampleCount).Clear();
+        }
+    }
+
+    private float* GetMicQueuePlane(int channel)
+    {
+        if (_micSampleQueueBuffer == null || _micSampleQueueCapacity <= 0)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=GetMicQueuePlane msg=Microphone sample queue was not initialized.");
+        }
+
+        return (float*)(_micSampleQueueBuffer + (channel * _micSampleQueueCapacity * sizeof(float)));
+    }
+
+    private int GetMicChannelCount()
+    {
+        var channelCount = (int)(_micCodecCtx != null && _micCodecCtx->ch_layout.nb_channels > 0
+            ? _micCodecCtx->ch_layout.nb_channels
+            : _options?.MicrophoneChannels ?? 0);
+        if (channelCount <= 0)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=GetMicChannelCount msg=Microphone channel count was not available.");
+        }
+
+        return channelCount;
+    }
+
+    private void FlushPendingMicSamples()
+    {
+        if (_micCodecCtx == null || _micFrame == null)
+        {
+            return;
+        }
+
+        if (_micAccumulatorBytes > 0)
+        {
+            var options = _options ?? throw new InvalidOperationException("Encoder options are not initialized.");
+            var inputBlockAlign = checked(options.MicrophoneChannels * sizeof(float));
+            if (_micAccumulatorBytes % inputBlockAlign != 0)
+            {
+                throw CreateLibAvException(
+                    $"LIBAV_ENCODER_ERROR operation=FlushPendingMicSamples msg=Accumulator is not sample-aligned bytes={_micAccumulatorBytes} block_align={inputBlockAlign}");
+            }
+
+            var pendingSamples = _micAccumulatorBytes / inputBlockAlign;
+            if (pendingSamples > 0)
+            {
+                EncodeMicChunk(_micResampleBuffer, pendingSamples);
+            }
+
+            _micAccumulatorBytes = 0;
+        }
+
+        while (_micBufferedSamples > 0)
+        {
+            var sampleCount = _micBufferedSamples >= _micFrameSize
+                ? _micFrameSize
+                : _micBufferedSamples;
+            SendPreparedMicFrame(sampleCount);
+            RemoveQueuedMicSamples(sampleCount);
+        }
+    }
+
     private void CopyToAudioAccumulator(ReadOnlySpan<byte> source, int destinationOffset)
     {
         if (source.IsEmpty)
@@ -1699,6 +2192,28 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 sourcePtr,
                 _resampleBuffer + destinationOffset,
                 _accumulatorCapacity - destinationOffset,
+                source.Length);
+        }
+    }
+
+    private void CopyToMicAccumulator(ReadOnlySpan<byte> source, int destinationOffset)
+    {
+        if (source.IsEmpty)
+        {
+            return;
+        }
+
+        if (_micResampleBuffer == null)
+        {
+            throw CreateLibAvException("LIBAV_ENCODER_ERROR operation=CopyToMicAccumulator msg=Microphone accumulator buffer is null.");
+        }
+
+        fixed (byte* sourcePtr = source)
+        {
+            Buffer.MemoryCopy(
+                sourcePtr,
+                _micResampleBuffer + destinationOffset,
+                _micAccumulatorCapacity - destinationOffset,
                 source.Length);
         }
     }
@@ -1794,6 +2309,13 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 _audioFrame = null;
             }
 
+            if (_micFrame != null)
+            {
+                var micFrame = _micFrame;
+                ffmpeg.av_frame_free(&micFrame);
+                _micFrame = null;
+            }
+
             if (_videoFrame != null)
             {
                 var videoFrame = _videoFrame;
@@ -1808,11 +2330,25 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 _swrCtx = null;
             }
 
+            if (_micSwrCtx != null)
+            {
+                var micSwrCtx = _micSwrCtx;
+                ffmpeg.swr_free(&micSwrCtx);
+                _micSwrCtx = null;
+            }
+
             if (_audioCodecCtx != null)
             {
                 var audioCodecCtx = _audioCodecCtx;
                 ffmpeg.avcodec_free_context(&audioCodecCtx);
                 _audioCodecCtx = null;
+            }
+
+            if (_micCodecCtx != null)
+            {
+                var micCodecCtx = _micCodecCtx;
+                ffmpeg.avcodec_free_context(&micCodecCtx);
+                _micCodecCtx = null;
             }
 
             if (_videoCodecCtx != null)
@@ -1834,6 +2370,18 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 _audioSampleQueueBuffer = null;
             }
 
+            if (_micResampleBuffer != null)
+            {
+                ffmpeg.av_free(_micResampleBuffer);
+                _micResampleBuffer = null;
+            }
+
+            if (_micSampleQueueBuffer != null)
+            {
+                ffmpeg.av_free(_micSampleQueueBuffer);
+                _micSampleQueueBuffer = null;
+            }
+
             if (_formatCtx != null)
             {
                 ffmpeg.avformat_free_context(_formatCtx);
@@ -1842,10 +2390,21 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
             _videoStream = null;
             _audioStream = null;
+            _micStream = null;
             _audioFrameSize = 0;
+            _micFrameSize = 0;
+            _accumulatorCapacity = 0;
             _audioSampleQueueCapacity = 0;
+            _micAccumulatorCapacity = 0;
+            _micSampleQueueCapacity = 0;
             _audioAccumulatorBytes = 0;
             _audioBufferedSamples = 0;
+            _micAccumulatorBytes = 0;
+            _micBufferedSamples = 0;
+            _nextMicPts = 0;
+            var finalMicSamplesReceived = _micSamplesReceived;
+            _micSamplesReceived = 0;
+            _cachedMicTimeBase = default;
             _isOpen = false;
             _headerWritten = false;
             _flushSent = false;
@@ -1861,12 +2420,12 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 if (normalClose)
                 {
                     Logger.Log(
-                        $"LIBAV_ENCODER_CLOSE output='{outputPath}' frames={_encodedFrameCount} dropped={_droppedFrameCount} audio_samples={_audioSamplesReceived} file_bytes={outputBytes}");
+                        $"LIBAV_ENCODER_CLOSE output='{outputPath}' frames={_encodedFrameCount} dropped={_droppedFrameCount} audio_samples={_audioSamplesReceived} mic_samples={finalMicSamplesReceived} file_bytes={outputBytes}");
                 }
                 else if (_headerWritten || _encodedFrameCount > 0 || outputBytes > 0)
                 {
                     Logger.Log(
-                        $"LIBAV_ENCODER_CLEANUP init_failed=true output='{outputPath}' frames={_encodedFrameCount} dropped={_droppedFrameCount} audio_samples={_audioSamplesReceived} file_bytes={outputBytes}");
+                        $"LIBAV_ENCODER_CLEANUP init_failed=true output='{outputPath}' frames={_encodedFrameCount} dropped={_droppedFrameCount} audio_samples={_audioSamplesReceived} mic_samples={finalMicSamplesReceived} file_bytes={outputBytes}");
                 }
             }
         }
@@ -1935,6 +2494,24 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         if (options.AudioBitRate <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(options), "AudioBitRate must be positive.");
+        }
+
+        if (options.MicrophoneEnabled)
+        {
+            if (options.MicrophoneSampleRate <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(options), "MicrophoneSampleRate must be positive.");
+            }
+
+            if (options.MicrophoneChannels <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(options), "MicrophoneChannels must be positive.");
+            }
+
+            if (options.MicrophoneBitRate <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(options), "MicrophoneBitRate must be positive.");
+            }
         }
 
 ValidateHdrOptions:
@@ -2074,13 +2651,13 @@ ValidateHdrOptions:
             den = 10_000
         };
 
-    private int GetDriftCorrectionSamples(long audioSamples, out long correctionVideoFrame, out double driftMs)
+    private int GetDriftCorrectionSamples(long audioSamples, int sampleRate, out long correctionVideoFrame, out double driftMs)
     {
         correctionVideoFrame = 0;
         driftMs = 0.0;
 
         if (_options == null ||
-            !_options.AudioEnabled ||
+            (!_options.AudioEnabled && !_options.MicrophoneEnabled) ||
             _nextVideoPts < MinimumAvSyncVideoFrames ||
             _nextVideoPts - _lastDriftCorrectionVideoFrame < AvSyncLogCadenceFrames)
         {
@@ -2093,12 +2670,12 @@ ValidateHdrOptions:
         }
 
         correctionVideoFrame = videoFrame;
-        if (Math.Abs(driftMs) <= DriftCorrectionThresholdMs || _audioCodecCtx == null || _audioCodecCtx->sample_rate <= 0)
+        if (Math.Abs(driftMs) <= DriftCorrectionThresholdMs || sampleRate <= 0)
         {
             return 0;
         }
 
-        var correctionSamples = (int)(-(driftMs / 1000.0) * _audioCodecCtx->sample_rate);
+        var correctionSamples = (int)(-(driftMs / 1000.0) * sampleRate);
         return Math.Clamp(correctionSamples, -MaxDriftCorrectionSamplesPerPass, MaxDriftCorrectionSamplesPerPass);
     }
 
@@ -2221,6 +2798,10 @@ internal sealed record LibAvEncoderOptions
     public int AudioSampleRate { get; init; } = 48_000;
     public int AudioChannels { get; init; } = 2;
     public int AudioBitRate { get; init; } = 320_000;
+    public bool MicrophoneEnabled { get; init; }
+    public int MicrophoneSampleRate { get; init; } = 48_000;
+    public int MicrophoneChannels { get; init; } = 2;
+    public int MicrophoneBitRate { get; init; } = 320_000;
     public bool HdrEnabled { get; init; }
     public bool IsFullRangeInput { get; init; }
     public string? HdrMasterDisplayMetadata { get; init; }

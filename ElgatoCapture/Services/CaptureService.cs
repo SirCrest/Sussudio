@@ -29,6 +29,10 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private LibAvRecordingSink? _libavSink;
     private IRecordingSink? _recordingSink;
     private WasapiAudioCapture? _wasapiAudioCapture;
+    private WasapiAudioCapture? _microphoneCapture;
+    private string? _micMonitorDeviceId;
+    private string? _micMonitorDeviceName;
+    private bool _micMonitorEnabled;
     private WasapiAudioPlayback? _wasapiAudioPlayback;
     private float _previewVolume = 1.0f;
     private bool _isMonitoringMuted;
@@ -81,6 +85,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     public event EventHandler<Exception>? ErrorOccurred;
     public event EventHandler<ulong>? FrameCaptured;
     public event EventHandler<AudioLevelEventArgs>? AudioLevelUpdated;
+    public event EventHandler<AudioLevelEventArgs>? MicrophoneAudioLevelUpdated;
     public event EventHandler<SourceSignalTelemetrySnapshot>? SourceTelemetryUpdated;
 
     public bool IsRecording => _isRecording;
@@ -373,6 +378,57 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         AudioLevelUpdated?.Invoke(this, e);
     }
+
+    private void OnMicrophoneAudioLevelUpdated(object? sender, AudioLevelEventArgs e)
+    {
+        MicrophoneAudioLevelUpdated?.Invoke(this, e);
+    }
+
+    private async Task DisposeMicrophoneCaptureAsync()
+    {
+        var mic = _microphoneCapture;
+        _microphoneCapture = null;
+        if (mic != null)
+        {
+            try
+            {
+                mic.SetAudioWriteDelegate(null);
+                mic.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
+                mic.CaptureFailed -= OnWasapiCaptureFailed;
+                await mic.DisposeAsync().ConfigureAwait(false);
+                Logger.Log("MIC_MONITOR_STOP");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Microphone capture dispose failed: " + ex.Message);
+            }
+        }
+    }
+
+    public Task UpdateMicrophoneMonitorAsync(bool enabled, string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
+        => RunTransitionAsync(_sessionState, async transitionToken =>
+        {
+            _micMonitorEnabled = enabled;
+            _micMonitorDeviceId = deviceId;
+            _micMonitorDeviceName = deviceName;
+
+            await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+
+            if (enabled && !_isRecording && _isVideoPreviewActive && !string.IsNullOrWhiteSpace(deviceId))
+            {
+                var micCapture = new WasapiAudioCapture();
+                await micCapture.InitializeAsync(deviceId, transitionToken).ConfigureAwait(false);
+                micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
+                micCapture.CaptureFailed += OnWasapiCaptureFailed;
+                micCapture.Start();
+                _microphoneCapture = micCapture;
+                Logger.Log("MIC_MONITOR_START device='" + (deviceName ?? "?") + "'");
+            }
+            else
+            {
+                MicrophoneAudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
+            }
+        }, cancellationToken);
 
     private void OnWasapiCaptureFailed(object? sender, Exception ex)
     {
@@ -1283,6 +1339,12 @@ public class CaptureService : IDisposable, IAsyncDisposable
             if (_currentDevice == null) throw new InvalidOperationException("No selected video device is available for preview.");
             if (_isVideoPreviewActive) return;
             transitionToken.ThrowIfCancellationRequested();
+
+            // Capture mic monitor settings for preview-time metering
+            _micMonitorEnabled = settings.MicrophoneEnabled;
+            _micMonitorDeviceId = settings.MicrophoneDeviceId;
+            _micMonitorDeviceName = settings.MicrophoneDeviceName;
+
             if (_isRecording && _unifiedVideoCapture != null)
             {
                 _unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
@@ -1372,6 +1434,25 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     _wasapiAudioCapture != null
                         ? "Preview backend active: IMFSourceReader video + WASAPI audio ingest."
                         : "Preview backend active: IMFSourceReader video only (no audio capture endpoint).");
+
+                // Start mic monitoring if enabled (metering only, no recording sink)
+                if (_micMonitorEnabled && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))
+                {
+                    try
+                    {
+                        var micCapture = new WasapiAudioCapture();
+                        await micCapture.InitializeAsync(_micMonitorDeviceId, transitionToken).ConfigureAwait(false);
+                        micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
+                        micCapture.CaptureFailed += OnWasapiCaptureFailed;
+                        micCapture.Start();
+                        _microphoneCapture = micCapture;
+                        Logger.Log("MIC_MONITOR_START device='" + (_micMonitorDeviceName ?? "?") + "'");
+                    }
+                    catch (Exception micEx)
+                    {
+                        Logger.Log("Mic monitor start failed (non-fatal): " + micEx.Message);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -1451,6 +1532,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 {
                     await capture.DisposeAsync().ConfigureAwait(false);
                 }
+
+                await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
             }
 
             _isVideoPreviewActive = false;
@@ -1568,17 +1651,18 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     outputFolder,
                     settings,
                     usePostMuxAudio: false,
-                    audioDeviceName,
-                    recordingFrameRate,
-                    frameRateArg,
-                    recordingWidth,
-                    recordingHeight,
-                    videoInputPixelFormat,
+                    audioDeviceName: audioDeviceName,
+                    microphoneDeviceName: settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
+                    effectiveFrameRate: recordingFrameRate,
+                    frameRateArg: frameRateArg,
+                    effectiveWidth: recordingWidth,
+                    effectiveHeight: recordingHeight,
+                    videoInputPixelFormat: videoInputPixelFormat,
                     isFullRangeInput: isMjpegMode,
-                    isMjpegMode ? IntPtr.Zero : (d3dManager?.Device.NativePointer ?? IntPtr.Zero),
-                    isMjpegMode ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero),
-                    cudaHwDeviceCtxPtr,
-                    cudaHwFramesCtxPtr).ConfigureAwait(false);
+                    d3d11DevicePtr: isMjpegMode ? IntPtr.Zero : (d3dManager?.Device.NativePointer ?? IntPtr.Zero),
+                    d3d11DeviceContextPtr: isMjpegMode ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero),
+                    cudaHwDeviceCtxPtr: cudaHwDeviceCtxPtr,
+                    cudaHwFramesCtxPtr: cudaHwFramesCtxPtr).ConfigureAwait(false);
 
                 transitionToken.ThrowIfCancellationRequested();
                 _mfReadwriteDisableConverters = requireP010 || isMjpegMode;
@@ -1636,12 +1720,31 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     }
                 }
 
+                var activeLibAvSink = libAvSink
+                    ?? throw new InvalidOperationException("Recording requires an active LibAv sink.");
+
+                // Dispose preview-time mic monitor — recording creates its own with sink
+                await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+
+                if (settings.MicrophoneEnabled && !string.IsNullOrWhiteSpace(settings.MicrophoneDeviceId))
+                {
+                    var micSink = activeLibAvSink; // capture stable reference — libAvSink is nulled on success path
+                    var micCapture = new WasapiAudioCapture();
+                    await micCapture.InitializeAsync(settings.MicrophoneDeviceId, transitionToken).ConfigureAwait(false);
+                    micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
+                    micCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    micCapture.SetAudioWriteDelegate(samples => micSink.WriteMicrophoneAudioAsync(samples));
+                    micCapture.Start();
+                    _microphoneCapture = micCapture;
+                    Logger.Log("MICROPHONE_CAPTURE_START device='" + settings.MicrophoneDeviceName + "'");
+                }
+
                 IGpuVideoFrameEncoder? gpuEncoder =
-                    (!isMjpegMode && libAvSink.GpuEncodingEnabled)
-                        ? libAvSink
+                    (!isMjpegMode && activeLibAvSink.GpuEncodingEnabled)
+                        ? activeLibAvSink
                         : null;
 
-                await unifiedVideoCapture.StartRecordingAsync(recordingSink, libAvSink, gpuEncoder).ConfigureAwait(false);
+                await unifiedVideoCapture.StartRecordingAsync(recordingSink, activeLibAvSink, gpuEncoder).ConfigureAwait(false);
                 if (gpuEncoder != null)
                 {
                     Logger.Log("GPU_RECORDING_ACTIVE gpu_encoder=active");
@@ -1681,6 +1784,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 {
                     _wasapiAudioCapture.DetachRecordingSink();
                 }
+
+                await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
 
                 if (ownedUnifiedVideoCapture != null)
                 {
@@ -1920,6 +2025,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 }
             }
 
+            await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+
             StopTelemetryPoll();
             _isVideoPreviewActive = false;
             _isAudioPreviewActive = false;
@@ -1999,6 +2106,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 Logger.Log($"Audio recording sink detach failed: {ex.Message}");
             }
         }
+
+        await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
 
         if (sink != null)
         {
@@ -2099,6 +2208,26 @@ public class CaptureService : IDisposable, IAsyncDisposable
         _recordingContext = null;
         _activeRecordingSettings = null;
         _mfReadwriteDisableConverters = false;
+
+        // Restart mic monitoring if preview is still active
+        if (_isVideoPreviewActive && _micMonitorEnabled && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))
+        {
+            try
+            {
+                var micCapture = new WasapiAudioCapture();
+                await micCapture.InitializeAsync(_micMonitorDeviceId, cancellationToken).ConfigureAwait(false);
+                micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
+                micCapture.CaptureFailed += OnWasapiCaptureFailed;
+                micCapture.Start();
+                _microphoneCapture = micCapture;
+                Logger.Log("MIC_MONITOR_RESTART device='" + (_micMonitorDeviceName ?? "?") + "'");
+            }
+            catch (Exception micEx)
+            {
+                Logger.Log("Mic monitor restart failed (non-fatal): " + micEx.Message);
+            }
+        }
+
         _lastOutputPath = result.OutputPath;
         _lastFinalizeStatus = result.StatusMessage;
         _lastFinalizeUtc = DateTimeOffset.UtcNow;

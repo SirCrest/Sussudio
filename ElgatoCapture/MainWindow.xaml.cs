@@ -57,6 +57,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private Storyboard? _statsDockStoryboard;
     private Storyboard? _showStatsDockStoryboard;
     private Storyboard? _hideStatsDockStoryboard;
+    private Storyboard? _micMeterRowStoryboard;
+    private Storyboard? _showMicMeterRowStoryboard;
+    private Storyboard? _hideMicMeterRowStoryboard;
+    private const double MicMeterRowHeight = 14;
     private long _previewFramesArrived;
     private long _previewFramesDisplayed;
     private long _previewFramesDropped;
@@ -68,9 +72,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private int _automationServicesStarted;
-    private readonly int[] _selectionSyncQueued = new int[8];
+    private readonly int[] _selectionSyncQueued = new int[9];
     private const int SyncDevice = 0, SyncAudio = 1, SyncResolution = 2, SyncFrameRate = 3,
-                       SyncFormat = 4, SyncQuality = 5, SyncPreset = 6, SyncSplitEncode = 7;
+                       SyncFormat = 4, SyncQuality = 5, SyncPreset = 6, SyncSplitEncode = 7,
+                       SyncMicrophone = 8;
     private readonly string _windowTitleBase;
     private DispatcherQueueTimer? _previewStartupWatchdogTimer;
     private DispatcherQueueTimer? _previewStartupTelemetryTimer;
@@ -125,6 +130,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _audioRangeResetTimestamp;
     private double _audioMeterDisplayLevel;
     private double _audioMeterTargetLevel;
+    private double _micMeterDisplayLevel;
+    private double _micMeterTargetLevel;
+    private bool _syncingMicrophoneVolumeControls;
     private int _selectedDecoderCount = 4;
     private LinearGradientBrush? _audioMeterColorBrush;
     private LinearGradientBrush? _audioMeterGreyBrush;
@@ -876,6 +884,35 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         }
     }
 
+    private void EnsureMicrophoneSelection()
+    {
+        if (ViewModel.MicrophoneDevices.Count == 0)
+        {
+            MicrophoneComboBox.SelectedItem = null;
+            return;
+        }
+
+        var matchingDevice = ViewModel.SelectedMicrophoneDevice != null
+            ? ViewModel.MicrophoneDevices.FirstOrDefault(device =>
+                string.Equals(device.Id, ViewModel.SelectedMicrophoneDevice.Id, StringComparison.OrdinalIgnoreCase))
+            : null;
+        matchingDevice ??= ViewModel.MicrophoneDevices.FirstOrDefault();
+        if (matchingDevice == null)
+        {
+            return;
+        }
+
+        if (!ReferenceEquals(ViewModel.SelectedMicrophoneDevice, matchingDevice))
+        {
+            ViewModel.SelectedMicrophoneDevice = matchingDevice;
+        }
+
+        if (!ReferenceEquals(MicrophoneComboBox.SelectedItem, matchingDevice))
+        {
+            MicrophoneComboBox.SelectedItem = matchingDevice;
+        }
+    }
+
     private void EnsureDeviceAudioModeSelection()
     {
         if (ViewModel.AvailableDeviceAudioModes.Count == 0)
@@ -1098,6 +1135,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void QueueDeviceSelectionSync() => QueueSelectionSync(SyncDevice, EnsureDeviceSelection);
     private void QueueAudioSelectionSync() => QueueSelectionSync(SyncAudio, EnsureAudioInputSelection);
+    private void QueueMicrophoneSelectionSync() => QueueSelectionSync(SyncMicrophone, EnsureMicrophoneSelection);
     private void QueueResolutionSelectionSync() => QueueSelectionSync(SyncResolution, EnsureResolutionSelection);
     private void QueueFrameRateSelectionSync() => QueueSelectionSync(SyncFrameRate, EnsureFrameRateSelection);
     private void QueueFormatSelectionSync() => QueueSelectionSync(SyncFormat, EnsureFormatSelection);
@@ -1273,10 +1311,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         InitializeAudioMeterBrushes();
         ViewModel.AudioMeterActivated += EnsureAudioMeterTimerRunning;
+        ViewModel.MicrophoneMeterActivated += EnsureAudioMeterTimerRunning;
 
         // Bind all collections to ComboBoxes
         DeviceComboBox.ItemsSource = ViewModel.Devices;
         AudioInputComboBox.ItemsSource = ViewModel.AudioInputDevices;
+        MicrophoneComboBox.ItemsSource = ViewModel.MicrophoneDevices;
         ResolutionComboBox.ItemsSource = ViewModel.AvailableResolutions;
         FrameRateComboBox.ItemsSource = ViewModel.AvailableFrameRates;
         FormatComboBox.ItemsSource = ViewModel.AvailableRecordingFormats;
@@ -1292,6 +1332,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         AttachCollectionSync(ViewModel.Devices, QueueDeviceSelectionSync);
         AttachCollectionSync(ViewModel.AudioInputDevices, QueueAudioSelectionSync);
+        AttachCollectionSync(ViewModel.MicrophoneDevices, QueueMicrophoneSelectionSync);
         AttachCollectionSync(ViewModel.AvailableResolutions, QueueResolutionSelectionSync);
         AttachCollectionSync(ViewModel.AvailableFrameRates, QueueFrameRateSelectionSync);
         AttachCollectionSync(ViewModel.AvailableRecordingFormats, QueueFormatSelectionSync);
@@ -1332,13 +1373,75 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 ViewModel.SavePreviewVolume();
             }
         };
+        SyncMicrophoneVolumeControls(ViewModel.MicrophoneVolume);
+        MicVolumeSlider.ValueChanged += (s, e) =>
+        {
+            if (_syncingMicrophoneVolumeControls)
+            {
+                return;
+            }
+
+            _syncingMicrophoneVolumeControls = true;
+            try
+            {
+                if (Math.Abs(ViewModel.MicrophoneVolume - e.NewValue) > 0.01)
+                {
+                    ViewModel.MicrophoneVolume = e.NewValue;
+                }
+
+                SyncMicrophoneVolumeControls(e.NewValue);
+            }
+            finally
+            {
+                _syncingMicrophoneVolumeControls = false;
+            }
+        };
+        MicVolumeSlider.PointerCaptureLost += (s, e) => ViewModel.SaveMicrophoneVolume();
+        MicVolumeShelfSlider.ValueChanged += (s, e) =>
+        {
+            if (_syncingMicrophoneVolumeControls)
+            {
+                return;
+            }
+
+            _syncingMicrophoneVolumeControls = true;
+            try
+            {
+                if (Math.Abs(ViewModel.MicrophoneVolume - e.NewValue) > 0.01)
+                {
+                    ViewModel.MicrophoneVolume = e.NewValue;
+                }
+
+                SyncMicrophoneVolumeControls(e.NewValue);
+            }
+            finally
+            {
+                _syncingMicrophoneVolumeControls = false;
+            }
+        };
+        MicVolumeShelfSlider.PointerCaptureLost += (s, e) => ViewModel.SaveMicrophoneVolume();
         CustomAudioToggle.IsChecked = ViewModel.IsCustomAudioInputEnabled;
         CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
+        MicrophoneToggle.IsChecked = ViewModel.IsMicrophoneEnabled;
+        MicrophoneToggle.IsEnabled = !ViewModel.IsRecording;
         ShowAllCaptureOptionsToggle.IsChecked = ViewModel.ShowAllCaptureOptions;
         StatsToggle.IsChecked = ViewModel.IsStatsVisible;
         AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
         AudioInputComboBox.SelectedItem = ViewModel.SelectedAudioInputDevice;
-        AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+        MicrophoneComboBox.IsEnabled = ViewModel.IsMicrophoneEnabled && !ViewModel.IsRecording;
+        MicrophoneComboBox.SelectedItem = ViewModel.SelectedMicrophoneDevice;
+        MicVolumeShelfSlider.IsEnabled = ViewModel.IsMicrophoneEnabled;
+        if (ViewModel.IsMicrophoneEnabled)
+        {
+            DeviceAudioRowTranslate.Y = 0;
+            MicMeterRowTranslate.Y = 0;
+            MicMeterRow.Opacity = 1;
+        }
+        else
+        {
+            DeviceAudioRowTranslate.Y = MicMeterRowHeight / 2;
+            HideMicMeterRow(immediate: true);
+        }
         ApplyDeviceAudioControlState();
         FormatComboBox.SelectedItem = ViewModel.SelectedRecordingFormat;
         QualityComboBox.SelectedItem = ViewModel.SelectedQuality;
@@ -1363,6 +1466,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         UpdateFpsTelemetryTooltip();
         EnsureDeviceSelection();
         EnsureAudioInputSelection();
+        EnsureMicrophoneSelection();
         EnsureDeviceAudioModeSelection();
         EnsureResolutionSelection();
         EnsureFrameRateSelection();
@@ -1388,6 +1492,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 device != ViewModel.SelectedAudioInputDevice)
             {
                 ViewModel.SelectedAudioInputDevice = device;
+            }
+        };
+
+        MicrophoneComboBox.SelectionChanged += (s, e) =>
+        {
+            if (MicrophoneComboBox.SelectedItem is ElgatoCapture.Models.AudioInputDevice device &&
+                device != ViewModel.SelectedMicrophoneDevice)
+            {
+                ViewModel.SelectedMicrophoneDevice = device;
             }
         };
 
@@ -1490,6 +1603,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         StatsToggle.Checked += StatsToggle_Checked;
         StatsToggle.Unchecked += StatsToggle_Unchecked;
         CustomAudioToggle.Click += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsChecked == true;
+        MicrophoneToggle.Click += (s, e) => ViewModel.IsMicrophoneEnabled = MicrophoneToggle.IsChecked == true;
         ShowAllCaptureOptionsToggle.Click += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsChecked == true;
         AnalogAudioGainSlider.ValueChanged += (s, e) =>
         {
@@ -1497,10 +1611,149 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             AnalogAudioGainValueTextBlock.Text = $"{(int)Math.Round(e.NewValue)}%";
         };
         AudioMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
+        MicMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
         ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
         CaptureSettingsGrid.SizeChanged += CaptureSettingsGrid_SizeChanged;
         OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();
         ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);
+    }
+
+    private void SyncMicrophoneVolumeControls(double volumePercent)
+    {
+        var clampedVolume = Math.Clamp(volumePercent, 0.0, 100.0);
+        if (Math.Abs(MicVolumeSlider.Value - clampedVolume) > 0.5)
+        {
+            MicVolumeSlider.Value = clampedVolume;
+        }
+
+        if (Math.Abs(MicVolumeShelfSlider.Value - clampedVolume) > 0.5)
+        {
+            MicVolumeShelfSlider.Value = clampedVolume;
+        }
+
+        MicVolumeLabel.Text = $"{(int)Math.Round(clampedVolume)}%";
+    }
+
+    private void UpdateMicrophoneControlsVisibility()
+    {
+        MicVolumeShelfSlider.IsEnabled = ViewModel.IsMicrophoneEnabled;
+        if (ViewModel.IsMicrophoneEnabled)
+        {
+            ShowMicMeterRow();
+        }
+        else
+        {
+            HideMicMeterRow(immediate: false);
+        }
+    }
+
+    private void ShowMicMeterRow()
+    {
+        EnsureMicMeterRowAnimations();
+        StopMicMeterRowAnimation();
+        DeviceAudioRowTranslate.Y = MicMeterRowHeight / 2;
+        MicMeterRowTranslate.Y = MicMeterRowHeight;
+        MicMeterRow.Opacity = 0;
+        _micMeterRowStoryboard = _showMicMeterRowStoryboard;
+        _showMicMeterRowStoryboard?.Begin();
+    }
+
+    private void HideMicMeterRow(bool immediate)
+    {
+        EnsureMicMeterRowAnimations();
+        StopMicMeterRowAnimation();
+        if (immediate || MicMeterRow.Opacity == 0)
+        {
+            DeviceAudioRowTranslate.Y = MicMeterRowHeight / 2;
+            MicMeterRowTranslate.Y = MicMeterRowHeight;
+            MicMeterRow.Opacity = 0;
+            _micMeterDisplayLevel = 0;
+            _micMeterTargetLevel = 0;
+            MicMeterClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
+            return;
+        }
+
+        _micMeterRowStoryboard = _hideMicMeterRowStoryboard;
+        _hideMicMeterRowStoryboard?.Begin();
+    }
+
+    private void StopMicMeterRowAnimation()
+    {
+        _micMeterRowStoryboard?.Stop();
+        _micMeterRowStoryboard = null;
+    }
+
+    private void EnsureMicMeterRowAnimations()
+    {
+        _showMicMeterRowStoryboard ??= CreateMicMeterRowStoryboard(showing: true);
+        _hideMicMeterRowStoryboard ??= CreateMicMeterRowStoryboard(showing: false);
+    }
+
+    private Storyboard CreateMicMeterRowStoryboard(bool showing)
+    {
+        var durationMs = showing ? 200 : 150;
+        var easing = new CubicEase { EasingMode = showing ? EasingMode.EaseOut : EasingMode.EaseIn };
+        var duration = TimeSpan.FromMilliseconds(durationMs);
+
+        var storyboard = new Storyboard();
+
+        // Device audio row: TranslateY 7→0 (show) or 0→7 (hide)
+        var deviceSlide = new DoubleAnimation
+        {
+            To = showing ? 0 : MicMeterRowHeight / 2,
+            Duration = duration,
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(deviceSlide, DeviceAudioRowTranslate);
+        Storyboard.SetTargetProperty(deviceSlide, "Y");
+
+        // Mic meter: TranslateY +14→0 (slides up into view) or 0→+14 (slides down out)
+        var slideAnim = new DoubleAnimation
+        {
+            To = showing ? 0 : MicMeterRowHeight,
+            Duration = duration,
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(slideAnim, MicMeterRowTranslate);
+        Storyboard.SetTargetProperty(slideAnim, "Y");
+
+        var fade = new DoubleAnimation
+        {
+            To = showing ? 1 : 0,
+            Duration = duration,
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(fade, MicMeterRow);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+
+        storyboard.Children.Add(deviceSlide);
+        storyboard.Children.Add(slideAnim);
+        storyboard.Children.Add(fade);
+        storyboard.Completed += (_, _) =>
+        {
+            if (!ReferenceEquals(_micMeterRowStoryboard, storyboard))
+            {
+                return;
+            }
+
+            _micMeterRowStoryboard = null;
+            if (showing)
+            {
+                DeviceAudioRowTranslate.Y = 0;
+                MicMeterRowTranslate.Y = 0;
+                MicMeterRow.Opacity = 1;
+                return;
+            }
+
+            DeviceAudioRowTranslate.Y = MicMeterRowHeight / 2;
+            MicMeterRowTranslate.Y = MicMeterRowHeight;
+            MicMeterRow.Opacity = 0;
+            _micMeterDisplayLevel = 0;
+            _micMeterTargetLevel = 0;
+            MicMeterClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
+        };
+
+        return storyboard;
     }
 
     private FrameworkElement[] GetControlBarButtons() => new FrameworkElement[]
@@ -2151,10 +2404,12 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         _isWindowClosing = true;
         ViewModel.AudioMeterActivated -= EnsureAudioMeterTimerRunning;
+        ViewModel.MicrophoneMeterActivated -= EnsureAudioMeterTimerRunning;
         _audioMeterAnimationTimer?.Stop();
         _audioMeterAnimationTimer = null;
         StopStatsDockPolling();
         HideStatsDockPanel(immediate: true);
+        StopMicMeterRowAnimation();
         RecordingGlowPulseStoryboard.Stop();
         RecordingGlowBorder.Opacity = 0;
         RecPulseStoryboard.Stop();
@@ -3303,7 +3558,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 }
                 AudioRecordToggle.IsEnabled = !ViewModel.IsRecording;
                 CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
+                MicrophoneToggle.IsEnabled = !ViewModel.IsRecording;
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
+                MicrophoneComboBox.IsEnabled = ViewModel.IsMicrophoneEnabled && !ViewModel.IsRecording;
                 DeviceAudioModeToggle.IsEnabled = ViewModel.IsDeviceAudioControlSupported && !ViewModel.IsRecording;
                 AnalogAudioGainSlider.IsEnabled = ViewModel.IsDeviceAudioControlSupported &&
                                                   string.Equals(ViewModel.SelectedDeviceAudioMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase) &&
@@ -3441,6 +3698,15 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
                 break;
 
+            case nameof(MainViewModel.IsMicrophoneEnabled):
+                if ((MicrophoneToggle.IsChecked == true) != ViewModel.IsMicrophoneEnabled)
+                {
+                    MicrophoneToggle.IsChecked = ViewModel.IsMicrophoneEnabled;
+                }
+                MicrophoneComboBox.IsEnabled = ViewModel.IsMicrophoneEnabled && !ViewModel.IsRecording;
+                UpdateMicrophoneControlsVisibility();
+                break;
+
             case nameof(MainViewModel.IsDeviceAudioControlSupported):
             case nameof(MainViewModel.SelectedDeviceAudioMode):
             case nameof(MainViewModel.AnalogAudioGainPercent):
@@ -3469,6 +3735,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
             case nameof(MainViewModel.SelectedAudioInputDevice):
                 EnsureAudioInputSelection();
+                break;
+
+            case nameof(MainViewModel.SelectedMicrophoneDevice):
+                EnsureMicrophoneSelection();
                 break;
 
             case nameof(MainViewModel.SelectedRecordingFormat):
@@ -3540,9 +3810,14 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                     if (PreviewVolumeSlider.Value != volumePct)
                     {
                         PreviewVolumeSlider.Value = volumePct;
-                        PreviewVolumeLabel.Text = $"{(int)volumePct}%";
                     }
+
+                    PreviewVolumeLabel.Text = $"{(int)volumePct}%";
                 }
+                break;
+
+            case nameof(MainViewModel.MicrophoneVolume):
+                SyncMicrophoneVolumeControls(ViewModel.MicrophoneVolume);
                 break;
 
             case nameof(MainViewModel.IsRecordingTransitioning):
@@ -4270,14 +4545,6 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             _audioMeterDisplayLevel = 0;
         }
 
-        // Stop timer when fully idle (no active level, no decay, no peak hold)
-        if (_audioMeterDisplayLevel == 0 && _audioPeakHoldLevel == 0 && target == 0)
-        {
-            _audioMeterAnimationTimer?.Stop();
-            ViewModel.ResetAudioMeterTimerFlag();
-            return;
-        }
-
         // Peak hold
         if (target >= _audioPeakHoldLevel)
         {
@@ -4306,13 +4573,55 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         // Update visuals
         var trackWidth = AudioMeterTrack.ActualWidth;
-        if (trackWidth <= 0) return;
+        if (trackWidth > 0)
+        {
+            var trackHeight = AudioMeterTrack.ActualHeight > 0 ? AudioMeterTrack.ActualHeight : 12;
+            AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * _audioMeterDisplayLevel, trackHeight);
+            AudioPeakHoldTranslate.X = TranslateMarker(trackWidth, _audioPeakHoldLevel, AudioPeakHoldIndicator.Width);
+            AudioRangeMinTranslate.X = TranslateMarker(trackWidth, _audioRangeMin, AudioRangeMinMarker.Width);
+            AudioRangeMaxTranslate.X = TranslateMarker(trackWidth, _audioRangeMax, AudioRangeMaxMarker.Width);
+        }
 
-        var trackHeight = AudioMeterTrack.ActualHeight > 0 ? AudioMeterTrack.ActualHeight : 12;
-        AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, trackWidth * _audioMeterDisplayLevel, trackHeight);
-        AudioPeakHoldTranslate.X = TranslateMarker(trackWidth, _audioPeakHoldLevel, AudioPeakHoldIndicator.Width);
-        AudioRangeMinTranslate.X = TranslateMarker(trackWidth, _audioRangeMin, AudioRangeMinMarker.Width);
-        AudioRangeMaxTranslate.X = TranslateMarker(trackWidth, _audioRangeMax, AudioRangeMaxMarker.Width);
+        if (ViewModel.IsMicrophoneEnabled)
+        {
+            _micMeterTargetLevel = Math.Clamp(ViewModel.MicrophoneMeterTarget, 0.0, 1.0);
+            if (_micMeterTargetLevel > _micMeterDisplayLevel)
+            {
+                _micMeterDisplayLevel += (_micMeterTargetLevel - _micMeterDisplayLevel) * 0.4;
+            }
+            else
+            {
+                _micMeterDisplayLevel += (_micMeterTargetLevel - _micMeterDisplayLevel) * 0.25;
+            }
+
+            if (_micMeterDisplayLevel < 0.001)
+            {
+                _micMeterDisplayLevel = 0;
+            }
+
+            var micTrackWidth = MicMeterTrack.ActualWidth - 2;
+            if (micTrackWidth > 0)
+            {
+                var micFillWidth = _micMeterDisplayLevel * micTrackWidth;
+                MicMeterClip.Rect = new Windows.Foundation.Rect(0, 0, micFillWidth, 8);
+            }
+        }
+        else if (_micMeterDisplayLevel != 0 || _micMeterTargetLevel != 0)
+        {
+            _micMeterDisplayLevel = 0;
+            _micMeterTargetLevel = 0;
+            MicMeterClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
+        }
+
+        if (_audioMeterDisplayLevel == 0 &&
+            _audioPeakHoldLevel == 0 &&
+            target == 0 &&
+            _micMeterDisplayLevel == 0 &&
+            _micMeterTargetLevel == 0)
+        {
+            _audioMeterAnimationTimer?.Stop();
+            ViewModel.ResetAudioMeterTimerFlag();
+        }
     }
 
     private void ResetAudioMeterVisuals()
@@ -4327,6 +4636,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioRangeMinTranslate.X = 0;
         AudioRangeMaxTranslate.X = 0;
         _audioMeterTargetLevel = 0;
+        AudioMeterClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
+        _micMeterDisplayLevel = 0;
+        _micMeterTargetLevel = 0;
+        MicMeterClip.Rect = new Windows.Foundation.Rect(0, 0, 0, 8);
     }
 
     private void InitializeAudioMeterBrushes()

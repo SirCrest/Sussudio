@@ -177,6 +177,99 @@ internal static class WasapiComInterop
         }
     }
 
+    internal static float GetEndpointVolume(string deviceId)
+    {
+        IMMDeviceEnumerator? enumerator = null;
+        IMMDevice? device = null;
+        try
+        {
+            enumerator = CreateDeviceEnumerator();
+            var hr = enumerator.GetDevice(deviceId, out device);
+            if (hr < 0 || device == null)
+            {
+                return 1.0f;
+            }
+
+            var iid = typeof(IAudioEndpointVolume).GUID;
+            hr = device.Activate(ref iid, CLSCTX_ALL, IntPtr.Zero, out var obj);
+            if (hr < 0 || obj is not IAudioEndpointVolume volume)
+            {
+                return 1.0f;
+            }
+
+            try
+            {
+                hr = volume.GetMasterVolumeLevelScalar(out var level);
+                return hr >= 0 ? Math.Clamp(level, 0f, 1f) : 1.0f;
+            }
+            finally
+            {
+                ReleaseComObjectSafe(obj);
+            }
+        }
+        finally
+        {
+            ReleaseComObject(ref device);
+            ReleaseComObject(ref enumerator);
+        }
+    }
+
+    internal static void SetEndpointVolume(string deviceId, float level)
+    {
+        IMMDeviceEnumerator? enumerator = null;
+        IMMDevice? device = null;
+        try
+        {
+            enumerator = CreateDeviceEnumerator();
+            var hr = enumerator.GetDevice(deviceId, out device);
+            if (hr < 0 || device == null)
+            {
+                return;
+            }
+
+            var iid = typeof(IAudioEndpointVolume).GUID;
+            hr = device.Activate(ref iid, CLSCTX_ALL, IntPtr.Zero, out var obj);
+            if (hr < 0 || obj is not IAudioEndpointVolume volume)
+            {
+                return;
+            }
+
+            try
+            {
+                _ = volume.SetMasterVolumeLevelScalar(Math.Clamp(level, 0f, 1f), Guid.Empty);
+            }
+            finally
+            {
+                ReleaseComObjectSafe(obj);
+            }
+        }
+        finally
+        {
+            ReleaseComObject(ref device);
+            ReleaseComObject(ref enumerator);
+        }
+    }
+
+    internal static void ReleaseComObjectSafe(object? obj)
+    {
+        if (obj == null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (Marshal.IsComObject(obj))
+            {
+                Marshal.ReleaseComObject(obj);
+            }
+        }
+        catch
+        {
+            // Best-effort.
+        }
+    }
+
     internal static IAudioClient ActivateAudioClient(IMMDevice device, out IAudioClient3? audioClient3)
     {
         var iidAudioClient3 = typeof(IAudioClient3).GUID;
@@ -249,6 +342,7 @@ internal static class WasapiComInterop
         throw new InvalidOperationException(
             $"Unsupported WASAPI sample format: formatTag=0x{formatTag:X4}, subFormat={subFormat}, bits={bitsPerSample}.");
     }
+
 }
 
 internal enum EDataFlow
@@ -542,6 +636,66 @@ internal interface IAudioRenderClient
 
     [PreserveSig]
     int ReleaseBuffer(uint numFramesWritten, uint flags);
+}
+
+[ComImport]
+[Guid("5CDF2C82-841E-4546-9722-0CF74078229A")]
+[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+internal interface IAudioEndpointVolume
+{
+    [PreserveSig]
+    int RegisterControlChangeNotify(IntPtr pNotify);
+
+    [PreserveSig]
+    int UnregisterControlChangeNotify(IntPtr pNotify);
+
+    [PreserveSig]
+    int GetChannelCount(out uint pnChannelCount);
+
+    [PreserveSig]
+    int SetMasterVolumeLevel(float fLevelDB, Guid pguidEventContext);
+
+    [PreserveSig]
+    int SetMasterVolumeLevelScalar(float fLevel, Guid pguidEventContext);
+
+    [PreserveSig]
+    int GetMasterVolumeLevel(out float pfLevelDB);
+
+    [PreserveSig]
+    int GetMasterVolumeLevelScalar(out float pfLevel);
+
+    [PreserveSig]
+    int SetChannelVolumeLevel(uint nChannel, float fLevelDB, Guid pguidEventContext);
+
+    [PreserveSig]
+    int SetChannelVolumeLevelScalar(uint nChannel, float fLevel, Guid pguidEventContext);
+
+    [PreserveSig]
+    int GetChannelVolumeLevel(uint nChannel, out float pfLevelDB);
+
+    [PreserveSig]
+    int GetChannelVolumeLevelScalar(uint nChannel, out float pfLevel);
+
+    [PreserveSig]
+    int SetMute([MarshalAs(UnmanagedType.Bool)] bool bMute, Guid pguidEventContext);
+
+    [PreserveSig]
+    int GetMute([MarshalAs(UnmanagedType.Bool)] out bool pbMute);
+
+    [PreserveSig]
+    int GetVolumeStepInfo(out uint pnStep, out uint pnStepCount);
+
+    [PreserveSig]
+    int VolumeStepUp(Guid pguidEventContext);
+
+    [PreserveSig]
+    int VolumeStepDown(Guid pguidEventContext);
+
+    [PreserveSig]
+    int QueryHardwareSupport(out uint pdwHardwareSupportMask);
+
+    [PreserveSig]
+    int GetVolumeRange(out float pflVolumeMindB, out float pflVolumeMaxdB, out float pflVolumeIncrementdB);
 }
 
 [ComImport]

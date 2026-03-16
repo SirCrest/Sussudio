@@ -59,6 +59,9 @@ public class CaptureSettings
     public bool UseCustomAudioInput { get; set; }
     public string? AudioDeviceId { get; set; }
     public string? AudioDeviceName { get; set; }
+    public bool MicrophoneEnabled { get; set; }
+    public string? MicrophoneDeviceId { get; set; }
+    public string? MicrophoneDeviceName { get; set; }
     public AudioPathMode AudioPathMode { get; set; } = AudioPathMode.PostMuxDefault;
     public RecordingPipelineOptions PipelineOptions { get; set; } = new();
     public bool ForceMjpegDecode { get; set; }

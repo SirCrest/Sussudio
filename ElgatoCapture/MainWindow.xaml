@@ -749,6 +749,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
@@ -761,6 +762,7 @@
                                   VerticalAlignment="Center"/>
                         <ComboBox x:Name="AudioInputComboBox"
                                   Grid.Column="1"
+                                  Grid.ColumnSpan="2"
                                   AutomationProperties.AutomationId="AudioInputComboBox"
                                   HorizontalAlignment="Stretch"
                                   VerticalAlignment="Center"
@@ -778,8 +780,18 @@
                                   AutomationProperties.AutomationId="MicrophoneComboBox"
                                   HorizontalAlignment="Stretch"
                                   VerticalAlignment="Center"
+                                  DisplayMemberPath="Name"
                                   PlaceholderText="Select microphone"
                                   IsEnabled="False"/>
+                        <Slider x:Name="MicVolumeShelfSlider"
+                                Grid.Row="1" Grid.Column="2"
+                                AutomationProperties.AutomationId="MicVolumeShelfSlider"
+                                Minimum="0" Maximum="100" StepFrequency="1"
+                                Value="100"
+                                Width="80"
+                                VerticalAlignment="Center"
+                                IsEnabled="False"
+                                ToolTipService.ToolTip="Microphone volume"/>
                     </Grid>
                 </StackPanel>
 
@@ -1028,71 +1040,194 @@
                                    FontSize="13"
                                    VerticalAlignment="Center"/>
                     </StackPanel>
-                    <Border x:Name="AudioMeterTrack"
-                            MinWidth="120" MaxWidth="300" Height="12"
-                            HorizontalAlignment="Stretch"
-                            Background="{ThemeResource AudioMeterTrackBrush}"
-                            BorderBrush="{ThemeResource AudioMeterBorderBrush}"
-                            BorderThickness="1"
-                            CornerRadius="6"
-                            VerticalAlignment="Center">
-                        <Grid>
-                            <Border x:Name="AudioMeterFill"
-                                    CornerRadius="6">
-                                <Border.Background>
-                                    <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
-                                        <GradientStop Color="#00CED1" Offset="0"/>
-                                        <GradientStop Color="#00E5B0" Offset="0.55"/>
-                                        <GradientStop Color="#FFD700" Offset="0.75"/>
-                                        <GradientStop Color="#FF6B3D" Offset="0.90"/>
-                                        <GradientStop Color="#FF1744" Offset="1"/>
-                                    </LinearGradientBrush>
-                                </Border.Background>
-                                <Border.Clip>
-                                    <RectangleGeometry x:Name="AudioMeterClip" Rect="0,0,0,12"/>
-                                </Border.Clip>
-                            </Border>
+                    <Grid VerticalAlignment="Center" RowSpacing="0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
 
-                            <Border x:Name="AudioPeakHoldIndicator"
-                                    Width="2"
-                                    Height="12"
-                                    Background="#FFFFFF"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    Opacity="0.9"
-                                    IsHitTestVisible="False">
-                                <Border.RenderTransform>
-                                    <TranslateTransform x:Name="AudioPeakHoldTranslate" X="0"/>
-                                </Border.RenderTransform>
-                            </Border>
+                        <Grid x:Name="DeviceAudioRow" Grid.Row="0">
+                            <Grid.RenderTransform>
+                                <TranslateTransform x:Name="DeviceAudioRowTranslate" Y="7"/>
+                            </Grid.RenderTransform>
+                            <Grid ColumnSpacing="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" MinWidth="80" MaxWidth="200"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
 
-                            <Border x:Name="AudioRangeMinMarker"
-                                    Width="1"
-                                    Height="8"
-                                    Background="#50FFFFFF"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    Opacity="0.5"
-                                    IsHitTestVisible="False">
-                                <Border.RenderTransform>
-                                    <TranslateTransform x:Name="AudioRangeMinTranslate" X="0"/>
-                                </Border.RenderTransform>
-                            </Border>
+                        <Border x:Name="AudioMeterTrack"
+                                Grid.Column="0"
+                                MinWidth="80" MaxWidth="200" Height="8"
+                                HorizontalAlignment="Stretch"
+                                Background="{ThemeResource AudioMeterTrackBrush}"
+                                BorderBrush="{ThemeResource AudioMeterBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                VerticalAlignment="Center">
+                            <Grid>
+                                <Border x:Name="AudioMeterFill"
+                                        CornerRadius="6">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                            <GradientStop Color="#00CED1" Offset="0"/>
+                                            <GradientStop Color="#00E5B0" Offset="0.55"/>
+                                            <GradientStop Color="#FFD700" Offset="0.75"/>
+                                            <GradientStop Color="#FF6B3D" Offset="0.90"/>
+                                            <GradientStop Color="#FF1744" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Border.Background>
+                                    <Border.Clip>
+                                        <RectangleGeometry x:Name="AudioMeterClip" Rect="0,0,0,8"/>
+                                    </Border.Clip>
+                                </Border>
 
-                            <Border x:Name="AudioRangeMaxMarker"
-                                    Width="1"
-                                    Height="8"
-                                    Background="#80FFFFFF"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Center"
-                                    Opacity="0.7"
-                                    IsHitTestVisible="False">
-                                <Border.RenderTransform>
-                                    <TranslateTransform x:Name="AudioRangeMaxTranslate" X="0"/>
-                                </Border.RenderTransform>
-                            </Border>
+                                <Border x:Name="AudioPeakHoldIndicator"
+                                        Width="2"
+                                        Height="8"
+                                        Background="#FFFFFF"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        Opacity="0.9"
+                                        IsHitTestVisible="False">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="AudioPeakHoldTranslate" X="0"/>
+                                    </Border.RenderTransform>
+                                </Border>
+
+                                <Border x:Name="AudioRangeMinMarker"
+                                        Width="1"
+                                        Height="8"
+                                        Background="#50FFFFFF"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        Opacity="0.5"
+                                        IsHitTestVisible="False">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="AudioRangeMinTranslate" X="0"/>
+                                    </Border.RenderTransform>
+                                </Border>
+
+                                <Border x:Name="AudioRangeMaxMarker"
+                                        Width="1"
+                                        Height="8"
+                                        Background="#80FFFFFF"
+                                        HorizontalAlignment="Left"
+                                        VerticalAlignment="Center"
+                                        Opacity="0.7"
+                                        IsHitTestVisible="False">
+                                    <Border.RenderTransform>
+                                        <TranslateTransform x:Name="AudioRangeMaxTranslate" X="0"/>
+                                    </Border.RenderTransform>
+                                </Border>
+                            </Grid>
+                        </Border>
+                        <Slider x:Name="PreviewVolumeSlider"
+                                Grid.Column="1"
+                                AutomationProperties.AutomationId="PreviewVolumeSlider"
+                                Minimum="0" Maximum="100" StepFrequency="1"
+                                Value="0"
+                                Width="70" MinHeight="0"
+                                Padding="0" Margin="0"
+                                VerticalAlignment="Center"
+                                ToolTipService.ToolTip="Preview volume">
+                            <Slider.Resources>
+                                <x:Double x:Key="SliderHorizontalHeight">10</x:Double>
+                                <x:Double x:Key="SliderTrackThemeHeight">2</x:Double>
+                                <x:Double x:Key="SliderHorizontalThumbWidth">10</x:Double>
+                                <x:Double x:Key="SliderHorizontalThumbHeight">10</x:Double>
+                                <CornerRadius x:Key="SliderThumbCornerRadius">5</CornerRadius>
+                                <Thickness x:Key="SliderTopHeaderMargin">0</Thickness>
+                                <x:Double x:Key="SliderPreContentMargin">0</x:Double>
+                                <x:Double x:Key="SliderPostContentMargin">0</x:Double>
+                                <Style TargetType="ToolTip">
+                                    <Setter Property="Opacity" Value="0"/>
+                                    <Setter Property="IsHitTestVisible" Value="False"/>
+                                </Style>
+                            </Slider.Resources>
+                        </Slider>
+                        <TextBlock x:Name="PreviewVolumeLabel"
+                                   Grid.Column="2"
+                                   FontSize="10"
+                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                   VerticalAlignment="Center"
+                                   Text="100%"/>
+                            </Grid>
                         </Grid>
-                    </Border>
+
+                        <Grid x:Name="MicMeterRow" Grid.Row="1"
+                              Height="14" Opacity="0">
+                            <Grid.RenderTransform>
+                                <TranslateTransform x:Name="MicMeterRowTranslate" Y="14"/>
+                            </Grid.RenderTransform>
+                            <Grid ColumnSpacing="4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" MinWidth="80" MaxWidth="200"/>
+                                    <ColumnDefinition Width="70"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Border x:Name="MicMeterTrack"
+                                        Grid.Column="0"
+                                        MinWidth="80" MaxWidth="200" Height="8"
+                                        HorizontalAlignment="Stretch"
+                                        Background="{ThemeResource AudioMeterTrackBrush}"
+                                        BorderBrush="{ThemeResource AudioMeterBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="6"
+                                        VerticalAlignment="Center">
+                                    <Grid>
+                                        <Border x:Name="MicMeterFill"
+                                                HorizontalAlignment="Stretch"
+                                                CornerRadius="5">
+                                            <Border.Background>
+                                                <LinearGradientBrush StartPoint="0,0.5" EndPoint="1,0.5">
+                                                    <GradientStop Color="#00CED1" Offset="0.0"/>
+                                                    <GradientStop Color="#00E5B0" Offset="0.3"/>
+                                                    <GradientStop Color="#FFD700" Offset="0.6"/>
+                                                    <GradientStop Color="#FF6B3D" Offset="0.8"/>
+                                                    <GradientStop Color="#FF1744" Offset="1.0"/>
+                                                </LinearGradientBrush>
+                                            </Border.Background>
+                                            <Border.Clip>
+                                                <RectangleGeometry x:Name="MicMeterClip" Rect="0,0,0,8"/>
+                                            </Border.Clip>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                                <Slider x:Name="MicVolumeSlider"
+                                        Grid.Column="1"
+                                        AutomationProperties.AutomationId="MicVolumeSlider"
+                                        Minimum="0" Maximum="100" StepFrequency="1"
+                                        Value="100"
+                                        Width="70" MinHeight="0"
+                                        Padding="0" Margin="0"
+                                        VerticalAlignment="Center"
+                                        ToolTipService.ToolTip="Microphone volume">
+                                    <Slider.Resources>
+                                        <x:Double x:Key="SliderHorizontalHeight">10</x:Double>
+                                        <x:Double x:Key="SliderTrackThemeHeight">2</x:Double>
+                                        <x:Double x:Key="SliderHorizontalThumbWidth">10</x:Double>
+                                        <x:Double x:Key="SliderHorizontalThumbHeight">10</x:Double>
+                                        <CornerRadius x:Key="SliderThumbCornerRadius">5</CornerRadius>
+                                        <Thickness x:Key="SliderTopHeaderMargin">0</Thickness>
+                                        <x:Double x:Key="SliderPreContentMargin">0</x:Double>
+                                        <x:Double x:Key="SliderPostContentMargin">0</x:Double>
+                                        <Style TargetType="ToolTip">
+                                            <Setter Property="Opacity" Value="0"/>
+                                            <Setter Property="IsHitTestVisible" Value="False"/>
+                                        </Style>
+                                    </Slider.Resources>
+                                </Slider>
+                                <TextBlock x:Name="MicVolumeLabel"
+                                           Grid.Column="2"
+                                           FontSize="10"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center"
+                                           Text="100%"/>
+                            </Grid>
+                        </Grid>
+                    </Grid>
                     <TextBlock x:Name="AudioClipText"
                                AutomationProperties.AutomationId="AudioClipText"
                                Text="CLIP"
@@ -1101,25 +1236,6 @@
                                FontWeight="SemiBold"
                                Visibility="Collapsed"
                                VerticalAlignment="Center"/>
-                    <Slider x:Name="PreviewVolumeSlider"
-                            AutomationProperties.AutomationId="PreviewVolumeSlider"
-                            Minimum="0" Maximum="100" StepFrequency="1"
-                            Value="0"
-                            Width="80"
-                            VerticalAlignment="Center"
-                            ToolTipService.ToolTip="Preview volume">
-                        <Slider.Resources>
-                            <Style TargetType="ToolTip">
-                                <Setter Property="Opacity" Value="0"/>
-                                <Setter Property="IsHitTestVisible" Value="False"/>
-                            </Style>
-                        </Slider.Resources>
-                    </Slider>
-                    <TextBlock x:Name="PreviewVolumeLabel"
-                               FontSize="12"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                               VerticalAlignment="Center"
-                               Text="100%"/>
                 </StackPanel>
 
                 <!-- Row 1: Controls -->

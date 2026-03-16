@@ -2691,3 +2691,51 @@ I2C_WR 0x4A reg=0x0200 val=[07 00]   (finalize)
 - ffprobe Evidence:
   - N/A (no recording artifact generated in this verification pass)
 - Conclusion: `ecctl` now provides a repo-local command-line entry point for the named-pipe automation surface while preserving the existing response/retry contract and passing the current regression suite.
+
+## E127 - MP4 recording now supports an optional second AAC microphone track
+- Timestamp (UTC): 2026-03-16T01:46:14.8522783Z
+- Commit Hash: 096ed1ca09a5a9a5ddee8d48828cb8b54255109a
+- What Changed (single change): Wired the existing microphone UI/settings path through `MainViewModel`, `CaptureService`, `WasapiAudioCapture`, `LibAvRecordingSink`, and `LibAvEncoder` so MP4 recording can optionally open a second WASAPI capture device and encode it as a separate AAC track alongside the existing video and capture-card audio streams.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm the pass stays free of new `LIBAV_ENCODER_ERROR`, `LIBAV_SINK_STOP_FAIL`, `WASAPI audio delegate write failed`, or microphone-capture dispose warnings.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed only the harness's expected telemetry/audio-preview fallback lines plus the existing synthetic HFR warnings, with no new libav/sink/microphone failures.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: The app now carries persisted microphone selection from the existing UI row into recording startup and, when enabled with a selected device, routes that capture through a dedicated libav queue/encoder stream without regressing the current build, runtime snapshot harness, or debug-log health.
+
+## E128 - Stacked audio meters plus microphone endpoint volume controls
+- Timestamp (UTC): 2026-03-16T02:42:44.3941652Z
+- Commit Hash: 096ed1ca09a5a9a5ddee8d48828cb8b54255109a
+- What Changed (single change): Reworked the control-bar audio area into stacked capture/microphone meter rows, added mirrored microphone volume sliders in the control bar and settings shelf, wired microphone endpoint volume through WASAPI COM interop plus persisted settings, and preserved the saved microphone volume when restoring the previously selected device instead of overwriting it with the live endpoint level during startup.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for unexpected microphone-volume, COM interop, or capture-service failures.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed the harness's existing synthetic HFR warnings (`UNIFIED_VIDEO_MJPEG_STOP_FAIL`, `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure`) plus the expected audio-preview-without-device fallback line, and no new microphone endpoint-volume, COM activation, or capture-service errors.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: The UI now exposes separate capture and microphone metering/volume controls, microphone endpoint volume persists safely across app restarts for the restored mic device, and the existing build/runtime regression suite stayed green with no new debug-log failures.
+
+## E129 - Microphone volume persistence now saves on interaction end
+- Timestamp (UTC): 2026-03-16T02:45:14.1143824Z
+- Commit Hash: 096ed1ca09a5a9a5ddee8d48828cb8b54255109a
+- What Changed (single change): Changed the microphone volume path to keep live endpoint updates on slider `ValueChanged` but defer `SaveSettings()` until pointer release, matching the existing preview-volume behavior and avoiding synchronous settings writes on every drag tick.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` for unexpected microphone-volume, COM interop, or capture-service failures.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` again showed only the harness's expected synthetic HFR warnings plus the no-audio-device fallback line, with no new microphone-volume, COM, or capture-service errors.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: Microphone volume changes still apply live to the endpoint, but the UI no longer forces a settings-file write on every slider tick, eliminating the hot-interaction regression flagged in review without regressing the current harness/log checks.

@@ -24,6 +24,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private readonly SemaphoreSlim _workAvailable = new(0, 1);
     private Channel<VideoFramePacket>? _videoQueue;
     private Channel<AudioSamplePacket>? _audioQueue;
+    private Channel<AudioSamplePacket>? _microphoneQueue;
     private Channel<GpuFramePacket>? _gpuQueue;
     private Channel<CudaFramePacket>? _cudaQueue;
     private CancellationTokenSource? _cts;
@@ -33,6 +34,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private int _width;
     private int _height;
     private bool _audioEnabled;
+    private bool _microphoneEnabled;
     private bool _started;
     private bool _disposed;
     private long _droppedVideoFrames;
@@ -42,12 +44,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private long _videoDropsBacklogEviction;
     private long _audioDropsQueueSaturated;
     private long _audioDropsBacklogEviction;
+    private long _microphoneDropsQueueSaturated;
+    private long _microphoneDropsBacklogEviction;
     private long _gpuFramesEnqueued;
     private long _gpuFramesDropped;
     private long _cudaFramesEnqueued;
     private long _cudaFramesDropped;
     private int _videoQueueDepth;
     private int _audioQueueDepth;
+    private int _microphoneQueueDepth;
     private int _gpuQueueDepth;
     private int _cudaQueueDepth;
     private long _lastVideoEnqueueTick;
@@ -65,10 +70,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         _encoder.DroppedFrameCount;
     public long EncodedVideoFrames => Interlocked.Read(ref _encodedVideoFrames);
     public long AudioSamplesReceived => _encoder.AudioSamplesReceived;
+    public long MicrophoneSamplesReceived => _encoder.MicrophoneSamplesReceived;
     public long OutputBytes => _encoder.TotalBytesWritten;
     public string OutputPath => _context?.FinalOutputPath ?? _encoder.OutputPath;
     public int VideoQueueCount => Volatile.Read(ref _videoQueueDepth);
     public int AudioQueueCount => Volatile.Read(ref _audioQueueDepth);
+    public int MicrophoneQueueCount => Volatile.Read(ref _microphoneQueueDepth);
     public long VideoFramesEnqueuedCount => Interlocked.Read(ref _videoFramesEnqueued);
     public long VideoDropsQueueSaturated => Interlocked.Read(ref _videoDropsQueueSaturated);
     public long VideoDropsBacklogEviction => Interlocked.Read(ref _videoDropsBacklogEviction);
@@ -102,6 +109,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         {
             LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
+            _microphoneEnabled = !string.IsNullOrWhiteSpace(context.MicrophoneDeviceName);
             var options = CreateOptions(context);
             _encoder.Initialize(options);
             if (_encoder.UseCudaHardwareFrames)
@@ -139,6 +147,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 SingleWriter = false,
                 FullMode = BoundedChannelFullMode.Wait
             });
+            if (_microphoneEnabled)
+            {
+                _microphoneQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
+                {
+                    SingleReader = true,
+                    SingleWriter = false,
+                    FullMode = BoundedChannelFullMode.Wait
+                });
+            }
             _cts = new CancellationTokenSource();
             _context = context;
             _encodingFailure = null;
@@ -152,12 +169,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
             Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
             Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
+            Interlocked.Exchange(ref _microphoneDropsQueueSaturated, 0);
+            Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
             Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
             Interlocked.Exchange(ref _gpuFramesDropped, 0);
             Interlocked.Exchange(ref _cudaFramesEnqueued, 0);
             Interlocked.Exchange(ref _cudaFramesDropped, 0);
             Interlocked.Exchange(ref _videoQueueDepth, 0);
             Interlocked.Exchange(ref _audioQueueDepth, 0);
+            Interlocked.Exchange(ref _microphoneQueueDepth, 0);
             Interlocked.Exchange(ref _gpuQueueDepth, 0);
             Interlocked.Exchange(ref _cudaQueueDepth, 0);
             Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);
@@ -175,17 +195,19 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
             Logger.Log(
                 $"LIBAV_SINK_START output='{context.FinalOutputPath}' codec='{options.CodecName}' " +
-                $"width={_width} height={_height} fps={context.EffectiveFrameRate:0.###} p010={context.HdrPipelineActive} audio={_audioEnabled}");
+                $"width={_width} height={_height} fps={context.EffectiveFrameRate:0.###} p010={context.HdrPipelineActive} audio={_audioEnabled} microphone={_microphoneEnabled}");
             return Task.CompletedTask;
         }
         catch
         {
             CompleteWriter(_videoQueue);
             CompleteWriter(_audioQueue);
+            CompleteWriter(_microphoneQueue);
             CompleteWriter(_gpuQueue);
             CompleteWriter(_cudaQueue);
             _videoQueue = null;
             _audioQueue = null;
+            _microphoneQueue = null;
             _gpuQueue = null;
             _cudaQueue = null;
             _gpuEncodingEnabled = false;
@@ -197,6 +219,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             _width = 0;
             _height = 0;
             _audioEnabled = false;
+            _microphoneEnabled = false;
             lock (_sync)
             {
                 _started = false;
@@ -331,6 +354,32 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return Task.CompletedTask;
     }
 
+    public Task WriteMicrophoneAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)
+    {
+        var queue = _microphoneQueue;
+        if (_disposed || !_started || !_microphoneEnabled || queue == null || samples.IsEmpty)
+        {
+            return Task.CompletedTask;
+        }
+
+        var buffer = GetBuffer(samples.Length);
+        samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
+        var packet = new AudioSamplePacket(buffer, samples.Length);
+        if (TryEnqueueMicrophonePacket(queue, packet))
+        {
+            return Task.CompletedTask;
+        }
+
+        var dropped = Interlocked.Increment(ref _microphoneDropsQueueSaturated);
+        if (dropped == 1 || dropped % 120 == 0)
+        {
+            Logger.Log(
+                $"LIBAV_SINK_MIC_DROP saturated={dropped} evicted={Interlocked.Read(ref _microphoneDropsBacklogEviction)}");
+        }
+
+        return Task.CompletedTask;
+    }
+
     public async Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)
     {
         var context = _context;
@@ -348,6 +397,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         CompleteWriter(_videoQueue);
         CompleteWriter(_audioQueue);
+        CompleteWriter(_microphoneQueue);
         CompleteWriter(_gpuQueue);
         CompleteWriter(_cudaQueue);
 
@@ -404,7 +454,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
 
         Logger.Log(
-            $"LIBAV_SINK_STOP output='{outputPath}' frames={EncodedVideoFrames} dropped={DroppedVideoFrames} audio_samples={AudioSamplesReceived}");
+            $"LIBAV_SINK_STOP output='{outputPath}' frames={EncodedVideoFrames} dropped={DroppedVideoFrames} audio_samples={AudioSamplesReceived} mic_samples={MicrophoneSamplesReceived}");
         return FinalizeResult.Success(outputPath, "Stopped");
     }
 
@@ -428,6 +478,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         CompleteWriter(_videoQueue);
         CompleteWriter(_audioQueue);
+        CompleteWriter(_microphoneQueue);
         CompleteWriter(_gpuQueue);
         CompleteWriter(_cudaQueue);
         _cts?.Cancel();
@@ -455,10 +506,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         ReturnRemainingBuffers(_videoQueue);
         ReturnRemainingBuffers(_audioQueue);
+        ReturnRemainingBuffers(_microphoneQueue);
         ReturnRemainingGpuBuffers(_gpuQueue);
         ReturnRemainingCudaFrames(_cudaQueue);
         Interlocked.Exchange(ref _videoQueueDepth, 0);
         Interlocked.Exchange(ref _audioQueueDepth, 0);
+        Interlocked.Exchange(ref _microphoneQueueDepth, 0);
         Interlocked.Exchange(ref _gpuQueueDepth, 0);
         Interlocked.Exchange(ref _cudaQueueDepth, 0);
 
@@ -466,10 +519,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         _cts = null;
         _videoQueue = null;
         _audioQueue = null;
+        _microphoneQueue = null;
         _gpuQueue = null;
         _cudaQueue = null;
         _gpuEncodingEnabled = false;
         _cudaEncodingEnabled = false;
+        _microphoneEnabled = false;
         _encodingTask = null;
         _workAvailable.Dispose();
 
@@ -545,6 +600,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
     }
 
+    private static void ReturnRemainingBuffers(Channel<AudioSamplePacket>? queue, ref int queueDepth)
+    {
+        ReturnRemainingBuffers(queue);
+        Interlocked.Exchange(ref queueDepth, 0);
+    }
+
     private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue)
     {
         if (queue == null)
@@ -602,7 +663,11 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             AudioEnabled = !string.IsNullOrWhiteSpace(context.AudioDeviceName),
             AudioSampleRate = 48_000,
             AudioChannels = 2,
-            AudioBitRate = 320_000
+            AudioBitRate = 320_000,
+            MicrophoneEnabled = _microphoneEnabled,
+            MicrophoneSampleRate = 48_000,
+            MicrophoneChannels = 2,
+            MicrophoneBitRate = 320_000
         };
     }
 
@@ -612,6 +677,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         {
             var videoQueue = _videoQueue ?? throw new InvalidOperationException("Video queue is not initialized.");
             var audioQueue = _audioQueue ?? throw new InvalidOperationException("Audio queue is not initialized.");
+            var microphoneQueue = _microphoneQueue;
             var gpuQueue = _gpuQueue;
             var cudaQueue = _cudaQueue;
 
@@ -629,13 +695,19 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
                 madeProgress = DrainVideoPackets(videoQueue.Reader) || madeProgress;
                 madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
+                if (_microphoneEnabled && microphoneQueue != null)
+                {
+                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
+                }
 
                 if (videoQueue.Reader.Completion.IsCompleted &&
                     audioQueue.Reader.Completion.IsCompleted &&
+                    (microphoneQueue == null || microphoneQueue.Reader.Completion.IsCompleted) &&
                     (gpuQueue == null || gpuQueue.Reader.Completion.IsCompleted) &&
                     (cudaQueue == null || cudaQueue.Reader.Completion.IsCompleted) &&
                     Volatile.Read(ref _videoQueueDepth) == 0 &&
                     Volatile.Read(ref _audioQueueDepth) == 0 &&
+                    Volatile.Read(ref _microphoneQueueDepth) == 0 &&
                     Volatile.Read(ref _gpuQueueDepth) == 0 &&
                     Volatile.Read(ref _cudaQueueDepth) == 0)
                 {
@@ -655,7 +727,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             ReturnRemainingBuffers(_videoQueue);
-            ReturnRemainingBuffers(_audioQueue);
+            ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
+            ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
             ReturnRemainingGpuBuffers(_gpuQueue);
             ReturnRemainingCudaFrames(_cudaQueue);
         }
@@ -663,7 +736,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         {
             _encodingFailure = ex;
             ReturnRemainingBuffers(_videoQueue);
-            ReturnRemainingBuffers(_audioQueue);
+            ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
+            ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
             ReturnRemainingGpuBuffers(_gpuQueue);
             ReturnRemainingCudaFrames(_cudaQueue);
             try
@@ -799,6 +873,27 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return drainedAny;
     }
 
+    private bool DrainMicrophonePackets(ChannelReader<AudioSamplePacket> reader)
+    {
+        var drainedAny = false;
+        while (reader.TryRead(out var packet))
+        {
+            Interlocked.Decrement(ref _microphoneQueueDepth);
+            try
+            {
+                _encoder.SendMicrophoneSamples(packet.Buffer.AsSpan(0, packet.Length));
+            }
+            finally
+            {
+                ReturnBuffer(packet.Buffer);
+            }
+
+            drainedAny = true;
+        }
+
+        return drainedAny;
+    }
+
     private void SignalWork()
     {
         try { _workAvailable.Release(); }
@@ -884,6 +979,38 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             if (queue.Writer.TryWrite(packet))
             {
                 Interlocked.Increment(ref _audioQueueDepth);
+                SignalWork();
+                return true;
+            }
+        }
+
+        ReturnBuffer(packet.Buffer);
+        return false;
+    }
+
+    private bool TryEnqueueMicrophonePacket(Channel<AudioSamplePacket> queue, AudioSamplePacket packet)
+    {
+        if (_cts?.IsCancellationRequested == true)
+        {
+            ReturnBuffer(packet.Buffer);
+            return false;
+        }
+
+        if (queue.Writer.TryWrite(packet))
+        {
+            Interlocked.Increment(ref _microphoneQueueDepth);
+            SignalWork();
+            return true;
+        }
+
+        if (queue.Reader.TryRead(out var evictedPacket))
+        {
+            Interlocked.Decrement(ref _microphoneQueueDepth);
+            Interlocked.Increment(ref _microphoneDropsBacklogEviction);
+            ReturnBuffer(evictedPacket.Buffer);
+            if (queue.Writer.TryWrite(packet))
+            {
+                Interlocked.Increment(ref _microphoneQueueDepth);
                 SignalWork();
                 return true;
             }
