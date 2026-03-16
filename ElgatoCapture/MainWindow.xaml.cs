@@ -107,6 +107,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private bool _isWindowClosing;
     private bool _toggleLabelsVisible;
     private bool _entranceAnimationPlayed;
+    private bool _liveSignalInfoVisible;
+    private DispatcherQueueTimer? _liveSignalDebounceTimer;
     private double _savedPreviewVolume;
     private bool _isVolumeFadingIn;
     private bool _isSettingsShelfAnimating;
@@ -3768,14 +3770,17 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
             case nameof(MainViewModel.LiveResolution):
                 LiveResolutionTextBlock.Text = ViewModel.LiveResolution;
+                UpdateLiveSignalInfoVisibility();
                 break;
 
             case nameof(MainViewModel.LiveFrameRate):
                 LiveFrameRateTextBlock.Text = ViewModel.LiveFrameRate;
+                UpdateLiveSignalInfoVisibility();
                 break;
 
             case nameof(MainViewModel.LivePixelFormat):
                 LivePixelFormatTextBlock.Text = ViewModel.LivePixelFormat;
+                UpdateLiveSignalInfoVisibility();
                 break;
 
             case nameof(MainViewModel.IsAudioEnabled):
@@ -4839,6 +4844,124 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         return AnimatePreviewTransitionAsync(1.0, 1.0, 250, EasingMode.EaseOut);
     }
 
+
+    private void UpdateLiveSignalInfoVisibility()
+    {
+        const string emDash = "\u2014";
+        bool allReal =
+            ViewModel.LiveResolution != emDash &&
+            ViewModel.LiveFrameRate != emDash &&
+            ViewModel.LivePixelFormat != emDash;
+
+        if (allReal && !_liveSignalInfoVisible)
+        {
+            // Debounce: wait 500ms for values to stabilize before animating in.
+            // During startup the pipeline cascades through Requested → Negotiated → Actual,
+            // and each level can change the text width. Animating mid-cascade looks jerky.
+            if (_liveSignalDebounceTimer == null)
+            {
+                _liveSignalDebounceTimer = DispatcherQueue.CreateTimer();
+                _liveSignalDebounceTimer.Interval = TimeSpan.FromMilliseconds(500);
+                _liveSignalDebounceTimer.IsRepeating = false;
+                _liveSignalDebounceTimer.Tick += (_, _) =>
+                {
+                    _liveSignalDebounceTimer = null;
+                    // Re-check: values might have reverted during the wait
+                    bool stillReal =
+                        ViewModel.LiveResolution != emDash &&
+                        ViewModel.LiveFrameRate != emDash &&
+                        ViewModel.LivePixelFormat != emDash;
+                    if (stillReal && !_liveSignalInfoVisible)
+                    {
+                        _liveSignalInfoVisible = true;
+                        AnimateLiveSignalInfoIn();
+                    }
+                };
+            }
+            _liveSignalDebounceTimer.Start();
+        }
+        else if (!allReal)
+        {
+            // Cancel any pending debounce
+            if (_liveSignalDebounceTimer != null)
+            {
+                _liveSignalDebounceTimer.Stop();
+                _liveSignalDebounceTimer = null;
+            }
+
+            if (_liveSignalInfoVisible)
+            {
+                _liveSignalInfoVisible = false;
+                AnimateLiveSignalInfoOut();
+            }
+        }
+    }
+
+    private void AnimateLiveSignalInfoIn()
+    {
+        LiveSignalInfoPanel.Opacity = 0;
+        LiveSignalInfoPanel.Visibility = Visibility.Visible;
+
+        var easing = new CubicEase { EasingMode = EasingMode.EaseOut };
+        var storyboard = new Storyboard();
+
+        var fade = new DoubleAnimation
+        {
+            From = 0, To = 1,
+            Duration = TimeSpan.FromMilliseconds(300),
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(fade, LiveSignalInfoPanel);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+        storyboard.Children.Add(fade);
+
+        var scaleX = new DoubleAnimation
+        {
+            From = 0.92, To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(300),
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(scaleX, LiveSignalInfoScale);
+        Storyboard.SetTargetProperty(scaleX, "ScaleX");
+        storyboard.Children.Add(scaleX);
+
+        var scaleY = new DoubleAnimation
+        {
+            From = 0.92, To = 1.0,
+            Duration = TimeSpan.FromMilliseconds(300),
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(scaleY, LiveSignalInfoScale);
+        Storyboard.SetTargetProperty(scaleY, "ScaleY");
+        storyboard.Children.Add(scaleY);
+
+        storyboard.Begin();
+    }
+
+    private void AnimateLiveSignalInfoOut()
+    {
+        var easing = new CubicEase { EasingMode = EasingMode.EaseIn };
+        var storyboard = new Storyboard();
+
+        var fade = new DoubleAnimation
+        {
+            From = 1, To = 0,
+            Duration = TimeSpan.FromMilliseconds(200),
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(fade, LiveSignalInfoPanel);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+        storyboard.Children.Add(fade);
+
+        storyboard.Completed += (_, _) =>
+        {
+            LiveSignalInfoPanel.Visibility = Visibility.Collapsed;
+        };
+
+        storyboard.Begin();
+    }
 
     private static void FadeOutElement(UIElement element)
     {
