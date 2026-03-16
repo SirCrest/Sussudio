@@ -917,7 +917,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         AnalogAudioGainValueTextBlock.Text = $"{(int)Math.Round(analogGain)}%";
         var analogModeActive = string.Equals(ViewModel.SelectedDeviceAudioMode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase);
-        AnalogAudioGainPanel.Visibility = ViewModel.IsDeviceAudioControlSupported ? Visibility.Visible : Visibility.Collapsed;
+        AnalogAudioGainPanel.Visibility = ViewModel.IsDeviceAudioControlSupported && analogModeActive ? Visibility.Visible : Visibility.Collapsed;
         AnalogAudioGainSlider.IsEnabled = ViewModel.IsDeviceAudioControlSupported && analogModeActive && !ViewModel.IsRecording;
     }
 
@@ -1300,7 +1300,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AttachCollectionSync(ViewModel.AvailableSplitEncodeModes, QueueSplitEncodeModeSelectionSync);
 
         // Set initial values
-        OutputPathTextBox.Text = ViewModel.OutputPath;
+        UpdateOutputPathDisplay();
         DiskSpaceTextBlock.Text = ViewModel.DiskSpaceInfo;
         RecordingSizeTextBlock.Text = ViewModel.RecordingSizeInfo;
         RecordingBitrateTextBlock.Text = ViewModel.RecordingBitrateInfo;
@@ -1332,13 +1332,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 ViewModel.SavePreviewVolume();
             }
         };
-        CustomAudioToggle.IsOn = ViewModel.IsCustomAudioInputEnabled;
+        CustomAudioToggle.IsChecked = ViewModel.IsCustomAudioInputEnabled;
         CustomAudioToggle.IsEnabled = !ViewModel.IsRecording;
-        ShowAllCaptureOptionsToggle.IsOn = ViewModel.ShowAllCaptureOptions;
+        ShowAllCaptureOptionsToggle.IsChecked = ViewModel.ShowAllCaptureOptions;
         StatsToggle.IsChecked = ViewModel.IsStatsVisible;
-        var customAudioVisible = ViewModel.IsCustomAudioInputEnabled ? Visibility.Visible : Visibility.Collapsed;
-        AudioInputLabel.Visibility = customAudioVisible;
-        AudioInputComboBox.Visibility = customAudioVisible;
+        AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
         AudioInputComboBox.SelectedItem = ViewModel.SelectedAudioInputDevice;
         AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
         ApplyDeviceAudioControlState();
@@ -1491,8 +1489,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioPreviewToggle.Unchecked += (s, e) => ViewModel.IsAudioPreviewEnabled = false;
         StatsToggle.Checked += StatsToggle_Checked;
         StatsToggle.Unchecked += StatsToggle_Unchecked;
-        CustomAudioToggle.Toggled += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsOn;
-        ShowAllCaptureOptionsToggle.Toggled += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsOn;
+        CustomAudioToggle.Click += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsChecked == true;
+        ShowAllCaptureOptionsToggle.Click += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsChecked == true;
         AnalogAudioGainSlider.ValueChanged += (s, e) =>
         {
             ViewModel.AnalogAudioGainPercent = e.NewValue;
@@ -1501,6 +1499,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         AudioMeterTrack.SizeChanged += (s, e) => AnimateAudioMeterTick();
         ControlBarBorder.SizeChanged += (s, e) => UpdateToggleLabelVisibility(e.NewSize.Width);
         CaptureSettingsGrid.SizeChanged += CaptureSettingsGrid_SizeChanged;
+        OutputPathTextBox.SizeChanged += (s, e) => UpdateOutputPathDisplay();
         ApplyStatsVisibility(ViewModel.IsStatsVisible, immediate: true);
     }
 
@@ -1795,25 +1794,31 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _captureSettingsNarrow = narrow;
         if (narrow)
         {
-            Grid.SetRow(PresetPanel, 1);
-            Grid.SetColumn(PresetPanel, 0);
-            Grid.SetRow(SplitPanel, 1);
-            Grid.SetColumn(SplitPanel, 1);
-            Grid.SetRow(CustomBitratePanel, 1);
-            Grid.SetColumn(CustomBitratePanel, 2);
+            VideoFormatColumn.Width = new GridLength(0);
             PresetColumn.Width = new GridLength(0);
             SplitColumn.Width = new GridLength(0);
+            Grid.SetRow(VideoFormatPanel, 1);
+            Grid.SetColumn(VideoFormatPanel, 0);
+            Grid.SetRow(PresetPanel, 1);
+            Grid.SetColumn(PresetPanel, 2);
+            Grid.SetRow(SplitPanel, 1);
+            Grid.SetColumn(SplitPanel, 3);
+            Grid.SetRow(CustomBitratePanel, 1);
+            Grid.SetColumn(CustomBitratePanel, 2);
         }
         else
         {
-            Grid.SetRow(PresetPanel, 0);
-            Grid.SetColumn(PresetPanel, 4);
-            Grid.SetRow(SplitPanel, 0);
-            Grid.SetColumn(SplitPanel, 5);
-            Grid.SetRow(CustomBitratePanel, 0);
-            Grid.SetColumn(CustomBitratePanel, 4);
+            VideoFormatColumn.Width = new GridLength(1, GridUnitType.Star);
             PresetColumn.Width = new GridLength(1, GridUnitType.Star);
             SplitColumn.Width = new GridLength(1, GridUnitType.Star);
+            Grid.SetRow(VideoFormatPanel, 0);
+            Grid.SetColumn(VideoFormatPanel, 0);
+            Grid.SetRow(PresetPanel, 0);
+            Grid.SetColumn(PresetPanel, 5);
+            Grid.SetRow(SplitPanel, 0);
+            Grid.SetColumn(SplitPanel, 6);
+            Grid.SetRow(CustomBitratePanel, 0);
+            Grid.SetColumn(CustomBitratePanel, 5);
         }
     }
 
@@ -2934,6 +2939,55 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 : Visibility.Collapsed;
     }
 
+    private void UpdateOutputPathDisplay()
+    {
+        var path = ViewModel.OutputPath;
+        if (string.IsNullOrEmpty(path))
+        {
+            OutputPathTextBox.Text = string.Empty;
+            return;
+        }
+
+        ToolTipService.SetToolTip(OutputPathTextBox, path);
+
+        var availableWidth = OutputPathTextBox.ActualWidth;
+        if (availableWidth <= 0)
+        {
+            OutputPathTextBox.Text = path;
+            return;
+        }
+
+        // FontSize 12 ≈ 7px per char, minus internal padding
+        var maxChars = (int)((availableWidth - 20) / 7);
+        if (path.Length <= maxChars)
+        {
+            OutputPathTextBox.Text = path;
+            return;
+        }
+
+        var parts = path.Split('\\', '/');
+        if (parts.Length <= 2)
+        {
+            OutputPathTextBox.Text = path;
+            return;
+        }
+
+        // Progressively truncate: keep root, show as many trailing segments as fit
+        var root = parts[0];
+        for (int tailCount = parts.Length - 1; tailCount >= 1; tailCount--)
+        {
+            var tail = string.Join("\\", parts[^tailCount..]);
+            var candidate = $"{root}\\...\\{tail}";
+            if (candidate.Length <= maxChars)
+            {
+                OutputPathTextBox.Text = candidate;
+                return;
+            }
+        }
+
+        OutputPathTextBox.Text = $"{root}\\...\\{parts[^1]}";
+    }
+
     private double GetSelectedFriendlyFrameRate()
     {
         if (FrameRateComboBox.SelectedItem is FrameRateOption option)
@@ -3288,7 +3342,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 break;
 
             case nameof(MainViewModel.OutputPath):
-                OutputPathTextBox.Text = ViewModel.OutputPath;
+                UpdateOutputPathDisplay();
                 break;
 
             case nameof(MainViewModel.AudioClipping):
@@ -3380,13 +3434,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 break;
 
             case nameof(MainViewModel.IsCustomAudioInputEnabled):
-                if (CustomAudioToggle.IsOn != ViewModel.IsCustomAudioInputEnabled)
+                if ((CustomAudioToggle.IsChecked == true) != ViewModel.IsCustomAudioInputEnabled)
                 {
-                    CustomAudioToggle.IsOn = ViewModel.IsCustomAudioInputEnabled;
+                    CustomAudioToggle.IsChecked = ViewModel.IsCustomAudioInputEnabled;
                 }
-                var isVisible = ViewModel.IsCustomAudioInputEnabled ? Visibility.Visible : Visibility.Collapsed;
-                AudioInputLabel.Visibility = isVisible;
-                AudioInputComboBox.Visibility = isVisible;
                 AudioInputComboBox.IsEnabled = ViewModel.IsCustomAudioInputEnabled && !ViewModel.IsRecording;
                 break;
 
@@ -3398,9 +3449,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                 break;
 
             case nameof(MainViewModel.ShowAllCaptureOptions):
-                if (ShowAllCaptureOptionsToggle.IsOn != ViewModel.ShowAllCaptureOptions)
+                if ((ShowAllCaptureOptionsToggle.IsChecked == true) != ViewModel.ShowAllCaptureOptions)
                 {
-                    ShowAllCaptureOptionsToggle.IsOn = ViewModel.ShowAllCaptureOptions;
+                    ShowAllCaptureOptionsToggle.IsChecked = ViewModel.ShowAllCaptureOptions;
                 }
                 break;
 

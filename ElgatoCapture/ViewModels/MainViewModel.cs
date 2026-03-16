@@ -22,18 +22,19 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private readonly ICaptureSessionCoordinator _sessionCoordinator;
     private readonly NativeXuAudioControlService _deviceAudioControlService;
     private readonly DispatcherQueue _dispatcherQueue;
+    private readonly AudioDeviceWatcher _audioDeviceWatcher;
     private readonly Stopwatch _recordingStopwatch = new();
     private DispatcherQueueTimer? _timer;
     private IntPtr _windowHandle;
     private readonly Queue<(long Tick, long Bytes)> _bitrateSamples = new();
     private const int BitrateWindowMs = 5000;
-    private const string DefaultRecordingFormat = "H.264 (MP4)";
-    private const string HevcRecordingFormat = "HEVC (MP4)";
-    private const string Av1RecordingFormat = "AV1 (MP4)";
+    private const string DefaultRecordingFormat = "H.264";
+    private const string HevcRecordingFormat = "HEVC";
+    private const string Av1RecordingFormat = "AV1";
     private const int DefaultDisposeTimeoutMs = 30000;
     private const string HdrToggleBlockedWhileRecordingMessage = "Stop recording before switching between HDR and SDR pipelines.";
     private const string LiveInfoUnavailable = "\u2014";
-    private const string AutoResolutionValue = "Auto";
+    private const string AutoResolutionValue = "Source";
     private const double AutoFrameRateValue = 0;
 
     [ObservableProperty]
@@ -406,6 +407,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         ApplySourceTelemetrySnapshot(_latestSourceTelemetry, allowAutoRetarget: false);
         UpdateHdrRuntimeStatusFromCapture();
         UpdateLiveCaptureInfo();
+
+        _audioDeviceWatcher = new AudioDeviceWatcher();
+        _audioDeviceWatcher.DevicesChanged += OnAudioDevicesChanged;
 
         SetupTimer();
         UpdateDiskSpace();
@@ -883,17 +887,17 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         if (support.HasH264)
         {
-            formats.Add("H.264 (MP4)");
+            formats.Add("H.264");
         }
 
         if (support.HasHevc)
         {
-            formats.Add("HEVC (MP4)");
+            formats.Add("HEVC");
         }
 
         if (support.HasAv1)
         {
-            formats.Add("AV1 (MP4)");
+            formats.Add("AV1");
         }
 
         void ApplyFormats()
@@ -1252,6 +1256,46 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         SourceTargetSummaryText = $"Target: {GetSelectedResolutionDisplayText()} @ {friendly:0} (exact {exactText}) | HDR={hdrStateText}";
     }
 
+    private void OnAudioDevicesChanged()
+    {
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            _ = RefreshAudioDeviceListAsync();
+        });
+    }
+
+    private List<AudioInputDevice> FilterOutCaptureCardAudio(List<AudioInputDevice> devices)
+    {
+        var excludeId = SelectedDevice?.AudioDeviceId;
+        if (string.IsNullOrWhiteSpace(excludeId))
+        {
+            return devices;
+        }
+
+        return devices.Where(d => !string.Equals(d.Id, excludeId, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private async Task RefreshAudioDeviceListAsync()
+    {
+        try
+        {
+            var previousAudioId = SelectedAudioInputDevice?.Id;
+            var audioDevices = FilterOutCaptureCardAudio(
+                (await _deviceService.EnumerateAudioCaptureDevicesAsync()).ToList());
+
+            ReplaceCollection(AudioInputDevices, audioDevices);
+            SelectedAudioInputDevice =
+                AudioInputDevices.FirstOrDefault(d => d.Id == previousAudioId)
+                ?? AudioInputDevices.FirstOrDefault();
+
+            Logger.Log($"Audio device list refreshed ({AudioInputDevices.Count} devices).");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Audio device list refresh failed: {ex.Message}");
+        }
+    }
+
     public async Task RefreshDevicesAsync()
     {
         StatusText = "Scanning for devices...";
@@ -1262,11 +1306,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             var scanGeneration = Interlocked.Increment(ref _deviceScanGeneration);
             var previousAudioId = SelectedAudioInputDevice?.Id;
             var previousDeviceId = SelectedDevice?.Id;
-            var audioDevices = await _deviceService.EnumerateAudioCaptureDevicesAsync();
+            var audioDevices = (await _deviceService.EnumerateAudioCaptureDevicesAsync()).ToList();
             var devices = await _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
             discoveryStopwatch.Stop();
 
-            ReplaceCollection(AudioInputDevices, audioDevices.ToList());
+            var captureCardAudioId = (devices.FirstOrDefault(d => d.Id == previousDeviceId) ?? devices.FirstOrDefault())?.AudioDeviceId;
+            var filteredAudio = string.IsNullOrWhiteSpace(captureCardAudioId)
+                ? audioDevices
+                : audioDevices.Where(d => !string.Equals(d.Id, captureCardAudioId, StringComparison.OrdinalIgnoreCase)).ToList();
+            ReplaceCollection(AudioInputDevices, filteredAudio);
             var savedAudioId = _pendingSavedAudioDeviceId;
             _pendingSavedAudioDeviceId = null;
             SelectedAudioInputDevice =
@@ -2259,7 +2307,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 FriendlyValue = AutoFrameRateValue,
                 Value = AutoFrameRateValue,
                 IsEnabled = true,
-                DisplayTextOverride = "Auto"
+                DisplayTextOverride = "Source"
             }
             : null;
         var availableOptions = autoFrameRateOption == null
@@ -4694,8 +4742,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     {
         var format = SelectedRecordingFormat switch
         {
-            "HEVC (MP4)" => RecordingFormat.HevcMp4,
-            "AV1 (MP4)" => RecordingFormat.Av1Mp4,
+            "HEVC" => RecordingFormat.HevcMp4,
+            "AV1" => RecordingFormat.Av1Mp4,
             _ => RecordingFormat.H264Mp4
         };
 
@@ -4849,6 +4897,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _captureService.FrameCaptured -= OnFrameCaptured;
         _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
         _captureService.SourceTelemetryUpdated -= OnSourceTelemetryUpdated;
+        _audioDeviceWatcher.DevicesChanged -= OnAudioDevicesChanged;
+        _audioDeviceWatcher.Dispose();
         var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "ELGATOCAPTURE_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,

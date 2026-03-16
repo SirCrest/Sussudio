@@ -1802,12 +1802,65 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }, cancellationToken);
 
     public Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default)
-        => RunTransitionAsync(_sessionState, transitionToken =>
+        => RunTransitionAsync(_sessionState, async transitionToken =>
         {
             transitionToken.ThrowIfCancellationRequested();
+            var previousDeviceId = _audioDeviceId;
             _audioDeviceId = audioDeviceId;
             _audioDeviceName = audioDeviceName;
-            return Task.CompletedTask;
+
+            if (string.Equals(previousDeviceId, audioDeviceId, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            if (_wasapiAudioCapture == null)
+            {
+                return;
+            }
+
+            Logger.Log($"Live audio input switch: {audioDeviceName ?? "(card default)"}");
+
+            var activeSink = _isRecording ? _recordingSink : null;
+            if (activeSink != null)
+            {
+                _wasapiAudioCapture.DetachRecordingSink();
+            }
+
+            var oldCapture = _wasapiAudioCapture;
+            _wasapiAudioCapture = null;
+            DetachWasapiAudioCapture(oldCapture);
+            await oldCapture.DisposeAsync().ConfigureAwait(false);
+
+            var resolvedId = audioDeviceId ?? _currentDevice?.AudioDeviceId;
+            if (!string.IsNullOrEmpty(resolvedId))
+            {
+                var newCapture = new WasapiAudioCapture();
+                await newCapture.InitializeAsync(resolvedId, transitionToken).ConfigureAwait(false);
+                newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
+                newCapture.CaptureFailed += OnWasapiCaptureFailed;
+                newCapture.Start();
+                _wasapiAudioCapture = newCapture;
+                Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
+                Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
+
+                if (_isAudioPreviewActive)
+                {
+                    await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
+                }
+
+                if (activeSink != null)
+                {
+                    newCapture.AttachRecordingSink(activeSink);
+                }
+
+                Logger.Log($"Audio input switched to: {audioDeviceName ?? resolvedId}");
+            }
+            else
+            {
+                Logger.Log("Audio input cleared — no device available");
+                AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
+            }
         }, cancellationToken);
 
     public Task CleanupAsync(CancellationToken cancellationToken = default)

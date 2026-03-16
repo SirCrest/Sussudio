@@ -570,5 +570,28 @@ internal interface IPropertyStore
 [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 internal interface IMMNotificationClient
 {
+    [PreserveSig]
+    int OnDeviceStateChanged(
+        [MarshalAs(UnmanagedType.LPWStr)] string deviceId,
+        uint newState);
+
+    [PreserveSig]
+    int OnDeviceAdded(
+        [MarshalAs(UnmanagedType.LPWStr)] string deviceId);
+
+    [PreserveSig]
+    int OnDeviceRemoved(
+        [MarshalAs(UnmanagedType.LPWStr)] string deviceId);
+
+    [PreserveSig]
+    int OnDefaultDeviceChanged(
+        EDataFlow flow,
+        ERole role,
+        [MarshalAs(UnmanagedType.LPWStr)] string? defaultDeviceId);
+
+    [PreserveSig]
+    int OnPropertyValueChanged(
+        [MarshalAs(UnmanagedType.LPWStr)] string deviceId,
+        PROPERTYKEY key);
 }
 
