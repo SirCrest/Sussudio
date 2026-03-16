@@ -84,6 +84,12 @@ internal static class Program
         Console.WriteLine("  device audio-select <name>");
         Console.WriteLine("  device custom-audio on|off");
         Console.WriteLine();
+        Console.WriteLine("Flashback:");
+        Console.WriteLine("  flashback play");
+        Console.WriteLine("  flashback pause");
+        Console.WriteLine("  flashback go-live");
+        Console.WriteLine("  flashback seek <ms>");
+        Console.WriteLine();
         Console.WriteLine("Window:");
         Console.WriteLine("  window close|minimize|maximize|restore|center");
         Console.WriteLine("  window snap left|right|top-left|top-right|bottom-left|bottom-right");

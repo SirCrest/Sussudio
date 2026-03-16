@@ -41,7 +41,8 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>      <!-- Row 0: Preview -->
             <RowDefinition Height="Auto"/>   <!-- Row 1: Settings Shelf -->
-            <RowDefinition Height="Auto"/>   <!-- Row 2: Control Bar -->
+            <RowDefinition Height="Auto"/>   <!-- Row 2: Flashback Timeline -->
+            <RowDefinition Height="Auto"/>   <!-- Row 3: Control Bar -->
         </Grid.RowDefinitions>
 
         <!-- Row 0: Preview Area + Settings Overlay -->
@@ -164,7 +165,7 @@
         <!-- Stats Dock Panel — full-height right column, outside preview grid -->
         <Border x:Name="StatsDockPanel"
                 Grid.Column="1"
-                Grid.RowSpan="3"
+                Grid.RowSpan="4"
                 Visibility="Collapsed"
                 Width="0"
                 MaxWidth="300"
@@ -672,6 +673,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Device -->
@@ -968,14 +970,148 @@
                               Padding="4,0" MinHeight="0" MinWidth="0"
                               VerticalAlignment="Center"/>
                 </Grid>
+
+                <!-- Flashback Settings -->
+                <StackPanel Grid.Row="5" Spacing="8" Margin="0,8,0,0">
+                    <TextBlock Text="Flashback" FontWeight="SemiBold" FontSize="13" Foreground="{ThemeResource TextFillColorPrimaryBrush}"/>
+                    <ToggleSwitch x:Name="FlashbackEnabledToggle"
+                                  Header="Enable Flashback Buffer"
+                                  Toggled="FlashbackEnabledToggle_Toggled"/>
+                    <ComboBox x:Name="FlashbackBufferDurationCombo"
+                              Header="Buffer Duration"
+                              Width="200"
+                              SelectionChanged="FlashbackBufferDurationCombo_SelectionChanged">
+                        <ComboBoxItem Content="1 minute" Tag="1"/>
+                        <ComboBoxItem Content="2 minutes" Tag="2"/>
+                        <ComboBoxItem Content="5 minutes" Tag="5" IsSelected="True"/>
+                        <ComboBoxItem Content="10 minutes" Tag="10"/>
+                        <ComboBoxItem Content="15 minutes" Tag="15"/>
+                        <ComboBoxItem Content="30 minutes" Tag="30"/>
+                    </ComboBox>
+                    <TextBlock x:Name="FlashbackDiskEstimateText"
+                               FontSize="11" Foreground="#80FFFFFF"
+                               Text="Estimated disk usage: ~1.3 GB"/>
+                </StackPanel>
             </Grid>
         </Border>
 
-        <!-- Row 1: Two-Tier Control Bar -->
-        <Border x:Name="ControlBarShadowHost" Grid.Row="2" Grid.Column="0"
+        <!-- Row 2: Flashback Timeline (collapsed by default) -->
+        <Border x:Name="FlashbackTimelinePanel" Grid.Row="2" Grid.Column="0"
+                Visibility="Collapsed"
+                Margin="16,0,16,8"
+                Padding="12,8,12,8"
+                CornerRadius="8"
+                Background="#E6202020"
+                BorderBrush="#20FFFFFF" BorderThickness="1">
+            <Grid RowSpacing="6">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Row 0: Status -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="FLASHBACK"
+                               Foreground="#00CED1" FontWeight="SemiBold"
+                               FontSize="11" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="FlashbackBufferStatusText" Grid.Column="1"
+                               Foreground="#80FFFFFF" FontSize="11"
+                               Margin="12,0,0,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="FlashbackPositionText" Grid.Column="2"
+                               Foreground="White" FontSize="11" FontFamily="Consolas"
+                               VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- Row 1: Scrub Track -->
+                <Grid Grid.Row="1" Height="32">
+                    <Border CornerRadius="4" Background="#30FFFFFF">
+                        <!-- Buffer fill indicator -->
+                        <Border x:Name="FlashbackBufferFillBar"
+                                CornerRadius="4" Background="#1500CED1"
+                                HorizontalAlignment="Left" Width="0"/>
+                    </Border>
+                    <!-- Playhead -->
+                    <Border x:Name="FlashbackPlayhead"
+                            Width="4" Background="White"
+                            HorizontalAlignment="Left" Margin="0"
+                            CornerRadius="2"/>
+                    <!-- Live edge indicator -->
+                    <Border x:Name="FlashbackLiveEdge"
+                            Width="2" Background="#00CED1"
+                            HorizontalAlignment="Right"
+                            CornerRadius="1"/>
+                    <!-- In point marker -->
+                    <Border x:Name="FlashbackInPointMarker"
+                            Width="2" Background="#FFD700"
+                            HorizontalAlignment="Left" Visibility="Collapsed"
+                            CornerRadius="1"/>
+                    <!-- Out point marker -->
+                    <Border x:Name="FlashbackOutPointMarker"
+                            Width="2" Background="#FFD700"
+                            HorizontalAlignment="Left" Visibility="Collapsed"
+                            CornerRadius="1"/>
+                    <!-- Hit-test overlay for pointer events -->
+                    <Border x:Name="FlashbackScrubArea" Background="Transparent"
+                            PointerPressed="FlashbackScrubArea_PointerPressed"
+                            PointerMoved="FlashbackScrubArea_PointerMoved"
+                            PointerReleased="FlashbackScrubArea_PointerReleased"/>
+                </Grid>
+
+                <!-- Row 2: Action Buttons -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="FlashbackInButton" Content="In" Width="40" Height="28"
+                            FontSize="11" Padding="0" CornerRadius="6"
+                            Click="FlashbackInButton_Click"
+                            ToolTipService.ToolTip="Set in point (I)"/>
+                    <Button x:Name="FlashbackOutButton" Content="Out" Width="40" Height="28"
+                            FontSize="11" Padding="0" CornerRadius="6"
+                            Click="FlashbackOutButton_Click"
+                            ToolTipService.ToolTip="Set out point (O)"/>
+                    <Button x:Name="FlashbackClearButton" Content="Clear" Height="28"
+                            FontSize="11" Padding="8,0" CornerRadius="6"
+                            Click="FlashbackClearButton_Click"
+                            ToolTipService.ToolTip="Clear in/out points"/>
+                    <Border Width="1" Height="16" Background="#30FFFFFF" Margin="4,0"/>
+                    <Button x:Name="FlashbackPlayPauseButton" Width="36" Height="28"
+                            Padding="0" CornerRadius="6"
+                            Click="FlashbackPlayPauseButton_Click"
+                            ToolTipService.ToolTip="Play/Pause (Space)">
+                        <FontIcon x:Name="FlashbackPlayPauseIcon" Glyph="&#xE768;" FontSize="14"/>
+                    </Button>
+                    <Button x:Name="FlashbackGoLiveButton" Content="Go Live" Height="28"
+                            FontSize="11" Padding="8,0" CornerRadius="6"
+                            Foreground="#00CED1"
+                            Click="FlashbackGoLiveButton_Click"
+                            ToolTipService.ToolTip="Return to live (L)"/>
+                    <Border Width="1" Height="16" Background="#30FFFFFF" Margin="4,0"/>
+                    <Button x:Name="FlashbackExportButton" Height="28"
+                            FontSize="11" Padding="8,0" CornerRadius="6"
+                            Click="FlashbackExportButton_Click"
+                            ToolTipService.ToolTip="Export selection">
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <FontIcon Glyph="&#xE78C;" FontSize="12"/>
+                            <TextBlock Text="Export" FontSize="11"/>
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="FlashbackSaveLast5mButton" Content="Save Last 5m" Height="28"
+                            FontSize="11" Padding="8,0" CornerRadius="6"
+                            Click="FlashbackSaveLast5mButton_Click"
+                            ToolTipService.ToolTip="Save last 5 minutes"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Row 3: Two-Tier Control Bar -->
+        <Border x:Name="ControlBarShadowHost" Grid.Row="3" Grid.Column="0"
                 Background="Transparent"
                 IsHitTestVisible="False"/>
-        <Border x:Name="ControlBarBorder" Grid.Row="2" Grid.Column="0"
+        <Border x:Name="ControlBarBorder" Grid.Row="3" Grid.Column="0"
                 Margin="16,8,16,16"
                 BorderBrush="#10FFFFFF" BorderThickness="1"
                 CornerRadius="12" Padding="16,12">
@@ -1479,6 +1615,23 @@
                         </StackPanel>
                     </ToggleButton>
                     <Border Width="1" Height="20" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
+                    <ToggleButton x:Name="FlashbackToggle"
+                                  AutomationProperties.AutomationId="FlashbackToggle"
+                                  Height="32"
+                                  Padding="8,0"
+                                  ToolTipService.ToolTip="Flashback timeline"
+                                  Checked="FlashbackToggle_Checked"
+                                  Unchecked="FlashbackToggle_Unchecked">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE81C;" FontSize="14"/>
+                            <TextBlock x:Name="FlashbackToggleLabel"
+                                       Text="Flashback"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
+                        </StackPanel>
+                    </ToggleButton>
+                    <Border Width="1" Height="20" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
                     <Button x:Name="FullScreenButton"
                             Click="FullScreenButton_Click"
                             VerticalAlignment="Center"
@@ -1498,7 +1651,7 @@
         </Border>
 
         <!-- Startup Splash Overlay -->
-        <Grid x:Name="SplashOverlay" Grid.RowSpan="3" Grid.ColumnSpan="2"
+        <Grid x:Name="SplashOverlay" Grid.RowSpan="4" Grid.ColumnSpan="2"
               Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
               RenderTransformOrigin="0.5,0.5">
             <Grid.RenderTransform>

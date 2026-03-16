@@ -18,6 +18,24 @@ public sealed class CaptureHealthSnapshot
     public string RecordingBackend { get; init; } = "None";
     public string AudioPathMode { get; init; } = "None";
     public string MuxResult { get; init; } = "NotAttempted";
+    public bool FlashbackActive { get; init; }
+    public long FlashbackBufferedDurationMs { get; init; }
+    public int FlashbackSegmentCount { get; init; }
+    public long FlashbackDiskBytes { get; init; }
+    public long FlashbackOutputBytes { get; init; }
+    public string? FlashbackFilePath { get; init; }
+    public long FlashbackEncodedFrames { get; init; }
+    public long FlashbackDroppedFrames { get; init; }
+    public bool FlashbackGpuEncoding { get; init; }
+    public int FlashbackVideoQueueDepth { get; init; }
+    public int FlashbackAudioQueueDepth { get; init; }
+    public string FlashbackPlaybackState { get; init; } = "N/A";
+    public long FlashbackPlaybackPositionMs { get; init; }
+    public string FlashbackDecoderHwAccel { get; init; } = "N/A";
+    public long FlashbackPlaybackFrameCount { get; init; }
+    public long FlashbackPlaybackLateFrames { get; init; }
+    public double FlashbackPlaybackObservedFps { get; init; }
+    public double FlashbackPlaybackAvgFrameMs { get; init; }
 
     public long RecordingElapsedMs { get; init; }
     public long LastFrameArrivalMs { get; init; }

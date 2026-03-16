@@ -751,7 +751,24 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             AvSyncCaptureDriftMs = captureRuntime.AvSyncCaptureDriftMs,
             AvSyncCaptureDriftRateMsPerSec = captureRuntime.AvSyncCaptureDriftRateMsPerSec,
             AvSyncEncoderDriftMs = captureRuntime.AvSyncEncoderDriftMs,
-            AvSyncEncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples
+            AvSyncEncoderCorrectionSamples = captureRuntime.AvSyncEncoderCorrectionSamples,
+            FlashbackActive = health.FlashbackActive,
+            FlashbackBufferedDurationMs = health.FlashbackBufferedDurationMs,
+            FlashbackDiskBytes = health.FlashbackDiskBytes,
+            FlashbackOutputBytes = health.FlashbackOutputBytes,
+            FlashbackFilePath = health.FlashbackFilePath,
+            FlashbackEncodedFrames = health.FlashbackEncodedFrames,
+            FlashbackDroppedFrames = health.FlashbackDroppedFrames,
+            FlashbackGpuEncoding = health.FlashbackGpuEncoding,
+            FlashbackVideoQueueDepth = health.FlashbackVideoQueueDepth,
+            FlashbackAudioQueueDepth = health.FlashbackAudioQueueDepth,
+            FlashbackPlaybackState = health.FlashbackPlaybackState,
+            FlashbackPlaybackPositionMs = health.FlashbackPlaybackPositionMs,
+            FlashbackDecoderHwAccel = health.FlashbackDecoderHwAccel,
+            FlashbackPlaybackFrameCount = health.FlashbackPlaybackFrameCount,
+            FlashbackPlaybackLateFrames = health.FlashbackPlaybackLateFrames,
+            FlashbackPlaybackObservedFps = health.FlashbackPlaybackObservedFps,
+            FlashbackPlaybackAvgFrameMs = health.FlashbackPlaybackAvgFrameMs
         };
 
         var verificationIdle = Volatile.Read(ref _verificationInProgress) == 0 &&

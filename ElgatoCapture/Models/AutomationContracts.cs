@@ -46,7 +46,8 @@ public enum AutomationCommandKind
     GetPerformanceTimeline,
     SetStatsSectionVisible,
     SetAnalogAudioGain,
-    SetSettingsVisible
+    SetSettingsVisible,
+    FlashbackAction
 }
 
 public enum AutomationWindowAction
@@ -540,6 +541,25 @@ public sealed class AutomationSnapshot
     public double? AvSyncCaptureDriftRateMsPerSec { get; init; }
     public double? AvSyncEncoderDriftMs { get; init; }
     public long? AvSyncEncoderCorrectionSamples { get; init; }
+
+    // === Flashback ===
+    public bool FlashbackActive { get; init; }
+    public long FlashbackBufferedDurationMs { get; init; }
+    public long FlashbackDiskBytes { get; init; }
+    public long FlashbackOutputBytes { get; init; }
+    public string? FlashbackFilePath { get; init; }
+    public long FlashbackEncodedFrames { get; init; }
+    public long FlashbackDroppedFrames { get; init; }
+    public bool FlashbackGpuEncoding { get; init; }
+    public int FlashbackVideoQueueDepth { get; init; }
+    public int FlashbackAudioQueueDepth { get; init; }
+    public string FlashbackPlaybackState { get; init; } = "N/A";
+    public long FlashbackPlaybackPositionMs { get; init; }
+    public string FlashbackDecoderHwAccel { get; init; } = "N/A";
+    public long FlashbackPlaybackFrameCount { get; init; }
+    public long FlashbackPlaybackLateFrames { get; init; }
+    public double FlashbackPlaybackObservedFps { get; init; }
+    public double FlashbackPlaybackAvgFrameMs { get; init; }
 }
 
 public sealed class PerformanceTimelineEntry

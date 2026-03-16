@@ -112,6 +112,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private double _savedPreviewVolume;
     private bool _isVolumeFadingIn;
     private bool _isSettingsShelfAnimating;
+    private bool _isFlashbackTimelineAnimating;
+    private bool _isFlashbackScrubbing;
     private bool _isFullScreen;
     private bool _isFullScreenTransitioning;
     private Windows.Graphics.RectInt32 _preFullScreenBounds;
@@ -1313,6 +1315,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         InitializeAudioMeterBrushes();
         ViewModel.AudioMeterActivated += EnsureAudioMeterTimerRunning;
         ViewModel.MicrophoneMeterActivated += EnsureAudioMeterTimerRunning;
+
+        // Flashback defaults (set in code-behind to avoid XAML parse issues with Toggled handler)
+        FlashbackEnabledToggle.IsOn = true;
 
         // Bind all collections to ComboBoxes
         DeviceComboBox.ItemsSource = ViewModel.Devices;
@@ -3854,6 +3859,36 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             case nameof(MainViewModel.IsFfmpegMissing):
                 RecordButton.IsEnabled = !ViewModel.IsFfmpegMissing && !ViewModel.IsRecordingTransitioning;
                 break;
+
+            case nameof(MainViewModel.IsFlashbackTimelineVisible):
+                if (ViewModel.IsFlashbackTimelineVisible)
+                    AnimateFlashbackTimeline(show: true);
+                else
+                    AnimateFlashbackTimeline(show: false);
+                break;
+
+            case nameof(MainViewModel.FlashbackState):
+                UpdateFlashbackStateUI();
+                break;
+
+            case nameof(MainViewModel.FlashbackBufferFillPercent):
+            case nameof(MainViewModel.FlashbackBufferDiskBytes):
+                UpdateFlashbackBufferFill();
+                break;
+
+            case nameof(MainViewModel.FlashbackBitrateInfo):
+                if (!ViewModel.IsRecording && ViewModel.IsFlashbackEnabled)
+                    RecordingBitrateTextBlock.Text = ViewModel.FlashbackBitrateInfo;
+                break;
+
+            case nameof(MainViewModel.FlashbackPlaybackPosition):
+                UpdateFlashbackPositionUI();
+                break;
+
+            case nameof(MainViewModel.FlashbackInPoint):
+            case nameof(MainViewModel.FlashbackOutPoint):
+                UpdateFlashbackMarkers();
+                break;
         }
     }
 
@@ -5240,6 +5275,316 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void ShowSettingsShelf() => AnimateSettingsShelf(show: true);
     private void HideSettingsShelf() => AnimateSettingsShelf(show: false);
 
+    #region Flashback Timeline
+
+    private void AnimateFlashbackTimeline(bool show)
+    {
+        _isFlashbackTimelineAnimating = true;
+        var durationMs = show ? 250 : 200;
+        var easing = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn };
+        var duration = TimeSpan.FromMilliseconds(durationMs);
+
+        double targetHeight;
+        if (show)
+        {
+            FlashbackTimelinePanel.Opacity = 0;
+            FlashbackTimelinePanel.Height = double.NaN;
+            FlashbackTimelinePanel.Visibility = Visibility.Visible;
+            FlashbackTimelinePanel.UpdateLayout();
+            targetHeight = FlashbackTimelinePanel.ActualHeight;
+            FlashbackTimelinePanel.Height = 0;
+        }
+        else
+        {
+            targetHeight = FlashbackTimelinePanel.ActualHeight;
+            FlashbackTimelinePanel.Height = targetHeight;
+        }
+
+        var heightAnim = new DoubleAnimation
+        {
+            To = show ? targetHeight : 0,
+            Duration = duration,
+            EasingFunction = easing,
+            EnableDependentAnimation = true
+        };
+        Storyboard.SetTarget(heightAnim, FlashbackTimelinePanel);
+        Storyboard.SetTargetProperty(heightAnim, "Height");
+
+        var fade = new DoubleAnimation
+        {
+            From = show ? 0 : 1,
+            To = show ? 1 : 0,
+            Duration = duration,
+            EasingFunction = easing
+        };
+        Storyboard.SetTarget(fade, FlashbackTimelinePanel);
+        Storyboard.SetTargetProperty(fade, "Opacity");
+
+        var storyboard = new Storyboard();
+        storyboard.Children.Add(heightAnim);
+        storyboard.Children.Add(fade);
+        storyboard.Completed += (_, _) =>
+        {
+            if (show)
+            {
+                FlashbackTimelinePanel.Height = double.NaN;
+                FlashbackTimelinePanel.Opacity = 1;
+            }
+            else
+            {
+                FlashbackTimelinePanel.Visibility = Visibility.Collapsed;
+                FlashbackTimelinePanel.Height = double.NaN;
+                FlashbackTimelinePanel.Opacity = 1;
+            }
+            _isFlashbackTimelineAnimating = false;
+        };
+        storyboard.Begin();
+    }
+
+    private DispatcherQueueTimer? _flashbackStatusTimer;
+
+    private void FlashbackToggle_Checked(object sender, RoutedEventArgs e)
+    {
+        if (!_isFlashbackTimelineAnimating)
+            AnimateFlashbackTimeline(show: true);
+        StartFlashbackStatusPolling();
+    }
+
+    private void FlashbackToggle_Unchecked(object sender, RoutedEventArgs e)
+    {
+        if (!_isFlashbackTimelineAnimating)
+            AnimateFlashbackTimeline(show: false);
+        StopFlashbackStatusPolling();
+    }
+
+    private void StartFlashbackStatusPolling()
+    {
+        _flashbackStatusTimer ??= _dispatcherQueue.CreateTimer();
+        _flashbackStatusTimer.Interval = TimeSpan.FromMilliseconds(250);
+        _flashbackStatusTimer.IsRepeating = true;
+        _flashbackStatusTimer.Tick -= FlashbackStatusTimer_Tick;
+        _flashbackStatusTimer.Tick += FlashbackStatusTimer_Tick;
+        _flashbackStatusTimer.Start();
+    }
+
+    private void StopFlashbackStatusPolling()
+    {
+        if (_flashbackStatusTimer == null) return;
+        _flashbackStatusTimer.Stop();
+        _flashbackStatusTimer.Tick -= FlashbackStatusTimer_Tick;
+    }
+
+    private void FlashbackStatusTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        if (_isWindowClosing) return;
+        ViewModel.UpdateFlashbackBufferStatus();
+    }
+
+    private long _lastScrubUpdateTick;
+
+    private void FlashbackScrubArea_PointerPressed(object sender, PointerRoutedEventArgs e)
+    {
+        _isFlashbackScrubbing = true;
+        (sender as UIElement)?.CapturePointer(e.Pointer);
+        var targetPosition = ComputeFlashbackScrubPosition(e);
+        ViewModel.FlashbackBeginScrub(targetPosition);
+        UpdateFlashbackScrubVisual(e);
+    }
+
+    private void FlashbackScrubArea_PointerMoved(object sender, PointerRoutedEventArgs e)
+    {
+        if (!_isFlashbackScrubbing) return;
+
+        // Throttle scrub updates to ~60fps to avoid flooding the decoder
+        var now = Environment.TickCount64;
+        if (now - _lastScrubUpdateTick < 16) return;
+        _lastScrubUpdateTick = now;
+
+        var targetPosition = ComputeFlashbackScrubPosition(e);
+        ViewModel.FlashbackUpdateScrub(targetPosition);
+        UpdateFlashbackScrubVisual(e);
+    }
+
+    private void FlashbackScrubArea_PointerReleased(object sender, PointerRoutedEventArgs e)
+    {
+        if (_isFlashbackScrubbing)
+        {
+            _isFlashbackScrubbing = false;
+            (sender as UIElement)?.ReleasePointerCapture(e.Pointer);
+            ViewModel.FlashbackEndScrub();
+        }
+    }
+
+    private TimeSpan ComputeFlashbackScrubPosition(PointerRoutedEventArgs e)
+    {
+        var pos = e.GetCurrentPoint(FlashbackScrubArea).Position;
+        var width = FlashbackScrubArea.ActualWidth;
+        if (width <= 0) return TimeSpan.Zero;
+
+        var fraction = Math.Clamp(pos.X / width, 0, 1);
+        var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
+        return TimeSpan.FromSeconds(fraction * bufferDuration.TotalSeconds);
+    }
+
+    private void UpdateFlashbackScrubVisual(PointerRoutedEventArgs e)
+    {
+        var pos = e.GetCurrentPoint(FlashbackScrubArea).Position;
+        var width = FlashbackScrubArea.ActualWidth;
+        if (width <= 0) return;
+
+        FlashbackPlayhead.Margin = new Thickness(Math.Clamp(pos.X, 0, width), 0, 0, 0);
+
+        var fraction = Math.Clamp(pos.X / width, 0, 1);
+        var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
+        ViewModel.FlashbackPlaybackPosition = TimeSpan.FromSeconds(fraction * bufferDuration.TotalSeconds);
+    }
+
+    private void FlashbackInButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.FlashbackSetInPoint();
+        ViewModel.FlashbackInPoint = ViewModel.FlashbackPlaybackPosition;
+    }
+
+    private void FlashbackOutButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.FlashbackSetOutPoint();
+        ViewModel.FlashbackOutPoint = ViewModel.FlashbackPlaybackPosition;
+    }
+
+    private void FlashbackClearButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.FlashbackClearInOutPoints();
+        ViewModel.FlashbackInPoint = null;
+        ViewModel.FlashbackOutPoint = null;
+    }
+
+    private void FlashbackPlayPauseButton_Click(object sender, RoutedEventArgs e)
+    {
+        var state = ViewModel.FlashbackState;
+        if (state == FlashbackPlaybackState.Playing)
+        {
+            ViewModel.FlashbackPause();
+        }
+        else if (state == FlashbackPlaybackState.Paused || state == FlashbackPlaybackState.Scrubbing)
+        {
+            ViewModel.FlashbackPlay();
+        }
+    }
+
+    private void FlashbackGoLiveButton_Click(object sender, RoutedEventArgs e)
+    {
+        ViewModel.FlashbackGoLive();
+    }
+
+    private void FlashbackExportButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => ViewModel.ExportFlashbackAsync(), nameof(FlashbackExportButton_Click));
+    }
+
+    private void FlashbackSaveLast5mButton_Click(object sender, RoutedEventArgs e)
+    {
+        _ = RunUiEventHandlerAsync(() => ViewModel.SaveFlashbackLast5mAsync(), nameof(FlashbackSaveLast5mButton_Click));
+    }
+
+    private void FlashbackEnabledToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        ViewModel.IsFlashbackEnabled = FlashbackEnabledToggle.IsOn;
+        ViewModel.SetFlashbackEnabled(FlashbackEnabledToggle.IsOn);
+    }
+
+    private void FlashbackBufferDurationCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (FlashbackBufferDurationCombo.SelectedItem is ComboBoxItem item && item.Tag is string tag)
+        {
+            // TODO: Update buffer duration in CaptureService
+            Logger.Log($"FLASHBACK_UI_BUFFER_DURATION_CHANGED minutes={tag}");
+        }
+    }
+
+    private void UpdateFlashbackStateUI()
+    {
+        var state = ViewModel.FlashbackState;
+        FlashbackPlayPauseIcon.Glyph = state == FlashbackPlaybackState.Playing ? "\uE769" : "\uE768";
+        FlashbackGoLiveButton.IsEnabled = state != FlashbackPlaybackState.Live && state != FlashbackPlaybackState.Disabled;
+    }
+
+    private void UpdateFlashbackBufferFill()
+    {
+        var fraction = ViewModel.FlashbackBufferFillPercent / 100.0;
+        var trackWidth = FlashbackScrubArea.ActualWidth;
+        FlashbackBufferFillBar.Width = Math.Max(0, fraction * trackWidth);
+
+        var duration = ViewModel.FlashbackBufferFilledDuration;
+        var diskBytes = ViewModel.FlashbackBufferDiskBytes;
+        var diskSize = FormatDiskSize(diskBytes);
+        var statusDetail = ViewModel.IsFlashbackEnabled
+            ? $" ({duration:mm\\:ss}, {diskSize})"
+            : "";
+        FlashbackBufferStatusText.Text = $"{ViewModel.FlashbackBufferFillPercent:F0}%{statusDetail}";
+    }
+
+    private static string FormatDiskSize(long bytes)
+    {
+        const double scale = 1024;
+        double value = Math.Max(0, bytes);
+        string[] units = { "B", "KB", "MB", "GB", "TB" };
+        var unit = 0;
+        while (value >= scale && unit < units.Length - 1)
+        {
+            value /= scale;
+            unit++;
+        }
+        return unit >= 3 ? $"{value:F1} {units[unit]}" : $"{Math.Round(value):0} {units[unit]}";
+    }
+
+    private void UpdateFlashbackPositionUI()
+    {
+        var pos = ViewModel.FlashbackPlaybackPosition;
+        var state = ViewModel.FlashbackState;
+        FlashbackPositionText.Text = state == FlashbackPlaybackState.Live
+            ? "LIVE"
+            : $"{pos:mm\\:ss\\.f}";
+
+        // Update playhead position
+        var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
+        if (bufferDuration.TotalSeconds > 0)
+        {
+            var fraction = pos.TotalSeconds / bufferDuration.TotalSeconds;
+            var trackWidth = FlashbackScrubArea.ActualWidth;
+            FlashbackPlayhead.Margin = new Thickness(Math.Clamp(fraction * trackWidth, 0, trackWidth), 0, 0, 0);
+        }
+    }
+
+    private void UpdateFlashbackMarkers()
+    {
+        var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
+        var trackWidth = FlashbackScrubArea.ActualWidth;
+
+        if (ViewModel.FlashbackInPoint is TimeSpan inPt && bufferDuration.TotalSeconds > 0)
+        {
+            FlashbackInPointMarker.Visibility = Visibility.Visible;
+            FlashbackInPointMarker.Margin = new Thickness(
+                Math.Clamp(inPt.TotalSeconds / bufferDuration.TotalSeconds * trackWidth, 0, trackWidth), 0, 0, 0);
+        }
+        else
+        {
+            FlashbackInPointMarker.Visibility = Visibility.Collapsed;
+        }
+
+        if (ViewModel.FlashbackOutPoint is TimeSpan outPt && bufferDuration.TotalSeconds > 0)
+        {
+            FlashbackOutPointMarker.Visibility = Visibility.Visible;
+            FlashbackOutPointMarker.Margin = new Thickness(
+                Math.Clamp(outPt.TotalSeconds / bufferDuration.TotalSeconds * trackWidth, 0, trackWidth), 0, 0, 0);
+        }
+        else
+        {
+            FlashbackOutPointMarker.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    #endregion
+
     #region Full screen mode
 
     private void OnContentKeyDown(object sender, KeyRoutedEventArgs e)
@@ -5248,6 +5593,39 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         {
             e.Handled = true;
             ExitFullScreen();
+            return;
+        }
+
+        // Flashback keyboard shortcuts (only when timeline is visible)
+        if (FlashbackTimelinePanel.Visibility == Visibility.Visible)
+        {
+            switch (e.Key)
+            {
+                case Windows.System.VirtualKey.I:
+                    FlashbackInButton_Click(sender, e);
+                    e.Handled = true;
+                    return;
+                case Windows.System.VirtualKey.O:
+                    FlashbackOutButton_Click(sender, e);
+                    e.Handled = true;
+                    return;
+                case Windows.System.VirtualKey.Space:
+                    FlashbackPlayPauseButton_Click(sender, e);
+                    e.Handled = true;
+                    return;
+                case Windows.System.VirtualKey.L:
+                    FlashbackGoLiveButton_Click(sender, e);
+                    e.Handled = true;
+                    return;
+                case Windows.System.VirtualKey.Left:
+                    ViewModel.FlashbackNudge(TimeSpan.FromSeconds(-1));
+                    e.Handled = true;
+                    return;
+                case Windows.System.VirtualKey.Right:
+                    ViewModel.FlashbackNudge(TimeSpan.FromSeconds(1));
+                    e.Handled = true;
+                    return;
+            }
         }
     }
 

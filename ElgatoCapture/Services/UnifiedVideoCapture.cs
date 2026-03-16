@@ -15,6 +15,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private IRecordingSink? _recordingSink;
     private IRawVideoFrameEncoder? _recordingEncoder;
     private IGpuVideoFrameEncoder? _gpuRecordingEncoder;
+    private FlashbackEncoderSink? _flashbackSink;
     private ParallelMjpegDecodePipeline? _mjpegPipeline;
     private bool _started;
     private bool _recordingActive;
@@ -36,6 +37,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private long _lastVideoFrameArrivedTick;
     private Action<string>? _observedPixelFormatObserver;
     private int _pixelFormatObserverFired;
+    private volatile bool _previewSuppressed;
 
     public readonly record struct MjpegPipelineTimingMetrics(
         int DecodeSampleCount,
@@ -266,6 +268,15 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         Volatile.Write(ref _previewSink, sink);
     }
 
+    public void SuppressPreviewSubmission() => _previewSuppressed = true;
+
+    public void ResumePreviewSubmission() => _previewSuppressed = false;
+
+    public void SetFlashbackSink(FlashbackEncoderSink? sink)
+    {
+        Volatile.Write(ref _flashbackSink, sink);
+    }
+
     public void SetObservedPixelFormatObserver(Action<string>? observer)
     {
         Volatile.Write(ref _observedPixelFormatObserver, observer);
@@ -332,6 +343,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             _recordingSink = null;
             _recordingEncoder = null;
             _gpuRecordingEncoder = null;
+            Volatile.Write(ref _flashbackSink, null);
             readCts = _readCts;
             _readCts = null;
             capture = _capture;
@@ -419,6 +431,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             _strictPreviewTextureRequired = false;
             _previewSink = null;
             _observedPixelFormatObserver = null;
+            Volatile.Write(ref _flashbackSink, null);
             _disposed = true;
         }
 
@@ -453,9 +466,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         FirePixelFormatObserverOnce(isP010 ? "P010" : "NV12");
 
         EnqueueRecordingFrame(frameData, width, height, isP010);
+        EnqueueFlashbackFrame(frameData, width, height, isP010);
 
         var previewSink = Volatile.Read(ref _previewSink);
-        if (previewSink != null && !frameData.IsEmpty)
+        if (!_previewSuppressed && previewSink != null && !frameData.IsEmpty)
         {
             SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick);
         }
@@ -467,9 +481,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         FirePixelFormatObserverOnce("NV12");
 
         EnqueueRecordingFrame(nv12Data, width, height, isP010);
+        EnqueueFlashbackFrame(nv12Data, width, height, isP010);
 
         var previewSink = Volatile.Read(ref _previewSink);
-        if (previewSink != null)
+        if (!_previewSuppressed && previewSink != null)
         {
             SubmitPreviewRawFrame(previewSink, nv12Data, width, height, isP010, arrivalTick);
         }
@@ -499,8 +514,17 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             EnqueueRecordingFrame(frameData, width, height, isP010);
         }
 
+        if (gpuTexture != IntPtr.Zero)
+        {
+            EnqueueFlashbackGpuFrame(gpuTexture, gpuSubresource);
+        }
+        else
+        {
+            EnqueueFlashbackFrame(frameData, width, height, isP010);
+        }
+
         var previewSink = Volatile.Read(ref _previewSink);
-        if (previewSink != null)
+        if (!_previewSuppressed && previewSink != null)
         {
             var textureSubmitted = false;
             if (gpuTexture != IntPtr.Zero)
@@ -530,6 +554,48 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             {
                 SubmitPreviewRawFrame(previewSink, frameData, width, height, isP010, arrivalTick);
             }
+        }
+    }
+
+    private void EnqueueFlashbackFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010)
+    {
+        var sink = Volatile.Read(ref _flashbackSink);
+        if (sink == null)
+        {
+            return;
+        }
+
+        try
+        {
+            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(width, height, isP010);
+            if (frameData.Length < expectedSize)
+            {
+                return;
+            }
+
+            sink.EnqueueRawVideoFrame(frameData, expectedSize);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"UNIFIED_VIDEO_FLASHBACK_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void EnqueueFlashbackGpuFrame(IntPtr texture, int subresource)
+    {
+        var sink = Volatile.Read(ref _flashbackSink);
+        if (sink == null)
+        {
+            return;
+        }
+
+        try
+        {
+            sink.EnqueueGpuVideoFrame(texture, subresource);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"UNIFIED_VIDEO_FLASHBACK_GPU_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
     }
 

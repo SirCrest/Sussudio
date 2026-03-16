@@ -2739,3 +2739,100 @@ I2C_WR 0x4A reg=0x0200 val=[07 00]   (finalize)
 - ffprobe Evidence:
   - N/A (no new recording artifact generated in this verification pass)
 - Conclusion: Microphone volume changes still apply live to the endpoint, but the UI no longer forces a settings-file write on every slider tick, eliminating the hot-interaction regression flagged in review without regressing the current harness/log checks.
+
+## E130 - Capture service now uses the always-on flashback backend during preview and recording
+- Timestamp (UTC): 2026-03-16T06:48:25.7371555Z
+- Commit Hash: 2b9febe28dd08260eb551779b8c540f42f82a163
+- What Changed (single change): Wired `CaptureService` to start a preview-owned `FlashbackEncoderSink`/`FlashbackBufferManager`, route unified video and WASAPI audio through that always-on backend, use `BeginRecording()` plus `FlashbackExporter` concatenation when flashback is enabled, surface flashback diagnostics in health/runtime snapshots, and preserve segment artifacts on failed flashback finalization instead of purging them during teardown.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm the pass stays free of new flashback integration failures such as `FLASHBACK_SINK_STOP_FAIL`, `FLASHBACK_EXPORTER_*`, `UNIFIED_VIDEO_FLASHBACK_*`, or `WASAPI_FLASHBACK_AUDIO_FAIL`.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` showed only the harness's existing expected lines (`Audio preview requested but no audio capture device is available.`, `UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='emitter_self_join'`, and `UNIFIED_VIDEO_CAPTURE_FATAL ... synthetic hfr failure`) with no new flashback integration errors.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: The preview/record lifecycle now keeps a single always-on flashback encoder active when enabled, the legacy libav sink remains the fallback only when flashback is unavailable, and the required build/test/log validation stayed green after fixing the stop-path artifact-preservation edge case.
+
+## E131 - Flashback recording now fails loudly when preview and record audio topology differ
+- Timestamp (UTC): 2026-03-16T06:54:20.1345616Z
+- Commit Hash: 2b9febe28dd08260eb551779b8c540f42f82a163
+- What Changed (single change): Added a `CaptureService` guard that rejects flashback-backed recording when the preview-owned flashback sink was opened with different HDMI-audio or microphone topology than the requested recording settings, preventing silent missing/extra tracks after preview-time setting changes.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm the verification pass stays free of new flashback integration failures.
+  4. Manual spot check: start preview, change audio or microphone enablement, then start recording and confirm the service now throws a restart-preview requirement instead of silently recording the wrong track topology.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` again showed only the harness's expected no-audio fallback and synthetic HFR warnings, with no new flashback guard failures during the automated pass.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: The flashback path no longer silently accepts preview/record audio-topology drift; it now fails loudly and asks for a preview restart when the always-on sink would otherwise encode the wrong set of audio tracks.
+
+## E131 - Recording-only flashback stop now detaches producers before export
+- Timestamp (UTC): 2026-03-16T06:52:41.1865352Z
+- Commit Hash: 2b9febe28dd08260eb551779b8c540f42f82a163
+- What Changed (single change): In `CaptureService.StopAndDisposeRecordingBackendAsync`, recording-only flashback sessions now detach `UnifiedVideoCapture` and `WasapiAudioCapture` from the flashback sink before running flashback export/finalization so stop no longer lets live capture keep feeding the sink during the slow stop/export path.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm the verification pass stays free of new stop/export warnings such as `FLASHBACK_PREVIEW_STOP_WARN`, `FLASHBACK_SINK_STOP_FAIL`, or `WASAPI_FLASHBACK_AUDIO_FAIL`.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` again showed only the harness's expected no-audio-preview fallback plus the existing synthetic HFR warnings, with no new flashback stop/export errors.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: Recording-only stop now sheds live producers before concatenation/HDR validation, reducing avoidable stop-path contention without regressing the current build, runtime harness, or debug-log health.
+
+## E131 - Preview startup no longer rechecks flashback initialization twice
+- Timestamp (UTC): 2026-03-16T06:51:51.7542594Z
+- Commit Hash: 2b9febe28dd08260eb551779b8c540f42f82a163
+- What Changed (single change): Removed the duplicate `EnsureFlashbackPreviewBackendAsync(...)` call from `CaptureService.StartVideoPreviewAsync()` so preview startup only performs one flashback backend initialization check before the final audio attachment step.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm the pass stays free of new preview-start or flashback initialization failures.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` again showed only the harness's expected NTSC-correction lines, the no-audio-device preview fallback line, and the existing synthetic HFR warnings, with no new flashback preview-start errors.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: Preview startup still passes the required validation loop, but it no longer performs a redundant flashback backend initialization check after the audio capture path is established.
+
+## E131 - Flashback recording now promotes buffered pre-roll into the active clip
+- Timestamp (UTC): 2026-03-16T06:51:29.1003356Z
+- Commit Hash: 2b9febe28dd08260eb551779b8c540f42f82a163
+- What Changed (single change): Updated `FlashbackBufferManager.BeginRecording()` to start from the first currently buffered segment and promote existing `Buffer` segments to `Recording`, so retroactive flashback clips keep pre-roll instead of starting only from the next segment boundary and leaving prior buffered segments evictable during recording.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm the pass stays free of new flashback buffer/export failures.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`)
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` again showed only the harness's expected no-audio-preview fallback plus synthetic HFR warnings, with no new flashback buffer/export errors.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: Flashback recording now matches the retroactive-buffer intent in the project plan by preserving already-buffered segments once recording begins, while the build/test/log validation remained clean after the fix.
+
+## E132 - Failed flashback finalization now preserves segment artifacts through teardown
+- Timestamp (UTC): 2026-03-16T06:52:42.4550881Z
+- Commit Hash: 2b9febe28dd08260eb551779b8c540f42f82a163
+- What Changed (single change): Adjusted `CaptureService.DisposeFlashbackPreviewBackendAsync(...)` so the failure-preservation path skips both `PurgeAllSegments()` and `FlashbackBufferManager.Dispose()`, preventing teardown from deleting the very flashback segment files returned as preserved artifacts when export or HDR validation fails.
+- How To Run:
+  1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true`
+  2. `dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"`
+  3. Inspect `temp/logs/ElgatoCapture_Debug.log` and confirm the pass stays free of new flashback teardown/export failures.
+- Validator Output:
+  - `Build succeeded.` (`0 Warning(s)`, `0 Error(s)`) after one transient retry to clear a known WinUI `Microsoft.UI.Xaml.Markup.Compiler` file lock on `obj\\...\\intermediatexaml\\ElgatoCapture.dll`
+  - `All runtime snapshot regression checks passed.`
+  - `temp/logs/ElgatoCapture_Debug.log` again showed only the harness's expected no-audio-preview fallback plus synthetic HFR warnings, with no new flashback teardown/export errors.
+- ffprobe Evidence:
+  - N/A (no new recording artifact generated in this verification pass)
+- Conclusion: Failed flashback finalization now leaves the segment artifacts intact for diagnosis/recovery instead of deleting them during cleanup, and the final validated build/test/log pass stayed green.

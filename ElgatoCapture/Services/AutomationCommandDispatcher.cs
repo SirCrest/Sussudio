@@ -229,6 +229,31 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     return CreateAcknowledgedResponse(correlationId, $"Settings panel {(visible ? "shown" : "hidden")}.");
                 }
 
+                case AutomationCommandKind.FlashbackAction:
+                {
+                    var action = RequireString(payload, "action").ToLowerInvariant();
+                    switch (action)
+                    {
+                        case "play":
+                            _viewModel.FlashbackPlay();
+                            return CreateAcknowledgedResponse(correlationId, "Flashback play requested.");
+                        case "pause":
+                            _viewModel.FlashbackPause();
+                            return CreateAcknowledgedResponse(correlationId, "Flashback pause requested.");
+                        case "go-live":
+                            _viewModel.FlashbackGoLive();
+                            return CreateAcknowledgedResponse(correlationId, "Flashback go-live requested.");
+                        case "seek":
+                            var positionMs = GetDouble(payload, "positionMs") ?? 0;
+                            var position = TimeSpan.FromMilliseconds(positionMs);
+                            _viewModel.FlashbackBeginScrub(position);
+                            _viewModel.FlashbackEndScrub();
+                            return CreateAcknowledgedResponse(correlationId, $"Flashback seek to {positionMs:0}ms requested.");
+                        default:
+                            throw new InvalidOperationException($"Unknown flashback action '{action}'. Expected play, pause, go-live, or seek.");
+                    }
+                }
+
                 case AutomationCommandKind.SetRecordingFormat:
                 {
                     var format = RequireString(payload, "format");

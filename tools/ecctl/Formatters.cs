@@ -94,6 +94,22 @@ internal static class Formatters
         builder.AppendLine($"Backend: {Get(snapshot, "RecordingBackend")} | Audio Path: {Get(snapshot, "AudioPathMode")} | Mux: {Get(snapshot, "MuxResult")}");
         builder.AppendLine($"Last Output: {Get(snapshot, "LastOutputPath")} ({Get(snapshot, "LastOutputSizeBytes")} bytes) Finalize: {Get(snapshot, "LastFinalizeStatus")}");
         builder.AppendLine();
+        var flashbackActive = Get(snapshot, "FlashbackActive", "false");
+        if (flashbackActive == "True" || flashbackActive == "true")
+        {
+            builder.AppendLine("== Flashback ==");
+            var fbDurationMs = long.TryParse(Get(snapshot, "FlashbackBufferedDurationMs", "0"), out var durMs) ? durMs : 0;
+            var fbDiskMb = long.TryParse(Get(snapshot, "FlashbackDiskBytes", "0"), out var diskBytes) ? diskBytes / (1024.0 * 1024.0) : 0;
+            builder.AppendLine($"Buffer: {fbDurationMs / 1000.0:F1}s | Disk: {fbDiskMb:F1} MB | GPU Encode: {Get(snapshot, "FlashbackGpuEncoding")}");
+            builder.AppendLine($"Encoded: {Get(snapshot, "FlashbackEncodedFrames")} frames | Dropped: {Get(snapshot, "FlashbackDroppedFrames")} | VQ: {Get(snapshot, "FlashbackVideoQueueDepth")} AQ: {Get(snapshot, "FlashbackAudioQueueDepth")}");
+            builder.AppendLine($"Playback: {Get(snapshot, "FlashbackPlaybackState")} | Pos: {Get(snapshot, "FlashbackPlaybackPositionMs")}ms | Decoder: {Get(snapshot, "FlashbackDecoderHwAccel")}");
+            var pbFps = double.TryParse(Get(snapshot, "FlashbackPlaybackObservedFps", "0"), out var fps) ? fps : 0;
+            var pbAvgMs = double.TryParse(Get(snapshot, "FlashbackPlaybackAvgFrameMs", "0"), out var avgMs) ? avgMs : 0;
+            builder.AppendLine($"Playback FPS: {pbFps:F1} | AvgFrame: {pbAvgMs:F2}ms | Frames: {Get(snapshot, "FlashbackPlaybackFrameCount")} | Late: {Get(snapshot, "FlashbackPlaybackLateFrames")}");
+            builder.AppendLine($"File: {Get(snapshot, "FlashbackFilePath")}");
+            builder.AppendLine();
+        }
+
         builder.AppendLine("== Performance ==");
         builder.AppendLine($"Score: {Get(snapshot, "PerformanceScore")} | Perfection: {Get(snapshot, "PerformancePerfectionMet")}");
         builder.AppendLine($"Summary: {Get(snapshot, "PerformanceSummary")}");

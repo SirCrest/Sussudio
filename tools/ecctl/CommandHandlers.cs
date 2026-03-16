@@ -28,6 +28,7 @@ internal static class CommandHandlers
             "probe" => HandleProbeAsync(context),
             "stats" => HandleStatsAsync(context),
             "settings" => HandleSettingsAsync(context),
+            "flashback" => HandleFlashbackAsync(context),
             _ => throw new UsageException($"Unknown command '{arguments[0]}'.")
         };
     }
@@ -354,6 +355,27 @@ internal static class CommandHandlers
             "SetSettingsVisible",
             new Dictionary<string, object?> { ["visible"] = visible },
             includeData: false);
+    }
+
+    private static Task<int> HandleFlashbackAsync(CommandContext context)
+    {
+        var subcommand = RequireWord(context.Rest, 0, "flashback play|pause|go-live|seek <ms>").ToLowerInvariant();
+        return subcommand switch
+        {
+            "play" => HandleSimpleCommandAsync(context, "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "play" }, includeData: false),
+            "pause" => HandleSimpleCommandAsync(context, "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "pause" }, includeData: false),
+            "go-live" => HandleSimpleCommandAsync(context, "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "go-live" }, includeData: false),
+            "seek" => HandleSimpleCommandAsync(context, "FlashbackAction",
+                new Dictionary<string, object?>
+                {
+                    ["action"] = "seek",
+                    ["positionMs"] = ParseDouble(RequireWord(context.Rest, 1, "flashback seek <ms>"))
+                }, includeData: false),
+            _ => throw new UsageException($"Unknown flashback command '{subcommand}'. Expected play, pause, go-live, or seek.")
+        };
     }
 
     private static Task<int> SendSetValueAsync(CommandContext context, string commandName, string propertyName, object value, string usage)

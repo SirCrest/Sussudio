@@ -10,6 +10,10 @@ public sealed class CaptureDiagnosticsSnapshot
     public string RecordingBackend { get; init; } = "None";
     public string AudioPathMode { get; init; } = "None";
     public string MuxResult { get; init; } = "NotAttempted";
+    public bool FlashbackActive { get; init; }
+    public long FlashbackBufferedDurationMs { get; init; }
+    public int FlashbackSegmentCount { get; init; }
+    public long FlashbackDiskBytes { get; init; }
 
     public long RecordingElapsedMs { get; init; }
     public long LastFrameArrivalMs { get; init; }

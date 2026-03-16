@@ -26,6 +26,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private WasapiAudioPlayback? _playback;
     private WasapiAudioFormat _captureFormat;
     private IRecordingSink? _recordingSink;
+    private IRecordingSink? _flashbackSink;
     private Func<ReadOnlyMemory<byte>, Task>? _audioWriteDelegate;
     private long _audioFramesArrived;
     private long _audioFramesWrittenToSink;
@@ -261,6 +262,17 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         Volatile.Write(ref _recordingSink, null);
     }
 
+    public void AttachFlashbackSink(IRecordingSink sink)
+    {
+        ArgumentNullException.ThrowIfNull(sink);
+        Volatile.Write(ref _flashbackSink, sink);
+    }
+
+    public void DetachFlashbackSink()
+    {
+        Volatile.Write(ref _flashbackSink, null);
+    }
+
     public void SetAudioWriteDelegate(Func<ReadOnlyMemory<byte>, Task>? writer)
     {
         Volatile.Write(ref _audioWriteDelegate, writer);
@@ -268,7 +280,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
     internal void SetPlayback(WasapiAudioPlayback? playback)
     {
-        _playback = playback;
+        Volatile.Write(ref _playback, playback);
     }
 
     public Task StopAsync()
@@ -309,8 +321,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
         await StopAsync().ConfigureAwait(false);
         Volatile.Write(ref _recordingSink, null);
+        Volatile.Write(ref _flashbackSink, null);
         Volatile.Write(ref _audioWriteDelegate, null);
-        _playback = null;
+        Volatile.Write(ref _playback, null);
 
         _captureEvent?.Dispose();
         _captureEvent = null;
@@ -451,7 +464,22 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                     }
                 }
 
-                var playback = _playback;
+                var flashbackSink = Volatile.Read(ref _flashbackSink);
+                if (flashbackSink != null)
+                {
+                    try
+                    {
+                        flashbackSink.WriteAudioAsync(new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length))
+                            .GetAwaiter()
+                            .GetResult();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"WASAPI_FLASHBACK_AUDIO_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                    }
+                }
+
+                var playback = Volatile.Read(ref _playback);
                 if (playback != null)
                 {
                     playback.EnqueuePooledSamples(convertedBuffer, converted.Length);

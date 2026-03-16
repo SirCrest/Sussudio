@@ -27,6 +27,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private DispatcherQueueTimer? _timer;
     private IntPtr _windowHandle;
     private readonly Queue<(long Tick, long Bytes)> _bitrateSamples = new();
+    private readonly Queue<(long Tick, long Bytes)> _flashbackBitrateSamples = new();
     private const int BitrateWindowMs = 5000;
     private const string DefaultRecordingFormat = "H.264";
     private const string HevcRecordingFormat = "HEVC";
@@ -347,6 +348,259 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     [ObservableProperty]
     public partial bool AudioClipping { get; set; }
+
+    // Flashback timeline properties
+    [ObservableProperty]
+    public partial bool IsFlashbackEnabled { get; set; } = true;
+
+    [ObservableProperty]
+    public partial bool IsFlashbackTimelineVisible { get; set; }
+
+    [ObservableProperty]
+    public partial FlashbackPlaybackState FlashbackState { get; set; } = FlashbackPlaybackState.Disabled;
+
+    [ObservableProperty]
+    public partial double FlashbackBufferFillPercent { get; set; }
+
+    [ObservableProperty]
+    public partial TimeSpan FlashbackBufferFilledDuration { get; set; }
+
+    [ObservableProperty]
+    public partial TimeSpan FlashbackPlaybackPosition { get; set; }
+
+    [ObservableProperty]
+    public partial TimeSpan? FlashbackInPoint { get; set; }
+
+    [ObservableProperty]
+    public partial TimeSpan? FlashbackOutPoint { get; set; }
+
+    [ObservableProperty]
+    public partial long FlashbackBufferDiskBytes { get; set; }
+
+    [ObservableProperty]
+    public partial string FlashbackBitrateInfo { get; set; } = "";
+
+    [ObservableProperty]
+    public partial double FlashbackExportProgress { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsFlashbackExporting { get; set; }
+
+    // --- Flashback playback commands (forward to CaptureService.FlashbackPlaybackController) ---
+
+    internal FlashbackPlaybackController? FlashbackPlaybackController
+        => _captureService.FlashbackPlaybackController;
+
+    public void FlashbackBeginScrub(TimeSpan position)
+    {
+        var c = _captureService.FlashbackPlaybackController;
+        if (c is { State: not FlashbackPlaybackState.Disabled }) c.BeginScrub(position);
+    }
+
+    public void FlashbackUpdateScrub(TimeSpan position)
+    {
+        var c = _captureService.FlashbackPlaybackController;
+        if (c is { State: not FlashbackPlaybackState.Disabled }) c.UpdateScrub(position);
+    }
+
+    public void FlashbackEndScrub()
+    {
+        var c = _captureService.FlashbackPlaybackController;
+        if (c is { State: not FlashbackPlaybackState.Disabled }) c.EndScrub();
+    }
+
+    public void FlashbackPlay()
+    {
+        var c = _captureService.FlashbackPlaybackController;
+        if (c is { State: not FlashbackPlaybackState.Disabled }) c.Play();
+    }
+
+    public void FlashbackPause()
+    {
+        var c = _captureService.FlashbackPlaybackController;
+        if (c is { State: not FlashbackPlaybackState.Disabled }) c.Pause();
+    }
+
+    public void FlashbackGoLive()
+    {
+        var c = _captureService.FlashbackPlaybackController;
+        if (c is { State: not FlashbackPlaybackState.Disabled }) c.GoLive();
+    }
+
+    public void FlashbackNudge(TimeSpan delta)
+    {
+        var c = _captureService.FlashbackPlaybackController;
+        if (c is { State: not FlashbackPlaybackState.Disabled }) c.NudgePosition(delta);
+    }
+
+    public void FlashbackSetInPoint()
+        => _captureService.FlashbackPlaybackController?.SetInPoint();
+
+    public void FlashbackSetOutPoint()
+        => _captureService.FlashbackPlaybackController?.SetOutPoint();
+
+    public void FlashbackClearInOutPoints()
+        => _captureService.FlashbackPlaybackController?.ClearInOutPoints();
+
+    /// <summary>
+    /// Updates flashback buffer status properties from the buffer manager.
+    /// Called from a periodic timer on the UI thread.
+    /// </summary>
+    public void UpdateFlashbackBufferStatus()
+    {
+        var bufferManager = _captureService.FlashbackBufferManager;
+        if (bufferManager == null || !_captureService.IsFlashbackActive)
+        {
+            if (FlashbackState != FlashbackPlaybackState.Disabled)
+                FlashbackState = FlashbackPlaybackState.Disabled;
+            FlashbackBufferFillPercent = 0;
+            FlashbackBufferFilledDuration = TimeSpan.Zero;
+            FlashbackBufferDiskBytes = 0;
+            FlashbackBitrateInfo = "";
+            _flashbackBitrateSamples.Clear();
+            return;
+        }
+
+        var bufferDuration = bufferManager.Options.BufferDuration;
+        var filledDuration = bufferManager.BufferedDuration;
+        FlashbackBufferFilledDuration = filledDuration;
+        FlashbackBufferDiskBytes = _captureService.FlashbackDiskBytes;
+        FlashbackBufferFillPercent = bufferDuration.TotalSeconds > 0
+            ? Math.Clamp(filledDuration.TotalSeconds / bufferDuration.TotalSeconds * 100, 0, 100)
+            : 0;
+
+        // Sample flashback output bytes for bitrate computation
+        UpdateFlashbackBitrate();
+
+        // Sync state from controller
+        var controller = _captureService.FlashbackPlaybackController;
+        if (controller != null)
+        {
+            FlashbackState = controller.State;
+            // Don't overwrite UI-driven position during scrub
+            if (controller.State != FlashbackPlaybackState.Scrubbing)
+                FlashbackPlaybackPosition = controller.PlaybackPosition;
+        }
+        else if (FlashbackState == FlashbackPlaybackState.Disabled)
+        {
+            FlashbackState = FlashbackPlaybackState.Live;
+        }
+    }
+
+    private void UpdateFlashbackBitrate()
+    {
+        var diskBytes = _captureService.FlashbackDiskBytes;
+        var now = Environment.TickCount64;
+        _flashbackBitrateSamples.Enqueue((now, diskBytes));
+        while (_flashbackBitrateSamples.Count > 0 && now - _flashbackBitrateSamples.Peek().Tick > BitrateWindowMs)
+        {
+            _flashbackBitrateSamples.Dequeue();
+        }
+
+        if (_flashbackBitrateSamples.Count >= 2)
+        {
+            var first = _flashbackBitrateSamples.Peek();
+            var last = _flashbackBitrateSamples.Last();
+            var deltaBytes = Math.Max(0, last.Bytes - first.Bytes);
+            var deltaSeconds = Math.Max(0.001, (last.Tick - first.Tick) / 1000.0);
+            var bitsPerSecond = (deltaBytes * 8.0) / deltaSeconds;
+            FlashbackBitrateInfo = FormatBitrate(bitsPerSecond);
+        }
+        else
+        {
+            FlashbackBitrateInfo = "";
+        }
+    }
+
+    public async Task ExportFlashbackAsync()
+    {
+        var bufferManager = _captureService.FlashbackBufferManager;
+        if (bufferManager == null) return;
+
+        try
+        {
+            var picker = new Windows.Storage.Pickers.FileSavePicker();
+            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.VideosLibrary;
+            picker.FileTypeChoices.Add("MP4 Video", new[] { ".mp4" });
+            picker.SuggestedFileName = $"Flashback_{DateTime.Now:yyyyMMdd_HHmmss}";
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, _windowHandle);
+
+            var file = await picker.PickSaveFileAsync();
+            if (file == null) return;
+
+            IsFlashbackExporting = true;
+            FlashbackExportProgress = 0;
+
+            var controller = _captureService.FlashbackPlaybackController;
+            var inPoint = controller?.InPoint;
+            var outPoint = controller?.OutPoint;
+
+            var progress = new Progress<ExportProgress>(p =>
+            {
+                _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
+            });
+
+            var result = await _captureService.ExportFlashbackRangeAsync(
+                inPoint, outPoint, file.Path, progress, CancellationToken.None);
+
+            StatusText = result.Succeeded
+                ? $"Export complete: {file.Path}"
+                : $"Export failed: {result.StatusMessage}";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Export error: {ex.Message}";
+        }
+        finally
+        {
+            IsFlashbackExporting = false;
+            FlashbackExportProgress = 0;
+        }
+    }
+
+    public async Task SaveFlashbackLast5mAsync()
+    {
+        var bufferManager = _captureService.FlashbackBufferManager;
+        if (bufferManager == null) return;
+
+        try
+        {
+            var picker = new Windows.Storage.Pickers.FileSavePicker();
+            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.VideosLibrary;
+            picker.FileTypeChoices.Add("MP4 Video", new[] { ".mp4" });
+            picker.SuggestedFileName = $"Flashback_Last5m_{DateTime.Now:yyyyMMdd_HHmmss}";
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, _windowHandle);
+
+            var file = await picker.PickSaveFileAsync();
+            if (file == null) return;
+
+            IsFlashbackExporting = true;
+            FlashbackExportProgress = 0;
+
+            var progress = new Progress<ExportProgress>(p =>
+            {
+                _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
+            });
+
+            var result = await _captureService.ExportFlashbackLastNSecondsAsync(
+                300, file.Path, progress, CancellationToken.None);
+
+            StatusText = result.Succeeded
+                ? $"Saved last 5 minutes: {file.Path}"
+                : $"Save failed: {result.StatusMessage}";
+        }
+        catch (Exception ex)
+        {
+            StatusText = $"Save error: {ex.Message}";
+        }
+        finally
+        {
+            IsFlashbackExporting = false;
+            FlashbackExportProgress = 0;
+        }
+    }
+
+    public void SetFlashbackEnabled(bool enabled) => _captureService.SetFlashbackEnabled(enabled);
 
     /// <summary>
     /// Written by WASAPI callback thread via Volatile.Write, read by UI timer.
