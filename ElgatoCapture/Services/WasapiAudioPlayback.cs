@@ -36,6 +36,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _initialized;
     private int _started;
     private int _disposed;
+    private int _renderingPaused; // 0 = active, 1 = paused
     private volatile float _targetVolume = 1.0f;
     private float _currentVolume;
     private const float VolumeRampPerFrame = 1.0f / (0.3f * 48000); // 300ms ramp at 48kHz
@@ -220,6 +221,51 @@ internal sealed class WasapiAudioPlayback : IDisposable
         EnqueueChunk(new PlaybackChunk(pooledBuffer, safeLength, IsPooled: true));
     }
 
+    public void PauseRendering()
+    {
+        if (Volatile.Read(ref _started) == 0) return;
+        if (Interlocked.CompareExchange(ref _renderingPaused, 1, 0) != 0) return;
+
+        try
+        {
+            _audioClient?.Stop();
+            _audioClient?.Reset();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"WASAPI_PAUSE_RENDER_WARN: {ex.Message}");
+        }
+
+        // Safe to flush after Reset() — render thread is idle in WaitForSingleObject (no events fire)
+        Flush();
+        Logger.Log("WASAPI_PLAYBACK_RENDER_PAUSED");
+    }
+
+    public void ResumeRendering()
+    {
+        if (Volatile.Read(ref _started) == 0) return;
+        if (Interlocked.CompareExchange(ref _renderingPaused, 0, 1) != 1) return;
+
+        try { _audioClient?.Start(); }
+        catch (Exception ex) { Logger.Log($"WASAPI_RESUME_RENDER_WARN: {ex.Message}"); }
+        Logger.Log("WASAPI_PLAYBACK_RENDER_RESUMED");
+    }
+
+    /// <summary>
+    /// Drains all queued audio chunks and resets the active chunk state.
+    /// Call this when transitioning between live and playback audio to prevent
+    /// stale samples from bleeding across the handoff boundary.
+    /// </summary>
+    public void Flush()
+    {
+        ReturnActiveChunk();
+        while (_sampleQueue.Reader.TryRead(out var queuedChunk))
+        {
+            ReturnChunk(queuedChunk);
+        }
+        _activeChunkOffset = 0;
+    }
+
     public void Stop()
     {
         if (Interlocked.CompareExchange(ref _started, 0, 1) != 1)
@@ -334,6 +380,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
         {
             return;
         }
+
+        if (Volatile.Read(ref _renderingPaused) != 0) return;
 
         Interlocked.Increment(ref _renderCallbackCount);
         Interlocked.Exchange(ref _lastRenderCallbackTickMs, Environment.TickCount64);
