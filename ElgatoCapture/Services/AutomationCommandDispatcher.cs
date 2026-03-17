@@ -235,18 +235,22 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     switch (action)
                     {
                         case "play":
-                            _viewModel.FlashbackPlay();
+                            if (!_viewModel.FlashbackPlay())
+                                throw new InvalidOperationException("Flashback is not active.");
                             return CreateAcknowledgedResponse(correlationId, "Flashback play requested.");
                         case "pause":
-                            _viewModel.FlashbackPause();
+                            if (!_viewModel.FlashbackPause())
+                                throw new InvalidOperationException("Flashback is not active.");
                             return CreateAcknowledgedResponse(correlationId, "Flashback pause requested.");
                         case "go-live":
-                            _viewModel.FlashbackGoLive();
+                            if (!_viewModel.FlashbackGoLive())
+                                throw new InvalidOperationException("Flashback is not active.");
                             return CreateAcknowledgedResponse(correlationId, "Flashback go-live requested.");
                         case "seek":
                             var positionMs = GetDouble(payload, "positionMs") ?? 0;
                             var position = TimeSpan.FromMilliseconds(positionMs);
-                            _viewModel.FlashbackBeginScrub(position);
+                            if (!_viewModel.FlashbackBeginScrub(position))
+                                throw new InvalidOperationException("Flashback is not active.");
                             _viewModel.FlashbackEndScrub();
                             return CreateAcknowledgedResponse(correlationId, $"Flashback seek to {positionMs:0}ms requested.");
                         default:

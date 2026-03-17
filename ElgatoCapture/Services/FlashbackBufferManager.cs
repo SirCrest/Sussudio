@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Threading;
 using ElgatoCapture.Models;
 
 namespace ElgatoCapture.Services;
@@ -14,11 +15,11 @@ internal sealed class FlashbackBufferManager : IDisposable
     private readonly FlashbackBufferOptions _options;
     private string? _sessionId;
     private string? _activeFilePath;
-    private TimeSpan _latestPts;
-    private TimeSpan _validStartPts;
+    private long _latestPtsTicks;
+    private long _validStartPtsTicks;
     private long _totalDiskBytes;
     private bool _disposed;
-    private bool _evictionPaused;
+    private volatile bool _evictionPaused;
     private TimeSpan _recordingStartPts;
     private TimeSpan _recordingEndPts;
 
@@ -57,23 +58,16 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         get
         {
-            lock (_indexLock)
-            {
-                var duration = _latestPts - _validStartPts;
-                return duration > TimeSpan.Zero ? duration : TimeSpan.Zero;
-            }
+            var latest = Interlocked.Read(ref _latestPtsTicks);
+            var start = Interlocked.Read(ref _validStartPtsTicks);
+            var duration = latest - start;
+            return duration > 0 ? TimeSpan.FromTicks(duration) : TimeSpan.Zero;
         }
     }
 
     public TimeSpan ValidStartPts
     {
-        get
-        {
-            lock (_indexLock)
-            {
-                return _validStartPts;
-            }
-        }
+        get { return TimeSpan.FromTicks(Interlocked.Read(ref _validStartPtsTicks)); }
     }
 
     public long TotalDiskBytes
@@ -89,13 +83,10 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     public TimeSpan LatestPts
     {
-        get { lock (_indexLock) { return _latestPts; } }
+        get { return TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks)); }
     }
 
-    public bool EvictionPaused
-    {
-        get { lock (_indexLock) { return _evictionPaused; } }
-    }
+    public bool EvictionPaused => _evictionPaused;
 
     public TimeSpan RecordingStartPts
     {
@@ -116,8 +107,8 @@ internal sealed class FlashbackBufferManager : IDisposable
         lock (_indexLock)
         {
             _evictionPaused = true;
-            _recordingStartPts = _latestPts;
-            Logger.Log($"FLASHBACK_BUFFER_EVICTION_PAUSED start_pts_ms={(long)_latestPts.TotalMilliseconds}");
+            _recordingStartPts = TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks));
+            Logger.Log($"FLASHBACK_BUFFER_EVICTION_PAUSED start_pts_ms={(long)_recordingStartPts.TotalMilliseconds}");
         }
     }
 
@@ -129,7 +120,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
-            _recordingEndPts = _latestPts;
+            _recordingEndPts = TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks));
             _evictionPaused = false;
             Logger.Log($"FLASHBACK_BUFFER_EVICTION_RESUMED start_pts_ms={(long)_recordingStartPts.TotalMilliseconds} end_pts_ms={(long)_recordingEndPts.TotalMilliseconds} range_s={(_recordingEndPts - _recordingStartPts).TotalSeconds:F1}");
             return (_recordingStartPts, _recordingEndPts);
@@ -185,8 +176,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
 
             _activeFilePath = null;
-            _latestPts = TimeSpan.Zero;
-            _validStartPts = TimeSpan.Zero;
+            Interlocked.Exchange(ref _latestPtsTicks, 0);
+            Interlocked.Exchange(ref _validStartPtsTicks, 0);
             _totalDiskBytes = 0;
             _sessionId = sessionId;
 
@@ -223,19 +214,24 @@ internal sealed class FlashbackBufferManager : IDisposable
     /// </summary>
     public void UpdateLatestPts(TimeSpan pts)
     {
-        lock (_indexLock)
+        var ptsTicks = pts.Ticks;
+        // Atomic monotonic update
+        long current;
+        do
         {
-            if (pts > _latestPts)
-            {
-                _latestPts = pts;
-            }
+            current = Interlocked.Read(ref _latestPtsTicks);
+            if (ptsTicks <= current) return;
+        } while (Interlocked.CompareExchange(ref _latestPtsTicks, ptsTicks, current) != current);
 
-            // Evict: advance valid start if buffer exceeds max duration
-            // Skip eviction while recording — the .ts file must keep growing
-            var duration = _latestPts - _validStartPts;
-            if (!_evictionPaused && duration > _options.BufferDuration)
+        // Evict: advance valid start if buffer exceeds max duration (skip while recording)
+        if (!_evictionPaused)
+        {
+            var maxTicks = _options.BufferDuration.Ticks;
+            var startTicks = Interlocked.Read(ref _validStartPtsTicks);
+            var duration = ptsTicks - startTicks;
+            if (duration > maxTicks)
             {
-                _validStartPts = _latestPts - _options.BufferDuration;
+                Interlocked.CompareExchange(ref _validStartPtsTicks, ptsTicks - maxTicks, startTicks);
             }
         }
     }
@@ -249,29 +245,23 @@ internal sealed class FlashbackBufferManager : IDisposable
         {
             _totalDiskBytes = bytes;
 
-            // Enforce MaxDiskBytes: advance _validStartPts to evict oldest content
-            // Skip during recording — file must keep growing
             if (!_evictionPaused && _totalDiskBytes > _options.MaxDiskBytes)
             {
                 var excessBytes = _totalDiskBytes - _options.MaxDiskBytes;
-                var totalDuration = _latestPts - _validStartPts;
+                var latestTicks = Interlocked.Read(ref _latestPtsTicks);
+                var startTicks = Interlocked.Read(ref _validStartPtsTicks);
+                var totalDuration = latestTicks - startTicks;
 
-                if (totalDuration.Ticks > 0)
+                if (totalDuration > 0)
                 {
-                    var bytesPerTick = (double)_totalDiskBytes / totalDuration.Ticks;
+                    var bytesPerTick = (double)_totalDiskBytes / totalDuration;
                     var evictTicks = (long)(excessBytes / bytesPerTick);
-                    var evictDuration = TimeSpan.FromTicks(evictTicks);
-
-                    _validStartPts += evictDuration;
-
-                    // Clamp so _validStartPts never exceeds _latestPts
-                    if (_validStartPts > _latestPts)
-                    {
-                        _validStartPts = _latestPts;
-                    }
+                    var newStart = startTicks + evictTicks;
+                    if (newStart > latestTicks) newStart = latestTicks;
+                    Interlocked.Exchange(ref _validStartPtsTicks, newStart);
 
                     Logger.Log(
-                        $"FLASHBACK_BUFFER_DISK_EVICT excess_bytes={excessBytes} evicted_seconds={evictDuration.TotalSeconds:F2}");
+                        $"FLASHBACK_BUFFER_DISK_EVICT excess_bytes={excessBytes} evicted_seconds={TimeSpan.FromTicks(evictTicks).TotalSeconds:F2}");
                 }
             }
         }
@@ -286,8 +276,8 @@ internal sealed class FlashbackBufferManager : IDisposable
                 TryDeleteFile(_activeFilePath);
                 _activeFilePath = null;
             }
-            _latestPts = TimeSpan.Zero;
-            _validStartPts = TimeSpan.Zero;
+            Interlocked.Exchange(ref _latestPtsTicks, 0);
+            Interlocked.Exchange(ref _validStartPtsTicks, 0);
             _totalDiskBytes = 0;
             Logger.Log("FLASHBACK_BUFFER_PURGE");
         }

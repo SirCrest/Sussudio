@@ -62,89 +62,19 @@ patterns that conflict with those goals.
   operation fails. See `docs/constraints.md`.
 - Append to `docs/experiment_log.md` when making investigative changes.
 
-## Codex CLI
+## Agent Teams
 
-Route all non-trivial implementation work to OpenAI Codex CLI. Only make
-small edits (3-line fixes, single-file tweaks) directly in Claude Code.
-Codex budget is unlimited — maximize reasoning depth and self-verification. 
-Use the most expensive Codex models and reasoning whenever possible, and when developing a prompt, ensure it is the most expensive in terms of token use, if you believe it will make Codex produce better code with less bugs. Imagine you are going on a shopping spree, but you're spending OpenAI Codex tokens.
-
-### Execution
-
-- Config defaults: `gpt-5.4`, `xhigh` reasoning, `multi_agent = true`
-- **Never pass prompts as inline shell arguments.** Prompts contain backticks,
-  quotes, and `$` from C#/markdown that break bash parsing. Always write the
-  prompt to a temp file and pipe via stdin:
-  `cat temp/codex-prompt.md | codex exec --full-auto -`
-- Execute `codex` directly via Bash — do not ask the user to copy-paste
-- Prompt Codex directly without the user needing to approve anything. Codex works for Claude.
-- Encourage Codex to spawn multiple agents or sub-agents for parallel work when efficient. Cost is no concern.
-
-### Claude Code's role as PM
-
-The user gives short, high-level requests ("add format caching", "fix the
-reinit flash"). Claude Code does ALL of the following before dispatching:
-
-1. **Explore the codebase** — read the relevant files, trace callers, identify
-   edge cases. Use subagents for broad searches.
-2. **Write the full Codex prompt** — fill in every field of the template below
-   with specific file paths, method names, caller lists, and constraints
-   discovered during exploration. The user should never need to type file paths
-   or implementation details.
-3. **Dispatch to Codex** — run `codex exec --full-auto` with the assembled prompt.
-4. **Verify Codex's output** — git diff, build, test, log review, perf-review
-   agent. Fix anything Codex missed before reporting back to the user.
-
-The user's only job is intent. Claude Code handles specification and verification.
-
-### Prompt template
-
-Every Codex prompt MUST follow this structure. Do not skip phases.
-
-```
-CONTEXT: Read these files first and understand them fully before writing
-any code: [list every file to modify + key callers/consumers].
-
-Read docs/project-plan.md for project scope and constraints.
-
-TASK: [precise description of what to implement/fix]
-
-CALLER TRACING: Before changing any method, function, or property, search
-for ALL callers and consumers. If you change a signature, return type, or
-behavior, update every call site. Use grep/search — do not guess.
-
-IMPLEMENT: Write the code.
-
-VERIFY (mandatory — do not skip):
-1. Build: dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true
-2. Test: dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"
-3. Read temp/logs/ElgatoCapture_Debug.log and check for errors or warnings.
-4. Re-read every file you modified. Look for: typos, missing null checks,
-   wrong variable names, threading issues (UI thread vs background),
-   broken callers, and off-by-one errors. Fix anything you find.
-5. If you found and fixed issues in step 4, re-run build + test again.
-
-FAILURE RECOVERY: If the build or tests fail, diagnose the root cause,
-fix it, and retry. Repeat up to 3 times. Do not stop and report the
-error — fix it yourself.
-
-EDGE CASES TO CHECK:
-- Null or empty device lists / format lists
-- First-run scenarios (no saved settings, no cache files)
-- UI thread safety (ObservableCollection mutations must be on UI thread)
-- HDR pipeline: P010 negotiation must never silently degrade
-- AutomationProperties.AutomationId values must not be removed or changed
-```
-
-### After Codex returns
-
-Claude Code must independently verify Codex's work:
-- `git diff` and read the actual changes (not just trust Codex's summary)
-- Confirm build + test pass in your own shell
-- Read `temp/logs/ElgatoCapture_Debug.log`
-- Launch perf-review agent if the change touches hot paths
+- This flashback worktree is very complicated. 
+- Use Claude Agent Teams for large refactors using Opus 4.6 1M on High or Max Effort.
+- You decide how to split up work and how to handle prompting.
+- Three agents should be enough. You can move to 4 or 5 if you believe the coding work or research is big enough.
+- During exploration and research, feel free to have agents do overlapping theorizing/reading.
+- Ensure agents aren't idle during work
+- Ensure agents aren't working on the same files as another agent.
 
 ## Build & Test
+
+Verify if the app is running before running the following build commands.
 
 ```bash
 dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true

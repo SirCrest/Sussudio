@@ -105,8 +105,9 @@ internal static class Formatters
             builder.AppendLine($"Playback: {Get(snapshot, "FlashbackPlaybackState")} | Pos: {Get(snapshot, "FlashbackPlaybackPositionMs")}ms | Decoder: {Get(snapshot, "FlashbackDecoderHwAccel")}");
             var pbFps = double.TryParse(Get(snapshot, "FlashbackPlaybackObservedFps", "0"), out var fps) ? fps : 0;
             var pbAvgMs = double.TryParse(Get(snapshot, "FlashbackPlaybackAvgFrameMs", "0"), out var avgMs) ? avgMs : 0;
+            var avDrift = double.TryParse(Get(snapshot, "FlashbackAvDriftMs", "0"), out var drift) ? drift : 0;
             builder.AppendLine($"Playback FPS: {pbFps:F1} | AvgFrame: {pbAvgMs:F2}ms | Frames: {Get(snapshot, "FlashbackPlaybackFrameCount")} | Late: {Get(snapshot, "FlashbackPlaybackLateFrames")}");
-            builder.AppendLine($"File: {Get(snapshot, "FlashbackFilePath")}");
+            builder.AppendLine($"A/V Drift: {avDrift:+0.0;-0.0;0.0}ms (+ = audio ahead) | File: {Get(snapshot, "FlashbackFilePath")}");
             builder.AppendLine();
         }
 

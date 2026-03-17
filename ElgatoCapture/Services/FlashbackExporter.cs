@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -122,16 +123,27 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
             // Create output .mp4 context
             CreateOutputContext(tmpPath, fastStart);
+            var videoStreamIndex = FindVideoStreamIndex(_activeInputContext);
             CopyTemplateStreams(_activeInputContext, _activeOutputContext);
             OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
 
             var streamCount = checked((int)_activeOutputContext->nb_streams);
-            var timestampBases = new long[streamCount];
+            var timestampBases = new long[streamCount]; // per-stream base in output time_base ticks
+            var timestampBasesUs = new long[streamCount]; // per-stream base in microseconds
             var hasTimestampBase = new bool[streamCount];
+            long? globalMinBaseUs = null; // global minimum base in microseconds
+            var packetCounts = new long[streamCount];
             long totalPackets = 0;
             var outPtsLimit = outPoint == TimeSpan.MaxValue ? long.MaxValue : (long)(outPoint.TotalSeconds * ffmpeg.AV_TIME_BASE);
+            var usTimeBase = new AVRational { num = 1, den = 1_000_000 };
 
-            // Read and remux packets
+            // Read and remux packets — two-phase approach:
+            // Phase 1: buffer packets until all stream timestamp bases are discovered (globalMinBaseUs is final)
+            // Phase 2: flush buffer then process remaining packets inline with stable base
+            var bufferedPackets = new List<IntPtr>();
+            var bufferedStreamIndices = new List<int>();
+            var allBasesDiscovered = false;
+
             var packet = ffmpeg.av_packet_alloc();
             if (packet == null)
             {
@@ -162,8 +174,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         var inStream = _activeInputContext->streams[streamIndex];
                         var outStream = _activeOutputContext->streams[streamIndex];
 
-                        // Check if we've passed outPoint
-                        if (packet->pts != ffmpeg.AV_NOPTS_VALUE && outPtsLimit < long.MaxValue)
+                        // Check if we've passed outPoint (video stream boundary only)
+                        if (streamIndex == videoStreamIndex &&
+                            packet->pts != ffmpeg.AV_NOPTS_VALUE && outPtsLimit < long.MaxValue)
                         {
                             var ptsUs = ffmpeg.av_rescale_q(packet->pts, inStream->time_base,
                                 new AVRational { num = 1, den = ffmpeg.AV_TIME_BASE });
@@ -176,13 +189,20 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         // Rescale timestamps
                         ffmpeg.av_packet_rescale_ts(packet, inStream->time_base, outStream->time_base);
 
-                        // Adjust timestamps to start from 0
+                        // Discover per-stream timestamp base and track global minimum (in microseconds)
                         if (!hasTimestampBase[streamIndex])
                         {
                             if (TryResolveTimestampBase(packet, out var tsBase))
                             {
                                 timestampBases[streamIndex] = tsBase;
+                                var baseUs = ffmpeg.av_rescale_q(tsBase, outStream->time_base, usTimeBase);
+                                timestampBasesUs[streamIndex] = baseUs;
                                 hasTimestampBase[streamIndex] = true;
+
+                                if (globalMinBaseUs == null || baseUs < globalMinBaseUs.Value)
+                                {
+                                    globalMinBaseUs = baseUs;
+                                }
                             }
                             else
                             {
@@ -190,7 +210,53 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             }
                         }
 
-                        var baseTs = timestampBases[streamIndex];
+                        // Phase 1: buffer until all stream bases are known so globalMinBaseUs is final
+                        if (!allBasesDiscovered)
+                        {
+                            var clone = ffmpeg.av_packet_clone(packet);
+                            if (clone != null)
+                            {
+                                bufferedPackets.Add((IntPtr)clone);
+                                bufferedStreamIndices.Add(streamIndex);
+                            }
+
+                            // Check if all streams now have bases
+                            allBasesDiscovered = true;
+                            for (int i = 0; i < streamCount; i++)
+                            {
+                                if (!hasTimestampBase[i]) { allBasesDiscovered = false; break; }
+                            }
+
+                            if (allBasesDiscovered)
+                            {
+                                // Flush buffer with final globalMinBaseUs
+                                for (int bi = 0; bi < bufferedPackets.Count; bi++)
+                                {
+                                    var buffPkt = (AVPacket*)bufferedPackets[bi];
+                                    var si = bufferedStreamIndices[bi];
+                                    var outStr = _activeOutputContext->streams[si];
+                                    var bTs = ffmpeg.av_rescale_q(globalMinBaseUs!.Value, usTimeBase, outStr->time_base);
+                                    if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
+                                        buffPkt->pts -= bTs;
+                                    if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
+                                        buffPkt->dts -= bTs;
+                                    buffPkt->pos = -1;
+                                    buffPkt->stream_index = outStr->index;
+                                    ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
+                                    packetCounts[si]++;
+                                    totalPackets++;
+                                    // Free clone struct (data already unreffed by write)
+                                    ffmpeg.av_packet_free(&buffPkt);
+                                    bufferedPackets[bi] = IntPtr.Zero;
+                                }
+                                bufferedPackets.Clear();
+                                bufferedStreamIndices.Clear();
+                            }
+                            continue;
+                        }
+
+                        // Phase 2: inline write with stable globalMinBaseUs
+                        var baseTs = ffmpeg.av_rescale_q(globalMinBaseUs!.Value, usTimeBase, outStream->time_base);
                         if (packet->pts != ffmpeg.AV_NOPTS_VALUE)
                             packet->pts -= baseTs;
                         if (packet->dts != ffmpeg.AV_NOPTS_VALUE)
@@ -200,6 +266,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         packet->stream_index = outStream->index;
 
                         ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), "av_interleaved_write_frame");
+                        packetCounts[streamIndex]++;
                         totalPackets++;
                     }
                     finally
@@ -207,11 +274,67 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         ffmpeg.av_packet_unref(packet);
                     }
                 }
+
+                // Phase 1 EOF: flush buffered packets with best-known base if not all streams discovered
+                if (!allBasesDiscovered && globalMinBaseUs.HasValue && bufferedPackets.Count > 0)
+                {
+                    var discoveredCount = 0;
+                    for (int i = 0; i < streamCount; i++) { if (hasTimestampBase[i]) discoveredCount++; }
+                    Logger.Log($"FLASHBACK_EXPORT_PARTIAL_BASE_FLUSH streams_discovered={discoveredCount}/{streamCount} buffered={bufferedPackets.Count}");
+                    for (int bi = 0; bi < bufferedPackets.Count; bi++)
+                    {
+                        var buffPkt = (AVPacket*)bufferedPackets[bi];
+                        var si = bufferedStreamIndices[bi];
+                        var outStr = _activeOutputContext->streams[si];
+                        var bTs = ffmpeg.av_rescale_q(globalMinBaseUs!.Value, usTimeBase, outStr->time_base);
+                        if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
+                            buffPkt->pts -= bTs;
+                        if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
+                            buffPkt->dts -= bTs;
+                        buffPkt->pos = -1;
+                        buffPkt->stream_index = outStr->index;
+                        ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
+                        packetCounts[si]++;
+                        totalPackets++;
+                        ffmpeg.av_packet_free(&buffPkt);
+                        bufferedPackets[bi] = IntPtr.Zero;
+                    }
+                    bufferedPackets.Clear();
+                    bufferedStreamIndices.Clear();
+                }
             }
             finally
             {
+                // Free any buffered packets not yet flushed (early EOF, error, or cancellation)
+                foreach (var pktPtr in bufferedPackets)
+                {
+                    if (pktPtr != IntPtr.Zero)
+                    {
+                        var p = (AVPacket*)pktPtr;
+                        ffmpeg.av_packet_free(&p);
+                    }
+                }
                 var packetToFree = packet;
                 ffmpeg.av_packet_free(&packetToFree);
+            }
+
+            // Log per-stream base drift warning if bases differ by more than 100ms
+            LogTimestampBaseDrift(timestampBasesUs, hasTimestampBase);
+
+            // Validate per-stream packet counts
+            if (videoStreamIndex >= 0 && videoStreamIndex < streamCount && packetCounts[videoStreamIndex] == 0)
+            {
+                const string message = "Flashback export failed: no video packets were written.";
+                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+                return FinalizeResult.Failure(outputPath, message);
+            }
+
+            for (var i = 0; i < streamCount; i++)
+            {
+                if (i != videoStreamIndex && hasTimestampBase[i] && packetCounts[i] == 0)
+                {
+                    Logger.Log($"FLASHBACK_EXPORT_WARN stream={i} reason='no_packets_written' (non-video stream)");
+                }
             }
 
             if (totalPackets == 0)
@@ -272,6 +395,41 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         timestampBase = hasPts ? packet->pts : packet->dts;
         return true;
+    }
+
+    private static int FindVideoStreamIndex(AVFormatContext* inputContext)
+    {
+        return ffmpeg.av_find_best_stream(inputContext, AVMediaType.AVMEDIA_TYPE_VIDEO, -1, -1, null, 0);
+    }
+
+    private static void LogTimestampBaseDrift(long[] timestampBasesUs, bool[] hasTimestampBase)
+    {
+        // All values are already in microseconds — find min/max to detect drift
+        long? minUs = null;
+        long? maxUs = null;
+
+        for (var i = 0; i < timestampBasesUs.Length; i++)
+        {
+            if (!hasTimestampBase[i])
+            {
+                continue;
+            }
+
+            var baseUs = timestampBasesUs[i];
+            if (minUs == null || baseUs < minUs.Value) minUs = baseUs;
+            if (maxUs == null || baseUs > maxUs.Value) maxUs = baseUs;
+        }
+
+        if (minUs == null || maxUs == null || minUs.Value == maxUs.Value)
+        {
+            return;
+        }
+
+        var driftUs = maxUs.Value - minUs.Value;
+        if (driftUs > 100_000) // 100ms threshold
+        {
+            Logger.Log($"FLASHBACK_EXPORT_WARN reason='stream_base_drift' drift_us={driftUs}");
+        }
     }
 
     private void OpenInput(string inputPath)

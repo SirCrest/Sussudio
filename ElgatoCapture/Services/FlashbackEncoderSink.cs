@@ -15,14 +15,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 {
     private const int VideoQueueCapacity = 180;
     private const int AudioQueueCapacity = 1800;
-    private const int GpuQueueCapacity = 4;
+    private const int GpuQueueCapacity = 8;
     private const int StopTimeoutMs = 30_000;
 
     private readonly object _sync = new();
     private readonly LibAvEncoder _encoder = new();
     private readonly FlashbackBufferManager _bufferManager;
     private readonly FlashbackBufferOptions _bufferOptions;
-    private readonly SemaphoreSlim _workAvailable = new(0, 1);
+    private readonly ManualResetEventSlim _workAvailable = new(false);
     private readonly bool _ownsBufferManager;
     private Channel<VideoFramePacket>? _videoQueue;
     private Channel<AudioSamplePacket>? _audioQueue;
@@ -372,6 +372,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         if (!queue.Writer.TryWrite(packet))
         {
             Marshal.Release(d3d11Texture2D);
+            _encoder.SkipVideoFrame();  // Advance PTS even on dropped frames to prevent A/V drift
             var dropped = Interlocked.Increment(ref _gpuFramesDropped);
             if (dropped == 1 || dropped % 30 == 0)
             {
@@ -634,6 +635,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     continue;
                 }
 
+                _workAvailable.Reset();
                 _workAvailable.Wait(cancellationToken);
             }
 
@@ -733,20 +735,19 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         // Periodically update disk bytes
         if (encoded % 300 == 0)
         {
-            var path = _tsFilePath;
-            if (path != null)
-            {
-                _bufferManager.UpdateDiskBytes(GetFileSize(path));
-            }
+            _bufferManager.UpdateDiskBytes(_encoder.TotalBytesWritten);
         }
 
-        try
+        if (Volatile.Read(ref _recordingActive) == 1)
         {
-            FrameEncoded?.Invoke(this, encoded);
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SINK_FRAME_EVENT_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            try
+            {
+                FrameEncoded?.Invoke(this, encoded);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_SINK_FRAME_EVENT_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            }
         }
     }
 
@@ -802,13 +803,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private void SignalWork()
     {
-        try
-        {
-            _workAvailable.Release();
-        }
-        catch (SemaphoreFullException)
-        {
-        }
+        _workAvailable.Set();
     }
 
     private bool TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)

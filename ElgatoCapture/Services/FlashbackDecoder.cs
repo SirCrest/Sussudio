@@ -40,20 +40,28 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     private GCHandle[] _videoFrameHandles = new GCHandle[VideoFrameBufferCount];
     private int _currentVideoBufferIndex;
 
-    // Audio output buffer (reused per decode call)
-    private byte[]? _audioOutputBuffer;
-    private int _audioOutputBufferSize;
-
     // Cross-stream packet stash: when reading video packets we may encounter audio
     // packets (and vice versa). Stash them here instead of discarding, since
     // av_read_frame is forward-only and discarding loses frames permanently.
     private readonly Queue<IntPtr> _pendingVideoPackets = new();
     private readonly Queue<IntPtr> _pendingAudioPackets = new();
 
+    // Pending frame stash: SeekTo() decodes forward to the target frame but must
+    // not discard it — stash it so the next TryDecodeNextVideoFrame() returns it.
+    private DecodedVideoFrame _pendingVideoFrame;
+    private bool _hasPendingVideoFrame;
+
     private bool _isOpen;
     private bool _disposed;
     private bool _initialized;
     private string? _currentFilePath;
+
+    /// <summary>
+    /// When set, audio packets encountered during video reads are decoded and
+    /// delivered here immediately — no stashing, no separate audio loop.
+    /// This keeps audio naturally interleaved with video, like any video player.
+    /// </summary>
+    public Action<DecodedAudioChunk>? AudioChunkCallback { get; set; }
 
     // Video info (populated after OpenFile)
     private int _videoWidth;
@@ -291,6 +299,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             ffmpeg.avcodec_flush_buffers(_audioCodecCtx);
         }
 
+        // Clear any stashed pending frame — it's from before the seek point
+        _pendingVideoFrame = default;
+        _hasPendingVideoFrame = false;
+
         _currentPosition = target;
         Logger.Log($"FLASHBACK_DECODER_SEEK_OK target_ms={(long)target.TotalMilliseconds}");
         return true;
@@ -309,7 +321,9 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             return false;
         }
 
-        // Decode forward until we reach (or pass) the target PTS
+        // Decode forward until we reach (or pass) the target PTS.
+        // Stash the target frame so the next TryDecodeNextVideoFrame() returns it
+        // instead of skipping past it (fixes off-by-one on seek).
         var targetTicks = target.Ticks;
         while (true)
         {
@@ -322,6 +336,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             if (frame.Pts.Ticks >= targetTicks)
             {
                 _currentPosition = frame.Pts;
+                _pendingVideoFrame = frame;
+                _hasPendingVideoFrame = true;
                 return true;
             }
         }
@@ -336,6 +352,15 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     {
         frame = default;
         ThrowIfNotOpen();
+
+        // Return stashed frame from SeekTo() before decoding new ones
+        if (_hasPendingVideoFrame)
+        {
+            frame = _pendingVideoFrame;
+            _pendingVideoFrame = default;
+            _hasPendingVideoFrame = false;
+            return true;
+        }
 
         while (true)
         {
@@ -353,20 +378,9 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 // Decoder needs more packets
                 if (!FeedNextVideoPacket())
                 {
-                    // No more packets — try to drain
-                    var sendResult = ffmpeg.avcodec_send_packet(_videoCodecCtx, null);
-                    if (sendResult < 0)
-                    {
-                        return false;
-                    }
-
-                    receiveResult = ffmpeg.avcodec_receive_frame(_videoCodecCtx, _videoFrame);
-                    if (receiveResult == 0)
-                    {
-                        frame = ConvertAndOutputVideoFrame();
-                        return true;
-                    }
-
+                    // Temporary EOF on live .ts — do NOT enter drain mode.
+                    // The encoder is still appending; drain mode is permanent and
+                    // would prevent decoding any future frames.
                     return false;
                 }
 
@@ -375,6 +389,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
             if (receiveResult == ffmpeg.AVERROR_EOF)
             {
+                // Decoder was previously drained — reset so it can accept new packets
+                ffmpeg.avcodec_flush_buffers(_videoCodecCtx);
                 return false;
             }
 
@@ -387,58 +403,12 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     /// <summary>
     /// Decodes the next audio chunk from the file.
     /// Returns f32le interleaved stereo 48kHz samples.
+    /// Deprecated — audio is now decoded inline via <see cref="AudioChunkCallback"/>.
     /// </summary>
     public bool TryDecodeNextAudioChunk(out DecodedAudioChunk chunk)
     {
         chunk = default;
-
-        if (_audioCodecCtx == null || _audioStreamIndex < 0)
-        {
-            return false;
-        }
-
-        ThrowIfNotOpen();
-
-        while (true)
-        {
-            var receiveResult = ffmpeg.avcodec_receive_frame(_audioCodecCtx, _audioFrame);
-            if (receiveResult == 0)
-            {
-                chunk = ConvertAndOutputAudioFrame();
-                return true;
-            }
-
-            if (receiveResult == ffmpeg.AVERROR(ffmpeg.EAGAIN))
-            {
-                if (!FeedNextAudioPacket())
-                {
-                    var sendResult = ffmpeg.avcodec_send_packet(_audioCodecCtx, null);
-                    if (sendResult < 0)
-                    {
-                        return false;
-                    }
-
-                    receiveResult = ffmpeg.avcodec_receive_frame(_audioCodecCtx, _audioFrame);
-                    if (receiveResult == 0)
-                    {
-                        chunk = ConvertAndOutputAudioFrame();
-                        return true;
-                    }
-
-                    return false;
-                }
-
-                continue;
-            }
-
-            if (receiveResult == ffmpeg.AVERROR_EOF)
-            {
-                return false;
-            }
-
-            Logger.Log($"FLASHBACK_DECODER_AUDIO_ERROR receive_frame code={receiveResult}");
-            return false;
-        }
+        return false;
     }
 
     public void Dispose()
@@ -765,7 +735,12 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             var readResult = ffmpeg.av_read_frame(_formatCtx, _packet);
             if (readResult < 0)
             {
-                return false; // EOF or error
+                // Clear AVIO EOF flag so subsequent reads can see newly appended data.
+                // Without this, C stdio's fread EOF is cached and av_read_frame keeps
+                // returning EOF even after the encoder writes more to the .ts file.
+                if (_formatCtx->pb != null)
+                    _formatCtx->pb->eof_reached = 0;
+                return false;
             }
 
             if (_packet->stream_index == _videoStreamIndex)
@@ -781,11 +756,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 return true;
             }
 
-            // Stash audio packets instead of discarding
-            if (_packet->stream_index == _audioStreamIndex)
+            // Decode audio inline — keeps A/V naturally interleaved
+            if (_packet->stream_index == _audioStreamIndex && _audioCodecCtx != null)
             {
-                var clone = ffmpeg.av_packet_clone(_packet);
-                if (clone != null) _pendingAudioPackets.Enqueue((IntPtr)clone);
+                DecodeAndDeliverAudioPacket(_packet);
             }
 
             ffmpeg.av_packet_unref(_packet);
@@ -793,55 +767,24 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     }
 
     /// <summary>
-    /// Reads packets until an audio packet is sent to the decoder.
-    /// Video packets encountered along the way are stashed for later video decode.
+    /// Sends an audio packet to the decoder and delivers any resulting chunks
+    /// via <see cref="AudioChunkCallback"/>. If no callback is set, audio is
+    /// silently decoded (keeps the decoder state advancing) but not delivered.
     /// </summary>
-    private bool FeedNextAudioPacket()
+    private void DecodeAndDeliverAudioPacket(AVPacket* packet)
     {
-        // Drain stashed audio packets first (put there by FeedNextVideoPacket)
-        while (_pendingAudioPackets.Count > 0)
+        var sendResult = ffmpeg.avcodec_send_packet(_audioCodecCtx, packet);
+        if (sendResult < 0 && sendResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
+            return;
+
+        while (ffmpeg.avcodec_receive_frame(_audioCodecCtx, _audioFrame) == 0)
         {
-            var stashed = (AVPacket*)_pendingAudioPackets.Dequeue();
-            var sendResult = ffmpeg.avcodec_send_packet(_audioCodecCtx, stashed);
-            ffmpeg.av_packet_free(&stashed);
-            if (sendResult < 0 && sendResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
-            {
-                Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN send_stashed code={sendResult}");
-                continue;
-            }
-            return true;
-        }
-
-        while (true)
-        {
-            ffmpeg.av_packet_unref(_packet);
-            var readResult = ffmpeg.av_read_frame(_formatCtx, _packet);
-            if (readResult < 0)
-            {
-                return false;
-            }
-
-            if (_packet->stream_index == _audioStreamIndex)
-            {
-                var sendResult = ffmpeg.avcodec_send_packet(_audioCodecCtx, _packet);
-                ffmpeg.av_packet_unref(_packet);
-                if (sendResult < 0 && sendResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
-                {
-                    Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN send_packet code={sendResult}");
-                    continue;
-                }
-
-                return true;
-            }
-
-            // Stash video packets instead of discarding
-            if (_packet->stream_index == _videoStreamIndex)
-            {
-                var clone = ffmpeg.av_packet_clone(_packet);
-                if (clone != null) _pendingVideoPackets.Enqueue((IntPtr)clone);
-            }
-
-            ffmpeg.av_packet_unref(_packet);
+            var callback = AudioChunkCallback;
+            var chunk = ConvertAndOutputAudioFrame();
+            if (callback != null && chunk.ValidLength > 0)
+                callback(chunk);
+            else if (chunk.Samples.Length > 0)
+                ArrayPool<byte>.Shared.Return(chunk.Samples);
         }
     }
 
@@ -1075,19 +1018,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
 
         var outputBytesNeeded = maxOutputSamples * OutputAudioChannels * sizeof(float);
-        if (_audioOutputBuffer == null || _audioOutputBufferSize < outputBytesNeeded)
-        {
-            if (_audioOutputBuffer != null)
-            {
-                ArrayPool<byte>.Shared.Return(_audioOutputBuffer);
-            }
-
-            _audioOutputBuffer = ArrayPool<byte>.Shared.Rent(outputBytesNeeded);
-            _audioOutputBufferSize = outputBytesNeeded;
-        }
+        var result = ArrayPool<byte>.Shared.Rent(outputBytesNeeded);
 
         int outputSamplesProduced;
-        fixed (byte* outputPtr = _audioOutputBuffer)
+        fixed (byte* outputPtr = result)
         {
             var outputPlanes = stackalloc byte*[1];
             outputPlanes[0] = outputPtr;
@@ -1109,13 +1043,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
         if (outputSamplesProduced <= 0)
         {
+            ArrayPool<byte>.Shared.Return(result);
             return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
         }
 
         var validBytes = outputSamplesProduced * OutputAudioChannels * sizeof(float);
-        var result = ArrayPool<byte>.Shared.Rent(validBytes);
-        Buffer.BlockCopy(_audioOutputBuffer, 0, result, 0, validBytes);
-
         return new DecodedAudioChunk
         {
             Samples = result,
@@ -1130,6 +1062,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     {
         Logger.Log($"FLASHBACK_DECODER_CLOSE_CORE path='{_currentFilePath}' had_swr={_swrCtx != null} had_video={_videoCodecCtx != null} had_audio={_audioCodecCtx != null}");
         _isOpen = false;
+
+        // Clear any stashed pending frame
+        _pendingVideoFrame = default;
+        _hasPendingVideoFrame = false;
 
         // Free pinned handles (software decode path only)
         for (var i = 0; i < VideoFrameBufferCount; i++)
@@ -1196,13 +1132,6 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             var fmt = _formatCtx;
             ffmpeg.avformat_close_input(&fmt);
             _formatCtx = null;
-        }
-
-        if (_audioOutputBuffer != null)
-        {
-            ArrayPool<byte>.Shared.Return(_audioOutputBuffer);
-            _audioOutputBuffer = null;
-            _audioOutputBufferSize = 0;
         }
 
         // Free any stashed cross-stream packets

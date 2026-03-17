@@ -103,6 +103,8 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     public bool UseCudaHardwareFrames => _useCudaHardwareFrames;
     public long NextVideoPts => _nextVideoPts;
 
+    public void SkipVideoFrame() { Interlocked.Increment(ref _nextVideoPts); }
+
     public static void InitializeFFmpeg(bool requireNativeRuntime = false)
     {
         lock (FfmpegInitSync)
@@ -360,7 +362,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         ThrowIfError(ffmpeg.av_frame_make_writable(_videoFrame), "av_frame_make_writable");
 
         CopyPackedFrameToVideoFrame(frameData[..expectedSize], options);
-        _videoFrame->pts = _nextVideoPts++;
+        _videoFrame->pts = Interlocked.Increment(ref _nextVideoPts) - 1;
         LogAvSyncIfDue();
 
         var attachedHdrSideData = false;
@@ -455,7 +457,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         _hwFrame->buf[0] = ffmpeg.av_buffer_create(
             (byte*)poolTexture, 0, _hwPoolTextureFree, null, 0);
 
-        _hwFrame->pts = _nextVideoPts++;
+        _hwFrame->pts = Interlocked.Increment(ref _nextVideoPts) - 1;
         LogAvSyncIfDue();
 
         var attachedHdrSideData = false;
@@ -521,7 +523,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             throw new InvalidOperationException($"av_frame_ref(cuda) failed: code={refResult} msg='{GetErrorString(refResult)}'");
         }
 
-        _hwFrame->pts = _nextVideoPts++;
+        _hwFrame->pts = Interlocked.Increment(ref _nextVideoPts) - 1;
         LogAvSyncIfDue();
 
         var attachedHdrSideData = false;

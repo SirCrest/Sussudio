@@ -2991,6 +2991,16 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             {
                 try
                 {
+                    // Guard: if the panel is no longer in the visual tree, its native
+                    // COM backing may be released. AccessViolationException from a stale
+                    // vtable pointer is a corrupted-state exception that .NET Core cannot
+                    // catch — it terminates the process. Skip the call entirely.
+                    if (_panel?.XamlRoot == null)
+                    {
+                        done.Set();
+                        return;
+                    }
+
                     var panelNative = CastExtensions.As<ISwapChainPanelNative>(_panel);
                     panelNative.SetSwapChain(IntPtr.Zero);
                 }

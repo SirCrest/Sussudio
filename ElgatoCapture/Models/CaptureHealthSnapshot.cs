@@ -36,6 +36,7 @@ public sealed class CaptureHealthSnapshot
     public long FlashbackPlaybackLateFrames { get; init; }
     public double FlashbackPlaybackObservedFps { get; init; }
     public double FlashbackPlaybackAvgFrameMs { get; init; }
+    public double FlashbackAvDriftMs { get; init; }
 
     public long RecordingElapsedMs { get; init; }
     public long LastFrameArrivalMs { get; init; }

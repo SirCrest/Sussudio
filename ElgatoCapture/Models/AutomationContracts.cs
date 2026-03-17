@@ -560,6 +560,7 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackLateFrames { get; init; }
     public double FlashbackPlaybackObservedFps { get; init; }
     public double FlashbackPlaybackAvgFrameMs { get; init; }
+    public double FlashbackAvDriftMs { get; init; }
 }
 
 public sealed class PerformanceTimelineEntry

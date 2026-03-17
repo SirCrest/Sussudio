@@ -391,10 +391,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     internal FlashbackPlaybackController? FlashbackPlaybackController
         => _captureService.FlashbackPlaybackController;
 
-    public void FlashbackBeginScrub(TimeSpan position)
+    public bool FlashbackBeginScrub(TimeSpan position)
     {
         var c = _captureService.FlashbackPlaybackController;
-        if (c is { State: not FlashbackPlaybackState.Disabled }) c.BeginScrub(position);
+        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        c.BeginScrub(position);
+        return true;
     }
 
     public void FlashbackUpdateScrub(TimeSpan position)
@@ -403,34 +405,44 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (c is { State: not FlashbackPlaybackState.Disabled }) c.UpdateScrub(position);
     }
 
-    public void FlashbackEndScrub()
+    public bool FlashbackEndScrub()
     {
         var c = _captureService.FlashbackPlaybackController;
-        if (c is { State: not FlashbackPlaybackState.Disabled }) c.EndScrub();
+        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        c.EndScrub();
+        return true;
     }
 
-    public void FlashbackPlay()
+    public bool FlashbackPlay()
     {
         var c = _captureService.FlashbackPlaybackController;
-        if (c is { State: not FlashbackPlaybackState.Disabled }) c.Play();
+        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        c.Play();
+        return true;
     }
 
-    public void FlashbackPause()
+    public bool FlashbackPause()
     {
         var c = _captureService.FlashbackPlaybackController;
-        if (c is { State: not FlashbackPlaybackState.Disabled }) c.Pause();
+        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        c.Pause();
+        return true;
     }
 
-    public void FlashbackGoLive()
+    public bool FlashbackGoLive()
     {
         var c = _captureService.FlashbackPlaybackController;
-        if (c is { State: not FlashbackPlaybackState.Disabled }) c.GoLive();
+        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        c.GoLive();
+        return true;
     }
 
-    public void FlashbackNudge(TimeSpan delta)
+    public bool FlashbackNudge(TimeSpan delta)
     {
         var c = _captureService.FlashbackPlaybackController;
-        if (c is { State: not FlashbackPlaybackState.Disabled }) c.NudgePosition(delta);
+        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        c.NudgePosition(delta);
+        return true;
     }
 
     public void FlashbackSetInPoint()

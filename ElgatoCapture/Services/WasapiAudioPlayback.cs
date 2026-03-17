@@ -44,6 +44,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _renderSilenceCount;
     private int _playbackQueueDropCount;
     private long _lastRenderCallbackTickMs;
+    private long _renderingPtsTicks; // PTS of chunk currently being rendered
 
     public long RenderCallbackCount => Interlocked.Read(ref _renderCallbackCount);
 
@@ -54,6 +55,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
     public int PlaybackQueueDropCount => Volatile.Read(ref _playbackQueueDropCount);
 
     public long LastRenderCallbackTickMs => Interlocked.Read(ref _lastRenderCallbackTickMs);
+
+    /// <summary>PTS (in TimeSpan ticks) of the audio chunk currently being rendered.</summary>
+    public long RenderingPtsTicks => Interlocked.Read(ref _renderingPtsTicks);
 
     public Task InitializeAsync(CancellationToken ct)
     {
@@ -197,7 +201,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
         _targetVolume = Math.Clamp(volume, 0f, 1f);
     }
 
-    internal void EnqueuePooledSamples(byte[] pooledBuffer, int validLength)
+    internal void EnqueuePooledSamples(byte[] pooledBuffer, int validLength, long ptsTicks = 0)
     {
         if (pooledBuffer == null)
         {
@@ -218,7 +222,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             return;
         }
 
-        EnqueueChunk(new PlaybackChunk(pooledBuffer, safeLength, IsPooled: true));
+        EnqueueChunk(new PlaybackChunk(pooledBuffer, safeLength, IsPooled: true, PtsTicks: ptsTicks));
     }
 
     public void PauseRendering()
@@ -437,6 +441,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
                 _activeChunkOffset = 0;
                 _hasActiveChunk = true;
+                if (_activeChunk.PtsTicks != 0)
+                    Interlocked.Exchange(ref _renderingPtsTicks, _activeChunk.PtsTicks);
             }
 
             var activeBuffer = _activeChunk.Buffer;
@@ -536,5 +542,5 @@ internal sealed class WasapiAudioPlayback : IDisposable
         ArrayPool<byte>.Shared.Return(chunk.Buffer);
     }
 
-    private readonly record struct PlaybackChunk(byte[]? Buffer, int Length, bool IsPooled);
+    private readonly record struct PlaybackChunk(byte[]? Buffer, int Length, bool IsPooled, long PtsTicks = 0);
 }

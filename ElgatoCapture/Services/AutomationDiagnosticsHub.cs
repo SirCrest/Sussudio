@@ -768,7 +768,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackPlaybackFrameCount = health.FlashbackPlaybackFrameCount,
             FlashbackPlaybackLateFrames = health.FlashbackPlaybackLateFrames,
             FlashbackPlaybackObservedFps = health.FlashbackPlaybackObservedFps,
-            FlashbackPlaybackAvgFrameMs = health.FlashbackPlaybackAvgFrameMs
+            FlashbackPlaybackAvgFrameMs = health.FlashbackPlaybackAvgFrameMs,
+            FlashbackAvDriftMs = health.FlashbackAvDriftMs
         };
 
         var verificationIdle = Volatile.Read(ref _verificationInProgress) == 0 &&

@@ -56,7 +56,8 @@ public sealed class PipeClient
         ["GetPerformanceTimeline"] = 37,
         ["SetStatsSectionVisible"] = 38,
         ["SetAnalogAudioGain"] = 39,
-        ["SetSettingsVisible"] = 40
+        ["SetSettingsVisible"] = 40,
+        ["FlashbackAction"] = 41
     };
 
     public async Task<JsonElement> SendCommandAsync(

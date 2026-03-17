@@ -38,10 +38,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- State (read from UI thread, written primarily from playback thread) ---
     private volatile FlashbackPlaybackState _state = FlashbackPlaybackState.Live;
-    private TimeSpan _playbackPosition;
+    private long _playbackPositionTicks;
     private volatile bool _initialized;
     private bool _disposed;
     private volatile string _decoderHwAccel = "N/A";
+
+    // --- A/V sync tracking ---
+    private long _lastAudioPtsTicks;  // PTS of last audio chunk delivered to WASAPI
+    private long _lastVideoPtsTicks;  // PTS of last video frame displayed
 
     // --- Playback cadence metrics (written on playback thread, read from UI/diag) ---
     private long _playbackFrameCount;
@@ -49,10 +53,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private double _playbackObservedFps;
     private double _playbackAvgFrameMs;
     private readonly Stopwatch _playbackFpsClock = new();
-
-    // --- Audio drift correction: wall-clock reference for audio target ---
-    private long _audioPlaybackStartTick;
-    private TimeSpan _audioPlaybackStartPts;
 
     // --- In/Out points ---
     public TimeSpan? InPoint { get; set; }
@@ -65,7 +65,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- Events ---
     public event Action<FlashbackPlaybackState>? StateChanged;
-    public event Action<TimeSpan>? PositionChanged;
 
     public FlashbackPlaybackController(FlashbackBufferManager bufferManager)
     {
@@ -78,14 +77,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     public TimeSpan PlaybackPosition
     {
-        get
-        {
-            lock (this) return _playbackPosition;
-        }
-        private set
-        {
-            lock (this) _playbackPosition = value;
-        }
+        get => TimeSpan.FromTicks(Interlocked.Read(ref _playbackPositionTicks));
+        private set => Interlocked.Exchange(ref _playbackPositionTicks, value.Ticks);
     }
 
     // --- Lifecycle ---
@@ -350,10 +343,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (decoder is { IsOpen: true })
                         {
                             frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
-                            PreFillAudioBuffer(decoder, PlaybackPosition + _bufferManager.ValidStartPts);
                         }
-                        _audioPlaybackStartTick = Environment.TickCount64;
-                        _audioPlaybackStartPts = PlaybackPosition + _bufferManager.ValidStartPts;
+                        RestoreAudioCallback(decoder);
+                        _audioPlayback?.Flush();
                         _audioPlayback?.ResumeRendering();
                         SetState(FlashbackPlaybackState.Playing);
                         var endScrubBufDur = _bufferManager.BufferedDuration;
@@ -366,6 +358,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         isPlaying = true;
                         _videoCapture?.SuppressPreviewSubmission();
                         SuppressLiveAudio();
+                        _audioPlayback?.PauseRendering();
                         ResetPlaybackMetrics();
                         pacingStopwatch.Restart();
 
@@ -373,12 +366,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         EnsureFileOpen(decoder, ref fileOpen);
                         if (decoder.IsOpen)
                         {
+                            // Suppress audio during seek-forward to prevent enqueuing
+                            // stale audio between the keyframe and the target position.
+                            // GOP can be up to 2s — that's the user-reported desync.
+                            decoder.AudioChunkCallback = null;
                             decoder.SeekTo(PlaybackPosition);
                             frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
-                            PreFillAudioBuffer(decoder, PlaybackPosition + _bufferManager.ValidStartPts);
                         }
-                        _audioPlaybackStartTick = Environment.TickCount64;
-                        _audioPlaybackStartPts = PlaybackPosition + _bufferManager.ValidStartPts;
+                        RestoreAudioCallback(decoder);
+                        _audioPlayback?.Flush();
                         _audioPlayback?.ResumeRendering();
 
                         SetState(FlashbackPlaybackState.Playing);
@@ -444,6 +440,19 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var devicePtr = d3dManager?.Device?.NativePointer ?? IntPtr.Zero;
         var contextPtr = d3dManager?.ImmediateContext?.NativePointer ?? IntPtr.Zero;
         decoder.Initialize(devicePtr, contextPtr);
+
+        // Wire up inline audio: decoded audio chunks are delivered as a side
+        // effect of reading video packets — no separate audio loop needed.
+        var playback = _audioPlayback;
+        if (playback != null)
+        {
+            decoder.AudioChunkCallback = chunk =>
+            {
+                Interlocked.Exchange(ref _lastAudioPtsTicks, chunk.Pts.Ticks);
+                playback.EnqueuePooledSamples(chunk.Samples, chunk.ValidLength, chunk.Pts.Ticks);
+            };
+        }
+
         return decoder;
     }
 
@@ -489,13 +498,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private void SeekAndDisplayKeyframe(FlashbackDecoder decoder, TimeSpan bufferPosition)
     {
+        // Suppress audio delivery during scrub — prevents audio accumulation
+        // in the WASAPI queue. Audio callback is re-enabled on Play/EndScrub.
+        decoder.AudioChunkCallback = null;
+        _audioPlayback?.Flush();
+
         bufferPosition = ClampPosition(bufferPosition);
 
         if (!decoder.IsOpen)
         {
             // No file — use requested position as fallback
             PlaybackPosition = bufferPosition;
-            PositionChanged?.Invoke(bufferPosition);
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_NO_FILE pos_ms={(long)bufferPosition.TotalMilliseconds}");
             return;
         }
@@ -509,7 +522,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 // Seek failed — use requested position as fallback
                 PlaybackPosition = bufferPosition;
-                PositionChanged?.Invoke(bufferPosition);
                 Logger.Log($"FLASHBACK_PLAYBACK_SEEK_FAIL offset_ms={(long)filePts.TotalMilliseconds}");
                 return;
             }
@@ -523,13 +535,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 var actualPosition = frame.Pts - _bufferManager.ValidStartPts;
                 if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
                 PlaybackPosition = actualPosition;
-                PositionChanged?.Invoke(actualPosition);
             }
             else
             {
                 // No frame decoded — use requested position as fallback
                 PlaybackPosition = bufferPosition;
-                PositionChanged?.Invoke(bufferPosition);
             }
 
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_OK pos_ms={(long)PlaybackPosition.TotalMilliseconds} file_pts_ms={(long)filePts.TotalMilliseconds} got_frame={gotFrame}");
@@ -538,7 +548,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             // On error, use requested position as fallback
             PlaybackPosition = bufferPosition;
-            PositionChanged?.Invoke(bufferPosition);
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_ERROR error='{ex.Message}'");
         }
     }
@@ -558,25 +567,26 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             if (!decoder.TryDecodeNextVideoFrame(out var videoFrame))
             {
-                // EOF — decoder returned no frame (read head caught write head?)
                 var bufDur = _bufferManager.BufferedDuration;
                 var pos = PlaybackPosition;
-                var gapMs = (bufDur - pos).TotalMilliseconds;
-                Logger.Log($"FLASHBACK_PLAYBACK_EOF_SNAP_TO_LIVE pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
-                if (decoder.IsOpen) decoder.CloseFile();
-                RestoreLiveAudio();
-                _videoCapture?.ResumePreviewSubmission();
-                SetState(FlashbackPlaybackState.Live);
-                return false;
+                var gap = (bufDur - pos).TotalMilliseconds;
+
+                // Always wait and retry — the .ts file is concurrently written by the encoder.
+                // av_read_frame returns EOF temporarily when it catches up to the write frontier;
+                // the AVIO EOF flag is cleared by the decoder so the next read will see new data.
+                Logger.Log($"FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT gap_ms={gap:F0} pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds}");
+                Thread.Sleep(50);
+                pacingStopwatch.Restart();
+                return true;
             }
 
             SubmitFrame(videoFrame);
+            Interlocked.Exchange(ref _lastVideoPtsTicks, videoFrame.Pts.Ticks);
 
             // Map file PTS back to buffer position
             var newPosition = videoFrame.Pts - _bufferManager.ValidStartPts;
             if (newPosition < TimeSpan.Zero) newPosition = TimeSpan.Zero;
             PlaybackPosition = newPosition;
-            PositionChanged?.Invoke(newPosition);
 
             // Check OutPoint
             if (OutPoint.HasValue && newPosition >= OutPoint.Value)
@@ -586,25 +596,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 return false;
             }
 
-            // Decode audio: target 500ms ahead of wall-clock expected position.
-            // Wall-clock reference self-corrects for WASAPI device clock drift:
-            // if WASAPI runs fast, expectedAudioPts advances faster → we decode more.
-            if (_audioPlayback != null)
-            {
-                var wallElapsedMs = Environment.TickCount64 - _audioPlaybackStartTick;
-                var expectedAudioPts = _audioPlaybackStartPts + TimeSpan.FromMilliseconds(wallElapsedMs);
-                var audioTargetPts = expectedAudioPts + TimeSpan.FromMilliseconds(500);
-                var safety = 50;
-                while (safety-- > 0 && decoder.TryDecodeNextAudioChunk(out var audioChunk))
-                {
-                    _audioPlayback.EnqueuePooledSamples(audioChunk.Samples, audioChunk.ValidLength);
-                    if (audioChunk.Pts > audioTargetPts) break;
-                }
-            }
+            // Audio is decoded inline during FeedNextVideoPacket via AudioChunkCallback.
+            // No separate audio loop — A/V stays naturally interleaved.
 
-            // Check if near live edge (within 0.5s of buffered end)
+            // Check if near live edge (within 2s of buffered end)
             var bufferedDuration = _bufferManager.BufferedDuration;
-            if (newPosition >= bufferedDuration - TimeSpan.FromMilliseconds(500))
+            if (newPosition >= bufferedDuration - TimeSpan.FromMilliseconds(2000))
             {
                 var gapMs = (bufferedDuration - newPosition).TotalMilliseconds;
                 Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)newPosition.TotalMilliseconds} bufferDur_ms={(long)bufferedDuration.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
@@ -723,6 +720,21 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public double PlaybackObservedFps => _playbackObservedFps;
     public double PlaybackAvgFrameMs => _playbackAvgFrameMs;
 
+    /// <summary>
+    /// Audio-video drift in milliseconds. Positive = audio ahead, negative = audio behind.
+    /// Uses the PTS of the chunk WASAPI is currently rendering (not just enqueued).
+    /// </summary>
+    public double AvDriftMs
+    {
+        get
+        {
+            var renderingPts = _audioPlayback?.RenderingPtsTicks ?? 0;
+            var videoPts = Interlocked.Read(ref _lastVideoPtsTicks);
+            if (renderingPts == 0 || videoPts == 0) return 0;
+            return TimeSpan.FromTicks(renderingPts - videoPts).TotalMilliseconds;
+        }
+    }
+
     private bool IsReady => _initialized && !_disposed;
 
     private void ResetPlaybackMetrics()
@@ -734,26 +746,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
         _playbackFpsClock.Reset();
     }
 
-    /// <summary>
-    /// Decodes audio chunks ahead of <paramref name="filePts"/> to prime the WASAPI
-    /// render buffer before entering the pacing loop. Without this, the render thread
-    /// hits silence on the first few callbacks after play/seek.
-    /// </summary>
-    private void PreFillAudioBuffer(FlashbackDecoder decoder, TimeSpan filePts)
+    private void RestoreAudioCallback(FlashbackDecoder decoder)
     {
-        if (_audioPlayback == null) return;
-
-        var targetPts = filePts + TimeSpan.FromMilliseconds(500);
-        var count = 0;
-        while (count < 50 && decoder.TryDecodeNextAudioChunk(out var chunk))
+        var playback = _audioPlayback;
+        if (playback != null)
         {
-            _audioPlayback.EnqueuePooledSamples(chunk.Samples, chunk.ValidLength);
-            count++;
-            if (chunk.Pts > targetPts) break;
+            decoder.AudioChunkCallback = chunk =>
+            {
+                Interlocked.Exchange(ref _lastAudioPtsTicks, chunk.Pts.Ticks);
+                playback.EnqueuePooledSamples(chunk.Samples, chunk.ValidLength, chunk.Pts.Ticks);
+            };
         }
-
-        if (count > 0)
-            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_PREFILL chunks={count}");
     }
 
     private void SuppressLiveAudio()

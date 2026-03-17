@@ -296,11 +296,44 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var frameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
         var d3dManager = unifiedVideoCapture.D3DManager;
 
+        // Resolve NTSC rational frame rate. _actualFrameRateNumerator may not be set yet
+        // (first preview init sets it AFTER this call), so fall back to telemetry-based
+        // NTSC detection. Using exact rationals (120000/1001) is critical — integer rates
+        // like 120/1 cause NVENC's ticks_per_frame=2 to halve the effective time_base,
+        // producing massive A/V drift in the flashback buffer.
+        int? fpsNum = null;
+        int? fpsDen = null;
+        if (_actualFrameRateNumerator.HasValue && _actualFrameRateDenominator is > 1)
+        {
+            fpsNum = (int)_actualFrameRateNumerator.Value;
+            fpsDen = (int)_actualFrameRateDenominator.Value;
+        }
+        else
+        {
+            var telemetry = _latestSourceTelemetry;
+            if (telemetry.HasFrameRate && telemetry.FrameRateExact.HasValue)
+            {
+                var bucket = (int)Math.Round(frameRate, MidpointRounding.AwayFromZero);
+                if (bucket > 0)
+                {
+                    var expectedNtsc = bucket * 1000.0 / 1001.0;
+                    if (Math.Abs(telemetry.FrameRateExact.Value - expectedNtsc) <= 0.15)
+                    {
+                        fpsNum = bucket * 1000;
+                        fpsDen = 1001;
+                        frameRate = (double)fpsNum.Value / fpsDen.Value;
+                    }
+                }
+            }
+        }
+
         return new FlashbackSessionContext
         {
             Width = Math.Max(1, unifiedVideoCapture.Width),
             Height = Math.Max(1, unifiedVideoCapture.Height),
             FrameRate = frameRate,
+            FrameRateNumerator = fpsNum,
+            FrameRateDenominator = fpsDen,
             CodecName = codecName,
             IsP010 = isP010,
             BitRate = isP010 ? 50_000_000u : 30_000_000u,
@@ -333,6 +366,23 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         try
         {
+            // Wait until both video and audio are confirmed flowing before starting
+            // the encoder. This eliminates the startup transient where audio PTS races
+            // ahead of video PTS (~840ms) because WASAPI starts before the source reader.
+            var deadline = Environment.TickCount64 + 5000;
+            while (Environment.TickCount64 < deadline)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var videoReady = unifiedVideoCapture.VideoFramesArrived > 0;
+                var audioReady = _wasapiAudioCapture == null || _wasapiAudioCapture.CaptureCallbackCount > 0;
+                if (videoReady && audioReady)
+                    break;
+                await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+            }
+            Logger.Log(
+                $"FLASHBACK_PREVIEW_READINESS video_frames={unifiedVideoCapture.VideoFramesArrived} " +
+                $"audio_callbacks={_wasapiAudioCapture?.CaptureCallbackCount ?? -1}");
+
             await flashbackSink.StartAsync(
                 CreateFlashbackSessionContext(unifiedVideoCapture, settings),
                 cancellationToken).ConfigureAwait(false);
@@ -1570,6 +1620,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             FlashbackPlaybackLateFrames = _flashbackPlaybackController?.PlaybackLateFrames ?? 0,
             FlashbackPlaybackObservedFps = _flashbackPlaybackController?.PlaybackObservedFps ?? 0,
             FlashbackPlaybackAvgFrameMs = _flashbackPlaybackController?.PlaybackAvgFrameMs ?? 0,
+            FlashbackAvDriftMs = _flashbackPlaybackController?.AvDriftMs ?? 0,
             RecordingElapsedMs = _isRecording ? _recordingStopwatch.ElapsedMilliseconds : 0,
             ExpectedFrameRate = _actualFrameRate ?? _currentSettings?.FrameRate ?? 0,
             NegotiatedWidth = _actualWidth,
@@ -1771,7 +1822,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     settings.MjpegDecoderCount).ConfigureAwait(false);
                 unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
                 TryApplySharedPreviewDevice(unifiedVideoCapture, _previewFrameSink);
-                await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, transitionToken).ConfigureAwait(false);
                 unifiedVideoCapture.Start();
                 // Skip Lock2D by default — preview uses GPU textures via SubmitTexture,
                 // never CPU bytes. Lock2D causes GPU pipeline stalls (~5% cadence drops
@@ -1806,7 +1856,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
                     wasapiCapture.Start();
                     _wasapiAudioCapture = wasapiCapture;
-                    AttachFlashbackAudioIfSupported(_wasapiAudioCapture, "preview_start");
                 }
                 else if (settings.AudioEnabled)
                 {
@@ -1846,6 +1895,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                         Logger.Log("Mic monitor start failed (non-fatal): " + micEx.Message);
                     }
                 }
+
+                // Start flashback AFTER all preview components are running.
+                // This eliminates the ~840ms A/V sync drift caused by WASAPI audio
+                // flowing before the source reader delivers its first video frame.
+                await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, transitionToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -2975,7 +3029,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             return;
 
         var expectedNtscFps = friendlyBucket * 1000.0 / 1001.0;
-        if (Math.Abs(telemetryFps - expectedNtscFps) > 0.5)
+        if (Math.Abs(telemetryFps - expectedNtscFps) > 0.15)
             return; // Telemetry doesn't match NTSC pattern for this bucket.
 
         var ntscNumerator = (uint)(friendlyBucket * 1000);
