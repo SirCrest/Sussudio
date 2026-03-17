@@ -106,7 +106,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
     internal FlashbackPlaybackController? FlashbackPlaybackController => _flashbackPlaybackController;
     internal FlashbackBufferManager? FlashbackBufferManager => _flashbackBufferManager;
     public long FlashbackOutputBytes => _flashbackSink?.OutputBytes ?? 0;
-    public void SetFlashbackEnabled(bool enabled) => _flashbackEnabled = enabled;
+    public void SetFlashbackEnabled(bool enabled)
+    {
+        if (_isRecording && IsFlashbackRecordingBackendActive() && !enabled)
+        {
+            Logger.Log("FLASHBACK_DISABLE_BLOCKED reason=recording_active");
+            return;
+        }
+        _flashbackEnabled = enabled;
+    }
 
     public void SetPreviewVolume(float volume)
     {
@@ -296,6 +304,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
             CodecName = codecName,
             IsP010 = isP010,
             BitRate = isP010 ? 50_000_000u : 30_000_000u,
+            HdrEnabled = isP010,
+            IsFullRangeInput = unifiedVideoCapture.IsHighFrameRateMjpegMode,
+            HdrMasterDisplayMetadata = settings.HdrMasterDisplayMetadata,
+            HdrMaxCll = settings.HdrMaxCll,
+            HdrMaxFall = settings.HdrMaxFall,
             D3D11DevicePtr = d3dManager?.Device?.NativePointer ?? IntPtr.Zero,
             D3D11DeviceContextPtr = d3dManager?.ImmediateContext?.NativePointer ?? IntPtr.Zero,
             AudioEnabled = settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId),
@@ -326,6 +339,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
             flashbackSink.FrameEncoded += OnFlashbackFrameEncoded;
             unifiedVideoCapture.SetFlashbackSink(flashbackSink);
             AttachFlashbackAudioIfSupported(_wasapiAudioCapture, "preview_backend_start");
+            if (_microphoneCapture != null && flashbackSink.MicrophoneEnabled)
+            {
+                _microphoneCapture.SetAudioWriteDelegate(samples => flashbackSink.WriteMicrophoneAudioAsync(samples));
+                Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='preview_backend_start'");
+            }
             _flashbackBufferManager = bufferManager;
             _flashbackSink = flashbackSink;
             _flashbackExporter = flashbackExporter;
@@ -387,6 +405,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
         }
 
+        _microphoneCapture?.SetAudioWriteDelegate(null);
         _wasapiAudioCapture?.DetachFlashbackSink();
         _unifiedVideoCapture?.SetFlashbackSink(null);
 
@@ -431,6 +450,27 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         Logger.Log("FLASHBACK_PREVIEW_DISPOSE_END");
+    }
+
+    /// <summary>
+    /// Tears down the current flashback buffer and starts a fresh one.
+    /// Called after recording stops to cycle to a clean .ts file.
+    /// </summary>
+    private async Task CycleFlashbackBufferAsync(CancellationToken cancellationToken)
+    {
+        Logger.Log("FLASHBACK_BUFFER_CYCLE_BEGIN");
+        await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
+
+        var unifiedVideoCapture = _unifiedVideoCapture;
+        if (_flashbackEnabled && unifiedVideoCapture != null && _currentSettings != null)
+        {
+            await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+            Logger.Log("FLASHBACK_BUFFER_CYCLE_DONE new_session=true");
+        }
+        else
+        {
+            Logger.Log("FLASHBACK_BUFFER_CYCLE_DONE new_session=false (flashback disabled or no capture)");
+        }
     }
 
     private void OnFlashbackFrameEncoded(object? sender, long frameCount)
@@ -480,15 +520,21 @@ public class CaptureService : IDisposable, IAsyncDisposable
         if (!endResult.Succeeded)
             return endResult;
 
+        var startPts = flashbackSink.LastRecordingStartPts;
+        var endPts = flashbackSink.LastRecordingEndPts;
+
         var tsPath = _flashbackBufferManager?.ActiveFilePath;
         if (string.IsNullOrWhiteSpace(tsPath))
             return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
 
+        Logger.Log($"FLASHBACK_RECORDING_EXPORT_BEGIN ts='{tsPath}' output='{outputPath}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}");
+
         var exporter = _flashbackExporter ??= new FlashbackExporter();
         var exportResult = await exporter
-            .ExportFullAsync(tsPath, outputPath, fastStart: true, progress: null, ct: cancellationToken)
+            .ExportAsync(tsPath, startPts, endPts, outputPath, fastStart: true, progress: null, ct: cancellationToken)
             .ConfigureAwait(false);
 
+        Logger.Log($"FLASHBACK_RECORDING_EXPORT_DONE succeeded={exportResult.Succeeded} status='{exportResult.StatusMessage}'");
         return exportResult;
     }
 
@@ -734,6 +780,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 micCapture.CaptureFailed += OnWasapiCaptureFailed;
                 micCapture.Start();
                 _microphoneCapture = micCapture;
+                if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
+                {
+                    micCapture.SetAudioWriteDelegate(samples => fbSink.WriteMicrophoneAudioAsync(samples));
+                    Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='mic_monitor_update'");
+                }
                 Logger.Log("MIC_MONITOR_START device='" + (deviceName ?? "?") + "'");
             }
             else
@@ -776,10 +827,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
 
         capture.SetPlayback(playback);
+
+        // Update flashback controller with audio components (they weren't available
+        // during flashback init because WASAPI starts after flashback).
+        _flashbackPlaybackController?.UpdateAudioComponents(playback, capture);
     }
 
     private void StopWasapiPlayback()
     {
+        _flashbackPlaybackController?.UpdateAudioComponents(null, null);
         var playback = _wasapiAudioPlayback;
         _wasapiAudioPlayback = null;
         _wasapiAudioCapture?.SetPlayback(null);
@@ -1778,6 +1834,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                         micCapture.CaptureFailed += OnWasapiCaptureFailed;
                         micCapture.Start();
                         _microphoneCapture = micCapture;
+                        if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
+                        {
+                            micCapture.SetAudioWriteDelegate(samples => fbSink.WriteMicrophoneAudioAsync(samples));
+                            Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='preview_mic_monitor_start'");
+                        }
                         Logger.Log("MIC_MONITOR_START device='" + (_micMonitorDeviceName ?? "?") + "'");
                     }
                     catch (Exception micEx)
@@ -1903,6 +1964,61 @@ public class CaptureService : IDisposable, IAsyncDisposable
             Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
             try
             {
+                // --- Unified path: piggyback on existing flashback NVENC session ---
+                if (_flashbackEnabled && _flashbackSink != null)
+                {
+                    StorageFolder fbOutputFolder;
+                    try
+                    {
+                        fbOutputFolder = await StorageFolder.GetFolderFromPathAsync(settings.OutputPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new InvalidOperationException($"Output folder is unavailable: {settings.OutputPath}", ex);
+                    }
+
+                    transitionToken.ThrowIfCancellationRequested();
+
+                    var fbRecordingContext = await _artifactManager.CreateContextAsync(
+                        fbOutputFolder,
+                        settings,
+                        usePostMuxAudio: false,
+                        audioDeviceName: settings.AudioEnabled
+                            ? (settings.UseCustomAudioInput ? settings.AudioDeviceName : (_audioDeviceName ?? _currentDevice.AudioDeviceName))
+                            : null,
+                        microphoneDeviceName: settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
+                        effectiveFrameRate: _unifiedVideoCapture?.Fps > 0 ? _unifiedVideoCapture.Fps : settings.FrameRate,
+                        frameRateArg: ResolveFrameRateArg(settings, _unifiedVideoCapture?.Fps > 0 ? _unifiedVideoCapture.Fps : settings.FrameRate),
+                        effectiveWidth: _actualWidth ?? settings.Width,
+                        effectiveHeight: _actualHeight ?? settings.Height,
+                        videoInputPixelFormat: _unifiedVideoCapture?.IsP010 == true ? "p010le" : "nv12",
+                        isFullRangeInput: _unifiedVideoCapture?.IsSoftwareMjpegPipelineActive == true,
+                        d3d11DevicePtr: IntPtr.Zero,
+                        d3d11DeviceContextPtr: IntPtr.Zero,
+                        cudaHwDeviceCtxPtr: IntPtr.Zero,
+                        cudaHwFramesCtxPtr: IntPtr.Zero).ConfigureAwait(false);
+
+                    EnsureFlashbackRecordingTopologyMatches(_flashbackSink,
+                        audioEnabled: settings.AudioEnabled,
+                        microphoneEnabled: settings.MicrophoneEnabled);
+
+                    _flashbackSink.BeginRecording(fbRecordingContext.FinalOutputPath);
+                    _recordingSink = _flashbackSink;
+                    _libavSink = null;
+                    _recordingContext = fbRecordingContext;
+                    _activeRecordingSettings = settings;
+                    _isRecording = true;
+                    _lastOutputPath = fbRecordingContext.FinalOutputPath;
+                    _lastFinalizeStatus = "Recording";
+                    _lastFinalizeUtc = null;
+                    _lastPreservedArtifacts = Array.Empty<string>();
+                    _recordingStopwatch.Restart();
+                    StatusChanged?.Invoke(this, "Recording");
+                    Logger.Log($"FLASHBACK_UNIFIED_RECORDING_START output='{fbRecordingContext.FinalOutputPath}'");
+                    return;
+                }
+
+                // --- Standard path: create dedicated LibAvRecordingSink ---
                 libAvSink = new LibAvRecordingSink();
                 libAvSink.FrameEncoded += (s, count) => FrameCaptured?.Invoke(this, unchecked((ulong)Math.Max(0L, count)));
                 recordingSink = libAvSink;
@@ -2381,6 +2497,77 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
     private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync(string fallbackStatusMessage, CancellationToken cancellationToken)
     {
+        // --- Unified flashback recording path: remux from .ts, cycle buffer ---
+        if (IsFlashbackRecordingBackendActive())
+        {
+            var flashbackSink = _flashbackSink!;
+            var fbRecordingContext = _recordingContext;
+            var fbOutputPath = fbRecordingContext?.FinalOutputPath ?? (_lastOutputPath ?? string.Empty);
+
+            _recordingSink = null;
+            // Don't null _flashbackSink — it continues for the buffer
+
+            Logger.Log("FLASHBACK_UNIFIED_RECORDING_STOP_BEGIN");
+            FinalizeResult fbResult;
+            try
+            {
+                fbResult = await FinalizeFlashbackRecordingAsync(flashbackSink, fbRecordingContext, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL error='{ex.Message}'");
+                fbResult = FinalizeResult.Failure(fbOutputPath, $"Flashback recording finalize failed: {ex.Message}");
+            }
+
+            // Cycle to fresh .ts buffer
+            try
+            {
+                await CycleFlashbackBufferAsync(cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_BUFFER_CYCLE_FAIL error='{ex.Message}'");
+            }
+
+            _recordingStopwatch.Stop();
+            _isRecording = false;
+            if (!_isVideoPreviewActive) StopTelemetryPoll();
+            _recordingContext = null;
+            _activeRecordingSettings = null;
+            _lastFinalizeStatus = fbResult.StatusMessage;
+            _lastFinalizeUtc = DateTimeOffset.UtcNow;
+            _lastPreservedArtifacts = fbResult.PreservedArtifacts;
+
+            // Restart mic monitoring if preview is still active
+            if (_isVideoPreviewActive && _micMonitorEnabled && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))
+            {
+                try
+                {
+                    if (_microphoneCapture == null)
+                    {
+                        var micCapture = new WasapiAudioCapture();
+                        await micCapture.InitializeAsync(_micMonitorDeviceId, cancellationToken).ConfigureAwait(false);
+                        micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
+                        micCapture.CaptureFailed += OnWasapiCaptureFailed;
+                        micCapture.Start();
+                        _microphoneCapture = micCapture;
+                        if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
+                        {
+                            micCapture.SetAudioWriteDelegate(samples => fbSink.WriteMicrophoneAudioAsync(samples));
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_MIC_RESTART_WARN error='{ex.Message}'");
+                }
+            }
+
+            Logger.Log($"FLASHBACK_UNIFIED_RECORDING_STOP_DONE succeeded={fbResult.Succeeded} output='{fbResult.OutputPath}'");
+            return fbResult;
+        }
+
+        // --- Standard LibAvRecordingSink path ---
         var sink = _recordingSink;
         var libAvSink = _libavSink;
         var recordingContext = _recordingContext;
@@ -2555,6 +2742,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 micCapture.CaptureFailed += OnWasapiCaptureFailed;
                 micCapture.Start();
                 _microphoneCapture = micCapture;
+                if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
+                {
+                    micCapture.SetAudioWriteDelegate(samples => fbSink.WriteMicrophoneAudioAsync(samples));
+                    Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='mic_monitor_restart'");
+                }
                 Logger.Log("MIC_MONITOR_RESTART device='" + (_micMonitorDeviceName ?? "?") + "'");
             }
             catch (Exception micEx)

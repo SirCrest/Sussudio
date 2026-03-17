@@ -356,7 +356,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         _audioPlaybackStartPts = PlaybackPosition + _bufferManager.ValidStartPts;
                         _audioPlayback?.ResumeRendering();
                         SetState(FlashbackPlaybackState.Playing);
-                        Logger.Log($"FLASHBACK_PLAYBACK_PLAY pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
+                        var endScrubBufDur = _bufferManager.BufferedDuration;
+                        Logger.Log($"FLASHBACK_ENDSCRUB_AUTO_PLAY pos_ms={(long)PlaybackPosition.TotalMilliseconds} bufferDur_ms={(long)endScrubBufDur.TotalMilliseconds} gapFromLive_ms={(endScrubBufDur - PlaybackPosition).TotalMilliseconds:F0}");
                         break;
 
                     case CommandKind.Play:
@@ -557,8 +558,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             if (!decoder.TryDecodeNextVideoFrame(out var videoFrame))
             {
-                // EOF — reached live edge. Go live.
-                Logger.Log("FLASHBACK_PLAYBACK_REACHED_LIVE_EDGE");
+                // EOF — decoder returned no frame (read head caught write head?)
+                var bufDur = _bufferManager.BufferedDuration;
+                var pos = PlaybackPosition;
+                var gapMs = (bufDur - pos).TotalMilliseconds;
+                Logger.Log($"FLASHBACK_PLAYBACK_EOF_SNAP_TO_LIVE pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
                 if (decoder.IsOpen) decoder.CloseFile();
                 RestoreLiveAudio();
                 _videoCapture?.ResumePreviewSubmission();
@@ -602,7 +606,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             var bufferedDuration = _bufferManager.BufferedDuration;
             if (newPosition >= bufferedDuration - TimeSpan.FromMilliseconds(500))
             {
-                Logger.Log("FLASHBACK_PLAYBACK_NEAR_LIVE_EDGE auto-transitioning");
+                var gapMs = (bufferedDuration - newPosition).TotalMilliseconds;
+                Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)newPosition.TotalMilliseconds} bufferDur_ms={(long)bufferedDuration.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
                 if (decoder.IsOpen) decoder.CloseFile();
                 RestoreLiveAudio();
                 _videoCapture?.ResumePreviewSubmission();
@@ -656,7 +661,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR error='{ex.Message}'");
+            var pos = PlaybackPosition;
+            var bufDur = _bufferManager.BufferedDuration;
+            var gapMs = (bufDur - pos).TotalMilliseconds;
+            Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE error='{ex.Message}' pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
+            Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
             // Can't recover — go live
             if (decoder.IsOpen) decoder.CloseFile();
             RestoreLiveAudio();

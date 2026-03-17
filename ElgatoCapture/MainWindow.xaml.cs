@@ -3874,6 +3874,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             case nameof(MainViewModel.FlashbackBufferFillPercent):
             case nameof(MainViewModel.FlashbackBufferDiskBytes):
                 UpdateFlashbackBufferFill();
+                UpdateFlashbackPositionUI(); // recalc playhead fraction as buffer grows
+                UpdateFlashbackMarkers();    // recalc in/out positions too
                 break;
 
             case nameof(MainViewModel.FlashbackBitrateInfo):
@@ -5380,6 +5382,27 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ViewModel.UpdateFlashbackBufferStatus();
     }
 
+    private void FlashbackTrack_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        var w = e.NewSize.Width;
+        var h = e.NewSize.Height;
+
+        // Size elements that fill the track
+        FlashbackTrackBackground.Width = w;
+        FlashbackTrackBackground.Height = h;
+        FlashbackScrubArea.Width = w;
+        FlashbackScrubArea.Height = h;
+        FlashbackPlayhead.Height = h;
+        FlashbackLiveEdge.Height = h;
+
+        // Live edge at right
+        Canvas.SetLeft(FlashbackLiveEdge, w - 2);
+
+        // Re-layout current positions
+        UpdateFlashbackPositionUI();
+        UpdateFlashbackMarkers();
+    }
+
     private long _lastScrubUpdateTick;
 
     private void FlashbackScrubArea_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -5432,7 +5455,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var width = FlashbackScrubArea.ActualWidth;
         if (width <= 0) return;
 
-        FlashbackPlayhead.Margin = new Thickness(Math.Clamp(pos.X, 0, width), 0, 0, 0);
+        var x = Math.Clamp(pos.X, 0, width);
+        PositionFlashbackPlayhead(x, width);
 
         var fraction = Math.Clamp(pos.X / width, 0, 1);
         var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
@@ -5510,17 +5534,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     private void UpdateFlashbackBufferFill()
     {
-        var fraction = ViewModel.FlashbackBufferFillPercent / 100.0;
-        var trackWidth = FlashbackScrubArea.ActualWidth;
-        FlashbackBufferFillBar.Width = Math.Max(0, fraction * trackWidth);
-
         var duration = ViewModel.FlashbackBufferFilledDuration;
-        var diskBytes = ViewModel.FlashbackBufferDiskBytes;
-        var diskSize = FormatDiskSize(diskBytes);
-        var statusDetail = ViewModel.IsFlashbackEnabled
-            ? $" ({duration:mm\\:ss}, {diskSize})"
-            : "";
-        FlashbackBufferStatusText.Text = $"{ViewModel.FlashbackBufferFillPercent:F0}%{statusDetail}";
+        FlashbackBufferDurationText.Text = FormatFlashbackDuration(duration);
     }
 
     private static string FormatDiskSize(long bytes)
@@ -5541,30 +5556,70 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     {
         var pos = ViewModel.FlashbackPlaybackPosition;
         var state = ViewModel.FlashbackState;
-        FlashbackPositionText.Text = state == FlashbackPlaybackState.Live
-            ? "LIVE"
-            : $"{pos:mm\\:ss\\.f}";
-
-        // Update playhead position
         var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
-        if (bufferDuration.TotalSeconds > 0)
+        var isLive = state == FlashbackPlaybackState.Live;
+
+        // Format floating time label
+        if (isLive)
+        {
+            FlashbackPlayheadTimeText.Text = "LIVE";
+        }
+        else
+        {
+            var offsetFromLive = bufferDuration - pos;
+            var totalStr = FormatFlashbackDuration(bufferDuration);
+            FlashbackPlayheadTimeText.Text = $"-{FormatFlashbackDuration(offsetFromLive)} / {totalStr}";
+        }
+
+        // Update playhead + handle + floating label position
+        // Live mode: pin to right edge. Otherwise: position fraction.
+        var trackWidth = FlashbackScrubArea.ActualWidth;
+        if (isLive)
+        {
+            PositionFlashbackPlayhead(trackWidth, trackWidth);
+        }
+        else if (bufferDuration.TotalSeconds > 0)
         {
             var fraction = pos.TotalSeconds / bufferDuration.TotalSeconds;
-            var trackWidth = FlashbackScrubArea.ActualWidth;
-            FlashbackPlayhead.Margin = new Thickness(Math.Clamp(fraction * trackWidth, 0, trackWidth), 0, 0, 0);
+            var x = Math.Clamp(fraction * trackWidth, 0, trackWidth);
+            PositionFlashbackPlayhead(x, trackWidth);
         }
+    }
+
+    private void PositionFlashbackPlayhead(double x, double trackWidth)
+    {
+        Canvas.SetLeft(FlashbackPlayhead, x - 1); // center 2px line
+        Canvas.SetLeft(FlashbackPlayheadHandle, x - 5); // center 10px circle
+
+        // Position floating time label, clamped to track bounds
+        FlashbackPlayheadTimeBorder.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var labelW = FlashbackPlayheadTimeBorder.DesiredSize.Width;
+        var labelX = Math.Clamp(x - labelW / 2, 0, Math.Max(0, trackWidth - labelW));
+        Canvas.SetLeft(FlashbackPlayheadTimeBorder, labelX);
+    }
+
+    private static string FormatFlashbackDuration(TimeSpan ts)
+    {
+        var totalMinutes = (int)ts.TotalMinutes;
+        var seconds = ts.Seconds;
+        return $"{totalMinutes}:{seconds:D2}";
     }
 
     private void UpdateFlashbackMarkers()
     {
         var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
         var trackWidth = FlashbackScrubArea.ActualWidth;
+        var trackHeight = FlashbackScrubArea.ActualHeight;
+
+        TimeSpan? inPtVal = null, outPtVal = null;
 
         if (ViewModel.FlashbackInPoint is TimeSpan inPt && bufferDuration.TotalSeconds > 0)
         {
+            inPtVal = inPt;
+            var inX = Math.Clamp(inPt.TotalSeconds / bufferDuration.TotalSeconds * trackWidth, 0, trackWidth);
             FlashbackInPointMarker.Visibility = Visibility.Visible;
-            FlashbackInPointMarker.Margin = new Thickness(
-                Math.Clamp(inPt.TotalSeconds / bufferDuration.TotalSeconds * trackWidth, 0, trackWidth), 0, 0, 0);
+            FlashbackInPointMarker.Height = trackHeight;
+            Canvas.SetLeft(FlashbackInPointMarker, inX - 1);
         }
         else
         {
@@ -5573,13 +5628,32 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
         if (ViewModel.FlashbackOutPoint is TimeSpan outPt && bufferDuration.TotalSeconds > 0)
         {
+            outPtVal = outPt;
+            var outX = Math.Clamp(outPt.TotalSeconds / bufferDuration.TotalSeconds * trackWidth, 0, trackWidth);
             FlashbackOutPointMarker.Visibility = Visibility.Visible;
-            FlashbackOutPointMarker.Margin = new Thickness(
-                Math.Clamp(outPt.TotalSeconds / bufferDuration.TotalSeconds * trackWidth, 0, trackWidth), 0, 0, 0);
+            FlashbackOutPointMarker.Height = trackHeight;
+            Canvas.SetLeft(FlashbackOutPointMarker, outX - 1);
         }
         else
         {
             FlashbackOutPointMarker.Visibility = Visibility.Collapsed;
+        }
+
+        // Selection region between in/out points
+        if (inPtVal is TimeSpan inVal && outPtVal is TimeSpan outVal && bufferDuration.TotalSeconds > 0)
+        {
+            var inFrac = inVal.TotalSeconds / bufferDuration.TotalSeconds;
+            var outFrac = outVal.TotalSeconds / bufferDuration.TotalSeconds;
+            var selLeft = Math.Clamp(inFrac * trackWidth, 0, trackWidth);
+            var selRight = Math.Clamp(outFrac * trackWidth, 0, trackWidth);
+            FlashbackSelectionRegion.Visibility = Visibility.Visible;
+            FlashbackSelectionRegion.Height = trackHeight;
+            FlashbackSelectionRegion.Width = Math.Max(0, selRight - selLeft);
+            Canvas.SetLeft(FlashbackSelectionRegion, selLeft);
+        }
+        else
+        {
+            FlashbackSelectionRegion.Visibility = Visibility.Collapsed;
         }
     }
 

@@ -264,6 +264,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return StartAsync(CreateSessionContext(context), cancellationToken);
     }
 
+    public TimeSpan LastRecordingStartPts { get; private set; }
+    public TimeSpan LastRecordingEndPts { get; private set; }
+
     public void BeginRecording(string outputPath)
     {
         if (_disposed || !_started)
@@ -273,6 +276,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         _recordingOutputPath = outputPath ?? string.Empty;
         Volatile.Write(ref _recordingActive, 1);
+        _bufferManager.PauseEviction();
         Logger.Log($"FLASHBACK_RECORDING_BEGIN output='{_recordingOutputPath}'");
     }
 
@@ -308,7 +312,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         cancellationToken.ThrowIfCancellationRequested();
         Volatile.Write(ref _recordingActive, 0);
 
-        Logger.Log($"FLASHBACK_RECORDING_END output='{_recordingOutputPath}'");
+        var (startPts, endPts) = _bufferManager.ResumeEviction();
+        LastRecordingStartPts = startPts;
+        LastRecordingEndPts = endPts;
+
+        Logger.Log($"FLASHBACK_RECORDING_END output='{_recordingOutputPath}' start_pts_ms={(long)startPts.TotalMilliseconds} end_pts_ms={(long)endPts.TotalMilliseconds} duration_s={(endPts - startPts).TotalSeconds:F1}");
 
         return new FinalizeResult
         {
