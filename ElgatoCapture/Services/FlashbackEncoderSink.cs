@@ -21,7 +21,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private readonly object _sync = new();
     private readonly LibAvEncoder _encoder = new();
     private readonly FlashbackBufferManager _bufferManager;
-    private readonly FlashbackBufferOptions _bufferOptions;
     private readonly AutoResetEvent _workAvailable = new(false);
     private readonly bool _ownsBufferManager;
     private Channel<VideoFramePacket>? _videoQueue;
@@ -73,8 +72,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     public FlashbackEncoderSink(FlashbackBufferOptions? options = null)
     {
-        _bufferOptions = options ?? new FlashbackBufferOptions();
-        _bufferManager = new FlashbackBufferManager(_bufferOptions);
+        var opts = options ?? new FlashbackBufferOptions();
+        _bufferManager = new FlashbackBufferManager(opts);
         _ownsBufferManager = true;
     }
 
@@ -82,7 +81,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     {
         ArgumentNullException.ThrowIfNull(bufferManager);
         _bufferManager = bufferManager;
-        _bufferOptions = bufferManager.Options;
         _ownsBufferManager = false;
     }
 
@@ -222,7 +220,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Interlocked.Exchange(ref _lastBurstEvictionTick, 0);
             Volatile.Write(ref _recordingActive, 0);
             _segmentStartPts = TimeSpan.Zero;
-            _segmentDuration = _bufferOptions.SegmentDuration;
+            _segmentDuration = _bufferManager.Options.SegmentDuration;
             Logger.Log($"FLASHBACK_SINK_INIT_COMPLETE session='{sessionId}' gpu_encoding={_gpuEncodingEnabled} segment_duration_s={_segmentDuration.TotalSeconds:F0}");
 
             _encodingTask = Task.Factory.StartNew(
@@ -234,7 +232,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Logger.Log(
                 $"FLASHBACK_SINK_START session='{sessionId}' output='{tsPath}' codec='{context.CodecName}' " +
                 $"width={_width} height={_height} fps={context.FrameRate:0.###} " +
-                $"buffer_ms={(long)_bufferOptions.BufferDuration.TotalMilliseconds} " +
+                $"buffer_ms={(long)_bufferManager.Options.BufferDuration.TotalMilliseconds} " +
                 $"audio={_audioEnabled} microphone={_microphoneEnabled} p010={context.IsP010}");
             return Task.CompletedTask;
         }

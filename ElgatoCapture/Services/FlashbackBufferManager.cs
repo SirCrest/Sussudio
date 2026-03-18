@@ -25,6 +25,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private TimeSpan _recordingEndPts;
     private readonly List<CompletedSegment> _completedSegments = new();
     private int _nextSegmentIndex;
+    private long _completedSegmentBytes; // running total — avoids iterating the list
 
     private record CompletedSegment(string Path, int SequenceNumber, TimeSpan StartPts, TimeSpan EndPts, long SizeBytes);
 
@@ -173,6 +174,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
             _activeSegmentPath = null;
             _completedSegments.Clear();
+            _completedSegmentBytes = 0;
             _nextSegmentIndex = 0;
             Interlocked.Exchange(ref _latestPtsTicks, 0);
             Interlocked.Exchange(ref _validStartPtsTicks, 0);
@@ -228,6 +230,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         {
             var sequenceNumber = _completedSegments.Count;
             _completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, sizeBytes));
+            _completedSegmentBytes += sizeBytes;
             Logger.Log($"FLASHBACK_BUFFER_SEGMENT_COMPLETE seq={sequenceNumber} path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} size_bytes={sizeBytes}");
 
             if (!_evictionPaused)
@@ -257,10 +260,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
-    public string ForceRotationPath()
-    {
-        return GenerateSegmentPath();
-    }
+
 
     /// <summary>
     /// Called by the encoder on each video frame to update the latest PTS.
@@ -276,22 +276,30 @@ internal sealed class FlashbackBufferManager : IDisposable
             if (ptsTicks <= current) return;
         } while (Interlocked.CompareExchange(ref _latestPtsTicks, ptsTicks, current) != current);
 
-        // Evict: advance valid start if buffer exceeds max duration (skip while recording).
-        // Double-check under lock to close the TOCTOU window where PauseEviction() could
-        // set _evictionPaused = true between our volatile read and the CAS below.
+        // Advance valid start if buffer exceeds max duration (skip while recording).
         if (!_evictionPaused)
         {
-            lock (_indexLock)
+            var maxTicks = _options.BufferDuration.Ticks;
+            var startTicks = Interlocked.Read(ref _validStartPtsTicks);
+            var duration = ptsTicks - startTicks;
+            if (duration > maxTicks)
             {
-                if (!_evictionPaused)
+                // Double-check under lock to close the TOCTOU window where PauseEviction()
+                // could set _evictionPaused between our volatile read and the CAS.
+                lock (_indexLock)
                 {
-                    var maxTicks = _options.BufferDuration.Ticks;
-                    var startTicks = Interlocked.Read(ref _validStartPtsTicks);
-                    var duration = ptsTicks - startTicks;
-                    if (duration > maxTicks)
+                    if (!_evictionPaused)
                     {
+                        startTicks = Interlocked.Read(ref _validStartPtsTicks);
                         Interlocked.CompareExchange(ref _validStartPtsTicks, ptsTicks - maxTicks, startTicks);
-                        EvictOldestSegments();
+
+                        // Only run segment eviction if there are segments that might be evictable.
+                        // This avoids taking the eviction path on every frame at 120fps.
+                        if (_completedSegments.Count > 0 &&
+                            _completedSegments[0].EndPts.Ticks <= Interlocked.Read(ref _validStartPtsTicks))
+                        {
+                            EvictOldestSegments();
+                        }
                     }
                 }
             }
@@ -307,7 +315,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
-            _totalDiskBytes = ComputeTotalSegmentBytes() + activeSegmentBytes;
+            _totalDiskBytes = _completedSegmentBytes + activeSegmentBytes;
 
             if (!_evictionPaused && _totalDiskBytes > _options.MaxDiskBytes)
             {
@@ -343,6 +351,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 TryDeleteFile(seg.Path);
             }
             _completedSegments.Clear();
+            _completedSegmentBytes = 0;
 
             // Delete active segment
             if (_activeSegmentPath != null)
@@ -388,6 +397,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 if (TryDeleteFile(oldest.Path))
                 {
                     evictedBytes += oldest.SizeBytes;
+                    _completedSegmentBytes -= oldest.SizeBytes;
                     _completedSegments.RemoveAt(0);
                     evictedCount++;
                 }
@@ -403,14 +413,13 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
 
         // Also evict if total disk bytes exceed limit
-        var totalBytes = ComputeTotalSegmentBytes();
-        while (_completedSegments.Count > 0 && totalBytes > _options.MaxDiskBytes)
+        while (_completedSegments.Count > 0 && _completedSegmentBytes > _options.MaxDiskBytes)
         {
             var oldest = _completedSegments[0];
             if (TryDeleteFile(oldest.Path))
             {
                 evictedBytes += oldest.SizeBytes;
-                totalBytes -= oldest.SizeBytes;
+                _completedSegmentBytes -= oldest.SizeBytes;
                 _completedSegments.RemoveAt(0);
                 evictedCount++;
             }
@@ -426,25 +435,11 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
-    private long ComputeTotalSegmentBytes()
-    {
-        long total = 0;
-        foreach (var seg in _completedSegments)
-        {
-            total += seg.SizeBytes;
-        }
-        return total;
-    }
-
     private bool TryDeleteFile(string filePath)
     {
         try
         {
-            if (File.Exists(filePath))
-            {
-                File.Delete(filePath);
-            }
-
+            File.Delete(filePath); // No-op if file doesn't exist (.NET 8+)
             return true;
         }
         catch (Exception ex)

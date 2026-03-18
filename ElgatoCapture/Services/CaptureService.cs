@@ -136,31 +136,13 @@ public class CaptureService : IDisposable, IAsyncDisposable
         IProgress<ExportProgress>? progress, CancellationToken ct)
     {
         var bufferManager = _flashbackBufferManager;
-        var flashbackSink = _flashbackSink;
         if (bufferManager == null)
             return FinalizeResult.Failure(outputPath, "Flashback buffer not active");
 
-        var exporter = _flashbackExporter ??= new FlashbackExporter();
-        // Map buffer-relative positions to file PTS (offset by valid start)
         var validStart = bufferManager.ValidStartPts;
         var fileInPoint = (inPoint ?? TimeSpan.Zero) + validStart;
         var fileOutPoint = outPoint.HasValue ? outPoint.Value + validStart : TimeSpan.MaxValue;
-
-        // Force-rotate active segment to make all previous segments immutable
-        if (flashbackSink != null)
-        {
-            var segmentPaths = flashbackSink.ForceRotateForExport(fileInPoint, fileOutPoint);
-            if (segmentPaths.Count > 0)
-            {
-                return await exporter.ExportSegmentsAsync(segmentPaths, fileInPoint, fileOutPoint, outputPath, true, progress, ct).ConfigureAwait(false);
-            }
-        }
-
-        // Fallback: single-file export if no segments available
-        var tsPath = bufferManager.ActiveFilePath;
-        if (string.IsNullOrWhiteSpace(tsPath))
-            return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
-        return await exporter.ExportAsync(tsPath, fileInPoint, fileOutPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+        return await ExportFlashbackCoreAsync(fileInPoint, fileOutPoint, outputPath, progress, ct).ConfigureAwait(false);
     }
 
     internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(
@@ -168,34 +150,37 @@ public class CaptureService : IDisposable, IAsyncDisposable
         IProgress<ExportProgress>? progress, CancellationToken ct)
     {
         var bufferManager = _flashbackBufferManager;
-        var flashbackSink = _flashbackSink;
         if (bufferManager == null)
             return FinalizeResult.Failure(outputPath, "Flashback buffer not active");
 
-        var exporter = _flashbackExporter ??= new FlashbackExporter();
-        // Export the last N seconds: compute in-point from current buffer state
         var bufferedDuration = bufferManager.BufferedDuration;
         var validStart = bufferManager.ValidStartPts;
         var rangeStart = bufferedDuration.TotalSeconds > seconds
             ? TimeSpan.FromSeconds(bufferedDuration.TotalSeconds - seconds)
             : TimeSpan.Zero;
         var fileInPoint = rangeStart + validStart;
+        return await ExportFlashbackCoreAsync(fileInPoint, TimeSpan.MaxValue, outputPath, progress, ct).ConfigureAwait(false);
+    }
 
-        // Force-rotate active segment to make all previous segments immutable
+    private async Task<FinalizeResult> ExportFlashbackCoreAsync(
+        TimeSpan inPoint, TimeSpan outPoint, string outputPath,
+        IProgress<ExportProgress>? progress, CancellationToken ct)
+    {
+        var flashbackSink = _flashbackSink;
+        var exporter = _flashbackExporter ??= new FlashbackExporter();
+
         if (flashbackSink != null)
         {
-            var segmentPaths = flashbackSink.ForceRotateForExport(fileInPoint, TimeSpan.MaxValue);
+            var segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint);
             if (segmentPaths.Count > 0)
-            {
-                return await exporter.ExportSegmentsAsync(segmentPaths, fileInPoint, TimeSpan.MaxValue, outputPath, true, progress, ct).ConfigureAwait(false);
-            }
+                return await exporter.ExportSegmentsAsync(segmentPaths, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
         }
 
         // Fallback: single-file export if no segments available
-        var tsPath = bufferManager.ActiveFilePath;
+        var tsPath = _flashbackBufferManager?.ActiveFilePath;
         if (string.IsNullOrWhiteSpace(tsPath))
             return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
-        return await exporter.ExportAsync(tsPath, fileInPoint, TimeSpan.MaxValue, outputPath, true, progress, ct).ConfigureAwait(false);
+        return await exporter.ExportAsync(tsPath, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
     }
 
     public int GetNegotiatedVideoWidth() => _unifiedVideoCapture?.Width ?? 0;
@@ -605,27 +590,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         Logger.Log($"FLASHBACK_RECORDING_EXPORT_BEGIN output='{outputPath}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}");
 
-        var exporter = _flashbackExporter ??= new FlashbackExporter();
-
-        // Force-rotate to get immutable segment list, then use multi-segment export
-        var segmentPaths = flashbackSink.ForceRotateForExport(startPts, endPts);
-        FinalizeResult exportResult;
-        if (segmentPaths.Count > 0)
-        {
-            exportResult = await exporter
-                .ExportSegmentsAsync(segmentPaths, startPts, endPts, outputPath, fastStart: true, progress: null, ct: cancellationToken)
-                .ConfigureAwait(false);
-        }
-        else
-        {
-            // Fallback: single-file export
-            var tsPath = _flashbackBufferManager?.ActiveFilePath;
-            if (string.IsNullOrWhiteSpace(tsPath))
-                return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
-            exportResult = await exporter
-                .ExportAsync(tsPath, startPts, endPts, outputPath, fastStart: true, progress: null, ct: cancellationToken)
-                .ConfigureAwait(false);
-        }
+        var exportResult = await ExportFlashbackCoreAsync(startPts, endPts, outputPath, progress: null, ct: cancellationToken)
+            .ConfigureAwait(false);
 
         Logger.Log($"FLASHBACK_RECORDING_EXPORT_DONE succeeded={exportResult.Succeeded} status='{exportResult.StatusMessage}'");
         return exportResult;

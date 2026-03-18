@@ -1052,11 +1052,12 @@
                                    FontSize="11" FontFamily="Consolas"
                                    Foreground="White"/>
                     </Border>
-                    <!-- Live edge indicator -->
+                    <!-- Live edge indicator (hidden — playhead already shows position) -->
                     <Border x:Name="FlashbackLiveEdge"
                             Width="2" Background="#00CED1"
                             CornerRadius="1"
-                            Canvas.Top="0"/>
+                            Canvas.Top="0"
+                            Visibility="Collapsed"/>
                     <!-- In point marker -->
                     <Border x:Name="FlashbackInPointMarker"
                             Width="2" Background="#FFD700"

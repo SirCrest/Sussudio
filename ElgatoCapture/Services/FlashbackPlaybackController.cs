@@ -55,11 +55,32 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private readonly Stopwatch _playbackFpsClock = new();
 
     // --- In/Out points ---
-    public TimeSpan? InPoint { get; set; }
-    public TimeSpan? OutPoint { get; set; }
+    private long _inPointTicks = long.MinValue;
+    private long _outPointTicks = long.MinValue;
+
+    public TimeSpan? InPoint
+    {
+        get
+        {
+            var t = Interlocked.Read(ref _inPointTicks);
+            return t == long.MinValue ? null : TimeSpan.FromTicks(t);
+        }
+        set => Interlocked.Exchange(ref _inPointTicks, value?.Ticks ?? long.MinValue);
+    }
+
+    public TimeSpan? OutPoint
+    {
+        get
+        {
+            var t = Interlocked.Read(ref _outPointTicks);
+            return t == long.MinValue ? null : TimeSpan.FromTicks(t);
+        }
+        set => Interlocked.Exchange(ref _outPointTicks, value?.Ticks ?? long.MinValue);
+    }
 
     // --- Playback thread ---
     private Thread? _playbackThread;
+    private int _playbackThreadStarted;
     private readonly Channel<PlaybackCommand> _commandChannel =
         Channel.CreateUnbounded<PlaybackCommand>(new UnboundedChannelOptions { SingleReader = true });
 
@@ -160,6 +181,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Logger.Log($"FLASHBACK_PLAYBACK_CMD_SKIP kind={CommandKind.Pause} reason=not_ready initialized={_initialized} disposed={_disposed}");
             return;
         }
+        EnsurePlaybackThread(); // Thread must be running to handle Live→Paused
         SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });
     }
 
@@ -228,7 +250,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private void EnsurePlaybackThread()
     {
-        if (_playbackThread is { IsAlive: true }) return;
+        if (Interlocked.CompareExchange(ref _playbackThreadStarted, 1, 0) != 0)
+            return;
 
         _playbackThread = new Thread(PlaybackThreadEntry)
         {
@@ -254,6 +277,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         _playbackThread = null;
+        Volatile.Write(ref _playbackThreadStarted, 0);
     }
 
     // --- Playback thread ---
@@ -382,12 +406,32 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         break;
 
                     case CommandKind.Pause:
-                        if (!isPlaying) break;
-                        isPlaying = false;
-                        _audioPlayback?.PauseRendering();
-                        pacingStopwatch.Stop();
-                        SetState(FlashbackPlaybackState.Paused);
-                        Logger.Log($"FLASHBACK_PLAYBACK_PAUSE pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
+                        if (isPlaying)
+                        {
+                            // Pause from Playing state
+                            isPlaying = false;
+                            _audioPlayback?.PauseRendering();
+                            pacingStopwatch.Stop();
+                            SetState(FlashbackPlaybackState.Paused);
+                            Logger.Log($"FLASHBACK_PLAYBACK_PAUSE pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
+                        }
+                        else if (State == FlashbackPlaybackState.Live)
+                        {
+                            // Pause from Live state — freeze at current buffer edge
+                            _videoCapture?.SuppressPreviewSubmission();
+                            SuppressLiveAudio();
+                            _audioPlayback?.PauseRendering();
+
+                            var pausePos = _bufferManager.BufferedDuration;
+                            PlaybackPosition = pausePos;
+
+                            decoder ??= CreateDecoder();
+                            EnsureFileOpen(decoder, ref fileOpen);
+                            SeekAndDisplayKeyframe(decoder, pausePos);
+
+                            SetState(FlashbackPlaybackState.Paused);
+                            Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)pausePos.TotalMilliseconds}");
+                        }
                         break;
 
                     case CommandKind.GoLive:
@@ -529,7 +573,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
             var gotFrame = decoder.TryDecodeNextVideoFrame(out var frame);
             if (gotFrame)
             {
-                SubmitFrame(frame);
+                try
+                {
+                    SubmitFrame(frame);
+                }
+                finally
+                {
+                    FlashbackDecoder.ReleaseHeldFrame(frame);
+                }
 
                 // Set position to actual decoded frame PTS mapped back to buffer position
                 var actualPosition = frame.Pts - _bufferManager.ValidStartPts;
@@ -580,7 +631,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 return true;
             }
 
-            SubmitFrame(videoFrame);
+            try
+            {
+                SubmitFrame(videoFrame);
+            }
+            finally
+            {
+                FlashbackDecoder.ReleaseHeldFrame(videoFrame);
+            }
             Interlocked.Exchange(ref _lastVideoPtsTicks, videoFrame.Pts.Ticks);
 
             // Map file PTS back to buffer position
@@ -589,7 +647,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             PlaybackPosition = newPosition;
 
             // Check OutPoint
-            if (OutPoint.HasValue && newPosition >= OutPoint.Value)
+            var outTicks = Interlocked.Read(ref _outPointTicks);
+            if (outTicks != long.MinValue && newPosition >= TimeSpan.FromTicks(outTicks))
             {
                 Logger.Log($"FLASHBACK_PLAYBACK_HIT_OUTPOINT pos_ms={(long)newPosition.TotalMilliseconds}");
                 SetState(FlashbackPlaybackState.Paused);
@@ -695,8 +754,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private TimeSpan ClampPosition(TimeSpan position)
     {
-        var min = InPoint ?? TimeSpan.Zero;
-        var max = OutPoint ?? _bufferManager.BufferedDuration;
+        var inTicks = Interlocked.Read(ref _inPointTicks);
+        var min = inTicks == long.MinValue ? TimeSpan.Zero : TimeSpan.FromTicks(inTicks);
+        var outTicks = Interlocked.Read(ref _outPointTicks);
+        var max = outTicks == long.MinValue ? _bufferManager.BufferedDuration : TimeSpan.FromTicks(outTicks);
         if (position < min) return min;
         if (position > max) return max;
         return position;
@@ -710,7 +771,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (oldState == newState) return;
         _state = newState;
         Logger.Log($"FLASHBACK_PLAYBACK_STATE {oldState} -> {newState}");
-        StateChanged?.Invoke(newState);
+        try { StateChanged?.Invoke(newState); }
+        catch (Exception ex) { Logger.Log($"FLASHBACK_PLAYBACK_STATE_HANDLER_FAIL type={ex.GetType().Name} msg={ex.Message}"); }
     }
 
     public bool IsInitialized => _initialized;
@@ -771,13 +833,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
         _audioPlayback?.ResumeRendering();
         if (_audioCapture != null && _audioPlayback != null)
             _audioCapture.SetPlayback(_audioPlayback);
-    }
-
-    private void ThrowIfNotInitialized()
-    {
-        if (!_initialized)
-            throw new InvalidOperationException("FlashbackPlaybackController has not been initialized.");
-        ObjectDisposedException.ThrowIf(_disposed, this);
     }
 
     // --- Timer resolution P/Invoke (1ms sleep granularity for 120fps pacing) ---

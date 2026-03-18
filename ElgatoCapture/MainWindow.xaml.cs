@@ -5485,7 +5485,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void FlashbackPlayPauseButton_Click(object sender, RoutedEventArgs e)
     {
         var state = ViewModel.FlashbackState;
-        if (state == FlashbackPlaybackState.Playing)
+        if (state == FlashbackPlaybackState.Playing || state == FlashbackPlaybackState.Live)
         {
             ViewModel.FlashbackPause();
         }
@@ -5528,7 +5528,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private void UpdateFlashbackStateUI()
     {
         var state = ViewModel.FlashbackState;
-        FlashbackPlayPauseIcon.Glyph = state == FlashbackPlaybackState.Playing ? "\uE769" : "\uE768";
+        FlashbackPlayPauseIcon.Glyph = state == FlashbackPlaybackState.Playing || state == FlashbackPlaybackState.Live ? "\uE769" : "\uE768";
         FlashbackGoLiveButton.IsEnabled = state != FlashbackPlaybackState.Live && state != FlashbackPlaybackState.Disabled;
     }
 
