@@ -398,7 +398,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             // stale audio between the keyframe and the target position.
                             // GOP can be up to 2s — that's the user-reported desync.
                             decoder.AudioChunkCallback = null;
-                            decoder.SeekTo(PlaybackPosition);
+                            decoder.SeekTo(PlaybackPosition + frozenValidStart);
                             frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
                         }
                         RestoreAudioCallback(decoder);
@@ -491,18 +491,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var contextPtr = d3dManager?.ImmediateContext?.NativePointer ?? IntPtr.Zero;
         decoder.Initialize(devicePtr, contextPtr);
 
-        // Wire up inline audio: decoded audio chunks are delivered as a side
-        // effect of reading video packets — no separate audio loop needed.
-        var playback = _audioPlayback;
-        if (playback != null)
-        {
-            decoder.AudioChunkCallback = chunk =>
-            {
-                Interlocked.Exchange(ref _lastAudioPtsTicks, chunk.Pts.Ticks);
-                playback.EnqueuePooledSamples(chunk.Samples, chunk.ValidLength, chunk.Pts.Ticks);
-            };
-        }
-
+        RestoreAudioCallback(decoder);
         return decoder;
     }
 
@@ -556,7 +545,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         _decoderHwAccel = "N/A";
     }
 
-    private void SeekAndDisplayKeyframe(FlashbackDecoder decoder, TimeSpan bufferPosition, TimeSpan validStartPts = default)
+    private void SeekAndDisplayKeyframe(FlashbackDecoder decoder, TimeSpan bufferPosition, TimeSpan validStartPts)
     {
         // Suppress audio delivery during scrub — prevents audio accumulation
         // in the WASAPI queue. Audio callback is re-enabled on Play/EndScrub.
@@ -575,8 +564,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         try
         {
-            // Map buffer position to file PTS (offset by valid start)
-            var filePts = bufferPosition + (validStartPts > TimeSpan.Zero ? validStartPts : _bufferManager.ValidStartPts);
+            // Map buffer position to file PTS (offset by frozen valid start)
+            var filePts = bufferPosition + validStartPts;
 
             if (!decoder.SeekToKeyframe(filePts))
             {
@@ -599,7 +588,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 }
 
                 // Set position to actual decoded frame PTS mapped back to buffer position
-                var actualPosition = frame.Pts - (validStartPts > TimeSpan.Zero ? validStartPts : _bufferManager.ValidStartPts);
+                var actualPosition = frame.Pts - validStartPts;
                 if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
                 PlaybackPosition = actualPosition;
             }
@@ -655,7 +644,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         _currentOpenFilePath = nextFile;
                         // Seek to our current position in the new file
                         decoder.AudioChunkCallback = null;
-                        decoder.SeekTo(pos);
+                        decoder.SeekTo(pos + frozenValidStart);
                         RestoreAudioCallback(decoder);
                         pacingStopwatch.Restart();
                         return true;
