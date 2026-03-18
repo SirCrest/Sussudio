@@ -290,6 +290,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var isPlaying = false;
         var isScrubbing = false;
         var fileOpen = false;
+        var frozenValidStart = TimeSpan.Zero; // captured when leaving Live, used for position mapping
 
         // Set 1ms timer resolution for accurate Thread.Sleep pacing.
         // Without this, Sleep(8) at 120fps sleeps ~15ms (default granularity) → half-speed.
@@ -306,7 +307,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     {
                         if (decoder is { IsOpen: true })
                         {
-                            if (!PaceAndDecodeFrame(decoder, pacingStopwatch, ref frameDuration))
+                            if (!PaceAndDecodeFrame(decoder, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart))
                             {
                                 isPlaying = false;
                             }
@@ -341,21 +342,22 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     case CommandKind.BeginScrub:
                         isPlaying = false;
                         isScrubbing = true;
+                        frozenValidStart = _bufferManager.ValidStartPts;
                         _videoCapture?.SuppressPreviewSubmission();
                         SuppressLiveAudio();
                         _audioPlayback?.PauseRendering();
                         SetState(FlashbackPlaybackState.Scrubbing);
 
                         decoder ??= CreateDecoder();
-                        EnsureFileOpen(decoder, ref fileOpen);
-                        SeekAndDisplayKeyframe(decoder, cmd.Position);
+                        EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
+                        SeekAndDisplayKeyframe(decoder, cmd.Position, frozenValidStart);
                         break;
 
                     case CommandKind.UpdateScrub:
                         if (!isScrubbing) break;
                         decoder ??= CreateDecoder();
-                        EnsureFileOpen(decoder, ref fileOpen);
-                        SeekAndDisplayKeyframe(decoder, cmd.Position);
+                        EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
+                        SeekAndDisplayKeyframe(decoder, cmd.Position, frozenValidStart);
                         break;
 
                     case CommandKind.EndScrub:
@@ -386,8 +388,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         ResetPlaybackMetrics();
                         pacingStopwatch.Restart();
 
+                        if (State == FlashbackPlaybackState.Live)
+                            frozenValidStart = _bufferManager.ValidStartPts;
                         decoder ??= CreateDecoder();
-                        EnsureFileOpen(decoder, ref fileOpen);
+                        EnsureFileOpen(decoder, ref fileOpen, PlaybackPosition + frozenValidStart);
                         if (decoder.IsOpen)
                         {
                             // Suppress audio during seek-forward to prevent enqueuing
@@ -422,12 +426,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             SuppressLiveAudio();
                             _audioPlayback?.PauseRendering();
 
+                            frozenValidStart = _bufferManager.ValidStartPts;
                             var pausePos = _bufferManager.BufferedDuration;
                             PlaybackPosition = pausePos;
 
                             decoder ??= CreateDecoder();
-                            EnsureFileOpen(decoder, ref fileOpen);
-                            SeekAndDisplayKeyframe(decoder, pausePos);
+                            EnsureFileOpen(decoder, ref fileOpen, pausePos + frozenValidStart);
+                            SeekAndDisplayKeyframe(decoder, pausePos, frozenValidStart);
 
                             SetState(FlashbackPlaybackState.Paused);
                             Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)pausePos.TotalMilliseconds}");
@@ -449,8 +454,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         nudgedPos = ClampPosition(nudgedPos);
                         if (decoder != null)
                         {
-                            EnsureFileOpen(decoder, ref fileOpen);
-                            SeekAndDisplayKeyframe(decoder, nudgedPos);
+                            EnsureFileOpen(decoder, ref fileOpen, nudgedPos + frozenValidStart);
+                            SeekAndDisplayKeyframe(decoder, nudgedPos, frozenValidStart);
                         }
                         break;
                 }
@@ -501,23 +506,31 @@ internal sealed class FlashbackPlaybackController : IDisposable
         return decoder;
     }
 
-    private void EnsureFileOpen(FlashbackDecoder decoder, ref bool fileOpen)
-    {
-        if (fileOpen && decoder.IsOpen)
-            return;
+    private string? _currentOpenFilePath;
 
-        var filePath = _bufferManager.ActiveFilePath;
+    private void EnsureFileOpen(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan? targetPts = null)
+    {
+        // Determine which segment file contains the target position
+        var filePath = targetPts.HasValue
+            ? _bufferManager.GetSegmentFileForPosition(targetPts.Value)
+            : _bufferManager.ActiveFilePath;
+
         if (string.IsNullOrWhiteSpace(filePath))
         {
             Logger.Log("FLASHBACK_PLAYBACK_NO_FILE");
             return;
         }
 
+        // If already open on the correct file, nothing to do
+        if (fileOpen && decoder.IsOpen && filePath == _currentOpenFilePath)
+            return;
+
         try
         {
             if (decoder.IsOpen) decoder.CloseFile();
             decoder.OpenFile(filePath);
             fileOpen = true;
+            _currentOpenFilePath = filePath;
             _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
             Logger.Log($"FLASHBACK_PLAYBACK_FILE_OPEN path='{filePath}' hw_accel={_decoderHwAccel}");
         }
@@ -525,6 +538,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             Logger.Log($"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' error='{ex.Message}'");
             fileOpen = false;
+            _currentOpenFilePath = null;
         }
     }
 
@@ -538,10 +552,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
             decoder = null;
         }
         fileOpen = false;
+        _currentOpenFilePath = null;
         _decoderHwAccel = "N/A";
     }
 
-    private void SeekAndDisplayKeyframe(FlashbackDecoder decoder, TimeSpan bufferPosition)
+    private void SeekAndDisplayKeyframe(FlashbackDecoder decoder, TimeSpan bufferPosition, TimeSpan validStartPts = default)
     {
         // Suppress audio delivery during scrub — prevents audio accumulation
         // in the WASAPI queue. Audio callback is re-enabled on Play/EndScrub.
@@ -561,7 +576,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         try
         {
             // Map buffer position to file PTS (offset by valid start)
-            var filePts = bufferPosition + _bufferManager.ValidStartPts;
+            var filePts = bufferPosition + (validStartPts > TimeSpan.Zero ? validStartPts : _bufferManager.ValidStartPts);
 
             if (!decoder.SeekToKeyframe(filePts))
             {
@@ -584,7 +599,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 }
 
                 // Set position to actual decoded frame PTS mapped back to buffer position
-                var actualPosition = frame.Pts - _bufferManager.ValidStartPts;
+                var actualPosition = frame.Pts - (validStartPts > TimeSpan.Zero ? validStartPts : _bufferManager.ValidStartPts);
                 if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
                 PlaybackPosition = actualPosition;
             }
@@ -613,7 +628,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private bool PaceAndDecodeFrame(
         FlashbackDecoder decoder,
         Stopwatch pacingStopwatch,
-        ref TimeSpan frameDuration)
+        ref TimeSpan frameDuration,
+        ref bool fileOpen,
+        TimeSpan frozenValidStart)
     {
         try
         {
@@ -623,9 +640,29 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 var pos = PlaybackPosition;
                 var gap = (bufDur - pos).TotalMilliseconds;
 
-                // Always wait and retry — the .ts file is concurrently written by the encoder.
-                // av_read_frame returns EOF temporarily when it catches up to the write frontier;
-                // the AVIO EOF flag is cleared by the decoder so the next read will see new data.
+                // EOF could mean: (a) we've caught up to the write head of the active segment,
+                // or (b) we've reached the end of a completed segment and need to switch files.
+                // If there's a large gap to the live edge, try opening the next segment.
+                if (gap > 2000)
+                {
+                    var nextFilePts = pos + frozenValidStart;
+                    var nextFile = _bufferManager.GetSegmentFileForPosition(nextFilePts);
+                    if (nextFile != null && nextFile != _currentOpenFilePath)
+                    {
+                        Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH pos_ms={(long)pos.TotalMilliseconds} next='{System.IO.Path.GetFileName(nextFile)}'");
+                        decoder.CloseFile();
+                        decoder.OpenFile(nextFile);
+                        _currentOpenFilePath = nextFile;
+                        // Seek to our current position in the new file
+                        decoder.AudioChunkCallback = null;
+                        decoder.SeekTo(pos);
+                        RestoreAudioCallback(decoder);
+                        pacingStopwatch.Restart();
+                        return true;
+                    }
+                }
+
+                // At the write head of the active segment — wait for encoder to produce more data
                 Logger.Log($"FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT gap_ms={gap:F0} pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds}");
                 Thread.Sleep(50);
                 pacingStopwatch.Restart();
@@ -642,8 +679,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             }
             Interlocked.Exchange(ref _lastVideoPtsTicks, videoFrame.Pts.Ticks);
 
-            // Map file PTS back to buffer position
-            var newPosition = videoFrame.Pts - _bufferManager.ValidStartPts;
+            // Map file PTS back to buffer position using frozen valid start
+            var newPosition = videoFrame.Pts - frozenValidStart;
             if (newPosition < TimeSpan.Zero) newPosition = TimeSpan.Zero;
             PlaybackPosition = newPosition;
 

@@ -240,6 +240,25 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
+    /// <summary>
+    /// Returns the segment file path containing the given absolute PTS, or the active segment
+    /// as fallback. Used by the playback controller to open the correct file for seeking.
+    /// </summary>
+    public string? GetSegmentFileForPosition(TimeSpan absolutePts)
+    {
+        lock (_indexLock)
+        {
+            // Search completed segments (they have known PTS ranges)
+            foreach (var seg in _completedSegments)
+            {
+                if (absolutePts >= seg.StartPts && absolutePts < seg.EndPts)
+                    return seg.Path;
+            }
+            // Fall back to active segment (contains the most recent, still-growing data)
+            return _activeSegmentPath;
+        }
+    }
+
     public IReadOnlyList<string> GetValidSegmentPaths(TimeSpan inPoint, TimeSpan outPoint)
     {
         lock (_indexLock)
