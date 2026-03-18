@@ -40,10 +40,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private bool _gpuEncodingEnabled;
 
     private volatile bool _forceRotateRequested;
-    private ManualResetEventSlim? _forceRotateComplete;
+    private volatile TaskCompletionSource<IReadOnlyList<string>>? _forceRotateTcs;
     private TimeSpan _forceRotateInPoint;
     private TimeSpan _forceRotateOutPoint;
-    private IReadOnlyList<string>? _forceRotateResult;
 
     private long _droppedVideoFrames;
     private long _encodedVideoFrames;
@@ -534,8 +533,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         _microphoneEnabled = false;
         _encodingTask = null;
         _workAvailable.Dispose();
-        _forceRotateComplete?.Dispose();
-        _forceRotateComplete = null;
+        _forceRotateTcs?.TrySetResult(Array.Empty<string>());
+        _forceRotateTcs = null;
 
         try
         {
@@ -646,15 +645,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                             RotateSegment(currentPts);
                         }
 
-                        _forceRotateResult = _bufferManager.GetValidSegmentPaths(_forceRotateInPoint, _forceRotateOutPoint);
+                        _forceRotateTcs?.TrySetResult(_bufferManager.GetValidSegmentPaths(_forceRotateInPoint, _forceRotateOutPoint));
                     }
                     catch (Exception ex)
                     {
                         Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}");
-                        _forceRotateResult = Array.Empty<string>();
+                        _forceRotateTcs?.TrySetResult(Array.Empty<string>());
                     }
-
-                    _forceRotateComplete?.Set();
                     madeProgress = true;
                 }
 
@@ -847,28 +844,20 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
 
         // Signal the encoding thread to perform the rotation (all encoder ops must be on that thread)
-        var completion = new ManualResetEventSlim(false);
+        var tcs = new TaskCompletionSource<IReadOnlyList<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
         _forceRotateInPoint = inPoint;
         _forceRotateOutPoint = outPoint;
-        _forceRotateResult = null;
-        _forceRotateComplete = completion;
+        _forceRotateTcs = tcs;
         _forceRotateRequested = true;
         _workAvailable.Set();
 
-        try
+        if (!tcs.Task.Wait(TimeSpan.FromSeconds(10)))
         {
-            if (!completion.Wait(TimeSpan.FromSeconds(10)))
-            {
-                Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT");
-                return Array.Empty<string>();
-            }
+            Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT");
+            return Array.Empty<string>();
+        }
 
-            return _forceRotateResult ?? Array.Empty<string>();
-        }
-        finally
-        {
-            completion.Dispose();
-        }
+        return tcs.Task.Result;
     }
 
     private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)

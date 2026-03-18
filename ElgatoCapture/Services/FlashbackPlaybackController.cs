@@ -467,6 +467,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         finally
         {
             timeEndPeriod(1);
+            Interlocked.Exchange(ref _playbackThreadStarted, 0);
         }
 
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");

@@ -167,20 +167,30 @@ public class CaptureService : IDisposable, IAsyncDisposable
         IProgress<ExportProgress>? progress, CancellationToken ct)
     {
         var flashbackSink = _flashbackSink;
+        var bufferManager = _flashbackBufferManager;
         var exporter = _flashbackExporter ??= new FlashbackExporter();
 
-        if (flashbackSink != null)
+        // Pause eviction so segments aren't deleted while the exporter reads them
+        bufferManager?.PauseEviction();
+        try
         {
-            var segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint);
-            if (segmentPaths.Count > 0)
-                return await exporter.ExportSegmentsAsync(segmentPaths, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
-        }
+            if (flashbackSink != null)
+            {
+                var segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint);
+                if (segmentPaths.Count > 0)
+                    return await exporter.ExportSegmentsAsync(segmentPaths, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+            }
 
-        // Fallback: single-file export if no segments available
-        var tsPath = _flashbackBufferManager?.ActiveFilePath;
-        if (string.IsNullOrWhiteSpace(tsPath))
-            return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
-        return await exporter.ExportAsync(tsPath, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+            // Fallback: single-file export if no segments available
+            var tsPath = bufferManager?.ActiveFilePath;
+            if (string.IsNullOrWhiteSpace(tsPath))
+                return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
+            return await exporter.ExportAsync(tsPath, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            bufferManager?.ResumeEviction();
+        }
     }
 
     public int GetNegotiatedVideoWidth() => _unifiedVideoCapture?.Width ?? 0;

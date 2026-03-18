@@ -15,6 +15,7 @@ namespace ElgatoCapture.Services;
 /// </summary>
 internal sealed unsafe class FlashbackExporter : IDisposable
 {
+    private readonly SemaphoreSlim _exportLock = new(1, 1);
     private AVFormatContext* _activeInputContext;
     private AVFormatContext* _activeOutputContext;
     private string? _activeTempPath;
@@ -77,6 +78,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         Logger.Log("FLASHBACK_EXPORT_DISPOSE");
         CleanupNativeState();
+        _exportLock.Dispose();
         _disposed = true;
         GC.SuppressFinalize(this);
     }
@@ -112,6 +114,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
+        _exportLock.Wait(ct);
+        try
+        {
         var tmpPath = outputPath + ".tmp";
         _activeTempPath = tmpPath;
 
@@ -407,6 +412,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             DeleteTempFileIfPresent(tmpPath);
             _activeTempPath = null;
         }
+        }
+        finally
+        {
+            _exportLock.Release();
+        }
     }
 
     private FinalizeResult ExportSegmentsCore(
@@ -448,6 +458,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             catch { /* ignore */ }
         }
 
+        _exportLock.Wait(ct);
+        try
+        {
         var tmpPath = outputPath + ".tmp";
         _activeTempPath = tmpPath;
 
@@ -781,6 +794,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             CleanupNativeState();
             DeleteTempFileIfPresent(tmpPath);
             _activeTempPath = null;
+        }
+        }
+        finally
+        {
+            _exportLock.Release();
         }
     }
 
