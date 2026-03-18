@@ -19,7 +19,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private const int StopTimeoutMs = 30_000;
 
     private readonly object _sync = new();
-    private readonly object _rotationLock = new();
     private readonly LibAvEncoder _encoder = new();
     private readonly FlashbackBufferManager _bufferManager;
     private readonly FlashbackBufferOptions _bufferOptions;
@@ -40,6 +39,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private bool _started;
     private bool _disposed;
     private bool _gpuEncodingEnabled;
+
+    private volatile bool _forceRotateRequested;
+    private ManualResetEventSlim? _forceRotateComplete;
+    private TimeSpan _forceRotateInPoint;
+    private TimeSpan _forceRotateOutPoint;
+    private IReadOnlyList<string>? _forceRotateResult;
 
     private long _droppedVideoFrames;
     private long _encodedVideoFrames;
@@ -531,6 +536,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         _microphoneEnabled = false;
         _encodingTask = null;
         _workAvailable.Dispose();
+        _forceRotateComplete?.Dispose();
+        _forceRotateComplete = null;
 
         try
         {
@@ -623,6 +630,34 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 if (_microphoneEnabled && microphoneQueue != null)
                 {
                     madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
+                }
+
+                // Handle force-rotate requests from the export thread (must run on encoding thread)
+                if (_forceRotateRequested)
+                {
+                    _forceRotateRequested = false;
+                    try
+                    {
+                        var frameRate = _sessionContext?.FrameRate ?? 30.0;
+                        var currentPts = frameRate > 0
+                            ? TimeSpan.FromSeconds(_encoder.NextVideoPts / frameRate)
+                            : TimeSpan.Zero;
+
+                        if (currentPts > _segmentStartPts)
+                        {
+                            RotateSegment(currentPts);
+                        }
+
+                        _forceRotateResult = _bufferManager.GetValidSegmentPaths(_forceRotateInPoint, _forceRotateOutPoint);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                        _forceRotateResult = Array.Empty<string>();
+                    }
+
+                    _forceRotateComplete?.Set();
+                    madeProgress = true;
                 }
 
                 if (videoQueue.Reader.Completion.IsCompleted &&
@@ -750,14 +785,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _bufferManager.UpdateLatestPts(pts);
 
             // Check if current segment duration exceeded — trigger rotation
-            // TryEnter: skip if ForceRotateForExport holds the lock (it'll rotate for us)
+            // All rotation now happens on the encoding thread, no lock needed
             if (_segmentDuration > TimeSpan.Zero && pts - _segmentStartPts >= _segmentDuration)
             {
-                if (Monitor.TryEnter(_rotationLock))
-                {
-                    try { RotateSegment(pts); }
-                    finally { Monitor.Exit(_rotationLock); }
-                }
+                RotateSegment(pts);
             }
         }
 
@@ -803,6 +834,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
         catch (Exception ex)
         {
+            // Advance _segmentStartPts to prevent infinite retry on every frame
+            _segmentStartPts = currentPts;
             Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
     }
@@ -815,22 +848,29 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 return Array.Empty<string>();
         }
 
-        // Hold _rotationLock to prevent concurrent rotation from the encoding loop
-        lock (_rotationLock)
+        // Signal the encoding thread to perform the rotation (all encoder ops must be on that thread)
+        var completion = new ManualResetEventSlim(false);
+        _forceRotateInPoint = inPoint;
+        _forceRotateOutPoint = outPoint;
+        _forceRotateResult = null;
+        _forceRotateComplete = completion;
+        _forceRotateRequested = true;
+        _workAvailable.Set();
+
+        try
         {
-            var frameRate = _sessionContext?.FrameRate ?? 30.0;
-            var currentPts = frameRate > 0
-                ? TimeSpan.FromSeconds(_encoder.NextVideoPts / frameRate)
-                : TimeSpan.Zero;
-
-            if (currentPts > _segmentStartPts)
+            if (!completion.Wait(TimeSpan.FromSeconds(10)))
             {
-                RotateSegment(currentPts);
+                Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT");
+                return Array.Empty<string>();
             }
-        }
 
-        // Return the list of completed segment paths that cover the requested range
-        return _bufferManager.GetValidSegmentPaths(inPoint, outPoint);
+            return _forceRotateResult ?? Array.Empty<string>();
+        }
+        finally
+        {
+            completion.Dispose();
+        }
     }
 
     private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)

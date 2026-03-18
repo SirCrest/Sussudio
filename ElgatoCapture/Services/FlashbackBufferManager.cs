@@ -388,9 +388,13 @@ internal sealed class FlashbackBufferManager : IDisposable
                 if (TryDeleteFile(oldest.Path))
                 {
                     evictedBytes += oldest.SizeBytes;
+                    _completedSegments.RemoveAt(0);
+                    evictedCount++;
                 }
-                _completedSegments.RemoveAt(0);
-                evictedCount++;
+                else
+                {
+                    break; // Can't delete — file is locked, stop evicting
+                }
             }
             else
             {
@@ -407,9 +411,13 @@ internal sealed class FlashbackBufferManager : IDisposable
             {
                 evictedBytes += oldest.SizeBytes;
                 totalBytes -= oldest.SizeBytes;
+                _completedSegments.RemoveAt(0);
+                evictedCount++;
             }
-            _completedSegments.RemoveAt(0);
-            evictedCount++;
+            else
+            {
+                break; // Can't delete — file is locked, stop evicting
+            }
         }
 
         if (evictedCount > 0)

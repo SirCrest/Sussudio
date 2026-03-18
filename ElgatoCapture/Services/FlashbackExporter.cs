@@ -459,7 +459,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_START segments={segmentPaths.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
 
             var usTimeBase = new AVRational { num = 1, den = 1_000_000 };
-            var outPtsLimitUs = outPoint == TimeSpan.MaxValue ? long.MaxValue : (long)(outPoint.TotalSeconds * 1_000_000);
+            var outPtsLimitUs = outPoint == TimeSpan.MaxValue ? long.MaxValue : (long)(outPoint.TotalSeconds * ffmpeg.AV_TIME_BASE);
 
             // Output state — initialized from first segment
             int streamCount = 0;
@@ -525,7 +525,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     var segBufferedPackets = new List<IntPtr>();
                     var segBufferedStreamIndices = new List<int>();
                     var segAllBasesDiscovered = false;
-                    long segMaxPtsUs = 0; // track highest PTS in this segment for offset calculation
+                    long segMaxPtsUs = 0; // track highest rebased PTS in this segment for offset calculation
+                    long segAbsMaxPtsUs = 0; // track highest absolute PTS for outPoint check
 
                     while (true)
                     {
@@ -600,6 +601,22 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                         var oi = streamMap[si];
                                         var outStr = _activeOutputContext->streams[oi];
 
+                                        // Check outPoint against absolute PTS BEFORE remapping
+                                        // At this point buffPkt->pts is in outStr->time_base but still absolute encoder PTS
+                                        if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
+                                        {
+                                            var absPtsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
+                                            if (si == videoStreamIndex && absPtsUs > segAbsMaxPtsUs)
+                                                segAbsMaxPtsUs = absPtsUs;
+                                            if (outPtsLimitUs < long.MaxValue && si == videoStreamIndex && absPtsUs > outPtsLimitUs)
+                                            {
+                                                ffmpeg.av_packet_free(&buffPkt);
+                                                segBufferedPackets[bi] = IntPtr.Zero;
+                                                stopFlushing = true;
+                                                continue;
+                                            }
+                                        }
+
                                         // Remap: subtract segment base, add cross-segment offset
                                         var segBaseTs = ffmpeg.av_rescale_q(segMinBaseUs!.Value, usTimeBase, outStr->time_base);
                                         var offsetTs = ffmpeg.av_rescale_q(outputPtsOffsetUs, usTimeBase, outStr->time_base);
@@ -610,15 +627,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                             // Track max PTS for offset calculation
                                             var ptsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
                                             if (ptsUs > segMaxPtsUs) segMaxPtsUs = ptsUs;
-
-                                            // Check outPoint
-                                            if (ptsUs > outPtsLimitUs && si == videoStreamIndex)
-                                            {
-                                                ffmpeg.av_packet_free(&buffPkt);
-                                                segBufferedPackets[bi] = IntPtr.Zero;
-                                                stopFlushing = true;
-                                                continue;
-                                            }
                                         }
                                         if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
                                         {
@@ -657,6 +665,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
                             // Phase 2: inline write
                             var outStream2 = _activeOutputContext->streams[mappedIndex];
+
+                            // Check outPoint against absolute PTS BEFORE remapping
+                            // At this point packet->pts is in outStream2->time_base but still absolute encoder PTS
+                            if (packet->pts != ffmpeg.AV_NOPTS_VALUE && streamIndex == videoStreamIndex)
+                            {
+                                var absPtsUs = ffmpeg.av_rescale_q(packet->pts, outStream2->time_base, usTimeBase);
+                                if (absPtsUs > segAbsMaxPtsUs)
+                                    segAbsMaxPtsUs = absPtsUs;
+                                if (outPtsLimitUs < long.MaxValue && absPtsUs > outPtsLimitUs)
+                                    break;
+                            }
+
                             var segBase = ffmpeg.av_rescale_q(segMinBaseUs!.Value, usTimeBase, outStream2->time_base);
                             var offset = ffmpeg.av_rescale_q(outputPtsOffsetUs, usTimeBase, outStream2->time_base);
 
@@ -665,10 +685,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                 packet->pts = packet->pts - segBase + offset;
                                 var ptsUs = ffmpeg.av_rescale_q(packet->pts, outStream2->time_base, usTimeBase);
                                 if (ptsUs > segMaxPtsUs) segMaxPtsUs = ptsUs;
-
-                                // Check outPoint
-                                if (ptsUs > outPtsLimitUs && streamIndex == videoStreamIndex)
-                                    break;
                             }
                             if (packet->dts != ffmpeg.AV_NOPTS_VALUE)
                             {
@@ -719,7 +735,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     Logger.Log($"FLASHBACK_EXPORT_SEGMENT_DONE seg={segIdx}/{segmentPaths.Count} path='{Path.GetFileName(segPath)}' packets={totalPackets}");
 
                     // If outPoint was hit, stop processing more segments
-                    if (outPtsLimitUs < long.MaxValue && segMaxPtsUs >= outPtsLimitUs)
+                    // Use absolute PTS (not rebased) since outPtsLimitUs is in absolute encoder time
+                    if (outPtsLimitUs < long.MaxValue && segAbsMaxPtsUs >= outPtsLimitUs)
                         break;
                 }
             }

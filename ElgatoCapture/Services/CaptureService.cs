@@ -447,6 +447,11 @@ public class CaptureService : IDisposable, IAsyncDisposable
             try { bufferManager.Dispose(); }
             catch (Exception disposeEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_BUFFER_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
 
+            _flashbackSink = null;
+            _flashbackBufferManager = null;
+            _flashbackExporter = null;
+            _flashbackPlaybackController = null;
+
             throw;
         }
     }
