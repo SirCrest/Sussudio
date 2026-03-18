@@ -32,7 +32,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private FlashbackEncoderSink? _flashbackSink;
     private FlashbackExporter? _flashbackExporter;
     private FlashbackPlaybackController? _flashbackPlaybackController;
-    private bool _flashbackEnabled = true;
+    private volatile bool _flashbackEnabled = true;
     private WasapiAudioCapture? _wasapiAudioCapture;
     private WasapiAudioCapture? _microphoneCapture;
     private string? _micMonitorDeviceId;
@@ -136,18 +136,30 @@ public class CaptureService : IDisposable, IAsyncDisposable
         IProgress<ExportProgress>? progress, CancellationToken ct)
     {
         var bufferManager = _flashbackBufferManager;
+        var flashbackSink = _flashbackSink;
         if (bufferManager == null)
             return FinalizeResult.Failure(outputPath, "Flashback buffer not active");
-
-        var tsPath = bufferManager.ActiveFilePath;
-        if (string.IsNullOrWhiteSpace(tsPath))
-            return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
 
         var exporter = _flashbackExporter ??= new FlashbackExporter();
         // Map buffer-relative positions to file PTS (offset by valid start)
         var validStart = bufferManager.ValidStartPts;
         var fileInPoint = (inPoint ?? TimeSpan.Zero) + validStart;
         var fileOutPoint = outPoint.HasValue ? outPoint.Value + validStart : TimeSpan.MaxValue;
+
+        // Force-rotate active segment to make all previous segments immutable
+        if (flashbackSink != null)
+        {
+            var segmentPaths = flashbackSink.ForceRotateForExport(fileInPoint, fileOutPoint);
+            if (segmentPaths.Count > 0)
+            {
+                return await exporter.ExportSegmentsAsync(segmentPaths, fileInPoint, fileOutPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+            }
+        }
+
+        // Fallback: single-file export if no segments available
+        var tsPath = bufferManager.ActiveFilePath;
+        if (string.IsNullOrWhiteSpace(tsPath))
+            return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
         return await exporter.ExportAsync(tsPath, fileInPoint, fileOutPoint, outputPath, true, progress, ct).ConfigureAwait(false);
     }
 
@@ -156,12 +168,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
         IProgress<ExportProgress>? progress, CancellationToken ct)
     {
         var bufferManager = _flashbackBufferManager;
+        var flashbackSink = _flashbackSink;
         if (bufferManager == null)
             return FinalizeResult.Failure(outputPath, "Flashback buffer not active");
-
-        var tsPath = bufferManager.ActiveFilePath;
-        if (string.IsNullOrWhiteSpace(tsPath))
-            return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
 
         var exporter = _flashbackExporter ??= new FlashbackExporter();
         // Export the last N seconds: compute in-point from current buffer state
@@ -171,6 +180,21 @@ public class CaptureService : IDisposable, IAsyncDisposable
             ? TimeSpan.FromSeconds(bufferedDuration.TotalSeconds - seconds)
             : TimeSpan.Zero;
         var fileInPoint = rangeStart + validStart;
+
+        // Force-rotate active segment to make all previous segments immutable
+        if (flashbackSink != null)
+        {
+            var segmentPaths = flashbackSink.ForceRotateForExport(fileInPoint, TimeSpan.MaxValue);
+            if (segmentPaths.Count > 0)
+            {
+                return await exporter.ExportSegmentsAsync(segmentPaths, fileInPoint, TimeSpan.MaxValue, outputPath, true, progress, ct).ConfigureAwait(false);
+            }
+        }
+
+        // Fallback: single-file export if no segments available
+        var tsPath = bufferManager.ActiveFilePath;
+        if (string.IsNullOrWhiteSpace(tsPath))
+            return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
         return await exporter.ExportAsync(tsPath, fileInPoint, TimeSpan.MaxValue, outputPath, true, progress, ct).ConfigureAwait(false);
     }
 
@@ -388,15 +412,16 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 cancellationToken).ConfigureAwait(false);
             flashbackSink.FrameEncoded += OnFlashbackFrameEncoded;
             unifiedVideoCapture.SetFlashbackSink(flashbackSink);
+            // Set _flashbackSink BEFORE AttachFlashbackAudioIfSupported — it reads the field
+            _flashbackBufferManager = bufferManager;
+            _flashbackSink = flashbackSink;
+            _flashbackExporter = flashbackExporter;
             AttachFlashbackAudioIfSupported(_wasapiAudioCapture, "preview_backend_start");
             if (_microphoneCapture != null && flashbackSink.MicrophoneEnabled)
             {
                 _microphoneCapture.SetAudioWriteDelegate(samples => flashbackSink.WriteMicrophoneAudioAsync(samples));
                 Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='preview_backend_start'");
             }
-            _flashbackBufferManager = bufferManager;
-            _flashbackSink = flashbackSink;
-            _flashbackExporter = flashbackExporter;
 
             // Create playback controller for timeline scrubbing/playback
             var playbackController = new FlashbackPlaybackController(bufferManager);
@@ -573,16 +598,29 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var startPts = flashbackSink.LastRecordingStartPts;
         var endPts = flashbackSink.LastRecordingEndPts;
 
-        var tsPath = _flashbackBufferManager?.ActiveFilePath;
-        if (string.IsNullOrWhiteSpace(tsPath))
-            return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
-
-        Logger.Log($"FLASHBACK_RECORDING_EXPORT_BEGIN ts='{tsPath}' output='{outputPath}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}");
+        Logger.Log($"FLASHBACK_RECORDING_EXPORT_BEGIN output='{outputPath}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}");
 
         var exporter = _flashbackExporter ??= new FlashbackExporter();
-        var exportResult = await exporter
-            .ExportAsync(tsPath, startPts, endPts, outputPath, fastStart: true, progress: null, ct: cancellationToken)
-            .ConfigureAwait(false);
+
+        // Force-rotate to get immutable segment list, then use multi-segment export
+        var segmentPaths = flashbackSink.ForceRotateForExport(startPts, endPts);
+        FinalizeResult exportResult;
+        if (segmentPaths.Count > 0)
+        {
+            exportResult = await exporter
+                .ExportSegmentsAsync(segmentPaths, startPts, endPts, outputPath, fastStart: true, progress: null, ct: cancellationToken)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            // Fallback: single-file export
+            var tsPath = _flashbackBufferManager?.ActiveFilePath;
+            if (string.IsNullOrWhiteSpace(tsPath))
+                return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
+            exportResult = await exporter
+                .ExportAsync(tsPath, startPts, endPts, outputPath, fastStart: true, progress: null, ct: cancellationToken)
+                .ConfigureAwait(false);
+        }
 
         Logger.Log($"FLASHBACK_RECORDING_EXPORT_DONE succeeded={exportResult.Succeeded} status='{exportResult.StatusMessage}'");
         return exportResult;

@@ -5,12 +5,21 @@ namespace ElgatoCapture.Models;
 
 internal sealed record FlashbackBufferOptions
 {
+    // 350 Mbps worst case (4K120 MJPEG) = 43.75 MB/s. 30% headroom → 57 MB/s.
+    private const long SafetyBytesPerSecond = 57L * 1024 * 1024;
+
     public TimeSpan BufferDuration { get; init; } = TimeSpan.FromMinutes(5);
     public string TempDirectory { get; init; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "ElgatoCapture",
         "Flashback");
-    public long MaxDiskBytes { get; init; } = 20L * 1024 * 1024 * 1024;
+    public TimeSpan SegmentDuration { get; init; } = TimeSpan.FromMinutes(2);
+
+    /// <summary>
+    /// Safety cap derived from BufferDuration. Not user-configurable — just a guardrail
+    /// against bugs in PTS-based eviction.
+    /// </summary>
+    public long MaxDiskBytes => (long)(BufferDuration.TotalSeconds * SafetyBytesPerSecond);
 }
 
 internal sealed record FlashbackSegment

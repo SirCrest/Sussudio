@@ -35,8 +35,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         CancellationToken ct)
     {
         EnsureNotDisposed();
-        var result = ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, ct);
-        return Task.FromResult(result);
+        return Task.Run(() => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, ct), ct);
     }
 
     /// <summary>
@@ -50,6 +49,23 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         CancellationToken ct)
     {
         return ExportAsync(inputTsPath, TimeSpan.Zero, TimeSpan.MaxValue, outputPath, fastStart, progress, ct);
+    }
+
+    /// <summary>
+    /// Exports a time range spanning multiple .ts segment files to a single .mp4 file.
+    /// Opens segments sequentially, remapping PTS for continuous output.
+    /// </summary>
+    public Task<FinalizeResult> ExportSegmentsAsync(
+        IReadOnlyList<string> segmentPaths,
+        TimeSpan inPoint,
+        TimeSpan outPoint,
+        string outputPath,
+        bool fastStart,
+        IProgress<ExportProgress>? progress,
+        CancellationToken ct)
+    {
+        EnsureNotDisposed();
+        return Task.Run(() => ExportSegmentsCore(segmentPaths, inPoint, outPoint, outputPath, fastStart, progress, ct), ct);
     }
 
     public void Dispose()
@@ -124,11 +140,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             // Create output .mp4 context
             CreateOutputContext(tmpPath, fastStart);
             var videoStreamIndex = FindVideoStreamIndex(_activeInputContext);
-            CopyTemplateStreams(_activeInputContext, _activeOutputContext);
+            var streamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext);
             OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
 
-            var streamCount = checked((int)_activeOutputContext->nb_streams);
-            var timestampBases = new long[streamCount]; // per-stream base in output time_base ticks
+            var streamCount = checked((int)_activeInputContext->nb_streams);
             var timestampBasesUs = new long[streamCount]; // per-stream base in microseconds
             var hasTimestampBase = new bool[streamCount];
             long? globalMinBaseUs = null; // global minimum base in microseconds
@@ -171,18 +186,24 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             continue;
                         }
 
-                        var inStream = _activeInputContext->streams[streamIndex];
-                        var outStream = _activeOutputContext->streams[streamIndex];
+                        // Skip streams that were filtered out (invalid codec params)
+                        var outputIndex = streamMap[streamIndex];
+                        if (outputIndex < 0)
+                            continue;
 
-                        // Check if we've passed outPoint (video stream boundary only)
-                        if (streamIndex == videoStreamIndex &&
-                            packet->pts != ffmpeg.AV_NOPTS_VALUE && outPtsLimit < long.MaxValue)
+                        var inStream = _activeInputContext->streams[streamIndex];
+                        var outStream = _activeOutputContext->streams[outputIndex];
+
+                        // Check if we've passed outPoint (applies to all streams)
+                        if (packet->pts != ffmpeg.AV_NOPTS_VALUE && outPtsLimit < long.MaxValue)
                         {
                             var ptsUs = ffmpeg.av_rescale_q(packet->pts, inStream->time_base,
                                 new AVRational { num = 1, den = ffmpeg.AV_TIME_BASE });
                             if (ptsUs > outPtsLimit)
                             {
-                                break;
+                                if (streamIndex == videoStreamIndex)
+                                    break; // Video past out-point — stop reading entirely
+                                continue; // Non-video past out-point — skip but keep reading for video
                             }
                         }
 
@@ -194,7 +215,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         {
                             if (TryResolveTimestampBase(packet, out var tsBase))
                             {
-                                timestampBases[streamIndex] = tsBase;
                                 var baseUs = ffmpeg.av_rescale_q(tsBase, outStream->time_base, usTimeBase);
                                 timestampBasesUs[streamIndex] = baseUs;
                                 hasTimestampBase[streamIndex] = true;
@@ -210,7 +230,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             }
                         }
 
-                        // Phase 1: buffer until all stream bases are known so globalMinBaseUs is final
+                        // Phase 1: buffer until all active stream bases are known so globalMinBaseUs is final.
+                        // Cap buffered packets to avoid unbounded memory if a configured stream never
+                        // produces packets (e.g., microphone enabled but silent).
+                        const int MaxBufferedPackets = 600;
                         if (!allBasesDiscovered)
                         {
                             var clone = ffmpeg.av_packet_clone(packet);
@@ -220,11 +243,19 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                 bufferedStreamIndices.Add(streamIndex);
                             }
 
-                            // Check if all streams now have bases
+                            // Check if all mapped streams have bases discovered,
+                            // OR we've buffered enough packets that missing streams are assumed empty
                             allBasesDiscovered = true;
                             for (int i = 0; i < streamCount; i++)
                             {
-                                if (!hasTimestampBase[i]) { allBasesDiscovered = false; break; }
+                                if (streamMap[i] >= 0 && !hasTimestampBase[i]) { allBasesDiscovered = false; break; }
+                            }
+                            if (!allBasesDiscovered && bufferedPackets.Count >= MaxBufferedPackets)
+                            {
+                                allBasesDiscovered = true;
+                                var discoveredCount = 0;
+                                for (var i = 0; i < streamCount; i++) { if (hasTimestampBase[i]) discoveredCount++; }
+                                Logger.Log($"FLASHBACK_EXPORT_PARTIAL_BASE_FLUSH buffered={bufferedPackets.Count} streams_discovered={discoveredCount}/{streamCount}");
                             }
 
                             if (allBasesDiscovered)
@@ -234,14 +265,15 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                 {
                                     var buffPkt = (AVPacket*)bufferedPackets[bi];
                                     var si = bufferedStreamIndices[bi];
-                                    var outStr = _activeOutputContext->streams[si];
+                                    var oi = streamMap[si];
+                                    var outStr = _activeOutputContext->streams[oi];
                                     var bTs = ffmpeg.av_rescale_q(globalMinBaseUs!.Value, usTimeBase, outStr->time_base);
                                     if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
                                         buffPkt->pts -= bTs;
                                     if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
                                         buffPkt->dts -= bTs;
                                     buffPkt->pos = -1;
-                                    buffPkt->stream_index = outStr->index;
+                                    buffPkt->stream_index = oi;
                                     ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
                                     packetCounts[si]++;
                                     totalPackets++;
@@ -285,14 +317,15 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     {
                         var buffPkt = (AVPacket*)bufferedPackets[bi];
                         var si = bufferedStreamIndices[bi];
-                        var outStr = _activeOutputContext->streams[si];
+                        var oi = streamMap[si];
+                        var outStr = _activeOutputContext->streams[oi];
                         var bTs = ffmpeg.av_rescale_q(globalMinBaseUs!.Value, usTimeBase, outStr->time_base);
                         if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
                             buffPkt->pts -= bTs;
                         if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
                             buffPkt->dts -= bTs;
                         buffPkt->pos = -1;
-                        buffPkt->stream_index = outStr->index;
+                        buffPkt->stream_index = oi;
                         ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
                         packetCounts[si]++;
                         totalPackets++;
@@ -355,6 +388,364 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 $"FLASHBACK_EXPORT_DONE output='{outputPath}' packets={totalPackets} bytes={outputBytes}");
             progress?.Report(new ExportProgress(1, 1, 100.0));
             return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from .ts");
+        }
+        catch (OperationCanceledException)
+        {
+            const string message = "Flashback export cancelled.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+        catch (Exception ex)
+        {
+            var message = $"Flashback export failed: {ex.Message}";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+        finally
+        {
+            CleanupNativeState();
+            DeleteTempFileIfPresent(tmpPath);
+            _activeTempPath = null;
+        }
+    }
+
+    private FinalizeResult ExportSegmentsCore(
+        IReadOnlyList<string> segmentPaths,
+        TimeSpan inPoint,
+        TimeSpan outPoint,
+        string outputPath,
+        bool fastStart,
+        IProgress<ExportProgress>? progress,
+        CancellationToken ct)
+    {
+        if (segmentPaths == null || segmentPaths.Count == 0)
+        {
+            const string message = "Flashback export failed: no segment paths provided.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            const string message = "Flashback export failed: output path is required.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+
+        var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+        if (string.IsNullOrWhiteSpace(outputDirectory) || !Directory.Exists(outputDirectory))
+        {
+            var message = $"Flashback export failed: output directory does not exist for '{outputPath}'.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+
+        // Estimate total bytes for progress
+        long totalEstimatedBytes = 0;
+        foreach (var segPath in segmentPaths)
+        {
+            try { if (File.Exists(segPath)) totalEstimatedBytes += new FileInfo(segPath).Length; }
+            catch { /* ignore */ }
+        }
+
+        var tmpPath = outputPath + ".tmp";
+        _activeTempPath = tmpPath;
+
+        try
+        {
+            DeleteTempFileIfPresent(tmpPath);
+            LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+
+            Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_START segments={segmentPaths.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
+
+            var usTimeBase = new AVRational { num = 1, den = 1_000_000 };
+            var outPtsLimitUs = outPoint == TimeSpan.MaxValue ? long.MaxValue : (long)(outPoint.TotalSeconds * 1_000_000);
+
+            // Output state — initialized from first segment
+            int streamCount = 0;
+            int videoStreamIndex = -1;
+            int[] streamMap = Array.Empty<int>();
+            long totalPackets = 0;
+            long bytesProcessed = 0;
+
+            // Cross-segment PTS tracking (in microseconds)
+            long outputPtsOffsetUs = 0; // accumulated offset for output continuity
+
+            // Per-stream last DTS tracking for monotonicity enforcement
+            var lastDtsPerStream = new long[64]; // indexed by OUTPUT stream index
+            for (int i = 0; i < lastDtsPerStream.Length; i++) lastDtsPerStream[i] = long.MinValue;
+
+            var packet = ffmpeg.av_packet_alloc();
+            if (packet == null)
+                throw new InvalidOperationException("Failed to allocate AVPacket.");
+
+            try
+            {
+                for (var segIdx = 0; segIdx < segmentPaths.Count; segIdx++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var segPath = segmentPaths[segIdx];
+
+                    if (!File.Exists(segPath))
+                    {
+                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='not_found'");
+                        continue;
+                    }
+
+                    var isFirst = segIdx == 0 || _activeOutputContext == null;
+                    var isLast = segIdx == segmentPaths.Count - 1;
+
+                    // Open this segment
+                    OpenInput(segPath);
+                    ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+
+                    if (isFirst)
+                    {
+                        // Create output from first segment's streams
+                        videoStreamIndex = FindVideoStreamIndex(_activeInputContext);
+                        CreateOutputContext(tmpPath, fastStart);
+                        streamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext);
+                        OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
+                        streamCount = checked((int)_activeInputContext->nb_streams);
+                    }
+
+                    // Seek to inPoint in first segment
+                    if (isFirst && inPoint > TimeSpan.Zero)
+                    {
+                        var seekTimestamp = (long)(inPoint.TotalSeconds * ffmpeg.AV_TIME_BASE);
+                        var seekResult = ffmpeg.av_seek_frame(_activeInputContext, -1, seekTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);
+                        if (seekResult < 0)
+                            Logger.Log($"FLASHBACK_EXPORT_SEEK_WARN code={seekResult} target_ms={(long)inPoint.TotalMilliseconds}");
+                    }
+
+                    // Per-segment timestamp discovery (two-phase like single-file export)
+                    var segTimestampBasesUs = new long[streamCount];
+                    var segHasTimestampBase = new bool[streamCount];
+                    long? segMinBaseUs = null;
+                    var segBufferedPackets = new List<IntPtr>();
+                    var segBufferedStreamIndices = new List<int>();
+                    var segAllBasesDiscovered = false;
+                    long segMaxPtsUs = 0; // track highest PTS in this segment for offset calculation
+
+                    while (true)
+                    {
+                        ct.ThrowIfCancellationRequested();
+
+                        var readResult = ffmpeg.av_read_frame(_activeInputContext, packet);
+                        if (readResult == ffmpeg.AVERROR_EOF)
+                            break;
+                        ThrowIfError(readResult, "av_read_frame");
+
+                        try
+                        {
+                            var streamIndex = packet->stream_index;
+                            if (streamIndex < 0 || streamIndex >= streamCount)
+                                continue;
+
+                            // Skip streams filtered out by CopyTemplateStreams
+                            var mappedIndex = streamMap[streamIndex];
+                            if (mappedIndex < 0)
+                                continue;
+
+                            var inStream = _activeInputContext->streams[streamIndex];
+                            var outStream = _activeOutputContext->streams[mappedIndex];
+
+                            // Rescale to output time base
+                            ffmpeg.av_packet_rescale_ts(packet, inStream->time_base, outStream->time_base);
+
+                            // Discover per-stream base
+                            if (!segHasTimestampBase[streamIndex])
+                            {
+                                if (TryResolveTimestampBase(packet, out var tsBase))
+                                {
+                                    var baseUs = ffmpeg.av_rescale_q(tsBase, outStream->time_base, usTimeBase);
+                                    segTimestampBasesUs[streamIndex] = baseUs;
+                                    segHasTimestampBase[streamIndex] = true;
+                                    if (segMinBaseUs == null || baseUs < segMinBaseUs.Value)
+                                        segMinBaseUs = baseUs;
+                                }
+                                else
+                                {
+                                    continue;
+                                }
+                            }
+
+                            // Phase 1: buffer until all bases known
+                            const int MaxBufferedPackets = 600;
+                            if (!segAllBasesDiscovered)
+                            {
+                                var clone = ffmpeg.av_packet_clone(packet);
+                                if (clone != null)
+                                {
+                                    segBufferedPackets.Add((IntPtr)clone);
+                                    segBufferedStreamIndices.Add(streamIndex);
+                                }
+
+                                segAllBasesDiscovered = true;
+                                for (int i = 0; i < streamCount; i++)
+                                {
+                                    if (streamMap[i] >= 0 && !segHasTimestampBase[i]) { segAllBasesDiscovered = false; break; }
+                                }
+                                if (!segAllBasesDiscovered && segBufferedPackets.Count >= MaxBufferedPackets)
+                                    segAllBasesDiscovered = true;
+
+                                if (segAllBasesDiscovered)
+                                {
+                                    // Flush buffer
+                                    var stopFlushing = false;
+                                    for (int bi = 0; bi < segBufferedPackets.Count; bi++)
+                                    {
+                                        var buffPkt = (AVPacket*)segBufferedPackets[bi];
+                                        var si = segBufferedStreamIndices[bi];
+                                        var oi = streamMap[si];
+                                        var outStr = _activeOutputContext->streams[oi];
+
+                                        // Remap: subtract segment base, add cross-segment offset
+                                        var segBaseTs = ffmpeg.av_rescale_q(segMinBaseUs!.Value, usTimeBase, outStr->time_base);
+                                        var offsetTs = ffmpeg.av_rescale_q(outputPtsOffsetUs, usTimeBase, outStr->time_base);
+
+                                        if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
+                                        {
+                                            buffPkt->pts = buffPkt->pts - segBaseTs + offsetTs;
+                                            // Track max PTS for offset calculation
+                                            var ptsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
+                                            if (ptsUs > segMaxPtsUs) segMaxPtsUs = ptsUs;
+
+                                            // Check outPoint
+                                            if (ptsUs > outPtsLimitUs && si == videoStreamIndex)
+                                            {
+                                                ffmpeg.av_packet_free(&buffPkt);
+                                                segBufferedPackets[bi] = IntPtr.Zero;
+                                                stopFlushing = true;
+                                                continue;
+                                            }
+                                        }
+                                        if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
+                                        {
+                                            buffPkt->dts = buffPkt->dts - segBaseTs + offsetTs;
+                                            if (oi < lastDtsPerStream.Length && lastDtsPerStream[oi] != long.MinValue && buffPkt->dts <= lastDtsPerStream[oi])
+                                                buffPkt->dts = lastDtsPerStream[oi] + 1;
+                                        }
+                                        if (oi < lastDtsPerStream.Length && buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
+                                            lastDtsPerStream[oi] = buffPkt->dts;
+
+                                        buffPkt->pos = -1;
+                                        buffPkt->stream_index = oi;
+                                        ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
+                                        totalPackets++;
+                                        ffmpeg.av_packet_free(&buffPkt);
+                                        segBufferedPackets[bi] = IntPtr.Zero;
+                                    }
+                                    // Free remaining unflushed clones
+                                    for (int bi = 0; bi < segBufferedPackets.Count; bi++)
+                                    {
+                                        var ptr = segBufferedPackets[bi];
+                                        if (ptr != IntPtr.Zero)
+                                        {
+                                            var p = (AVPacket*)ptr;
+                                            ffmpeg.av_packet_free(&p);
+                                        }
+                                    }
+                                    segBufferedPackets.Clear();
+                                    segBufferedStreamIndices.Clear();
+
+                                    if (stopFlushing)
+                                        break;
+                                }
+                                continue;
+                            }
+
+                            // Phase 2: inline write
+                            var outStream2 = _activeOutputContext->streams[mappedIndex];
+                            var segBase = ffmpeg.av_rescale_q(segMinBaseUs!.Value, usTimeBase, outStream2->time_base);
+                            var offset = ffmpeg.av_rescale_q(outputPtsOffsetUs, usTimeBase, outStream2->time_base);
+
+                            if (packet->pts != ffmpeg.AV_NOPTS_VALUE)
+                            {
+                                packet->pts = packet->pts - segBase + offset;
+                                var ptsUs = ffmpeg.av_rescale_q(packet->pts, outStream2->time_base, usTimeBase);
+                                if (ptsUs > segMaxPtsUs) segMaxPtsUs = ptsUs;
+
+                                // Check outPoint
+                                if (ptsUs > outPtsLimitUs && streamIndex == videoStreamIndex)
+                                    break;
+                            }
+                            if (packet->dts != ffmpeg.AV_NOPTS_VALUE)
+                            {
+                                packet->dts = packet->dts - segBase + offset;
+                                // Enforce DTS monotonicity — mp4 muxer rejects non-monotonic DTS
+                                if (mappedIndex < lastDtsPerStream.Length && lastDtsPerStream[mappedIndex] != long.MinValue && packet->dts <= lastDtsPerStream[mappedIndex])
+                                    packet->dts = lastDtsPerStream[mappedIndex] + 1;
+                            }
+                            if (mappedIndex < lastDtsPerStream.Length && packet->dts != ffmpeg.AV_NOPTS_VALUE)
+                                lastDtsPerStream[mappedIndex] = packet->dts;
+
+                            packet->pos = -1;
+                            packet->stream_index = mappedIndex;
+                            ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), "av_interleaved_write_frame");
+                            totalPackets++;
+                        }
+                        finally
+                        {
+                            ffmpeg.av_packet_unref(packet);
+                        }
+                    }
+
+                    // Free any remaining buffered packets (EOF before all bases discovered)
+                    foreach (var pktPtr in segBufferedPackets)
+                    {
+                        if (pktPtr != IntPtr.Zero)
+                        {
+                            var p = (AVPacket*)pktPtr;
+                            ffmpeg.av_packet_free(&p);
+                        }
+                    }
+
+                    // Update cross-segment offset: next segment's PTS starts after this segment's max
+                    // Add a small overlap buffer (one frame at ~30fps = ~33ms) to avoid gaps
+                    if (segMaxPtsUs > outputPtsOffsetUs)
+                        outputPtsOffsetUs = segMaxPtsUs;
+
+                    // Track bytes for progress
+                    try { if (File.Exists(segPath)) bytesProcessed += new FileInfo(segPath).Length; }
+                    catch { /* ignore */ }
+
+                    // Close this segment's input
+                    CloseActiveInput();
+
+                    progress?.Report(new ExportProgress(segIdx + 1, segmentPaths.Count,
+                        totalEstimatedBytes > 0 ? 100.0 * bytesProcessed / totalEstimatedBytes : 100.0 * (segIdx + 1) / segmentPaths.Count));
+
+                    Logger.Log($"FLASHBACK_EXPORT_SEGMENT_DONE seg={segIdx}/{segmentPaths.Count} path='{Path.GetFileName(segPath)}' packets={totalPackets}");
+
+                    // If outPoint was hit, stop processing more segments
+                    if (outPtsLimitUs < long.MaxValue && segMaxPtsUs >= outPtsLimitUs)
+                        break;
+                }
+            }
+            finally
+            {
+                var packetToFree = packet;
+                ffmpeg.av_packet_free(&packetToFree);
+            }
+
+            if (totalPackets == 0)
+            {
+                const string message = "Flashback export failed: no packets were written from any segment.";
+                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+                return FinalizeResult.Failure(outputPath, message);
+            }
+
+            ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer");
+            CloseOutputIo();
+
+            AtomicMoveTempFile(tmpPath, outputPath);
+            _activeTempPath = null;
+
+            var outputBytes = new FileInfo(outputPath).Length;
+            Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_DONE output='{outputPath}' segments={segmentPaths.Count} packets={totalPackets} bytes={outputBytes}");
+            progress?.Report(new ExportProgress(segmentPaths.Count, segmentPaths.Count, 100.0));
+            return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from {segmentPaths.Count} segments");
         }
         catch (OperationCanceledException)
         {
@@ -477,12 +868,38 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
     }
 
-    private static void CopyTemplateStreams(AVFormatContext* inputContext, AVFormatContext* outputContext)
+    /// <summary>
+    /// Copies stream templates from input to output, skipping streams with invalid codec parameters
+    /// (e.g., audio with 0 channels). Returns a mapping array: streamMap[inputIndex] = outputIndex, or -1 if skipped.
+    /// </summary>
+    private static int[] CopyTemplateStreams(AVFormatContext* inputContext, AVFormatContext* outputContext)
     {
-        var streamCount = checked((int)inputContext->nb_streams);
-        for (var streamIndex = 0; streamIndex < streamCount; streamIndex++)
+        var inputStreamCount = checked((int)inputContext->nb_streams);
+        var streamMap = new int[inputStreamCount];
+
+        for (var streamIndex = 0; streamIndex < inputStreamCount; streamIndex++)
         {
             var inStream = inputContext->streams[streamIndex];
+            var codecType = inStream->codecpar->codec_type;
+
+            // Skip audio streams with incomplete codec params (0 channels or 0 sample_rate)
+            if (codecType == AVMediaType.AVMEDIA_TYPE_AUDIO &&
+                (inStream->codecpar->ch_layout.nb_channels <= 0 || inStream->codecpar->sample_rate <= 0))
+            {
+                Logger.Log($"FLASHBACK_EXPORT_STREAM_SKIP input_index={streamIndex} reason='invalid_audio_params' channels={inStream->codecpar->ch_layout.nb_channels} sample_rate={inStream->codecpar->sample_rate}");
+                streamMap[streamIndex] = -1;
+                continue;
+            }
+
+            // Skip video streams with incomplete params
+            if (codecType == AVMediaType.AVMEDIA_TYPE_VIDEO &&
+                (inStream->codecpar->width <= 0 || inStream->codecpar->height <= 0))
+            {
+                Logger.Log($"FLASHBACK_EXPORT_STREAM_SKIP input_index={streamIndex} reason='invalid_video_params' width={inStream->codecpar->width} height={inStream->codecpar->height}");
+                streamMap[streamIndex] = -1;
+                continue;
+            }
+
             var outStream = ffmpeg.avformat_new_stream(outputContext, null);
             if (outStream == null)
             {
@@ -494,7 +911,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             outStream->time_base = inStream->time_base;
             outStream->avg_frame_rate = inStream->avg_frame_rate;
             outStream->sample_aspect_ratio = inStream->sample_aspect_ratio;
+
+            streamMap[streamIndex] = outStream->index;
         }
+
+        return streamMap;
     }
 
     private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)
