@@ -216,6 +216,51 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
     }
 
+    public async Task<RecordingVerificationResult> VerifyFileAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        await _verificationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        Interlocked.Increment(ref _verificationInProgress);
+        try
+        {
+            var runtimeSnapshot = await _viewModel
+                .GetCaptureRuntimeSnapshotAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var verification = await _recordingVerifier
+                .VerifyAsync(filePath, runtimeSnapshot, cancellationToken)
+                .ConfigureAwait(false);
+
+            lock (_stateLock)
+            {
+                _lastVerification = verification;
+            }
+
+            AddEvent(
+                verification.Succeeded ? DiagnosticsSeverity.Info : DiagnosticsSeverity.Error,
+                DiagnosticsCategory.Verification,
+                $"File verification ({System.IO.Path.GetFileName(filePath)}): {verification.Message}");
+
+            await RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
+            return verification;
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _verificationInProgress);
+            _verificationGate.Release();
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                try
+                {
+                    await RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Best-effort snapshot refresh after verification state transition.
+                }
+            }
+        }
+    }
+
     public void Dispose()
     {
         if (_disposed)
@@ -769,7 +814,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackPlaybackLateFrames = health.FlashbackPlaybackLateFrames,
             FlashbackPlaybackObservedFps = health.FlashbackPlaybackObservedFps,
             FlashbackPlaybackAvgFrameMs = health.FlashbackPlaybackAvgFrameMs,
-            FlashbackAvDriftMs = health.FlashbackAvDriftMs
+            FlashbackAvDriftMs = health.FlashbackAvDriftMs,
+            LastExportPath = health.LastExportPath,
+            LastExportSuccess = health.LastExportSuccess,
+            LastExportMessage = health.LastExportMessage
         };
 
         var verificationIdle = Volatile.Read(ref _verificationInProgress) == 0 &&

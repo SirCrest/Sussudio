@@ -21,7 +21,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private readonly object _sync = new();
     private readonly LibAvEncoder _encoder = new();
     private readonly FlashbackBufferManager _bufferManager;
-    private readonly AutoResetEvent _workAvailable = new(false);
+    private readonly ManualResetEventSlim _workAvailable = new(false, 100);
     private readonly bool _ownsBufferManager;
     private Channel<VideoFramePacket>? _videoQueue;
     private Channel<AudioSamplePacket>? _audioQueue;
@@ -94,7 +94,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     public long AudioSamplesReceived => Interlocked.Read(ref _audioSamplesReceived);
 
-    public long OutputBytes => _bufferManager.TotalDiskBytes + _encoder.TotalBytesWritten;
+    public long OutputBytes => _bufferManager.TotalDiskBytes;
 
     public int VideoQueueCount => Volatile.Read(ref _videoQueueDepth);
 
@@ -157,6 +157,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             // TryWrite returns false immediately when full regardless of FullMode,
             // allowing our manual eviction paths to handle resource cleanup (COM Release,
             // ArrayPool Return) before dropping the packet.
+            if (!_encoder.UseHardwareFrames && (_width >= 2560 || _height >= 1440))
+            {
+                Logger.Log($"FLASHBACK_SINK_WARN_CPU_ENCODING width={_width} height={_height} — GPU encoding unavailable, performance will be severely degraded");
+            }
+
             if (_encoder.UseHardwareFrames)
             {
                 _gpuQueue = Channel.CreateBounded<GpuFramePacket>(new BoundedChannelOptions(GpuQueueCapacity)
@@ -281,6 +286,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             if (_disposed || !_started) return;
         }
 
+        if (_encodingFailure != null)
+            throw new InvalidOperationException("Cannot begin recording: encoding loop has failed", _encodingFailure);
+        if (_encodingTask?.IsCompleted == true && _encodingTask.IsFaulted)
+            throw new InvalidOperationException("Cannot begin recording: encoding task has terminated");
+
         _recordingOutputPath = outputPath ?? string.Empty;
         Volatile.Write(ref _recordingActive, 1);
         _bufferManager.PauseEviction();
@@ -318,6 +328,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     {
         cancellationToken.ThrowIfCancellationRequested();
         Volatile.Write(ref _recordingActive, 0);
+
+        // Give encoding loop time to drain remaining queued frames
+        await Task.Delay(100, cancellationToken).ConfigureAwait(false);
 
         var (startPts, endPts) = _bufferManager.ResumeEviction();
         LastRecordingStartPts = startPts;
@@ -474,7 +487,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     public void Dispose()
     {
-        DisposeAsync().AsTask().GetAwaiter().GetResult();
+        if (_disposed) return;
+        Task.Run(async () => await DisposeAsync()).GetAwaiter().GetResult();
     }
 
     public async ValueTask DisposeAsync()
@@ -617,12 +631,22 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             while (true)
             {
                 var madeProgress = false;
-                if (gpuQueue != null)
+
+                // Audio FIRST — prevent starvation during slow video encoding
+                madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
+                if (_microphoneEnabled && microphoneQueue != null)
                 {
-                    madeProgress = DrainGpuPackets(gpuQueue.Reader, audioQueue.Reader, microphoneQueue?.Reader) || madeProgress;
+                    madeProgress = DrainMicrophonePackets(microphoneQueue.Reader) || madeProgress;
                 }
 
-                madeProgress = DrainVideoPackets(videoQueue.Reader, audioQueue.Reader, microphoneQueue?.Reader) || madeProgress;
+                // Video (existing drain methods, unchanged behavior)
+                if (gpuQueue != null)
+                {
+                    madeProgress = DrainGpuPackets(gpuQueue.Reader) || madeProgress;
+                }
+                madeProgress = DrainVideoPackets(videoQueue.Reader) || madeProgress;
+
+                // Audio AGAIN — catch samples that arrived during video encoding
                 madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
                 if (_microphoneEnabled && microphoneQueue != null)
                 {
@@ -630,9 +654,18 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 }
 
                 // Handle force-rotate requests from the export thread (must run on encoding thread)
-                if (_forceRotateRequested)
+                if (Volatile.Read(ref _forceRotateRequested))
                 {
-                    _forceRotateRequested = false;
+                    TaskCompletionSource<IReadOnlyList<string>>? localTcs;
+                    TimeSpan localIn, localOut;
+                    lock (_sync)
+                    {
+                        _forceRotateRequested = false;
+                        localTcs = _forceRotateTcs;
+                        _forceRotateTcs = null;
+                        localIn = _forceRotateInPoint;
+                        localOut = _forceRotateOutPoint;
+                    }
                     try
                     {
                         var frameRate = _sessionContext?.FrameRate ?? 30.0;
@@ -645,12 +678,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                             RotateSegment(currentPts);
                         }
 
-                        _forceRotateTcs?.TrySetResult(_bufferManager.GetValidSegmentPaths(_forceRotateInPoint, _forceRotateOutPoint));
+                        localTcs?.TrySetResult(_bufferManager.GetValidSegmentPaths(localIn, localOut));
                     }
                     catch (Exception ex)
                     {
                         Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}");
-                        _forceRotateTcs?.TrySetResult(Array.Empty<string>());
+                        localTcs?.TrySetResult(Array.Empty<string>());
                     }
                     madeProgress = true;
                 }
@@ -672,7 +705,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     continue;
                 }
 
-                while (!_workAvailable.WaitOne(50))
+                _workAvailable.Reset();
+                while (!_workAvailable.Wait(50))
                     cancellationToken.ThrowIfCancellationRequested();
             }
 
@@ -693,6 +727,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             Logger.Log("FLASHBACK_SINK_ENCODING_LOOP_CANCELLED");
+            _forceRotateTcs?.TrySetResult(Array.Empty<string>());
             ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
             ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
             ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
@@ -702,6 +737,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             Logger.Log($"FLASHBACK_SINK_ENCODING_LOOP_FATAL type={ex.GetType().Name} msg={ex.Message}");
             _encodingFailure = ex;
+            _forceRotateTcs?.TrySetResult(Array.Empty<string>());
+            lock (_sync) { _started = false; }
             ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
             ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
             ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
@@ -717,10 +754,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    private bool DrainVideoPackets(
-        ChannelReader<VideoFramePacket> reader,
-        ChannelReader<AudioSamplePacket> audioReader,
-        ChannelReader<AudioSamplePacket>? microphoneReader)
+    private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader)
     {
         var drainedAny = false;
         while (reader.TryRead(out var packet))
@@ -729,7 +763,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             try
             {
                 _encoder.SendVideoFrame(packet.Buffer.AsSpan(0, packet.Length), _width, _height);
-                OnVideoFrameEncoded(audioReader, microphoneReader);
+                OnVideoFrameEncoded();
             }
             finally
             {
@@ -742,10 +776,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return drainedAny;
     }
 
-    private bool DrainGpuPackets(
-        ChannelReader<GpuFramePacket> reader,
-        ChannelReader<AudioSamplePacket> audioReader,
-        ChannelReader<AudioSamplePacket>? microphoneReader)
+    private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader)
     {
         var drainedAny = false;
         while (reader.TryRead(out var packet))
@@ -754,7 +785,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             try
             {
                 _encoder.SendGpuVideoFrame(packet.Texture, packet.Subresource);
-                OnVideoFrameEncoded(audioReader, microphoneReader);
+                OnVideoFrameEncoded();
             }
             finally
             {
@@ -767,7 +798,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return drainedAny;
     }
 
-    private void OnVideoFrameEncoded(ChannelReader<AudioSamplePacket> audioReader, ChannelReader<AudioSamplePacket>? microphoneReader)
+    private void OnVideoFrameEncoded()
     {
         Interlocked.Exchange(ref _lastVideoWriteTick, Environment.TickCount64);
         var encoded = Interlocked.Increment(ref _encodedVideoFrames);
@@ -793,6 +824,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _bufferManager.UpdateDiskBytes(_encoder.TotalBytesWritten);
         }
 
+        // NOTE: This event fires on the encoding background thread, NOT the UI thread.
+        // Handlers must marshal to DispatcherQueue if they need to update UI state.
         if (Volatile.Read(ref _recordingActive) == 1)
         {
             try
@@ -810,11 +843,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     {
         try
         {
-            var newPath = _bufferManager.GenerateSegmentPath();
-            var result = _encoder.RotateOutput(newPath);
+            // Register the completed segment BEFORE rotating (so it's never orphaned on disk)
+            var completedPath = _tsFilePath;
+            var completedBytes = _encoder.TotalBytesWritten;
+            _bufferManager.OnSegmentCompleted(completedPath!, _segmentStartPts, currentPts, completedBytes);
 
-            // Notify buffer manager of completed segment
-            _bufferManager.OnSegmentCompleted(result.PreviousPath, _segmentStartPts, currentPts, result.PreviousTotalBytes);
+            var newPath = _bufferManager.GenerateSegmentPath();
+            _encoder.RotateOutput(newPath);
 
             _segmentStartPts = currentPts;
             _tsFilePath = newPath;
@@ -824,7 +859,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             Logger.Log(
                 $"FLASHBACK_SINK_ROTATE new_segment='{Path.GetFileName(newPath)}' " +
-                $"prev_frames={result.PreviousEncodedFrames} prev_bytes={result.PreviousTotalBytes} " +
+                $"prev_bytes={completedBytes} " +
                 $"segment_start_ms={(long)currentPts.TotalMilliseconds}");
         }
         catch (Exception ex)
@@ -845,13 +880,18 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         // Signal the encoding thread to perform the rotation (all encoder ops must be on that thread)
         var tcs = new TaskCompletionSource<IReadOnlyList<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _forceRotateInPoint = inPoint;
-        _forceRotateOutPoint = outPoint;
-        _forceRotateTcs = tcs;
-        _forceRotateRequested = true;
+        lock (_sync)
+        {
+            _forceRotateInPoint = inPoint;
+            _forceRotateOutPoint = outPoint;
+            _forceRotateTcs = tcs;
+            Volatile.Write(ref _forceRotateRequested, true);
+        }
         _workAvailable.Set();
 
-        if (!tcs.Task.Wait(TimeSpan.FromSeconds(10)))
+        // Keep timeout short — this blocks the caller (CaptureService) synchronously.
+        // Changing to async would require updating all callers.
+        if (!tcs.Task.Wait(TimeSpan.FromSeconds(3)))
         {
             Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT");
             return Array.Empty<string>();
@@ -934,6 +974,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         if (queue.Reader.TryRead(out var evictedPacket))
         {
             Interlocked.Decrement(ref _videoQueueDepth);
+            _encoder.SkipVideoFrame();
             ReturnBuffer(evictedPacket.Buffer);
             var evictedCount = 1;
 
@@ -945,6 +986,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 for (var index = 1; index < burstSize && queue.Reader.TryRead(out var extra); index++)
                 {
                     Interlocked.Decrement(ref _videoQueueDepth);
+                    _encoder.SkipVideoFrame();
                     ReturnBuffer(extra.Buffer);
                     evictedCount++;
                 }
@@ -966,6 +1008,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
 
         Interlocked.Increment(ref _droppedVideoFrames);
+        _encoder.SkipVideoFrame();
         ReturnBuffer(packet.Buffer);
         return false;
     }
@@ -1066,6 +1109,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             BitRate = context.BitRate,
             IsP010 = context.IsP010,
             NvencPreset = context.NvencPreset,
+            // 1-second GOP for fast interactive seeking. The default (2x frame rate)
+            // means up to 2 seconds of decode-forward on every pause/scrub.
+            // 1x frame rate halves worst-case seek latency with minimal bitrate impact.
+            GopSize = (int)Math.Max(1, Math.Round(context.FrameRate)),
             HdrEnabled = context.HdrEnabled,
             IsFullRangeInput = context.IsFullRangeInput,
             HdrMasterDisplayMetadata = context.HdrMasterDisplayMetadata,

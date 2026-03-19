@@ -120,6 +120,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private Windows.Graphics.PointInt32 _preFullScreenPosition;
     private bool _preFullScreenSettingsVisible;
     private bool _preFullScreenStatsDockVisible;
+    private bool _preFullScreenTimelineVisible;
     private bool _captureSettingsNarrow;
     private const double ControlBarLabelThreshold = 900.0;
     private const int MinWindowWidth = 900;
@@ -3891,6 +3892,22 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             case nameof(MainViewModel.FlashbackOutPoint):
                 UpdateFlashbackMarkers();
                 break;
+
+            case nameof(MainViewModel.FlashbackExportProgress):
+                FlashbackExportProgressBar.Value = ViewModel.FlashbackExportProgress;
+                break;
+
+            case nameof(MainViewModel.IsFlashbackExporting):
+                FlashbackExportProgressBar.Visibility = ViewModel.IsFlashbackExporting
+                    ? Microsoft.UI.Xaml.Visibility.Visible
+                    : Microsoft.UI.Xaml.Visibility.Collapsed;
+                if (!ViewModel.IsFlashbackExporting)
+                    FlashbackExportProgressBar.Value = 0;
+                break;
+
+            case nameof(MainViewModel.IsDiskWarningActive):
+                DiskWarningInfoBar.IsOpen = ViewModel.IsDiskWarningActive;
+                break;
         }
     }
 
@@ -5344,6 +5361,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     }
 
     private DispatcherQueueTimer? _flashbackStatusTimer;
+    private DispatcherQueueTimer? _flashbackPlaybackTimer; // 30Hz position poll for smooth CTI during playback
 
     private void FlashbackToggle_Checked(object sender, RoutedEventArgs e)
     {
@@ -5374,12 +5392,47 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         if (_flashbackStatusTimer == null) return;
         _flashbackStatusTimer.Stop();
         _flashbackStatusTimer.Tick -= FlashbackStatusTimer_Tick;
+        StopFlashbackPlaybackPolling();
+    }
+
+    /// <summary>
+    /// Starts a 30Hz timer that polls the playback position for smooth CTI movement.
+    /// Only active during Playing state — the 250ms timer handles position for other states.
+    /// </summary>
+    private void StartFlashbackPlaybackPolling()
+    {
+        _flashbackPlaybackTimer ??= _dispatcherQueue.CreateTimer();
+        if (_flashbackPlaybackTimer.IsRunning) return;
+        _flashbackPlaybackTimer.Interval = TimeSpan.FromMilliseconds(33); // ~30Hz
+        _flashbackPlaybackTimer.IsRepeating = true;
+        _flashbackPlaybackTimer.Tick -= FlashbackPlaybackTimer_Tick;
+        _flashbackPlaybackTimer.Tick += FlashbackPlaybackTimer_Tick;
+        _flashbackPlaybackTimer.Start();
+    }
+
+    private void StopFlashbackPlaybackPolling()
+    {
+        if (_flashbackPlaybackTimer == null) return;
+        _flashbackPlaybackTimer.Stop();
+        _flashbackPlaybackTimer.Tick -= FlashbackPlaybackTimer_Tick;
     }
 
     private void FlashbackStatusTimer_Tick(DispatcherQueueTimer sender, object args)
     {
         if (_isWindowClosing) return;
         ViewModel.UpdateFlashbackBufferStatus();
+    }
+
+    private void FlashbackPlaybackTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        if (_isWindowClosing) return;
+        var controller = ViewModel.FlashbackPlaybackController;
+        if (controller == null || controller.State != FlashbackPlaybackState.Playing)
+        {
+            StopFlashbackPlaybackPolling();
+            return;
+        }
+        ViewModel.FlashbackPlaybackPosition = controller.PlaybackPosition;
     }
 
     private void FlashbackTrack_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -5530,6 +5583,13 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var state = ViewModel.FlashbackState;
         FlashbackPlayPauseIcon.Glyph = state == FlashbackPlaybackState.Playing || state == FlashbackPlaybackState.Live ? "\uE769" : "\uE768";
         FlashbackGoLiveButton.IsEnabled = state != FlashbackPlaybackState.Live && state != FlashbackPlaybackState.Disabled;
+
+        // Start/stop the 30Hz playback position timer based on state.
+        // Playing needs smooth CTI; other states use the 250ms buffer status timer.
+        if (state == FlashbackPlaybackState.Playing)
+            StartFlashbackPlaybackPolling();
+        else
+            StopFlashbackPlaybackPolling();
     }
 
     private void UpdateFlashbackBufferFill()
@@ -5764,6 +5824,18 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             HideStatsDockPanel(immediate: true);
         }
 
+        // M19: Clean up scrub state if user is scrubbing when fullscreen triggers
+        if (_isFlashbackScrubbing)
+        {
+            _isFlashbackScrubbing = false;
+            ViewModel?.FlashbackEndScrub();
+        }
+
+        // M18: Hide flashback timeline during fullscreen
+        _preFullScreenTimelineVisible = FlashbackTimelinePanel.Visibility == Visibility.Visible;
+        if (_preFullScreenTimelineVisible)
+            FlashbackTimelinePanel.Visibility = Visibility.Collapsed;
+
         PreviewBorder.Margin = new Thickness(0);
         PreviewShadowHost.Margin = new Thickness(0);
         PreviewShadowHost.CornerRadius = new CornerRadius(0);
@@ -5830,6 +5902,11 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         if (_preFullScreenStatsDockVisible)
         {
             ShowStatsDockPanel();
+        }
+        // M18: Restore flashback timeline if it was visible before fullscreen
+        if (_preFullScreenTimelineVisible)
+        {
+            FlashbackTimelinePanel.Visibility = Visibility.Visible;
         }
 
         ((Grid)Content).Background = null;

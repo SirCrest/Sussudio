@@ -258,6 +258,55 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     }
                 }
 
+                case AutomationCommandKind.FlashbackExport:
+                {
+                    var seconds = GetDouble(payload, "seconds") ?? 300;
+                    var outputPath = RequireString(payload, "outputPath");
+                    var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, cancellationToken).ConfigureAwait(false);
+                    return CreateSuccessResponse(
+                        correlationId,
+                        exportResult.StatusMessage ?? (exportResult.Succeeded ? "Export complete." : "Export failed."),
+                        data: new
+                        {
+                            exportResult.Succeeded,
+                            exportResult.OutputPath,
+                            exportResult.StatusMessage,
+                            FileSizeBytes = File.Exists(exportResult.OutputPath) ? new FileInfo(exportResult.OutputPath).Length : 0L
+                        },
+                        errorCode: exportResult.Succeeded ? null : "export-failed",
+                        success: exportResult.Succeeded,
+                        status: exportResult.Succeeded ? "ok" : "error");
+                }
+
+                case AutomationCommandKind.FlashbackGetSegments:
+                {
+                    var segments = _viewModel.GetFlashbackSegments();
+                    return CreateSuccessResponse(
+                        correlationId,
+                        $"Found {segments.Count} segment(s).",
+                        data: new { Segments = segments });
+                }
+
+                case AutomationCommandKind.VerifyFile:
+                {
+                    var filePath = RequireString(payload, "filePath");
+                    var verifyStartedAt = Stopwatch.GetTimestamp();
+                    var verification = await _diagnosticsHub.VerifyFileAsync(filePath, cancellationToken).ConfigureAwait(false);
+                    var elapsedMs = (long)Math.Round(Stopwatch.GetElapsedTime(verifyStartedAt).TotalMilliseconds);
+                    return CreateSuccessResponse(
+                        correlationId,
+                        verification.Message,
+                        data: new
+                        {
+                            Verification = verification,
+                            HdrParity = verification.HdrParity
+                        },
+                        errorCode: verification.Succeeded ? null : "verification-failed",
+                        success: verification.Succeeded,
+                        status: verification.Succeeded ? "ok" : "error",
+                        elapsedMs: elapsedMs);
+                }
+
                 case AutomationCommandKind.SetRecordingFormat:
                 {
                     var format = RequireString(payload, "format");

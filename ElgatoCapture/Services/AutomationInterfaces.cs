@@ -32,6 +32,7 @@ public interface IAutomationDiagnosticsHub : IDisposable, IAsyncDisposable
     IReadOnlyList<PerformanceTimelineEntry> GetPerformanceTimeline(int maxEntries = 240);
     IReadOnlyList<DiagnosticsEvent> GetRecentEvents(int maxEvents = 100);
     Task<RecordingVerificationResult> VerifyLastRecordingAsync(CancellationToken cancellationToken = default);
+    Task<RecordingVerificationResult> VerifyFileAsync(string filePath, CancellationToken cancellationToken = default);
     void Start();
     Task StopAsync(CancellationToken cancellationToken = default);
     event EventHandler<AutomationSnapshot>? SnapshotUpdated;

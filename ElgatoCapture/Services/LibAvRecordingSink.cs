@@ -7,7 +7,6 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using FFmpeg.AutoGen;
-using Windows.Graphics.Imaging;
 
 namespace ElgatoCapture.Services;
 
@@ -321,11 +320,6 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             Logger.Log(
                 $"LIBAV_SINK_VIDEO_DROP saturated={dropped} evicted={Interlocked.Read(ref _videoDropsBacklogEviction)} total_dropped={DroppedVideoFrames}");
         }
-    }
-
-    public Task WriteVideoAsync(SoftwareBitmap frame, CancellationToken cancellationToken = default)
-    {
-        throw new NotSupportedException("Use EnqueueRawVideoFrame, EnqueueGpuVideoFrame, or EnqueueCudaVideoFrame instead.");
     }
 
     public Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default)

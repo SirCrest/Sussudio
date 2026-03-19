@@ -6,8 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using FFmpeg.AutoGen;
-using Windows.Graphics.Imaging;
-
 namespace ElgatoCapture.Services;
 
 public sealed class RecordingContext
@@ -101,7 +99,6 @@ public unsafe interface ICudaVideoFrameEncoder
 public interface IRecordingSink : IDisposable, IAsyncDisposable
 {
     Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default);
-    Task WriteVideoAsync(SoftwareBitmap frame, CancellationToken cancellationToken = default);
     Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default);
     Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default);
 }

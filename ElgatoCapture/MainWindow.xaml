@@ -160,6 +160,16 @@
                 </Grid>
             </Border>
 
+            <!-- Disk warning InfoBar — overlays at top of preview area -->
+            <InfoBar x:Name="DiskWarningInfoBar"
+                     Title="Disk Space Warning"
+                     Message="Recording disk usage exceeds the flashback buffer limit. Oldest segments cannot be evicted."
+                     Severity="Error"
+                     IsOpen="False"
+                     IsClosable="False"
+                     VerticalAlignment="Top"
+                     Margin="16,8,16,0"/>
+
         </Grid>
 
         <!-- Stats Dock Panel — full-height right column, outside preview grid -->
@@ -986,6 +996,8 @@
                     <ComboBox x:Name="FlashbackBufferDurationCombo"
                               Width="160"
                               VerticalAlignment="Center"
+                              IsEnabled="False"
+                              ToolTipService.ToolTip="Buffer duration is fixed at 5 minutes"
                               SelectionChanged="FlashbackBufferDurationCombo_SelectionChanged">
                         <ComboBoxItem Content="1 minute" Tag="1"/>
                         <ComboBoxItem Content="2 minutes" Tag="2"/>
@@ -1012,6 +1024,7 @@
                 BorderBrush="#20FFFFFF" BorderThickness="1">
             <Grid RowSpacing="6">
                 <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
@@ -1117,6 +1130,13 @@
                             Click="FlashbackSaveLast5mButton_Click"
                             ToolTipService.ToolTip="Save last 5 minutes"/>
                 </StackPanel>
+
+                <!-- Row 3: Export Progress -->
+                <ProgressBar x:Name="FlashbackExportProgressBar" Grid.Row="3"
+                             Minimum="0" Maximum="100" Value="0"
+                             Visibility="Collapsed"
+                             Height="4" CornerRadius="2"
+                             Margin="0,2,0,0"/>
             </Grid>
         </Border>
 

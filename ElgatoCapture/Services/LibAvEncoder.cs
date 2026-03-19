@@ -21,7 +21,8 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     // offset from WASAPI pre-buffering. Correcting it causes audible pops because 480-
     // sample block insertions/removals create hard discontinuities in the waveform.
     // Players handle the small initial A/V offset in the container transparently.
-    private const double DriftCorrectionThresholdMs = 5000.0;
+    private const double DriftCorrectionThresholdMs = double.MaxValue;
+    private const double MicDriftCorrectionThresholdMs = 200.0;
     private const int MaxDriftCorrectionSamplesPerPass = 480;
 
     private static readonly Regex MasterDisplayMetadataRegex = new(
@@ -82,6 +83,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     private AVFrame* _hwFrame;
     private bool _useHardwareFrames;
     private bool _useCudaHardwareFrames;
+    private volatile bool _forceNextKeyframe;
     private IntPtr[]? _hwPoolTextures; // individual ArraySize=1 D3D11 textures for the hw frames pool
     private int _hwPoolIndex; // round-robin index into _hwPoolTextures
 
@@ -195,7 +197,11 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
             ConfigureVideoCodecContext(_videoCodecCtx, options);
 
-            if ((_formatCtx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+            // For MP4: SPS/PPS goes in moov atom via extradata (GLOBAL_HEADER).
+            // For MPEG-TS: SPS/PPS must be inline with every IDR so each segment
+            // is independently decodable after segment rotation.
+            if (options.ContainerFormat != "mpegts" &&
+                (_formatCtx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
             {
                 _videoCodecCtx->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
             }
@@ -362,6 +368,12 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         ThrowIfError(ffmpeg.av_frame_make_writable(_videoFrame), "av_frame_make_writable");
 
         CopyPackedFrameToVideoFrame(frameData[..expectedSize], options);
+        if (_forceNextKeyframe)
+        {
+            _videoFrame->pict_type = AVPictureType.AV_PICTURE_TYPE_I;
+            _forceNextKeyframe = false;
+        }
+
         _videoFrame->pts = Interlocked.Increment(ref _nextVideoPts) - 1;
         LogAvSyncIfDue();
 
@@ -456,6 +468,12 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         // Create a buffer ref with no-op free so av_frame_unref doesn't release our pool texture
         _hwFrame->buf[0] = ffmpeg.av_buffer_create(
             (byte*)poolTexture, 0, _hwPoolTextureFree, null, 0);
+
+        if (_forceNextKeyframe)
+        {
+            _hwFrame->pict_type = AVPictureType.AV_PICTURE_TYPE_I;
+            _forceNextKeyframe = false;
+        }
 
         _hwFrame->pts = Interlocked.Increment(ref _nextVideoPts) - 1;
         LogAvSyncIfDue();
@@ -719,7 +737,17 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
         CloseCurrentOutputIo();
         FreeCurrentOutputContext();
-        ReinitializeOutputContext(newPath);
+        try
+        {
+            ReinitializeOutputContext(newPath);
+        }
+        catch (Exception ex)
+        {
+            _isOpen = false;
+            Logger.Log($"LIBAV_ENCODER_ROTATE_FAILED path='{newPath}' error={ex.Message}");
+            throw;
+        }
+
         ResetSegmentRuntimeState();
         _options = options with { OutputPath = newPath };
 
@@ -1212,7 +1240,9 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
         ConfigureAudioCodecContext(_audioCodecCtx, options, codec);
 
-        if ((_formatCtx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+        // Skip GLOBAL_HEADER for MPEG-TS — AAC needs ADTS framing per segment.
+        if (options.ContainerFormat != "mpegts" &&
+            (_formatCtx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
         {
             _audioCodecCtx->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
         }
@@ -1277,7 +1307,9 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 $"LIBAV_ENCODER_ERROR operation=InitializeMicrophoneIfNeeded msg=Requested sample format '{_micCodecCtx->sample_fmt}' is not supported by AAC encoder.");
         }
 
-        if ((_formatCtx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
+        // Skip GLOBAL_HEADER for MPEG-TS — AAC needs ADTS framing per segment.
+        if (options.ContainerFormat != "mpegts" &&
+            (_formatCtx->oformat->flags & ffmpeg.AVFMT_GLOBALHEADER) != 0)
         {
             _micCodecCtx->flags |= ffmpeg.AV_CODEC_FLAG_GLOBAL_HEADER;
         }
@@ -1785,12 +1817,6 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             ThrowIfError(convertedSamples, "swr_convert");
         }
 
-        if (convertedSamples != inputSamples)
-        {
-            throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=swr_convert msg=Unexpected sample count converted={convertedSamples} expected={inputSamples}");
-        }
-
         var queuedSamples = _audioBufferedSamples + convertedSamples;
         var queuedAudioSamples = _nextAudioPts + queuedSamples;
         var correctionSamples = GetDriftCorrectionSamples(
@@ -1876,19 +1902,14 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             ThrowIfError(convertedSamples, "swr_convert(mic)");
         }
 
-        if (convertedSamples != inputSamples)
-        {
-            throw CreateLibAvException(
-                $"LIBAV_ENCODER_ERROR operation=swr_convert(mic) msg=Unexpected sample count converted={convertedSamples} expected={inputSamples}");
-        }
-
         var queuedSamples = _micBufferedSamples + convertedSamples;
         var queuedMicSamples = _nextMicPts + queuedSamples;
         var correctionSamples = GetDriftCorrectionSamples(
             queuedMicSamples,
             _micCodecCtx->sample_rate,
             out _,
-            out _);
+            out _,
+            MicDriftCorrectionThresholdMs);
 
         if (correctionSamples < 0)
         {
@@ -2442,6 +2463,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         // Also do NOT reset audio accumulators — the AAC encoder's internal
         // frame accumulator carries partial frames across segment boundaries.
         // Resetting would lose those samples and break A/V sync.
+        _forceNextKeyframe = true;
         _encodedFrameCount = 0;
         _droppedFrameCount = 0;
         _audioSamplesReceived = 0;
@@ -2636,6 +2658,8 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             _audioBufferedSamples = 0;
             _micAccumulatorBytes = 0;
             _micBufferedSamples = 0;
+            _nextVideoPts = 0;
+            _nextAudioPts = 0;
             _nextMicPts = 0;
             var finalMicSamplesReceived = _micSamplesReceived;
             _micSamplesReceived = 0;
@@ -2886,7 +2910,8 @@ ValidateHdrOptions:
             den = 10_000
         };
 
-    private int GetDriftCorrectionSamples(long audioSamples, int sampleRate, out long correctionVideoFrame, out double driftMs)
+    private int GetDriftCorrectionSamples(long audioSamples, int sampleRate, out long correctionVideoFrame, out double driftMs,
+        double thresholdMs = DriftCorrectionThresholdMs)
     {
         correctionVideoFrame = 0;
         driftMs = 0.0;
@@ -2905,7 +2930,7 @@ ValidateHdrOptions:
         }
 
         correctionVideoFrame = videoFrame;
-        if (Math.Abs(driftMs) <= DriftCorrectionThresholdMs || sampleRate <= 0)
+        if (Math.Abs(driftMs) <= thresholdMs || sampleRate <= 0)
         {
             return 0;
         }
@@ -2958,6 +2983,13 @@ ValidateHdrOptions:
             $"LIBAV_AV_SYNC videoFrame={videoFrame} videoSec={videoTimeSec:F3} " +
             $"audioSamples={audioSamples} audioSec={audioTimeSec:F3} driftMs={driftMs:F1} " +
             $"totalCorrectionSamples={_driftCorrectionAppliedSamples}");
+
+        if (Math.Abs(driftMs) > 500.0)
+        {
+            Logger.Log(
+                $"LIBAV_AV_SYNC_DRIFT_WARNING videoFrame={videoFrame} driftMs={driftMs:F1} " +
+                $"audioSamples={audioSamples} — drift exceeds 500ms, investigate audio delivery");
+        }
     }
 
     private bool TryGetAvSyncState(

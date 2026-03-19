@@ -53,6 +53,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private DateTimeOffset? _lastFinalizeUtc;
     private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();
     private bool _lastUsePostMuxAudio;
+    private FinalizeResult? _lastExportResult;
     private string? _audioDeviceId;
     private string? _audioDeviceName;
     private bool _mfReadwriteDisableConverters;
@@ -106,6 +107,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
     internal FlashbackPlaybackController? FlashbackPlaybackController => _flashbackPlaybackController;
     internal FlashbackBufferManager? FlashbackBufferManager => _flashbackBufferManager;
     public long FlashbackOutputBytes => _flashbackSink?.OutputBytes ?? 0;
+    public FinalizeResult? LastExportResult => _lastExportResult;
+
+    internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
+    {
+        return _flashbackBufferManager?.GetSegmentInfoList()
+            ?? Array.Empty<FlashbackSegmentInfo>();
+    }
+
     public void SetFlashbackEnabled(bool enabled)
     {
         if (_isRecording && IsFlashbackRecordingBackendActive() && !enabled)
@@ -121,45 +130,65 @@ public class CaptureService : IDisposable, IAsyncDisposable
         _previewVolume = Math.Clamp(volume, 0f, 1f);
         if (!_isMonitoringMuted)
         {
-            _wasapiAudioPlayback?.SetVolume(_previewVolume);
+            var playback = _wasapiAudioPlayback;
+            playback?.SetVolume(_previewVolume);
         }
     }
 
     public void SetMonitoringMuted(bool muted)
     {
         _isMonitoringMuted = muted;
-        _wasapiAudioPlayback?.SetVolume(muted ? 0f : _previewVolume);
+        var playback = _wasapiAudioPlayback;
+        playback?.SetVolume(muted ? 0f : _previewVolume);
     }
 
     internal async Task<FinalizeResult> ExportFlashbackRangeAsync(
         TimeSpan? inPoint, TimeSpan? outPoint, string outputPath,
         IProgress<ExportProgress>? progress, CancellationToken ct)
     {
-        var bufferManager = _flashbackBufferManager;
-        if (bufferManager == null)
-            return FinalizeResult.Failure(outputPath, "Flashback buffer not active");
+        // M5: Acquire session lock so a concurrent recording stop can't cycle the buffer
+        await _sessionTransitionLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var bufferManager = _flashbackBufferManager;
+            if (bufferManager == null)
+                return FinalizeResult.Failure(outputPath, "Flashback buffer not active");
 
-        var validStart = bufferManager.ValidStartPts;
-        var fileInPoint = (inPoint ?? TimeSpan.Zero) + validStart;
-        var fileOutPoint = outPoint.HasValue ? outPoint.Value + validStart : TimeSpan.MaxValue;
-        return await ExportFlashbackCoreAsync(fileInPoint, fileOutPoint, outputPath, progress, ct).ConfigureAwait(false);
+            var validStart = bufferManager.ValidStartPts;
+            var fileInPoint = (inPoint ?? TimeSpan.Zero) + validStart;
+            var fileOutPoint = outPoint.HasValue ? outPoint.Value + validStart : TimeSpan.MaxValue;
+            return await ExportFlashbackCoreAsync(fileInPoint, fileOutPoint, outputPath, progress, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _sessionTransitionLock.Release();
+        }
     }
 
     internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(
         double seconds, string outputPath,
         IProgress<ExportProgress>? progress, CancellationToken ct)
     {
-        var bufferManager = _flashbackBufferManager;
-        if (bufferManager == null)
-            return FinalizeResult.Failure(outputPath, "Flashback buffer not active");
+        // M5: Acquire session lock so a concurrent recording stop can't cycle the buffer
+        await _sessionTransitionLock.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            var bufferManager = _flashbackBufferManager;
+            if (bufferManager == null)
+                return FinalizeResult.Failure(outputPath, "Flashback buffer not active");
 
-        var bufferedDuration = bufferManager.BufferedDuration;
-        var validStart = bufferManager.ValidStartPts;
-        var rangeStart = bufferedDuration.TotalSeconds > seconds
-            ? TimeSpan.FromSeconds(bufferedDuration.TotalSeconds - seconds)
-            : TimeSpan.Zero;
-        var fileInPoint = rangeStart + validStart;
-        return await ExportFlashbackCoreAsync(fileInPoint, TimeSpan.MaxValue, outputPath, progress, ct).ConfigureAwait(false);
+            var bufferedDuration = bufferManager.BufferedDuration;
+            var validStart = bufferManager.ValidStartPts;
+            var rangeStart = bufferedDuration.TotalSeconds > seconds
+                ? TimeSpan.FromSeconds(bufferedDuration.TotalSeconds - seconds)
+                : TimeSpan.Zero;
+            var fileInPoint = rangeStart + validStart;
+            return await ExportFlashbackCoreAsync(fileInPoint, TimeSpan.MaxValue, outputPath, progress, ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            _sessionTransitionLock.Release();
+        }
     }
 
     private async Task<FinalizeResult> ExportFlashbackCoreAsync(
@@ -174,18 +203,29 @@ public class CaptureService : IDisposable, IAsyncDisposable
         bufferManager?.PauseEviction();
         try
         {
+            FinalizeResult result;
             if (flashbackSink != null)
             {
                 var segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint);
                 if (segmentPaths.Count > 0)
-                    return await exporter.ExportSegmentsAsync(segmentPaths, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+                {
+                    result = await exporter.ExportSegmentsAsync(segmentPaths, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+                    _lastExportResult = result;
+                    return result;
+                }
             }
 
             // Fallback: single-file export if no segments available
             var tsPath = bufferManager?.ActiveFilePath;
             if (string.IsNullOrWhiteSpace(tsPath))
-                return FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
-            return await exporter.ExportAsync(tsPath, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+            {
+                result = FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
+                _lastExportResult = result;
+                return result;
+            }
+            result = await exporter.ExportAsync(tsPath, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+            _lastExportResult = result;
+            return result;
         }
         finally
         {
@@ -591,20 +631,40 @@ public class CaptureService : IDisposable, IAsyncDisposable
         CancellationToken cancellationToken)
     {
         var outputPath = recordingContext?.FinalOutputPath ?? string.Empty;
-        var endResult = await flashbackSink.EndRecordingAsync(cancellationToken).ConfigureAwait(false);
-        if (!endResult.Succeeded)
-            return endResult;
 
-        var startPts = flashbackSink.LastRecordingStartPts;
-        var endPts = flashbackSink.LastRecordingEndPts;
+        // H3: Pause eviction BEFORE EndRecordingAsync to close the window where
+        // eviction could delete segments between EndRecording (which resumes eviction
+        // internally) and ExportFlashbackCoreAsync (which pauses it again).
+        // With ref-counted eviction, the nested Pause from ExportFlashbackCoreAsync is safe.
+        // M2: Track whether we actually paused so the finally block doesn't decrement past zero
+        // if PauseEviction was never reached (e.g. bufferManager is null).
+        bool outerPauseApplied = false;
+        var bufferManager = _flashbackBufferManager;
+        try
+        {
+            bufferManager?.PauseEviction();
+            outerPauseApplied = true;
 
-        Logger.Log($"FLASHBACK_RECORDING_EXPORT_BEGIN output='{outputPath}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}");
+            var endResult = await flashbackSink.EndRecordingAsync(cancellationToken).ConfigureAwait(false);
+            if (!endResult.Succeeded)
+                return endResult;
 
-        var exportResult = await ExportFlashbackCoreAsync(startPts, endPts, outputPath, progress: null, ct: cancellationToken)
-            .ConfigureAwait(false);
+            var startPts = flashbackSink.LastRecordingStartPts;
+            var endPts = flashbackSink.LastRecordingEndPts;
 
-        Logger.Log($"FLASHBACK_RECORDING_EXPORT_DONE succeeded={exportResult.Succeeded} status='{exportResult.StatusMessage}'");
-        return exportResult;
+            Logger.Log($"FLASHBACK_RECORDING_EXPORT_BEGIN output='{outputPath}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}");
+
+            var exportResult = await ExportFlashbackCoreAsync(startPts, endPts, outputPath, progress: null, ct: cancellationToken)
+                .ConfigureAwait(false);
+
+            Logger.Log($"FLASHBACK_RECORDING_EXPORT_DONE succeeded={exportResult.Succeeded} status='{exportResult.StatusMessage}'");
+            return exportResult;
+        }
+        finally
+        {
+            if (outerPauseApplied)
+                bufferManager?.ResumeEviction();
+        }
     }
 
     private void OnUnifiedVideoCaptureFatalError(object? sender, Exception ex)
@@ -899,12 +959,14 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         // Update flashback controller with audio components (they weren't available
         // during flashback init because WASAPI starts after flashback).
-        _flashbackPlaybackController?.UpdateAudioComponents(playback, capture);
+        var controller = _flashbackPlaybackController;
+        controller?.UpdateAudioComponents(playback, capture);
     }
 
     private void StopWasapiPlayback()
     {
-        _flashbackPlaybackController?.UpdateAudioComponents(null, null);
+        var fbController = _flashbackPlaybackController;
+        fbController?.UpdateAudioComponents(null, null);
         var playback = _wasapiAudioPlayback;
         _wasapiAudioPlayback = null;
         _wasapiAudioCapture?.SetPlayback(null);
@@ -1602,6 +1664,9 @@ public class CaptureService : IDisposable, IAsyncDisposable
     {
         var sink = _libavSink;
         var unifiedVideoCapture = _unifiedVideoCapture;
+        var fbSink = _flashbackSink;
+        var bufMgr = _flashbackBufferManager;
+        var fbPlayback = _flashbackPlaybackController;
         var observedTelemetry = ResolveObservedFrameTelemetry();
         var videoFramesDropped = sink?.DroppedVideoFrames ?? Interlocked.Read(ref _videoFramesDropped);
         var sourceTelemetrySuppressedReason = ResolveSourceTelemetrySuppressedReason(_latestSourceTelemetry);
@@ -1621,25 +1686,28 @@ public class CaptureService : IDisposable, IAsyncDisposable
             SessionState = _sessionState,
             IsRecording = _isRecording,
             RecordingBackend = ResolveRecordingBackendName(),
-            FlashbackActive = IsFlashbackActive,
-            FlashbackBufferedDurationMs = (long)FlashbackBufferedDuration.TotalMilliseconds,
-            FlashbackSegmentCount = FlashbackSegmentCount,
-            FlashbackDiskBytes = FlashbackDiskBytes,
-            FlashbackOutputBytes = FlashbackOutputBytes,
-            FlashbackFilePath = _flashbackBufferManager?.ActiveFilePath,
-            FlashbackEncodedFrames = _flashbackSink?.EncodedVideoFrames ?? 0,
-            FlashbackDroppedFrames = _flashbackSink?.DroppedVideoFrames ?? 0,
-            FlashbackGpuEncoding = _flashbackSink?.GpuEncodingEnabled ?? false,
-            FlashbackVideoQueueDepth = _flashbackSink?.VideoQueueCount ?? 0,
-            FlashbackAudioQueueDepth = _flashbackSink?.AudioQueueCount ?? 0,
-            FlashbackPlaybackState = _flashbackPlaybackController?.State.ToString() ?? "N/A",
-            FlashbackPlaybackPositionMs = (long)(_flashbackPlaybackController?.PlaybackPosition.TotalMilliseconds ?? 0),
-            FlashbackDecoderHwAccel = _flashbackPlaybackController?.DecoderHwAccel ?? "N/A",
-            FlashbackPlaybackFrameCount = _flashbackPlaybackController?.PlaybackFrameCount ?? 0,
-            FlashbackPlaybackLateFrames = _flashbackPlaybackController?.PlaybackLateFrames ?? 0,
-            FlashbackPlaybackObservedFps = _flashbackPlaybackController?.PlaybackObservedFps ?? 0,
-            FlashbackPlaybackAvgFrameMs = _flashbackPlaybackController?.PlaybackAvgFrameMs ?? 0,
-            FlashbackAvDriftMs = _flashbackPlaybackController?.AvDriftMs ?? 0,
+            FlashbackActive = fbSink != null,
+            FlashbackBufferedDurationMs = (long)(bufMgr?.BufferedDuration.TotalMilliseconds ?? 0),
+            FlashbackSegmentCount = bufMgr?.SegmentCount ?? 0,
+            FlashbackDiskBytes = bufMgr?.TotalDiskBytes ?? 0,
+            FlashbackOutputBytes = fbSink?.OutputBytes ?? 0,
+            FlashbackFilePath = bufMgr?.ActiveFilePath,
+            FlashbackEncodedFrames = fbSink?.EncodedVideoFrames ?? 0,
+            FlashbackDroppedFrames = fbSink?.DroppedVideoFrames ?? 0,
+            FlashbackGpuEncoding = fbSink?.GpuEncodingEnabled ?? false,
+            FlashbackVideoQueueDepth = fbSink?.VideoQueueCount ?? 0,
+            FlashbackAudioQueueDepth = fbSink?.AudioQueueCount ?? 0,
+            FlashbackPlaybackState = fbPlayback?.State.ToString() ?? "N/A",
+            FlashbackPlaybackPositionMs = (long)(fbPlayback?.PlaybackPosition.TotalMilliseconds ?? 0),
+            FlashbackDecoderHwAccel = fbPlayback?.DecoderHwAccel ?? "N/A",
+            FlashbackPlaybackFrameCount = fbPlayback?.PlaybackFrameCount ?? 0,
+            FlashbackPlaybackLateFrames = fbPlayback?.PlaybackLateFrames ?? 0,
+            FlashbackPlaybackObservedFps = fbPlayback?.PlaybackObservedFps ?? 0,
+            FlashbackPlaybackAvgFrameMs = fbPlayback?.PlaybackAvgFrameMs ?? 0,
+            FlashbackAvDriftMs = fbPlayback?.AvDriftMs ?? 0,
+            LastExportPath = _lastExportResult?.OutputPath,
+            LastExportSuccess = _lastExportResult?.Succeeded,
+            LastExportMessage = _lastExportResult?.StatusMessage,
             RecordingElapsedMs = _isRecording ? _recordingStopwatch.ElapsedMilliseconds : 0,
             ExpectedFrameRate = _actualFrameRate ?? _currentSettings?.FrameRate ?? 0,
             NegotiatedWidth = _actualWidth,
@@ -2550,6 +2618,15 @@ public class CaptureService : IDisposable, IAsyncDisposable
             }
 
             await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);
+
+            try
+            {
+                await DisposeFlashbackPreviewBackendAsync(transitionToken).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"Cleanup flashback dispose warning: {ex.Message}");
+            }
 
             StopTelemetryPoll();
             _isVideoPreviewActive = false;

@@ -23,7 +23,7 @@ internal static class CommandHandlers
             "device" => HandleDeviceAsync(context),
             "window" => HandleWindowAsync(context),
             "wait" => HandleWaitAsync(context),
-            "verify" => HandleSimpleCommandAsync(context, "VerifyLastRecording", includeData: true),
+            "verify" => HandleVerifyAsync(context),
             "assert" => HandleAssertAsync(context),
             "probe" => HandleProbeAsync(context),
             "stats" => HandleStatsAsync(context),
@@ -359,23 +359,67 @@ internal static class CommandHandlers
 
     private static Task<int> HandleFlashbackAsync(CommandContext context)
     {
-        var subcommand = RequireWord(context.Rest, 0, "flashback play|pause|go-live|seek <ms>").ToLowerInvariant();
-        return subcommand switch
+        var subcommand = RequireWord(context.Rest, 0, "flashback play|pause|go-live|seek|export|segments").ToLowerInvariant();
+        switch (subcommand)
         {
-            "play" => HandleSimpleCommandAsync(context, "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "play" }, includeData: false),
-            "pause" => HandleSimpleCommandAsync(context, "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "pause" }, includeData: false),
-            "go-live" => HandleSimpleCommandAsync(context, "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "go-live" }, includeData: false),
-            "seek" => HandleSimpleCommandAsync(context, "FlashbackAction",
-                new Dictionary<string, object?>
-                {
-                    ["action"] = "seek",
-                    ["positionMs"] = ParseDouble(RequireWord(context.Rest, 1, "flashback seek <ms>"))
-                }, includeData: false),
-            _ => throw new UsageException($"Unknown flashback command '{subcommand}'. Expected play, pause, go-live, or seek.")
-        };
+            case "play":
+                return HandleSimpleCommandAsync(context, "FlashbackAction",
+                    new Dictionary<string, object?> { ["action"] = "play" }, includeData: false);
+            case "pause":
+                return HandleSimpleCommandAsync(context, "FlashbackAction",
+                    new Dictionary<string, object?> { ["action"] = "pause" }, includeData: false);
+            case "go-live":
+                return HandleSimpleCommandAsync(context, "FlashbackAction",
+                    new Dictionary<string, object?> { ["action"] = "go-live" }, includeData: false);
+            case "seek":
+                return HandleSimpleCommandAsync(context, "FlashbackAction",
+                    new Dictionary<string, object?>
+                    {
+                        ["action"] = "seek",
+                        ["positionMs"] = ParseDouble(RequireWord(context.Rest, 1, "flashback seek <ms>"))
+                    }, includeData: false);
+            case "export":
+            {
+                var seconds = context.Rest.Count >= 2
+                    ? ParseDouble(context.Rest[1])
+                    : 300;
+                var outputPath = context.Rest.Count >= 3
+                    ? JoinRemaining(context.Rest, 2)
+                    : $"temp/flashback_export_{DateTime.Now:yyyyMMdd_HHmmss}.mp4";
+                Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
+                return HandleSimpleCommandAsync(context, "FlashbackExport",
+                    new Dictionary<string, object?>
+                    {
+                        ["seconds"] = seconds,
+                        ["outputPath"] = outputPath
+                    }, includeData: true);
+            }
+            case "segments":
+                return HandleSimpleCommandAsync(context, "FlashbackGetSegments", includeData: true);
+            default:
+                throw new UsageException($"Unknown flashback command '{subcommand}'. Expected play, pause, go-live, seek, export, or segments.");
+        }
+    }
+
+    private static async Task<int> HandleVerifyAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        if (context.Rest.Count > 0)
+        {
+            // Verify a specific file
+            var filePath = JoinRemaining(context.Rest, 0);
+            var response = await context.Transport.SendCommandAsync(
+                "VerifyFile",
+                new Dictionary<string, object?> { ["filePath"] = filePath },
+                60000).ConfigureAwait(false);
+            return WriteResponse(response, json, value => Formatters.FormatResult(value, includeData: true));
+        }
+        else
+        {
+            // Verify last recording (existing behavior)
+            var response = await context.Transport.SendCommandAsync("VerifyLastRecording").ConfigureAwait(false);
+            return WriteResponse(response, json, value => Formatters.FormatResult(value, includeData: true));
+        }
     }
 
     private static Task<int> SendSetValueAsync(CommandContext context, string commandName, string propertyName, object value, string usage)

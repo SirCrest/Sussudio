@@ -77,8 +77,16 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         Logger.Log("FLASHBACK_EXPORT_DISPOSE");
-        CleanupNativeState();
-        _exportLock.Dispose();
+        _exportLock.Wait(TimeSpan.FromSeconds(5));
+        try
+        {
+            CleanupNativeState();
+        }
+        finally
+        {
+            _exportLock.Release();
+            _exportLock.Dispose();
+        }
         _disposed = true;
         GC.SuppressFinalize(this);
     }
@@ -277,6 +285,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                         buffPkt->pts -= bTs;
                                     if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
                                         buffPkt->dts -= bTs;
+                                    if (buffPkt->pts < 0) buffPkt->pts = 0;
+                                    if (buffPkt->dts < 0) buffPkt->dts = 0;
                                     buffPkt->pos = -1;
                                     buffPkt->stream_index = oi;
                                     ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
@@ -298,6 +308,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             packet->pts -= baseTs;
                         if (packet->dts != ffmpeg.AV_NOPTS_VALUE)
                             packet->dts -= baseTs;
+                        if (packet->pts < 0) packet->pts = 0;
+                        if (packet->dts < 0) packet->dts = 0;
 
                         packet->pos = -1;
                         packet->stream_index = outStream->index;
@@ -329,6 +341,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             buffPkt->pts -= bTs;
                         if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
                             buffPkt->dts -= bTs;
+                        if (buffPkt->pts < 0) buffPkt->pts = 0;
+                        if (buffPkt->dts < 0) buffPkt->dts = 0;
                         buffPkt->pos = -1;
                         buffPkt->stream_index = oi;
                         ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
@@ -730,10 +744,15 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         }
                     }
 
-                    // Update cross-segment offset: next segment's PTS starts after this segment's max
-                    // Add a small overlap buffer (one frame at ~30fps = ~33ms) to avoid gaps
+                    // Update cross-segment offset: next segment's PTS starts after this segment's max + one frame
                     if (segMaxPtsUs > outputPtsOffsetUs)
-                        outputPtsOffsetUs = segMaxPtsUs;
+                    {
+                        var videoStream = videoStreamIndex >= 0 ? _activeInputContext->streams[videoStreamIndex] : null;
+                        long frameDurUs = (videoStream != null && videoStream->avg_frame_rate.num > 0)
+                            ? 1_000_000L * videoStream->avg_frame_rate.den / videoStream->avg_frame_rate.num
+                            : 33333; // fallback ~30fps
+                        outputPtsOffsetUs = segMaxPtsUs + frameDurUs;
+                    }
 
                     // Track bytes for progress
                     try { if (File.Exists(segPath)) bytesProcessed += new FileInfo(segPath).Length; }
@@ -1059,5 +1078,31 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         var buffer = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE];
         ffmpeg.av_strerror(errorCode, buffer, (ulong)ffmpeg.AV_ERROR_MAX_STRING_SIZE);
         return Marshal.PtrToStringAnsi((IntPtr)buffer) ?? $"unknown error {errorCode}";
+    }
+
+    internal static void CleanupOrphanedTempFiles(string directory)
+    {
+        if (string.IsNullOrWhiteSpace(directory) || !Directory.Exists(directory))
+            return;
+
+        try
+        {
+            foreach (var tmpFile in Directory.EnumerateFiles(directory, "*.mp4.tmp"))
+            {
+                try
+                {
+                    File.Delete(tmpFile);
+                    Logger.Log($"FLASHBACK_EXPORT_ORPHAN_CLEANUP deleted='{Path.GetFileName(tmpFile)}'");
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_EXPORT_ORPHAN_CLEANUP_FAIL path='{Path.GetFileName(tmpFile)}' msg='{ex.Message}'");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_ORPHAN_SCAN_FAIL dir='{directory}' msg='{ex.Message}'");
+        }
     }
 }

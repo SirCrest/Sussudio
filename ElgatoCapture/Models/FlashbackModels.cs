@@ -13,7 +13,7 @@ internal sealed record FlashbackBufferOptions
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "ElgatoCapture",
         "Flashback");
-    public TimeSpan SegmentDuration { get; init; } = TimeSpan.FromMinutes(2);
+    public TimeSpan SegmentDuration { get; init; } = TimeSpan.FromMinutes(10);
 
     /// <summary>
     /// Safety cap derived from BufferDuration. Not user-configurable — just a guardrail

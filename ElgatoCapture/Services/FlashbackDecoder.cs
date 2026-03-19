@@ -40,12 +40,6 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     private GCHandle[] _videoFrameHandles = new GCHandle[VideoFrameBufferCount];
     private int _currentVideoBufferIndex;
 
-    // Cross-stream packet stash: when reading video packets we may encounter audio
-    // packets (and vice versa). Stash them here instead of discarding, since
-    // av_read_frame is forward-only and discarding loses frames permanently.
-    private readonly Queue<IntPtr> _pendingVideoPackets = new();
-    private readonly Queue<IntPtr> _pendingAudioPackets = new();
-
     // Pending frame stash: SeekTo() decodes forward to the target frame but must
     // not discard it — stash it so the next TryDecodeNextVideoFrame() returns it.
     private DecodedVideoFrame _pendingVideoFrame;
@@ -194,6 +188,12 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 ffmpeg.avformat_open_input(&formatCtx, filePath, null, null),
                 "avformat_open_input");
             _formatCtx = formatCtx;
+            _formatCtx->flags |= ffmpeg.AVFMT_FLAG_GENPTS;
+
+            // Our own MPEG-TS files have known codecs (HEVC/H.264 + AAC) —
+            // reduce probing from defaults (5MB / 5s) to cut segment switch latency.
+            _formatCtx->probesize = 32768;           // 32KB instead of default 5MB
+            _formatCtx->max_analyze_duration = 500000; // 0.5s instead of default 5s
 
             ThrowIfError(
                 ffmpeg.avformat_find_stream_info(_formatCtx, null),
@@ -277,18 +277,6 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             return false;
         }
 
-        // Flush stashed cross-stream packets — they're from before the seek point
-        while (_pendingVideoPackets.Count > 0)
-        {
-            var pkt = (AVPacket*)_pendingVideoPackets.Dequeue();
-            ffmpeg.av_packet_free(&pkt);
-        }
-        while (_pendingAudioPackets.Count > 0)
-        {
-            var pkt = (AVPacket*)_pendingAudioPackets.Dequeue();
-            ffmpeg.av_packet_free(&pkt);
-        }
-
         if (_videoCodecCtx != null)
         {
             ffmpeg.avcodec_flush_buffers(_videoCodecCtx);
@@ -300,10 +288,13 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
 
         // Clear any stashed pending frame — it's from before the seek point
-        _pendingVideoFrame = default;
-        _hasPendingVideoFrame = false;
+        if (_hasPendingVideoFrame)
+        {
+            ReleaseHeldFrame(_pendingVideoFrame);
+            _pendingVideoFrame = default;
+            _hasPendingVideoFrame = false;
+        }
 
-        _currentPosition = target;
         Logger.Log($"FLASHBACK_DECODER_SEEK_OK target_ms={(long)target.TotalMilliseconds}");
         return true;
     }
@@ -329,8 +320,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         {
             if (!TryDecodeNextVideoFrame(out var frame))
             {
-                // Reached end before target — position at last decoded frame
-                return true;
+                // Reached EOF before target — no frame was stashed
+                return false;
             }
 
             if (frame.Pts.Ticks >= targetTicks)
@@ -340,6 +331,9 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 _hasPendingVideoFrame = true;
                 return true;
             }
+
+            // Intermediate frame before target — free its held D3D11VA surface
+            ReleaseHeldFrame(frame);
         }
     }
 
@@ -370,6 +364,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             {
                 // Got a decoded frame — convert and return
                 frame = ConvertAndOutputVideoFrame();
+                if (frame.Width <= 0)
+                    return false; // clone failed, treat as decode failure
                 return true;
             }
 
@@ -590,7 +586,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             }
 
             decoderCtx->get_format = _getFormatD3D11;
-            decoderCtx->extra_hw_frames = 16;
+            decoderCtx->extra_hw_frames = 4;
 
             var openResult = ffmpeg.avcodec_open2(decoderCtx, codec, null);
             if (openResult < 0)
@@ -711,24 +707,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
     /// <summary>
     /// Reads packets until a video packet is sent to the decoder.
-    /// Audio packets encountered along the way are stashed for later audio decode.
+    /// Audio packets are decoded inline via AudioChunkCallback.
     /// </summary>
     private bool FeedNextVideoPacket()
     {
-        // Drain stashed video packets first (put there by FeedNextAudioPacket)
-        while (_pendingVideoPackets.Count > 0)
-        {
-            var stashed = (AVPacket*)_pendingVideoPackets.Dequeue();
-            var sendResult = ffmpeg.avcodec_send_packet(_videoCodecCtx, stashed);
-            ffmpeg.av_packet_free(&stashed);
-            if (sendResult < 0 && sendResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
-            {
-                Logger.Log($"FLASHBACK_DECODER_VIDEO_WARN send_stashed code={sendResult}");
-                continue;
-            }
-            return true;
-        }
-
         while (true)
         {
             ffmpeg.av_packet_unref(_packet);
@@ -757,12 +739,17 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             }
 
             // Decode audio inline — keeps A/V naturally interleaved
-            if (_packet->stream_index == _audioStreamIndex && _audioCodecCtx != null)
+            try
             {
-                DecodeAndDeliverAudioPacket(_packet);
+                if (_packet->stream_index == _audioStreamIndex && _audioCodecCtx != null)
+                {
+                    DecodeAndDeliverAudioPacket(_packet);
+                }
             }
-
-            ffmpeg.av_packet_unref(_packet);
+            finally
+            {
+                ffmpeg.av_packet_unref(_packet);
+            }
         }
     }
 
@@ -773,6 +760,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     /// </summary>
     private void DecodeAndDeliverAudioPacket(AVPacket* packet)
     {
+        if (AudioChunkCallback == null) return; // skip audio decode during scrub — save CPU
+
         var sendResult = ffmpeg.avcodec_send_packet(_audioCodecCtx, packet);
         if (sendResult < 0 && sendResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
             return;
@@ -782,8 +771,20 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             var callback = AudioChunkCallback;
             var chunk = ConvertAndOutputAudioFrame();
             if (callback != null && chunk.ValidLength > 0)
-                callback(chunk);
-            else if (chunk.Samples.Length > 0)
+            {
+                try
+                {
+                    callback(chunk);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_DECODE_AUDIO_CALLBACK_FAIL type={ex.GetType().Name} msg={ex.Message}");
+                    // Caller is responsible for returning buffer on success; on failure we must return it
+                    if (chunk.Samples != null)
+                        ArrayPool<byte>.Shared.Return(chunk.Samples);
+                }
+            }
+            else if (chunk.Samples != null && chunk.Samples.Length > 0)
                 ArrayPool<byte>.Shared.Return(chunk.Samples);
         }
     }
@@ -805,10 +806,20 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         if (_isD3D11HwAccelerated)
         {
             // D3D11VA path: frame->data[0] is ID3D11Texture2D*, data[1] is subresource index.
-            // Don't unref _videoFrame here — avcodec_receive_frame unrefs on next call.
-            // SubmitTexture will AddRef the COM texture to keep it alive.
-            var texturePtr = (IntPtr)_videoFrame->data[0];
-            var subresource = (int)(long)_videoFrame->data[1];
+            // Clone the AVFrame to hold the D3D11VA surface reference — _videoFrame is reused
+            // by the next avcodec_receive_frame call, which can release the surface back to the
+            // pool before the renderer copies it. The cloned frame must be freed after the
+            // texture is consumed (via HeldFrame).
+            var clonedFrame = ffmpeg.av_frame_clone(_videoFrame);
+            ffmpeg.av_frame_unref(_videoFrame); // release pool slot immediately
+            if (clonedFrame == null)
+            {
+                Logger.Log("FLASHBACK_DECODE_CLONE_FAIL reason='av_frame_clone returned null'");
+                return default;
+            }
+
+            var texturePtr = (IntPtr)clonedFrame->data[0];
+            var subresource = (int)(long)clonedFrame->data[1];
 
             return new DecodedVideoFrame
             {
@@ -818,7 +829,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 Height = _videoHeight,
                 IsHdr = _isHdr,
                 Pts = pts,
-                IsD3D11Texture = true
+                IsD3D11Texture = true,
+                HeldFrame = (IntPtr)clonedFrame
             };
         }
 
@@ -869,7 +881,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             Height = _videoHeight,
             IsHdr = _isHdr,
             Pts = pts,
-            IsD3D11Texture = false
+            IsD3D11Texture = false,
+            HeldFrame = IntPtr.Zero
         };
     }
 
@@ -1063,9 +1076,13 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         Logger.Log($"FLASHBACK_DECODER_CLOSE_CORE path='{_currentFilePath}' had_swr={_swrCtx != null} had_video={_videoCodecCtx != null} had_audio={_audioCodecCtx != null}");
         _isOpen = false;
 
-        // Clear any stashed pending frame
-        _pendingVideoFrame = default;
-        _hasPendingVideoFrame = false;
+        // Clear any stashed pending frame (free held D3D11VA surface if present)
+        if (_hasPendingVideoFrame)
+        {
+            ReleaseHeldFrame(_pendingVideoFrame);
+            _pendingVideoFrame = default;
+            _hasPendingVideoFrame = false;
+        }
 
         // Free pinned handles (software decode path only)
         for (var i = 0; i < VideoFrameBufferCount; i++)
@@ -1103,11 +1120,12 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             _audioFrame = null;
         }
 
-        _isD3D11HwAccelerated = false;
         // Note: do NOT free _d3d11HwDeviceCtx here — it's persistent across files
+        // Note: do NOT reset _isD3D11HwAccelerated here — the D3D11VA device context persists
 
         if (_swrCtx != null)
         {
+            ffmpeg.swr_convert(_swrCtx, null, 0, null, 0);
             var swr = _swrCtx;
             ffmpeg.swr_free(&swr);
             _swrCtx = null;
@@ -1132,18 +1150,6 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             var fmt = _formatCtx;
             ffmpeg.avformat_close_input(&fmt);
             _formatCtx = null;
-        }
-
-        // Free any stashed cross-stream packets
-        while (_pendingVideoPackets.Count > 0)
-        {
-            var pkt = (AVPacket*)_pendingVideoPackets.Dequeue();
-            ffmpeg.av_packet_free(&pkt);
-        }
-        while (_pendingAudioPackets.Count > 0)
-        {
-            var pkt = (AVPacket*)_pendingAudioPackets.Dequeue();
-            ffmpeg.av_packet_free(&pkt);
         }
 
         _videoStreamIndex = -1;
@@ -1218,6 +1224,20 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         Logger.Log($"FLASHBACK_DECODER_ERROR {message}");
         return new InvalidOperationException($"FLASHBACK_DECODER_ERROR {message}");
     }
+
+    /// <summary>
+    /// Frees the cloned AVFrame held by a D3D11VA <see cref="DecodedVideoFrame"/>,
+    /// releasing the D3D11VA surface reference back to the decoder pool.
+    /// Safe to call on software frames (no-op when <see cref="DecodedVideoFrame.HeldFrame"/> is zero).
+    /// </summary>
+    internal static void ReleaseHeldFrame(DecodedVideoFrame frame)
+    {
+        if (frame.HeldFrame != IntPtr.Zero)
+        {
+            var heldFrame = (AVFrame*)frame.HeldFrame;
+            ffmpeg.av_frame_free(&heldFrame);
+        }
+    }
 }
 
 // ── Output Types ────────────────────────────────────────────────────────────
@@ -1238,6 +1258,7 @@ internal readonly struct DecodedVideoFrame
     public IntPtr TexturePtr { get; init; }
     public int SubresourceIndex { get; init; }
     public bool IsD3D11Texture { get; init; }
+    public IntPtr HeldFrame { get; init; } // AVFrame* that must be freed after texture is consumed
 }
 
 /// <summary>

@@ -20,7 +20,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private long _validStartPtsTicks;
     private long _totalDiskBytes;
     private bool _disposed;
-    private volatile bool _evictionPaused;
+    private int _evictionPauseCount;
     private TimeSpan _recordingStartPts;
     private TimeSpan _recordingEndPts;
     private readonly List<CompletedSegment> _completedSegments = new();
@@ -83,7 +83,23 @@ internal sealed class FlashbackBufferManager : IDisposable
         get { return TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks)); }
     }
 
-    public bool EvictionPaused => _evictionPaused;
+    public bool EvictionPaused => Volatile.Read(ref _evictionPauseCount) > 0;
+
+    public long MaxDiskBytes => _options.MaxDiskBytes;
+
+    /// <summary>
+    /// True when eviction is paused (recording/export) and total disk usage exceeds the limit.
+    /// The UI polls this to show a disk warning InfoBar.
+    /// </summary>
+    public bool IsDiskWarningActive
+    {
+        get
+        {
+            if (Volatile.Read(ref _evictionPauseCount) <= 0) return false;
+            var totalBytes = Volatile.Read(ref _totalDiskBytes);
+            return totalBytes > _options.MaxDiskBytes;
+        }
+    }
 
     public TimeSpan RecordingStartPts
     {
@@ -103,9 +119,9 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
-            _evictionPaused = true;
+            Interlocked.Increment(ref _evictionPauseCount);
             _recordingStartPts = TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks));
-            Logger.Log($"FLASHBACK_BUFFER_EVICTION_PAUSED start_pts_ms={(long)_recordingStartPts.TotalMilliseconds}");
+            Logger.Log($"FLASHBACK_BUFFER_EVICTION_PAUSED count={Volatile.Read(ref _evictionPauseCount)} start_pts_ms={(long)_recordingStartPts.TotalMilliseconds}");
         }
     }
 
@@ -118,8 +134,13 @@ internal sealed class FlashbackBufferManager : IDisposable
         lock (_indexLock)
         {
             _recordingEndPts = TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks));
-            _evictionPaused = false;
-            Logger.Log($"FLASHBACK_BUFFER_EVICTION_RESUMED start_pts_ms={(long)_recordingStartPts.TotalMilliseconds} end_pts_ms={(long)_recordingEndPts.TotalMilliseconds} range_s={(_recordingEndPts - _recordingStartPts).TotalSeconds:F1}");
+            var newCount = Interlocked.Decrement(ref _evictionPauseCount);
+            if (newCount < 0)
+            {
+                Interlocked.CompareExchange(ref _evictionPauseCount, 0, newCount);
+                System.Diagnostics.Debug.WriteLine($"FLASHBACK_BUFFER: WARNING — eviction pause count underflowed to {newCount}, clamped to 0");
+            }
+            Logger.Log($"FLASHBACK_BUFFER_EVICTION_RESUMED count={Volatile.Read(ref _evictionPauseCount)} start_pts_ms={(long)_recordingStartPts.TotalMilliseconds} end_pts_ms={(long)_recordingEndPts.TotalMilliseconds} range_s={(_recordingEndPts - _recordingStartPts).TotalSeconds:F1}");
             return (_recordingStartPts, _recordingEndPts);
         }
     }
@@ -162,6 +183,9 @@ internal sealed class FlashbackBufferManager : IDisposable
 
             Directory.CreateDirectory(_options.TempDirectory);
 
+            // Clean up orphaned export temp files from previous sessions
+            FlashbackExporter.CleanupOrphanedTempFiles(_options.TempDirectory);
+
             // Clean up stale files from previous sessions
             var staleDeleted = 0;
             foreach (var filePath in Directory.EnumerateFiles(_options.TempDirectory, "fb_*.*", SearchOption.TopDirectoryOnly))
@@ -179,6 +203,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             Interlocked.Exchange(ref _latestPtsTicks, 0);
             Interlocked.Exchange(ref _validStartPtsTicks, 0);
             _totalDiskBytes = 0;
+            Interlocked.Exchange(ref _evictionPauseCount, 0);
             _sessionId = sessionId;
 
             Logger.Log(
@@ -233,7 +258,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             _completedSegmentBytes += sizeBytes;
             Logger.Log($"FLASHBACK_BUFFER_SEGMENT_COMPLETE seq={sequenceNumber} path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} size_bytes={sizeBytes}");
 
-            if (!_evictionPaused)
+            if (!(Volatile.Read(ref _evictionPauseCount) > 0))
             {
                 EvictOldestSegments();
             }
@@ -259,6 +284,67 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
+    /// <summary>
+    /// Returns a validated segment file path for the given position. Unlike GetSegmentFileForPosition,
+    /// this checks that the file still exists (hasn't been evicted between lookup and open).
+    /// If the target segment was evicted, falls back to the oldest available segment.
+    /// </summary>
+    public string? GetValidSegmentFileForPosition(TimeSpan absolutePts)
+    {
+        lock (_indexLock)
+        {
+            var path = GetSegmentFileForPositionCore(absolutePts);
+            if (path != null && File.Exists(path))
+                return path;
+            // If the target segment was evicted, return the oldest valid segment
+            if (_completedSegments.Count > 0 && File.Exists(_completedSegments[0].Path))
+                return _completedSegments[0].Path;
+            return _activeSegmentPath;
+        }
+    }
+
+    /// <summary>
+    /// Core lookup without lock — caller must hold _indexLock.
+    /// </summary>
+    private string? GetSegmentFileForPositionCore(TimeSpan absolutePts)
+    {
+        foreach (var seg in _completedSegments)
+        {
+            if (absolutePts >= seg.StartPts && absolutePts < seg.EndPts)
+                return seg.Path;
+        }
+        return _activeSegmentPath;
+    }
+
+    /// <summary>
+    /// Returns the path of the segment immediately after the given one, or the active
+    /// segment path if currentPath is the last completed segment. If currentPath was
+    /// evicted or is unknown, returns the oldest available segment instead of blindly
+    /// jumping to the active segment.
+    /// </summary>
+    public string? GetNextSegmentFile(string currentPath)
+    {
+        lock (_indexLock)
+        {
+            for (int i = 0; i < _completedSegments.Count; i++)
+            {
+                if (_completedSegments[i].Path == currentPath)
+                {
+                    // Found current — return next if it exists
+                    if (i + 1 < _completedSegments.Count)
+                        return _completedSegments[i + 1].Path;
+                    // Current is the last completed — fall back to active
+                    return _activeSegmentPath;
+                }
+            }
+            // currentPath not found (evicted or unknown)
+            // Return the oldest available segment, or active if none
+            if (_completedSegments.Count > 0)
+                return _completedSegments[0].Path;
+            return _activeSegmentPath;
+        }
+    }
+
     public IReadOnlyList<string> GetValidSegmentPaths(TimeSpan inPoint, TimeSpan outPoint)
     {
         lock (_indexLock)
@@ -279,7 +365,41 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
-
+    public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()
+    {
+        lock (_indexLock)
+        {
+            var result = new List<FlashbackSegmentInfo>(_completedSegments.Count + 1);
+            foreach (var seg in _completedSegments)
+            {
+                result.Add(new FlashbackSegmentInfo
+                {
+                    Path = seg.Path,
+                    SequenceNumber = seg.SequenceNumber,
+                    StartPtsMs = (long)seg.StartPts.TotalMilliseconds,
+                    EndPtsMs = (long)seg.EndPts.TotalMilliseconds,
+                    SizeBytes = seg.SizeBytes,
+                    IsActive = false
+                });
+            }
+            if (_activeSegmentPath != null)
+            {
+                var activeStartPts = _completedSegments.Count > 0
+                    ? _completedSegments[^1].EndPts
+                    : _recordingStartPts;
+                result.Add(new FlashbackSegmentInfo
+                {
+                    Path = _activeSegmentPath,
+                    SequenceNumber = _nextSegmentIndex,
+                    StartPtsMs = (long)activeStartPts.TotalMilliseconds,
+                    EndPtsMs = (long)TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks)).TotalMilliseconds,
+                    SizeBytes = _totalDiskBytes - _completedSegmentBytes,
+                    IsActive = true
+                });
+            }
+            return result;
+        }
+    }
 
     /// <summary>
     /// Called by the encoder on each video frame to update the latest PTS.
@@ -296,7 +416,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         } while (Interlocked.CompareExchange(ref _latestPtsTicks, ptsTicks, current) != current);
 
         // Advance valid start if buffer exceeds max duration (skip while recording).
-        if (!_evictionPaused)
+        if (!(Volatile.Read(ref _evictionPauseCount) > 0))
         {
             var maxTicks = _options.BufferDuration.Ticks;
             var startTicks = Interlocked.Read(ref _validStartPtsTicks);
@@ -304,10 +424,10 @@ internal sealed class FlashbackBufferManager : IDisposable
             if (duration > maxTicks)
             {
                 // Double-check under lock to close the TOCTOU window where PauseEviction()
-                // could set _evictionPaused between our volatile read and the CAS.
+                // could increment _evictionPauseCount between our volatile read and the CAS.
                 lock (_indexLock)
                 {
-                    if (!_evictionPaused)
+                    if (!(Volatile.Read(ref _evictionPauseCount) > 0))
                     {
                         startTicks = Interlocked.Read(ref _validStartPtsTicks);
                         Interlocked.CompareExchange(ref _validStartPtsTicks, ptsTicks - maxTicks, startTicks);
@@ -336,7 +456,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         {
             _totalDiskBytes = _completedSegmentBytes + activeSegmentBytes;
 
-            if (!_evictionPaused && _totalDiskBytes > _options.MaxDiskBytes)
+            if (!(Volatile.Read(ref _evictionPauseCount) > 0) && _totalDiskBytes > _options.MaxDiskBytes)
             {
                 var excessBytes = _totalDiskBytes - _options.MaxDiskBytes;
                 var latestTicks = Interlocked.Read(ref _latestPtsTicks);
@@ -381,6 +501,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             Interlocked.Exchange(ref _latestPtsTicks, 0);
             Interlocked.Exchange(ref _validStartPtsTicks, 0);
             _totalDiskBytes = 0;
+            Interlocked.Exchange(ref _evictionPauseCount, 0);
             Logger.Log("FLASHBACK_BUFFER_PURGE");
         }
     }

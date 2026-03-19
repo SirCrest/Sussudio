@@ -140,6 +140,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private double? _pendingSavedAnalogAudioGainPercent;
     private bool _isRefreshingDeviceAudioControls;
     private CancellationTokenSource? _gainFlashDebounceCts;
+    private CancellationTokenSource? _exportCts;
     [ObservableProperty]
     public partial bool IsRecordingTransitioning { get; set; }
 
@@ -386,6 +387,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     [ObservableProperty]
     public partial bool IsFlashbackExporting { get; set; }
 
+    [ObservableProperty]
+    public partial bool IsDiskWarningActive { get; set; }
+
     // --- Flashback playback commands (forward to CaptureService.FlashbackPlaybackController) ---
 
     internal FlashbackPlaybackController? FlashbackPlaybackController
@@ -469,6 +473,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             FlashbackBufferFilledDuration = TimeSpan.Zero;
             FlashbackBufferDiskBytes = 0;
             FlashbackBitrateInfo = "";
+            IsDiskWarningActive = false;
             _flashbackBitrateSamples.Clear();
             return;
         }
@@ -480,6 +485,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         FlashbackBufferFillPercent = bufferDuration.TotalSeconds > 0
             ? Math.Clamp(filledDuration.TotalSeconds / bufferDuration.TotalSeconds * 100, 0, 100)
             : 0;
+
+        IsDiskWarningActive = bufferManager.IsDiskWarningActive;
 
         // Sample flashback output bytes for bitrate computation
         UpdateFlashbackBitrate();
@@ -552,8 +559,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
             });
 
+            _exportCts?.Cancel();
+            _exportCts = new CancellationTokenSource();
+            var ct = _exportCts.Token;
+
             var result = await _captureService.ExportFlashbackRangeAsync(
-                inPoint, outPoint, file.Path, progress, CancellationToken.None);
+                inPoint, outPoint, file.Path, progress, ct);
 
             StatusText = result.Succeeded
                 ? $"Export complete: {file.Path}"
@@ -594,8 +605,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
             });
 
+            _exportCts?.Cancel();
+            _exportCts = new CancellationTokenSource();
+            var ct = _exportCts.Token;
+
             var result = await _captureService.ExportFlashbackLastNSecondsAsync(
-                300, file.Path, progress, CancellationToken.None);
+                300, file.Path, progress, ct);
 
             StatusText = result.Succeeded
                 ? $"Saved last 5 minutes: {file.Path}"
@@ -611,6 +626,30 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             FlashbackExportProgress = 0;
         }
     }
+
+    internal async Task<FinalizeResult> ExportFlashbackAutomationAsync(
+        double seconds, string outputPath, CancellationToken ct)
+    {
+        IsFlashbackExporting = true;
+        FlashbackExportProgress = 0;
+        try
+        {
+            var progress = new Progress<ExportProgress>(p =>
+            {
+                _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
+            });
+            return await _captureService.ExportFlashbackLastNSecondsAsync(
+                seconds, outputPath, progress, ct);
+        }
+        finally
+        {
+            IsFlashbackExporting = false;
+            FlashbackExportProgress = 0;
+        }
+    }
+
+    internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
+        => _captureService.GetFlashbackSegments();
 
     public void SetFlashbackEnabled(bool enabled) => _captureService.SetFlashbackEnabled(enabled);
 
@@ -5351,6 +5390,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             return;
         }
 
+        _exportCts?.Cancel();
+        _exportCts?.Dispose();
         _gainFlashDebounceCts?.Cancel();
         _gainFlashDebounceCts?.Dispose();
         _timer?.Stop();

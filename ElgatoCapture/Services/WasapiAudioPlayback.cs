@@ -250,6 +250,34 @@ internal sealed class WasapiAudioPlayback : IDisposable
         if (Volatile.Read(ref _started) == 0) return;
         if (Interlocked.CompareExchange(ref _renderingPaused, 0, 1) != 1) return;
 
+        // Pre-fill the endpoint buffer with silence before starting,
+        // so the first render callback doesn't hit an empty buffer.
+        try
+        {
+            if (_audioClient != null && _audioRenderClient != null && _bufferFrameCount > 0)
+            {
+                WasapiComInterop.ThrowIfFailed(
+                    _audioClient.GetCurrentPadding(out var paddingFrames),
+                    "IAudioClient.GetCurrentPadding(pre-fill)");
+
+                var availableFrames = _bufferFrameCount - paddingFrames;
+                if (availableFrames > 0)
+                {
+                    WasapiComInterop.ThrowIfFailed(
+                        _audioRenderClient.GetBuffer(availableFrames, out _),
+                        "IAudioRenderClient.GetBuffer(pre-fill)");
+                    WasapiComInterop.ThrowIfFailed(
+                        _audioRenderClient.ReleaseBuffer(availableFrames, WasapiComInterop.AUDCLNT_BUFFERFLAGS_SILENT),
+                        "IAudioRenderClient.ReleaseBuffer(pre-fill)");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"WASAPI_PREFILL_WARN: {ex.Message}");
+            // Non-fatal — proceed with Start() anyway
+        }
+
         try { _audioClient?.Start(); }
         catch (Exception ex) { Logger.Log($"WASAPI_RESUME_RENDER_WARN: {ex.Message}"); }
         Logger.Log("WASAPI_PLAYBACK_RENDER_RESUMED");
@@ -291,7 +319,10 @@ internal sealed class WasapiAudioPlayback : IDisposable
         _renderThread = null;
         if (thread != null && thread.IsAlive)
         {
-            thread.Join();
+            if (!thread.Join(TimeSpan.FromSeconds(3)))
+            {
+                Logger.Log("WASAPI_PLAYBACK_THREAD_JOIN_TIMEOUT");
+            }
         }
 
         ReturnActiveChunk();

@@ -57,7 +57,10 @@ internal sealed class PipeTransport
         ["SetStatsSectionVisible"] = 38,
         ["SetAnalogAudioGain"] = 39,
         ["SetSettingsVisible"] = 40,
-        ["FlashbackAction"] = 41
+        ["FlashbackAction"] = 41,
+        ["FlashbackExport"] = 42,
+        ["FlashbackGetSegments"] = 43,
+        ["VerifyFile"] = 44
     };
 
     private readonly string _pipeName;
@@ -161,7 +164,7 @@ internal sealed class PipeTransport
     {
         return commandName switch
         {
-            "WaitForCondition" or "VerifyLastRecording" or "CapturePreviewFrame" or "CaptureWindowScreenshot" => ExtendedResponseTimeoutMs,
+            "WaitForCondition" or "VerifyLastRecording" or "CapturePreviewFrame" or "CaptureWindowScreenshot" or "FlashbackExport" or "VerifyFile" => ExtendedResponseTimeoutMs,
             _ => ResponseTimeoutMs
         };
     }

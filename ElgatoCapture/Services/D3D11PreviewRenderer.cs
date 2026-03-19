@@ -376,6 +376,20 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private int _hdrInputConfiguredHeight;
     private ID3D11Device? _sharedDevice;
 
+    // Pre-allocated arrays to avoid per-frame GC pressure (720+ allocs/s at 120fps)
+    private readonly VideoProcessorStream[] _vpStreamArray = new VideoProcessorStream[1];
+    private readonly ID3D11RenderTargetView?[] _rtvArray = new ID3D11RenderTargetView?[1];
+    private readonly Viewport[] _viewportArray = new Viewport[1];
+    private readonly ID3D11SamplerState[] _samplerArray = new ID3D11SamplerState[1];
+    private readonly ID3D11ShaderResourceView?[] _srvArray2 = new ID3D11ShaderResourceView?[2];
+    private readonly ID3D11ShaderResourceView?[] _srvNullArray2 = new ID3D11ShaderResourceView?[2];
+    private readonly ID3D11Buffer[] _cbArray = new ID3D11Buffer[1];
+
+    // Persistent staging texture for frame capture (avoids GPU resource churn)
+    private ID3D11Texture2D? _captureStagingTexture;
+    private int _captureStagingWidth;
+    private int _captureStagingHeight;
+
     private int _configuredInputWidth;
     private int _configuredInputHeight;
     private int _configuredOutputWidth;
@@ -981,6 +995,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
                     catch (Exception ex)
                     {
                         Logger.Log($"D3D11 preview shared device rebind failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+                        CleanupD3DResources();
                     }
                 }
 
@@ -1138,8 +1153,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
                 return;
             }
 
-            var stream = new VideoProcessorStream { Enable = true, InputSurface = inputView };
-            var bltResult = _videoContext.VideoProcessorBlt(_videoProcessor, _outputView, _outputFrameIndex++, 1, new[] { stream });
+            _vpStreamArray[0] = new VideoProcessorStream { Enable = true, InputSurface = inputView };
+            var bltResult = _videoContext.VideoProcessorBlt(_videoProcessor, _outputView, _outputFrameIndex++, 1, _vpStreamArray);
             if (bltResult.Failure)
             {
                 throw new InvalidOperationException($"VideoProcessorBlt failed: 0x{bltResult.Code:X8}.");
@@ -1200,19 +1215,26 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
         var viewport = ComputeLetterboxViewport(frame.Width, frame.Height);
 
-        _deviceContext.OMSetRenderTargets(1, new[] { _swapChainRTV }, null);
+        _rtvArray[0] = _swapChainRTV;
+        _deviceContext.OMSetRenderTargets(1, _rtvArray, null);
         _deviceContext.ClearRenderTargetView(_swapChainRTV, new Color4(0.0f, 0.0f, 0.0f, 1.0f));
-        _deviceContext.RSSetViewports(1, new[] { viewport });
+        _viewportArray[0] = viewport;
+        _deviceContext.RSSetViewports(1, _viewportArray);
         _deviceContext.IASetInputLayout(null);
         _deviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         _deviceContext.VSSetShader(_fullscreenVS, Array.Empty<ID3D11ClassInstance>(), 0);
         _deviceContext.PSSetShader(_nv12PS, Array.Empty<ID3D11ClassInstance>(), 0);
-        _deviceContext.PSSetSamplers(0, 1, new[] { _linearSampler });
-        _deviceContext.PSSetShaderResources(0, 2, new[] { _nv12YSRV, _nv12UVSRV });
+        _samplerArray[0] = _linearSampler!;
+        _deviceContext.PSSetSamplers(0, 1, _samplerArray);
+        _srvArray2[0] = _nv12YSRV;
+        _srvArray2[1] = _nv12UVSRV;
+        _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
         UpdateViewportConstantBuffer(viewport);
 
         _deviceContext.Draw(3, 0);
-        _deviceContext.PSSetShaderResources(0, 2, new ID3D11ShaderResourceView[] { null!, null! });
+        _srvNullArray2[0] = null;
+        _srvNullArray2[1] = null;
+        _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
         TryCaptureFrameBeforePresent(RendererModeNv12Shader);
         var presentResult = _swapChain.Present(1, PresentFlags.None);
@@ -1289,20 +1311,27 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
         var viewport = ComputeLetterboxViewport(frame.Width, frame.Height);
 
-        _deviceContext.OMSetRenderTargets(1, new[] { _swapChainRTV }, null);
+        _rtvArray[0] = _swapChainRTV;
+        _deviceContext.OMSetRenderTargets(1, _rtvArray, null);
         _deviceContext.ClearRenderTargetView(_swapChainRTV, new Color4(0.0f, 0.0f, 0.0f, 1.0f));
-        _deviceContext.RSSetViewports(1, new[] { viewport });
+        _viewportArray[0] = viewport;
+        _deviceContext.RSSetViewports(1, _viewportArray);
         _deviceContext.IASetInputLayout(null);
         _deviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
         _deviceContext.VSSetShader(_fullscreenVS, Array.Empty<ID3D11ClassInstance>(), 0);
         _deviceContext.PSSetShader(pixelShader, Array.Empty<ID3D11ClassInstance>(), 0);
-        _deviceContext.PSSetSamplers(0, 1, new[] { _linearSampler });
-        _deviceContext.PSSetShaderResources(0, 2, new[] { _hdrYPlaneSRV!, _hdrUVPlaneSRV! });
+        _samplerArray[0] = _linearSampler!;
+        _deviceContext.PSSetSamplers(0, 1, _samplerArray);
+        _srvArray2[0] = _hdrYPlaneSRV!;
+        _srvArray2[1] = _hdrUVPlaneSRV!;
+        _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
 
         UpdateViewportConstantBuffer(viewport);
 
         _deviceContext.Draw(3, 0);
-        _deviceContext.PSSetShaderResources(0, 2, new ID3D11ShaderResourceView[] { null!, null! });
+        _srvNullArray2[0] = null;
+        _srvNullArray2[1] = null;
+        _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
         var rendererMode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
             ? RendererModeHdrPassthrough
@@ -1419,7 +1448,8 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         }
 
         _deviceContext.Unmap(_viewportCB, 0);
-        _deviceContext.PSSetConstantBuffers(0, 1, new[] { _viewportCB });
+        _cbArray[0] = _viewportCB;
+        _deviceContext.PSSetConstantBuffers(0, 1, _cbArray);
     }
 
     private void TryCaptureFrameBeforePresent(string rendererMode)
@@ -1475,20 +1505,28 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
                     throw new InvalidOperationException("Swap chain back buffer has invalid dimensions.");
                 }
 
-                var stagingDescription = new Texture2DDescription(
-                    backBufferDescription.Format,
-                    (uint)width,
-                    (uint)height,
-                    1,
-                    1,
-                    BindFlags.None,
-                    ResourceUsage.Staging,
-                    CpuAccessFlags.Read,
-                    1,
-                    0,
-                    ResourceOptionFlags.None);
+                if (_captureStagingTexture == null ||
+                    _captureStagingWidth != width ||
+                    _captureStagingHeight != height)
+                {
+                    _captureStagingTexture?.Dispose();
+                    _captureStagingTexture = _device.CreateTexture2D(new Texture2DDescription(
+                        backBufferDescription.Format,
+                        (uint)width,
+                        (uint)height,
+                        1,
+                        1,
+                        BindFlags.None,
+                        ResourceUsage.Staging,
+                        CpuAccessFlags.Read,
+                        1,
+                        0,
+                        ResourceOptionFlags.None));
+                    _captureStagingWidth = width;
+                    _captureStagingHeight = height;
+                }
 
-                using var stagingTexture = _device.CreateTexture2D(stagingDescription);
+                var stagingTexture = _captureStagingTexture;
                 _deviceContext.CopyResource(stagingTexture, backBuffer);
 
                 _deviceContext.Map(stagingTexture, 0, MapMode.Read, Vortice.Direct3D11.MapFlags.None, out var mapped);
@@ -3101,6 +3139,11 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
     private void CleanupD3DResources()
     {
         DisposeProcessorResources();
+
+        _captureStagingTexture?.Dispose();
+        _captureStagingTexture = null;
+        _captureStagingWidth = 0;
+        _captureStagingHeight = 0;
 
         _stagingTexture?.Dispose();
         _stagingTexture = null;

@@ -47,7 +47,10 @@ public enum AutomationCommandKind
     SetStatsSectionVisible,
     SetAnalogAudioGain,
     SetSettingsVisible,
-    FlashbackAction
+    FlashbackAction,
+    FlashbackExport,
+    FlashbackGetSegments,
+    VerifyFile
 }
 
 public enum AutomationWindowAction
@@ -561,6 +564,19 @@ public sealed class AutomationSnapshot
     public double FlashbackPlaybackObservedFps { get; init; }
     public double FlashbackPlaybackAvgFrameMs { get; init; }
     public double FlashbackAvDriftMs { get; init; }
+    public string? LastExportPath { get; init; }
+    public bool? LastExportSuccess { get; init; }
+    public string? LastExportMessage { get; init; }
+}
+
+public sealed class FlashbackSegmentInfo
+{
+    public string Path { get; init; } = "";
+    public int SequenceNumber { get; init; }
+    public long StartPtsMs { get; init; }
+    public long EndPtsMs { get; init; }
+    public long SizeBytes { get; init; }
+    public bool IsActive { get; init; }
 }
 
 public sealed class PerformanceTimelineEntry
