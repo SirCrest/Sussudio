@@ -16,6 +16,7 @@ namespace ElgatoCapture.Services;
 internal sealed unsafe class FlashbackExporter : IDisposable
 {
     private readonly SemaphoreSlim _exportLock = new(1, 1);
+    private CancellationTokenSource? _disposeCts = new();
     private AVFormatContext* _activeInputContext;
     private AVFormatContext* _activeOutputContext;
     private string? _activeTempPath;
@@ -36,7 +37,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         CancellationToken ct)
     {
         EnsureNotDisposed();
-        return Task.Run(() => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, ct), ct);
+        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, _disposeCts!.Token);
+        return Task.Run(() =>
+        {
+            try
+            {
+                return ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token);
+            }
+            finally
+            {
+                linkedCts.Dispose();
+            }
+        }, linkedCts.Token);
     }
 
     /// <summary>
@@ -66,7 +78,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         CancellationToken ct)
     {
         EnsureNotDisposed();
-        return Task.Run(() => ExportSegmentsCore(segmentPaths, inPoint, outPoint, outputPath, fastStart, progress, ct), ct);
+        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, _disposeCts!.Token);
+        return Task.Run(() =>
+        {
+            try
+            {
+                return ExportSegmentsCore(segmentPaths, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token);
+            }
+            finally
+            {
+                linkedCts.Dispose();
+            }
+        }, linkedCts.Token);
     }
 
     public void Dispose()
@@ -77,6 +100,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         Logger.Log("FLASHBACK_EXPORT_DISPOSE");
+
+        // Signal any running export to cancel — ExportCore/ExportSegmentsCore will exit
+        // via OperationCanceledException, clean up native state in their own finally block,
+        // and release _exportLock before we acquire it.
+        try { _disposeCts?.Cancel(); } catch (ObjectDisposedException) { }
+
         _exportLock.Wait(TimeSpan.FromSeconds(5));
         try
         {
@@ -86,6 +115,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             _exportLock.Release();
             _exportLock.Dispose();
+            _disposeCts?.Dispose();
+            _disposeCts = null;
         }
         _disposed = true;
         GC.SuppressFinalize(this);

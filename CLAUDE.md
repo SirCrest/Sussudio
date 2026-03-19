@@ -62,14 +62,23 @@ patterns that conflict with those goals.
   operation fails. See `docs/constraints.md`.
 - Append to `docs/experiment_log.md` when making investigative changes.
 
-## Agent Teams
+## Architect-Team Workflow
 
-- This flashback worktree is very complicated. 
-- Use Claude Agent Teams for large refactors using Opus 4.6 1M on High or Max Effort.
-- You decide how to split up work and how to handle prompting.
-- Three agents should be enough. You can move to 4 or 5 if you believe the coding work or research is big enough.
-- During exploration and research, feel free to have agents do overlapping theorizing/reading.
-- Ensure agents aren't idle during work
+When the user says **"architect-team"**, read `.claude/workflows/architect-team.md`
+and execute the workflow **as team lead yourself**. Do NOT delegate to a sub-agent.
+You create the team (TeamCreate), spawn teammates (Agent with `team_name`),
+coordinate phases via SendMessage and tasks, run builds, and shut down the team.
+
+This is the primary workflow for large implementation, refactoring, and
+diagnostic/bug-fix tasks on this codebase.
+
+## Agent Teams (general)
+
+- This flashback worktree is very complicated.
+- Use Claude Agent Teams for large refactors using Opus 4.6 1M on Max Effort.
+- During exploration and research, feel free to have agents do overlapping
+  theorizing/reading.
+- Ensure agents aren't idle during work.
 - Ensure agents aren't working on the same files as another agent.
 
 ## Build & Test

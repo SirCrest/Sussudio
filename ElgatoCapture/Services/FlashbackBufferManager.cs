@@ -305,14 +305,34 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     /// <summary>
     /// Core lookup without lock — caller must hold _indexLock.
+    /// Uses binary search since completed segments are sorted by StartPts.
     /// </summary>
     private string? GetSegmentFileForPositionCore(TimeSpan absolutePts)
     {
-        foreach (var seg in _completedSegments)
+        var segments = _completedSegments;
+        var count = segments.Count;
+        if (count == 0)
+            return _activeSegmentPath;
+
+        // Binary search: find the last segment whose StartPts <= absolutePts
+        int lo = 0, hi = count - 1, best = -1;
+        while (lo <= hi)
         {
-            if (absolutePts >= seg.StartPts && absolutePts < seg.EndPts)
-                return seg.Path;
+            var mid = lo + (hi - lo) / 2;
+            if (segments[mid].StartPts <= absolutePts)
+            {
+                best = mid;
+                lo = mid + 1;
+            }
+            else
+            {
+                hi = mid - 1;
+            }
         }
+
+        if (best >= 0 && absolutePts < segments[best].EndPts)
+            return segments[best].Path;
+
         return _activeSegmentPath;
     }
 

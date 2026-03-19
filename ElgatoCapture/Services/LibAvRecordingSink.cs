@@ -243,6 +243,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         if (!queue.Writer.TryWrite(packet))
         {
             Marshal.Release(d3d11Texture2D);
+            _encoder.SkipVideoFrame();  // Advance PTS even on dropped frames to prevent A/V drift
             var dropped = Interlocked.Increment(ref _gpuFramesDropped);
             if (dropped == 1 || dropped % 30 == 0)
             {
@@ -268,6 +269,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var cloned = ffmpeg.av_frame_clone(cudaFrame);
         if (cloned == null)
         {
+            _encoder.SkipVideoFrame();  // Advance PTS even on clone failure to prevent A/V drift
             Interlocked.Increment(ref _cudaFramesDropped);
             return;
         }
@@ -276,6 +278,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         if (!queue.Writer.TryWrite(packet))
         {
             ffmpeg.av_frame_free(&cloned);
+            _encoder.SkipVideoFrame();  // Advance PTS even on dropped frames to prevent A/V drift
             var dropped = Interlocked.Increment(ref _cudaFramesDropped);
             if (dropped == 1 || dropped % 30 == 0)
             {
@@ -489,7 +492,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 else
                 {
                     Logger.Log("LIBAV_SINK_DISPOSE_TIMEOUT task=encoding_loop");
-                    return;
+                    _cts?.Cancel();
+                    // Fall through to cleanup
                 }
             }
             catch
@@ -729,6 +733,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         catch (Exception ex)
         {
             _encodingFailure = ex;
+            lock (_sync) { _started = false; }
             ReturnRemainingBuffers(_videoQueue);
             ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
             ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
@@ -913,6 +918,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         if (queue.Reader.TryRead(out var evictedPacket))
         {
             Interlocked.Decrement(ref _videoQueueDepth);
+            _encoder.SkipVideoFrame();  // Advance PTS to prevent A/V drift from evicted frames
             ReturnBuffer(evictedPacket.Buffer);
             var evictedCount = 1;
 
@@ -925,6 +931,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 for (var i = 1; i < burstSize && queue.Reader.TryRead(out var extra); i++)
                 {
                     Interlocked.Decrement(ref _videoQueueDepth);
+                    _encoder.SkipVideoFrame();  // Advance PTS for each evicted frame
                     ReturnBuffer(extra.Buffer);
                     evictedCount++;
                 }
@@ -946,6 +953,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
 
         Interlocked.Increment(ref _droppedVideoFrames);
+        _encoder.SkipVideoFrame();  // Advance PTS even on final drop to prevent A/V drift
         ReturnBuffer(packet.Buffer);
         return false;
     }

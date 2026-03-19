@@ -2541,6 +2541,8 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
                 Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
 
+                AttachFlashbackAudioIfSupported(newCapture, "audio_input_switch");
+
                 if (_isAudioPreviewActive)
                 {
                     await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);

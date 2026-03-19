@@ -14,6 +14,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private const int OutputBlockAlign = OutputChannels * BytesPerSample;
     private const uint WaitTimeoutMs = 100;
 
+    private readonly object _chunkLock = new();
     private readonly Channel<PlaybackChunk> _sampleQueue = Channel.CreateBounded<PlaybackChunk>(
         new BoundedChannelOptions(128)
         {
@@ -290,12 +291,15 @@ internal sealed class WasapiAudioPlayback : IDisposable
     /// </summary>
     public void Flush()
     {
-        ReturnActiveChunk();
-        while (_sampleQueue.Reader.TryRead(out var queuedChunk))
+        lock (_chunkLock)
         {
-            ReturnChunk(queuedChunk);
+            ReturnActiveChunk();
+            while (_sampleQueue.Reader.TryRead(out var queuedChunk))
+            {
+                ReturnChunk(queuedChunk);
+            }
+            _activeChunkOffset = 0;
         }
-        _activeChunkOffset = 0;
     }
 
     public void Stop()
@@ -325,10 +329,13 @@ internal sealed class WasapiAudioPlayback : IDisposable
             }
         }
 
-        ReturnActiveChunk();
-        while (_sampleQueue.Reader.TryRead(out var queuedChunk))
+        lock (_chunkLock)
         {
-            ReturnChunk(queuedChunk);
+            ReturnActiveChunk();
+            while (_sampleQueue.Reader.TryRead(out var queuedChunk))
+            {
+                ReturnChunk(queuedChunk);
+            }
         }
 
         Logger.Log("WASAPI playback stopped.");
@@ -358,17 +365,21 @@ internal sealed class WasapiAudioPlayback : IDisposable
             return;
         }
 
+        // Queue full — evict oldest chunk to make room for the new one.
+        // The evicted chunk is the real drop; the new chunk replaces it.
         if (_sampleQueue.Reader.TryRead(out var droppedChunk))
         {
-            Interlocked.Increment(ref _playbackQueueDropCount);
             ReturnChunk(droppedChunk);
+            if (_sampleQueue.Writer.TryWrite(chunk))
+            {
+                Interlocked.Increment(ref _playbackQueueDropCount);
+                return;
+            }
         }
 
-        if (!_sampleQueue.Writer.TryWrite(chunk))
-        {
-            Interlocked.Increment(ref _playbackQueueDropCount);
-            ReturnChunk(chunk);
-        }
+        // Both eviction and re-enqueue failed — drop the new chunk
+        Interlocked.Increment(ref _playbackQueueDropCount);
+        ReturnChunk(chunk);
     }
 
     private void RenderThreadMain()
@@ -444,7 +455,10 @@ internal sealed class WasapiAudioPlayback : IDisposable
         {
             var bytesToWrite = checked((int)framesToWrite * OutputBlockAlign);
             var destinationSpan = new Span<byte>((void*)destination, bytesToWrite);
-            FillRenderBuffer(destinationSpan);
+            lock (_chunkLock)
+            {
+                FillRenderBuffer(destinationSpan);
+            }
             ApplyVolume(destinationSpan);
         }
         finally

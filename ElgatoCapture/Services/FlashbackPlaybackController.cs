@@ -809,6 +809,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 }
 
                 // At the write head of the active segment — wait for encoder to produce more data
+                // Check for pending commands before sleeping to avoid delayed shutdown response
+                if (_commandChannel.Reader.TryPeek(out _) || _disposedFlag != 0)
+                {
+                    pacingStopwatch.Restart();
+                    return true;
+                }
                 Logger.Log($"FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT gap_ms={gap:F0} pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds}");
                 Thread.Sleep(50);
                 pacingStopwatch.Restart();

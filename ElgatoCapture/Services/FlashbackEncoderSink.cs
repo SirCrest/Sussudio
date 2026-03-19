@@ -705,7 +705,21 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     continue;
                 }
 
+                // Reset THEN re-check queues before blocking. This closes the race where
+                // a producer calls Set() between our drain loop exit and the Reset() call —
+                // the re-check sees the item and loops back without entering Wait().
                 _workAvailable.Reset();
+
+                // Re-check all queues after reset to close the TOCTOU window
+                if ((videoQueue.Reader.TryPeek(out _)) ||
+                    (audioQueue.Reader.TryPeek(out _)) ||
+                    (_microphoneEnabled && microphoneQueue != null && microphoneQueue.Reader.TryPeek(out _)) ||
+                    (gpuQueue != null && gpuQueue.Reader.TryPeek(out _)) ||
+                    Volatile.Read(ref _forceRotateRequested))
+                {
+                    continue;
+                }
+
                 while (!_workAvailable.Wait(50))
                     cancellationToken.ThrowIfCancellationRequested();
             }
@@ -739,6 +753,24 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _encodingFailure = ex;
             _forceRotateTcs?.TrySetResult(Array.Empty<string>());
             lock (_sync) { _started = false; }
+
+            // Register the active segment so PurgeAllSegments can clean it up
+            if (_tsFilePath != null)
+            {
+                try
+                {
+                    var frameRate = _sessionContext?.FrameRate ?? 30.0;
+                    var crashPts = frameRate > 0
+                        ? TimeSpan.FromSeconds(_encoder.NextVideoPts / frameRate)
+                        : TimeSpan.Zero;
+                    if (crashPts > _segmentStartPts)
+                    {
+                        _bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, crashPts, _encoder.TotalBytesWritten);
+                    }
+                }
+                catch { /* Best effort — don't mask the original fatal error */ }
+            }
+
             ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
             ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
             ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
