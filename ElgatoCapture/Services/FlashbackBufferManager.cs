@@ -119,9 +119,14 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
-            Interlocked.Increment(ref _evictionPauseCount);
-            _recordingStartPts = TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks));
-            Logger.Log($"FLASHBACK_BUFFER_EVICTION_PAUSED count={Volatile.Read(ref _evictionPauseCount)} start_pts_ms={(long)_recordingStartPts.TotalMilliseconds}");
+            var newCount = Interlocked.Increment(ref _evictionPauseCount);
+            if (newCount == 1)
+            {
+                // First pause — capture the recording start boundary.
+                // Nested pauses (e.g. export during recording) must not overwrite this.
+                _recordingStartPts = TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks));
+            }
+            Logger.Log($"FLASHBACK_BUFFER_EVICTION_PAUSED count={newCount} start_pts_ms={(long)_recordingStartPts.TotalMilliseconds}");
         }
     }
 

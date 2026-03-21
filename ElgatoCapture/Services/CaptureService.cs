@@ -568,23 +568,94 @@ public class CaptureService : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
-    /// Tears down the current flashback buffer and starts a fresh one.
-    /// Called after recording stops to cycle to a clean .ts file.
+    /// Cycles the flashback encoder sink after recording stops.
+    /// Preserves the buffer manager and its segments so DVR rewind history
+    /// survives across recordings. Only the encoder sink is torn down and
+    /// replaced; the buffer manager continues accumulating segments.
+    /// Falls back to full teardown+rebuild if sink-only cycle fails.
     /// </summary>
     private async Task CycleFlashbackBufferAsync(CancellationToken cancellationToken)
     {
-        Logger.Log("FLASHBACK_BUFFER_CYCLE_BEGIN");
-        await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
-
         var unifiedVideoCapture = _unifiedVideoCapture;
-        if (_flashbackEnabled && unifiedVideoCapture != null && _currentSettings != null)
+        var bufferManager = _flashbackBufferManager;
+        var oldSink = _flashbackSink;
+
+        // If prerequisites are missing, fall back to full teardown
+        if (!_flashbackEnabled || unifiedVideoCapture == null || _currentSettings == null || bufferManager == null || oldSink == null)
         {
-            await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
-            Logger.Log("FLASHBACK_BUFFER_CYCLE_DONE new_session=true");
+            Logger.Log("FLASHBACK_BUFFER_CYCLE_BEGIN mode=full_teardown");
+            await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
+            if (_flashbackEnabled && unifiedVideoCapture != null && _currentSettings != null)
+            {
+                await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+                Logger.Log("FLASHBACK_BUFFER_CYCLE_DONE new_session=true");
+            }
+            else
+            {
+                Logger.Log("FLASHBACK_BUFFER_CYCLE_DONE new_session=false (flashback disabled or no capture)");
+            }
+            return;
         }
-        else
+
+        Logger.Log($"FLASHBACK_BUFFER_CYCLE_BEGIN mode=sink_only segments={bufferManager.SegmentCount} buffered={bufferManager.BufferedDuration.TotalSeconds:F1}s");
+
+        // Detach audio/video feeds from the old sink
+        _microphoneCapture?.SetAudioWriteDelegate(null);
+        _wasapiAudioCapture?.DetachFlashbackSink();
+        unifiedVideoCapture.SetFlashbackSink(null);
+        oldSink.FrameEncoded -= OnFlashbackFrameEncoded;
+
+        // Stop and dispose the old sink (leaves buffer manager and segments intact)
+        try
         {
-            Logger.Log("FLASHBACK_BUFFER_CYCLE_DONE new_session=false (flashback disabled or no capture)");
+            await oldSink.StopAsync(cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_CYCLE_STOP_WARN type={ex.GetType().Name} msg={ex.Message}");
+        }
+
+        try
+        {
+            oldSink.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_CYCLE_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+        }
+
+        // Create and start a new encoder sink on the same buffer manager
+        var newSink = new FlashbackEncoderSink(bufferManager);
+        try
+        {
+            await newSink.StartAsync(
+                CreateFlashbackSessionContext(unifiedVideoCapture, _currentSettings),
+                cancellationToken).ConfigureAwait(false);
+
+            newSink.FrameEncoded += OnFlashbackFrameEncoded;
+            _flashbackSink = newSink;
+
+            // Reattach feeds
+            unifiedVideoCapture.SetFlashbackSink(newSink);
+            AttachFlashbackAudioIfSupported(_wasapiAudioCapture, "buffer_cycle");
+            if (_microphoneCapture != null && newSink.MicrophoneEnabled)
+            {
+                _microphoneCapture.SetAudioWriteDelegate(samples => newSink.WriteMicrophoneAudioAsync(samples));
+                Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='buffer_cycle'");
+            }
+
+            Logger.Log($"FLASHBACK_BUFFER_CYCLE_DONE mode=sink_only segments={bufferManager.SegmentCount} buffered={bufferManager.BufferedDuration.TotalSeconds:F1}s");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_FAIL error='{ex.Message}' — falling back to full teardown");
+            try { newSink.Dispose(); } catch { }
+            _flashbackSink = null;
+
+            // Full teardown and rebuild
+            await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
+            await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+            Logger.Log("FLASHBACK_BUFFER_CYCLE_DONE mode=fallback_full_rebuild");
         }
     }
 

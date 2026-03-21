@@ -299,6 +299,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
     private Thread? _renderThread;
     private PendingFrame? _pendingFrame;
+    private volatile bool _swapChainBound;
 
     private int _disposed;
     private int _stopRequested;
@@ -575,6 +576,32 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             {
                 Logger.Log("D3D11 preview renderer stop wait exceeded 3s; waiting until render thread exits.");
                 renderThread.Join();
+            }
+        }
+
+        // Unbind swap chain from panel after render thread exits (avoids deadlock —
+        // render thread cleanup no longer dispatches to UI thread).
+        if (_swapChainBound)
+        {
+            _swapChainBound = false;
+            try
+            {
+                if (_dispatcherQueue.HasThreadAccess)
+                {
+                    if (_panel?.XamlRoot != null)
+                    {
+                        var panelNative = CastExtensions.As<ISwapChainPanelNative>(_panel);
+                        panelNative.SetSwapChain(IntPtr.Zero);
+                    }
+                }
+                else
+                {
+                    UnbindSwapChainFromPanel();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"D3D11 preview swap chain unbind failed: {ex.GetType().Name} msg={ex.Message}");
             }
         }
 
@@ -2996,6 +3023,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             {
                 var panelNative = CastExtensions.As<ISwapChainPanelNative>(_panel);
                 panelNative.SetSwapChain(swapChain.NativePointer);
+                _swapChainBound = true;
             }
             catch (Exception ex)
             {
@@ -3155,14 +3183,9 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _inputTexture?.Dispose();
         _inputTexture = null;
 
-        // Unbind the swap chain from the panel BEFORE disposing it.
-        // The panel holds a native reference to the swap chain; if we dispose
-        // without unbinding, the panel's stale pointer causes an AV when a
-        // new renderer calls SetSwapChain on the same panel.
-        if (_swapChain != null)
-        {
-            UnbindSwapChainFromPanel();
-        }
+        // Swap chain unbind is handled by Stop()/Dispose() after the render
+        // thread exits to avoid deadlock (render thread dispatching to UI
+        // thread while UI thread is blocked on Join).
 
         _swapChain3?.Dispose();
         _swapChain3 = null;

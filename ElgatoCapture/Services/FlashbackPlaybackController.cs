@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -378,6 +379,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
+                        if (!decoder.IsOpen)
+                        {
+                            Logger.Log("FLASHBACK_PLAYBACK_SCRUB_NO_FILE — restoring live");
+                            isScrubbing = false;
+                            RestoreLiveAudio();
+                            _videoCapture?.ResumePreviewSubmission();
+                            _audioPlayback?.ResumeRendering();
+                            SetState(FlashbackPlaybackState.Live);
+                            break;
+                        }
                         SeekAndDisplayKeyframe(decoder, cmd.Position, frozenValidStart);
                         break;
 
@@ -438,6 +449,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         decoder ??= CreateDecoder();
                         var prevFile = _currentOpenFilePath;
                         EnsureFileOpen(decoder, ref fileOpen, PlaybackPosition + frozenValidStart);
+                        if (!decoder.IsOpen)
+                        {
+                            Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE — restoring live");
+                            RestoreLiveAudio();
+                            _videoCapture?.ResumePreviewSubmission();
+                            SetState(FlashbackPlaybackState.Live);
+                            break;
+                        }
                         if (decoder.IsOpen)
                         {
                             var seekTarget = PlaybackPosition + frozenValidStart;
@@ -492,6 +511,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                             decoder ??= CreateDecoder();
                             EnsureFileOpen(decoder, ref fileOpen, pausePos + frozenValidStart);
+                            if (!decoder.IsOpen)
+                            {
+                                Logger.Log("FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_NO_FILE — restoring live");
+                                RestoreLiveAudio();
+                                _videoCapture?.ResumePreviewSubmission();
+                                break;  // remain in Live state — don't set Paused
+                            }
                             // Frame-accurate seek: decode forward from nearest keyframe to exact
                             // target frame. SeekAndDisplayKeyframe only lands on keyframes which
                             // can be up to 2 seconds away with default GOP size.
@@ -1009,17 +1035,27 @@ internal sealed class FlashbackPlaybackController : IDisposable
             decoder.AudioChunkCallback = chunk =>
             {
                 var pb = _audioPlayback; // re-read volatile field, not closure capture
-                if (pb == null) return;
+                if (pb == null)
+                {
+                    if (chunk.Samples is { Length: > 0 }) ArrayPool<byte>.Shared.Return(chunk.Samples);
+                    return;
+                }
 
                 // Skip invalid or non-monotonic PTS (L8 fix)
                 var prevPts = Interlocked.Read(ref _lastAudioPtsTicks);
                 if (chunk.Pts.Ticks <= 0 || chunk.Pts.Ticks < prevPts)
+                {
+                    if (chunk.Samples is { Length: > 0 }) ArrayPool<byte>.Shared.Return(chunk.Samples);
                     return;
+                }
 
                 // Skip stale GOP audio after seek (H2/H3 fix)
                 var suppressUntil = Interlocked.Read(ref _suppressAudioUntilPtsTicks);
                 if (suppressUntil > 0 && chunk.Pts.Ticks < suppressUntil)
+                {
+                    if (chunk.Samples is { Length: > 0 }) ArrayPool<byte>.Shared.Return(chunk.Samples);
                     return;
+                }
                 // Clear suppression once we've passed the target
                 if (suppressUntil > 0)
                     Interlocked.CompareExchange(ref _suppressAudioUntilPtsTicks, 0, suppressUntil);

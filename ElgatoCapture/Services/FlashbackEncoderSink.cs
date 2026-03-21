@@ -332,6 +332,21 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         // Give encoding loop time to drain remaining queued frames
         await Task.Delay(100, cancellationToken).ConfigureAwait(false);
 
+        // Check if the encoding loop crashed during the recording
+        var failure = _encodingFailure;
+        if (failure != null)
+        {
+            _bufferManager.ResumeEviction();
+            Logger.Log($"FLASHBACK_RECORDING_END_FAIL error='{failure.Message}'");
+            return new FinalizeResult
+            {
+                Succeeded = false,
+                OutputPath = _recordingOutputPath ?? string.Empty,
+                StatusMessage = $"Flashback recording failed: {failure.Message}",
+                PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()
+            };
+        }
+
         var (startPts, endPts) = _bufferManager.ResumeEviction();
         LastRecordingStartPts = startPts;
         LastRecordingEndPts = endPts;

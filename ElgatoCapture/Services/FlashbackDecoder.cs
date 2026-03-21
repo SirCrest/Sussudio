@@ -439,6 +439,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
     private void InitializeVideoDecoder()
     {
+        // Reset hw accel flag — it persists across file opens but must reflect
+        // the decoder chosen for THIS file (D3D11VA may fail for some streams).
+        _isD3D11HwAccelerated = false;
+
         var videoStream = _formatCtx->streams[_videoStreamIndex];
         _videoTimeBase = videoStream->time_base;
 
@@ -1161,7 +1165,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
 
         // Note: do NOT free _d3d11HwDeviceCtx here — it's persistent across files
-        // Note: do NOT reset _isD3D11HwAccelerated here — the D3D11VA device context persists
+        // Note: _isD3D11HwAccelerated is reset per-file in InitializeVideoDecoder
 
         if (_swrCtx != null)
         {
