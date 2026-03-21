@@ -62,6 +62,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     private int _videoHeight;
     private bool _isHdr;
     private double _frameRate;
+    private double _metadataFrameRate;
+    private int _ptsCalibrationCount;
+    private long _firstCalibrationPtsTicks;
+    private long _lastCalibrationPtsTicks;
+    private const int PtsCalibrationFrames = 10;
     private TimeSpan _currentPosition;
     private AVPixelFormat _decodedPixelFormat;
     private bool _needsConvert;
@@ -191,8 +196,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             _formatCtx->flags |= ffmpeg.AVFMT_FLAG_GENPTS;
 
             // Our own MPEG-TS files have known codecs (HEVC/H.264 + AAC) —
-            // reduce probing from defaults (5MB / 5s) to cut segment switch latency.
-            _formatCtx->probesize = 32768;           // 32KB instead of default 5MB
+            // reduce probing from defaults (5MB / 5s) but keep enough data for
+            // accurate frame rate computation (H.264 SPS timing is field-doubled,
+            // so FFmpeg must derive fps from actual PTS deltas, not SPS metadata).
+            _formatCtx->probesize = 256 * 1024;      // 256KB — need enough PTS samples for H.264 fps computation
             _formatCtx->max_analyze_duration = 500000; // 0.5s instead of default 5s
 
             ThrowIfError(
@@ -459,6 +466,17 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             _frameRate = 30.0; // fallback
             Logger.Log($"FLASHBACK_DECODER_VIDEO_WARN reason=framerate_fallback default=30.0 path='{_currentFilePath}'");
         }
+
+        Logger.Log($"FLASHBACK_DECODER_STREAM_INFO " +
+                   $"avg_frame_rate={{num={videoStream->avg_frame_rate.num}, den={videoStream->avg_frame_rate.den}}} " +
+                   $"r_frame_rate={{num={videoStream->r_frame_rate.num}, den={videoStream->r_frame_rate.den}}} " +
+                   $"time_base={{num={videoStream->time_base.num}, den={videoStream->time_base.den}}} " +
+                   $"computed_fps={_frameRate:F4}");
+
+        _metadataFrameRate = _frameRate;
+        _ptsCalibrationCount = 0;
+        _firstCalibrationPtsTicks = 0;
+        _lastCalibrationPtsTicks = 0;
 
         // Try D3D11VA hardware decode first, fall back to software
         if (TryInitializeD3D11VADecoder(codecPar))
@@ -802,6 +820,28 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
 
         _currentPosition = pts;
+
+        if (_ptsCalibrationCount < PtsCalibrationFrames && pts > TimeSpan.Zero)
+        {
+            if (_ptsCalibrationCount == 0)
+                _firstCalibrationPtsTicks = pts.Ticks;
+            _lastCalibrationPtsTicks = pts.Ticks;
+            _ptsCalibrationCount++;
+
+            if (_ptsCalibrationCount == PtsCalibrationFrames && _lastCalibrationPtsTicks > _firstCalibrationPtsTicks)
+            {
+                var elapsedSec = (_lastCalibrationPtsTicks - _firstCalibrationPtsTicks) / (double)TimeSpan.TicksPerSecond;
+                if (elapsedSec > 0.001)
+                {
+                    var measuredFps = (PtsCalibrationFrames - 1) / elapsedSec;
+                    if (_metadataFrameRate > measuredFps * 1.5 && measuredFps > 10)
+                    {
+                        Logger.Log($"FLASHBACK_DECODER_FPS_OVERRIDE metadata={_metadataFrameRate:F2} measured={measuredFps:F2}");
+                        _frameRate = measuredFps;
+                    }
+                }
+            }
+        }
 
         if (_isD3D11HwAccelerated)
         {
@@ -1158,6 +1198,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         _videoHeight = 0;
         _isHdr = false;
         _frameRate = 0;
+        _metadataFrameRate = 0;
+        _ptsCalibrationCount = 0;
+        _firstCalibrationPtsTicks = 0;
+        _lastCalibrationPtsTicks = 0;
         _currentPosition = TimeSpan.Zero;
         _needsConvert = false;
         _currentVideoBufferIndex = 0;

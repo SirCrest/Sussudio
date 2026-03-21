@@ -1161,7 +1161,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             }
 
             TryCaptureFrameBeforePresent("VideoProcessor");
-            var presentResult = _swapChain.Present(1, PresentFlags.None);
+            var presentResult = _swapChain.Present(0, PresentFlags.None);
             if (presentResult.Failure)
             {
                 throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
@@ -1237,7 +1237,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
         _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
         TryCaptureFrameBeforePresent(RendererModeNv12Shader);
-        var presentResult = _swapChain.Present(1, PresentFlags.None);
+        var presentResult = _swapChain.Present(0, PresentFlags.None);
         if (presentResult.Failure)
         {
             throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
@@ -1337,7 +1337,7 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
             ? RendererModeHdrPassthrough
             : RendererModeHdrShader;
         TryCaptureFrameBeforePresent(rendererMode);
-        var presentResult = _swapChain.Present(1, PresentFlags.None);
+        var presentResult = _swapChain.Present(0, PresentFlags.None);
         if (presentResult.Failure)
         {
             throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
@@ -2298,6 +2298,11 @@ internal sealed class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 
         _multithread = device.QueryInterfaceOrNull<ID3D11Multithread>();
         _multithread?.SetMultithreadProtected(true);
+
+        // Reduce DXGI frame queue from default 3 to 2 — lowers preview latency
+        // by one frame interval without risking GPU starvation on trivial renders.
+        using var dxgiDevice1 = device.QueryInterfaceOrNull<IDXGIDevice1>();
+        dxgiDevice1?.SetMaximumFrameLatency(2);
 
         _videoDevice = device.QueryInterfaceOrNull<ID3D11VideoDevice>();
         _videoContext = deviceContext.QueryInterfaceOrNull<ID3D11VideoContext>();
