@@ -452,6 +452,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!decoder.IsOpen)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE — restoring live");
+                            isPlaying = false;
                             RestoreLiveAudio();
                             _videoCapture?.ResumePreviewSubmission();
                             SetState(FlashbackPlaybackState.Live);
@@ -865,6 +866,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             if (outTicks != long.MinValue && newPosition >= TimeSpan.FromTicks(outTicks))
             {
                 Logger.Log($"FLASHBACK_PLAYBACK_HIT_OUTPOINT pos_ms={(long)newPosition.TotalMilliseconds}");
+                _audioPlayback?.PauseRendering();
+                pacingStopwatch.Stop();
                 SetState(FlashbackPlaybackState.Paused);
                 return false;
             }
@@ -883,6 +886,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 var gapMs = (absoluteLatestPts - absoluteFramePts).TotalMilliseconds;
                 Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)newPosition.TotalMilliseconds} framePts_ms={(long)absoluteFramePts.TotalMilliseconds} latestPts_ms={(long)absoluteLatestPts.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
                 if (decoder.IsOpen) decoder.CloseFile();
+                fileOpen = false;
                 Interlocked.Exchange(ref _lastAudioPtsTicks, 0); // F1 fix: reset before live audio restore
                 RestoreLiveAudio();
                 _videoCapture?.ResumePreviewSubmission();
@@ -943,6 +947,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
             // Can't recover — go live
             if (decoder.IsOpen) decoder.CloseFile();
+            fileOpen = false;
             RestoreLiveAudio();
             _videoCapture?.ResumePreviewSubmission();
             SetState(FlashbackPlaybackState.Live);
