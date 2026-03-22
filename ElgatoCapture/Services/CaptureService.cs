@@ -355,36 +355,44 @@ public class CaptureService : IDisposable, IAsyncDisposable
         var frameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
         var d3dManager = unifiedVideoCapture.D3DManager;
 
-        // Resolve NTSC rational frame rate. _actualFrameRateNumerator may not be set yet
-        // (first preview init sets it AFTER this call), so fall back to telemetry-based
-        // NTSC detection. Using exact rationals (120000/1001) is critical — integer rates
-        // like 120/1 cause NVENC's ticks_per_frame=2 to halve the effective time_base,
-        // producing massive A/V drift in the flashback buffer.
+        // NTSC rational frame rate correction — DISABLED.
+        // The HDMI source outputs 119.88fps but the capture card delivers at ~120fps
+        // over USB (its own clock). Using NTSC time_base (1001/120000) makes video PTS
+        // run ~1ms/sec ahead of audio, causing progressive A/V drift. The driver rate
+        // matches the actual frame delivery rate, so use it as-is for correct sync.
+        //
+        // The original comment claimed integer rates cause "NVENC ticks_per_frame=2"
+        // drift — that was a misdiagnosis. The actual issue was probesize starvation
+        // in FlashbackDecoder (fixed: probesize increased from 32KB to 256KB).
+        //
+        // TODO: Revisit when we can measure the true source rate vs delivery rate and
+        // handle the discrepancy properly (e.g., detect duplicate frames from the
+        // capture card, or use drift correction in the encoder).
         int? fpsNum = null;
         int? fpsDen = null;
-        if (_actualFrameRateNumerator.HasValue && _actualFrameRateDenominator is > 1)
-        {
-            fpsNum = (int)_actualFrameRateNumerator.Value;
-            fpsDen = (int)_actualFrameRateDenominator.Value;
-        }
-        else
-        {
-            var telemetry = _latestSourceTelemetry;
-            if (telemetry.HasFrameRate && telemetry.FrameRateExact.HasValue)
-            {
-                var bucket = (int)Math.Round(frameRate, MidpointRounding.AwayFromZero);
-                if (bucket > 0)
-                {
-                    var expectedNtsc = bucket * 1000.0 / 1001.0;
-                    if (Math.Abs(telemetry.FrameRateExact.Value - expectedNtsc) <= 0.15)
-                    {
-                        fpsNum = bucket * 1000;
-                        fpsDen = 1001;
-                        frameRate = (double)fpsNum.Value / fpsDen.Value;
-                    }
-                }
-            }
-        }
+        // if (_actualFrameRateNumerator.HasValue && _actualFrameRateDenominator is > 1)
+        // {
+        //     fpsNum = (int)_actualFrameRateNumerator.Value;
+        //     fpsDen = (int)_actualFrameRateDenominator.Value;
+        // }
+        // else
+        // {
+        //     var telemetry = _latestSourceTelemetry;
+        //     if (telemetry.HasFrameRate && telemetry.FrameRateExact.HasValue)
+        //     {
+        //         var bucket = (int)Math.Round(frameRate, MidpointRounding.AwayFromZero);
+        //         if (bucket > 0)
+        //         {
+        //             var expectedNtsc = bucket * 1000.0 / 1001.0;
+        //             if (Math.Abs(telemetry.FrameRateExact.Value - expectedNtsc) <= 0.15)
+        //             {
+        //                 fpsNum = bucket * 1000;
+        //                 fpsDen = 1001;
+        //                 frameRate = (double)fpsNum.Value / fpsDen.Value;
+        //             }
+        //         }
+        //     }
+        // }
 
         return new FlashbackSessionContext
         {
