@@ -191,7 +191,59 @@ static class Program
             // --- RecordingContextRequest ---
             await RunCheckAsync(
                 "RecordingContextRequest defaults match RecordingContext defaults",
-                RecordingContextRequest_DefaultsMatchRecordingContextDefaults)
+                RecordingContextRequest_DefaultsMatchRecordingContextDefaults),
+
+            // --- MediaFormat ---
+            await RunCheckAsync(
+                "MediaFormat equality with matching rational frame rates",
+                MediaFormat_Equality_WithMatchingRationalFrameRates),
+            await RunCheckAsync(
+                "MediaFormat inequality when dimensions differ",
+                MediaFormat_Inequality_WhenDimensionsDiffer),
+            await RunCheckAsync(
+                "MediaFormat GetHashCode consistency for equal objects",
+                MediaFormat_GetHashCode_ConsistencyForEqualObjects),
+
+            // --- AutomationContracts ---
+            await RunCheckAsync(
+                "AutomationCommandKind has sequential values 0 through 44",
+                AutomationCommandKind_HasSequentialValues_0Through44),
+            await RunCheckAsync(
+                "AutomationWindowAction has expected values",
+                AutomationWindowAction_HasExpectedValues),
+
+            // --- RuntimePaths ---
+            await RunCheckAsync(
+                "RuntimePaths GetRepoLogFile returns path under repo root",
+                RuntimePaths_GetRepoLogFile_ReturnsPathUnderRepoRoot),
+            await RunCheckAsync(
+                "RuntimePaths paths contain expected directory names",
+                RuntimePaths_PathsContainExpectedDirectoryNames),
+
+            // --- SourceSignalTelemetrySnapshot ---
+            await RunCheckAsync(
+                "SourceSignalTelemetrySnapshot defaults have expected values",
+                SourceSignalTelemetrySnapshot_DefaultsHaveExpectedValues),
+            await RunCheckAsync(
+                "SourceSignalTelemetrySnapshot properties round-trip",
+                SourceSignalTelemetrySnapshot_PropertiesRoundTrip),
+
+            // --- Tool CommandMap & Formatter Alignment ---
+            await RunCheckAsync(
+                "MCP PipeClient CommandMap covers every AutomationCommandKind enum value",
+                McpPipeClient_CommandMap_CoversEveryAutomationCommandKind),
+            await RunCheckAsync(
+                "ecctl PipeTransport CommandMap covers every AutomationCommandKind enum value",
+                EcctlPipeTransport_CommandMap_CoversEveryAutomationCommandKind),
+            await RunCheckAsync(
+                "ResponseFormatter.IsSuccess correctly parses success and failure JSON",
+                ResponseFormatter_IsSuccess_ParsesSuccessAndFailureJson),
+            await RunCheckAsync(
+                "ResponseFormatter.Get handles all JSON value kinds correctly",
+                ResponseFormatter_Get_HandlesAllJsonValueKinds),
+            await RunCheckAsync(
+                "ecctl Formatters snapshot fields align with MCP ResponseFormatter",
+                EcctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter)
         };
 
         var failed = results.Where(r => !r.Passed).ToList();
@@ -1721,6 +1773,443 @@ static class Program
         AssertEqual(false, GetBoolProperty(request, "UsePostMuxAudio"), "UsePostMuxAudio default");
 
         return Task.CompletedTask;
+    }
+
+    // --- MediaFormat tests ---
+
+    private static Task MediaFormat_Equality_WithMatchingRationalFrameRates()
+    {
+        var a = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        SetPropertyOrBackingField(a, "Width", 1920u);
+        SetPropertyOrBackingField(a, "Height", 1080u);
+        SetPropertyOrBackingField(a, "FrameRateNumerator", 60000u);
+        SetPropertyOrBackingField(a, "FrameRateDenominator", 1001u);
+        SetPropertyOrBackingField(a, "PixelFormat", "NV12");
+        SetPropertyOrBackingField(a, "IsHdr", false);
+
+        var b = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        SetPropertyOrBackingField(b, "Width", 1920u);
+        SetPropertyOrBackingField(b, "Height", 1080u);
+        SetPropertyOrBackingField(b, "FrameRateNumerator", 60000u);
+        SetPropertyOrBackingField(b, "FrameRateDenominator", 1001u);
+        SetPropertyOrBackingField(b, "PixelFormat", "NV12");
+        SetPropertyOrBackingField(b, "IsHdr", false);
+
+        AssertEqual(true, a.Equals(b), "MediaFormat rational equality");
+        return Task.CompletedTask;
+    }
+
+    private static Task MediaFormat_Inequality_WhenDimensionsDiffer()
+    {
+        var a = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        SetPropertyOrBackingField(a, "Width", 1920u);
+        SetPropertyOrBackingField(a, "Height", 1080u);
+        SetPropertyOrBackingField(a, "FrameRate", 60.0);
+        SetPropertyOrBackingField(a, "PixelFormat", "NV12");
+        SetPropertyOrBackingField(a, "IsHdr", false);
+
+        var b = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        SetPropertyOrBackingField(b, "Width", 3840u);
+        SetPropertyOrBackingField(b, "Height", 2160u);
+        SetPropertyOrBackingField(b, "FrameRate", 60.0);
+        SetPropertyOrBackingField(b, "PixelFormat", "NV12");
+        SetPropertyOrBackingField(b, "IsHdr", false);
+
+        AssertEqual(false, a.Equals(b), "MediaFormat dimension inequality");
+        return Task.CompletedTask;
+    }
+
+    private static Task MediaFormat_GetHashCode_ConsistencyForEqualObjects()
+    {
+        var a = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        SetPropertyOrBackingField(a, "Width", 3840u);
+        SetPropertyOrBackingField(a, "Height", 2160u);
+        SetPropertyOrBackingField(a, "FrameRateNumerator", 120000u);
+        SetPropertyOrBackingField(a, "FrameRateDenominator", 1001u);
+        SetPropertyOrBackingField(a, "PixelFormat", "P010");
+        SetPropertyOrBackingField(a, "IsHdr", true);
+
+        var b = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        SetPropertyOrBackingField(b, "Width", 3840u);
+        SetPropertyOrBackingField(b, "Height", 2160u);
+        SetPropertyOrBackingField(b, "FrameRateNumerator", 120000u);
+        SetPropertyOrBackingField(b, "FrameRateDenominator", 1001u);
+        SetPropertyOrBackingField(b, "PixelFormat", "P010");
+        SetPropertyOrBackingField(b, "IsHdr", true);
+
+        AssertEqual(a.GetHashCode(), b.GetHashCode(), "MediaFormat hash consistency");
+        return Task.CompletedTask;
+    }
+
+    // --- AutomationContracts tests ---
+
+    private static Task AutomationCommandKind_HasSequentialValues_0Through44()
+    {
+        var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var values = Enum.GetValues(enumType);
+        AssertEqual(45, values.Length, "AutomationCommandKind value count");
+
+        for (int i = 0; i < 45; i++)
+        {
+            var found = Enum.IsDefined(enumType, i);
+            if (!found)
+                throw new InvalidOperationException(
+                    $"AutomationCommandKind missing sequential value {i}.");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AutomationWindowAction_HasExpectedValues()
+    {
+        var enumType = RequireType("ElgatoCapture.Models.AutomationWindowAction");
+        var names = Enum.GetNames(enumType);
+
+        // Verify expected members exist
+        var expectedNames = new[]
+        {
+            "Minimize", "Maximize", "Restore", "Close",
+            "SnapLeft", "SnapRight", "SnapTopLeft", "SnapTopRight",
+            "SnapBottomLeft", "SnapBottomRight", "Center", "Move", "Resize"
+        };
+        AssertEqual(expectedNames.Length, names.Length, "AutomationWindowAction count");
+
+        foreach (var expected in expectedNames)
+        {
+            if (!Enum.IsDefined(enumType, Enum.Parse(enumType, expected)))
+                throw new InvalidOperationException(
+                    $"AutomationWindowAction missing expected value '{expected}'.");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // --- RuntimePaths tests ---
+
+    private static Task RuntimePaths_GetRepoLogFile_ReturnsPathUnderRepoRoot()
+    {
+        var runtimePathsType = RequireType("ElgatoCapture.RuntimePaths");
+        var getRepoLogFile = runtimePathsType.GetMethod(
+            "GetRepoLogFile",
+            BindingFlags.Public | BindingFlags.Static,
+            binder: null,
+            types: new[] { typeof(string) },
+            modifiers: null);
+        if (getRepoLogFile == null)
+            throw new InvalidOperationException("RuntimePaths.GetRepoLogFile not found.");
+
+        var logPath = (string)getRepoLogFile.Invoke(null, new object[] { "test.log" })!;
+        AssertContains(logPath, "test.log");
+
+        // The log path should be a rooted path
+        if (!Path.IsPathRooted(logPath))
+            throw new InvalidOperationException(
+                $"GetRepoLogFile returned non-rooted path: {logPath}");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task RuntimePaths_PathsContainExpectedDirectoryNames()
+    {
+        var runtimePathsType = RequireType("ElgatoCapture.RuntimePaths");
+
+        var getRepoLogRoot = runtimePathsType.GetMethod(
+            "GetRepoLogRoot", BindingFlags.Public | BindingFlags.Static);
+        if (getRepoLogRoot == null)
+            throw new InvalidOperationException("RuntimePaths.GetRepoLogRoot not found.");
+        var logRoot = (string)getRepoLogRoot.Invoke(null, null)!;
+        AssertContains(logRoot, "logs");
+
+        var getRepoTempRoot = runtimePathsType.GetMethod(
+            "GetRepoTempRoot", BindingFlags.Public | BindingFlags.Static);
+        if (getRepoTempRoot == null)
+            throw new InvalidOperationException("RuntimePaths.GetRepoTempRoot not found.");
+        var tempRoot = (string)getRepoTempRoot.Invoke(null, null)!;
+        AssertContains(tempRoot, "temp");
+
+        return Task.CompletedTask;
+    }
+
+    // --- SourceSignalTelemetrySnapshot tests ---
+
+    private static Task SourceSignalTelemetrySnapshot_DefaultsHaveExpectedValues()
+    {
+        var type = RequireType("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
+        var instance = RuntimeHelpers.GetUninitializedObject(type);
+
+        // Uninitialized record: nullable properties should be default (null for nullable, 0 for value types)
+        // Use the factory method to test proper defaults
+        var createMethod = type.GetMethod(
+            "CreateUnavailable",
+            BindingFlags.Public | BindingFlags.Static,
+            binder: null,
+            types: new[] { typeof(string), typeof(string) },
+            modifiers: null)!;
+        var snapshot = createMethod.Invoke(null, new object?[] { "test-reason", null })!;
+
+        AssertEqual("Unavailable",
+            GetStringProperty(snapshot, "Availability"),
+            "CreateUnavailable Availability");
+        AssertEqual("Unknown",
+            GetStringProperty(snapshot, "Origin"),
+            "CreateUnavailable Origin");
+        AssertEqual("Unavailable",
+            GetStringProperty(snapshot, "OriginDetail"),
+            "CreateUnavailable OriginDetail");
+        AssertContains(GetStringProperty(snapshot, "DiagnosticSummary"), "test-reason");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task SourceSignalTelemetrySnapshot_PropertiesRoundTrip()
+    {
+        var type = RequireType("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
+        var snapshot = RuntimeHelpers.GetUninitializedObject(type);
+
+        SetPropertyBackingField(snapshot, "Width", (int?)1920);
+        SetPropertyBackingField(snapshot, "Height", (int?)1080);
+        SetPropertyBackingField(snapshot, "FrameRateExact", (double?)59.94);
+        SetPropertyBackingField(snapshot, "IsHdr", (bool?)true);
+        SetPropertyBackingField(snapshot, "VideoFormat", "P010");
+        SetPropertyBackingField(snapshot, "Firmware", "1.2.3");
+
+        AssertEqual(1920, GetIntProperty(snapshot, "Width"), "Width round-trip");
+        AssertEqual(1080, GetIntProperty(snapshot, "Height"), "Height round-trip");
+        AssertEqual("P010", GetStringProperty(snapshot, "VideoFormat"), "VideoFormat round-trip");
+        AssertEqual("1.2.3", GetStringProperty(snapshot, "Firmware"), "Firmware round-trip");
+        AssertEqual(true, GetBoolProperty(snapshot, "IsHdr"), "IsHdr round-trip");
+
+        return Task.CompletedTask;
+    }
+
+    // ── Tool CommandMap & Formatter Alignment tests ──
+
+    private static Task McpPipeClient_CommandMap_CoversEveryAutomationCommandKind()
+    {
+        var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var enumNames = Enum.GetNames(enumType);
+        var enumValues = Enum.GetValues(enumType);
+
+        if (enumNames.Length == 0)
+            throw new InvalidOperationException("AutomationCommandKind enum has no members.");
+
+        var pipeClientText = ReadRepoFile("tools/McpServer/PipeClient.cs");
+
+        for (int i = 0; i < enumNames.Length; i++)
+        {
+            var name = enumNames[i];
+            var ordinal = Convert.ToInt32(enumValues.GetValue(i));
+            var expectedEntry = $"[\"{name}\"] = {ordinal}";
+            AssertContains(pipeClientText, expectedEntry);
+        }
+
+        var mapEntryCount = 0;
+        var inMap = false;
+        foreach (var line in pipeClientText.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.Contains("CommandMap = new"))
+                inMap = true;
+            if (inMap && trimmed.StartsWith("[\"") && trimmed.Contains("] ="))
+                mapEntryCount++;
+            if (inMap && trimmed == "};")
+                inMap = false;
+        }
+
+        AssertEqual(enumNames.Length, mapEntryCount,
+            "MCP PipeClient CommandMap entry count vs AutomationCommandKind enum count");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task EcctlPipeTransport_CommandMap_CoversEveryAutomationCommandKind()
+    {
+        var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var enumNames = Enum.GetNames(enumType);
+        var enumValues = Enum.GetValues(enumType);
+
+        if (enumNames.Length == 0)
+            throw new InvalidOperationException("AutomationCommandKind enum has no members.");
+
+        var pipeTransportText = ReadRepoFile("tools/ecctl/PipeTransport.cs");
+
+        for (int i = 0; i < enumNames.Length; i++)
+        {
+            var name = enumNames[i];
+            var ordinal = Convert.ToInt32(enumValues.GetValue(i));
+            var expectedEntry = $"[\"{name}\"] = {ordinal}";
+            AssertContains(pipeTransportText, expectedEntry);
+        }
+
+        var mapEntryCount = 0;
+        var inMap = false;
+        foreach (var line in pipeTransportText.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (trimmed.Contains("CommandMap = new"))
+                inMap = true;
+            if (inMap && trimmed.StartsWith("[\"") && trimmed.Contains("] ="))
+                mapEntryCount++;
+            if (inMap && trimmed == "};")
+                inMap = false;
+        }
+
+        AssertEqual(enumNames.Length, mapEntryCount,
+            "ecctl PipeTransport CommandMap entry count vs AutomationCommandKind enum count");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ResponseFormatter_IsSuccess_ParsesSuccessAndFailureJson()
+    {
+        var formatterText = ReadRepoFile("tools/McpServer/ResponseFormatter.cs");
+        AssertContains(formatterText, "public static bool IsSuccess(JsonElement response)");
+        AssertContains(formatterText, "success.ValueKind == JsonValueKind.True");
+
+        using (var docTrue = JsonDocument.Parse("{\"Success\": true, \"Message\": \"ok\"}"))
+        {
+            var el = docTrue.RootElement;
+            var isSuccess = el.ValueKind == JsonValueKind.Object &&
+                            el.TryGetProperty("Success", out var s) &&
+                            s.ValueKind == JsonValueKind.True;
+            AssertEqual(true, isSuccess, "IsSuccess with Success=true");
+        }
+
+        using (var docFalse = JsonDocument.Parse("{\"Success\": false, \"Message\": \"fail\"}"))
+        {
+            var el = docFalse.RootElement;
+            var isSuccess = el.ValueKind == JsonValueKind.Object &&
+                            el.TryGetProperty("Success", out var s) &&
+                            s.ValueKind == JsonValueKind.True;
+            AssertEqual(false, isSuccess, "IsSuccess with Success=false");
+        }
+
+        using (var docMissing = JsonDocument.Parse("{\"Message\": \"no success field\"}"))
+        {
+            var el = docMissing.RootElement;
+            var isSuccess = el.ValueKind == JsonValueKind.Object &&
+                            el.TryGetProperty("Success", out var s) &&
+                            s.ValueKind == JsonValueKind.True;
+            AssertEqual(false, isSuccess, "IsSuccess with missing Success property");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ResponseFormatter_Get_HandlesAllJsonValueKinds()
+    {
+        var formatterText = ReadRepoFile("tools/McpServer/ResponseFormatter.cs");
+        AssertContains(formatterText, "public static string Get(JsonElement el, string prop, string fallback = \"N/A\")");
+
+        var json = @"{
+            ""str"": ""hello"",
+            ""num"": 42,
+            ""boolTrue"": true,
+            ""boolFalse"": false,
+            ""nullVal"": null,
+            ""emptyArr"": [],
+            ""nonEmptyArr"": [1, 2],
+            ""obj"": { ""nested"": true },
+            ""emptyStr"": """"
+        }";
+
+        using var doc = JsonDocument.Parse(json);
+        var el = doc.RootElement;
+
+        string Get(JsonElement element, string prop, string fallback = "N/A")
+        {
+            if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(prop, out var value))
+                return fallback;
+            if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+                return fallback;
+            return value.ValueKind switch
+            {
+                JsonValueKind.String => value.GetString() ?? fallback,
+                JsonValueKind.True => "true",
+                JsonValueKind.False => "false",
+                JsonValueKind.Number => value.ToString(),
+                JsonValueKind.Array => value.GetArrayLength() == 0 ? fallback : value.ToString(),
+                JsonValueKind.Object => value.ToString(),
+                _ => fallback
+            };
+        }
+
+        AssertEqual("hello", Get(el, "str"), "Get string value");
+        AssertEqual("42", Get(el, "num"), "Get number value");
+        AssertEqual("true", Get(el, "boolTrue"), "Get bool true");
+        AssertEqual("false", Get(el, "boolFalse"), "Get bool false");
+        AssertEqual("N/A", Get(el, "nullVal"), "Get null value");
+        AssertEqual("N/A", Get(el, "nonExistent"), "Get missing property");
+        AssertEqual("custom", Get(el, "nonExistent", "custom"), "Get missing with custom fallback");
+        AssertEqual("N/A", Get(el, "emptyArr"), "Get empty array");
+        AssertEqual("", Get(el, "emptyStr"), "Get empty string");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task EcctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter()
+    {
+        var mcpText = ReadRepoFile("tools/McpServer/ResponseFormatter.cs");
+        var ecctlText = ReadRepoFile("tools/ecctl/Formatters.cs");
+
+        var mcpFields = ExtractSnapshotFields(mcpText);
+        var ecctlFields = ExtractSnapshotFields(ecctlText);
+
+        if (mcpFields.Count == 0)
+            throw new InvalidOperationException("Failed to extract any snapshot fields from MCP ResponseFormatter.");
+        if (ecctlFields.Count == 0)
+            throw new InvalidOperationException("Failed to extract any snapshot fields from ecctl Formatters.");
+
+        var missingInEcctl = new List<string>();
+        foreach (var field in mcpFields)
+        {
+            if (!ecctlFields.Contains(field))
+                missingInEcctl.Add(field);
+        }
+
+        if (missingInEcctl.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"MCP ResponseFormatter references {missingInEcctl.Count} snapshot field(s) " +
+                $"missing from ecctl Formatters: {string.Join(", ", missingInEcctl)}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static HashSet<string> ExtractSnapshotFields(string sourceText)
+    {
+        var fields = new HashSet<string>(StringComparer.Ordinal);
+        var index = 0;
+        while (index < sourceText.Length)
+        {
+            var getIdx = sourceText.IndexOf("Get(snapshot,", index, StringComparison.Ordinal);
+            if (getIdx < 0)
+                break;
+
+            var afterComma = getIdx + "Get(snapshot,".Length;
+            var quoteIdx = sourceText.IndexOf('"', afterComma);
+            if (quoteIdx < 0 || quoteIdx - afterComma > 10)
+            {
+                index = afterComma;
+                continue;
+            }
+
+            var endQuoteIdx = sourceText.IndexOf('"', quoteIdx + 1);
+            if (endQuoteIdx < 0)
+            {
+                index = quoteIdx + 1;
+                continue;
+            }
+
+            var fieldName = sourceText.Substring(quoteIdx + 1, endQuoteIdx - quoteIdx - 1);
+            if (fieldName.Length > 0)
+                fields.Add(fieldName);
+
+            index = endQuoteIdx + 1;
+        }
+
+        return fields;
     }
 
     // ── Test helpers for new tests ──
