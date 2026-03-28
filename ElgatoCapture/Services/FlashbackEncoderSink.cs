@@ -270,7 +270,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    public Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default)
+    Task IRecordingSink.StartAsync(RecordingContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(context);
         return StartAsync(CreateSessionContext(context), cancellationToken);
@@ -488,11 +488,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public Task WriteVideoAsync(SoftwareBitmap frame, CancellationToken cancellationToken = default)
     {
         throw new NotSupportedException("Use EnqueueRawVideoFrame or EnqueueGpuVideoFrame instead.");
-    }
-
-    public async Task StopAsync()
-    {
-        await StopCoreAsync(CancellationToken.None).ConfigureAwait(false);
     }
 
     public Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default)

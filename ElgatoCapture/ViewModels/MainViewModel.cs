@@ -19,7 +19,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 {
     private readonly DeviceService _deviceService;
     private readonly CaptureService _captureService;
-    private readonly ICaptureSessionCoordinator _sessionCoordinator;
+    private readonly CaptureSessionCoordinator _sessionCoordinator;
     private readonly NativeXuAudioControlService _deviceAudioControlService;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly AudioDeviceWatcher _audioDeviceWatcher;

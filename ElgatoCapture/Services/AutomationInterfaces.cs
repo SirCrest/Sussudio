@@ -18,14 +18,6 @@ public interface IAutomationWindowControl
     Task<WindowScreenshotResult> CaptureWindowScreenshotAsync(string outputPath, CancellationToken cancellationToken = default);
 }
 
-public interface IRecordingVerifier
-{
-    Task<RecordingVerificationResult> VerifyAsync(
-        string? outputPath,
-        CaptureRuntimeSnapshot runtimeSnapshot,
-        CancellationToken cancellationToken = default);
-}
-
 public interface IAutomationDiagnosticsHub : IDisposable, IAsyncDisposable
 {
     AutomationSnapshot GetLatestSnapshot();

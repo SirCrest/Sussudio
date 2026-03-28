@@ -8,6 +8,30 @@ using ElgatoCapture.Models;
 using FFmpeg.AutoGen;
 namespace ElgatoCapture.Services;
 
+public readonly record struct GpuPipelineHandles(
+    IntPtr D3D11DevicePtr,
+    IntPtr D3D11DeviceContextPtr,
+    IntPtr CudaHwDeviceCtxPtr,
+    IntPtr CudaHwFramesCtxPtr)
+{
+    public static GpuPipelineHandles None => default;
+}
+
+public sealed class RecordingContextRequest
+{
+    public required CaptureSettings Settings { get; init; }
+    public bool UsePostMuxAudio { get; init; }
+    public string? AudioDeviceName { get; init; }
+    public string? MicrophoneDeviceName { get; init; }
+    public double EffectiveFrameRate { get; init; }
+    public string FrameRateArg { get; init; } = "30";
+    public uint EffectiveWidth { get; init; }
+    public uint EffectiveHeight { get; init; }
+    public string VideoInputPixelFormat { get; init; } = "nv12";
+    public bool IsFullRangeInput { get; init; }
+    public GpuPipelineHandles GpuHandles { get; init; }
+}
+
 public sealed class RecordingContext
 {
     public required CaptureSettings Settings { get; init; }
@@ -24,10 +48,13 @@ public sealed class RecordingContext
     public string VideoInputPixelFormat { get; init; } = "nv12";
     public bool HdrPipelineActive { get; init; }
     public bool IsFullRangeInput { get; init; }
-    public IntPtr D3D11DevicePtr { get; init; }
-    public IntPtr D3D11DeviceContextPtr { get; init; }
-    public IntPtr CudaHwDeviceCtxPtr { get; init; }
-    public IntPtr CudaHwFramesCtxPtr { get; init; }
+    public GpuPipelineHandles GpuHandles { get; init; }
+
+    // Convenience accessors for existing consumers.
+    public IntPtr D3D11DevicePtr => GpuHandles.D3D11DevicePtr;
+    public IntPtr D3D11DeviceContextPtr => GpuHandles.D3D11DeviceContextPtr;
+    public IntPtr CudaHwDeviceCtxPtr => GpuHandles.CudaHwDeviceCtxPtr;
+    public IntPtr CudaHwFramesCtxPtr => GpuHandles.CudaHwFramesCtxPtr;
 }
 
 public sealed class FinalizeResult
@@ -101,4 +128,12 @@ public interface IRecordingSink : IDisposable, IAsyncDisposable
     Task StartAsync(RecordingContext context, CancellationToken cancellationToken = default);
     Task WriteAudioAsync(ReadOnlyMemory<byte> samples, CancellationToken cancellationToken = default);
     Task<FinalizeResult> StopAsync(CancellationToken cancellationToken = default);
+}
+
+public interface IRecordingVerifier
+{
+    Task<RecordingVerificationResult> VerifyAsync(
+        string? outputPath,
+        CaptureRuntimeSnapshot runtimeSnapshot,
+        CancellationToken cancellationToken = default);
 }

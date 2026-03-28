@@ -2189,24 +2189,25 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
                     transitionToken.ThrowIfCancellationRequested();
 
+                    var fbEffectiveFrameRate = _unifiedVideoCapture?.Fps > 0 ? _unifiedVideoCapture.Fps : settings.FrameRate;
                     var fbRecordingContext = await _artifactManager.CreateContextAsync(
                         fbOutputFolder,
-                        settings,
-                        usePostMuxAudio: false,
-                        audioDeviceName: settings.AudioEnabled
-                            ? (settings.UseCustomAudioInput ? settings.AudioDeviceName : (_audioDeviceName ?? _currentDevice.AudioDeviceName))
-                            : null,
-                        microphoneDeviceName: settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
-                        effectiveFrameRate: _unifiedVideoCapture?.Fps > 0 ? _unifiedVideoCapture.Fps : settings.FrameRate,
-                        frameRateArg: ResolveFrameRateArg(settings, _unifiedVideoCapture?.Fps > 0 ? _unifiedVideoCapture.Fps : settings.FrameRate),
-                        effectiveWidth: _actualWidth ?? settings.Width,
-                        effectiveHeight: _actualHeight ?? settings.Height,
-                        videoInputPixelFormat: _unifiedVideoCapture?.IsP010 == true ? "p010le" : "nv12",
-                        isFullRangeInput: _unifiedVideoCapture?.IsSoftwareMjpegPipelineActive == true,
-                        d3d11DevicePtr: IntPtr.Zero,
-                        d3d11DeviceContextPtr: IntPtr.Zero,
-                        cudaHwDeviceCtxPtr: IntPtr.Zero,
-                        cudaHwFramesCtxPtr: IntPtr.Zero).ConfigureAwait(false);
+                        new RecordingContextRequest
+                        {
+                            Settings = settings,
+                            UsePostMuxAudio = false,
+                            AudioDeviceName = settings.AudioEnabled
+                                ? (settings.UseCustomAudioInput ? settings.AudioDeviceName : (_audioDeviceName ?? _currentDevice.AudioDeviceName))
+                                : null,
+                            MicrophoneDeviceName = settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
+                            EffectiveFrameRate = fbEffectiveFrameRate,
+                            FrameRateArg = ResolveFrameRateArg(settings, fbEffectiveFrameRate),
+                            EffectiveWidth = _actualWidth ?? settings.Width,
+                            EffectiveHeight = _actualHeight ?? settings.Height,
+                            VideoInputPixelFormat = _unifiedVideoCapture?.IsP010 == true ? "p010le" : "nv12",
+                            IsFullRangeInput = _unifiedVideoCapture?.IsSoftwareMjpegPipelineActive == true,
+                            GpuHandles = GpuPipelineHandles.None
+                        }).ConfigureAwait(false);
 
                     EnsureFlashbackRecordingTopologyMatches(_flashbackSink,
                         audioEnabled: settings.AudioEnabled,
@@ -2310,20 +2311,24 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
                 recordingContext = await _artifactManager.CreateContextAsync(
                     outputFolder,
-                    settings,
-                    usePostMuxAudio: false,
-                    audioDeviceName: audioDeviceName,
-                    microphoneDeviceName: settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
-                    effectiveFrameRate: recordingFrameRate,
-                    frameRateArg: frameRateArg,
-                    effectiveWidth: recordingWidth,
-                    effectiveHeight: recordingHeight,
-                    videoInputPixelFormat: videoInputPixelFormat,
-                    isFullRangeInput: isMjpegMode,
-                    d3d11DevicePtr: isMjpegMode ? IntPtr.Zero : (d3dManager?.Device.NativePointer ?? IntPtr.Zero),
-                    d3d11DeviceContextPtr: isMjpegMode ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero),
-                    cudaHwDeviceCtxPtr: cudaHwDeviceCtxPtr,
-                    cudaHwFramesCtxPtr: cudaHwFramesCtxPtr).ConfigureAwait(false);
+                    new RecordingContextRequest
+                    {
+                        Settings = settings,
+                        UsePostMuxAudio = false,
+                        AudioDeviceName = audioDeviceName,
+                        MicrophoneDeviceName = settings.MicrophoneEnabled ? settings.MicrophoneDeviceName : null,
+                        EffectiveFrameRate = recordingFrameRate,
+                        FrameRateArg = frameRateArg,
+                        EffectiveWidth = recordingWidth,
+                        EffectiveHeight = recordingHeight,
+                        VideoInputPixelFormat = videoInputPixelFormat,
+                        IsFullRangeInput = isMjpegMode,
+                        GpuHandles = new GpuPipelineHandles(
+                            isMjpegMode ? IntPtr.Zero : (d3dManager?.Device.NativePointer ?? IntPtr.Zero),
+                            isMjpegMode ? IntPtr.Zero : (d3dManager?.ImmediateContext.NativePointer ?? IntPtr.Zero),
+                            cudaHwDeviceCtxPtr,
+                            cudaHwFramesCtxPtr)
+                    }).ConfigureAwait(false);
 
                 transitionToken.ThrowIfCancellationRequested();
                 _mfReadwriteDisableConverters = requireP010 || isMjpegMode;

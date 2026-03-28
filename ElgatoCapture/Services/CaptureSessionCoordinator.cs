@@ -40,23 +40,7 @@ public sealed class CaptureSessionSnapshot
     public bool IsAudioPreviewActive { get; init; }
 }
 
-public interface ICaptureSessionCoordinator : IDisposable, IAsyncDisposable
-{
-    CaptureSessionSnapshot Snapshot { get; }
-
-    Task InitializeAsync(CaptureDevice device, CaptureSettings settings, CancellationToken cancellationToken = default);
-    Task StartVideoPreviewAsync(CaptureSettings settings, CancellationToken cancellationToken = default);
-    Task StopVideoPreviewAsync(CancellationToken cancellationToken = default);
-    Task StartRecordingAsync(CaptureSettings settings, CancellationToken cancellationToken = default);
-    Task StopRecordingAsync(CancellationToken cancellationToken = default);
-    Task StartAudioPreviewAsync(CancellationToken cancellationToken = default);
-    Task StopAudioPreviewAsync(bool teardownCapture = false, CancellationToken cancellationToken = default);
-    Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default);
-    Task UpdateMicrophoneMonitorAsync(bool enabled, string? micDeviceId, string? micDeviceName, CancellationToken cancellationToken = default);
-    Task CleanupAsync(CancellationToken cancellationToken = default);
-}
-
-public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
+public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 {
     private readonly CaptureService _captureService;
     private readonly Channel<CoordinatorWorkItem> _queue;

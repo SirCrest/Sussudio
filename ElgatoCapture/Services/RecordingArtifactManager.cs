@@ -12,56 +12,24 @@ public sealed class RecordingArtifactManager
 {
     public async Task<RecordingContext> CreateContextAsync(
         StorageFolder outputFolder,
-        CaptureSettings settings,
-        bool usePostMuxAudio,
-        string? audioDeviceName,
-        string? microphoneDeviceName,
-        double effectiveFrameRate,
-        string frameRateArg,
-        uint effectiveWidth,
-        uint effectiveHeight,
-        string videoInputPixelFormat,
-        bool isFullRangeInput = false,
-        IntPtr d3d11DevicePtr = default,
-        IntPtr d3d11DeviceContextPtr = default,
-        IntPtr cudaHwDeviceCtxPtr = default,
-        IntPtr cudaHwFramesCtxPtr = default,
+        RecordingContextRequest request,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(outputFolder);
-        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(request);
 
         cancellationToken.ThrowIfCancellationRequested();
 
+        var settings = request.Settings;
         var finalOutputFile = await outputFolder.CreateFileAsync(
             settings.GetOutputFileName(),
             CreationCollisionOption.GenerateUniqueName);
 
-        var hdrPipelineActive = string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
+        var hdrPipelineActive = string.Equals(request.VideoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase);
 
-        if (!usePostMuxAudio)
+        if (!request.UsePostMuxAudio)
         {
-            return new RecordingContext
-            {
-                Settings = settings,
-                VideoOutputPath = finalOutputFile.Path,
-                FinalOutputPath = finalOutputFile.Path,
-                AudioTempPath = null,
-                UsePostMuxAudio = false,
-                AudioDeviceName = audioDeviceName,
-                MicrophoneDeviceName = microphoneDeviceName,
-                EffectiveFrameRate = effectiveFrameRate,
-                FrameRateArg = frameRateArg,
-                EffectiveWidth = effectiveWidth,
-                EffectiveHeight = effectiveHeight,
-                VideoInputPixelFormat = videoInputPixelFormat,
-                HdrPipelineActive = hdrPipelineActive,
-                IsFullRangeInput = isFullRangeInput,
-                D3D11DevicePtr = d3d11DevicePtr,
-                D3D11DeviceContextPtr = d3d11DeviceContextPtr,
-                CudaHwDeviceCtxPtr = cudaHwDeviceCtxPtr,
-                CudaHwFramesCtxPtr = cudaHwFramesCtxPtr
-            };
+            return BuildContext(request, finalOutputFile.Path, finalOutputFile.Path, null, false, hdrPipelineActive);
         }
 
         var baseName = Path.GetFileNameWithoutExtension(finalOutputFile.Name);
@@ -75,26 +43,34 @@ public sealed class RecordingArtifactManager
             $"{baseName}_audio.m4a",
             CreationCollisionOption.GenerateUniqueName);
 
+        return BuildContext(request, tempVideoFile.Path, finalOutputFile.Path, tempAudioFile.Path, true, hdrPipelineActive);
+    }
+
+    private static RecordingContext BuildContext(
+        RecordingContextRequest request,
+        string videoOutputPath,
+        string finalOutputPath,
+        string? audioTempPath,
+        bool usePostMuxAudio,
+        bool hdrPipelineActive)
+    {
         return new RecordingContext
         {
-            Settings = settings,
-            VideoOutputPath = tempVideoFile.Path,
-            FinalOutputPath = finalOutputFile.Path,
-            AudioTempPath = tempAudioFile.Path,
-            UsePostMuxAudio = true,
-            AudioDeviceName = audioDeviceName,
-            MicrophoneDeviceName = microphoneDeviceName,
-            EffectiveFrameRate = effectiveFrameRate,
-            FrameRateArg = frameRateArg,
-            EffectiveWidth = effectiveWidth,
-            EffectiveHeight = effectiveHeight,
-            VideoInputPixelFormat = videoInputPixelFormat,
+            Settings = request.Settings,
+            VideoOutputPath = videoOutputPath,
+            FinalOutputPath = finalOutputPath,
+            AudioTempPath = audioTempPath,
+            UsePostMuxAudio = usePostMuxAudio,
+            AudioDeviceName = request.AudioDeviceName,
+            MicrophoneDeviceName = request.MicrophoneDeviceName,
+            EffectiveFrameRate = request.EffectiveFrameRate,
+            FrameRateArg = request.FrameRateArg,
+            EffectiveWidth = request.EffectiveWidth,
+            EffectiveHeight = request.EffectiveHeight,
+            VideoInputPixelFormat = request.VideoInputPixelFormat,
             HdrPipelineActive = hdrPipelineActive,
-            IsFullRangeInput = isFullRangeInput,
-            D3D11DevicePtr = d3d11DevicePtr,
-            D3D11DeviceContextPtr = d3d11DeviceContextPtr,
-            CudaHwDeviceCtxPtr = cudaHwDeviceCtxPtr,
-            CudaHwFramesCtxPtr = cudaHwFramesCtxPtr
+            IsFullRangeInput = request.IsFullRangeInput,
+            GpuHandles = request.GpuHandles
         };
     }
 
