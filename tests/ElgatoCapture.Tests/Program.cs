@@ -279,7 +279,10 @@ static class Program
                 ResponseFormatter_Get_HandlesAllJsonValueKinds),
             await RunCheckAsync(
                 "ecctl Formatters snapshot fields align with MCP ResponseFormatter",
-                EcctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter)
+                EcctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter),
+            await RunCheckAsync(
+                "AutomationClient CommandMap covers every AutomationCommandKind enum value",
+                AutomationClient_CommandMap_CoversEveryAutomationCommandKind)
         };
 
         var failed = results.Where(r => !r.Passed).ToList();
@@ -2375,6 +2378,25 @@ static class Program
             throw new InvalidOperationException(
                 $"MCP ResponseFormatter references {missingInEcctl.Count} snapshot field(s) " +
                 $"missing from ecctl Formatters: {string.Join(", ", missingInEcctl)}");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AutomationClient_CommandMap_CoversEveryAutomationCommandKind()
+    {
+        var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var enumNames = Enum.GetNames(enumType);
+        var enumValues = Enum.GetValues(enumType);
+
+        var clientText = ReadRepoFile("tools/AutomationClient/Program.cs");
+
+        for (int i = 0; i < enumNames.Length; i++)
+        {
+            var name = enumNames[i];
+            var ordinal = Convert.ToInt32(enumValues.GetValue(i));
+            var expectedEntry = $"[\"{name}\"] = {ordinal}";
+            AssertContains(clientText, expectedEntry);
         }
 
         return Task.CompletedTask;

@@ -35,8 +35,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private int _height;
     private bool _audioEnabled;
     private bool _microphoneEnabled;
-    private bool _started;
-    private bool _disposed;
+    private volatile bool _started;
+    private volatile bool _disposed;
     private bool _gpuEncodingEnabled;
 
     private volatile bool _forceRotateRequested;

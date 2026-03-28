@@ -53,7 +53,11 @@ internal static class Program
         ["GetPerformanceTimeline"] = 37,
         ["SetStatsSectionVisible"] = 38,
         ["SetAnalogAudioGain"] = 39,
-        ["SetSettingsVisible"] = 40
+        ["SetSettingsVisible"] = 40,
+        ["FlashbackAction"] = 41,
+        ["FlashbackExport"] = 42,
+        ["FlashbackGetSegments"] = 43,
+        ["VerifyFile"] = 44
     };
 
     public static async Task<int> Main(string[] args)
