@@ -19,7 +19,7 @@ public static class DiagnosticsTool
         };
 
         var response = await pipeClient.SendCommandAsync("GetDiagnostics", payload).ConfigureAwait(false);
-        if (!IsSuccess(response))
+        if (!ResponseFormatter.IsSuccess(response))
         {
             return GetMessage(response);
         }
@@ -44,13 +44,6 @@ public static class DiagnosticsTool
         return count == 0
             ? "No diagnostic events were returned."
             : lines.ToString().TrimEnd();
-    }
-
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
     }
 
     private static string GetMessage(JsonElement response)

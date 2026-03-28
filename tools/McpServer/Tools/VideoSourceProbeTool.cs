@@ -12,7 +12,7 @@ public static class VideoSourceProbeTool
     public static async Task<string> probe_video_source(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("ProbeVideoSource").ConfigureAwait(false);
-        if (!IsSuccess(response))
+        if (!ResponseFormatter.IsSuccess(response))
         {
             return GetMessage(response);
         }
@@ -72,13 +72,6 @@ public static class VideoSourceProbeTool
         }
 
         return builder.ToString().TrimEnd();
-    }
-
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
     }
 
     private static string GetMessage(JsonElement response)

@@ -22,7 +22,7 @@ public static class WindowScreenshotTool
         };
 
         var response = await pipeClient.SendCommandAsync("CaptureWindowScreenshot", payload).ConfigureAwait(false);
-        if (!IsSuccess(response))
+        if (!ResponseFormatter.IsSuccess(response))
         {
             return ResponseFormatter.Get(response, "Message", "Screenshot failed.");
         }
@@ -40,10 +40,4 @@ public static class WindowScreenshotTool
         return $"Window screenshot saved: {filePath} ({width}x{height}, {fileSize} bytes)";
     }
 
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
-    }
 }

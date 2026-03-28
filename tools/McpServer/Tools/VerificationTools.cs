@@ -20,7 +20,7 @@ public static class VerificationTools
         }
 
         var builder = new StringBuilder();
-        builder.AppendLine(IsSuccess(response) ? "== Recording Verification: PASS ==" : "== Recording Verification: FAIL ==");
+        builder.AppendLine(ResponseFormatter.IsSuccess(response) ? "== Recording Verification: PASS ==" : "== Recording Verification: FAIL ==");
         builder.AppendLine($"Message: {message}");
         builder.AppendLine($"Output: {ResponseFormatter.Get(verification, "OutputPath")} | Exists: {ResponseFormatter.Get(verification, "FileExists")} | Size: {ResponseFormatter.Get(verification, "FileSizeBytes")} bytes");
         builder.AppendLine($"Mode: {ResponseFormatter.Get(verification, "VerificationMode")} | Codec: {ResponseFormatter.Get(verification, "DetectedVideoCodec")} | Pixel Format: {ResponseFormatter.Get(verification, "DetectedPixelFormat")}");
@@ -79,7 +79,7 @@ public static class VerificationTools
 
         var response = await pipeClient.SendCommandAsync("AssertSnapshot", payload).ConfigureAwait(false);
         var builder = new StringBuilder();
-        builder.AppendLine(IsSuccess(response) ? "Snapshot assertions: PASS" : "Snapshot assertions: FAIL");
+        builder.AppendLine(ResponseFormatter.IsSuccess(response) ? "Snapshot assertions: PASS" : "Snapshot assertions: FAIL");
         builder.AppendLine($"Message: {ResponseFormatter.Get(response, "Message", "No message.")}");
 
         if (response.TryGetProperty("Data", out var data) && data.ValueKind == JsonValueKind.Object)
@@ -128,10 +128,4 @@ public static class VerificationTools
         return false;
     }
 
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
-    }
 }

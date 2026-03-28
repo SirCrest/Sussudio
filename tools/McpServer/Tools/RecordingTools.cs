@@ -18,15 +18,9 @@ public static class RecordingTools
         };
 
         var response = await pipeClient.SendCommandAsync("SetRecordingEnabled", payload).ConfigureAwait(false);
-        var status = IsSuccess(response) ? "OK" : "ERROR";
+        var status = ResponseFormatter.IsSuccess(response) ? "OK" : "ERROR";
         var message = ResponseFormatter.Get(response, "Message", "No message.");
         return $"[{status}] SetRecordingEnabled: {message}";
     }
 
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
-    }
 }

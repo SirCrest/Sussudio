@@ -56,7 +56,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private FinalizeResult? _lastExportResult;
     private string? _audioDeviceId;
     private string? _audioDeviceName;
-    private bool _mfReadwriteDisableConverters;
+    private bool _mfConvertersDisabled;
     private uint? _actualWidth;
     private uint? _actualHeight;
     private double? _actualFrameRate;
@@ -1160,7 +1160,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         bool? encoderTenBitPipelineConfirmed = _isRecording
             ? _recordingContext?.HdrPipelineActive == true
             : null;
-        var mfReadwriteDisableConverters = _mfReadwriteDisableConverters;
+        var mfConvertersDisabled = _mfConvertersDisabled;
         var negotiatedMediaSubtypeToken = string.Equals(encoderInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase)
             ? "P010|MFVideoFormat_P010"
             : "NV12";
@@ -1374,7 +1374,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
             EncoderVideoCodec = encoderVideoCodec,
             EncoderVideoProfile = encoderVideoProfile,
             EncoderTenBitPipelineConfirmed = encoderTenBitPipelineConfirmed,
-            MfReadwriteDisableConverters = mfReadwriteDisableConverters,
+            MfReadwriteDisableConverters = mfConvertersDisabled,
             NegotiatedMediaSubtypeToken = negotiatedMediaSubtypeToken,
             DetectedSourceFrameRate = _latestSourceTelemetry.FrameRateExact,
             DetectedSourceFrameRateArg = _latestSourceTelemetry.FrameRateArg,
@@ -2331,7 +2331,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     }).ConfigureAwait(false);
 
                 transitionToken.ThrowIfCancellationRequested();
-                _mfReadwriteDisableConverters = requireP010 || isMjpegMode;
+                _mfConvertersDisabled = requireP010 || isMjpegMode;
                 Logger.Log(
                     "HDR_NEGOTIATION " +
                     $"requested_hdr={hdrPipelineRequested} " +
@@ -2344,7 +2344,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                     $"hdr_master_display_set={(!string.IsNullOrWhiteSpace(settings.HdrMasterDisplayMetadata))} " +
                     $"hdr_max_cll={settings.HdrMaxCll} " +
                     $"hdr_max_fall={settings.HdrMaxFall} " +
-                    $"mf_readwrite_disable_converters={(_mfReadwriteDisableConverters ? "true" : "false")} " +
+                    $"mf_readwrite_disable_converters={(_mfConvertersDisabled ? "true" : "false")} " +
                     $"libav_ingest_pix_fmt={(string.Equals(videoInputPixelFormat, "p010le", StringComparison.OrdinalIgnoreCase) ? "AV_PIX_FMT_P010LE" : "AV_PIX_FMT_NV12")}");
 
                 await recordingSink.StartAsync(recordingContext, transitionToken).ConfigureAwait(false);
@@ -2483,7 +2483,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
                 _activeRecordingSettings = null;
                 _isRecording = false;
                 _recordingStopwatch.Reset();
-                _mfReadwriteDisableConverters = false;
+                _mfConvertersDisabled = false;
                 throw;
             }
         }, cancellationToken);
@@ -2955,7 +2955,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         if (!_isVideoPreviewActive) StopTelemetryPoll();
         _recordingContext = null;
         _activeRecordingSettings = null;
-        _mfReadwriteDisableConverters = false;
+        _mfConvertersDisabled = false;
 
         // Restart mic monitoring if preview is still active
         if (_isVideoPreviewActive && _micMonitorEnabled && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))

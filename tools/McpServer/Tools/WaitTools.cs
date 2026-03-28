@@ -26,7 +26,7 @@ public static class WaitTools
         var response = await pipeClient.SendCommandAsync("WaitForCondition", payload, responseTimeoutMs).ConfigureAwait(false);
 
         var builder = new StringBuilder();
-        builder.AppendLine(IsSuccess(response) ? "Condition result: MET" : "Condition result: NOT MET");
+        builder.AppendLine(ResponseFormatter.IsSuccess(response) ? "Condition result: MET" : "Condition result: NOT MET");
         builder.AppendLine($"Message: {ResponseFormatter.Get(response, "Message", "No message.")}");
 
         if (response.TryGetProperty("Data", out var data) && data.ValueKind == JsonValueKind.Object)
@@ -40,10 +40,4 @@ public static class WaitTools
         return builder.ToString().TrimEnd();
     }
 
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
-    }
 }

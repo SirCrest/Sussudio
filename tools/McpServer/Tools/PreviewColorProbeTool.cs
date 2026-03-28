@@ -12,7 +12,7 @@ public static class PreviewColorProbeTool
     public static async Task<string> probe_preview_color(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("ProbePreviewColor").ConfigureAwait(false);
-        if (!IsSuccess(response))
+        if (!ResponseFormatter.IsSuccess(response))
         {
             return GetMessage(response);
         }
@@ -111,13 +111,6 @@ public static class PreviewColorProbeTool
         }
 
         return builder.ToString().TrimEnd();
-    }
-
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
     }
 
     private static string GetMessage(JsonElement response)

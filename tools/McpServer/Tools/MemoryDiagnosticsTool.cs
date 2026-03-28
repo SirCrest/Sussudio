@@ -12,7 +12,7 @@ public static class MemoryDiagnosticsTool
     public static async Task<string> get_memory_diagnostics(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
-        if (!IsSuccess(response))
+        if (!ResponseFormatter.IsSuccess(response))
         {
             return GetMessage(response);
         }
@@ -43,13 +43,6 @@ public static class MemoryDiagnosticsTool
         builder.AppendLine($"IO Threads:     {Get(snapshot, "ThreadPoolIoAvailable")} available / {Get(snapshot, "ThreadPoolIoMax")} max");
 
         return builder.ToString().TrimEnd();
-    }
-
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
     }
 
     private static string GetMessage(JsonElement response)

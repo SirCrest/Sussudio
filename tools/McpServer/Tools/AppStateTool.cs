@@ -11,7 +11,7 @@ public static class AppStateTool
     public static async Task<string> get_app_state(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
-        if (!IsSuccess(response))
+        if (!ResponseFormatter.IsSuccess(response))
         {
             return GetMessage(response);
         }
@@ -23,7 +23,7 @@ public static class AppStateTool
     public static async Task<object> get_app_state_raw(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
-        if (!IsSuccess(response))
+        if (!ResponseFormatter.IsSuccess(response))
         {
             return CreateError(response);
         }
@@ -38,13 +38,6 @@ public static class AppStateTool
             success = false,
             message = "Snapshot data was not available."
         };
-    }
-
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
     }
 
     private static string GetMessage(JsonElement response)

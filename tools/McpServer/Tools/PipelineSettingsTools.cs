@@ -60,15 +60,9 @@ public static class PipelineSettingsTools
         Dictionary<string, object?>? payload = null)
     {
         var response = await pipeClient.SendCommandAsync(commandName, payload).ConfigureAwait(false);
-        var status = IsSuccess(response) ? "OK" : "ERROR";
+        var status = ResponseFormatter.IsSuccess(response) ? "OK" : "ERROR";
         var message = ResponseFormatter.Get(response, "Message", "No message.");
         return $"[{status}] {label}: {message}";
     }
 
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
-    }
 }

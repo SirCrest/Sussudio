@@ -57,7 +57,10 @@ public sealed class PipeClient
         ["SetStatsSectionVisible"] = 38,
         ["SetAnalogAudioGain"] = 39,
         ["SetSettingsVisible"] = 40,
-        ["FlashbackAction"] = 41
+        ["FlashbackAction"] = 41,
+        ["FlashbackExport"] = 42,
+        ["FlashbackGetSegments"] = 43,
+        ["VerifyFile"] = 44
     };
 
     public async Task<JsonElement> SendCommandAsync(

@@ -208,6 +208,13 @@ public static class ResponseFormatter
         return Math.Max(0, Environment.TickCount64 - tickMs);
     }
 
+    public static bool IsSuccess(JsonElement response)
+    {
+        return response.ValueKind == JsonValueKind.Object &&
+               response.TryGetProperty("Success", out var success) &&
+               success.ValueKind == JsonValueKind.True;
+    }
+
     public static string Get(JsonElement el, string prop, string fallback = "N/A")
     {
         if (el.ValueKind != JsonValueKind.Object || !el.TryGetProperty(prop, out var value))

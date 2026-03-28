@@ -20,7 +20,7 @@ public static class PerformanceTimelineTool
         };
 
         var response = await pipeClient.SendCommandAsync("GetPerformanceTimeline", payload).ConfigureAwait(false);
-        if (!IsSuccess(response))
+        if (!ResponseFormatter.IsSuccess(response))
         {
             return GetMessage(response);
         }
@@ -104,13 +104,6 @@ public static class PerformanceTimelineTool
         }
 
         return builder.ToString().TrimEnd();
-    }
-
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
     }
 
     private static string GetMessage(JsonElement response)

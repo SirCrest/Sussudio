@@ -11,7 +11,7 @@ public static class CaptureOptionsTool
     public static async Task<object> get_capture_options(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("GetCaptureOptions").ConfigureAwait(false);
-        if (!IsSuccess(response))
+        if (!ResponseFormatter.IsSuccess(response))
         {
             return CreateError(response);
         }
@@ -26,13 +26,6 @@ public static class CaptureOptionsTool
             success = false,
             message = "Capture options data was not available."
         };
-    }
-
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
     }
 
     private static object CreateError(JsonElement response)

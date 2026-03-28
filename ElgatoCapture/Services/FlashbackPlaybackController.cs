@@ -458,27 +458,24 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             SetState(FlashbackPlaybackState.Live);
                             break;
                         }
-                        if (decoder.IsOpen)
+                        var seekTarget = PlaybackPosition + frozenValidStart;
+                        if (State == FlashbackPlaybackState.Paused && prevFile == _currentOpenFilePath)
                         {
-                            var seekTarget = PlaybackPosition + frozenValidStart;
-                            if (State == FlashbackPlaybackState.Paused && prevFile == _currentOpenFilePath)
-                            {
-                                // Resume from Paused — decoder is already positioned at the
-                                // correct frame (set by Pause or scrub). Skip the expensive
-                                // re-seek which flushes codec state and decodes forward from
-                                // a keyframe, potentially landing on a different frame.
-                                Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, seekTarget.Ticks);
-                                Logger.Log($"FLASHBACK_PLAYBACK_RESUME_NO_SEEK pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
-                            }
-                            else
-                            {
-                                // Playing from Live or file changed — full seek required
-                                decoder.AudioChunkCallback = null;
-                                Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, seekTarget.Ticks);
-                                decoder.SeekTo(seekTarget);
-                            }
-                            frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
+                            // Resume from Paused — decoder is already positioned at the
+                            // correct frame (set by Pause or scrub). Skip the expensive
+                            // re-seek which flushes codec state and decodes forward from
+                            // a keyframe, potentially landing on a different frame.
+                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, seekTarget.Ticks);
+                            Logger.Log($"FLASHBACK_PLAYBACK_RESUME_NO_SEEK pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
                         }
+                        else
+                        {
+                            // Playing from Live or file changed — full seek required
+                            decoder.AudioChunkCallback = null;
+                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, seekTarget.Ticks);
+                            decoder.SeekTo(seekTarget);
+                        }
+                        frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
                         RestoreAudioCallback(decoder);
                         _audioPlayback?.Flush();
                         _audioPlayback?.ResumeRendering();

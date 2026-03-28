@@ -15,14 +15,14 @@ public static class Logger
 {
     private static readonly string LogFilePath = RuntimePaths.GetRepoLogFile("ElgatoCapture_Debug.log");
 
-    private static readonly object _lockObject = new();
-    private static readonly Channel<string> _logChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(8192)
+    private static readonly object LockObject = new();
+    private static readonly Channel<string> LogChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(8192)
     {
         SingleReader = true,
         SingleWriter = false,
         FullMode = BoundedChannelFullMode.Wait
     });
-    private static readonly CancellationTokenSource _logWriterCancellation = new();
+    private static readonly CancellationTokenSource LogWriterCancellation = new();
     public static bool VerboseEnabled { get; set; }
     private static int _systemInfoLogged;
     private static long _droppedLogMessages;
@@ -53,7 +53,7 @@ public static class Logger
         // Write to debug output
         System.Diagnostics.Debug.WriteLine(logMessage.TrimEnd());
 
-        if (_logChannel.Writer.TryWrite(logMessage))
+        if (LogChannel.Writer.TryWrite(logMessage))
         {
             return;
         }
@@ -143,9 +143,9 @@ public static class Logger
     {
         try
         {
-            while (await _logChannel.Reader.WaitToReadAsync(_logWriterCancellation.Token))
+            while (await LogChannel.Reader.WaitToReadAsync(LogWriterCancellation.Token))
             {
-                while (_logChannel.Reader.TryRead(out var entry))
+                while (LogChannel.Reader.TryRead(out var entry))
                 {
                     WriteDirect(entry);
                 }
@@ -165,7 +165,7 @@ public static class Logger
     {
         try
         {
-            lock (_lockObject)
+            lock (LockObject)
             {
                 File.AppendAllText(LogFilePath, entry);
             }

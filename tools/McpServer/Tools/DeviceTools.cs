@@ -81,15 +81,9 @@ public static class DeviceTools
         int? responseTimeoutMs = null)
     {
         var response = await pipeClient.SendCommandAsync(commandName, payload, responseTimeoutMs).ConfigureAwait(false);
-        var status = IsSuccess(response) ? "OK" : "ERROR";
+        var status = ResponseFormatter.IsSuccess(response) ? "OK" : "ERROR";
         var message = ResponseFormatter.Get(response, "Message", "No message.");
         return $"[{status}] {label}: {message}";
     }
 
-    private static bool IsSuccess(JsonElement response)
-    {
-        return response.ValueKind == JsonValueKind.Object &&
-               response.TryGetProperty("Success", out var success) &&
-               success.ValueKind == JsonValueKind.True;
-    }
 }
