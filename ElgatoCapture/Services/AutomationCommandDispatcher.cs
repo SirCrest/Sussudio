@@ -53,7 +53,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             var authorized = IsAuthorized(request);
             if (request.Command == AutomationCommandKind.Authenticate)
             {
-                return CreateSuccessResponse(
+                return CreateResponse(
                     correlationId,
                     authorized
                         ? "Authentication accepted."
@@ -66,7 +66,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
             if (!authorized)
             {
-                return CreateSuccessResponse(
+                return CreateResponse(
                     correlationId,
                     "Unauthorized command request.",
                     errorCode: "unauthorized",
@@ -77,7 +77,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
             if (RequiresReadyDevices(request.Command) && !IsAutomationReady())
             {
-                return CreateSuccessResponse(
+                return CreateResponse(
                     correlationId,
                     "Automation is still initializing devices; retry shortly.",
                     errorCode: "not-ready",
@@ -90,13 +90,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             switch (request.Command)
             {
                 case AutomationCommandKind.GetSnapshot:
-                    return CreateSuccessResponse(correlationId, "Snapshot retrieved.");
+                    return CreateResponse(correlationId, "Snapshot retrieved.");
 
                 case AutomationCommandKind.GetDiagnostics:
                 {
                     var maxEvents = GetInt(payload, "maxEvents") ?? 100;
                     var events = _diagnosticsHub.GetRecentEvents(maxEvents);
-                    return CreateSuccessResponse(correlationId, "Diagnostics retrieved.", data: events);
+                    return CreateResponse(correlationId, "Diagnostics retrieved.", data: events);
                 }
 
                 case AutomationCommandKind.RefreshDevices:
@@ -150,7 +150,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 case AutomationCommandKind.GetCaptureOptions:
                 {
                     var options = await _viewModel.GetAutomationOptionsSnapshotAsync(cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(correlationId, "Capture options retrieved.", data: options);
+                    return CreateResponse(correlationId, "Capture options retrieved.", data: options);
                 }
 
                 case AutomationCommandKind.SetPreset:
@@ -263,7 +263,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var seconds = GetDouble(payload, "seconds") ?? 300;
                     var outputPath = RequireString(payload, "outputPath");
                     var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(
+                    return CreateResponse(
                         correlationId,
                         exportResult.StatusMessage ?? (exportResult.Succeeded ? "Export complete." : "Export failed."),
                         data: new
@@ -281,7 +281,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 case AutomationCommandKind.FlashbackGetSegments:
                 {
                     var segments = _viewModel.GetFlashbackSegments();
-                    return CreateSuccessResponse(
+                    return CreateResponse(
                         correlationId,
                         $"Found {segments.Count} segment(s).",
                         data: new { Segments = segments });
@@ -293,7 +293,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var verifyStartedAt = Stopwatch.GetTimestamp();
                     var verification = await _diagnosticsHub.VerifyFileAsync(filePath, cancellationToken).ConfigureAwait(false);
                     var elapsedMs = (long)Math.Round(Stopwatch.GetElapsedTime(verifyStartedAt).TotalMilliseconds);
-                    return CreateSuccessResponse(
+                    return CreateResponse(
                         correlationId,
                         verification.Message,
                         data: new
@@ -401,7 +401,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                         if (!armed)
                         {
-                            return CreateSuccessResponse(
+                            return CreateResponse(
                                 correlationId,
                                 "Window close is disallowed until ArmClose is requested.",
                                 errorCode: "window-close-not-armed",
@@ -440,7 +440,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var pollMs = Math.Clamp(GetInt(payload, "pollMs") ?? DefaultWaitPollMs, 50, 5_000);
                     var met = await WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken).ConfigureAwait(false);
 
-                    return CreateSuccessResponse(
+                    return CreateResponse(
                         correlationId,
                         met
                             ? $"Condition met: {condition}."
@@ -462,7 +462,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var verifyStartedAt = Stopwatch.GetTimestamp();
                     var verification = await _diagnosticsHub.VerifyLastRecordingAsync(cancellationToken).ConfigureAwait(false);
                     var elapsedMs = (long)Math.Round(Stopwatch.GetElapsedTime(verifyStartedAt).TotalMilliseconds);
-                    return CreateSuccessResponse(
+                    return CreateResponse(
                         correlationId,
                         verification.Message,
                         data: new
@@ -490,7 +490,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     }
 
                     var passed = failures.Count == 0;
-                    return CreateSuccessResponse(
+                    return CreateResponse(
                         correlationId,
                         passed
                             ? $"All {assertions.Count} snapshot assertions passed."
@@ -509,13 +509,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 case AutomationCommandKind.ProbeVideoSource:
                 {
                     var result = _viewModel.ProbeVideoSource();
-                    return CreateSuccessResponse(correlationId, "Video source probe completed.", data: result);
+                    return CreateResponse(correlationId, "Video source probe completed.", data: result);
                 }
 
                 case AutomationCommandKind.ProbePreviewColor:
                 {
                     var result = _viewModel.ProbePreviewColor();
-                    return CreateSuccessResponse(correlationId, "Preview color probe completed.", data: result);
+                    return CreateResponse(correlationId, "Preview color probe completed.", data: result);
                 }
 
                 case AutomationCommandKind.CapturePreviewFrame:
@@ -523,7 +523,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var outputPath = GetString(payload, "outputPath")
                         ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp");
                     var result = await _viewModel.CapturePreviewFrameAsync(outputPath).ConfigureAwait(false);
-                    return CreateSuccessResponse(
+                    return CreateResponse(
                         correlationId,
                         result.Message,
                         data: result,
@@ -537,7 +537,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var outputPath = GetString(payload, "outputPath")
                         ?? Path.Combine(Path.GetTempPath(), $"window_screenshot_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.png");
                     var result = await _windowControl.CaptureWindowScreenshotAsync(outputPath, cancellationToken).ConfigureAwait(false);
-                    return CreateSuccessResponse(
+                    return CreateResponse(
                         correlationId,
                         result.Message,
                         data: result,
@@ -550,11 +550,11 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 {
                     var maxEntries = GetInt(payload, "maxEntries") ?? 240;
                     var timeline = _diagnosticsHub.GetPerformanceTimeline(maxEntries);
-                    return CreateSuccessResponse(correlationId, "Performance timeline retrieved.", data: timeline);
+                    return CreateResponse(correlationId, "Performance timeline retrieved.", data: timeline);
                 }
 
                 default:
-                    return CreateSuccessResponse(
+                    return CreateResponse(
                         correlationId,
                         $"Unsupported command: {request.Command}",
                         errorCode: "unsupported-command",
@@ -564,7 +564,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         }
         catch (OperationCanceledException)
         {
-            return CreateSuccessResponse(
+            return CreateResponse(
                 correlationId,
                 "Command canceled.",
                 errorCode: "canceled",
@@ -582,7 +582,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 ? $"{ex.GetType().Name} occurred while executing {request.Command}."
                 : ex.Message;
 
-            return CreateSuccessResponse(
+            return CreateResponse(
                 correlationId,
                 message,
                 errorCode: "command-failed",
@@ -592,7 +592,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         }
     }
 
-    private AutomationCommandResponse CreateSuccessResponse(
+    private AutomationCommandResponse CreateResponse(
         string correlationId,
         string message,
         object? data = null,
@@ -626,7 +626,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         object? data = null,
         bool includeSnapshot = true)
     {
-        return CreateSuccessResponse(
+        return CreateResponse(
             correlationId,
             message,
             data: data,

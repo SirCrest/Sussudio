@@ -425,7 +425,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             _emitSignal.WaitOne(50);
 
             var emittedAny = DrainReadyFrames();
-            DetectAndHandleStall(emittedAny);
+            DetectAndResetStall(emittedAny);
         }
 
         DrainReadyFrames();
@@ -482,7 +482,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         return emittedAny;
     }
 
-    private void DetectAndHandleStall(bool emittedAny)
+    private void DetectAndResetStall(bool emittedAny)
     {
         var depth = Volatile.Read(ref _reorderBufferDepth);
         if (emittedAny || depth <= _decoderCount * 2)
