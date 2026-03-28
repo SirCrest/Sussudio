@@ -40,7 +40,7 @@ public static class Logger
             File.WriteAllText(LogFilePath, $"=== ElgatoCapture Debug Log ===\n");
             File.AppendAllText(LogFilePath, $"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n\n");
         }
-        catch { }
+        catch { /* Best-effort: Logger init must not throw — if the log file is locked we proceed without it */ }
 
         _ = Task.Run(RunLogWriterAsync);
     }

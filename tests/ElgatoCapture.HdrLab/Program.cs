@@ -6,7 +6,6 @@ using Windows.Graphics.Imaging;
 using Windows.Media.Capture;
 using Windows.Media.Capture.Frames;
 using Windows.Media.MediaProperties;
-using WinRT;
 
 internal static class Program
 {

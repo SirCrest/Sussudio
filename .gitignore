@@ -56,3 +56,4 @@ artifacts/
 temp/*
 !temp/.gitkeep
 ElgatoCapture/ffmpeg/*.dll
+.desloppify/

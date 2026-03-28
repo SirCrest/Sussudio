@@ -657,7 +657,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_FAIL error='{ex.Message}' — falling back to full teardown");
-            try { newSink.Dispose(); } catch { }
+            try { newSink.Dispose(); } catch { /* Best-effort: dispose during error recovery must not mask the cycle failure */ }
             _flashbackSink = null;
 
             // Full teardown and rebuild

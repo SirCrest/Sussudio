@@ -896,7 +896,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private void SignalWork()
     {
         try { _workAvailable.Release(); }
-        catch (SemaphoreFullException) { }
+        catch (SemaphoreFullException) { /* Best-effort: semaphore already signaled — work loop will pick it up */ }
     }
 
     private bool TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)

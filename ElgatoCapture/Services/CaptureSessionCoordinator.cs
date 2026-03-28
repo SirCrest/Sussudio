@@ -347,6 +347,7 @@ public sealed class CaptureSessionCoordinator : ICaptureSessionCoordinator
                 }
                 catch (ObjectDisposedException)
                 {
+                    // Best-effort: CTS may already be disposed if worker completed before continuation ran
                 }
             },
             _workerCancellation,

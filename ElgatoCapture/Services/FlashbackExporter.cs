@@ -104,7 +104,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         // Signal any running export to cancel — ExportCore/ExportSegmentsCore will exit
         // via OperationCanceledException, clean up native state in their own finally block,
         // and release _exportLock before we acquire it.
-        try { _disposeCts?.Cancel(); } catch (ObjectDisposedException) { }
+        try { _disposeCts?.Cancel(); } catch (ObjectDisposedException) { /* Best-effort: CTS may already be disposed if Dispose races */ }
 
         _exportLock.Wait(TimeSpan.FromSeconds(5));
         try
@@ -500,7 +500,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         foreach (var segPath in segmentPaths)
         {
             try { if (File.Exists(segPath)) totalEstimatedBytes += new FileInfo(segPath).Length; }
-            catch { /* ignore */ }
+            catch { /* Best-effort: segment may be deleted mid-scan; progress estimate is non-critical */ }
         }
 
         _exportLock.Wait(ct);
@@ -787,7 +787,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
                     // Track bytes for progress
                     try { if (File.Exists(segPath)) bytesProcessed += new FileInfo(segPath).Length; }
-                    catch { /* ignore */ }
+                    catch { /* Best-effort: segment may be deleted mid-export; progress tracking is non-critical */ }
 
                     // Close this segment's input
                     CloseActiveInput();
