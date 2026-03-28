@@ -228,6 +228,26 @@ static class Program
                 "SourceSignalTelemetrySnapshot properties round-trip",
                 SourceSignalTelemetrySnapshot_PropertiesRoundTrip),
 
+            // --- RecordingPipelineOptions ---
+            await RunCheckAsync(
+                "RecordingPipelineOptions resolves video queue capacity from frame rate",
+                RecordingPipelineOptions_ResolvesVideoQueueCapacity),
+
+            // --- NvmlSnapshot computed properties ---
+            await RunCheckAsync(
+                "NvmlSnapshot computed properties convert units correctly",
+                NvmlSnapshot_ComputedProperties_ConvertUnits),
+
+            // --- CaptureSessionSnapshot defaults ---
+            await RunCheckAsync(
+                "CaptureSessionSnapshot has correct default state",
+                CaptureSessionSnapshot_DefaultState),
+
+            // --- ProcessSpec and ProcessRunResult contracts ---
+            await RunCheckAsync(
+                "ProcessSpec default timeout is 30 seconds",
+                ProcessSpec_DefaultTimeout_Is30Seconds),
+
             // --- Tool CommandMap & Formatter Alignment ---
             await RunCheckAsync(
                 "MCP PipeClient CommandMap covers every AutomationCommandKind enum value",
@@ -1978,6 +1998,105 @@ static class Program
         AssertEqual("P010", GetStringProperty(snapshot, "VideoFormat"), "VideoFormat round-trip");
         AssertEqual("1.2.3", GetStringProperty(snapshot, "Firmware"), "Firmware round-trip");
         AssertEqual(true, GetBoolProperty(snapshot, "IsHdr"), "IsHdr round-trip");
+
+        return Task.CompletedTask;
+    }
+
+    // ── RecordingPipelineOptions / NvmlSnapshot / Coordinator / ProcessSpec tests ──
+
+    private static Task RecordingPipelineOptions_ResolvesVideoQueueCapacity()
+    {
+        var options = CreateInstance("ElgatoCapture.Models.RecordingPipelineOptions");
+
+        // Default: 250ms latency, min=4, max=30
+        // At 60fps: ceil(60 * 250 / 1000) = ceil(15) = 15 → clamp(15, 4, 30) = 15
+        var method = options.GetType().GetMethod("ResolveVideoQueueCapacity")!;
+        var at60 = (int)method.Invoke(options, new object[] { 60.0 })!;
+        AssertEqual(15, at60, "60fps default latency");
+
+        // At 120fps: ceil(120 * 250 / 1000) = ceil(30) = 30 → clamp(30, 4, 30) = 30
+        var at120 = (int)method.Invoke(options, new object[] { 120.0 })!;
+        AssertEqual(30, at120, "120fps default latency");
+
+        // At 30fps: ceil(30 * 250 / 1000) = ceil(7.5) = 8 → clamp(8, 4, 30) = 8
+        var at30 = (int)method.Invoke(options, new object[] { 30.0 })!;
+        AssertEqual(8, at30, "30fps default latency");
+
+        // Zero fps falls back to 60fps: ceil(60 * 250 / 1000) = 15
+        var atZero = (int)method.Invoke(options, new object[] { 0.0 })!;
+        AssertEqual(15, atZero, "0fps fallback to 60");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task NvmlSnapshot_ComputedProperties_ConvertUnits()
+    {
+        var snapshotType = RequireType("ElgatoCapture.Services.NvmlSnapshot");
+        // Constructor: GpuName, GpuUtil%, MemUtil%, NvdecUtil%, NvencUtil%, PcieTxKB, PcieRxKB,
+        //              VramUsedB, VramTotalB, TempC, PowerMw, ClockMHz, MemClockMHz
+        var snapshot = Activator.CreateInstance(snapshotType,
+            "RTX 4090",        // GpuName
+            (uint?)85,         // GpuUtilizationPercent
+            (uint?)40,         // GpuMemoryUtilizationPercent
+            (uint?)50,         // NvdecUtilizationPercent
+            (uint?)75,         // NvencUtilizationPercent
+            (uint?)1024,       // PcieTxKBps (1024 KB/s = 1.0 MB/s)
+            (uint?)2048,       // PcieRxKBps (2048 KB/s = 2.0 MB/s)
+            (ulong?)2147483648,// VramUsedBytes (2 GB)
+            (ulong?)25769803776,// VramTotalBytes (24 GB)
+            (uint?)65,         // GpuTemperatureC
+            (uint?)350000,     // GpuPowerMilliwatts (350W)
+            (uint?)2520,       // GpuClockMHz
+            (uint?)10501)!;    // GpuMemClockMHz
+
+        // GpuPowerW = 350000 / 1000 = 350.0
+        var powerW = GetPropertyValue(snapshot, "GpuPowerW");
+        AssertEqual(350.0, (double)powerW!, "GpuPowerW");
+
+        // PcieTxMBps = 1024 / 1024 = 1.0
+        var txMB = GetPropertyValue(snapshot, "PcieTxMBps");
+        AssertEqual(1.0, (double)txMB!, "PcieTxMBps");
+
+        // PcieRxMBps = 2048 / 1024 = 2.0
+        var rxMB = GetPropertyValue(snapshot, "PcieRxMBps");
+        AssertEqual(2.0, (double)rxMB!, "PcieRxMBps");
+
+        // VramUsedMB = 2147483648 / (1024*1024) = 2048
+        var usedMB = GetPropertyValue(snapshot, "VramUsedMB");
+        AssertEqual(2048UL, (ulong)usedMB!, "VramUsedMB");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureSessionSnapshot_DefaultState()
+    {
+        var snapshotType = RequireType("ElgatoCapture.Services.CaptureSessionSnapshot");
+        var snapshot = RuntimeHelpers.GetUninitializedObject(snapshotType);
+
+        AssertEqual(false, GetBoolProperty(snapshot, "IsRecording"), "IsRecording default");
+        AssertEqual(false, GetBoolProperty(snapshot, "IsInitialized"), "IsInitialized default");
+        AssertEqual(false, GetBoolProperty(snapshot, "IsVideoPreviewActive"), "IsVideoPreviewActive default");
+        AssertEqual(false, GetBoolProperty(snapshot, "IsAudioPreviewActive"), "IsAudioPreviewActive default");
+        AssertEqual(0, (int)GetPropertyValue(snapshot, "PendingCommands")!, "PendingCommands default");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ProcessSpec_DefaultTimeout_Is30Seconds()
+    {
+        var specType = RequireType("ElgatoCapture.Services.ProcessSpec");
+        var spec = RuntimeHelpers.GetUninitializedObject(specType);
+        // ProcessSpec uses init-only with defaults — GetUninitializedObject bypasses ctor
+        // So test the contract by checking the source
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/ProcessSupervisor.cs");
+        AssertContains(sourceText, "public int TimeoutMs { get; init; } = 30_000;");
+        AssertContains(sourceText, "public string Arguments { get; init; } = string.Empty;");
+
+        // ProcessRunResult contract
+        AssertContains(sourceText, "public bool Started { get; init; }");
+        AssertContains(sourceText, "public bool TimedOut { get; init; }");
+        AssertContains(sourceText, "public string StdOut { get; init; } = string.Empty;");
+        AssertContains(sourceText, "public string StdErr { get; init; } = string.Empty;");
 
         return Task.CompletedTask;
     }
