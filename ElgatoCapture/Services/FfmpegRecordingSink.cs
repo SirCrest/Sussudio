@@ -185,7 +185,7 @@ public sealed class FfmpegRecordingSink : IRecordingSink
             catch (OperationCanceledException)
             {
                 Logger.Log($"Audio encoder wait timed out after {sw.ElapsedMilliseconds}ms — killing");
-                try { _audioEncoderProcess.Kill(); } catch { /* best-effort */ }
+                try { _audioEncoderProcess.Kill(); } catch { /* Best-effort: process may have already exited */ }
                 FinalizeResult = FinalizeResult.Failure(
                     outputPath,
                     "Stopped (audio encoder timed out)");

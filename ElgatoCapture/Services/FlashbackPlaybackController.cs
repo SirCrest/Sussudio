@@ -291,7 +291,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });
         _commandChannel.Writer.TryComplete();
 
-        try { _playCts?.Cancel(); } catch { /* best effort */ }
+        try { _playCts?.Cancel(); } catch { /* Best-effort: CTS cancel during stop must not prevent thread join */ }
 
         var thread = _playbackThread;
         if (thread is { IsAlive: true })
@@ -576,8 +576,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             Logger.Log($"FLASHBACK_PLAYBACK_FATAL error='{ex.Message}'");
             CleanupDecoder(ref decoder, ref fileOpen);
-            try { RestoreLiveAudio(); } catch { /* best effort */ }
-            try { _videoCapture?.ResumePreviewSubmission(); } catch { /* best effort */ }
+            try { RestoreLiveAudio(); } catch { /* Best-effort: restore audio during fatal error recovery — already logged above */ }
+            try { _videoCapture?.ResumePreviewSubmission(); } catch { /* Best-effort: resume preview during fatal error recovery — already logged above */ }
             SetState(FlashbackPlaybackState.Live);
         }
         finally
