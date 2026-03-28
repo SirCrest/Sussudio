@@ -15,7 +15,7 @@ using Windows.Storage.Pickers;
 
 namespace ElgatoCapture.ViewModels;
 
-public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable
+public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable, IAutomationViewModel
 {
     private readonly DeviceService _deviceService;
     private readonly CaptureService _captureService;
@@ -627,7 +627,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
-    internal async Task<FinalizeResult> ExportFlashbackAutomationAsync(
+    public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
         double seconds, string outputPath, CancellationToken ct)
     {
         IsFlashbackExporting = true;
@@ -648,7 +648,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
-    internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
+    public IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
         => _captureService.GetFlashbackSegments();
 
     public void SetFlashbackEnabled(bool enabled) => _captureService.SetFlashbackEnabled(enabled);

@@ -9,13 +9,12 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.ViewModels;
 
 namespace ElgatoCapture.Services;
 
 public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 {
-    private readonly MainViewModel _viewModel;
+    private readonly IAutomationViewModel _viewModel;
     private readonly IAutomationDiagnosticsHub _diagnosticsHub;
     private readonly IAutomationWindowControl _windowControl;
     private readonly string? _authToken;
@@ -28,7 +27,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     private const int DefaultWaitPollMs = 250;
 
     public AutomationCommandDispatcher(
-        MainViewModel viewModel,
+        IAutomationViewModel viewModel,
         IAutomationDiagnosticsHub diagnosticsHub,
         IAutomationWindowControl windowControl,
         string? authToken = null)

@@ -6,13 +6,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.ViewModels;
 
 namespace ElgatoCapture.Services;
 
 public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 {
-    private readonly MainViewModel _viewModel;
+    private readonly IAutomationViewModel _viewModel;
     private readonly Func<CancellationToken, Task<PreviewRuntimeSnapshot>> _previewSnapshotProvider;
     private readonly IRecordingVerifier _recordingVerifier;
     private readonly object _stateLock = new();
@@ -56,7 +55,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     public event EventHandler<AutomationSnapshot>? SnapshotUpdated;
 
     public AutomationDiagnosticsHub(
-        MainViewModel viewModel,
+        IAutomationViewModel viewModel,
         Func<CancellationToken, Task<PreviewRuntimeSnapshot>> previewSnapshotProvider,
         IRecordingVerifier recordingVerifier)
     {
