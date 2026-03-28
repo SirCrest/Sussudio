@@ -267,15 +267,7 @@ public sealed partial class StatsWindow : Window
     }
 
     private static string FormatSourceHdr(bool? isHdr, string? colorimetry)
-    {
-        return isHdr switch
-        {
-            true when !string.IsNullOrWhiteSpace(colorimetry) => $"On ({colorimetry})",
-            true => "On",
-            false => "Off",
-            _ => "\u2014"
-        };
-    }
+        => DisplayFormatters.FormatSourceHdr(isHdr, colorimetry);
 
     private static double Sanitize(double value)
     {

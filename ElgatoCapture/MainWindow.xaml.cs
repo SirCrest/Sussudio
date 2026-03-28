@@ -3133,15 +3133,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     }
 
     private static string FormatSourceHdr(bool? isHdr, string? colorimetry)
-    {
-        return isHdr switch
-        {
-            true when !string.IsNullOrWhiteSpace(colorimetry) => $"On ({colorimetry})",
-            true => "On",
-            false => "Off",
-            _ => "\u2014"
-        };
-    }
+        => DisplayFormatters.FormatSourceHdr(isHdr, colorimetry);
 
     private static string FormatMs(double value)
     {

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using ElgatoCapture.Models;
 using ElgatoCapture.Services;
 using Microsoft.UI.Dispatching;
@@ -4605,17 +4604,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private async Task InitializeDeviceAsync()
     {
         Logger.Log("=== InitializeDeviceAsync BEGIN ===");
-        System.Diagnostics.Debug.WriteLine("=== InitializeDeviceAsync BEGIN ===");
 
         if (SelectedDevice == null)
         {
             Logger.Log("ERROR: SelectedDevice is NULL");
-            System.Diagnostics.Debug.WriteLine("ERROR: SelectedDevice is NULL");
             return;
         }
 
         Logger.Log($"Device: {SelectedDevice.Name} (ID: {SelectedDevice.Id})");
-        System.Diagnostics.Debug.WriteLine($"Device: {SelectedDevice.Name} (ID: {SelectedDevice.Id})");
 
         try
         {
@@ -4623,12 +4619,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             var settings = BuildCaptureSettings();
             Logger.Log($"Settings: {settings.Width}x{settings.Height} @ {settings.FrameRate}fps");
             Logger.Log($"Format: {settings.Format}, HDR: {settings.HdrEnabled}, Audio: {settings.AudioEnabled}");
-            System.Diagnostics.Debug.WriteLine($"Settings: {settings.Width}x{settings.Height} @ {settings.FrameRate}fps");
-            System.Diagnostics.Debug.WriteLine($"Format: {settings.Format}, HDR: {settings.HdrEnabled}, Audio: {settings.AudioEnabled}");
 
             await _sessionCoordinator.InitializeAsync(SelectedDevice, settings);
-            Logger.Log("✓ CaptureService initialized");
-            System.Diagnostics.Debug.WriteLine("✓ CaptureService initialized");
+            Logger.Log("CaptureService initialized");
 
             IsInitialized = true;
             StatusText = "Device ready";
@@ -4636,15 +4629,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         catch (Exception ex)
         {
             Logger.LogException(ex);
-            System.Diagnostics.Debug.WriteLine($"✗ EXCEPTION: {ex.GetType().Name}");
-            System.Diagnostics.Debug.WriteLine($"  Message: {ex.Message}");
-            System.Diagnostics.Debug.WriteLine($"  StackTrace: {ex.StackTrace}");
             StatusText = $"Failed to initialize: {ex.Message}";
             IsInitialized = false;
         }
 
         Logger.Log("=== InitializeDeviceAsync END ===");
-        System.Diagnostics.Debug.WriteLine("=== InitializeDeviceAsync END ===");
     }
 
     public async Task StartPreviewAsync(bool userInitiated = true)
@@ -4655,20 +4644,15 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
 
         PreviewStartRequested?.Invoke(this, EventArgs.Empty);
-        Logger.Log("=== StartPreviewAsync (ViewModel) BEGIN ===");
-        Logger.Log($"IsInitialized: {IsInitialized}");
-        System.Diagnostics.Debug.WriteLine("=== StartPreviewAsync (ViewModel) BEGIN ===");
-        System.Diagnostics.Debug.WriteLine($"IsInitialized: {IsInitialized}");
+        Logger.Log($"StartPreviewAsync BEGIN IsInitialized={IsInitialized}");
 
         if (!IsInitialized)
         {
             Logger.Log("Device not initialized, initializing now...");
-            System.Diagnostics.Debug.WriteLine("Device not initialized, initializing now...");
             await InitializeDeviceAsync();
         }
 
         Logger.Log($"After initialization - IsInitialized: {IsInitialized}");
-        System.Diagnostics.Debug.WriteLine($"After initialization - IsInitialized: {IsInitialized}");
 
         if (IsInitialized)
         {
@@ -4676,11 +4660,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             await _sessionCoordinator.StartVideoPreviewAsync(settings).ConfigureAwait(true);
 
             Logger.Log("Setting IsPreviewing = true");
-            System.Diagnostics.Debug.WriteLine("Setting IsPreviewing = true");
             IsPreviewing = true;
             StatusText = "Preview starting...";
 
-            // Start audio preview if enabled
             if (IsAudioPreviewEnabled && IsAudioEnabled)
             {
                 Logger.Log("Starting audio preview...");
@@ -4691,13 +4673,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
         else
         {
-            Logger.Log("✗ Cannot start preview - device not initialized");
-            System.Diagnostics.Debug.WriteLine("✗ Cannot start preview - device not initialized");
+            Logger.Log("Cannot start preview - device not initialized");
             StatusText = "Cannot start preview - device not initialized";
         }
 
-        Logger.Log("=== StartPreviewAsync (ViewModel) END ===");
-        System.Diagnostics.Debug.WriteLine("=== StartPreviewAsync (ViewModel) END ===");
+        Logger.Log("StartPreviewAsync END");
     }
 
     public async Task StopPreviewAsync(bool userInitiated = true)

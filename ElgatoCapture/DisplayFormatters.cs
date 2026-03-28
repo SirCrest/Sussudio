@@ -1,0 +1,15 @@
+namespace ElgatoCapture;
+
+internal static class DisplayFormatters
+{
+    public static string FormatSourceHdr(bool? isHdr, string? colorimetry)
+    {
+        return isHdr switch
+        {
+            true when !string.IsNullOrWhiteSpace(colorimetry) => $"On ({colorimetry})",
+            true => "On",
+            false => "Off",
+            _ => "\u2014"
+        };
+    }
+}
