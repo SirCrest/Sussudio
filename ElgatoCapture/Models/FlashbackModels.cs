@@ -32,7 +32,7 @@ internal sealed record FlashbackSegment
     public required long FileSizeBytes { get; init; }
     public required DateTimeOffset CreatedUtc { get; init; }
     public required bool HasAudio { get; init; }
-    public FlashbackSegmentState State { get; set; } = FlashbackSegmentState.Buffer;
+    public FlashbackSegmentState State { get; init; } = FlashbackSegmentState.Buffer;
 }
 
 internal enum FlashbackSegmentState
