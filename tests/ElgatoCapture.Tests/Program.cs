@@ -1053,8 +1053,8 @@ static class Program
 
     private static Task AutomationPreviewVolume_PersistsThroughSettingsPath()
     {
-        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        AssertContains(mainViewModelText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
+        var automationText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Automation.cs").Replace("\r\n", "\n");
+        AssertContains(automationText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
         return Task.CompletedTask;
     }
 
@@ -1102,11 +1102,11 @@ static class Program
     private static Task DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll()
     {
         var diagnosticsHubText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationDiagnosticsHub.cs");
-        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs");
+        var automationText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Automation.cs");
 
         AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
         AssertDoesNotContain(diagnosticsHubText, "Options = optionsSnapshot");
-        AssertContains(mainViewModelText, "GetAutomationOptionsSnapshotAsync");
+        AssertContains(automationText, "GetAutomationOptionsSnapshotAsync");
 
         return Task.CompletedTask;
     }
