@@ -169,6 +169,20 @@ static class Program
                 "MJPEG HFR mode requires SDR and MJPG pixel format",
                 CaptureSettings_MjpegHfrMode_RequiresSdrAndMjpgPixelFormat),
 
+            // --- FlashbackBufferManager ---
+            await RunCheckAsync(
+                "FlashbackBufferManager segment lookup returns correct file for position",
+                FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment),
+            await RunCheckAsync(
+                "FlashbackBufferManager GetNextSegmentFile walks forward through segments",
+                FlashbackBufferManager_GetNextSegmentFile_WalksForward),
+            await RunCheckAsync(
+                "FlashbackBufferManager GetValidSegmentPaths returns overlapping segments",
+                FlashbackBufferManager_GetValidSegmentPaths_ReturnsOverlapping),
+            await RunCheckAsync(
+                "FlashbackBufferManager eviction pause and resume are balanced",
+                FlashbackBufferManager_EvictionPauseResume_Balanced),
+
             // --- GpuPipelineHandles ---
             await RunCheckAsync(
                 "GpuPipelineHandles.None returns zeroed struct",
@@ -1522,6 +1536,161 @@ static class Program
         // SDR + MJPG + 1080p60 → false (too low res/fps)
         var result4 = (bool)method.Invoke(null, new object?[] { "MJPG", 1920u, 1080u, 60.0, false, false })!;
         AssertEqual(false, result4, "1080p60 should not be HFR");
+
+        return Task.CompletedTask;
+    }
+
+    // ── FlashbackBufferManager tests ──
+
+    private static object CreateInitializedBufferManager(string tempDir)
+    {
+        var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+        var options = RuntimeHelpers.GetUninitializedObject(optionsType);
+        SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
+        SetPropertyBackingField(options, "TempDirectory", tempDir);
+        SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
+
+        var managerType = RequireType("ElgatoCapture.Services.FlashbackBufferManager");
+        var manager = RuntimeHelpers.GetUninitializedObject(managerType);
+        SetPrivateField(manager, "_options", options);
+        SetPrivateField(manager, "_indexLock", new object());
+        SetPrivateField(manager, "_sessionId", "test-session");
+        SetPrivateField(manager, "_activeSegmentPath", Path.Combine(tempDir, "fb_test_0003.ts"));
+        SetPrivateField(manager, "_nextSegmentIndex", 4);
+
+        // Initialize the completed segments list via reflection
+        var listType = managerType.GetField("_completedSegments", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var list = listType.GetValue(manager);
+        if (list == null)
+        {
+            // GetUninitializedObject skips ctor — create the list
+            var csType = managerType.GetNestedType("CompletedSegment", BindingFlags.NonPublic)!;
+            var listGenericType = typeof(List<>).MakeGenericType(csType);
+            list = Activator.CreateInstance(listGenericType)!;
+            listType.SetValue(manager, list);
+        }
+
+        return manager;
+    }
+
+    private static void AddCompletedSegment(object manager, string path, TimeSpan startPts, TimeSpan endPts, long sizeBytes)
+    {
+        var managerType = manager.GetType();
+        var csType = managerType.GetNestedType("CompletedSegment", BindingFlags.NonPublic)!;
+        var listField = managerType.GetField("_completedSegments", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var list = listField.GetValue(manager)!;
+        var addMethod = list.GetType().GetMethod("Add")!;
+
+        var countProp = list.GetType().GetProperty("Count")!;
+        var seqNum = (int)countProp.GetValue(list)!;
+
+        var segment = Activator.CreateInstance(csType, path, seqNum, startPts, endPts, sizeBytes)!;
+        addMethod.Invoke(list, new[] { segment });
+    }
+
+    private static Task FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        // Add 3 segments: 0-5s, 5-10s, 10-15s
+        AddCompletedSegment(manager, "/seg0.ts", TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 1000);
+        AddCompletedSegment(manager, "/seg1.ts", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 1000);
+        AddCompletedSegment(manager, "/seg2.ts", TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 1000);
+
+        var method = manager.GetType().GetMethod("GetSegmentFileForPosition")!;
+
+        // Position 7s → segment 1 (5-10s)
+        var result1 = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(7) }) as string;
+        AssertEqual("/seg1.ts", result1!, "Position 7s");
+
+        // Position 0s → segment 0 (0-5s)
+        var result2 = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(0) }) as string;
+        AssertEqual("/seg0.ts", result2!, "Position 0s");
+
+        // Position 20s → not in any completed segment → falls back to active
+        var result3 = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(20) }) as string;
+        AssertContains(result3!, "fb_test_0003.ts");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_GetNextSegmentFile_WalksForward()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        AddCompletedSegment(manager, "/a.ts", TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 500);
+        AddCompletedSegment(manager, "/b.ts", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+        AddCompletedSegment(manager, "/c.ts", TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 500);
+
+        var method = manager.GetType().GetMethod("GetNextSegmentFile")!;
+
+        // From a → b
+        var next1 = method.Invoke(manager, new object[] { "/a.ts" }) as string;
+        AssertEqual("/b.ts", next1!, "a→b");
+
+        // From b → c
+        var next2 = method.Invoke(manager, new object[] { "/b.ts" }) as string;
+        AssertEqual("/c.ts", next2!, "b→c");
+
+        // From c (last completed) → active segment
+        var next3 = method.Invoke(manager, new object[] { "/c.ts" }) as string;
+        AssertContains(next3!, "fb_test_0003.ts");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_GetValidSegmentPaths_ReturnsOverlapping()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        AddCompletedSegment(manager, "/s0.ts", TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 500);
+        AddCompletedSegment(manager, "/s1.ts", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+        AddCompletedSegment(manager, "/s2.ts", TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 500);
+        AddCompletedSegment(manager, "/s3.ts", TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(20), 500);
+
+        var method = manager.GetType().GetMethod("GetValidSegmentPaths")!;
+
+        // Range 3s-12s should include s0 (0-5 overlaps), s1 (5-10), s2 (10-15 overlaps)
+        var result = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(12) })!;
+        var count = GetCountProperty(result);
+        AssertEqual(3, count, "3s-12s should span 3 segments");
+
+        // Range 5s-5.5s should include only s1 (5-10)
+        var narrow = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5.5) })!;
+        AssertEqual(1, GetCountProperty(narrow), "5s-5.5s should be 1 segment");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_EvictionPauseResume_Balanced()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var pauseMethod = manager.GetType().GetMethod("PauseEviction")!;
+        var resumeMethod = manager.GetType().GetMethod("ResumeEviction")!;
+
+        // Initially not paused
+        AssertEqual(false, GetBoolProperty(manager, "EvictionPaused"), "Initial EvictionPaused");
+
+        // Pause → paused
+        pauseMethod.Invoke(manager, null);
+        AssertEqual(true, GetBoolProperty(manager, "EvictionPaused"), "After 1 pause");
+
+        // Double-pause → still paused (count-based)
+        pauseMethod.Invoke(manager, null);
+        AssertEqual(true, GetBoolProperty(manager, "EvictionPaused"), "After 2 pauses");
+
+        // Resume once → still paused (count = 1)
+        resumeMethod.Invoke(manager, null);
+        AssertEqual(true, GetBoolProperty(manager, "EvictionPaused"), "After 1 resume (count=1)");
+
+        // Resume again → unpaused (count = 0)
+        resumeMethod.Invoke(manager, null);
+        AssertEqual(false, GetBoolProperty(manager, "EvictionPaused"), "After 2 resumes (count=0)");
 
         return Task.CompletedTask;
     }
