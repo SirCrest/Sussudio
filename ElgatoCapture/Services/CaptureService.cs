@@ -267,11 +267,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    private void ConfigureObservedPixelTelemetry(UnifiedVideoCapture unifiedVideoCapture)
-    {
-        unifiedVideoCapture.SetObservedPixelFormatObserver(OnUnifiedVideoFrameObserved);
-    }
-
     private void CacheMjpegTimingMetrics(UnifiedVideoCapture? unifiedVideoCapture)
     {
         if (unifiedVideoCapture == null)
@@ -297,7 +292,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private void AttachUnifiedVideoCapture(UnifiedVideoCapture unifiedVideoCapture)
     {
         unifiedVideoCapture.FatalErrorOccurred += OnUnifiedVideoCaptureFatalError;
-        ConfigureObservedPixelTelemetry(unifiedVideoCapture);
+        unifiedVideoCapture.SetObservedPixelFormatObserver(fmt => RecordObservedPixelFormat(fmt));
     }
 
     private void DetachUnifiedVideoCapture(UnifiedVideoCapture? unifiedVideoCapture)
@@ -309,11 +304,6 @@ public class CaptureService : IDisposable, IAsyncDisposable
 
         unifiedVideoCapture.FatalErrorOccurred -= OnUnifiedVideoCaptureFatalError;
         unifiedVideoCapture.SetObservedPixelFormatObserver(null);
-    }
-
-    private void OnUnifiedVideoFrameObserved(string format)
-    {
-        RecordObservedPixelFormat(format);
     }
 
     private bool IsFlashbackRecordingBackendActive()

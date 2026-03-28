@@ -403,17 +403,6 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
     }
 
-    /// <summary>
-    /// Decodes the next audio chunk from the file.
-    /// Returns f32le interleaved stereo 48kHz samples.
-    /// Deprecated — audio is now decoded inline via <see cref="AudioChunkCallback"/>.
-    /// </summary>
-    public bool TryDecodeNextAudioChunk(out DecodedAudioChunk chunk)
-    {
-        chunk = default;
-        return false;
-    }
-
     public void Dispose()
     {
         if (_disposed)
