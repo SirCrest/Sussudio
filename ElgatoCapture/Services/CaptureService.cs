@@ -79,7 +79,7 @@ public class CaptureService : IDisposable, IAsyncDisposable
     private ParallelMjpegDecodePipeline.PipelineTimingMetrics? _lastFullMjpegPipelineTimingMetrics;
     private CancellationTokenSource? _telemetryPollCts;
     private Task? _telemetryPollTask;
-    private const int TelemetryPollIntervalMs = 2000;
+    private const int TelemetryPollIntervalMs = 500;
 
     // AV sync drift diagnostics
     private double _avSyncBaselineDriftMs = double.NaN;
