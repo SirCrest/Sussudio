@@ -539,7 +539,7 @@ static class Program
     private static Task AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields()
     {
         var contractsText = ReadRepoFile("ElgatoCapture/Models/AutomationContracts.cs").Replace("\r\n", "\n");
-        var diagnosticsHubText = ReadRepoFile("ElgatoCapture/Services/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n");
+        var diagnosticsHubText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n");
 
         AssertContains(contractsText, "public string? SourceFirmware { get; init; }");
         AssertContains(contractsText, "public string? SourceAudioFormat { get; init; }");
@@ -1038,7 +1038,7 @@ static class Program
 
     private static Task UiAutomationCommands_AreNotBlockedOnDeviceReadiness()
     {
-        var dispatcherText = ReadRepoFile("ElgatoCapture/Services/AutomationCommandDispatcher.cs");
+        var dispatcherText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationCommandDispatcher.cs");
 
         AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetShowAllCaptureOptions => true,");
         AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetPreviewVolume => true,");
@@ -1098,7 +1098,7 @@ static class Program
 
     private static Task DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll()
     {
-        var diagnosticsHubText = ReadRepoFile("ElgatoCapture/Services/AutomationDiagnosticsHub.cs");
+        var diagnosticsHubText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationDiagnosticsHub.cs");
         var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs");
 
         AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
@@ -1110,7 +1110,7 @@ static class Program
 
     private static Task PreviewStartup_ToleratesMissingAudioCaptureDevices()
     {
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/CaptureService.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "if (settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId))");
         AssertContains(captureServiceText, "Audio preview requested but no audio capture device is available; continuing with video-only preview.");
@@ -1181,7 +1181,7 @@ static class Program
 
     private static Task PreviewBackendLog_ReflectsVideoOnlyFallback()
     {
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/CaptureService.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "_wasapiAudioCapture != null");
         AssertContains(captureServiceText, "\"Preview backend active: IMFSourceReader video + WASAPI audio ingest.\"");
@@ -1212,7 +1212,7 @@ static class Program
         var mainWindowXaml = ReadRepoFile("ElgatoCapture/MainWindow.xaml").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("ElgatoCapture/StatsWindow.xaml.cs").Replace("\r\n", "\n");
         var statsWindowXaml = ReadRepoFile("ElgatoCapture/StatsWindow.xaml").Replace("\r\n", "\n");
-        var nativeXuText = ReadRepoFile("ElgatoCapture/Services/NativeXuAtCommandProvider.cs").Replace("\r\n", "\n");
+        var nativeXuText = ReadRepoFile("ElgatoCapture/Services/Telemetry/NativeXuAtCommandProvider.cs").Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
         AssertContains(mainWindowText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
