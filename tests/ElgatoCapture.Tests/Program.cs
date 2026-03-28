@@ -228,6 +228,22 @@ static class Program
                 "SourceSignalTelemetrySnapshot properties round-trip",
                 SourceSignalTelemetrySnapshot_PropertiesRoundTrip),
 
+            // --- HdrOutputPolicy ---
+            await RunCheckAsync(
+                "HdrOutputPolicy returns true when HDR and Hdr10Pq requested",
+                HdrOutputPolicy_ReturnsTrue_WhenHdrAndHdr10PqRequested),
+            await RunCheckAsync(
+                "HdrOutputPolicy returns false when HDR disabled",
+                HdrOutputPolicy_ReturnsFalse_WhenHdrDisabled),
+            await RunCheckAsync(
+                "HdrOutputPolicy returns false for non-Hdr10Pq mode",
+                HdrOutputPolicy_ReturnsFalse_WhenNotHdr10Pq),
+
+            // --- FlashbackPlaybackState enum ---
+            await RunCheckAsync(
+                "FlashbackPlaybackState enum has all expected states",
+                FlashbackPlaybackState_HasAllExpectedStates),
+
             // --- RecordingPipelineOptions ---
             await RunCheckAsync(
                 "RecordingPipelineOptions resolves video queue capacity from frame rate",
@@ -1998,6 +2014,74 @@ static class Program
         AssertEqual("P010", GetStringProperty(snapshot, "VideoFormat"), "VideoFormat round-trip");
         AssertEqual("1.2.3", GetStringProperty(snapshot, "Firmware"), "Firmware round-trip");
         AssertEqual(true, GetBoolProperty(snapshot, "IsHdr"), "IsHdr round-trip");
+
+        return Task.CompletedTask;
+    }
+
+    // ── HdrOutputPolicy tests ──
+
+    private static Task HdrOutputPolicy_ReturnsTrue_WhenHdrAndHdr10PqRequested()
+    {
+        var policyType = RequireType("ElgatoCapture.Services.HdrOutputPolicy");
+        var method = policyType.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("HdrOutputPolicy.IsEnabled not found");
+
+        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "HdrEnabled", true);
+        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("ElgatoCapture.Models.HdrOutputMode", "Hdr10Pq"));
+
+        var result = (bool)method.Invoke(null, new[] { settings })!;
+        AssertEqual(true, result, "HDR enabled + Hdr10Pq should return true");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task HdrOutputPolicy_ReturnsFalse_WhenHdrDisabled()
+    {
+        var policyType = RequireType("ElgatoCapture.Services.HdrOutputPolicy");
+        var method = policyType.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static)!;
+
+        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "HdrEnabled", false);
+        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("ElgatoCapture.Models.HdrOutputMode", "Hdr10Pq"));
+
+        var result = (bool)method.Invoke(null, new[] { settings })!;
+        AssertEqual(false, result, "HDR disabled should return false");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task HdrOutputPolicy_ReturnsFalse_WhenNotHdr10Pq()
+    {
+        var policyType = RequireType("ElgatoCapture.Services.HdrOutputPolicy");
+        var method = policyType.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static)!;
+
+        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "HdrEnabled", true);
+        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("ElgatoCapture.Models.HdrOutputMode", "Off"));
+
+        var result = (bool)method.Invoke(null, new[] { settings })!;
+        AssertEqual(false, result, "HdrOutputMode=Off should return false");
+
+        return Task.CompletedTask;
+    }
+
+    // ── FlashbackPlaybackState enum test ──
+
+    private static Task FlashbackPlaybackState_HasAllExpectedStates()
+    {
+        var enumType = RequireType("ElgatoCapture.Models.FlashbackPlaybackState");
+        var names = Enum.GetNames(enumType);
+
+        // Expected states from the state machine design
+        var expected = new HashSet<string> { "Disabled", "Buffering", "Live", "Scrubbing", "Playing", "Paused" };
+        foreach (var name in expected)
+        {
+            if (!names.Contains(name))
+                throw new InvalidOperationException($"Missing FlashbackPlaybackState: {name}");
+        }
+
+        AssertEqual(expected.Count, names.Length, "FlashbackPlaybackState count");
 
         return Task.CompletedTask;
     }
