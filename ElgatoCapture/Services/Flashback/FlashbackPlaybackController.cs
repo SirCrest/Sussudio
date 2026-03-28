@@ -806,151 +806,167 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             if (!decoder.TryDecodeNextVideoFrame(out var videoFrame))
             {
-                var bufDur = _bufferManager.BufferedDuration;
-                var pos = PlaybackPosition;
-                var gap = (bufDur - pos).TotalMilliseconds;
-
-                // EOF could mean: (a) we've caught up to the write head of the active segment,
-                // or (b) we've reached the end of a completed segment and need to switch files.
-                // If there's a large gap to the live edge, try opening the next segment.
-                if (gap > 2000)
-                {
-                    var nextFile = _bufferManager.GetNextSegmentFile(_currentOpenFilePath);
-                    if (nextFile != null && nextFile != _currentOpenFilePath)
-                    {
-                        Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH pos_ms={(long)pos.TotalMilliseconds} next='{System.IO.Path.GetFileName(nextFile)}'");
-                        decoder.CloseFile();
-                        decoder.OpenFile(nextFile);
-                        _currentOpenFilePath = nextFile;
-                        // Seek to our current position in the new file
-                        decoder.AudioChunkCallback = null;
-                        var segSwitchTarget = pos + frozenValidStart;
-                        Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, segSwitchTarget.Ticks);
-                        decoder.SeekTo(segSwitchTarget);
-                        RestoreAudioCallback(decoder);
-                        pacingStopwatch.Restart();
-                        return true;
-                    }
-                }
-
-                // At the write head of the active segment — wait for encoder to produce more data
-                // Check for pending commands before sleeping to avoid delayed shutdown response
-                if (_commandChannel.Reader.TryPeek(out _) || _disposedFlag != 0)
-                {
-                    pacingStopwatch.Restart();
-                    return true;
-                }
-                Logger.Log($"FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT gap_ms={gap:F0} pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds}");
-                Thread.Sleep(50);
-                pacingStopwatch.Restart();
-                return true;
+                return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart);
             }
 
-            // Release the PREVIOUS held frame (renderer has had time to copy it)
             ReleasePreviousHeldFrame();
             SubmitFrame(videoFrame);
-            // Stash this frame — don't release yet, renderer needs time to copy the texture
             _previousHeldFrame = videoFrame;
             _hasPreviousHeldFrame = true;
             Interlocked.Exchange(ref _lastVideoPtsTicks, videoFrame.Pts.Ticks);
 
-            // Map file PTS back to buffer position using frozen valid start
             var newPosition = videoFrame.Pts - frozenValidStart;
             if (newPosition < TimeSpan.Zero) newPosition = TimeSpan.Zero;
             PlaybackPosition = newPosition;
 
-            // Check OutPoint
-            var outTicks = Interlocked.Read(ref _outPointTicks);
-            if (outTicks != long.MinValue && newPosition >= TimeSpan.FromTicks(outTicks))
-            {
-                Logger.Log($"FLASHBACK_PLAYBACK_HIT_OUTPOINT pos_ms={(long)newPosition.TotalMilliseconds}");
-                _audioPlayback?.PauseRendering();
-                pacingStopwatch.Stop();
-                SetState(FlashbackPlaybackState.Paused);
+            if (CheckOutPoint(newPosition, pacingStopwatch))
                 return false;
-            }
 
-            // Audio is decoded inline during FeedNextVideoPacket via AudioChunkCallback.
-            // No separate audio loop — A/V stays naturally interleaved.
-
-            // Check if near live edge (within 2s of buffered end)
-            // Use absolute PTS from the same domain — frame PTS vs buffer manager's latest PTS
-            // Only snap after 60+ frames to avoid false positives during write-head waits
-            var absoluteFramePts = videoFrame.Pts;
-            var absoluteLatestPts = _bufferManager.LatestPts;
-            if (Interlocked.Read(ref _playbackFrameCount) > 60 &&
-                absoluteLatestPts - absoluteFramePts <= TimeSpan.FromMilliseconds(2000))
-            {
-                var gapMs = (absoluteLatestPts - absoluteFramePts).TotalMilliseconds;
-                Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)newPosition.TotalMilliseconds} framePts_ms={(long)absoluteFramePts.TotalMilliseconds} latestPts_ms={(long)absoluteLatestPts.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
-                if (decoder.IsOpen) decoder.CloseFile();
-                fileOpen = false;
-                Interlocked.Exchange(ref _lastAudioPtsTicks, 0); // F1 fix: reset before live audio restore
-                RestoreLiveAudio();
-                _videoCapture?.ResumePreviewSubmission();
-                SetState(FlashbackPlaybackState.Live);
+            if (CheckNearLiveEdge(decoder, videoFrame.Pts, newPosition, ref fileOpen))
                 return false;
-            }
 
-            // Pace: wait for remainder of frame interval after decode work.
-            var targetTicks = (long)(frameDuration.TotalSeconds * Stopwatch.Frequency);
-            var actualElapsed = pacingStopwatch.ElapsedTicks;
-            var remaining = targetTicks - actualElapsed;
-            if (remaining > 0)
-            {
-                // Coarse sleep: yield CPU, leaving 2ms margin for spin
-                var spinThresholdTicks = 2L * Stopwatch.Frequency / 1000;
-                if (remaining > spinThresholdTicks)
-                {
-                    var sleepMs = (int)((remaining - spinThresholdTicks) * 1000 / Stopwatch.Frequency);
-                    if (sleepMs > 0) Thread.Sleep(sleepMs);
-                }
-                // Fine spin-wait for sub-ms accuracy
-                while (pacingStopwatch.ElapsedTicks < targetTicks)
-                    Thread.SpinWait(1);
-            }
-            else
-            {
-                // Frame took longer than the budget — count as late
-                Interlocked.Increment(ref _playbackLateFrames);
-            }
-
-            // Cadence metrics: compute rolling FPS every 60 frames
-            var frameNum = Interlocked.Increment(ref _playbackFrameCount);
-            var totalFrameMs = pacingStopwatch.ElapsedTicks * 1000.0 / Stopwatch.Frequency;
-            pacingStopwatch.Restart();
-
-            if (frameNum == 1)
-            {
-                _playbackFpsClock.Restart();
-            }
-            else if (frameNum % 60 == 0)
-            {
-                var wallMs = _playbackFpsClock.ElapsedMilliseconds;
-                if (wallMs > 0)
-                {
-                    _playbackObservedFps = frameNum * 1000.0 / wallMs;
-                    _playbackAvgFrameMs = wallMs / (double)frameNum;
-                }
-            }
+            PaceFrameInterval(pacingStopwatch, frameDuration);
+            UpdateCadenceMetrics(pacingStopwatch);
 
             return true;
         }
         catch (Exception ex)
         {
-            var pos = PlaybackPosition;
-            var bufDur = _bufferManager.BufferedDuration;
-            var gapMs = (bufDur - pos).TotalMilliseconds;
-            Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE error='{ex.Message}' pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
-            Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
-            // Can't recover — go live
+            SnapToLiveOnError(decoder, ex, ref fileOpen);
+            return false;
+        }
+    }
+
+    private bool HandleEndOfSegment(
+        FlashbackDecoder decoder,
+        Stopwatch pacingStopwatch,
+        TimeSpan frozenValidStart)
+    {
+        var bufDur = _bufferManager.BufferedDuration;
+        var pos = PlaybackPosition;
+        var gap = (bufDur - pos).TotalMilliseconds;
+
+        if (gap > 2000)
+        {
+            var nextFile = _bufferManager.GetNextSegmentFile(_currentOpenFilePath);
+            if (nextFile != null && nextFile != _currentOpenFilePath)
+            {
+                Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH pos_ms={(long)pos.TotalMilliseconds} next='{System.IO.Path.GetFileName(nextFile)}'");
+                decoder.CloseFile();
+                decoder.OpenFile(nextFile);
+                _currentOpenFilePath = nextFile;
+                decoder.AudioChunkCallback = null;
+                var segSwitchTarget = pos + frozenValidStart;
+                Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, segSwitchTarget.Ticks);
+                decoder.SeekTo(segSwitchTarget);
+                RestoreAudioCallback(decoder);
+                pacingStopwatch.Restart();
+                return true;
+            }
+        }
+
+        if (_commandChannel.Reader.TryPeek(out _) || _disposedFlag != 0)
+        {
+            pacingStopwatch.Restart();
+            return true;
+        }
+
+        Logger.Log($"FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT gap_ms={gap:F0} pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds}");
+        Thread.Sleep(50);
+        pacingStopwatch.Restart();
+        return true;
+    }
+
+    private bool CheckOutPoint(TimeSpan position, Stopwatch pacingStopwatch)
+    {
+        var outTicks = Interlocked.Read(ref _outPointTicks);
+        if (outTicks != long.MinValue && position >= TimeSpan.FromTicks(outTicks))
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_HIT_OUTPOINT pos_ms={(long)position.TotalMilliseconds}");
+            _audioPlayback?.PauseRendering();
+            pacingStopwatch.Stop();
+            SetState(FlashbackPlaybackState.Paused);
+            return true;
+        }
+        return false;
+    }
+
+    private bool CheckNearLiveEdge(
+        FlashbackDecoder decoder,
+        TimeSpan absoluteFramePts,
+        TimeSpan bufferPosition,
+        ref bool fileOpen)
+    {
+        var absoluteLatestPts = _bufferManager.LatestPts;
+        if (Interlocked.Read(ref _playbackFrameCount) > 60 &&
+            absoluteLatestPts - absoluteFramePts <= TimeSpan.FromMilliseconds(2000))
+        {
+            var gapMs = (absoluteLatestPts - absoluteFramePts).TotalMilliseconds;
+            Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)bufferPosition.TotalMilliseconds} framePts_ms={(long)absoluteFramePts.TotalMilliseconds} latestPts_ms={(long)absoluteLatestPts.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
             if (decoder.IsOpen) decoder.CloseFile();
             fileOpen = false;
+            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
             RestoreLiveAudio();
             _videoCapture?.ResumePreviewSubmission();
             SetState(FlashbackPlaybackState.Live);
-            return false;
+            return true;
         }
+        return false;
+    }
+
+    private void PaceFrameInterval(Stopwatch pacingStopwatch, TimeSpan frameDuration)
+    {
+        var targetTicks = (long)(frameDuration.TotalSeconds * Stopwatch.Frequency);
+        var remaining = targetTicks - pacingStopwatch.ElapsedTicks;
+        if (remaining > 0)
+        {
+            var spinThresholdTicks = 2L * Stopwatch.Frequency / 1000;
+            if (remaining > spinThresholdTicks)
+            {
+                var sleepMs = (int)((remaining - spinThresholdTicks) * 1000 / Stopwatch.Frequency);
+                if (sleepMs > 0) Thread.Sleep(sleepMs);
+            }
+            while (pacingStopwatch.ElapsedTicks < targetTicks)
+                Thread.SpinWait(1);
+        }
+        else
+        {
+            Interlocked.Increment(ref _playbackLateFrames);
+        }
+    }
+
+    private void UpdateCadenceMetrics(Stopwatch pacingStopwatch)
+    {
+        var frameNum = Interlocked.Increment(ref _playbackFrameCount);
+        pacingStopwatch.Restart();
+
+        if (frameNum == 1)
+        {
+            _playbackFpsClock.Restart();
+        }
+        else if (frameNum % 60 == 0)
+        {
+            var wallMs = _playbackFpsClock.ElapsedMilliseconds;
+            if (wallMs > 0)
+            {
+                _playbackObservedFps = frameNum * 1000.0 / wallMs;
+                _playbackAvgFrameMs = wallMs / (double)frameNum;
+            }
+        }
+    }
+
+    private void SnapToLiveOnError(FlashbackDecoder decoder, Exception ex, ref bool fileOpen)
+    {
+        var pos = PlaybackPosition;
+        var bufDur = _bufferManager.BufferedDuration;
+        var gapMs = (bufDur - pos).TotalMilliseconds;
+        Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE error='{ex.Message}' pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
+        Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
+        if (decoder.IsOpen) decoder.CloseFile();
+        fileOpen = false;
+        RestoreLiveAudio();
+        _videoCapture?.ResumePreviewSubmission();
+        SetState(FlashbackPlaybackState.Live);
     }
 
     /// <summary>
