@@ -128,7 +128,56 @@ static class Program
                 CaptureService_StrictHfrFatalHandler_ClearsActiveSessionState),
             await RunCheckAsync(
                 "Capture errors refresh ViewModel runtime flags",
-                CaptureErrors_RefreshViewModelRuntimeFlags)
+                CaptureErrors_RefreshViewModelRuntimeFlags),
+
+            // --- RecordingContracts ---
+            await RunCheckAsync(
+                "FinalizeResult.Success produces empty preserved list",
+                FinalizeResult_Success_ProducesEmptyPreservedList),
+            await RunCheckAsync(
+                "FinalizeResult.Failure deduplicates and filters preserved artifacts",
+                FinalizeResult_Failure_DeduplicatesAndFiltersArtifacts),
+
+            // --- RecordingArtifactManager ---
+            await RunCheckAsync(
+                "FinalizeContext returns success when post-mux audio disabled",
+                ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled),
+            await RunCheckAsync(
+                "FinalizeContext preserves temp artifacts when mux fails",
+                ArtifactManager_FinalizeContext_PreservesTempArtifacts_WhenMuxFails),
+            await RunCheckAsync(
+                "RollbackAsync deletes all artifacts when post-mux enabled",
+                ArtifactManager_RollbackAsync_DeletesAllArtifacts_WhenPostMuxEnabled),
+            await RunCheckAsync(
+                "RollbackAsync is safe with null context",
+                ArtifactManager_RollbackAsync_SafeWithNullContext),
+
+            // --- CaptureSettings ---
+            await RunCheckAsync(
+                "GetTargetBitrate scales by resolution and frame rate",
+                CaptureSettings_GetTargetBitrate_ScalesByResolutionAndFrameRate),
+            await RunCheckAsync(
+                "GetTargetBitrate applies codec efficiency for HEVC and AV1",
+                CaptureSettings_GetTargetBitrate_AppliesCodecEfficiency),
+            await RunCheckAsync(
+                "GetTargetBitrate clamps custom quality to range",
+                CaptureSettings_GetTargetBitrate_ClampsCustomQuality),
+            await RunCheckAsync(
+                "GetOutputFileName includes format suffix",
+                CaptureSettings_GetOutputFileName_IncludesFormatSuffix),
+            await RunCheckAsync(
+                "MJPEG HFR mode requires SDR and MJPG pixel format",
+                CaptureSettings_MjpegHfrMode_RequiresSdrAndMjpgPixelFormat),
+
+            // --- GpuPipelineHandles ---
+            await RunCheckAsync(
+                "GpuPipelineHandles.None returns zeroed struct",
+                GpuPipelineHandles_None_ReturnsZeroedStruct),
+
+            // --- RecordingContextRequest ---
+            await RunCheckAsync(
+                "RecordingContextRequest defaults match RecordingContext defaults",
+                RecordingContextRequest_DefaultsMatchRecordingContextDefaults)
         };
 
         var failed = results.Where(r => !r.Passed).ToList();
@@ -1209,6 +1258,354 @@ static class Program
         AssertContains(mainViewModelText, "UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);");
 
         return Task.CompletedTask;
+    }
+
+    // ── RecordingContracts tests ──
+
+    private static Task FinalizeResult_Success_ProducesEmptyPreservedList()
+    {
+        var resultType = RequireType("ElgatoCapture.Services.FinalizeResult");
+        var successMethod = resultType.GetMethod("Success", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("FinalizeResult.Success not found");
+        var result = successMethod.Invoke(null, new object[] { "/path/output.mp4", "Stopped" })!;
+
+        AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
+        AssertEqual("/path/output.mp4", GetStringProperty(result, "OutputPath"), "OutputPath");
+        AssertEqual("Stopped", GetStringProperty(result, "StatusMessage"), "StatusMessage");
+        var artifacts = GetPropertyValue(result, "PreservedArtifacts");
+        AssertEqual(0, GetCountProperty(artifacts), "PreservedArtifacts.Count");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FinalizeResult_Failure_DeduplicatesAndFiltersArtifacts()
+    {
+        var resultType = RequireType("ElgatoCapture.Services.FinalizeResult");
+        var failureMethod = resultType.GetMethod("Failure", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("FinalizeResult.Failure not found");
+
+        var artifacts = new List<string?> { "/path/a.mp4", "/path/A.mp4", null!, "", " ", "/path/b.m4a" }
+            .Where(s => true) as IEnumerable<string>;
+        var result = failureMethod.Invoke(null, new object?[] { "/output.mp4", "mux failed", artifacts })!;
+
+        AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
+        var preserved = GetPropertyValue(result, "PreservedArtifacts");
+        AssertEqual(2, GetCountProperty(preserved), "PreservedArtifacts.Count");
+
+        return Task.CompletedTask;
+    }
+
+    // ── RecordingArtifactManager tests ──
+
+    private static Task ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled()
+    {
+        var manager = CreateInstance("ElgatoCapture.Services.RecordingArtifactManager");
+        var context = BuildRecordingContext(usePostMuxAudio: false, finalPath: "/out/video.mp4");
+
+        var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
+            ?? throw new InvalidOperationException("FinalizeContext not found");
+        var result = finalizeMethod.Invoke(manager, new object?[] { context, true, null })!;
+
+        AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
+        AssertEqual("/out/video.mp4", GetStringProperty(result, "OutputPath"), "OutputPath");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ArtifactManager_FinalizeContext_PreservesTempArtifacts_WhenMuxFails()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var videoPath = Path.Combine(tempDir, "vid.mp4");
+            var audioPath = Path.Combine(tempDir, "aud.m4a");
+            var finalPath = Path.Combine(tempDir, "final.mp4");
+            File.WriteAllText(videoPath, "video-data");
+            File.WriteAllText(audioPath, "audio-data");
+            File.WriteAllBytes(finalPath, Array.Empty<byte>()); // empty placeholder
+
+            var manager = CreateInstance("ElgatoCapture.Services.RecordingArtifactManager");
+            var context = BuildRecordingContext(
+                usePostMuxAudio: true,
+                videoPath: videoPath,
+                audioTempPath: audioPath,
+                finalPath: finalPath);
+
+            var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
+                ?? throw new InvalidOperationException("FinalizeContext not found");
+            var result = finalizeMethod.Invoke(manager, new object?[] { context, false, "encoder error" })!;
+
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            var preserved = GetPropertyValue(result, "PreservedArtifacts");
+            AssertEqual(2, GetCountProperty(preserved), "PreservedArtifacts.Count");
+
+            // Empty final file should have been deleted
+            if (File.Exists(finalPath))
+                throw new InvalidOperationException("Expected empty final file to be deleted");
+
+            return Task.CompletedTask;
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { /* best-effort cleanup */ }
+        }
+    }
+
+    private static Task ArtifactManager_RollbackAsync_DeletesAllArtifacts_WhenPostMuxEnabled()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var videoPath = Path.Combine(tempDir, "vid.mp4");
+            var audioPath = Path.Combine(tempDir, "aud.m4a");
+            var finalPath = Path.Combine(tempDir, "final.mp4");
+            File.WriteAllText(videoPath, "v");
+            File.WriteAllText(audioPath, "a");
+            File.WriteAllText(finalPath, "f");
+
+            var manager = CreateInstance("ElgatoCapture.Services.RecordingArtifactManager");
+            var context = BuildRecordingContext(
+                usePostMuxAudio: true,
+                videoPath: videoPath,
+                audioTempPath: audioPath,
+                finalPath: finalPath);
+
+            var rollbackMethod = manager.GetType().GetMethod("RollbackAsync")
+                ?? throw new InvalidOperationException("RollbackAsync not found");
+            var task = rollbackMethod.Invoke(manager, new object?[] { context, CancellationToken.None }) as Task
+                ?? throw new InvalidOperationException("RollbackAsync did not return Task");
+            task.GetAwaiter().GetResult();
+
+            if (File.Exists(videoPath))
+                throw new InvalidOperationException("Expected video temp to be deleted");
+            if (File.Exists(audioPath))
+                throw new InvalidOperationException("Expected audio temp to be deleted");
+            if (File.Exists(finalPath))
+                throw new InvalidOperationException("Expected final output to be deleted");
+
+            return Task.CompletedTask;
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { /* best-effort cleanup */ }
+        }
+    }
+
+    private static Task ArtifactManager_RollbackAsync_SafeWithNullContext()
+    {
+        var manager = CreateInstance("ElgatoCapture.Services.RecordingArtifactManager");
+        var rollbackMethod = manager.GetType().GetMethod("RollbackAsync")
+            ?? throw new InvalidOperationException("RollbackAsync not found");
+
+        var contextType = RequireType("ElgatoCapture.Services.RecordingContext");
+        var task = rollbackMethod.Invoke(manager, new object?[] { null, CancellationToken.None }) as Task
+            ?? throw new InvalidOperationException("RollbackAsync did not return Task");
+        task.GetAwaiter().GetResult();
+
+        return Task.CompletedTask;
+    }
+
+    // ── CaptureSettings tests ──
+
+    private static Task CaptureSettings_GetTargetBitrate_ScalesByResolutionAndFrameRate()
+    {
+        // 4K60 H264 High: 25 * (3840*2160/2073600) * (60/30) * 1.0 = 25 * 3.98 * 2 = ~199.07 → clamped to 200
+        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "Width", 3840u);
+        SetPropertyOrBackingField(settings, "Height", 2160u);
+        SetPropertyOrBackingField(settings, "FrameRate", 60.0);
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "H264Mp4"));
+        SetPropertyOrBackingField(settings, "Quality", ParseEnum("ElgatoCapture.Models.VideoQuality", "High"));
+
+        var bitrate = InvokeInstanceMethod(settings, "GetTargetBitrate");
+        var bps = Convert.ToUInt32(bitrate);
+
+        // 4K60 H264 High should be at or near 200 Mbps cap
+        if (bps < 150_000_000 || bps > 200_000_000)
+            throw new InvalidOperationException($"Expected 4K60 H264 High ~200 Mbps, got {bps / 1_000_000.0:F1} Mbps");
+
+        // 1080p30 H264 High: 25 * 1.0 * 1.0 * 1.0 = 25 Mbps
+        SetPropertyOrBackingField(settings, "Width", 1920u);
+        SetPropertyOrBackingField(settings, "Height", 1080u);
+        SetPropertyOrBackingField(settings, "FrameRate", 30.0);
+        var lowBitrate = Convert.ToUInt32(InvokeInstanceMethod(settings, "GetTargetBitrate"));
+        if (lowBitrate < 24_000_000 || lowBitrate > 26_000_000)
+            throw new InvalidOperationException($"Expected 1080p30 H264 High ~25 Mbps, got {lowBitrate / 1_000_000.0:F1} Mbps");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureSettings_GetTargetBitrate_AppliesCodecEfficiency()
+    {
+        // 1080p60 at each codec: H264 > HEVC > AV1
+        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "Width", 1920u);
+        SetPropertyOrBackingField(settings, "Height", 1080u);
+        SetPropertyOrBackingField(settings, "FrameRate", 60.0);
+        SetPropertyOrBackingField(settings, "Quality", ParseEnum("ElgatoCapture.Models.VideoQuality", "High"));
+
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "H264Mp4"));
+        var h264 = Convert.ToUInt32(InvokeInstanceMethod(settings, "GetTargetBitrate"));
+
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "HevcMp4"));
+        var hevc = Convert.ToUInt32(InvokeInstanceMethod(settings, "GetTargetBitrate"));
+
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "Av1Mp4"));
+        var av1 = Convert.ToUInt32(InvokeInstanceMethod(settings, "GetTargetBitrate"));
+
+        if (hevc >= h264)
+            throw new InvalidOperationException($"HEVC ({hevc}) should be less than H264 ({h264})");
+        if (av1 >= hevc)
+            throw new InvalidOperationException($"AV1 ({av1}) should be less than HEVC ({hevc})");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureSettings_GetTargetBitrate_ClampsCustomQuality()
+    {
+        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "Quality", ParseEnum("ElgatoCapture.Models.VideoQuality", "Custom"));
+
+        // Over max: should clamp to 300 Mbps
+        SetPropertyOrBackingField(settings, "CustomBitrateMbps", 999.0);
+        var over = Convert.ToUInt32(InvokeInstanceMethod(settings, "GetTargetBitrate"));
+        AssertEqual(300_000_000u, over, "CustomBitrate over-max clamp");
+
+        // Under min: should clamp to 1 Mbps
+        SetPropertyOrBackingField(settings, "CustomBitrateMbps", 0.1);
+        var under = Convert.ToUInt32(InvokeInstanceMethod(settings, "GetTargetBitrate"));
+        AssertEqual(1_000_000u, under, "CustomBitrate under-min clamp");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureSettings_GetOutputFileName_IncludesFormatSuffix()
+    {
+        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "Av1Mp4"));
+        var av1Name = InvokeInstanceMethod(settings, "GetOutputFileName").ToString()!;
+        AssertContains(av1Name, "_AV1.");
+        AssertContains(av1Name, ".mp4");
+
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "HevcMp4"));
+        var hevcName = InvokeInstanceMethod(settings, "GetOutputFileName").ToString()!;
+        AssertContains(hevcName, "_HEVC.");
+
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "H264Mp4"));
+        var h264Name = InvokeInstanceMethod(settings, "GetOutputFileName").ToString()!;
+        AssertContains(h264Name, "_H264.");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureSettings_MjpegHfrMode_RequiresSdrAndMjpgPixelFormat()
+    {
+        var settingsType = RequireType("ElgatoCapture.Models.CaptureSettings");
+        var method = settingsType.GetMethod("IsMjpegHighFrameRateMode", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("IsMjpegHighFrameRateMode not found");
+
+        // SDR + MJPG + 4K120 → true
+        var result1 = (bool)method.Invoke(null, new object?[] { "MJPG", 3840u, 2160u, 120.0, false, false })!;
+        AssertEqual(true, result1, "SDR+MJPG+4K120 should be HFR");
+
+        // HDR + MJPG → false (HDR disqualifies)
+        var result2 = (bool)method.Invoke(null, new object?[] { "MJPG", 3840u, 2160u, 120.0, true, false })!;
+        AssertEqual(false, result2, "HDR should not be HFR");
+
+        // SDR + NV12 → false (wrong pixel format)
+        var result3 = (bool)method.Invoke(null, new object?[] { "NV12", 3840u, 2160u, 120.0, false, false })!;
+        AssertEqual(false, result3, "NV12 should not be HFR");
+
+        // SDR + MJPG + 1080p60 → false (too low res/fps)
+        var result4 = (bool)method.Invoke(null, new object?[] { "MJPG", 1920u, 1080u, 60.0, false, false })!;
+        AssertEqual(false, result4, "1080p60 should not be HFR");
+
+        return Task.CompletedTask;
+    }
+
+    // ── GpuPipelineHandles / RecordingContextRequest tests ──
+
+    private static Task GpuPipelineHandles_None_ReturnsZeroedStruct()
+    {
+        var handlesType = RequireType("ElgatoCapture.Services.GpuPipelineHandles");
+        var noneProp = handlesType.GetProperty("None", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("GpuPipelineHandles.None not found");
+        var none = noneProp.GetValue(null)!;
+
+        AssertEqual(IntPtr.Zero, (IntPtr)GetPropertyValue(none, "D3D11DevicePtr")!, "D3D11DevicePtr");
+        AssertEqual(IntPtr.Zero, (IntPtr)GetPropertyValue(none, "D3D11DeviceContextPtr")!, "D3D11DeviceContextPtr");
+        AssertEqual(IntPtr.Zero, (IntPtr)GetPropertyValue(none, "CudaHwDeviceCtxPtr")!, "CudaHwDeviceCtxPtr");
+        AssertEqual(IntPtr.Zero, (IntPtr)GetPropertyValue(none, "CudaHwFramesCtxPtr")!, "CudaHwFramesCtxPtr");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task RecordingContextRequest_DefaultsMatchRecordingContextDefaults()
+    {
+        var request = CreateInstance("ElgatoCapture.Services.RecordingContextRequest");
+        AssertEqual("30", GetStringProperty(request, "FrameRateArg"), "FrameRateArg default");
+        AssertEqual("nv12", GetStringProperty(request, "VideoInputPixelFormat"), "VideoInputPixelFormat default");
+        AssertEqual(false, GetBoolProperty(request, "IsFullRangeInput"), "IsFullRangeInput default");
+        AssertEqual(false, GetBoolProperty(request, "UsePostMuxAudio"), "UsePostMuxAudio default");
+
+        return Task.CompletedTask;
+    }
+
+    // ── Test helpers for new tests ──
+
+    private static object BuildRecordingContext(
+        bool usePostMuxAudio,
+        string? videoPath = null,
+        string? audioTempPath = null,
+        string? finalPath = null)
+    {
+        var settings = BuildSettings(hdrEnabled: false);
+        var contextType = RequireType("ElgatoCapture.Services.RecordingContext");
+        var context = RuntimeHelpers.GetUninitializedObject(contextType);
+        SetPropertyBackingField(context, "Settings", settings);
+        SetPropertyBackingField(context, "VideoOutputPath", videoPath ?? "/tmp/video.mp4");
+        SetPropertyBackingField(context, "FinalOutputPath", finalPath ?? "/tmp/final.mp4");
+        SetPropertyBackingField(context, "AudioTempPath", audioTempPath);
+        SetPropertyBackingField(context, "UsePostMuxAudio", usePostMuxAudio);
+        SetPropertyBackingField(context, "EffectiveFrameRate", 60.0);
+        SetPropertyBackingField(context, "FrameRateArg", "60");
+        SetPropertyBackingField(context, "EffectiveWidth", 1920u);
+        SetPropertyBackingField(context, "EffectiveHeight", 1080u);
+        SetPropertyBackingField(context, "VideoInputPixelFormat", "nv12");
+        return context;
+    }
+
+    private static void SetPropertyBackingField(object instance, string propertyName, object? value)
+    {
+        // Try init-only property backing field patterns
+        var field = instance.GetType().GetField($"<{propertyName}>k__BackingField", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (field != null)
+        {
+            field.SetValue(instance, value);
+            return;
+        }
+
+        // Fall back to SetPropertyOrBackingField
+        SetPropertyOrBackingField(instance, propertyName, value);
+    }
+
+    private static int GetCountProperty(object collection)
+    {
+        var countProp = collection.GetType().GetProperty("Count");
+        if (countProp != null)
+            return (int)(countProp.GetValue(collection) ?? 0);
+        // IReadOnlyList<T> might not expose Count directly; try ICollection
+        var iface = collection.GetType().GetInterfaces()
+            .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IReadOnlyCollection<>));
+        if (iface != null)
+        {
+            var cp = iface.GetProperty("Count");
+            return (int)(cp?.GetValue(collection) ?? 0);
+        }
+        throw new InvalidOperationException("No Count property found");
     }
 
     private static object BuildDevice(string id = "device-1")
