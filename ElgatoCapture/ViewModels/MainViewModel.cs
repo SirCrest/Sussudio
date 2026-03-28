@@ -1405,6 +1405,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
         catch
         {
+            /* Best-effort: drive may be unavailable or path invalid — clear the display gracefully */
             DiskSpaceInfo = "";
         }
     }
@@ -3944,7 +3945,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             }
             catch
             {
-                // Device may be unavailable or disconnected.
+                /* Best-effort: audio device may be unavailable or disconnected — non-fatal */
             }
         }
 
@@ -4039,7 +4040,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
         catch
         {
-            // Device may be unavailable or disconnected.
+            /* Best-effort: audio device may be unavailable or disconnected — non-fatal */
         }
     }
 
@@ -4065,7 +4066,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
         catch
         {
-            // Device may be unavailable or disconnected.
+            /* Best-effort: audio device may be unavailable or disconnected — non-fatal */
         }
     }
 
@@ -4083,6 +4084,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
         catch
         {
+            /* Best-effort: device may be unavailable or disconnected — default to full volume */
             return 100.0;
         }
     }

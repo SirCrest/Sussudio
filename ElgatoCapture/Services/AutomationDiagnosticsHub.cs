@@ -110,7 +110,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
         catch (OperationCanceledException)
         {
-            // Ignore.
+            /* Expected during shutdown — stop/dispose requested while awaiting loop tasks */
         }
 
         _cts?.Dispose();
@@ -210,7 +210,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 }
                 catch
                 {
-                    // Best-effort snapshot refresh after verification state transition.
+                    /* Best-effort: snapshot refresh after verification is non-fatal — state is already committed */
                 }
             }
         }
@@ -255,7 +255,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 }
                 catch
                 {
-                    // Best-effort snapshot refresh after verification state transition.
+                    /* Best-effort: snapshot refresh after verification is non-fatal — state is already committed */
                 }
             }
         }
@@ -295,6 +295,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             }
             catch (OperationCanceledException)
             {
+                /* Expected during shutdown — exit the refresh loop */
                 break;
             }
             catch (Exception ex)
@@ -308,6 +309,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             }
             catch (OperationCanceledException)
             {
+                /* Expected during shutdown — exit the refresh loop */
                 break;
             }
         }
@@ -432,7 +434,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             }
             catch
             {
-                // File doesn't exist or is inaccessible
+                /* Best-effort: output file may not exist yet or be locked — diagnostics can proceed without it */
             }
         }
 
@@ -882,7 +884,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 }
                 catch (OperationCanceledException)
                 {
-                    // Expected during shutdown.
+                    /* Expected during shutdown — auto-verification cancelled */
                 }
                 catch (Exception ex)
                 {

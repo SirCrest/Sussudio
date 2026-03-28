@@ -199,6 +199,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
         catch
         {
+            /* Cleanup must not throw — tear down partially-initialized queues/state before re-throwing */
             CompleteWriter(_videoQueue);
             CompleteWriter(_audioQueue);
             CompleteWriter(_microphoneQueue);

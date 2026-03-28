@@ -33,7 +33,7 @@ public static class RuntimePaths
             }
             catch
             {
-                // Ignore invalid override and fall back.
+                /* Best-effort: env var path may be malformed or inaccessible — fall back to default */
             }
         }
 
@@ -47,7 +47,7 @@ public static class RuntimePaths
             }
             catch
             {
-                // Fall back below.
+                /* Best-effort: repo-local log dir creation may fail (permissions) — fall back to %LOCALAPPDATA% */
             }
         }
 
@@ -87,7 +87,7 @@ public static class RuntimePaths
         }
         catch
         {
-            // Best effort fallback below.
+            /* Best-effort: latest-build parent resolution may fail — fall back to cwd */
         }
 
         return Directory.GetCurrentDirectory();
@@ -102,6 +102,7 @@ public static class RuntimePaths
         }
         catch
         {
+            /* Best-effort: path may be invalid or inaccessible — treat as no repo root found */
             return null;
         }
 
@@ -131,7 +132,7 @@ public static class RuntimePaths
             }
             catch
             {
-                // Continue walking parents.
+                /* Best-effort: directory may be inaccessible (permissions/junction) — skip and continue walking parents */
             }
 
             current = current.Parent;
@@ -154,7 +155,7 @@ public static class RuntimePaths
         }
         catch
         {
-            // Ignore malformed paths.
+            /* Best-effort: candidate path may be malformed — skip it */
         }
     }
 

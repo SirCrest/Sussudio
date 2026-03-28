@@ -278,6 +278,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         catch
         {
+            /* Cleanup must not throw — tear down CTS before re-throwing thread start failure */
             _playCts.Dispose();
             _playCts = null;
             Interlocked.Exchange(ref _playbackThreadStarted, 0);

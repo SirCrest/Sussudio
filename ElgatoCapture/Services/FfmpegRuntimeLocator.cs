@@ -259,6 +259,7 @@ internal static class FfmpegRuntimeLocator
         }
         catch
         {
+            /* Best-effort: where.exe/which probe may fail (not found, access denied) — treat as unresolved */
             return false;
         }
     }

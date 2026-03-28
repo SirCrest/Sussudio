@@ -216,7 +216,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException)
         {
-            // Expected on disposal/cancellation.
+            /* Expected during disposal — worker loop cancelled via CancellationToken */
         }
         catch (Exception ex)
         {
@@ -301,7 +301,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException)
         {
-            // Expected.
+            /* Expected during disposal — worker task was cancelled */
         }
         catch (Exception ex)
         {

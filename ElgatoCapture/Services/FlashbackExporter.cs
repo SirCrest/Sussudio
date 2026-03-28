@@ -919,6 +919,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
         catch
         {
+            /* Cleanup must not throw — close partially-opened input before re-throwing */
             if (inputContext != null)
             {
                 ffmpeg.avformat_close_input(&inputContext);

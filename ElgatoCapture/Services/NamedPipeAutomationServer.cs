@@ -93,7 +93,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException)
         {
-            // Ignore.
+            /* Expected during shutdown — server loop cancelled via disposal */
         }
 
         _cts?.Dispose();
@@ -136,6 +136,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             catch (OperationCanceledException)
             {
+                /* Expected during shutdown — exit the accept loop */
                 break;
             }
             catch (Exception ex)
@@ -155,7 +156,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException)
         {
-            // Expected on shutdown.
+            /* Expected during shutdown — connection cancelled while handling client */
         }
         catch (IOException ioEx)
         {
@@ -175,7 +176,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             catch
             {
-                // Best effort.
+                /* Cleanup must not throw — pipe server may already be disposed or broken */
             }
         }
     }
@@ -474,7 +475,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         }
         catch
         {
-            // Best effort only.
+            /* Best-effort: trace log write is non-fatal — filesystem may be unavailable */
         }
     }
 }

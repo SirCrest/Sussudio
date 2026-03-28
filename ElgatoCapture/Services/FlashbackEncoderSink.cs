@@ -242,6 +242,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
         catch
         {
+            /* Cleanup must not throw — tear down partially-initialized queues/state before re-throwing */
             CompleteWriter(_videoQueue);
             CompleteWriter(_audioQueue);
             CompleteWriter(_microphoneQueue);
@@ -1237,6 +1238,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
         catch
         {
+            /* Best-effort: file may be locked, deleted, or inaccessible — zero is a safe fallback */
             return 0;
         }
     }
