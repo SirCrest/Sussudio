@@ -1226,7 +1226,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private async Task RefreshRecordingFormatsAsync()
     {
-        var support = await FFmpegEncoderService.GetEncoderSupportAsync();
+        var support = await FfmpegRuntimeLocator.GetEncoderSupportAsync();
         var formats = new List<string>();
 
         if (support.HasH264)
@@ -1270,7 +1270,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private async Task RefreshSplitEncodeModesAsync()
     {
-        var support = await FFmpegEncoderService.GetSplitEncodeSupportAsync();
+        var support = await FfmpegRuntimeLocator.GetSplitEncodeSupportAsync();
         var modes = new List<string> { "Auto", "Disabled", "2-way", "3-way" };
 
         void ApplyModes()
