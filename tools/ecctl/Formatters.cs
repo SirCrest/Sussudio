@@ -98,6 +98,15 @@ internal static class Formatters
         if (flashbackActive == "True" || flashbackActive == "true")
         {
             builder.AppendLine("== Flashback ==");
+            var encCodec = Get(snapshot, "EncoderCodecName");
+            if (!string.IsNullOrEmpty(encCodec))
+            {
+                var encW = Get(snapshot, "EncoderWidth", "0");
+                var encH = Get(snapshot, "EncoderHeight", "0");
+                var encFps = Get(snapshot, "EncoderFrameRate", "0");
+                var encBr = uint.TryParse(Get(snapshot, "EncoderTargetBitRate", "0"), out var br) ? br / 1_000_000.0 : 0;
+                builder.AppendLine($"Encoder: {encCodec} {encW}x{encH} @ {encFps} fps | Target: {encBr:0.#} Mbps");
+            }
             var fbDurationMs = long.TryParse(Get(snapshot, "FlashbackBufferedDurationMs", "0"), out var durMs) ? durMs : 0;
             var fbDiskMb = long.TryParse(Get(snapshot, "FlashbackDiskBytes", "0"), out var diskBytes) ? diskBytes / (1024.0 * 1024.0) : 0;
             builder.AppendLine($"Buffer: {fbDurationMs / 1000.0:F1}s | Disk: {fbDiskMb:F1} MB | GPU Encode: {Get(snapshot, "FlashbackGpuEncoding")}");

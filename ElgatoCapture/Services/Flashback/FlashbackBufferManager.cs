@@ -19,6 +19,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private long _latestPtsTicks;
     private long _validStartPtsTicks;
     private long _totalDiskBytes;
+    private long _totalBytesWritten;
     private bool _disposed;
     private int _evictionPauseCount;
     private TimeSpan _recordingStartPts;
@@ -26,6 +27,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private readonly List<CompletedSegment> _completedSegments = new();
     private int _nextSegmentIndex;
     private long _completedSegmentBytes; // running total — avoids iterating the list
+    private long _previousActiveSegmentBytes; // for monotonic written counter
 
     private record CompletedSegment(string Path, int SequenceNumber, TimeSpan StartPts, TimeSpan EndPts, long SizeBytes);
 
@@ -78,6 +80,9 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     public long TotalDiskBytes => Volatile.Read(ref _totalDiskBytes);
 
+    /// <summary>Monotonic counter of all bytes written (never decreases on eviction).</summary>
+    public long TotalBytesWritten => Volatile.Read(ref _totalBytesWritten);
+
     public TimeSpan LatestPts
     {
         get { return TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks)); }
@@ -86,6 +91,13 @@ internal sealed class FlashbackBufferManager : IDisposable
     public bool EvictionPaused => Volatile.Read(ref _evictionPauseCount) > 0;
 
     public long MaxDiskBytes => _options.MaxDiskBytes;
+
+    /// <summary>
+    /// The frame rate the encoder was configured with — ground truth for playback pacing.
+    /// Set once when the encoder starts; avoids relying on TS container metadata which
+    /// can report doubled rates (e.g. 240 for 120fps content).
+    /// </summary>
+    public double EncodeFrameRate { get; set; }
 
     /// <summary>
     /// True when eviction is paused (recording/export) and total disk usage exceeds the limit.
@@ -208,6 +220,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             Interlocked.Exchange(ref _latestPtsTicks, 0);
             Interlocked.Exchange(ref _validStartPtsTicks, 0);
             _totalDiskBytes = 0;
+            _totalBytesWritten = 0;
+            _previousActiveSegmentBytes = 0;
             Interlocked.Exchange(ref _evictionPauseCount, 0);
             _sessionId = sessionId;
 
@@ -479,6 +493,14 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
+            // Track monotonic bytes written: when active segment grows, add the delta.
+            // On rotation activeSegmentBytes resets to 0 — the completed segment's bytes
+            // were already added to _completedSegmentBytes via CompleteSegment, so we just
+            // reset the previous-active tracker.
+            if (activeSegmentBytes >= _previousActiveSegmentBytes)
+                Interlocked.Add(ref _totalBytesWritten, activeSegmentBytes - _previousActiveSegmentBytes);
+            _previousActiveSegmentBytes = activeSegmentBytes;
+
             _totalDiskBytes = _completedSegmentBytes + activeSegmentBytes;
 
             if (!(Volatile.Read(ref _evictionPauseCount) > 0) && _totalDiskBytes > _options.MaxDiskBytes)
@@ -526,6 +548,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             Interlocked.Exchange(ref _latestPtsTicks, 0);
             Interlocked.Exchange(ref _validStartPtsTicks, 0);
             _totalDiskBytes = 0;
+            _totalBytesWritten = 0;
+            _previousActiveSegmentBytes = 0;
             Interlocked.Exchange(ref _evictionPauseCount, 0);
             Logger.Log("FLASHBACK_BUFFER_PURGE");
         }

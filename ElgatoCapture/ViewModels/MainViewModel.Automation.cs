@@ -34,7 +34,7 @@ public partial class MainViewModel
     public VideoSourceProbeResult ProbeVideoSource() => _captureService.ProbeVideoSource();
     public PreviewColorProbeResult ProbePreviewColor() => _captureService.ProbePreviewColor();
     public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath) => _captureService.CapturePreviewFrameAsync(outputPath);
-    public CaptureSettings GetCurrentSettings() => BuildCaptureSettings();
+    public CaptureSettings BuildCurrentSettings() => BuildCaptureSettings();
 
     // ── Flashback playback commands ──────────────────────────────────────
 
@@ -145,16 +145,18 @@ public partial class MainViewModel
             // Don't overwrite UI-driven position during scrub
             if (controller.State != FlashbackPlaybackState.Scrubbing)
                 FlashbackPlaybackPosition = controller.PlaybackPosition;
+            FlashbackGapFromLive = controller.GapFromLive;
         }
         else if (FlashbackState == FlashbackPlaybackState.Disabled)
         {
             FlashbackState = FlashbackPlaybackState.Live;
         }
+
     }
 
     private void UpdateFlashbackBitrate()
     {
-        var diskBytes = _captureService.FlashbackDiskBytes;
+        var diskBytes = _captureService.FlashbackTotalBytesWritten;
         var now = Environment.TickCount64;
         _flashbackBitrateSamples.Enqueue((now, diskBytes));
         while (_flashbackBitrateSamples.Count > 0 && now - _flashbackBitrateSamples.Peek().Tick > BitrateWindowMs)
@@ -182,48 +184,25 @@ public partial class MainViewModel
         var bufferManager = _captureService.FlashbackBufferManager;
         if (bufferManager == null) return;
 
-        try
+        var file = await PickFlashbackExportFileAsync($"Flashback_{DateTime.Now:yyyyMMdd_HHmmss}");
+        if (file == null) return;
+
+        var controller = _captureService.FlashbackPlaybackController;
+        var inPoint = controller?.InPoint;
+        var outPoint = controller?.OutPoint;
+
+        var (result, errorMessage) = await ExportFlashbackCoreAsync(async (progress, ct) =>
+            await _captureService.ExportFlashbackRangeAsync(inPoint, outPoint, file.Path, progress, ct));
+
+        if (errorMessage != null)
         {
-            var picker = new Windows.Storage.Pickers.FileSavePicker();
-            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.VideosLibrary;
-            picker.FileTypeChoices.Add("MP4 Video", new[] { ".mp4" });
-            picker.SuggestedFileName = $"Flashback_{DateTime.Now:yyyyMMdd_HHmmss}";
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, _windowHandle);
-
-            var file = await picker.PickSaveFileAsync();
-            if (file == null) return;
-
-            IsFlashbackExporting = true;
-            FlashbackExportProgress = 0;
-
-            var controller = _captureService.FlashbackPlaybackController;
-            var inPoint = controller?.InPoint;
-            var outPoint = controller?.OutPoint;
-
-            var progress = new Progress<ExportProgress>(p =>
-            {
-                _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
-            });
-
-            _exportCts?.Cancel();
-            _exportCts = new CancellationTokenSource();
-            var ct = _exportCts.Token;
-
-            var result = await _captureService.ExportFlashbackRangeAsync(
-                inPoint, outPoint, file.Path, progress, ct);
-
-            StatusText = result.Succeeded
+            StatusText = $"Export error: {errorMessage}";
+        }
+        else
+        {
+            StatusText = result!.Succeeded
                 ? $"Export complete: {file.Path}"
                 : $"Export failed: {result.StatusMessage}";
-        }
-        catch (Exception ex)
-        {
-            StatusText = $"Export error: {ex.Message}";
-        }
-        finally
-        {
-            IsFlashbackExporting = false;
-            FlashbackExportProgress = 0;
         }
     }
 
@@ -232,20 +211,41 @@ public partial class MainViewModel
         var bufferManager = _captureService.FlashbackBufferManager;
         if (bufferManager == null) return;
 
+        var file = await PickFlashbackExportFileAsync($"Flashback_Last5m_{DateTime.Now:yyyyMMdd_HHmmss}");
+        if (file == null) return;
+
+        var (result, errorMessage) = await ExportFlashbackCoreAsync(async (progress, ct) =>
+            await _captureService.ExportFlashbackLastNSecondsAsync(300, file.Path, progress, ct));
+
+        if (errorMessage != null)
+        {
+            StatusText = $"Save error: {errorMessage}";
+        }
+        else
+        {
+            StatusText = result!.Succeeded
+                ? $"Saved last 5 minutes: {file.Path}"
+                : $"Save failed: {result.StatusMessage}";
+        }
+    }
+
+    private async Task<Windows.Storage.StorageFile?> PickFlashbackExportFileAsync(string suggestedFileName)
+    {
+        var picker = new Windows.Storage.Pickers.FileSavePicker();
+        picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.VideosLibrary;
+        picker.FileTypeChoices.Add("MP4 Video", new[] { ".mp4" });
+        picker.SuggestedFileName = suggestedFileName;
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, _windowHandle);
+        return await picker.PickSaveFileAsync();
+    }
+
+    private async Task<(FinalizeResult? Result, string? ErrorMessage)> ExportFlashbackCoreAsync(
+        Func<IProgress<ExportProgress>, CancellationToken, Task<FinalizeResult>> exportAction)
+    {
+        IsFlashbackExporting = true;
+        FlashbackExportProgress = 0;
         try
         {
-            var picker = new Windows.Storage.Pickers.FileSavePicker();
-            picker.SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.VideosLibrary;
-            picker.FileTypeChoices.Add("MP4 Video", new[] { ".mp4" });
-            picker.SuggestedFileName = $"Flashback_Last5m_{DateTime.Now:yyyyMMdd_HHmmss}";
-            WinRT.Interop.InitializeWithWindow.Initialize(picker, _windowHandle);
-
-            var file = await picker.PickSaveFileAsync();
-            if (file == null) return;
-
-            IsFlashbackExporting = true;
-            FlashbackExportProgress = 0;
-
             var progress = new Progress<ExportProgress>(p =>
             {
                 _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
@@ -255,16 +255,13 @@ public partial class MainViewModel
             _exportCts = new CancellationTokenSource();
             var ct = _exportCts.Token;
 
-            var result = await _captureService.ExportFlashbackLastNSecondsAsync(
-                300, file.Path, progress, ct);
-
-            StatusText = result.Succeeded
-                ? $"Saved last 5 minutes: {file.Path}"
-                : $"Save failed: {result.StatusMessage}";
+            var result = await exportAction(progress, ct);
+            return (result, null);
         }
         catch (Exception ex)
         {
-            StatusText = $"Save error: {ex.Message}";
+            Logger.LogException(ex);
+            return (null, ex.Message);
         }
         finally
         {
@@ -276,8 +273,11 @@ public partial class MainViewModel
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
         double seconds, string outputPath, CancellationToken ct)
     {
-        IsFlashbackExporting = true;
-        FlashbackExportProgress = 0;
+        _dispatcherQueue.TryEnqueue(() =>
+        {
+            IsFlashbackExporting = true;
+            FlashbackExportProgress = 0;
+        });
         try
         {
             var progress = new Progress<ExportProgress>(p =>
@@ -289,8 +289,11 @@ public partial class MainViewModel
         }
         finally
         {
-            IsFlashbackExporting = false;
-            FlashbackExportProgress = 0;
+            _dispatcherQueue.TryEnqueue(() =>
+            {
+                IsFlashbackExporting = false;
+                FlashbackExportProgress = 0;
+            });
         }
     }
 
@@ -298,6 +301,12 @@ public partial class MainViewModel
         => _captureService.GetFlashbackSegments();
 
     public void SetFlashbackEnabled(bool enabled) => _captureService.SetFlashbackEnabled(enabled);
+
+    public async Task RestartFlashbackAsync()
+    {
+        await _captureService.RestartFlashbackAsync().ConfigureAwait(false);
+        _flashbackBitrateSamples.Clear();
+    }
 
     // ── ViewModel runtime snapshot ───────────────────────────────────────
 

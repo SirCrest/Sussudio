@@ -274,8 +274,9 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
             return ComputeCadenceMetrics(intervalsMs, expectedFrameRate);
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Log($"AnalyzeCadenceMetricsAsync ffprobe JSON parse failed: {ex.Message}");
             return null;
         }
     }
@@ -345,8 +346,9 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
             return new HdrSideDataProbeResult(false, sideDataTypes);
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Log($"ProbeHdrSideDataAsync ffprobe JSON parse failed: {ex.Message}");
             return new HdrSideDataProbeResult(null, Array.Empty<string>());
         }
     }

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using ElgatoCapture.Tools;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -36,20 +37,20 @@ public static class PerformanceTimelineTool
             entries.Add(new TimelineRow
             {
                 Timestamp = ResponseFormatter.Get(item, "TimestampUtc"),
-                CaptureFps = GetDouble(item, "CaptureFps"),
-                PreviewFps = GetDouble(item, "PreviewFps"),
-                VidQueue = GetInt(item, "VideoQueueDepth"),
-                VidDrops = GetLong(item, "VideoDrops"),
-                P95Ms = GetDouble(item, "CaptureCadenceP95Ms"),
-                LatencyMs = GetLong(item, "PipelineLatencyMs"),
-                WorkingMb = GetDouble(item, "MemoryWorkingSetMb"),
-                ManagedMb = GetDouble(item, "MemoryManagedHeapMb"),
-                Gen0 = GetInt(item, "GcGen0Collections"),
-                Gen1 = GetInt(item, "GcGen1Collections"),
-                Gen2 = GetInt(item, "GcGen2Collections"),
-                GcPause = GetDouble(item, "GcPauseTimePercent"),
-                Workers = GetInt(item, "ThreadPoolWorkerAvailable"),
-                IoThreads = GetInt(item, "ThreadPoolIoAvailable")
+                CaptureFps = AutomationSnapshotFormatter.GetDouble(item, "CaptureFps"),
+                PreviewFps = AutomationSnapshotFormatter.GetDouble(item, "PreviewFps"),
+                VidQueue = AutomationSnapshotFormatter.GetInt(item, "VideoQueueDepth"),
+                VidDrops = AutomationSnapshotFormatter.GetLong(item, "VideoDrops"),
+                P95Ms = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceP95Ms"),
+                LatencyMs = AutomationSnapshotFormatter.GetLong(item, "PipelineLatencyMs"),
+                WorkingMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryWorkingSetMb"),
+                ManagedMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryManagedHeapMb"),
+                Gen0 = AutomationSnapshotFormatter.GetInt(item, "GcGen0Collections"),
+                Gen1 = AutomationSnapshotFormatter.GetInt(item, "GcGen1Collections"),
+                Gen2 = AutomationSnapshotFormatter.GetInt(item, "GcGen2Collections"),
+                GcPause = AutomationSnapshotFormatter.GetDouble(item, "GcPauseTimePercent"),
+                Workers = AutomationSnapshotFormatter.GetInt(item, "ThreadPoolWorkerAvailable"),
+                IoThreads = AutomationSnapshotFormatter.GetInt(item, "ThreadPoolIoAvailable")
             });
         }
 
@@ -109,45 +110,6 @@ public static class PerformanceTimelineTool
     private static string GetMessage(JsonElement response)
     {
         return ResponseFormatter.Get(response, "Message", "Command failed.");
-    }
-
-    private static double GetDouble(JsonElement el, string prop)
-    {
-        if (el.ValueKind == JsonValueKind.Object &&
-            el.TryGetProperty(prop, out var value) &&
-            value.ValueKind == JsonValueKind.Number &&
-            value.TryGetDouble(out var result))
-        {
-            return result;
-        }
-
-        return 0;
-    }
-
-    private static int GetInt(JsonElement el, string prop)
-    {
-        if (el.ValueKind == JsonValueKind.Object &&
-            el.TryGetProperty(prop, out var value) &&
-            value.ValueKind == JsonValueKind.Number &&
-            value.TryGetInt32(out var result))
-        {
-            return result;
-        }
-
-        return 0;
-    }
-
-    private static long GetLong(JsonElement el, string prop)
-    {
-        if (el.ValueKind == JsonValueKind.Object &&
-            el.TryGetProperty(prop, out var value) &&
-            value.ValueKind == JsonValueKind.Number &&
-            value.TryGetInt64(out var result))
-        {
-            return result;
-        }
-
-        return 0;
     }
 
     private sealed class TimelineRow

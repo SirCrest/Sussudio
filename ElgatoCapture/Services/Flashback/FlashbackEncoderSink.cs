@@ -95,6 +95,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public long AudioSamplesReceived => Interlocked.Read(ref _audioSamplesReceived);
 
     public long OutputBytes => _bufferManager.TotalDiskBytes;
+    public long TotalBytesWritten => _bufferManager.TotalBytesWritten;
 
     public int VideoQueueCount => Volatile.Read(ref _videoQueueDepth);
 
@@ -119,6 +120,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public bool AudioEnabled => Volatile.Read(ref _audioEnabled);
 
     public bool MicrophoneEnabled => Volatile.Read(ref _microphoneEnabled);
+
+    public string? CodecName => _sessionContext?.CodecName;
+    public uint TargetBitRate => _sessionContext?.BitRate ?? 0;
+    public int EncoderWidth => _width;
+    public int EncoderHeight => _height;
+    public double EncoderFrameRate => _sessionContext?.FrameRate ?? 0;
 
     public Task StartAsync(FlashbackSessionContext context, CancellationToken cancellationToken = default)
     {
@@ -203,29 +210,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _height = context.Height;
             _audioEnabled = context.AudioEnabled;
             _microphoneEnabled = context.MicrophoneEnabled;
-            Interlocked.Exchange(ref _droppedVideoFrames, 0);
-            Interlocked.Exchange(ref _encodedVideoFrames, 0);
-            Interlocked.Exchange(ref _videoFramesEnqueued, 0);
-            Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
-            Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
-            Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
-            Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
-            Interlocked.Exchange(ref _microphoneDropsQueueSaturated, 0);
-            Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
-            Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
-            Interlocked.Exchange(ref _gpuFramesDropped, 0);
-            Interlocked.Exchange(ref _audioSamplesReceived, 0);
-            Interlocked.Exchange(ref _videoQueueDepth, 0);
-            Interlocked.Exchange(ref _audioQueueDepth, 0);
-            Interlocked.Exchange(ref _microphoneQueueDepth, 0);
-            Interlocked.Exchange(ref _gpuQueueDepth, 0);
-            Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);
-            Interlocked.Exchange(ref _lastVideoWriteTick, 0);
-            Interlocked.Exchange(ref _lastBurstEvictionTick, 0);
+            ResetEncodingCounters();
             Volatile.Write(ref _recordingActive, 0);
             _segmentStartPts = TimeSpan.Zero;
             _segmentDuration = _bufferManager.Options.SegmentDuration;
             Logger.Log($"FLASHBACK_SINK_INIT_COMPLETE session='{sessionId}' gpu_encoding={_gpuEncodingEnabled} segment_duration_s={_segmentDuration.TotalSeconds:F0}");
+
+            // Publish the encoder's frame rate as ground truth for playback pacing.
+            _bufferManager.EncodeFrameRate = context.FrameRate;
 
             _encodingTask = Task.Factory.StartNew(
                 () => EncodingLoop(_cts.Token),
@@ -625,6 +617,29 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             $"FLASHBACK_SINK_STOP output='{outputPath}' frames={EncodedVideoFrames} dropped={DroppedVideoFrames} " +
             $"audio_samples={AudioSamplesReceived}");
         return FinalizeResult.Success(outputPath, "Stopped");
+    }
+
+    private void ResetEncodingCounters()
+    {
+        Interlocked.Exchange(ref _droppedVideoFrames, 0);
+        Interlocked.Exchange(ref _encodedVideoFrames, 0);
+        Interlocked.Exchange(ref _videoFramesEnqueued, 0);
+        Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
+        Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
+        Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _microphoneDropsQueueSaturated, 0);
+        Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
+        Interlocked.Exchange(ref _gpuFramesDropped, 0);
+        Interlocked.Exchange(ref _audioSamplesReceived, 0);
+        Interlocked.Exchange(ref _videoQueueDepth, 0);
+        Interlocked.Exchange(ref _audioQueueDepth, 0);
+        Interlocked.Exchange(ref _microphoneQueueDepth, 0);
+        Interlocked.Exchange(ref _gpuQueueDepth, 0);
+        Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);
+        Interlocked.Exchange(ref _lastVideoWriteTick, 0);
+        Interlocked.Exchange(ref _lastBurstEvictionTick, 0);
     }
 
     // ── Encoding Loop ───────────────────────────────────────────────────────

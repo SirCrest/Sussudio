@@ -554,6 +554,11 @@ public sealed class AutomationSnapshot
     public long FlashbackEncodedFrames { get; init; }
     public long FlashbackDroppedFrames { get; init; }
     public bool FlashbackGpuEncoding { get; init; }
+    public string? EncoderCodecName { get; init; }
+    public uint EncoderTargetBitRate { get; init; }
+    public int EncoderWidth { get; init; }
+    public int EncoderHeight { get; init; }
+    public double EncoderFrameRate { get; init; }
     public int FlashbackVideoQueueDepth { get; init; }
     public int FlashbackAudioQueueDepth { get; init; }
     public string FlashbackPlaybackState { get; init; } = "N/A";

@@ -35,7 +35,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
     private long _videoFramesWrittenToSink;
     private long _recordingFramesDelivered;
     private long _lastVideoFrameArrivedTick;
-    private Action<string>? _observedPixelFormatObserver;
+    private Action<string>? _pixelFormatDetectedCallback;
     private int _pixelFormatObserverFired;
     private volatile bool _previewSuppressed;
 
@@ -277,9 +277,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         Volatile.Write(ref _flashbackSink, sink);
     }
 
-    public void SetObservedPixelFormatObserver(Action<string>? observer)
+    public void SetPixelFormatDetectedCallback(Action<string>? observer)
     {
-        Volatile.Write(ref _observedPixelFormatObserver, observer);
+        Volatile.Write(ref _pixelFormatDetectedCallback, observer);
     }
 
     public Task StartRecordingAsync(
@@ -369,7 +369,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             if (mjpegPipelineToStop != null)
             {
                 _previewSink = null;
-                _observedPixelFormatObserver = null;
+                _pixelFormatDetectedCallback = null;
             }
         }
 
@@ -430,7 +430,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             _isHighFrameRateMjpegMode = false;
             _strictPreviewTextureRequired = false;
             _previewSink = null;
-            _observedPixelFormatObserver = null;
+            _pixelFormatDetectedCallback = null;
             Volatile.Write(ref _flashbackSink, null);
             _disposed = true;
         }
@@ -697,7 +697,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
             return;
         }
 
-        Volatile.Read(ref _observedPixelFormatObserver)?.Invoke(format);
+        Volatile.Read(ref _pixelFormatDetectedCallback)?.Invoke(format);
     }
 
     private void SignalFatalError(Exception ex, string logMessage)

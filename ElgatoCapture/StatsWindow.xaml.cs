@@ -321,4 +321,9 @@ public sealed record StatsSnapshot(
     double? AvSyncCaptureDriftMs = null,
     double? AvSyncCaptureDriftRateMsPerSec = null,
     double? AvSyncEncoderDriftMs = null,
-    long? AvSyncEncoderCorrectionSamples = null);
+    long? AvSyncEncoderCorrectionSamples = null,
+    string? EncoderCodecName = null,
+    int EncoderWidth = 0,
+    int EncoderHeight = 0,
+    double EncoderFrameRate = 0,
+    uint EncoderTargetBitRate = 0);

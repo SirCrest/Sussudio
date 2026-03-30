@@ -16,6 +16,7 @@ public enum CaptureCommandKind
     StopRecording,
     StartAudioPreview,
     StopAudioPreview,
+    UpdateAudioMonitoring,
     UpdateAudioInput,
     UpdateMicrophoneMonitor,
     Cleanup
@@ -119,6 +120,30 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 
     public Task StopAudioPreviewAsync(bool teardownCapture = false, CancellationToken cancellationToken = default)
         => EnqueueAsync(CaptureCommandKind.StopAudioPreview, ct => _captureService.StopAudioPreviewAsync(teardownCapture, ct), cancellationToken);
+
+    public Task UpdateAudioMonitoringAsync(bool enabled, CancellationToken cancellationToken = default)
+        => EnqueueAsync(
+            CaptureCommandKind.UpdateAudioMonitoring,
+            async ct =>
+            {
+                if (enabled)
+                {
+                    await _captureService.StartAudioPreviewAsync(ct).ConfigureAwait(false);
+                    _captureService.SetMonitoringMuted(false);
+                }
+                else
+                {
+                    _captureService.SetMonitoringMuted(true);
+                    await _captureService.StopAudioPreviewAsync(teardownCapture: false, ct).ConfigureAwait(false);
+                }
+            },
+            cancellationToken);
+
+    internal void SetPreviewVolume(double volume)
+    {
+        ThrowIfDisposed();
+        _captureService.SetPreviewVolume((float)volume);
+    }
 
     public Task UpdateAudioInputAsync(string? audioDeviceId, string? audioDeviceName, CancellationToken cancellationToken = default)
         => EnqueueAsync(

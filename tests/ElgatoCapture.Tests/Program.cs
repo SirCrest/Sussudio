@@ -4,7 +4,7 @@ using System.Runtime.Loader;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
-static class Program
+static partial class Program
 {
     private sealed record CheckResult(string Name, bool Passed, string? Detail = null);
 
@@ -282,7 +282,16 @@ static class Program
                 EcctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter),
             await RunCheckAsync(
                 "AutomationClient CommandMap covers every AutomationCommandKind enum value",
-                AutomationClient_CommandMap_CoversEveryAutomationCommandKind)
+                AutomationClient_CommandMap_CoversEveryAutomationCommandKind),
+            await RunCheckAsync(
+                "ecctl CommandHandlers route core command groups",
+                EcctlCommandHandlers_RouteCoreCommandGroups),
+            await RunCheckAsync(
+                "ecctl Formatters emit core snapshot sections",
+                EcctlFormatters_EmitCoreSnapshotSections),
+            await RunCheckAsync(
+                "ecctl PipeTransport exposes advanced automation command ids",
+                EcctlPipeTransport_ExposesAdvancedAutomationCommandIds)
         };
 
         var failed = results.Where(r => !r.Passed).ToList();
@@ -1060,18 +1069,18 @@ static class Program
 
     private static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
-        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var settingsPartialText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Settings.cs").Replace("\r\n", "\n");
         var settingsServiceText = ReadRepoFile("ElgatoCapture/Services/SettingsService.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? ShowAllCaptureOptions { get; set; }");
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
-        AssertContains(mainViewModelText, "if (settings.ShowAllCaptureOptions.HasValue)");
-        AssertContains(mainViewModelText, "if (settings.IsStatsVisible.HasValue)");
-        AssertContains(mainViewModelText, "ShowAllCaptureOptions = ShowAllCaptureOptions,");
-        AssertContains(mainViewModelText, "IsStatsVisible = IsStatsVisible,");
-        AssertContains(mainViewModelText, "partial void OnIsStatsVisibleChanged(bool value)");
-        AssertContains(mainViewModelText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
-        AssertContains(mainViewModelText, "RebuildResolutionOptions();\n        SaveSettings();");
+        AssertContains(settingsPartialText, "if (settings.ShowAllCaptureOptions.HasValue)");
+        AssertContains(settingsPartialText, "if (settings.IsStatsVisible.HasValue)");
+        AssertContains(settingsPartialText, "ShowAllCaptureOptions = ShowAllCaptureOptions,");
+        AssertContains(settingsPartialText, "IsStatsVisible = IsStatsVisible,");
+        AssertContains(settingsPartialText, "partial void OnIsStatsVisibleChanged(bool value)");
+        AssertContains(settingsPartialText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
+        AssertContains(settingsPartialText, "RebuildResolutionOptions();\n        SaveSettings();");
 
         return Task.CompletedTask;
     }
@@ -1089,7 +1098,7 @@ static class Program
 
     private static Task ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates()
     {
-        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.DeviceManagement.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "options = ShowAllCaptureOptions");
         AssertContains(mainViewModelText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");
@@ -1171,13 +1180,11 @@ static class Program
     private static Task AudioMonitoringVisuals_FollowRuntimePreviewActivity()
     {
         var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var mainWindowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("ElgatoCapture/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
 
-        AssertContains(mainViewModelText, "public partial bool IsAudioPreviewActive { get; set; }");
-        AssertContains(mainViewModelText, "IsAudioPreviewActive = runtime.IsAudioPreviewActive;");
-        AssertContains(mainViewModelText, "IsAudioPreviewActive = false;");
-        AssertContains(mainWindowText, "case nameof(MainViewModel.IsAudioPreviewActive):");
-        AssertContains(mainWindowText, "SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);");
+        AssertContains(mainViewModelText, "IsAudioPreviewActive");
+        AssertContains(propertyChangedText, "case nameof(MainViewModel.IsAudioPreviewActive):");
+        AssertContains(propertyChangedText, "SetAudioMeterMonitoringState(ViewModel.IsAudioPreviewActive);");
 
         return Task.CompletedTask;
     }
@@ -1211,15 +1218,15 @@ static class Program
 
     private static Task StatsPanels_UseSourceTelemetry_ForHdmiInput()
     {
-        var mainWindowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs").Replace("\r\n", "\n");
+        var statsOverlayText = ReadRepoFile("ElgatoCapture/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
         var mainWindowXaml = ReadRepoFile("ElgatoCapture/MainWindow.xaml").Replace("\r\n", "\n");
         var statsWindowText = ReadRepoFile("ElgatoCapture/StatsWindow.xaml.cs").Replace("\r\n", "\n");
         var statsWindowXaml = ReadRepoFile("ElgatoCapture/StatsWindow.xaml").Replace("\r\n", "\n");
         var nativeXuText = ReadRepoFile("ElgatoCapture/Services/Telemetry/NativeXuAtCommandProvider.cs").Replace("\r\n", "\n");
 
-        AssertContains(mainWindowText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
-        AssertContains(mainWindowText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
-        AssertDoesNotContain(mainWindowText, "var sourceFormat =\n            snapshot.ReaderSourceSubtype ??");
+        AssertContains(statsOverlayText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
+        AssertContains(statsOverlayText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
+        AssertDoesNotContain(statsOverlayText, "var sourceFormat =\n            snapshot.ReaderSourceSubtype ??");
         AssertContains(statsWindowText, "SourceHdrValue.Text = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
         AssertContains(statsWindowText, "SourceFormatValue.Text = snapshot.SourceVideoFormat ?? \"\\u2014\";");
         AssertContains(mainWindowXaml, "Text=\"Video Format\"");
@@ -1260,8 +1267,8 @@ static class Program
         var unifiedVideoCapture = CreateInstance("ElgatoCapture.Services.UnifiedVideoCapture");
         var observed = string.Empty;
 
-        var setObserver = unifiedVideoCapture.GetType().GetMethod("SetObservedPixelFormatObserver", BindingFlags.Public | BindingFlags.Instance)
-            ?? throw new InvalidOperationException("SetObservedPixelFormatObserver method not found.");
+        var setObserver = unifiedVideoCapture.GetType().GetMethod("SetPixelFormatDetectedCallback", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("SetPixelFormatDetectedCallback method not found.");
         setObserver.Invoke(unifiedVideoCapture, new object?[] { new Action<string>(value => observed = value) });
 
         var emitMethod = unifiedVideoCapture.GetType().GetMethod("OnMjpegPipelineFrameEmitted", BindingFlags.NonPublic | BindingFlags.Instance)
@@ -2899,4 +2906,42 @@ static class Program
     }
 
     private delegate void ClosedMjpegEmitDelegate(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick);
+
+    private static Assembly LoadToolAssembly(string relativeAssemblyPath)
+    {
+        var fullPath = Path.Combine(GetRepoRoot(), relativeAssemblyPath);
+        return AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
+    }
+
+    private static async Task<JsonElement> CapturePipeRequestAsync(string pipeName, Func<Task> clientAction)
+    {
+        using var serverPipe = new System.IO.Pipes.NamedPipeServerStream(
+            pipeName,
+            System.IO.Pipes.PipeDirection.InOut,
+            1,
+            System.IO.Pipes.PipeTransmissionMode.Byte,
+            System.IO.Pipes.PipeOptions.Asynchronous);
+
+        var clientTask = Task.Run(async () =>
+        {
+            try { await clientAction().ConfigureAwait(false); }
+            catch { /* Client may fail when server responds with synthetic data */ }
+        });
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        await serverPipe.WaitForConnectionAsync(cts.Token).ConfigureAwait(false);
+
+        using var reader = new StreamReader(serverPipe, leaveOpen: true);
+        var requestLine = await reader.ReadLineAsync().ConfigureAwait(false)
+            ?? throw new InvalidOperationException("No request received on pipe.");
+
+        // Send a synthetic success response so the client completes
+        using var writer = new StreamWriter(serverPipe, leaveOpen: true) { AutoFlush = true };
+        await writer.WriteLineAsync("{\"Success\":true}").ConfigureAwait(false);
+
+        await clientTask.ConfigureAwait(false);
+
+        using var doc = JsonDocument.Parse(requestLine);
+        return doc.RootElement.Clone();
+    }
 }

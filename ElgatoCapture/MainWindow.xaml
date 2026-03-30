@@ -323,6 +323,50 @@
                             </StackPanel>
                         </StackPanel>
 
+                        <StackPanel x:Name="EncoderSection" Spacing="2" Visibility="Collapsed">
+                            <TextBlock Text="Encoder" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Codec" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_EncoderCodecValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Resolution" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_EncoderResolutionValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Frame Rate" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_EncoderFrameRateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Target Bitrate" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_EncoderBitrateValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
                         <StackPanel Spacing="2">
                             <Grid x:Name="SourceCadence_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="SourceCadence_Content">
                                 <Grid.ColumnDefinitions>
@@ -1006,6 +1050,12 @@
                         <ComboBoxItem Content="15 minutes" Tag="15"/>
                         <ComboBoxItem Content="30 minutes" Tag="30"/>
                     </ComboBox>
+                    <Button x:Name="FlashbackApplyButton"
+                            Content="Apply"
+                            Height="28" Padding="12,0"
+                            VerticalAlignment="Center"
+                            ToolTipService.ToolTip="Restart flashback with current settings (clears buffer)"
+                            Click="FlashbackApplyButton_Click"/>
                     <TextBlock x:Name="FlashbackDiskEstimateText"
                                FontSize="11" Foreground="#80FFFFFF"
                                VerticalAlignment="Center"
@@ -1682,6 +1732,13 @@
                            Visibility="Collapsed"/>
             </Grid>
         </Border>
+
+        <!-- Fullscreen: VLC-style slide-up controls overlay -->
+        <StackPanel x:Name="FullScreenControlsOverlay"
+                    Grid.RowSpan="4" Grid.ColumnSpan="2"
+                    Visibility="Collapsed"
+                    VerticalAlignment="Bottom"
+                    Canvas.ZIndex="10"/>
 
         <!-- Startup Splash Overlay -->
         <Grid x:Name="SplashOverlay" Grid.RowSpan="4" Grid.ColumnSpan="2"

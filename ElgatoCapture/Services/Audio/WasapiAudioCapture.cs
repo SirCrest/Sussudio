@@ -273,7 +273,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         Volatile.Write(ref _flashbackSink, null);
     }
 
-    public void SetAudioWriteDelegate(Func<ReadOnlyMemory<byte>, Task>? writer)
+    public void SetAudioWriter(Func<ReadOnlyMemory<byte>, Task>? writer)
     {
         Volatile.Write(ref _audioWriteDelegate, writer);
     }

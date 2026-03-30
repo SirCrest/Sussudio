@@ -20,7 +20,7 @@ internal sealed unsafe class CudaD3D11InteropBridge : IDisposable
 {
     // D3D11 immediate context is NOT thread-safe. cuGraphicsMapResources uses it
     // internally, so concurrent calls from two decoder threads race and cause error 999.
-    private static readonly object s_d3d11InteropLock = new();
+    private static readonly object D3D11InteropLock = new();
 
     private const uint CU_MEMORYTYPE_HOST = 1;
     private const uint CU_MEMORYTYPE_DEVICE = 2;
@@ -418,6 +418,7 @@ internal sealed unsafe class CudaD3D11InteropBridge : IDisposable
         }
         catch
         {
+            // Best-effort: CUDA context or resource may already be destroyed during teardown — non-fatal
         }
     }
 

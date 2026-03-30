@@ -88,8 +88,8 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     private int _hwPoolIndex; // round-robin index into _hwPoolTextures
 
     /// <summary>No-op free callback for av_buffer_create — our pool textures outlive individual frames.</summary>
-    private static readonly av_buffer_create_free _hwPoolTextureFreeDelegate = (opaque, data) => { /* intentional no-op */ };
-    private static readonly av_buffer_create_free_func _hwPoolTextureFree = _hwPoolTextureFreeDelegate;
+    private static readonly av_buffer_create_free HwPoolTextureFreeDelegate = (opaque, data) => { /* intentional no-op */ };
+    private static readonly av_buffer_create_free_func HwPoolTextureFree = HwPoolTextureFreeDelegate;
 
     public long EncodedFrameCount => _encodedFrameCount;
     public long DroppedFrameCount => _droppedFrameCount;
@@ -467,7 +467,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         _hwFrame->data[1] = (byte*)(nint)0; // subresource index = 0
         // Create a buffer ref with no-op free so av_frame_unref doesn't release our pool texture
         _hwFrame->buf[0] = ffmpeg.av_buffer_create(
-            (byte*)poolTexture, 0, _hwPoolTextureFree, null, 0);
+            (byte*)poolTexture, 0, HwPoolTextureFree, null, 0);
 
         if (_forceNextKeyframe)
         {

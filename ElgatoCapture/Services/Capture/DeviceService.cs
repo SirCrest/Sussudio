@@ -601,10 +601,8 @@ public class DeviceService
         return token.ToUpperInvariant();
     }
 
-    public async Task<List<AudioInputDevice>> EnumerateAudioCaptureDevicesAsync()
-    {
-        return await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync().ConfigureAwait(false);
-    }
+    public Task<List<AudioInputDevice>> EnumerateAudioCaptureDevicesAsync()
+        => MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();
 
     private sealed record DeviceCandidate(
         string SourceName,

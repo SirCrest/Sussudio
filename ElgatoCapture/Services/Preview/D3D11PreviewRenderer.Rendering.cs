@@ -48,11 +48,16 @@ internal sealed partial class D3D11PreviewRenderer
 
                 if (Interlocked.CompareExchange(ref _compositionTransformDirty, 0, 1) == 1)
                 {
+                    // Re-check stop flag: Stop() may have unbound the swap chain between
+                    // the top-of-loop check and here. Accessing an unbound chain causes
+                    // native stack corruption (BEX64 / 0xc0000409).
+                    if (Volatile.Read(ref _stopRequested) != 0) break;
                     try
                     {
-                        if (_swapChain != null)
+                        var swapChain = _swapChain;
+                        if (swapChain != null && _swapChainBound)
                         {
-                            ApplyCompositionScaleTransform(_swapChain);
+                            ApplyCompositionScaleTransform(swapChain);
                         }
                     }
                     catch (Exception ex)
@@ -78,6 +83,12 @@ internal sealed partial class D3D11PreviewRenderer
                         _frameReadyEvent.Set();
                     }
                     continue;
+                }
+
+                if (Volatile.Read(ref _stopRequested) != 0)
+                {
+                    frame.Dispose();
+                    break;
                 }
 
                 try

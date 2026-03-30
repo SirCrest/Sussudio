@@ -79,7 +79,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
     // get_format callback: tells the decoder to use D3D11VA when available.
     // Must be stored as a field to prevent GC collection while the decoder is alive.
-    private static readonly AVCodecContext_get_format _getFormatD3D11 = GetFormatD3D11;
+    private static readonly AVCodecContext_get_format GetFormatD3D11Callback = GetFormatD3D11;
 
     private static AVPixelFormat GetFormatD3D11(AVCodecContext* ctx, AVPixelFormat* fmt)
     {
@@ -596,7 +596,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 goto cleanup;
             }
 
-            decoderCtx->get_format = _getFormatD3D11;
+            decoderCtx->get_format = GetFormatD3D11Callback;
             decoderCtx->extra_hw_frames = 4;
 
             var openResult = ffmpeg.avcodec_open2(decoderCtx, codec, null);

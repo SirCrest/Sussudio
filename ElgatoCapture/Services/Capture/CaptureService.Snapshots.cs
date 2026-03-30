@@ -39,8 +39,9 @@ public partial class CaptureService
                 return new RecordingStats(0, 0);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Log($"GetRecordingStats failed: {ex.Message}");
             return new RecordingStats(0, 0);
         }
     }
@@ -709,6 +710,11 @@ public partial class CaptureService
             FlashbackEncodedFrames = fbSink?.EncodedVideoFrames ?? 0,
             FlashbackDroppedFrames = fbSink?.DroppedVideoFrames ?? 0,
             FlashbackGpuEncoding = fbSink?.GpuEncodingEnabled ?? false,
+            EncoderCodecName = fbSink?.CodecName,
+            EncoderTargetBitRate = fbSink?.TargetBitRate ?? 0,
+            EncoderWidth = fbSink?.EncoderWidth ?? 0,
+            EncoderHeight = fbSink?.EncoderHeight ?? 0,
+            EncoderFrameRate = fbSink?.EncoderFrameRate ?? 0,
             FlashbackVideoQueueDepth = fbSink?.VideoQueueCount ?? 0,
             FlashbackAudioQueueDepth = fbSink?.AudioQueueCount ?? 0,
             FlashbackPlaybackState = fbPlayback?.State.ToString() ?? "N/A",

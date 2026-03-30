@@ -14,14 +14,14 @@ internal static class FfmpegRuntimeLocator
     // ── Encoder capability probes (moved from legacy FFmpegEncoderService) ──
 
     private static Task<EncoderSupport>? _encoderProbeTask;
-    private static readonly object _encoderProbeLock = new();
+    private static readonly object EncoderProbeLock = new();
     private static Task<SplitEncodeSupport>? _splitEncodeSupportTask;
-    private static readonly object _splitEncodeSupportLock = new();
+    private static readonly object SplitEncodeSupportLock = new();
     private static readonly Lazy<string> CachedFfmpegPath = new(() => FindToolPath("ffmpeg.exe"));
 
     public static Task<EncoderSupport> GetEncoderSupportAsync()
     {
-        lock (_encoderProbeLock)
+        lock (EncoderProbeLock)
         {
             _encoderProbeTask ??= ProbeEncoderSupportAsync();
             return _encoderProbeTask;
@@ -30,7 +30,7 @@ internal static class FfmpegRuntimeLocator
 
     public static Task<SplitEncodeSupport> GetSplitEncodeSupportAsync()
     {
-        lock (_splitEncodeSupportLock)
+        lock (SplitEncodeSupportLock)
         {
             _splitEncodeSupportTask ??= ProbeSplitEncodeSupportAsync();
             return _splitEncodeSupportTask;

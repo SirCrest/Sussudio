@@ -114,6 +114,23 @@ internal sealed class FlashbackPlaybackController : IDisposable
         private set => Interlocked.Exchange(ref _playbackPositionTicks, value.Ticks);
     }
 
+    /// <summary>
+    /// Distance from the live edge in absolute PTS space. Immune to the
+    /// frozenValidStart vs currentValidStartPts coordinate mismatch that
+    /// makes PlaybackPosition exceed BufferedDuration after segment eviction.
+    /// </summary>
+    public TimeSpan GapFromLive
+    {
+        get
+        {
+            var latest = _bufferManager.LatestPts;
+            var lastFrame = TimeSpan.FromTicks(Interlocked.Read(ref _lastVideoPtsTicks));
+            if (lastFrame == TimeSpan.Zero) return TimeSpan.Zero;
+            var gap = latest - lastFrame;
+            return gap > TimeSpan.Zero ? gap : TimeSpan.Zero;
+        }
+    }
+
     // --- Lifecycle ---
 
     public void Initialize(
@@ -825,6 +842,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
             if (CheckNearLiveEdge(decoder, videoFrame.Pts, newPosition, ref fileOpen))
                 return false;
 
+            // Use the encoder's frame rate as ground truth — the buffer manager knows
+            // exactly what rate we told NVENC to encode at. TS container metadata can
+            // report doubled rates (e.g. 240 for 120fps) and the decoder's PTS calibration
+            // needs ~10 frames to correct. The encode rate is authoritative from frame 1.
+            var groundTruthFps = _bufferManager.EncodeFrameRate;
+            if (groundTruthFps > 0)
+                frameDuration = TimeSpan.FromSeconds(1.0 / groundTruthFps);
+            else
+                frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
+
             PaceFrameInterval(pacingStopwatch, frameDuration);
             UpdateCadenceMetrics(pacingStopwatch);
 
@@ -842,11 +869,20 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Stopwatch pacingStopwatch,
         TimeSpan frozenValidStart)
     {
-        var bufDur = _bufferManager.BufferedDuration;
+        // Use absolute PTS to measure distance from live edge.
+        // PlaybackPosition uses frozenValidStart (captured at scrub time) while
+        // BufferedDuration uses the current ValidStartPts (moves as segments are
+        // evicted). Mixing these coordinate systems causes a permanently negative
+        // gap once eviction advances ValidStartPts past frozenValidStart.
+        var latestAbsPts = _bufferManager.LatestPts;
+        var lastFrameAbsPts = TimeSpan.FromTicks(Interlocked.Read(ref _lastVideoPtsTicks));
+        // Fallback: if no frame was decoded yet, estimate from PlaybackPosition
+        if (lastFrameAbsPts == TimeSpan.Zero)
+            lastFrameAbsPts = PlaybackPosition + frozenValidStart;
+        var gapFromLive = (latestAbsPts - lastFrameAbsPts).TotalMilliseconds;
         var pos = PlaybackPosition;
-        var gap = (bufDur - pos).TotalMilliseconds;
 
-        if (gap > 2000)
+        if (gapFromLive > 2000)
         {
             var nextFile = _bufferManager.GetNextSegmentFile(_currentOpenFilePath);
             if (nextFile != null && nextFile != _currentOpenFilePath)
@@ -871,7 +907,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             return true;
         }
 
-        Logger.Log($"FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT gap_ms={gap:F0} pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds}");
+        Logger.Log($"FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT gapFromLive_ms={gapFromLive:F0} pos_ms={(long)pos.TotalMilliseconds} lastFrameAbsPts_ms={(long)lastFrameAbsPts.TotalMilliseconds} latestPts_ms={(long)latestAbsPts.TotalMilliseconds}");
         Thread.Sleep(50);
         pacingStopwatch.Restart();
         return true;

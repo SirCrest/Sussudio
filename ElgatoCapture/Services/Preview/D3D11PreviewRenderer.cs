@@ -569,18 +569,12 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             Interlocked.Exchange(ref _stopRequested, 1);
         }
 
-        _frameReadyEvent.Set();
-        if (Thread.CurrentThread != renderThread)
-        {
-            if (!renderThread.Join(TimeSpan.FromSeconds(3)))
-            {
-                Logger.Log("D3D11 preview renderer stop wait exceeded 3s; waiting until render thread exits.");
-                renderThread.Join();
-            }
-        }
-
-        // Unbind swap chain from panel after render thread exits (avoids deadlock —
-        // render thread cleanup no longer dispatches to UI thread).
+        // Unbind swap chain from panel BEFORE joining the render thread.
+        // The render thread releases the swap chain and D3D device during cleanup.
+        // If we unbind after that, the panel holds a stale DXGI reference and
+        // SetSwapChain (either null or new chain) hits an AccessViolationException
+        // — a corrupted-state exception .NET Core cannot catch.
+        // Unbinding first, while D3D resources are still alive, avoids this.
         if (_swapChainBound)
         {
             _swapChainBound = false;
@@ -602,6 +596,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             catch (Exception ex)
             {
                 Logger.Log($"D3D11 preview swap chain unbind failed: {ex.GetType().Name} msg={ex.Message}");
+            }
+        }
+
+        _frameReadyEvent.Set();
+        if (Thread.CurrentThread != renderThread)
+        {
+            if (!renderThread.Join(TimeSpan.FromSeconds(3)))
+            {
+                Logger.Log("D3D11 preview renderer stop wait exceeded 3s; waiting until render thread exits.");
+                renderThread.Join();
             }
         }
 

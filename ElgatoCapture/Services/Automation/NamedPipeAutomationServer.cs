@@ -15,6 +15,8 @@ namespace ElgatoCapture.Services;
 
 public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 {
+    public const string DefaultPipeName = "ElgatoCaptureAutomation";
+
     private readonly IAutomationCommandDispatcher _commandDispatcher;
     private readonly string _pipeName;
     private readonly JsonSerializerOptions _jsonOptions;
@@ -40,7 +42,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         string? pipeName = null)
     {
         _commandDispatcher = commandDispatcher ?? throw new ArgumentNullException(nameof(commandDispatcher));
-        _pipeName = string.IsNullOrWhiteSpace(pipeName) ? "ElgatoCaptureAutomation" : pipeName;
+        _pipeName = string.IsNullOrWhiteSpace(pipeName) ? DefaultPipeName : pipeName;
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true

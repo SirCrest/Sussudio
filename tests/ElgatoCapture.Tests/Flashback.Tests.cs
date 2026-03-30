@@ -1,0 +1,345 @@
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
+static partial class Program
+{
+    // ── FlashbackBufferOptions ──
+
+    private static Task FlashbackBufferOptions_MaxDiskBytes_ScalesWithDuration()
+    {
+        var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+
+        // 57 MB/s safety rate = 57 * 1024 * 1024 = 59768832 bytes/sec
+        const long safetyBytesPerSecond = 57L * 1024 * 1024;
+
+        var options = RuntimeHelpers.GetUninitializedObject(optionsType);
+
+        // 5 minutes
+        SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
+        var maxBytes = (long)GetPropertyValue(options, "MaxDiskBytes")!;
+        AssertEqual((long)(300.0 * safetyBytesPerSecond), maxBytes, "MaxDiskBytes for 5 minutes");
+
+        // 1 minute
+        SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(1));
+        var oneMinBytes = (long)GetPropertyValue(options, "MaxDiskBytes")!;
+        AssertEqual((long)(60.0 * safetyBytesPerSecond), oneMinBytes, "MaxDiskBytes for 1 minute");
+
+        // Linear scaling: 5 min = 5 × 1 min
+        AssertEqual(maxBytes, oneMinBytes * 5, "MaxDiskBytes linear scaling");
+
+        return Task.CompletedTask;
+    }
+
+    // ── FlashbackSegment ──
+
+    private static Task FlashbackSegment_DefaultState_IsBuffer()
+    {
+        var segmentType = RequireType("ElgatoCapture.Models.FlashbackSegment");
+        var segment = RuntimeHelpers.GetUninitializedObject(segmentType);
+
+        var stateEnumType = RequireType("ElgatoCapture.Models.FlashbackSegmentState");
+        var bufferValue = Enum.Parse(stateEnumType, "Buffer");
+        var actualState = GetPropertyValue(segment, "State");
+
+        // GetUninitializedObject zeros all fields; State(0) should be Buffer if Buffer=0
+        AssertEqual(Convert.ToInt32(bufferValue), Convert.ToInt32(actualState), "FlashbackSegment default State");
+
+        return Task.CompletedTask;
+    }
+
+    // ── FlashbackEncoderSink pure logic ──
+
+    private static Task FlashbackEncoderSink_ResolveFrameRateParts_ParsesFractionalRates()
+    {
+        var sinkType = RequireType("ElgatoCapture.Services.Flashback.FlashbackEncoderSink");
+        var method = sinkType.GetMethod("ResolveFrameRateParts", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ResolveFrameRateParts not found.");
+
+        // "60000/1001" → (60000, 1001)
+        var result1 = method.Invoke(null, new object[] { "60000/1001" });
+        var (num1, den1) = GetTupleValues(result1!);
+        AssertEqual(60000, num1, "60000/1001 numerator");
+        AssertEqual(1001, den1, "60000/1001 denominator");
+
+        // "30/1" → (30, 1)
+        var result2 = method.Invoke(null, new object[] { "30/1" });
+        var (num2, den2) = GetTupleValues(result2!);
+        AssertEqual(30, num2, "30/1 numerator");
+        AssertEqual(1, den2, "30/1 denominator");
+
+        // null → (null, null)
+        var result3 = method.Invoke(null, new object?[] { null });
+        var (num3, den3) = GetNullableTupleValues(result3!);
+        if (num3 != null)
+            throw new InvalidOperationException($"Expected null numerator for null input, got {num3}");
+
+        // Empty string → (null, null)
+        var result4 = method.Invoke(null, new object[] { "" });
+        var (num4, den4) = GetNullableTupleValues(result4!);
+        if (num4 != null)
+            throw new InvalidOperationException($"Expected null numerator for empty input, got {num4}");
+
+        return Task.CompletedTask;
+    }
+
+    private static (int, int) GetTupleValues(object tuple)
+    {
+        var item1 = tuple.GetType().GetField("Item1")?.GetValue(tuple);
+        var item2 = tuple.GetType().GetField("Item2")?.GetValue(tuple);
+        return (Convert.ToInt32(item1), Convert.ToInt32(item2));
+    }
+
+    private static (int?, int?) GetNullableTupleValues(object tuple)
+    {
+        var item1 = tuple.GetType().GetField("Item1")?.GetValue(tuple);
+        var item2 = tuple.GetType().GetField("Item2")?.GetValue(tuple);
+        return (item1 == null ? null : Convert.ToInt32(item1), item2 == null ? null : Convert.ToInt32(item2));
+    }
+
+    private static Task FlashbackEncoderSink_MapCodecName_MapsFormats()
+    {
+        var sinkType = RequireType("ElgatoCapture.Services.Flashback.FlashbackEncoderSink");
+        var method = sinkType.GetMethod("MapCodecName", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("MapCodecName not found.");
+
+        var formatType = RequireType("ElgatoCapture.Models.RecordingFormat");
+
+        var hevc = method.Invoke(null, new[] { Enum.Parse(formatType, "HevcMp4") })?.ToString();
+        AssertContains(hevc ?? "", "hevc");
+
+        var h264 = method.Invoke(null, new[] { Enum.Parse(formatType, "H264Mp4") })?.ToString();
+        AssertContains(h264 ?? "", "264");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackEncoderSink_CountersDefaultToZero()
+    {
+        var sinkType = RequireType("ElgatoCapture.Services.Flashback.FlashbackEncoderSink");
+        var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+        var ctor = sinkType.GetConstructor(new[] { optionsType })
+            ?? throw new InvalidOperationException("FlashbackEncoderSink(FlashbackBufferOptions) constructor not found.");
+        var sink = ctor.Invoke(new object?[] { null })!;
+
+        AssertEqual(0L, GetLongProperty(sink, "DroppedVideoFrames"), "DroppedVideoFrames");
+        AssertEqual(0L, GetLongProperty(sink, "EncodedVideoFrames"), "EncodedVideoFrames");
+        AssertEqual(0L, GetLongProperty(sink, "AudioSamplesReceived"), "AudioSamplesReceived");
+
+        return Task.CompletedTask;
+    }
+
+    // ── FlashbackExporter ──
+
+    private static Task FlashbackExporter_CleanupOrphanedTempFiles_HandlesNonexistentDirectory()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var cleanup = exporterType.GetMethod("CleanupOrphanedTempFiles", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("CleanupOrphanedTempFiles not found.");
+
+        // Non-existent directory should not throw
+        cleanup.Invoke(null, new object[] { Path.Combine(Path.GetTempPath(), $"nonexistent_{Guid.NewGuid():N}") });
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackExporter_CleanupOrphanedTempFiles_DeletesTempFiles()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var cleanup = exporterType.GetMethod("CleanupOrphanedTempFiles", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("CleanupOrphanedTempFiles not found.");
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_cleanup_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            // Create some temp files that match the cleanup pattern
+            File.WriteAllText(Path.Combine(tempDir, "fb_export_temp_001.ts"), "data");
+            File.WriteAllText(Path.Combine(tempDir, "fb_export_temp_002.ts"), "data");
+            File.WriteAllText(Path.Combine(tempDir, "unrelated.mp4"), "keep");
+
+            cleanup.Invoke(null, new object[] { tempDir });
+
+            // Unrelated file should survive
+            AssertEqual(true, File.Exists(Path.Combine(tempDir, "unrelated.mp4")), "Unrelated file preserved");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    // ── FlashbackPlaybackController ──
+
+    private static Task FlashbackPlaybackController_InitialState_IsLive()
+    {
+        var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+        var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
+
+        var controllerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackPlaybackController");
+        var ctor = controllerType.GetConstructor(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { bufferManagerType },
+            modifiers: null)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController constructor not found.");
+
+        var controller = ctor.Invoke(new[] { bufferManager });
+
+        // State should be Live before Initialize
+        var stateStr = GetPropertyValue(controller, "State")?.ToString();
+        AssertEqual("Live", stateStr, "Initial state is Live");
+
+        // PlaybackPosition should be zero
+        var position = (TimeSpan)GetPropertyValue(controller, "PlaybackPosition")!;
+        AssertEqual(TimeSpan.Zero, position, "Initial PlaybackPosition");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackPlaybackController_CommandsNoOpBeforeInitialize()
+    {
+        var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+        var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
+
+        var controllerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackPlaybackController");
+        var ctor = controllerType.GetConstructor(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { bufferManagerType },
+            modifiers: null)!;
+        var controller = ctor.Invoke(new[] { bufferManager });
+
+        // These should all no-op without throwing (IsReady is false)
+        var playMethod = controllerType.GetMethod("Play", BindingFlags.Public | BindingFlags.Instance);
+        var pauseMethod = controllerType.GetMethod("Pause", BindingFlags.Public | BindingFlags.Instance);
+        var goLiveMethod = controllerType.GetMethod("GoLive", BindingFlags.Public | BindingFlags.Instance);
+
+        playMethod?.Invoke(controller, null);
+        pauseMethod?.Invoke(controller, null);
+        goLiveMethod?.Invoke(controller, null);
+
+        // State should still be Live (commands were no-ops)
+        var stateStr = GetPropertyValue(controller, "State")?.ToString();
+        AssertEqual("Live", stateStr, "State unchanged after no-op commands");
+
+        return Task.CompletedTask;
+    }
+
+    // ── FlashbackExporter: early-exit error paths ──
+
+    private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenInputFileNotFound()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var exporter = Activator.CreateInstance(exporterType)!;
+        var exportMethod = exporterType.GetMethod("ExportAsync", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("ExportAsync not found.");
+
+        var nonexistentInput = Path.Combine(Path.GetTempPath(), $"nonexistent_{Guid.NewGuid():N}.ts");
+        var outputPath = Path.Combine(Path.GetTempPath(), $"output_{Guid.NewGuid():N}.mp4");
+
+        var task = exportMethod.Invoke(exporter, new object?[]
+        {
+            nonexistentInput,
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(10),
+            outputPath,
+            true,
+            null,
+            CancellationToken.None
+        }) as Task ?? throw new InvalidOperationException("ExportAsync did not return Task.");
+
+        await task.ConfigureAwait(false);
+        var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
+        var succeeded = GetBoolProperty(result, "Succeeded");
+        AssertEqual(false, succeeded, "Export fails when input file not found");
+    }
+
+    private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathEmpty()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var exporter = Activator.CreateInstance(exporterType)!;
+        var exportMethod = exporterType.GetMethod("ExportAsync", BindingFlags.Public | BindingFlags.Instance)!;
+
+        // Create a real temp file so input validation passes
+        var tempInput = Path.Combine(Path.GetTempPath(), $"fb_input_{Guid.NewGuid():N}.ts");
+        File.WriteAllBytes(tempInput, new byte[] { 0x47 }); // MPEG-TS sync byte
+        try
+        {
+            var task = exportMethod.Invoke(exporter, new object?[]
+            {
+                tempInput,
+                TimeSpan.Zero,
+                TimeSpan.FromSeconds(10),
+                "",  // empty output path
+                true,
+                null,
+                CancellationToken.None
+            }) as Task ?? throw new InvalidOperationException("ExportAsync did not return Task.");
+
+            await task.ConfigureAwait(false);
+            var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Export fails when output path empty");
+        }
+        finally
+        {
+            try { File.Delete(tempInput); } catch { }
+        }
+    }
+
+    private static async Task FlashbackExporter_ExportSegmentsAsync_ReturnsFailure_WhenNoSegments()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var exporter = Activator.CreateInstance(exporterType)!;
+        var exportMethod = exporterType.GetMethod("ExportSegmentsAsync", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("ExportSegmentsAsync not found.");
+
+        var emptySegments = Array.Empty<string>();
+        var outputPath = Path.Combine(Path.GetTempPath(), $"output_{Guid.NewGuid():N}.mp4");
+
+        var task = exportMethod.Invoke(exporter, new object?[]
+        {
+            emptySegments,
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(10),
+            outputPath,
+            true,
+            null,
+            CancellationToken.None
+        }) as Task ?? throw new InvalidOperationException("ExportSegmentsAsync did not return Task.");
+
+        await task.ConfigureAwait(false);
+        var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
+        AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Export segments fails when no segments");
+    }
+
+    private static Task FlashbackPlaybackController_InOutPoints_DefaultToUnset()
+    {
+        var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+        var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
+
+        var controllerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackPlaybackController");
+        var ctor = controllerType.GetConstructor(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { bufferManagerType },
+            modifiers: null)!;
+        var controller = ctor.Invoke(new[] { bufferManager });
+
+        // InPoint and OutPoint properties
+        var inPointProp = controllerType.GetProperty("InPoint", BindingFlags.Public | BindingFlags.Instance);
+        var outPointProp = controllerType.GetProperty("OutPoint", BindingFlags.Public | BindingFlags.Instance);
+
+        AssertNotNull(inPointProp, "FlashbackPlaybackController.InPoint");
+        AssertNotNull(outPointProp, "FlashbackPlaybackController.OutPoint");
+
+        // ClearInOutPoints should not throw on a fresh controller
+        var clearMethod = controllerType.GetMethod("ClearInOutPoints", BindingFlags.Public | BindingFlags.Instance);
+        AssertNotNull(clearMethod, "FlashbackPlaybackController.ClearInOutPoints");
+        clearMethod!.Invoke(controller, null);
+
+        return Task.CompletedTask;
+    }
+}

@@ -1,9 +1,9 @@
 using System.ComponentModel;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using ElgatoCapture.Tools;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -90,17 +90,17 @@ public static class PreviewFrameCaptureTool
             builder.AppendLine("Histogram unavailable.");
         }
 
-        var averageLuminance = GetDouble(data, "AverageLuminance");
-        var minLuminance = GetDouble(data, "MinLuminance");
-        var maxLuminance = GetDouble(data, "MaxLuminance");
-        var pureBlackPercent = GetDouble(data, "PureBlackPercent");
-        var letterboxTopRows = GetInt(data, "LetterboxTopRows");
-        var letterboxBottomRows = GetInt(data, "LetterboxBottomRows");
-        var pillarboxLeftCols = GetInt(data, "PillarboxLeftCols");
-        var pillarboxRightCols = GetInt(data, "PillarboxRightCols");
-        var contentAspectRatio = GetDouble(data, "ContentAspectRatio");
-        var contentWidth = GetInt(data, "ContentWidth");
-        var contentHeight = GetInt(data, "ContentHeight");
+        var averageLuminance = AutomationSnapshotFormatter.GetDouble(data, "AverageLuminance");
+        var minLuminance = AutomationSnapshotFormatter.GetDouble(data, "MinLuminance");
+        var maxLuminance = AutomationSnapshotFormatter.GetDouble(data, "MaxLuminance");
+        var pureBlackPercent = AutomationSnapshotFormatter.GetDouble(data, "PureBlackPercent");
+        var letterboxTopRows = AutomationSnapshotFormatter.GetInt(data, "LetterboxTopRows");
+        var letterboxBottomRows = AutomationSnapshotFormatter.GetInt(data, "LetterboxBottomRows");
+        var pillarboxLeftCols = AutomationSnapshotFormatter.GetInt(data, "PillarboxLeftCols");
+        var pillarboxRightCols = AutomationSnapshotFormatter.GetInt(data, "PillarboxRightCols");
+        var contentAspectRatio = AutomationSnapshotFormatter.GetDouble(data, "ContentAspectRatio");
+        var contentWidth = AutomationSnapshotFormatter.GetInt(data, "ContentWidth");
+        var contentHeight = AutomationSnapshotFormatter.GetInt(data, "ContentHeight");
 
         var diagnosis = new List<string>();
         if (pureBlackPercent > 95.0)
@@ -157,46 +157,6 @@ public static class PreviewFrameCaptureTool
     private static bool IsNear(double value, double target, double tolerance)
     {
         return Math.Abs(value - target) <= tolerance;
-    }
-
-    private static int GetInt(JsonElement element, string propertyName)
-    {
-        if (element.ValueKind == JsonValueKind.Object &&
-            element.TryGetProperty(propertyName, out var value))
-        {
-            if (value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var numeric))
-            {
-                return numeric;
-            }
-
-            if (value.ValueKind == JsonValueKind.String &&
-                int.TryParse(value.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
-            {
-                return parsed;
-            }
-        }
-
-        return 0;
-    }
-
-    private static double GetDouble(JsonElement element, string propertyName)
-    {
-        if (element.ValueKind == JsonValueKind.Object &&
-            element.TryGetProperty(propertyName, out var value))
-        {
-            if (value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var numeric))
-            {
-                return numeric;
-            }
-
-            if (value.ValueKind == JsonValueKind.String &&
-                double.TryParse(value.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
-            {
-                return parsed;
-            }
-        }
-
-        return 0.0;
     }
 
     private static string Get(JsonElement element, string propertyName, string fallback = "N/A")
