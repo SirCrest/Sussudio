@@ -1,64 +1,12 @@
 using System.Globalization;
-using System.IO.Pipes;
-using System.Text;
 using System.Text.Json;
+using ElgatoCapture.Tools;
 
 internal static class Program
 {
-    private const string DefaultPipeName = "ElgatoCaptureAutomation";
     private const int DefaultConnectTimeoutMs = 5000;
-    private const int DefaultResponseTimeoutMs = 15000;
     private const int DefaultNotReadyRetries = 15;
     private const int DefaultNotReadyDelayMs = 1000;
-
-    private static readonly Dictionary<string, int> CommandMap = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Authenticate"] = 0,
-        ["GetSnapshot"] = 1,
-        ["GetDiagnostics"] = 2,
-        ["RefreshDevices"] = 3,
-        ["SelectDevice"] = 4,
-        ["SelectAudioInputDevice"] = 5,
-        ["SetCustomAudioInput"] = 6,
-        ["SetResolution"] = 7,
-        ["SetFrameRate"] = 8,
-        ["SetRecordingFormat"] = 9,
-        ["SetQuality"] = 10,
-        ["SetCustomBitrate"] = 11,
-        ["SetHdrEnabled"] = 12,
-        ["SetAudioEnabled"] = 13,
-        ["SetAudioPreviewEnabled"] = 14,
-        ["SetOutputPath"] = 15,
-        ["SetPreviewEnabled"] = 16,
-        ["SetRecordingEnabled"] = 17,
-        ["ArmClose"] = 18,
-        ["WindowAction"] = 19,
-        ["WaitForCondition"] = 20,
-        ["VerifyLastRecording"] = 21,
-        ["AssertSnapshot"] = 22,
-        ["SetTrueHdrPreviewEnabled"] = 23,
-        ["ProbeVideoSource"] = 24,
-        ["ProbePreviewColor"] = 25,
-        ["CapturePreviewFrame"] = 26,
-        ["CaptureWindowScreenshot"] = 27,
-        ["SetVideoFormat"] = 28,
-        ["GetCaptureOptions"] = 29,
-        ["SetPreset"] = 30,
-        ["SetSplitEncodeMode"] = 31,
-        ["SetMjpegDecoderCount"] = 32,
-        ["SetShowAllCaptureOptions"] = 33,
-        ["SetPreviewVolume"] = 34,
-        ["SetStatsVisible"] = 35,
-        ["SetDeviceAudioMode"] = 36,
-        ["GetPerformanceTimeline"] = 37,
-        ["SetStatsSectionVisible"] = 38,
-        ["SetAnalogAudioGain"] = 39,
-        ["SetSettingsVisible"] = 40,
-        ["FlashbackAction"] = 41,
-        ["FlashbackExport"] = 42,
-        ["FlashbackGetSegments"] = 43,
-        ["VerifyFile"] = 44
-    };
 
     public static async Task<int> Main(string[] args)
     {
@@ -78,19 +26,14 @@ internal static class Program
                 return 2;
             }
 
-            var commandValue = ResolveCommand(options.Command);
+            var commandValue = AutomationPipeProtocol.ResolveCommand(options.Command);
             var payload = BuildPayload(options);
 
             string responseLine;
             for (var attempt = 0; ; attempt++)
             {
-                var request = new Dictionary<string, object?>
-                {
-                    ["command"] = commandValue,
-                    ["correlationId"] = Guid.NewGuid().ToString("N"),
-                    ["authToken"] = options.AuthToken,
-                    ["payload"] = payload
-                };
+                var request = AutomationPipeProtocol.CreateRequestEnvelope(commandValue, authToken: options.AuthToken);
+                request["payload"] = payload;
 
                 var requestJson = JsonSerializer.Serialize(request);
                 responseLine = await SendAsync(
@@ -167,32 +110,8 @@ internal static class Program
         try
         {
             using var responseDocument = JsonDocument.Parse(responseJson);
-            if (responseDocument.RootElement.TryGetProperty("Success", out var successProperty) &&
-                successProperty.ValueKind is JsonValueKind.True or JsonValueKind.False)
-            {
-                success = successProperty.GetBoolean();
-            }
-
-            if (responseDocument.RootElement.TryGetProperty("Status", out var statusProperty) &&
-                statusProperty.ValueKind == JsonValueKind.String)
-            {
-                status = statusProperty.GetString();
-            }
-
-            if (responseDocument.RootElement.TryGetProperty("RetryAfterMs", out var retryAfterProperty))
-            {
-                if (retryAfterProperty.ValueKind == JsonValueKind.Number && retryAfterProperty.TryGetInt32(out var numeric))
-                {
-                    retryAfterMs = numeric;
-                }
-                else if (retryAfterProperty.ValueKind == JsonValueKind.String &&
-                         int.TryParse(retryAfterProperty.GetString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
-                {
-                    retryAfterMs = parsed;
-                }
-            }
-
-            return true;
+            return AutomationResponseState.TryRead(
+                responseDocument.RootElement, out success, out status, out retryAfterMs);
         }
         catch
         {
@@ -206,71 +125,11 @@ internal static class Program
         int connectTimeoutMs,
         int responseTimeoutMs)
     {
-        using var client = new NamedPipeClientStream(
-            ".",
+        return await AutomationPipeClient.SendRequestAsync(
             pipeName,
-            PipeDirection.InOut,
-            PipeOptions.None);
-
-        client.Connect(connectTimeoutMs);
-
-        using var writer = new StreamWriter(
-            client,
-            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
-            bufferSize: 4096,
-            leaveOpen: true)
-        {
-            AutoFlush = true
-        };
-
-        using var reader = new StreamReader(
-            client,
-            Encoding.UTF8,
-            detectEncodingFromByteOrderMarks: false,
-            bufferSize: 4096,
-            leaveOpen: true);
-
-        await writer.WriteLineAsync(requestJson).ConfigureAwait(false);
-        var responseLine = await reader.ReadLineAsync()
-            .WaitAsync(TimeSpan.FromMilliseconds(responseTimeoutMs))
-            .ConfigureAwait(false);
-
-        if (string.IsNullOrWhiteSpace(responseLine))
-        {
-            throw new InvalidOperationException("No response received from automation pipe.");
-        }
-
-        return responseLine;
-    }
-
-    private static int ResolveCommand(string command)
-    {
-        if (int.TryParse(command, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numeric))
-        {
-            return numeric;
-        }
-
-        if (CommandMap.TryGetValue(command, out var directMatch))
-        {
-            return directMatch;
-        }
-
-        var normalized = Normalize(command);
-        foreach (var entry in CommandMap)
-        {
-            if (Normalize(entry.Key).Equals(normalized, StringComparison.OrdinalIgnoreCase))
-            {
-                return entry.Value;
-            }
-        }
-
-        throw new ArgumentException($"Unknown command '{command}'.");
-    }
-
-    private static string Normalize(string value)
-    {
-        var buffer = value.Where(char.IsLetterOrDigit).ToArray();
-        return new string(buffer);
+            requestJson,
+            connectTimeoutMs,
+            responseTimeoutMs).ConfigureAwait(false);
     }
 
     private static object BuildPayload(Options options)
@@ -436,12 +295,12 @@ internal static class Program
     private sealed class Options
     {
         public string? Command { get; set; }
-        public string PipeName { get; set; } = DefaultPipeName;
+        public string PipeName { get; set; } = AutomationPipeProtocol.DefaultPipeName;
         public string? AuthToken { get; set; }
         public string PayloadJson { get; set; } = "{}";
         public List<string> PayloadKv { get; } = [];
         public int ConnectTimeoutMs { get; set; } = DefaultConnectTimeoutMs;
-        public int ResponseTimeoutMs { get; set; } = DefaultResponseTimeoutMs;
+        public int ResponseTimeoutMs { get; set; } = AutomationPipeProtocol.DefaultResponseTimeoutMs;
         public bool Pretty { get; set; }
         public bool ShowHelp { get; set; }
     }

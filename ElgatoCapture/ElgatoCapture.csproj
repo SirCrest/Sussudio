@@ -100,6 +100,10 @@
     <RuntimeHostConfigurationOption Include="System.Text.Json.JsonSerializer.IsReflectionEnabledByDefault" Value="true" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Include="..\tools\Common\AutomationPipeProtocol.cs" Link="Common\AutomationPipeProtocol.cs" />
+  </ItemGroup>
+
   <!-- Strip WinUI satellite locale folders that SatelliteResourceLanguages doesn't cover.
        English-only: keep en-US/en-us. Remove all other ??-?? directories. -->
   <Target Name="StripUnwantedLocales"

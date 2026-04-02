@@ -230,22 +230,22 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                 case AutomationCommandKind.FlashbackAction:
                 {
-                    var action = RequireString(payload, "action").ToLowerInvariant();
+                    var action = ParseFlashbackAction(payload);
                     switch (action)
                     {
-                        case "play":
+                        case AutomationFlashbackAction.Play:
                             if (!_viewModel.FlashbackPlay())
                                 throw new InvalidOperationException("Flashback is not active.");
                             return CreateAcknowledgedResponse(correlationId, "Flashback play requested.");
-                        case "pause":
+                        case AutomationFlashbackAction.Pause:
                             if (!_viewModel.FlashbackPause())
                                 throw new InvalidOperationException("Flashback is not active.");
                             return CreateAcknowledgedResponse(correlationId, "Flashback pause requested.");
-                        case "go-live":
+                        case AutomationFlashbackAction.GoLive:
                             if (!_viewModel.FlashbackGoLive())
                                 throw new InvalidOperationException("Flashback is not active.");
                             return CreateAcknowledgedResponse(correlationId, "Flashback go-live requested.");
-                        case "seek":
+                        case AutomationFlashbackAction.Seek:
                             var positionMs = GetDouble(payload, "positionMs") ?? 0;
                             var position = TimeSpan.FromMilliseconds(positionMs);
                             if (!_viewModel.FlashbackBeginScrub(position))
@@ -253,7 +253,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                             _viewModel.FlashbackEndScrub();
                             return CreateAcknowledgedResponse(correlationId, $"Flashback seek to {positionMs:0}ms requested.");
                         default:
-                            throw new InvalidOperationException($"Unknown flashback action '{action}'. Expected play, pause, go-live, or seek.");
+                            throw new InvalidOperationException($"Unsupported flashback action '{action}'.");
                     }
                 }
 
@@ -521,7 +521,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 {
                     var outputPath = GetString(payload, "outputPath")
                         ?? Path.Combine(Path.GetTempPath(), $"preview_capture_{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.bmp");
-                    var result = await _viewModel.CapturePreviewFrameAsync(outputPath).ConfigureAwait(false);
+                    var result = await _viewModel.CapturePreviewFrameAsync(outputPath, cancellationToken).ConfigureAwait(false);
                     return CreateResponse(
                         correlationId,
                         result.Message,
@@ -679,6 +679,22 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         }
 
         throw new InvalidOperationException($"Invalid window action: '{raw}'.");
+    }
+
+    private static AutomationFlashbackAction ParseFlashbackAction(JsonElement payload)
+    {
+        var raw = RequireString(payload, "action");
+        var normalized = raw.Replace("-", string.Empty, StringComparison.Ordinal)
+            .Replace("_", string.Empty, StringComparison.Ordinal)
+            .Trim();
+
+        if (Enum.TryParse<AutomationFlashbackAction>(normalized, ignoreCase: true, out var parsed))
+        {
+            return parsed;
+        }
+
+        throw new InvalidOperationException(
+            $"Invalid flashback action: '{raw}'. Expected play, pause, go-live, or seek.");
     }
 
     private static AutomationWaitCondition ParseWaitCondition(JsonElement payload)

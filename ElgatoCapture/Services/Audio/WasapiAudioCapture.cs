@@ -27,7 +27,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private WasapiAudioFormat _captureFormat;
     private IRecordingSink? _recordingSink;
     private IRecordingSink? _flashbackSink;
-    private Func<ReadOnlyMemory<byte>, Task>? _audioWriteDelegate;
+    private Func<ReadOnlyMemory<byte>, Task>? _audioWriter;
     private long _audioFramesArrived;
     private long _audioFramesWrittenToSink;
     private long _audioLevelLastFireTick;
@@ -185,8 +185,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
             return Task.CompletedTask;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioCapture.InitializeAsync: {ex.Message}");
             captureEvent?.Dispose();
             WasapiComInterop.ReleaseComObject(ref audioCaptureClient);
             WasapiComInterop.ReleaseComObject(ref audioClient3);
@@ -236,8 +237,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
             WasapiComInterop.ThrowIfFailed(_audioClient!.Start(), "IAudioClient.Start(capture)");
             Logger.Log("WASAPI capture started.");
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioCapture.StartCapture: {ex.Message}");
             Interlocked.Exchange(ref _stopRequested, 1);
             _captureEvent?.Set();
             if (_captureThread?.IsAlive == true)
@@ -275,7 +277,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
 
     public void SetAudioWriter(Func<ReadOnlyMemory<byte>, Task>? writer)
     {
-        Volatile.Write(ref _audioWriteDelegate, writer);
+        Volatile.Write(ref _audioWriter, writer);
     }
 
     internal void SetPlayback(WasapiAudioPlayback? playback)
@@ -322,7 +324,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         await StopAsync().ConfigureAwait(false);
         Volatile.Write(ref _recordingSink, null);
         Volatile.Write(ref _flashbackSink, null);
-        Volatile.Write(ref _audioWriteDelegate, null);
+        Volatile.Write(ref _audioWriter, null);
         Volatile.Write(ref _playback, null);
 
         _captureEvent?.Dispose();
@@ -424,19 +426,19 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                 var convertedBuffer = converted.Buffer;
                 RaiseAudioLevelIfDue(convertedBuffer.AsSpan(0, converted.Length));
 
-                var writeDelegate = Volatile.Read(ref _audioWriteDelegate);
-                if (writeDelegate != null)
+                var audioWriter = Volatile.Read(ref _audioWriter);
+                if (audioWriter != null)
                 {
                     try
                     {
-                        writeDelegate(new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length))
+                        audioWriter(new ReadOnlyMemory<byte>(convertedBuffer, 0, converted.Length))
                             .GetAwaiter()
                             .GetResult();
                         Interlocked.Add(ref _audioFramesWrittenToSink, converted.Frames);
                     }
                     catch (Exception ex)
                     {
-                        Volatile.Write(ref _audioWriteDelegate, null);
+                        Volatile.Write(ref _audioWriter, null);
                         Interlocked.Exchange(ref _stopRequested, 1);
                         _captureEvent?.Set();
                         throw new InvalidOperationException("WASAPI audio delegate write failed.", ex);
@@ -798,9 +800,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         {
             handler.Invoke(this, ex);
         }
-        catch
+        catch (Exception fanOutEx)
         {
-            // Never throw from capture thread event fan-out.
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioCapture event fan-out: {fanOutEx.Message}");
         }
     }
 

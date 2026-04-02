@@ -1,11 +1,14 @@
+using System.Collections.Generic;
 using System.Globalization;
+using System;
+using System.Linq;
 
 namespace ElgatoCapture.Tools;
 
 internal static class AutomationPipeProtocol
 {
     internal const string DefaultPipeName = "ElgatoCaptureAutomation";
-    internal const string AuthTokenEnvVar = "ELGATOCAPTURE_AUTOMATION_TOKEN";
+    internal const string AutomationKeyEnvVar = "ELGATOCAPTURE_AUTOMATION_TOKEN";
     internal const int DefaultConnectTimeoutMs = 5000;
     internal const int DefaultResponseTimeoutMs = 15000;
     internal const int ExtendedResponseTimeoutMs = 60000;
@@ -69,7 +72,7 @@ internal static class AutomationPipeProtocol
             return explicitAuthToken;
         }
 
-        var envToken = Environment.GetEnvironmentVariable(AuthTokenEnvVar);
+        var envToken = Environment.GetEnvironmentVariable(AutomationKeyEnvVar);
         return string.IsNullOrWhiteSpace(envToken) ? null : envToken;
     }
 

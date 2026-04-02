@@ -11,112 +11,40 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-function Resolve-CommandValue {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Value
-    )
-
-    $parsed = 0
-    if ([int]::TryParse($Value, [ref]$parsed)) {
-        return $parsed
+function Resolve-AutomationClientPath {
+    $projectPath = Join-Path $PSScriptRoot "AutomationClient\AutomationClient.csproj"
+    if (-not (Test-Path $projectPath)) {
+        throw "AutomationClient project not found: $projectPath"
     }
 
-    switch ($Value.Trim().ToLowerInvariant()) {
-        "authenticate" { return 0 }
-        "getsnapshot" { return 1 }
-        "getdiagnostics" { return 2 }
-        "refreshdevices" { return 3 }
-        "selectdevice" { return 4 }
-        "selectaudioinputdevice" { return 5 }
-        "setcustomaudioinput" { return 6 }
-        "setresolution" { return 7 }
-        "setframerate" { return 8 }
-        "setrecordingformat" { return 9 }
-        "setquality" { return 10 }
-        "setcustombitrate" { return 11 }
-        "sethdrenabled" { return 12 }
-        "setaudioenabled" { return 13 }
-        "setaudiopreviewenabled" { return 14 }
-        "setoutputpath" { return 15 }
-        "setpreviewenabled" { return 16 }
-        "setrecordingenabled" { return 17 }
-        "armclose" { return 18 }
-        "windowaction" { return 19 }
-        "waitforcondition" { return 20 }
-        "verifylastrecording" { return 21 }
-        "assertsnapshot" { return 22 }
-        "settruehdrpreviewenabled" { return 23 }
-        "probevideosource" { return 24 }
-        "probepreviewcolor" { return 25 }
-        "capturepreviewframe" { return 26 }
-        "capturewindowscreenshot" { return 27 }
-        "setvideoformat" { return 28 }
-        "getcaptureoptions" { return 29 }
-        "setpreset" { return 30 }
-        "setsplitencodemode" { return 31 }
-        "setmjpegdecodercount" { return 32 }
-        "setshowallcaptureoptions" { return 33 }
-        "setpreviewvolume" { return 34 }
-        "setstatsvisible" { return 35 }
-        "setdeviceaudiomode" { return 36 }
-        "getperformancetimeline" { return 37 }
-        "setstatssectionvisible" { return 38 }
-        "setanalogaudiogain" { return 39 }
-        default { throw "Unknown automation command '$Value'." }
+    $buildOutput = Join-Path $PSScriptRoot "AutomationClient\bin\Debug\net8.0\AutomationClient.dll"
+    if (Test-Path $buildOutput) {
+        return $buildOutput
     }
+
+    & dotnet build $projectPath -nologo | Out-Null
+    if (Test-Path $buildOutput) {
+        return $buildOutput
+    }
+
+    throw "AutomationClient build output not found: $buildOutput"
 }
 
-$commandValue = Resolve-CommandValue -Value $Command
-
-$payload = $null
 if ([string]::IsNullOrWhiteSpace($PayloadJson)) {
-    $payload = @{}
-}
-else {
-    $payload = $PayloadJson | ConvertFrom-Json
+    $PayloadJson = "{}"
 }
 
-$request = [ordered]@{
-    command = $commandValue
-    correlationId = [Guid]::NewGuid().ToString("N")
-    authToken = $AuthToken
-    payload = $payload
+$automationClientPath = Resolve-AutomationClientPath
+$arguments = @(
+    $automationClientPath
+    "--command", $Command
+    "--pipe", $PipeName
+    "--connect-timeout-ms", $ConnectTimeoutMs
+    "--payload", $PayloadJson
+)
+
+if (-not [string]::IsNullOrWhiteSpace($AuthToken)) {
+    $arguments += @("--token", $AuthToken)
 }
 
-$json = $request | ConvertTo-Json -Depth 20 -Compress
-
-$client = [System.IO.Pipes.NamedPipeClientStream]::new(
-    ".",
-    $PipeName,
-    [System.IO.Pipes.PipeDirection]::InOut,
-    [System.IO.Pipes.PipeOptions]::None)
-
-try {
-    $client.Connect($ConnectTimeoutMs)
-
-    $writer = [System.IO.StreamWriter]::new(
-        $client,
-        [System.Text.UTF8Encoding]::new($false),
-        4096,
-        $true)
-    $writer.AutoFlush = $true
-    $writer.WriteLine($json)
-
-    $reader = [System.IO.StreamReader]::new(
-        $client,
-        [System.Text.Encoding]::UTF8,
-        $false,
-        4096,
-        $true)
-
-    $response = $reader.ReadLine()
-    if ([string]::IsNullOrWhiteSpace($response)) {
-        throw "No response received from automation pipe."
-    }
-
-    $response
-}
-finally {
-    $client.Dispose()
-}
+& dotnet @arguments

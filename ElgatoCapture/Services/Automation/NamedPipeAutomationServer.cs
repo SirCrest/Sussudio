@@ -10,12 +10,13 @@ using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Tools;
 
 namespace ElgatoCapture.Services;
 
 public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 {
-    public const string DefaultPipeName = "ElgatoCaptureAutomation";
+    public const string DefaultPipeName = AutomationPipeProtocol.DefaultPipeName;
 
     private readonly IAutomationCommandDispatcher _commandDispatcher;
     private readonly string _pipeName;
@@ -26,6 +27,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     private CancellationTokenSource? _cts;
     private Task? _serverTask;
     private bool _disposed;
+    private bool _explicitSecurityFailed;
 
     private const uint PipeAccessDuplex = 0x00000003;
     private const uint FileFlagOverlapped = 0x40000000;
@@ -176,9 +178,9 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             {
                 server.Dispose();
             }
-            catch
+            catch (Exception ex)
             {
-                /* Cleanup must not throw — pipe server may already be disposed or broken */
+                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in NamedPipeAutomationServer pipe dispose: {ex.Message}");
             }
         }
     }
@@ -233,7 +235,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 
     private NamedPipeServerStream CreateServerStream()
     {
-        if (_pipeSecurityDescriptor != null && OperatingSystem.IsWindows())
+        if (_pipeSecurityDescriptor != null && OperatingSystem.IsWindows() && !_explicitSecurityFailed)
         {
             try
             {
@@ -241,6 +243,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             catch (Exception ex)
             {
+                _explicitSecurityFailed = true;
                 Logger.Log($"Automation pipe explicit security fallback: {ex.Message}");
             }
         }
@@ -475,9 +478,9 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             var path = RuntimePaths.GetRepoLogFile("ElgatoCapture_AutomationPipe.log");
             File.AppendAllText(path, line + Environment.NewLine);
         }
-        catch
+        catch (Exception ex)
         {
-            /* Best-effort: trace log write is non-fatal — filesystem may be unavailable */
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in NamedPipeAutomationServer.TraceFallback: {ex.Message}");
         }
     }
 }
