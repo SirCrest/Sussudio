@@ -287,7 +287,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     public void Dispose()
     {
         if (!TryBeginDispose()) return;
-        Task.Run(async () => await CoreDisposeAsync()).GetAwaiter().GetResult();
+        Task.Run(() => CoreDisposeAsync().AsTask()).GetAwaiter().GetResult();
     }
 
     public async ValueTask DisposeAsync()

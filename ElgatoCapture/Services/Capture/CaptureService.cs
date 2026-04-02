@@ -47,6 +47,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private bool _wasapiAudioCaptureFaulted;
     private string? _wasapiAudioCaptureFaultMessage;
     private int _fatalCleanupInProgress;
+    private long _sessionGeneration;
     private UnifiedVideoCapture? _unifiedVideoCapture;
     private IPreviewFrameSink? _previewFrameSink;
     private RecordingContext? _recordingContext;
@@ -907,6 +908,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             return;
         }
 
+        var generationAtFault = Interlocked.Read(ref _sessionGeneration);
+
         _ = Task.Run(async () =>
         {
             try
@@ -919,7 +922,17 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             finally
             {
-                _sessionState = CaptureSessionState.Faulted;
+                // Only overwrite session state if no new session has started
+                // during cleanup — a new RunTransitionAsync increments the
+                // generation, so a mismatch means our Faulted write is stale.
+                if (Interlocked.Read(ref _sessionGeneration) == generationAtFault)
+                {
+                    _sessionState = CaptureSessionState.Faulted;
+                }
+                else
+                {
+                    Logger.Log("FATAL_CLEANUP_SKIP_FAULTED reason='session_generation_changed'");
+                }
 
                 StatusChanged?.Invoke(this, $"Video capture error: {ex.Message}");
                 ErrorOccurred?.Invoke(this, ex);
@@ -2450,6 +2463,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            Interlocked.Increment(ref _sessionGeneration);
             _sessionState = transitionState;
             await action(cancellationToken).ConfigureAwait(false);
             cancellationToken.ThrowIfCancellationRequested();

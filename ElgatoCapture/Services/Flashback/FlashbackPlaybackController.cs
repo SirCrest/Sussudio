@@ -269,7 +269,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
         // A completed channel silently drops all TryWrite calls.
         _commandChannel = Channel.CreateUnbounded<PlaybackCommand>(new UnboundedChannelOptions { SingleReader = true });
         _playCts = new CancellationTokenSource();
-        _playbackThread = new Thread(PlaybackThreadEntry)
+        var threadCts = _playCts;
+        _playbackThread = new Thread(() => PlaybackThreadEntry(threadCts))
         {
             Name = "FlashbackPlayback",
             IsBackground = true,
@@ -314,7 +315,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- Playback thread ---
 
-    private void PlaybackThreadEntry()
+    private void PlaybackThreadEntry(CancellationTokenSource cts)
     {
         FlashbackDecoder? decoder = null;
         var pacingStopwatch = new Stopwatch();
@@ -323,10 +324,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var isScrubbing = false;
         var fileOpen = false;
         var frozenValidStart = TimeSpan.Zero; // captured when leaving Live, used for position mapping
-
-        // Capture CTS into a local — _playCts can be nulled by StopPlaybackThread
-        // between a null-check and use, causing a race.
-        var cts = _playCts;
 
         // Set 1ms timer resolution for accurate Thread.Sleep pacing.
         // Without this, Sleep(8) at 120fps sleeps ~15ms (default granularity) → half-speed.
@@ -355,7 +352,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 {
                     if (!_commandChannel.Reader.TryRead(out cmd))
                     {
-                        _commandChannel.Reader.WaitToReadAsync(cts?.Token ?? CancellationToken.None).AsTask().GetAwaiter().GetResult();
+                        _commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();
                         if (_disposedFlag != 0)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
@@ -959,10 +956,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 decoder.CloseFile();
                 decoder.OpenFile(nextFile);
                 _currentOpenFilePath = nextFile;
+                // Gate audio at last played position, not seek target — audio between
+                // the last played sample and the seek point would otherwise be dropped,
+                // causing an audible gap at segment boundaries.
+                var audioGate = Interlocked.Read(ref _lastAudioPtsTicks);
                 decoder.AudioChunkCallback = null;
                 var segSwitchTarget = pos + frozenValidStart;
                 decoder.SeekTo(segSwitchTarget);
-                RestoreAudioCallback(decoder, segSwitchTarget.Ticks);
+                RestoreAudioCallback(decoder, audioGate);
                 pacingStopwatch.Restart();
                 return true;
             }
@@ -977,9 +978,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN pos_ms={(long)pos.TotalMilliseconds} resumePts_ms={(long)resumeTarget.TotalMilliseconds}");
                 decoder.CloseFile();
                 decoder.OpenFile(_currentOpenFilePath);
+                var fmpAudioGate = Interlocked.Read(ref _lastAudioPtsTicks);
                 decoder.AudioChunkCallback = null;
                 decoder.SeekTo(resumeTarget);
-                RestoreAudioCallback(decoder, resumeTarget.Ticks);
+                RestoreAudioCallback(decoder, fmpAudioGate);
                 pacingStopwatch.Restart();
                 return true;
             }

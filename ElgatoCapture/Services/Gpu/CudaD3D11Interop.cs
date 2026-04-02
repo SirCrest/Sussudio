@@ -293,86 +293,77 @@ internal sealed unsafe class CudaD3D11InteropBridge : IDisposable
         var stagingTexture = _stagingTexture ?? throw new InvalidOperationException("Staging interop resources are unavailable.");
         var defaultTexture = _defaultTexture ?? throw new InvalidOperationException("Default interop texture is unavailable.");
 
-        // Map the staging NV12 texture (subresource 0 covers both Y and UV planes).
-        // NV12 layout: Y plane at offset 0 (rowPitch x height), UV at rowPitch x height.
+        // Hold the D3D11 multithread lock across Map, CUDA copy, Unmap, and CopyResource
+        // to prevent another thread from using the device context in between.
         _multithread.Enter();
-        MappedSubresource mapped;
         try
         {
-            mapped = _deviceContext.Map(stagingTexture, 0, MapMode.Write);
-        }
-        catch
-        {
-            _multithread.Leave();
-            throw;
-        }
+            // Map the staging NV12 texture (subresource 0 covers both Y and UV planes).
+            // NV12 layout: Y plane at offset 0 (rowPitch x height), UV at rowPitch x height.
+            var mapped = _deviceContext.Map(stagingTexture, 0, MapMode.Write);
 
-        var yHostPtr = mapped.DataPointer;
-        var uvHostPtr = mapped.DataPointer + (nint)(mapped.RowPitch * _height);
+            var yHostPtr = mapped.DataPointer;
+            var uvHostPtr = mapped.DataPointer + (nint)(mapped.RowPitch * _height);
 
-        // CUDA DtoH copy: device planes -> staging CPU memory
-        try
-        {
-            if (Interlocked.Exchange(ref _ctxDiagDone, 1) == 0)
+            // CUDA DtoH copy: device planes -> staging CPU memory
+            try
             {
-                Logger.Log($"CUDA_D3D11_CTX_PRE_SET ctx=0x{(long)_cudaCtx:X} thread={Environment.CurrentManagedThreadId}");
+                if (Interlocked.Exchange(ref _ctxDiagDone, 1) == 0)
+                {
+                    Logger.Log($"CUDA_D3D11_CTX_PRE_SET ctx=0x{(long)_cudaCtx:X} thread={Environment.CurrentManagedThreadId}");
+                }
+
+                ThrowOnCudaError(cuCtxSetCurrent(_cudaCtx), nameof(cuCtxSetCurrent));
+
+                // Y plane: width bytes x height rows
+                var yCopy = new CUDA_MEMCPY2D
+                {
+                    srcMemoryType = CU_MEMORYTYPE_DEVICE,
+                    srcDevice = (ulong)cudaFrame->data[0],
+                    srcPitch = (ulong)cudaFrame->linesize[0],
+                    dstMemoryType = CU_MEMORYTYPE_HOST,
+                    dstHost = yHostPtr,
+                    dstPitch = (ulong)mapped.RowPitch,
+                    WidthInBytes = (ulong)_width,
+                    Height = (ulong)_height
+                };
+                ThrowOnCudaError(cuMemcpy2D_v2(&yCopy), "cuMemcpy2D[Y]");
+
+                // UV plane: width bytes x height/2 rows (interleaved U,V pairs)
+                var uvCopy = new CUDA_MEMCPY2D
+                {
+                    srcMemoryType = CU_MEMORYTYPE_DEVICE,
+                    srcDevice = (ulong)cudaFrame->data[1],
+                    srcPitch = (ulong)cudaFrame->linesize[1],
+                    dstMemoryType = CU_MEMORYTYPE_HOST,
+                    dstHost = uvHostPtr,
+                    dstPitch = (ulong)mapped.RowPitch,
+                    WidthInBytes = (ulong)_width,
+                    Height = (ulong)(_height / 2)
+                };
+                ThrowOnCudaError(cuMemcpy2D_v2(&uvCopy), "cuMemcpy2D[UV]");
+            }
+            finally
+            {
+                _deviceContext.Unmap(stagingTexture, 0);
             }
 
-            ThrowOnCudaError(cuCtxSetCurrent(_cudaCtx), nameof(cuCtxSetCurrent));
-
-            // Y plane: width bytes x height rows
-            var yCopy = new CUDA_MEMCPY2D
-            {
-                srcMemoryType = CU_MEMORYTYPE_DEVICE,
-                srcDevice = (ulong)cudaFrame->data[0],
-                srcPitch = (ulong)cudaFrame->linesize[0],
-                dstMemoryType = CU_MEMORYTYPE_HOST,
-                dstHost = yHostPtr,
-                dstPitch = (ulong)mapped.RowPitch,
-                WidthInBytes = (ulong)_width,
-                Height = (ulong)_height
-            };
-            ThrowOnCudaError(cuMemcpy2D_v2(&yCopy), "cuMemcpy2D[Y]");
-
-            // UV plane: width bytes x height/2 rows (interleaved U,V pairs)
-            var uvCopy = new CUDA_MEMCPY2D
-            {
-                srcMemoryType = CU_MEMORYTYPE_DEVICE,
-                srcDevice = (ulong)cudaFrame->data[1],
-                srcPitch = (ulong)cudaFrame->linesize[1],
-                dstMemoryType = CU_MEMORYTYPE_HOST,
-                dstHost = uvHostPtr,
-                dstPitch = (ulong)mapped.RowPitch,
-                WidthInBytes = (ulong)_width,
-                Height = (ulong)(_height / 2)
-            };
-            ThrowOnCudaError(cuMemcpy2D_v2(&uvCopy), "cuMemcpy2D[UV]");
-        }
-        finally
-        {
-            _deviceContext.Unmap(stagingTexture, 0);
-            _multithread.Leave();
-        }
-
-        // GPU copy: staging NV12 -> default NV12
-        _multithread.Enter();
-        try
-        {
+            // GPU copy: staging NV12 -> default NV12 (still under lock)
             _deviceContext.CopyResource(defaultTexture, stagingTexture);
+
+            if (Interlocked.Exchange(ref _diagDone, 1) == 0)
+            {
+                Logger.Log(
+                    "CUDA_D3D11_STAGING_COPY_DIAG " +
+                    $"y_src=0x{(ulong)cudaFrame->data[0]:X} uv_src=0x{(ulong)cudaFrame->data[1]:X} " +
+                    $"y_pitch={cudaFrame->linesize[0]} uv_pitch={cudaFrame->linesize[1]} " +
+                    $"staging_pitch={mapped.RowPitch} uv_offset={mapped.RowPitch * _height} " +
+                    $"width={_width} height={_height}");
+            }
         }
         finally
         {
             _multithread.Leave();
-        }
-
-        if (Interlocked.Exchange(ref _diagDone, 1) == 0)
-        {
-            Logger.Log(
-                "CUDA_D3D11_STAGING_COPY_DIAG " +
-                $"y_src=0x{(ulong)cudaFrame->data[0]:X} uv_src=0x{(ulong)cudaFrame->data[1]:X} " +
-                $"y_pitch={cudaFrame->linesize[0]} uv_pitch={cudaFrame->linesize[1]} " +
-                $"staging_pitch={mapped.RowPitch} uv_offset={mapped.RowPitch * _height} " +
-                $"width={_width} height={_height}");
         }
     }
 

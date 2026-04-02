@@ -329,12 +329,22 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         // Decode forward until we reach (or pass) the target PTS.
         // Stash the target frame so the next TryDecodeNextVideoFrame() returns it
         // instead of skipping past it (fixes off-by-one on seek).
+        // Cap at 960 frames (8s at 120fps) to prevent CPU saturation on scrub.
+        const int maxForwardFrames = 960;
         var targetTicks = target.Ticks;
-        while (true)
+        DecodedVideoFrame? bestFrame = null;
+        for (var i = 0; i < maxForwardFrames; i++)
         {
             if (!TryDecodeNextVideoFrame(out var frame))
             {
-                // Reached EOF before target — no frame was stashed
+                // Reached EOF before target — return best frame if we have one
+                if (bestFrame != null)
+                {
+                    _currentPosition = bestFrame.Value.Pts;
+                    _pendingVideoFrame = bestFrame.Value;
+                    _hasPendingVideoFrame = true;
+                    return true;
+                }
                 return false;
             }
 
@@ -343,12 +353,25 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 _currentPosition = frame.Pts;
                 _pendingVideoFrame = frame;
                 _hasPendingVideoFrame = true;
+                if (bestFrame != null) ReleaseHeldFrame(bestFrame.Value);
                 return true;
             }
 
-            // Intermediate frame before target — free its held D3D11VA surface
-            ReleaseHeldFrame(frame);
+            // Keep the closest frame in case we hit the limit
+            if (bestFrame != null) ReleaseHeldFrame(bestFrame.Value);
+            bestFrame = frame;
         }
+
+        // Hit frame limit — return the closest frame we decoded
+        if (bestFrame != null)
+        {
+            Logger.Log($"FLASHBACK_DECODER_SEEK_FRAME_LIMIT target_ms={(long)target.TotalMilliseconds} best_ms={(long)bestFrame.Value.Pts.TotalMilliseconds} frames={maxForwardFrames}");
+            _currentPosition = bestFrame.Value.Pts;
+            _pendingVideoFrame = bestFrame.Value;
+            _hasPendingVideoFrame = true;
+            return true;
+        }
+        return false;
     }
 
     /// <summary>

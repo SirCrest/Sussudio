@@ -111,21 +111,16 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         // and release _exportLock before we acquire it.
         try { _disposeCts?.Cancel(); } catch (ObjectDisposedException) { /* Best-effort: CTS may already be disposed if Dispose races */ }
 
-        var acquired = _exportLock.Wait(TimeSpan.FromSeconds(5));
-        if (acquired)
+        // Wait for the export task to release the lock. The CTS is cancelled so
+        // the task must exit — waiting indefinitely is safe and avoids use-after-free.
+        _exportLock.Wait();
+        try
         {
-            try
-            {
-                CleanupNativeState();
-            }
-            finally
-            {
-                _exportLock.Release();
-            }
+            CleanupNativeState();
         }
-        else
+        finally
         {
-            Logger.Log("FLASHBACK_EXPORT_DISPOSE_WARN reason='lock_timeout' — native state leaked to avoid use-after-free");
+            _exportLock.Release();
         }
 
         _exportLock.Dispose();
