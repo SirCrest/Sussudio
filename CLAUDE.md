@@ -9,6 +9,36 @@ patterns that conflict with those goals.
 - The working directory is already the repo root. Do not `cd` into the repo
   before running commands — it triggers unnecessary permission prompts.
 
+## Debugging Rules
+
+- When debugging A/V, playback, or encoding issues: instrument and measure
+  before theorizing. Add diagnostic logging/metrics first, verify the actual
+  runtime state, then propose fixes based on evidence. Never claim a fix is
+  working without verifiable proof.
+- When multiple incremental fix attempts fail (3+ cycles), stop and propose a
+  full rewrite or architectural change instead of continuing to tweak. Ask the
+  user before continuing down a failing path.
+
+## Pre-Flight Checks
+
+- Before building or deploying, always verify the target app/process is closed.
+- Before editing files, confirm you are on the correct git worktree with
+  `git rev-parse --show-toplevel`.
+
+## Communication Rules
+
+- Do NOT speculate about results from sub-agents, Codex, or external tools. If
+  you don't have concrete output, say so and do the actual work. Never "dream"
+  about what a tool might have returned.
+
+## Language-Specific Notes
+
+### C#
+
+- `AccessViolationException` cannot be caught in .NET 8+ (it's a corrupted
+  state exception). Always check runtime-specific behaviors before proposing
+  exception handling patterns.
+
 ## Workflow
 
 - **Always prefer MCP tools over PowerShell pipe scripts.** At the start of

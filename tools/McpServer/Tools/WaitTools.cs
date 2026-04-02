@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
+using ElgatoCapture.Tools;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -22,19 +23,19 @@ public static class WaitTools
             ["pollMs"] = pollMs
         };
 
-        var responseTimeoutMs = Math.Max(timeoutMs + 5000, PipeClient.ResponseTimeoutMs);
+        var responseTimeoutMs = Math.Max(timeoutMs + 5000, AutomationPipeProtocol.DefaultResponseTimeoutMs);
         var response = await pipeClient.SendCommandAsync("WaitForCondition", payload, responseTimeoutMs).ConfigureAwait(false);
 
         var builder = new StringBuilder();
-        builder.AppendLine(ResponseFormatter.IsSuccess(response) ? "Condition result: MET" : "Condition result: NOT MET");
-        builder.AppendLine($"Message: {ResponseFormatter.Get(response, "Message", "No message.")}");
+        builder.AppendLine(AutomationSnapshotFormatter.IsSuccess(response) ? "Condition result: MET" : "Condition result: NOT MET");
+        builder.AppendLine($"Message: {AutomationSnapshotFormatter.Get(response, "Message", "No message.")}");
 
         if (response.TryGetProperty("Data", out var data) && data.ValueKind == JsonValueKind.Object)
         {
-            builder.AppendLine($"Condition: {ResponseFormatter.Get(data, "condition")}");
-            builder.AppendLine($"Met: {ResponseFormatter.Get(data, "met")}");
-            builder.AppendLine($"TimeoutMs: {ResponseFormatter.Get(data, "timeoutMs")}");
-            builder.AppendLine($"PollMs: {ResponseFormatter.Get(data, "pollMs")}");
+            builder.AppendLine($"Condition: {AutomationSnapshotFormatter.Get(data, "condition")}");
+            builder.AppendLine($"Met: {AutomationSnapshotFormatter.Get(data, "met")}");
+            builder.AppendLine($"TimeoutMs: {AutomationSnapshotFormatter.Get(data, "timeoutMs")}");
+            builder.AppendLine($"PollMs: {AutomationSnapshotFormatter.Get(data, "pollMs")}");
         }
 
         return builder.ToString().TrimEnd();

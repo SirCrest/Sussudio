@@ -73,15 +73,8 @@ public sealed partial class MainWindow
 
         _automationDiagnosticsHub.Start();
         _automationPipeServer.Start();
-        var automationToken = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_TOKEN");
-        var automationPipeName = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_PIPE");
-        if (string.IsNullOrWhiteSpace(automationPipeName))
-        {
-            automationPipeName = NamedPipeAutomationServer.DefaultPipeName;
-        }
-
         Logger.Log(
-            $"Automation control ready on pipe '{automationPipeName}' (token required={!string.IsNullOrWhiteSpace(automationToken)}).");
+            $"Automation control ready on pipe '{_automationPipeName}' (token required={_automationTokenRequired}).");
     }
     private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
     {
@@ -408,8 +401,9 @@ public sealed partial class MainWindow
             Logger.Log($"Window.Close COMException (0x{ex.HResult:X8}); using Application.Current.Exit() fallback.");
             Application.Current.Exit();
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in MainWindow.RequestWindowClose: {ex.Message}");
             Interlocked.Exchange(ref _windowCloseRequested, 0);
             throw;
         }

@@ -207,6 +207,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial bool IsStatsVisible { get; set; }
 
     [ObservableProperty]
+    public partial bool FlashbackGpuDecode { get; set; } = true;
+
+    [ObservableProperty]
+    public partial int FlashbackBufferMinutes { get; set; } = 5;
+
+    [ObservableProperty]
     public partial bool IsSettingsVisible { get; set; }
 
     [ObservableProperty]
@@ -720,9 +726,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             var freeGb = drive.AvailableFreeSpace / (1024.0 * 1024 * 1024);
             DiskSpaceInfo = $"Free: {freeGb:F1} GB";
         }
-        catch
+        catch (Exception ex)
         {
-            /* Best-effort: drive may be unavailable or path invalid — clear the display gracefully */
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in MainViewModel.RefreshDiskSpace: {ex.Message}");
             DiskSpaceInfo = "";
         }
     }
@@ -880,11 +886,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Intentionally empty: mic device may be unavailable or disconnected during
-                // selection change — volume/gain readback failure is non-fatal and expected
-                // when devices are hot-unplugged.
+                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in MainViewModel mic volume readback: {ex.Message}");
             }
         }
 

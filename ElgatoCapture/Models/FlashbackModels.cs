@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace ElgatoCapture.Models;
@@ -20,26 +21,6 @@ internal sealed record FlashbackBufferOptions
     /// against bugs in PTS-based eviction.
     /// </summary>
     public long MaxDiskBytes => (long)(BufferDuration.TotalSeconds * SafetyBytesPerSecond);
-}
-
-internal sealed record FlashbackSegment
-{
-    public required string FilePath { get; init; }
-    public required int SequenceNumber { get; init; }
-    public required long StartFrameIndex { get; init; }
-    public required long FrameCount { get; init; }
-    public required TimeSpan Duration { get; init; }
-    public required long FileSizeBytes { get; init; }
-    public required DateTimeOffset CreatedUtc { get; init; }
-    public required bool HasAudio { get; init; }
-    public FlashbackSegmentState State { get; init; } = FlashbackSegmentState.Buffer;
-}
-
-internal enum FlashbackSegmentState
-{
-    Buffer,
-    Recording,
-    Exporting
 }
 
 internal sealed record FlashbackSessionContext
@@ -75,3 +56,20 @@ public enum FlashbackPlaybackState
 }
 
 internal sealed record ExportProgress(int SegmentsProcessed, int TotalSegments, double Percent);
+
+/// <summary>
+/// Groups the parameters for a flashback export operation (single-file or multi-segment).
+/// </summary>
+internal sealed record FlashbackExportRequest
+{
+    /// <summary>Segment file paths for multi-segment export, or null for single-file export.</summary>
+    public IReadOnlyList<string>? SegmentPaths { get; init; }
+
+    /// <summary>Single .ts input path for single-file export. Ignored when SegmentPaths is set.</summary>
+    public string? InputTsPath { get; init; }
+
+    public required TimeSpan InPoint { get; init; }
+    public required TimeSpan OutPoint { get; init; }
+    public required string OutputPath { get; init; }
+    public bool FastStart { get; init; } = true;
+}

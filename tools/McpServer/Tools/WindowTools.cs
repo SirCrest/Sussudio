@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Linq;
-using System.Text.Json;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -26,7 +25,7 @@ public static class WindowTools
             {
                 ["armed"] = true
             };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "ArmClose", "ArmClose", armPayload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "ArmClose", "ArmClose", armPayload).ConfigureAwait(false));
         }
 
         // Normalize snake_case to PascalCase for enum parsing (e.g. snap_left -> SnapLeft)
@@ -43,21 +42,9 @@ public static class WindowTools
         if (width.HasValue) actionPayload["width"] = width.Value;
         if (height.HasValue) actionPayload["height"] = height.Value;
 
-        results.Add(await ExecuteAndFormatAsync(pipeClient, "WindowAction", "WindowAction", actionPayload).ConfigureAwait(false));
+        results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "WindowAction", "WindowAction", actionPayload).ConfigureAwait(false));
 
         return string.Join(Environment.NewLine, results);
-    }
-
-    private static async Task<string> ExecuteAndFormatAsync(
-        PipeClient pipeClient,
-        string commandName,
-        string label,
-        Dictionary<string, object?> payload)
-    {
-        var response = await pipeClient.SendCommandAsync(commandName, payload).ConfigureAwait(false);
-        var status = ResponseFormatter.IsSuccess(response) ? "OK" : "ERROR";
-        var message = ResponseFormatter.Get(response, "Message", "No message.");
-        return $"[{status}] {label}: {message}";
     }
 
 }

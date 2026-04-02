@@ -38,6 +38,8 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _started;
     private int _disposed;
     private int _renderingPaused; // 0 = active, 1 = paused
+    private volatile bool _pauseRequested;
+    private volatile bool _resumeRequested;
     private volatile float _targetVolume = 1.0f;
     private float _currentVolume;
     private const float VolumeRampPerFrame = 1.0f / (0.3f * 48000); // 300ms ramp at 48kHz
@@ -144,8 +146,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
             Logger.Log("WASAPI playback initialized (f32le 48kHz stereo).");
             return Task.CompletedTask;
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioPlayback.InitializeAsync: {ex.Message}");
             renderEvent?.Dispose();
             WasapiComInterop.ReleaseComObject(ref audioRenderClient);
             WasapiComInterop.ReleaseComObject(ref audioClient3);
@@ -190,8 +193,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
             _renderThread.Start();
             Logger.Log("WASAPI playback started.");
         }
-        catch
+        catch (Exception ex)
         {
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiAudioPlayback.Start: {ex.Message}");
             Interlocked.Exchange(ref _started, 0);
             throw;
         }
@@ -229,59 +233,19 @@ internal sealed class WasapiAudioPlayback : IDisposable
     public void PauseRendering()
     {
         if (Volatile.Read(ref _started) == 0) return;
-        if (Interlocked.CompareExchange(ref _renderingPaused, 1, 0) != 0) return;
+        if (Volatile.Read(ref _renderingPaused) != 0) return;
 
-        try
-        {
-            _audioClient?.Stop();
-            _audioClient?.Reset();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"WASAPI_PAUSE_RENDER_WARN: {ex.Message}");
-        }
-
-        // Safe to flush after Reset() — render thread is idle in WaitForSingleObject (no events fire)
-        Flush();
-        Logger.Log("WASAPI_PLAYBACK_RENDER_PAUSED");
+        _pauseRequested = true;
+        _renderEvent?.Set();
     }
 
     public void ResumeRendering()
     {
         if (Volatile.Read(ref _started) == 0) return;
-        if (Interlocked.CompareExchange(ref _renderingPaused, 0, 1) != 1) return;
+        if (Volatile.Read(ref _renderingPaused) == 0) return;
 
-        // Pre-fill the endpoint buffer with silence before starting,
-        // so the first render callback doesn't hit an empty buffer.
-        try
-        {
-            if (_audioClient != null && _audioRenderClient != null && _bufferFrameCount > 0)
-            {
-                WasapiComInterop.ThrowIfFailed(
-                    _audioClient.GetCurrentPadding(out var paddingFrames),
-                    "IAudioClient.GetCurrentPadding(pre-fill)");
-
-                var availableFrames = _bufferFrameCount - paddingFrames;
-                if (availableFrames > 0)
-                {
-                    WasapiComInterop.ThrowIfFailed(
-                        _audioRenderClient.GetBuffer(availableFrames, out _),
-                        "IAudioRenderClient.GetBuffer(pre-fill)");
-                    WasapiComInterop.ThrowIfFailed(
-                        _audioRenderClient.ReleaseBuffer(availableFrames, WasapiComInterop.AUDCLNT_BUFFERFLAGS_SILENT),
-                        "IAudioRenderClient.ReleaseBuffer(pre-fill)");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"WASAPI_PREFILL_WARN: {ex.Message}");
-            // Non-fatal — proceed with Start() anyway
-        }
-
-        try { _audioClient?.Start(); }
-        catch (Exception ex) { Logger.Log($"WASAPI_RESUME_RENDER_WARN: {ex.Message}"); }
-        Logger.Log("WASAPI_PLAYBACK_RENDER_RESUMED");
+        _resumeRequested = true;
+        _renderEvent?.Set();
     }
 
     /// <summary>
@@ -300,6 +264,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             }
             _activeChunkOffset = 0;
         }
+        Interlocked.Exchange(ref _renderingPtsTicks, 0);
     }
 
     public void Stop()
@@ -407,6 +372,59 @@ internal sealed class WasapiAudioPlayback : IDisposable
             if (Volatile.Read(ref _started) == 0)
             {
                 return;
+            }
+
+            // Handle pause request on the render thread to avoid cross-thread WASAPI calls
+            if (_pauseRequested)
+            {
+                _pauseRequested = false;
+                try
+                {
+                    _audioClient?.Stop();
+                    _audioClient?.Reset();
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"WASAPI_PAUSE_RENDER_WARN: {ex.Message}");
+                }
+                Flush();
+                Interlocked.Exchange(ref _renderingPaused, 1);
+                Logger.Log("WASAPI_PLAYBACK_RENDER_PAUSED");
+                continue;
+            }
+
+            // Handle resume request on the render thread to avoid cross-thread WASAPI calls
+            if (_resumeRequested)
+            {
+                _resumeRequested = false;
+                try
+                {
+                    if (_audioClient != null && _audioRenderClient != null && _bufferFrameCount > 0)
+                    {
+                        WasapiComInterop.ThrowIfFailed(
+                            _audioClient.GetCurrentPadding(out var paddingFrames),
+                            "IAudioClient.GetCurrentPadding(pre-fill)");
+                        var availableFrames = _bufferFrameCount - paddingFrames;
+                        if (availableFrames > 0)
+                        {
+                            WasapiComInterop.ThrowIfFailed(
+                                _audioRenderClient.GetBuffer(availableFrames, out _),
+                                "IAudioRenderClient.GetBuffer(pre-fill)");
+                            WasapiComInterop.ThrowIfFailed(
+                                _audioRenderClient.ReleaseBuffer(availableFrames, WasapiComInterop.AUDCLNT_BUFFERFLAGS_SILENT),
+                                "IAudioRenderClient.ReleaseBuffer(pre-fill)");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"WASAPI_PREFILL_WARN: {ex.Message}");
+                }
+                try { _audioClient?.Start(); }
+                catch (Exception ex) { Logger.Log($"WASAPI_RESUME_RENDER_WARN: {ex.Message}"); }
+                Interlocked.Exchange(ref _renderingPaused, 0);
+                Logger.Log("WASAPI_PLAYBACK_RENDER_RESUMED");
+                continue;
             }
 
             try

@@ -167,9 +167,9 @@ internal static class WasapiComInterop
                 Marshal.ReleaseComObject(comObject);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Best-effort.
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiComInterop.ReleaseComObject<T>: {ex.Message}");
         }
         finally
         {
@@ -194,6 +194,7 @@ internal static class WasapiComInterop
             hr = device.Activate(ref iid, CLSCTX_ALL, IntPtr.Zero, out var obj);
             if (hr < 0 || obj is not IAudioEndpointVolume volume)
             {
+                if (obj != null) ReleaseComObjectSafe(obj);
                 return 1.0f;
             }
 
@@ -231,6 +232,7 @@ internal static class WasapiComInterop
             hr = device.Activate(ref iid, CLSCTX_ALL, IntPtr.Zero, out var obj);
             if (hr < 0 || obj is not IAudioEndpointVolume volume)
             {
+                if (obj != null) ReleaseComObjectSafe(obj);
                 return;
             }
 
@@ -264,9 +266,9 @@ internal static class WasapiComInterop
                 Marshal.ReleaseComObject(obj);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Best-effort.
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in WasapiComInterop.SafeReleaseComObject: {ex.Message}");
         }
     }
 

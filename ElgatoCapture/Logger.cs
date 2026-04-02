@@ -155,9 +155,9 @@ public static class Logger
         {
             // Expected during shutdown.
         }
-        catch
+        catch (Exception ex)
         {
-            // Logging must never throw.
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.LogWriterLoop: {ex.Message}");
         }
     }
 
@@ -170,9 +170,9 @@ public static class Logger
                 File.AppendAllText(LogFilePath, entry);
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Best effort only.
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.WriteDirect: {ex.Message}");
         }
     }
 
@@ -243,9 +243,9 @@ public static class Logger
         {
             System.Diagnostics.Debug.WriteLine(breadcrumb.TrimEnd());
         }
-        catch
+        catch (Exception debugEx)
         {
-            // Best effort only.
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.LogFatalBreadcrumb debug write: {debugEx.Message}");
         }
     }
 

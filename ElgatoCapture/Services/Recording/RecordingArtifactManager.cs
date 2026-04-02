@@ -29,7 +29,7 @@ public sealed class RecordingArtifactManager
 
         if (!request.UsePostMuxAudio)
         {
-            return BuildContext(request, finalOutputFile.Path, finalOutputFile.Path, null, false, hdrPipelineActive);
+            return BuildContext(request, finalOutputFile.Path, finalOutputFile.Path, null, hdrPipelineActive);
         }
 
         var baseName = Path.GetFileNameWithoutExtension(finalOutputFile.Name);
@@ -43,7 +43,7 @@ public sealed class RecordingArtifactManager
             $"{baseName}_audio.m4a",
             CreationCollisionOption.GenerateUniqueName);
 
-        return BuildContext(request, tempVideoFile.Path, finalOutputFile.Path, tempAudioFile.Path, true, hdrPipelineActive);
+        return BuildContext(request, tempVideoFile.Path, finalOutputFile.Path, tempAudioFile.Path, hdrPipelineActive);
     }
 
     private static RecordingContext BuildContext(
@@ -51,27 +51,14 @@ public sealed class RecordingArtifactManager
         string videoOutputPath,
         string finalOutputPath,
         string? audioTempPath,
-        bool usePostMuxAudio,
         bool hdrPipelineActive)
     {
-        return new RecordingContext
-        {
-            Settings = request.Settings,
-            VideoOutputPath = videoOutputPath,
-            FinalOutputPath = finalOutputPath,
-            AudioTempPath = audioTempPath,
-            UsePostMuxAudio = usePostMuxAudio,
-            AudioDeviceName = request.AudioDeviceName,
-            MicrophoneDeviceName = request.MicrophoneDeviceName,
-            EffectiveFrameRate = request.EffectiveFrameRate,
-            FrameRateArg = request.FrameRateArg,
-            EffectiveWidth = request.EffectiveWidth,
-            EffectiveHeight = request.EffectiveHeight,
-            VideoInputPixelFormat = request.VideoInputPixelFormat,
-            HdrPipelineActive = hdrPipelineActive,
-            IsFullRangeInput = request.IsFullRangeInput,
-            GpuHandles = request.GpuHandles
-        };
+        return new RecordingContext(
+            request,
+            videoOutputPath,
+            finalOutputPath,
+            audioTempPath,
+            hdrPipelineActive);
     }
 
     public FinalizeResult FinalizeContext(

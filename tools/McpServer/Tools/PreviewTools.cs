@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using ElgatoCapture.Tools;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -18,8 +19,8 @@ public static class PreviewTools
         };
 
         var response = await pipeClient.SendCommandAsync("SetPreviewEnabled", payload).ConfigureAwait(false);
-        var status = ResponseFormatter.IsSuccess(response) ? "OK" : "ERROR";
-        var message = ResponseFormatter.Get(response, "Message", "No message.");
+        var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
+        var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
         return $"[{status}] SetPreviewEnabled: {message}";
     }
 

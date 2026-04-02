@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Text.Json;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -21,7 +20,7 @@ public static class DeviceTools
 
         if (refresh)
         {
-            results.Add(await ExecuteAndFormatAsync(
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(
                 pipeClient,
                 commandName: "RefreshDevices",
                 label: "RefreshDevices").ConfigureAwait(false));
@@ -34,7 +33,7 @@ public static class DeviceTools
                 ["deviceId"] = string.IsNullOrWhiteSpace(deviceId) ? null : deviceId,
                 ["deviceName"] = string.IsNullOrWhiteSpace(deviceName) ? null : deviceName
             };
-            results.Add(await ExecuteAndFormatAsync(
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(
                 pipeClient,
                 commandName: "SelectDevice",
                 label: "SelectDevice",
@@ -48,7 +47,7 @@ public static class DeviceTools
                 ["deviceId"] = string.IsNullOrWhiteSpace(audioDeviceId) ? null : audioDeviceId,
                 ["deviceName"] = string.IsNullOrWhiteSpace(audioDeviceName) ? null : audioDeviceName
             };
-            results.Add(await ExecuteAndFormatAsync(
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(
                 pipeClient,
                 commandName: "SelectAudioInputDevice",
                 label: "SelectAudioInputDevice",
@@ -61,7 +60,7 @@ public static class DeviceTools
             {
                 ["enabled"] = customAudioInput.Value
             };
-            results.Add(await ExecuteAndFormatAsync(
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(
                 pipeClient,
                 commandName: "SetCustomAudioInput",
                 label: "SetCustomAudioInput",
@@ -71,19 +70,6 @@ public static class DeviceTools
         return results.Count == 0
             ? "No device configuration changes requested."
             : string.Join(Environment.NewLine, results);
-    }
-
-    private static async Task<string> ExecuteAndFormatAsync(
-        PipeClient pipeClient,
-        string commandName,
-        string label,
-        Dictionary<string, object?>? payload = null,
-        int? responseTimeoutMs = null)
-    {
-        var response = await pipeClient.SendCommandAsync(commandName, payload, responseTimeoutMs).ConfigureAwait(false);
-        var status = ResponseFormatter.IsSuccess(response) ? "OK" : "ERROR";
-        var message = ResponseFormatter.Get(response, "Message", "No message.");
-        return $"[{status}] {label}: {message}";
     }
 
 }

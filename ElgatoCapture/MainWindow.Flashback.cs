@@ -263,10 +263,12 @@ public sealed partial class MainWindow
     }
     private void FlashbackBufferDurationCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (FlashbackBufferDurationCombo.SelectedItem is ComboBoxItem item && item.Tag is string tag)
+        if (ViewModel == null) return; // Guard: fires during XAML init before ViewModel is set
+        if (FlashbackBufferDurationCombo.SelectedItem is ComboBoxItem item && item.Tag is string tag
+            && int.TryParse(tag, out var minutes))
         {
-            // TODO: Update buffer duration in CaptureService
-            Logger.Log($"FLASHBACK_UI_BUFFER_DURATION_CHANGED minutes={tag}");
+            ViewModel.FlashbackBufferMinutes = minutes;
+            Logger.Log($"FLASHBACK_UI_BUFFER_DURATION_CHANGED minutes={minutes}");
         }
     }
     private void FlashbackApplyButton_Click(object sender, RoutedEventArgs e)

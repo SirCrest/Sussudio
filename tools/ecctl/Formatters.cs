@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using ElgatoCapture.Tools;
 
 namespace EcCtl;
 
@@ -21,14 +22,14 @@ internal static class Formatters
         if (!snapshotResponse.TryGetProperty("Snapshot", out var snapshot) ||
             snapshot.ValueKind != JsonValueKind.Object)
         {
-            return Get(snapshotResponse, "Message", "Snapshot data not available.");
+            return AutomationSnapshotFormatter.Get(snapshotResponse, "Message", "Snapshot data not available.");
         }
 
-        var selectedFriendlyFrameRate = Get(snapshot, "SelectedFriendlyFrameRate", string.Empty);
-        var selectedExactFrameRate = Get(snapshot, "SelectedExactFrameRate", string.Empty);
-        var selectedExactFrameRateArg = Get(snapshot, "SelectedExactFrameRateArg", string.Empty);
+        var selectedFriendlyFrameRate = AutomationSnapshotFormatter.Get(snapshot, "SelectedFriendlyFrameRate", string.Empty);
+        var selectedExactFrameRate = AutomationSnapshotFormatter.Get(snapshot, "SelectedExactFrameRate", string.Empty);
+        var selectedExactFrameRateArg = AutomationSnapshotFormatter.Get(snapshot, "SelectedExactFrameRateArg", string.Empty);
         var frameRateBucket = string.IsNullOrWhiteSpace(selectedFriendlyFrameRate)
-            ? Get(snapshot, "SelectedFrameRate")
+            ? AutomationSnapshotFormatter.Get(snapshot, "SelectedFrameRate")
             : selectedFriendlyFrameRate;
         var frameRateExactDetail = !string.IsNullOrWhiteSpace(selectedExactFrameRateArg)
             ? $"{selectedExactFrameRate} fps, {selectedExactFrameRateArg}"
@@ -41,134 +42,134 @@ internal static class Formatters
 
         var builder = new StringBuilder();
         builder.AppendLine("== ElgatoCapture State ==");
-        builder.AppendLine($"Status: {Get(snapshot, "SessionState")} | {Get(snapshot, "StatusText")}");
-        builder.AppendLine($"Device: {Get(snapshot, "SelectedDeviceName")} ({Get(snapshot, "SelectedDeviceId")})");
-        builder.AppendLine($"Initialized: {Get(snapshot, "IsInitialized")} | Previewing: {Get(snapshot, "IsPreviewing")} | Recording: {Get(snapshot, "IsRecording")}");
+        builder.AppendLine($"Status: {AutomationSnapshotFormatter.Get(snapshot, "SessionState")} | {AutomationSnapshotFormatter.Get(snapshot, "StatusText")}");
+        builder.AppendLine($"Device: {AutomationSnapshotFormatter.Get(snapshot, "SelectedDeviceName")} ({AutomationSnapshotFormatter.Get(snapshot, "SelectedDeviceId")})");
+        builder.AppendLine($"Initialized: {AutomationSnapshotFormatter.Get(snapshot, "IsInitialized")} | Previewing: {AutomationSnapshotFormatter.Get(snapshot, "IsPreviewing")} | Recording: {AutomationSnapshotFormatter.Get(snapshot, "IsRecording")}");
         builder.AppendLine();
         builder.AppendLine("== Capture Settings ==");
-        builder.AppendLine($"Resolution: {Get(snapshot, "SelectedResolution")} | Frame Rate: {frameRateSummary}");
-        builder.AppendLine($"Format: {Get(snapshot, "SelectedRecordingFormat")} | Quality: {Get(snapshot, "SelectedQuality")} | Preset: {Get(snapshot, "SelectedPreset")}");
-        builder.AppendLine($"Video Format: {Get(snapshot, "SelectedVideoFormat")} | Split Encode: {Get(snapshot, "SelectedSplitEncodeMode")} | MJPEG Decoders: {Get(snapshot, "MjpegDecoderCount")}");
-        builder.AppendLine($"HDR: {Get(snapshot, "IsHdrEnabled")} (Available: {Get(snapshot, "IsHdrAvailable")}, Active: {Get(snapshot, "HdrOutputActive")}, State: {Get(snapshot, "HdrRuntimeState")})");
-        builder.AppendLine($"Pipeline: Requested={Get(snapshot, "RequestedPipelineMode")} Active={Get(snapshot, "ActivePipelineMode")} Matched={Get(snapshot, "PipelineModeMatched")}");
-        builder.AppendLine($"UI: Show All Options={Get(snapshot, "ShowAllCaptureOptions")} | Preview Volume={Get(snapshot, "PreviewVolumePercent")}% | Stats Visible={Get(snapshot, "IsStatsVisible")}");
+        builder.AppendLine($"Resolution: {AutomationSnapshotFormatter.Get(snapshot, "SelectedResolution")} | Frame Rate: {frameRateSummary}");
+        builder.AppendLine($"Format: {AutomationSnapshotFormatter.Get(snapshot, "SelectedRecordingFormat")} | Quality: {AutomationSnapshotFormatter.Get(snapshot, "SelectedQuality")} | Preset: {AutomationSnapshotFormatter.Get(snapshot, "SelectedPreset")}");
+        builder.AppendLine($"Video Format: {AutomationSnapshotFormatter.Get(snapshot, "SelectedVideoFormat")} | Split Encode: {AutomationSnapshotFormatter.Get(snapshot, "SelectedSplitEncodeMode")} | MJPEG Decoders: {AutomationSnapshotFormatter.Get(snapshot, "MjpegDecoderCount")}");
+        builder.AppendLine($"HDR: {AutomationSnapshotFormatter.Get(snapshot, "IsHdrEnabled")} (Available: {AutomationSnapshotFormatter.Get(snapshot, "IsHdrAvailable")}, Active: {AutomationSnapshotFormatter.Get(snapshot, "HdrOutputActive")}, State: {AutomationSnapshotFormatter.Get(snapshot, "HdrRuntimeState")})");
+        builder.AppendLine($"Pipeline: Requested={AutomationSnapshotFormatter.Get(snapshot, "RequestedPipelineMode")} Active={AutomationSnapshotFormatter.Get(snapshot, "ActivePipelineMode")} Matched={AutomationSnapshotFormatter.Get(snapshot, "PipelineModeMatched")}");
+        builder.AppendLine($"UI: Show All Options={AutomationSnapshotFormatter.Get(snapshot, "ShowAllCaptureOptions")} | Preview Volume={AutomationSnapshotFormatter.Get(snapshot, "PreviewVolumePercent")}% | Stats Visible={AutomationSnapshotFormatter.Get(snapshot, "IsStatsVisible")}");
         builder.AppendLine();
         builder.AppendLine("== Audio ==");
-        builder.AppendLine($"Enabled: {Get(snapshot, "IsAudioEnabled")} | Preview: {Get(snapshot, "IsAudioPreviewEnabled")} | Custom Input: {Get(snapshot, "IsCustomAudioInputEnabled")}");
-        builder.AppendLine($"Peak: {Get(snapshot, "AudioPeak")} | Clipping: {Get(snapshot, "AudioClipping")} | Signal: {Get(snapshot, "AudioSignalPresent")}");
-        builder.AppendLine($"Reader: {Get(snapshot, "AudioReaderActive")} | Frames: {Get(snapshot, "AudioFramesArrived")} arrived, {Get(snapshot, "AudioFramesWrittenToSink")} to sink");
+        builder.AppendLine($"Enabled: {AutomationSnapshotFormatter.Get(snapshot, "IsAudioEnabled")} | Preview: {AutomationSnapshotFormatter.Get(snapshot, "IsAudioPreviewEnabled")} | Custom Input: {AutomationSnapshotFormatter.Get(snapshot, "IsCustomAudioInputEnabled")}");
+        builder.AppendLine($"Peak: {AutomationSnapshotFormatter.Get(snapshot, "AudioPeak")} | Clipping: {AutomationSnapshotFormatter.Get(snapshot, "AudioClipping")} | Signal: {AutomationSnapshotFormatter.Get(snapshot, "AudioSignalPresent")}");
+        builder.AppendLine($"Reader: {AutomationSnapshotFormatter.Get(snapshot, "AudioReaderActive")} | Frames: {AutomationSnapshotFormatter.Get(snapshot, "AudioFramesArrived")} arrived, {AutomationSnapshotFormatter.Get(snapshot, "AudioFramesWrittenToSink")} to sink");
         builder.AppendLine();
         builder.AppendLine("== Video Pipeline ==");
-        builder.AppendLine($"Reader: {Get(snapshot, "VideoReaderActive")} | Ingest: {Get(snapshot, "IngestVideoFramesArrived")} arrived, {Get(snapshot, "IngestVideoFramesWrittenToSink")} to sink");
-        builder.AppendLine($"Encoder: {Get(snapshot, "EncoderVideoFramesEnqueued")} enqueued, {Get(snapshot, "EncoderVideoFramesEncoded")} encoded | Queue: {Get(snapshot, "FfmpegVideoQueueDepth")} depth, {Get(snapshot, "VideoDropsQueueSaturated")} drops");
-        builder.AppendLine($"Freshness: reader {Get(snapshot, "IngestLastVideoFrameAgeMs")}ms | enqueue {Get(snapshot, "EncoderLastEnqueueAgeMs")}ms | write {Get(snapshot, "EncoderLastWriteAgeMs")}ms");
-        builder.AppendLine($"Diagnostics: MemPref={Get(snapshot, "MemoryPreference")} ReqSubtype={Get(snapshot, "VideoRequestedSubtype")} NegSubtype={Get(snapshot, "VideoNegotiatedSubtype")} Errors={Get(snapshot, "VideoIngestErrorCount")}");
+        builder.AppendLine($"Reader: {AutomationSnapshotFormatter.Get(snapshot, "VideoReaderActive")} | Ingest: {AutomationSnapshotFormatter.Get(snapshot, "IngestVideoFramesArrived")} arrived, {AutomationSnapshotFormatter.Get(snapshot, "IngestVideoFramesWrittenToSink")} to sink");
+        builder.AppendLine($"Encoder: {AutomationSnapshotFormatter.Get(snapshot, "EncoderVideoFramesEnqueued")} enqueued, {AutomationSnapshotFormatter.Get(snapshot, "EncoderVideoFramesEncoded")} encoded | Queue: {AutomationSnapshotFormatter.Get(snapshot, "FfmpegVideoQueueDepth")} depth, {AutomationSnapshotFormatter.Get(snapshot, "VideoDropsQueueSaturated")} drops");
+        builder.AppendLine($"Freshness: reader {AutomationSnapshotFormatter.Get(snapshot, "IngestLastVideoFrameAgeMs")}ms | enqueue {AutomationSnapshotFormatter.Get(snapshot, "EncoderLastEnqueueAgeMs")}ms | write {AutomationSnapshotFormatter.Get(snapshot, "EncoderLastWriteAgeMs")}ms");
+        builder.AppendLine($"Diagnostics: MemPref={AutomationSnapshotFormatter.Get(snapshot, "MemoryPreference")} ReqSubtype={AutomationSnapshotFormatter.Get(snapshot, "VideoRequestedSubtype")} NegSubtype={AutomationSnapshotFormatter.Get(snapshot, "VideoNegotiatedSubtype")} Errors={AutomationSnapshotFormatter.Get(snapshot, "VideoIngestErrorCount")}");
         builder.AppendLine();
         builder.AppendLine("== Thread Health ==");
-        var sourceReaderLastFrameAgeMs = FormatTickAgeMs(GetLong(snapshot, "SourceReaderLastFrameTickMs"));
-        var wasapiCaptureLastCallbackAgeMs = FormatTickAgeMs(GetLong(snapshot, "WasapiCaptureLastCallbackTickMs"));
-        var wasapiPlaybackLastRenderAgeMs = FormatTickAgeMs(GetLong(snapshot, "WasapiPlaybackLastRenderTickMs"));
-        var sourceReaderOutstanding = Get(snapshot, "SourceReaderReadOutstanding");
+        var sourceReaderLastFrameAgeMs = AutomationSnapshotFormatter.ComputeTickAgeMs(AutomationSnapshotFormatter.GetLong(snapshot, "SourceReaderLastFrameTickMs"));
+        var wasapiCaptureLastCallbackAgeMs = AutomationSnapshotFormatter.ComputeTickAgeMs(AutomationSnapshotFormatter.GetLong(snapshot, "WasapiCaptureLastCallbackTickMs"));
+        var wasapiPlaybackLastRenderAgeMs = AutomationSnapshotFormatter.ComputeTickAgeMs(AutomationSnapshotFormatter.GetLong(snapshot, "WasapiPlaybackLastRenderTickMs"));
+        var sourceReaderOutstanding = AutomationSnapshotFormatter.Get(snapshot, "SourceReaderReadOutstanding");
         var sourceReaderOutstandingSuffix = string.Equals(sourceReaderOutstanding, "true", StringComparison.OrdinalIgnoreCase)
-            ? $" outstandingFor={Get(snapshot, "SourceReaderReadOutstandingMs")}ms"
+            ? $" outstandingFor={AutomationSnapshotFormatter.Get(snapshot, "SourceReaderReadOutstandingMs")}ms"
             : string.Empty;
         builder.AppendLine(
             $"Source Reader: outstanding={sourceReaderOutstanding}{sourceReaderOutstandingSuffix} " +
-            $"lastFrame={sourceReaderLastFrameAgeMs}ms ago channelDepth={Get(snapshot, "SourceReaderFrameChannelDepth")}");
+            $"lastFrame={sourceReaderLastFrameAgeMs}ms ago channelDepth={AutomationSnapshotFormatter.Get(snapshot, "SourceReaderFrameChannelDepth")}");
         builder.AppendLine(
-            $"WASAPI Capture: callbacks={Get(snapshot, "WasapiCaptureCallbackCount")} " +
-            $"interval={Get(snapshot, "WasapiCaptureCallbackAvgIntervalMs")}ms/avg {Get(snapshot, "WasapiCaptureCallbackMaxIntervalMs")}ms/max " +
-            $"silence={Get(snapshot, "WasapiCaptureCallbackSilenceCount")} " +
+            $"WASAPI Capture: callbacks={AutomationSnapshotFormatter.Get(snapshot, "WasapiCaptureCallbackCount")} " +
+            $"interval={AutomationSnapshotFormatter.Get(snapshot, "WasapiCaptureCallbackAvgIntervalMs")}ms/avg {AutomationSnapshotFormatter.Get(snapshot, "WasapiCaptureCallbackMaxIntervalMs")}ms/max " +
+            $"silence={AutomationSnapshotFormatter.Get(snapshot, "WasapiCaptureCallbackSilenceCount")} " +
             $"lastCallback={wasapiCaptureLastCallbackAgeMs}ms ago " +
-            $"levelEvents={Get(snapshot, "WasapiCaptureAudioLevelEventsFired")}");
+            $"levelEvents={AutomationSnapshotFormatter.Get(snapshot, "WasapiCaptureAudioLevelEventsFired")}");
         builder.AppendLine(
-            $"WASAPI Playback: callbacks={Get(snapshot, "WasapiPlaybackRenderCallbackCount")} " +
-            $"silence={Get(snapshot, "WasapiPlaybackRenderSilenceCount")} " +
-            $"queueDepth={Get(snapshot, "WasapiPlaybackQueueDepth")} " +
-            $"drops={Get(snapshot, "WasapiPlaybackQueueDropCount")} " +
+            $"WASAPI Playback: callbacks={AutomationSnapshotFormatter.Get(snapshot, "WasapiPlaybackRenderCallbackCount")} " +
+            $"silence={AutomationSnapshotFormatter.Get(snapshot, "WasapiPlaybackRenderSilenceCount")} " +
+            $"queueDepth={AutomationSnapshotFormatter.Get(snapshot, "WasapiPlaybackQueueDepth")} " +
+            $"drops={AutomationSnapshotFormatter.Get(snapshot, "WasapiPlaybackQueueDropCount")} " +
             $"lastCallback={wasapiPlaybackLastRenderAgeMs}ms ago");
         builder.AppendLine();
         builder.AppendLine("== Recording ==");
-        builder.AppendLine($"Recording: {Get(snapshot, "IsRecording")} | Output: {Get(snapshot, "OutputPath")}");
-        builder.AppendLine($"Time: {Get(snapshot, "RecordingTime")} | Size: {Get(snapshot, "RecordingSizeInfo")} | Bitrate: {Get(snapshot, "RecordingBitrateInfo")}");
-        builder.AppendLine($"Backend: {Get(snapshot, "RecordingBackend")} | Audio Path: {Get(snapshot, "AudioPathMode")} | Mux: {Get(snapshot, "MuxResult")}");
-        builder.AppendLine($"Last Output: {Get(snapshot, "LastOutputPath")} ({Get(snapshot, "LastOutputSizeBytes")} bytes) Finalize: {Get(snapshot, "LastFinalizeStatus")}");
+        builder.AppendLine($"Recording: {AutomationSnapshotFormatter.Get(snapshot, "IsRecording")} | Output: {AutomationSnapshotFormatter.Get(snapshot, "OutputPath")}");
+        builder.AppendLine($"Time: {AutomationSnapshotFormatter.Get(snapshot, "RecordingTime")} | Size: {AutomationSnapshotFormatter.Get(snapshot, "RecordingSizeInfo")} | Bitrate: {AutomationSnapshotFormatter.Get(snapshot, "RecordingBitrateInfo")}");
+        builder.AppendLine($"Backend: {AutomationSnapshotFormatter.Get(snapshot, "RecordingBackend")} | Audio Path: {AutomationSnapshotFormatter.Get(snapshot, "AudioPathMode")} | Mux: {AutomationSnapshotFormatter.Get(snapshot, "MuxResult")}");
+        builder.AppendLine($"Last Output: {AutomationSnapshotFormatter.Get(snapshot, "LastOutputPath")} ({AutomationSnapshotFormatter.Get(snapshot, "LastOutputSizeBytes")} bytes) Finalize: {AutomationSnapshotFormatter.Get(snapshot, "LastFinalizeStatus")}");
         builder.AppendLine();
-        var flashbackActive = Get(snapshot, "FlashbackActive", "false");
+        var flashbackActive = AutomationSnapshotFormatter.Get(snapshot, "FlashbackActive", "false");
         if (flashbackActive == "True" || flashbackActive == "true")
         {
             builder.AppendLine("== Flashback ==");
-            var encCodec = Get(snapshot, "EncoderCodecName");
+            var encCodec = AutomationSnapshotFormatter.Get(snapshot, "EncoderCodecName");
             if (!string.IsNullOrEmpty(encCodec))
             {
-                var encW = Get(snapshot, "EncoderWidth", "0");
-                var encH = Get(snapshot, "EncoderHeight", "0");
-                var encFps = Get(snapshot, "EncoderFrameRate", "0");
-                var encBr = uint.TryParse(Get(snapshot, "EncoderTargetBitRate", "0"), out var br) ? br / 1_000_000.0 : 0;
+                var encW = AutomationSnapshotFormatter.Get(snapshot, "EncoderWidth", "0");
+                var encH = AutomationSnapshotFormatter.Get(snapshot, "EncoderHeight", "0");
+                var encFps = AutomationSnapshotFormatter.Get(snapshot, "EncoderFrameRate", "0");
+                var encBr = uint.TryParse(AutomationSnapshotFormatter.Get(snapshot, "EncoderTargetBitRate", "0"), out var br) ? br / 1_000_000.0 : 0;
                 builder.AppendLine($"Encoder: {encCodec} {encW}x{encH} @ {encFps} fps | Target: {encBr:0.#} Mbps");
             }
-            var fbDurationMs = long.TryParse(Get(snapshot, "FlashbackBufferedDurationMs", "0"), out var durMs) ? durMs : 0;
-            var fbDiskMb = long.TryParse(Get(snapshot, "FlashbackDiskBytes", "0"), out var diskBytes) ? diskBytes / (1024.0 * 1024.0) : 0;
-            builder.AppendLine($"Buffer: {fbDurationMs / 1000.0:F1}s | Disk: {fbDiskMb:F1} MB | GPU Encode: {Get(snapshot, "FlashbackGpuEncoding")}");
-            builder.AppendLine($"Encoded: {Get(snapshot, "FlashbackEncodedFrames")} frames | Dropped: {Get(snapshot, "FlashbackDroppedFrames")} | VQ: {Get(snapshot, "FlashbackVideoQueueDepth")} AQ: {Get(snapshot, "FlashbackAudioQueueDepth")}");
-            builder.AppendLine($"Playback: {Get(snapshot, "FlashbackPlaybackState")} | Pos: {Get(snapshot, "FlashbackPlaybackPositionMs")}ms | Decoder: {Get(snapshot, "FlashbackDecoderHwAccel")}");
-            var pbFps = double.TryParse(Get(snapshot, "FlashbackPlaybackObservedFps", "0"), out var fps) ? fps : 0;
-            var pbAvgMs = double.TryParse(Get(snapshot, "FlashbackPlaybackAvgFrameMs", "0"), out var avgMs) ? avgMs : 0;
-            var avDrift = double.TryParse(Get(snapshot, "FlashbackAvDriftMs", "0"), out var drift) ? drift : 0;
-            builder.AppendLine($"Playback FPS: {pbFps:F1} | AvgFrame: {pbAvgMs:F2}ms | Frames: {Get(snapshot, "FlashbackPlaybackFrameCount")} | Late: {Get(snapshot, "FlashbackPlaybackLateFrames")}");
-            builder.AppendLine($"A/V Drift: {avDrift:+0.0;-0.0;0.0}ms (+ = audio ahead) | File: {Get(snapshot, "FlashbackFilePath")}");
+            var fbDurationMs = long.TryParse(AutomationSnapshotFormatter.Get(snapshot, "FlashbackBufferedDurationMs", "0"), out var durMs) ? durMs : 0;
+            var fbDiskMb = long.TryParse(AutomationSnapshotFormatter.Get(snapshot, "FlashbackDiskBytes", "0"), out var diskBytes) ? diskBytes / (1024.0 * 1024.0) : 0;
+            builder.AppendLine($"Buffer: {fbDurationMs / 1000.0:F1}s | Disk: {fbDiskMb:F1} MB | GPU Encode: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackGpuEncoding")}");
+            builder.AppendLine($"Encoded: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackEncodedFrames")} frames | Dropped: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackDroppedFrames")} | VQ: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackVideoQueueDepth")} AQ: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackAudioQueueDepth")}");
+            builder.AppendLine($"Playback: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackState")} | Pos: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackPositionMs")}ms | Decoder: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackDecoderHwAccel")}");
+            var pbFps = double.TryParse(AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackObservedFps", "0"), out var fps) ? fps : 0;
+            var pbAvgMs = double.TryParse(AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackAvgFrameMs", "0"), out var avgMs) ? avgMs : 0;
+            var avDrift = double.TryParse(AutomationSnapshotFormatter.Get(snapshot, "FlashbackAvDriftMs", "0"), out var drift) ? drift : 0;
+            builder.AppendLine($"Playback FPS: {pbFps:F1} | AvgFrame: {pbAvgMs:F2}ms | Frames: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackFrameCount")} | Late: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackLateFrames")}");
+            builder.AppendLine($"A/V Drift: {avDrift:+0.0;-0.0;0.0}ms (+ = audio ahead) | File: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackFilePath")}");
             builder.AppendLine();
         }
 
         builder.AppendLine("== Performance ==");
-        builder.AppendLine($"Score: {Get(snapshot, "PerformanceScore")} | Perfection: {Get(snapshot, "PerformancePerfectionMet")}");
-        builder.AppendLine($"Summary: {Get(snapshot, "PerformanceSummary")}");
-        builder.AppendLine($"Pipeline Latency: {Get(snapshot, "EstimatedPipelineLatencyMs")}ms (source reader -> present)");
+        builder.AppendLine($"Score: {AutomationSnapshotFormatter.Get(snapshot, "PerformanceScore")} | Perfection: {AutomationSnapshotFormatter.Get(snapshot, "PerformancePerfectionMet")}");
+        builder.AppendLine($"Summary: {AutomationSnapshotFormatter.Get(snapshot, "PerformanceSummary")}");
+        builder.AppendLine($"Pipeline Latency: {AutomationSnapshotFormatter.Get(snapshot, "EstimatedPipelineLatencyMs")}ms (source reader -> present)");
         builder.AppendLine();
         builder.AppendLine("== Memory & GC ==");
-        builder.AppendLine($"Working Set: {Get(snapshot, "MemoryWorkingSetMb")} MB | Private: {Get(snapshot, "MemoryPrivateBytesMb")} MB | Managed Heap: {Get(snapshot, "MemoryManagedHeapMb")} MB");
-        builder.AppendLine($"Total Allocated: {Get(snapshot, "MemoryTotalAllocatedMb")} MB | GC Heap: {Get(snapshot, "MemoryGcHeapSizeMb")} MB");
-        builder.AppendLine($"GC Collections: Gen0={Get(snapshot, "MemoryGcGen0Collections")} Gen1={Get(snapshot, "MemoryGcGen1Collections")} Gen2={Get(snapshot, "MemoryGcGen2Collections")}");
-        builder.AppendLine($"GC Pause: {Get(snapshot, "MemoryGcPauseTimePercent")}% | Fragmentation: {Get(snapshot, "MemoryGcFragmentationPercent")}%");
-        builder.AppendLine($"ThreadPool Workers: {Get(snapshot, "ThreadPoolWorkerAvailable")}/{Get(snapshot, "ThreadPoolWorkerMax")} avail | IO: {Get(snapshot, "ThreadPoolIoAvailable")}/{Get(snapshot, "ThreadPoolIoMax")} avail");
+        builder.AppendLine($"Working Set: {AutomationSnapshotFormatter.Get(snapshot, "MemoryWorkingSetMb")} MB | Private: {AutomationSnapshotFormatter.Get(snapshot, "MemoryPrivateBytesMb")} MB | Managed Heap: {AutomationSnapshotFormatter.Get(snapshot, "MemoryManagedHeapMb")} MB");
+        builder.AppendLine($"Total Allocated: {AutomationSnapshotFormatter.Get(snapshot, "MemoryTotalAllocatedMb")} MB | GC Heap: {AutomationSnapshotFormatter.Get(snapshot, "MemoryGcHeapSizeMb")} MB");
+        builder.AppendLine($"GC Collections: Gen0={AutomationSnapshotFormatter.Get(snapshot, "MemoryGcGen0Collections")} Gen1={AutomationSnapshotFormatter.Get(snapshot, "MemoryGcGen1Collections")} Gen2={AutomationSnapshotFormatter.Get(snapshot, "MemoryGcGen2Collections")}");
+        builder.AppendLine($"GC Pause: {AutomationSnapshotFormatter.Get(snapshot, "MemoryGcPauseTimePercent")}% | Fragmentation: {AutomationSnapshotFormatter.Get(snapshot, "MemoryGcFragmentationPercent")}%");
+        builder.AppendLine($"ThreadPool Workers: {AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolWorkerAvailable")}/{AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolWorkerMax")} avail | IO: {AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolIoAvailable")}/{AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolIoMax")} avail");
         builder.AppendLine();
         builder.AppendLine("== Capture Cadence ==");
-        builder.AppendLine($"Source: {Get(snapshot, "CaptureCadenceObservedFps")} fps (expected {Get(snapshot, "ExpectedCaptureFrameRate")} fps) | Samples: {Get(snapshot, "CaptureCadenceSampleCount")}");
-        builder.AppendLine($"Interval: avg={Get(snapshot, "CaptureCadenceAverageIntervalMs")}ms P95={Get(snapshot, "CaptureCadenceP95IntervalMs")}ms max={Get(snapshot, "CaptureCadenceMaxIntervalMs")}ms");
-        builder.AppendLine($"Jitter: {Get(snapshot, "CaptureCadenceJitterStdDevMs")}ms | Gaps: {Get(snapshot, "CaptureCadenceSevereGapCount")} | Est Drops: {Get(snapshot, "CaptureCadenceEstimatedDroppedFrames")} ({Get(snapshot, "CaptureCadenceEstimatedDropPercent")}%)");
-        var mjpegDecodeSamples = Get(snapshot, "MjpegDecodeSampleCount", "0");
+        builder.AppendLine($"Source: {AutomationSnapshotFormatter.Get(snapshot, "CaptureCadenceObservedFps")} fps (expected {AutomationSnapshotFormatter.Get(snapshot, "ExpectedCaptureFrameRate")} fps) | Samples: {AutomationSnapshotFormatter.Get(snapshot, "CaptureCadenceSampleCount")}");
+        builder.AppendLine($"Interval: avg={AutomationSnapshotFormatter.Get(snapshot, "CaptureCadenceAverageIntervalMs")}ms P95={AutomationSnapshotFormatter.Get(snapshot, "CaptureCadenceP95IntervalMs")}ms max={AutomationSnapshotFormatter.Get(snapshot, "CaptureCadenceMaxIntervalMs")}ms");
+        builder.AppendLine($"Jitter: {AutomationSnapshotFormatter.Get(snapshot, "CaptureCadenceJitterStdDevMs")}ms | Gaps: {AutomationSnapshotFormatter.Get(snapshot, "CaptureCadenceSevereGapCount")} | Est Drops: {AutomationSnapshotFormatter.Get(snapshot, "CaptureCadenceEstimatedDroppedFrames")} ({AutomationSnapshotFormatter.Get(snapshot, "CaptureCadenceEstimatedDropPercent")}%)");
+        var mjpegDecodeSamples = AutomationSnapshotFormatter.Get(snapshot, "MjpegDecodeSampleCount", "0");
         if (mjpegDecodeSamples != "0")
         {
             builder.AppendLine();
             builder.AppendLine("== MJPEG Pipeline Timing ==");
-            builder.AppendLine($"Decode: avg={Get(snapshot, "MjpegDecodeAvgMs")}ms P95={Get(snapshot, "MjpegDecodeP95Ms")}ms max={Get(snapshot, "MjpegDecodeMaxMs")}ms ({mjpegDecodeSamples} samples)");
-            builder.AppendLine($"Interop Copy: avg={Get(snapshot, "MjpegInteropCopyAvgMs")}ms P95={Get(snapshot, "MjpegInteropCopyP95Ms")}ms max={Get(snapshot, "MjpegInteropCopyMaxMs")}ms ({Get(snapshot, "MjpegInteropCopySampleCount")} samples)");
-            builder.AppendLine($"Total Callback: avg={Get(snapshot, "MjpegCallbackAvgMs")}ms P95={Get(snapshot, "MjpegCallbackP95Ms")}ms max={Get(snapshot, "MjpegCallbackMaxMs")}ms ({Get(snapshot, "MjpegCallbackSampleCount")} samples)");
+            builder.AppendLine($"Decode: avg={AutomationSnapshotFormatter.Get(snapshot, "MjpegDecodeAvgMs")}ms P95={AutomationSnapshotFormatter.Get(snapshot, "MjpegDecodeP95Ms")}ms max={AutomationSnapshotFormatter.Get(snapshot, "MjpegDecodeMaxMs")}ms ({mjpegDecodeSamples} samples)");
+            builder.AppendLine($"Interop Copy: avg={AutomationSnapshotFormatter.Get(snapshot, "MjpegInteropCopyAvgMs")}ms P95={AutomationSnapshotFormatter.Get(snapshot, "MjpegInteropCopyP95Ms")}ms max={AutomationSnapshotFormatter.Get(snapshot, "MjpegInteropCopyMaxMs")}ms ({AutomationSnapshotFormatter.Get(snapshot, "MjpegInteropCopySampleCount")} samples)");
+            builder.AppendLine($"Total Callback: avg={AutomationSnapshotFormatter.Get(snapshot, "MjpegCallbackAvgMs")}ms P95={AutomationSnapshotFormatter.Get(snapshot, "MjpegCallbackP95Ms")}ms max={AutomationSnapshotFormatter.Get(snapshot, "MjpegCallbackMaxMs")}ms ({AutomationSnapshotFormatter.Get(snapshot, "MjpegCallbackSampleCount")} samples)");
 
-            var mjpegDecoderCount = Get(snapshot, "MjpegDecoderCount", "0");
+            var mjpegDecoderCount = AutomationSnapshotFormatter.Get(snapshot, "MjpegDecoderCount", "0");
             if (mjpegDecoderCount != "0")
             {
-                builder.AppendLine($"Decoders: {mjpegDecoderCount} | Decoded={Get(snapshot, "MjpegTotalDecoded")} Emitted={Get(snapshot, "MjpegTotalEmitted")} Dropped={Get(snapshot, "MjpegTotalDropped")}");
-                builder.AppendLine($"Reorder: avg={Get(snapshot, "MjpegReorderAvgMs")}ms P95={Get(snapshot, "MjpegReorderP95Ms")}ms max={Get(snapshot, "MjpegReorderMaxMs")}ms ({Get(snapshot, "MjpegReorderSampleCount")} samples) | Skips={Get(snapshot, "MjpegReorderSkips")} Buffer={Get(snapshot, "MjpegReorderBufferDepth")}");
-                builder.AppendLine($"Pipeline: avg={Get(snapshot, "MjpegPipelineAvgMs")}ms P95={Get(snapshot, "MjpegPipelineP95Ms")}ms max={Get(snapshot, "MjpegPipelineMaxMs")}ms ({Get(snapshot, "MjpegPipelineSampleCount")} samples)");
+                builder.AppendLine($"Decoders: {mjpegDecoderCount} | Decoded={AutomationSnapshotFormatter.Get(snapshot, "MjpegTotalDecoded")} Emitted={AutomationSnapshotFormatter.Get(snapshot, "MjpegTotalEmitted")} Dropped={AutomationSnapshotFormatter.Get(snapshot, "MjpegTotalDropped")}");
+                builder.AppendLine($"Reorder: avg={AutomationSnapshotFormatter.Get(snapshot, "MjpegReorderAvgMs")}ms P95={AutomationSnapshotFormatter.Get(snapshot, "MjpegReorderP95Ms")}ms max={AutomationSnapshotFormatter.Get(snapshot, "MjpegReorderMaxMs")}ms ({AutomationSnapshotFormatter.Get(snapshot, "MjpegReorderSampleCount")} samples) | Skips={AutomationSnapshotFormatter.Get(snapshot, "MjpegReorderSkips")} Buffer={AutomationSnapshotFormatter.Get(snapshot, "MjpegReorderBufferDepth")}");
+                builder.AppendLine($"Pipeline: avg={AutomationSnapshotFormatter.Get(snapshot, "MjpegPipelineAvgMs")}ms P95={AutomationSnapshotFormatter.Get(snapshot, "MjpegPipelineP95Ms")}ms max={AutomationSnapshotFormatter.Get(snapshot, "MjpegPipelineMaxMs")}ms ({AutomationSnapshotFormatter.Get(snapshot, "MjpegPipelineSampleCount")} samples)");
                 if (snapshot.TryGetProperty("MjpegPerDecoder", out var perDecoder) &&
                     perDecoder.ValueKind == JsonValueKind.Array)
                 {
                     foreach (var worker in perDecoder.EnumerateArray())
                     {
                         builder.AppendLine(
-                            $"Decoder[{Get(worker, "WorkerIndex", "?")}]: avg={Get(worker, "AvgMs")}ms " +
-                            $"P95={Get(worker, "P95Ms")}ms max={Get(worker, "MaxMs")}ms " +
-                            $"({Get(worker, "SampleCount")} samples)");
+                            $"Decoder[{AutomationSnapshotFormatter.Get(worker, "WorkerIndex", "?")}]: avg={AutomationSnapshotFormatter.Get(worker, "AvgMs")}ms " +
+                            $"P95={AutomationSnapshotFormatter.Get(worker, "P95Ms")}ms max={AutomationSnapshotFormatter.Get(worker, "MaxMs")}ms " +
+                            $"({AutomationSnapshotFormatter.Get(worker, "SampleCount")} samples)");
                     }
                 }
             }
         }
 
-        var avSyncDrift = Get(snapshot, "AvSyncCaptureDriftMs", string.Empty);
-        var avSyncRate = Get(snapshot, "AvSyncCaptureDriftRateMsPerSec", string.Empty);
-        var avSyncEncoder = Get(snapshot, "AvSyncEncoderDriftMs", string.Empty);
-        var avSyncCorr = Get(snapshot, "AvSyncEncoderCorrectionSamples", string.Empty);
+        var avSyncDrift = AutomationSnapshotFormatter.Get(snapshot, "AvSyncCaptureDriftMs", string.Empty);
+        var avSyncRate = AutomationSnapshotFormatter.Get(snapshot, "AvSyncCaptureDriftRateMsPerSec", string.Empty);
+        var avSyncEncoder = AutomationSnapshotFormatter.Get(snapshot, "AvSyncEncoderDriftMs", string.Empty);
+        var avSyncCorr = AutomationSnapshotFormatter.Get(snapshot, "AvSyncEncoderCorrectionSamples", string.Empty);
         if (!string.IsNullOrWhiteSpace(avSyncDrift) || !string.IsNullOrWhiteSpace(avSyncEncoder))
         {
             builder.AppendLine();
@@ -186,35 +187,35 @@ internal static class Formatters
 
         builder.AppendLine();
         builder.AppendLine("== Preview ==");
-        var rendererMode = Get(snapshot, "PreviewRendererMode");
-        builder.AppendLine($"Renderer: {rendererMode} | Startup: {Get(snapshot, "PreviewStartupState")} | First Visual: {Get(snapshot, "PreviewFirstVisualConfirmed")}");
+        var rendererMode = AutomationSnapshotFormatter.Get(snapshot, "PreviewRendererMode");
+        builder.AppendLine($"Renderer: {rendererMode} | Startup: {AutomationSnapshotFormatter.Get(snapshot, "PreviewStartupState")} | First Visual: {AutomationSnapshotFormatter.Get(snapshot, "PreviewFirstVisualConfirmed")}");
         if (rendererMode == "GpuMediaSource")
         {
-            builder.AppendLine($"GPU Playback: {Get(snapshot, "PreviewGpuPlaybackState")} | Video: {Get(snapshot, "PreviewGpuNaturalVideoWidth")}x{Get(snapshot, "PreviewGpuNaturalVideoHeight")} | Position: {Get(snapshot, "PreviewGpuPositionMs")}ms | Events: {Get(snapshot, "PreviewGpuPositionEventCount")}");
+            builder.AppendLine($"GPU Playback: {AutomationSnapshotFormatter.Get(snapshot, "PreviewGpuPlaybackState")} | Video: {AutomationSnapshotFormatter.Get(snapshot, "PreviewGpuNaturalVideoWidth")}x{AutomationSnapshotFormatter.Get(snapshot, "PreviewGpuNaturalVideoHeight")} | Position: {AutomationSnapshotFormatter.Get(snapshot, "PreviewGpuPositionMs")}ms | Events: {AutomationSnapshotFormatter.Get(snapshot, "PreviewGpuPositionEventCount")}");
         }
         else if (rendererMode == "D3D11VideoProcessor" || rendererMode == "HdrShader")
         {
-            builder.AppendLine($"D3D Frames: {Get(snapshot, "PreviewD3DFramesSubmitted")} submitted, {Get(snapshot, "PreviewD3DFramesRendered")} rendered, {Get(snapshot, "PreviewD3DFramesDropped")} dropped");
-            builder.AppendLine($"Color: input={Get(snapshot, "PreviewD3DInputColorSpace")} output={Get(snapshot, "PreviewD3DOutputColorSpace")}");
-            builder.AppendLine($"Cadence: {Get(snapshot, "PreviewCadenceObservedFps")} fps");
+            builder.AppendLine($"D3D Frames: {AutomationSnapshotFormatter.Get(snapshot, "PreviewD3DFramesSubmitted")} submitted, {AutomationSnapshotFormatter.Get(snapshot, "PreviewD3DFramesRendered")} rendered, {AutomationSnapshotFormatter.Get(snapshot, "PreviewD3DFramesDropped")} dropped");
+            builder.AppendLine($"Color: input={AutomationSnapshotFormatter.Get(snapshot, "PreviewD3DInputColorSpace")} output={AutomationSnapshotFormatter.Get(snapshot, "PreviewD3DOutputColorSpace")}");
+            builder.AppendLine($"Cadence: {AutomationSnapshotFormatter.Get(snapshot, "PreviewCadenceObservedFps")} fps");
         }
         else
         {
-            builder.AppendLine($"Frames: {Get(snapshot, "PreviewFramesArrived")} arrived, {Get(snapshot, "PreviewFramesDisplayed")} displayed, {Get(snapshot, "PreviewFramesDropped")} dropped");
-            builder.AppendLine($"Cadence: {Get(snapshot, "PreviewCadenceObservedFps")} fps");
+            builder.AppendLine($"Frames: {AutomationSnapshotFormatter.Get(snapshot, "PreviewFramesArrived")} arrived, {AutomationSnapshotFormatter.Get(snapshot, "PreviewFramesDisplayed")} displayed, {AutomationSnapshotFormatter.Get(snapshot, "PreviewFramesDropped")} dropped");
+            builder.AppendLine($"Cadence: {AutomationSnapshotFormatter.Get(snapshot, "PreviewCadenceObservedFps")} fps");
         }
 
         builder.AppendLine();
         builder.AppendLine("== Source ==");
-        var sourceFrameRate = Get(snapshot, "DetectedSourceFrameRate", string.Empty);
-        var sourceFrameRateArg = Get(snapshot, "DetectedSourceFrameRateArg", string.Empty);
+        var sourceFrameRate = AutomationSnapshotFormatter.Get(snapshot, "DetectedSourceFrameRate", string.Empty);
+        var sourceFrameRateArg = AutomationSnapshotFormatter.Get(snapshot, "DetectedSourceFrameRateArg", string.Empty);
         var sourceFpsSummary = !string.IsNullOrWhiteSpace(sourceFrameRateArg)
             ? $"{sourceFrameRate}fps ({sourceFrameRateArg})"
             : !string.IsNullOrWhiteSpace(sourceFrameRate)
                 ? $"{sourceFrameRate}fps"
                 : "N/A";
-        builder.AppendLine($"Source: {Get(snapshot, "SourceWidth")} x {Get(snapshot, "SourceHeight")} @ {sourceFpsSummary} HDR={Get(snapshot, "SourceIsHdr")}");
-        builder.AppendLine($"Telemetry: {Get(snapshot, "SourceTelemetryAvailability")} ({Get(snapshot, "SourceTelemetryConfidence")})");
+        builder.AppendLine($"Source: {AutomationSnapshotFormatter.Get(snapshot, "SourceWidth")} x {AutomationSnapshotFormatter.Get(snapshot, "SourceHeight")} @ {sourceFpsSummary} HDR={AutomationSnapshotFormatter.Get(snapshot, "SourceIsHdr")}");
+        builder.AppendLine($"Telemetry: {AutomationSnapshotFormatter.Get(snapshot, "SourceTelemetryAvailability")} ({AutomationSnapshotFormatter.Get(snapshot, "SourceTelemetryConfidence")})");
 
         return builder.ToString().TrimEnd();
     }
@@ -223,7 +224,7 @@ internal static class Formatters
     {
         if (!TryGetData(response, out var data) || data.ValueKind != JsonValueKind.Array)
         {
-            return Get(response, "Message", "No diagnostics available.");
+            return AutomationSnapshotFormatter.Get(response, "Message", "No diagnostics available.");
         }
 
         var builder = new StringBuilder();
@@ -232,10 +233,10 @@ internal static class Formatters
         foreach (var item in data.EnumerateArray())
         {
             count++;
-            var correlation = Get(item, "CorrelationId", string.Empty);
+            var correlation = AutomationSnapshotFormatter.Get(item, "CorrelationId", string.Empty);
             var correlationSuffix = string.IsNullOrWhiteSpace(correlation) ? string.Empty : $" [{correlation}]";
             builder.AppendLine(
-                $"{Get(item, "TimestampUtc", "?")} [{Get(item, "Severity", "Info")}] [{Get(item, "Category", "System")}] {Get(item, "Message", string.Empty)}{correlationSuffix}");
+                $"{AutomationSnapshotFormatter.Get(item, "TimestampUtc", "?")} [{AutomationSnapshotFormatter.Get(item, "Severity", "Info")}] [{AutomationSnapshotFormatter.Get(item, "Category", "System")}] {AutomationSnapshotFormatter.Get(item, "Message", string.Empty)}{correlationSuffix}");
         }
 
         if (count == 0)
@@ -250,17 +251,17 @@ internal static class Formatters
     {
         if (!TryGetData(response, out var data) || data.ValueKind != JsonValueKind.Object)
         {
-            return Get(response, "Message", "Capture options not available.");
+            return AutomationSnapshotFormatter.Get(response, "Message", "Capture options not available.");
         }
 
         var builder = new StringBuilder();
         builder.AppendLine("== Capture Options ==");
-        builder.AppendLine($"Selected Device: {Get(data, "SelectedDeviceId")}");
-        builder.AppendLine($"Selected Audio Input: {Get(data, "SelectedAudioInputDeviceId")}");
-        builder.AppendLine($"Resolution: {Get(data, "SelectedResolution")} | Frame Rate: {Get(data, "SelectedFrameRate")}");
-        builder.AppendLine($"Format: {Get(data, "SelectedRecordingFormat")} | Quality: {Get(data, "SelectedQuality")} | Preset: {Get(data, "SelectedPreset")}");
-        builder.AppendLine($"Split Encode: {Get(data, "SelectedSplitEncodeMode")} | Video Format: {Get(data, "SelectedVideoFormat")} | MJPEG Decoders: {Get(data, "MjpegDecoderCount")}");
-        builder.AppendLine($"Show All Options: {Get(data, "ShowAllCaptureOptions")} | Preview Volume: {Get(data, "PreviewVolumePercent")}% | Stats Visible: {Get(data, "IsStatsVisible")}");
+        builder.AppendLine($"Selected Device: {AutomationSnapshotFormatter.Get(data, "SelectedDeviceId")}");
+        builder.AppendLine($"Selected Audio Input: {AutomationSnapshotFormatter.Get(data, "SelectedAudioInputDeviceId")}");
+        builder.AppendLine($"Resolution: {AutomationSnapshotFormatter.Get(data, "SelectedResolution")} | Frame Rate: {AutomationSnapshotFormatter.Get(data, "SelectedFrameRate")}");
+        builder.AppendLine($"Format: {AutomationSnapshotFormatter.Get(data, "SelectedRecordingFormat")} | Quality: {AutomationSnapshotFormatter.Get(data, "SelectedQuality")} | Preset: {AutomationSnapshotFormatter.Get(data, "SelectedPreset")}");
+        builder.AppendLine($"Split Encode: {AutomationSnapshotFormatter.Get(data, "SelectedSplitEncodeMode")} | Video Format: {AutomationSnapshotFormatter.Get(data, "SelectedVideoFormat")} | MJPEG Decoders: {AutomationSnapshotFormatter.Get(data, "MjpegDecoderCount")}");
+        builder.AppendLine($"Show All Options: {AutomationSnapshotFormatter.Get(data, "ShowAllCaptureOptions")} | Preview Volume: {AutomationSnapshotFormatter.Get(data, "PreviewVolumePercent")}% | Stats Visible: {AutomationSnapshotFormatter.Get(data, "IsStatsVisible")}");
         builder.AppendLine();
         AppendNamedOptions(builder, "Devices", data, "Devices", includeId: true);
         builder.AppendLine();
@@ -288,7 +289,7 @@ internal static class Formatters
     {
         if (!TryGetData(response, out var data) || data.ValueKind != JsonValueKind.Object)
         {
-            return Get(response, "Message", "Capture options not available.");
+            return AutomationSnapshotFormatter.Get(response, "Message", "Capture options not available.");
         }
 
         var builder = new StringBuilder();
@@ -303,7 +304,7 @@ internal static class Formatters
     {
         if (!TryGetData(response, out var data) || data.ValueKind != JsonValueKind.Array)
         {
-            return Get(response, "Message", "No timeline data available.");
+            return AutomationSnapshotFormatter.Get(response, "Message", "No timeline data available.");
         }
 
         var entries = new List<TimelineRow>();
@@ -311,21 +312,21 @@ internal static class Formatters
         {
             entries.Add(new TimelineRow
             {
-                Timestamp = Get(item, "TimestampUtc"),
-                CaptureFps = GetDouble(item, "CaptureFps"),
-                PreviewFps = GetDouble(item, "PreviewFps"),
-                VidQueue = GetInt(item, "VideoQueueDepth"),
-                VidDrops = GetLong(item, "VideoDrops"),
-                P95Ms = GetDouble(item, "CaptureCadenceP95Ms"),
-                LatencyMs = GetLong(item, "PipelineLatencyMs"),
-                WorkingMb = GetDouble(item, "MemoryWorkingSetMb"),
-                ManagedMb = GetDouble(item, "MemoryManagedHeapMb"),
-                Gen0 = GetInt(item, "GcGen0Collections"),
-                Gen1 = GetInt(item, "GcGen1Collections"),
-                Gen2 = GetInt(item, "GcGen2Collections"),
-                GcPause = GetDouble(item, "GcPauseTimePercent"),
-                Workers = GetInt(item, "ThreadPoolWorkerAvailable"),
-                IoThreads = GetInt(item, "ThreadPoolIoAvailable")
+                Timestamp = AutomationSnapshotFormatter.Get(item, "TimestampUtc"),
+                CaptureFps = AutomationSnapshotFormatter.GetDouble(item, "CaptureFps"),
+                PreviewFps = AutomationSnapshotFormatter.GetDouble(item, "PreviewFps"),
+                VidQueue = AutomationSnapshotFormatter.GetInt(item, "VideoQueueDepth"),
+                VidDrops = AutomationSnapshotFormatter.GetLong(item, "VideoDrops"),
+                P95Ms = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceP95Ms"),
+                LatencyMs = AutomationSnapshotFormatter.GetLong(item, "PipelineLatencyMs"),
+                WorkingMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryWorkingSetMb"),
+                ManagedMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryManagedHeapMb"),
+                Gen0 = AutomationSnapshotFormatter.GetInt(item, "GcGen0Collections"),
+                Gen1 = AutomationSnapshotFormatter.GetInt(item, "GcGen1Collections"),
+                Gen2 = AutomationSnapshotFormatter.GetInt(item, "GcGen2Collections"),
+                GcPause = AutomationSnapshotFormatter.GetDouble(item, "GcPauseTimePercent"),
+                Workers = AutomationSnapshotFormatter.GetInt(item, "ThreadPoolWorkerAvailable"),
+                IoThreads = AutomationSnapshotFormatter.GetInt(item, "ThreadPoolIoAvailable")
             });
         }
 
@@ -386,20 +387,20 @@ internal static class Formatters
     {
         if (!response.TryGetProperty("Snapshot", out var snapshot) || snapshot.ValueKind != JsonValueKind.Object)
         {
-            return Get(response, "Message", "Snapshot data not available.");
+            return AutomationSnapshotFormatter.Get(response, "Message", "Snapshot data not available.");
         }
 
         var builder = new StringBuilder();
         builder.AppendLine("== Memory & GC ==");
-        builder.AppendLine($"Working Set: {Get(snapshot, "MemoryWorkingSetMb")} MB");
-        builder.AppendLine($"Private Bytes: {Get(snapshot, "MemoryPrivateBytesMb")} MB");
-        builder.AppendLine($"Managed Heap: {Get(snapshot, "MemoryManagedHeapMb")} MB");
-        builder.AppendLine($"Total Allocated: {Get(snapshot, "MemoryTotalAllocatedMb")} MB");
-        builder.AppendLine($"GC Heap Size: {Get(snapshot, "MemoryGcHeapSizeMb")} MB");
-        builder.AppendLine($"GC Collections: Gen0={Get(snapshot, "MemoryGcGen0Collections")} Gen1={Get(snapshot, "MemoryGcGen1Collections")} Gen2={Get(snapshot, "MemoryGcGen2Collections")}");
-        builder.AppendLine($"GC Pause: {Get(snapshot, "MemoryGcPauseTimePercent")}% | Fragmentation: {Get(snapshot, "MemoryGcFragmentationPercent")}%");
-        builder.AppendLine($"ThreadPool Workers: {Get(snapshot, "ThreadPoolWorkerAvailable")}/{Get(snapshot, "ThreadPoolWorkerMax")} avail");
-        builder.AppendLine($"ThreadPool IO: {Get(snapshot, "ThreadPoolIoAvailable")}/{Get(snapshot, "ThreadPoolIoMax")} avail");
+        builder.AppendLine($"Working Set: {AutomationSnapshotFormatter.Get(snapshot, "MemoryWorkingSetMb")} MB");
+        builder.AppendLine($"Private Bytes: {AutomationSnapshotFormatter.Get(snapshot, "MemoryPrivateBytesMb")} MB");
+        builder.AppendLine($"Managed Heap: {AutomationSnapshotFormatter.Get(snapshot, "MemoryManagedHeapMb")} MB");
+        builder.AppendLine($"Total Allocated: {AutomationSnapshotFormatter.Get(snapshot, "MemoryTotalAllocatedMb")} MB");
+        builder.AppendLine($"GC Heap Size: {AutomationSnapshotFormatter.Get(snapshot, "MemoryGcHeapSizeMb")} MB");
+        builder.AppendLine($"GC Collections: Gen0={AutomationSnapshotFormatter.Get(snapshot, "MemoryGcGen0Collections")} Gen1={AutomationSnapshotFormatter.Get(snapshot, "MemoryGcGen1Collections")} Gen2={AutomationSnapshotFormatter.Get(snapshot, "MemoryGcGen2Collections")}");
+        builder.AppendLine($"GC Pause: {AutomationSnapshotFormatter.Get(snapshot, "MemoryGcPauseTimePercent")}% | Fragmentation: {AutomationSnapshotFormatter.Get(snapshot, "MemoryGcFragmentationPercent")}%");
+        builder.AppendLine($"ThreadPool Workers: {AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolWorkerAvailable")}/{AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolWorkerMax")} avail");
+        builder.AppendLine($"ThreadPool IO: {AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolIoAvailable")}/{AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolIoMax")} avail");
         return builder.ToString().TrimEnd();
     }
 
@@ -407,10 +408,10 @@ internal static class Formatters
     {
         if (!includeData || !TryGetData(response, out var data) || data.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
         {
-            return Get(response, "Message", "Command completed.");
+            return AutomationSnapshotFormatter.Get(response, "Message", "Command completed.");
         }
 
-        return $"{Get(response, "Message", "Command completed.")}{Environment.NewLine}{PrettyJson(data)}";
+        return $"{AutomationSnapshotFormatter.Get(response, "Message", "Command completed.")}{Environment.NewLine}{PrettyJson(data)}";
     }
 
     public static string PrettyJson(JsonElement element)
@@ -427,9 +428,9 @@ internal static class Formatters
 
         foreach (var item in options.EnumerateArray())
         {
-            var prefix = Get(item, "IsSelected", "false").Equals("true", StringComparison.OrdinalIgnoreCase) ? "*" : "-";
-            var idSuffix = includeId ? $" ({Get(item, "Id")})" : string.Empty;
-            builder.AppendLine($"{prefix} {Get(item, "Name")}{idSuffix}");
+            var prefix = AutomationSnapshotFormatter.Get(item, "IsSelected", "false").Equals("true", StringComparison.OrdinalIgnoreCase) ? "*" : "-";
+            var idSuffix = includeId ? $" ({AutomationSnapshotFormatter.Get(item, "Id")})" : string.Empty;
+            builder.AppendLine($"{prefix} {AutomationSnapshotFormatter.Get(item, "Name")}{idSuffix}");
         }
     }
 
@@ -444,7 +445,7 @@ internal static class Formatters
 
         foreach (var item in options.EnumerateArray())
         {
-            builder.AppendLine($"{GetSelectionPrefix(item)} {Get(item, "Value")} ({Get(item, "Width")}x{Get(item, "Height")}){GetDisableSuffix(item)}");
+            builder.AppendLine($"{GetSelectionPrefix(item)} {AutomationSnapshotFormatter.Get(item, "Value")} ({AutomationSnapshotFormatter.Get(item, "Width")}x{AutomationSnapshotFormatter.Get(item, "Height")}){GetDisableSuffix(item)}");
         }
     }
 
@@ -460,7 +461,7 @@ internal static class Formatters
         foreach (var item in options.EnumerateArray())
         {
             builder.AppendLine(
-                $"{GetSelectionPrefix(item)} {Get(item, "FriendlyValue")} fps ({Get(item, "Value")} exact, {Get(item, "ExactValueArg")}){GetDisableSuffix(item)}");
+                $"{GetSelectionPrefix(item)} {AutomationSnapshotFormatter.Get(item, "FriendlyValue")} fps ({AutomationSnapshotFormatter.Get(item, "Value")} exact, {AutomationSnapshotFormatter.Get(item, "ExactValueArg")}){GetDisableSuffix(item)}");
         }
     }
 
@@ -475,7 +476,7 @@ internal static class Formatters
 
         foreach (var item in options.EnumerateArray())
         {
-            builder.AppendLine($"{GetSelectionPrefix(item)} {Get(item, "Label", Get(item, "Value"))}{GetDisableSuffix(item)}");
+            builder.AppendLine($"{GetSelectionPrefix(item)} {AutomationSnapshotFormatter.Get(item, "Label", AutomationSnapshotFormatter.Get(item, "Value"))}{GetDisableSuffix(item)}");
         }
     }
 
@@ -490,22 +491,22 @@ internal static class Formatters
 
         foreach (var item in options.EnumerateArray())
         {
-            builder.AppendLine($"{GetSelectionPrefix(item)} {Get(item, "Value")}{GetDisableSuffix(item)}");
+            builder.AppendLine($"{GetSelectionPrefix(item)} {AutomationSnapshotFormatter.Get(item, "Value")}{GetDisableSuffix(item)}");
         }
     }
 
     private static string GetSelectionPrefix(JsonElement item)
-        => Get(item, "IsSelected", "false").Equals("true", StringComparison.OrdinalIgnoreCase) ? "*" : "-";
+        => AutomationSnapshotFormatter.Get(item, "IsSelected", "false").Equals("true", StringComparison.OrdinalIgnoreCase) ? "*" : "-";
 
     private static string GetDisableSuffix(JsonElement item)
     {
-        var isEnabled = Get(item, "IsEnabled", "true");
+        var isEnabled = AutomationSnapshotFormatter.Get(item, "IsEnabled", "true");
         if (isEnabled.Equals("true", StringComparison.OrdinalIgnoreCase))
         {
             return string.Empty;
         }
 
-        return $" [disabled: {Get(item, "DisableReason", "Unavailable")}]";
+        return $" [disabled: {AutomationSnapshotFormatter.Get(item, "DisableReason", "Unavailable")}]";
     }
 
     private static bool TryGetData(JsonElement response, out JsonElement data)
@@ -517,70 +518,6 @@ internal static class Formatters
 
         data = default;
         return false;
-    }
-
-    private static double GetDouble(JsonElement element, string propertyName)
-    {
-        return element.ValueKind == JsonValueKind.Object &&
-               element.TryGetProperty(propertyName, out var value) &&
-               value.ValueKind == JsonValueKind.Number &&
-               value.TryGetDouble(out var result)
-            ? result
-            : 0;
-    }
-
-    private static int GetInt(JsonElement element, string propertyName)
-    {
-        return element.ValueKind == JsonValueKind.Object &&
-               element.TryGetProperty(propertyName, out var value) &&
-               value.ValueKind == JsonValueKind.Number &&
-               value.TryGetInt32(out var result)
-            ? result
-            : 0;
-    }
-
-    private static long GetLong(JsonElement element, string propertyName, long fallback = 0)
-    {
-        return element.ValueKind == JsonValueKind.Object &&
-               element.TryGetProperty(propertyName, out var value) &&
-               value.ValueKind == JsonValueKind.Number &&
-               value.TryGetInt64(out var result)
-            ? result
-            : fallback;
-    }
-
-    private static long FormatTickAgeMs(long tickMs)
-    {
-        if (tickMs <= 0)
-        {
-            return -1;
-        }
-
-        return Math.Max(0, Environment.TickCount64 - tickMs);
-    }
-
-    public static string Get(JsonElement element, string propertyName, string fallback = "N/A")
-    {
-        if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(propertyName, out var value))
-        {
-            return fallback;
-        }
-
-        if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-        {
-            return fallback;
-        }
-
-        return value.ValueKind switch
-        {
-            JsonValueKind.String => value.GetString() ?? fallback,
-            JsonValueKind.True => "true",
-            JsonValueKind.False => "false",
-            JsonValueKind.Number => value.ToString(),
-            JsonValueKind.Array => value.GetArrayLength() == 0 ? fallback : value.ToString(),
-            JsonValueKind.Object => value.ToString(),
-            _ => fallback
-        };
     }
 
     private sealed class TimelineRow

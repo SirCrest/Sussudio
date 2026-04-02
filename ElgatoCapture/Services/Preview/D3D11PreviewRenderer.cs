@@ -15,7 +15,6 @@ using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Mathematics;
 using WinRT;
-
 namespace ElgatoCapture.Services;
 
 internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
@@ -375,6 +374,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     private ID3D11Buffer? _viewportCB;
     private int _hdrInputConfiguredWidth;
     private int _hdrInputConfiguredHeight;
+    private bool _hdrPlaneViewsUnavailable;
     private ID3D11Device? _sharedDevice;
 
     // Pre-allocated arrays to avoid per-frame GC pressure (720+ allocs/s at 120fps)
@@ -404,6 +404,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     private int _swapChainColorSpaceDirty;
     private int _sharedDeviceResetPending;
     private int _sharedDeviceActive;
+    private bool _loggedNv12ShaderMissing;
 
     public D3D11PreviewRenderer(SwapChainPanel panel, DispatcherQueue dispatcherQueue)
     {
@@ -718,8 +719,18 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             return;
         }
 
-        if (yTexturePtr == IntPtr.Zero || uvTexturePtr == IntPtr.Zero || width <= 0 || height <= 0 || _nv12PS == null)
+        if (yTexturePtr == IntPtr.Zero || uvTexturePtr == IntPtr.Zero || width <= 0 || height <= 0)
         {
+            return;
+        }
+
+        if (_nv12PS == null)
+        {
+            if (!_loggedNv12ShaderMissing)
+            {
+                Logger.Log("D3D11_RENDERER_WARN NV12 pixel shader not available — frames will be dropped via this path");
+                _loggedNv12ShaderMissing = true;
+            }
             return;
         }
 

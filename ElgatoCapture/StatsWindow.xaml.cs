@@ -132,9 +132,9 @@ public sealed partial class StatsWindow : Window
                 presenter.IsAlwaysOnTop = AlwaysOnTopToggle.IsOn;
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Ignore presenter toggle failures; stats polling can continue.
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in StatsWindow always-on-top toggle: {ex.Message}");
         }
     }
 

@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Text.Json;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -21,31 +20,31 @@ public static class PipelineSettingsTools
         if (hdrEnabled.HasValue)
         {
             var payload = new Dictionary<string, object?> { ["enabled"] = hdrEnabled.Value };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetHdrEnabled", "SetHdrEnabled", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetHdrEnabled", "SetHdrEnabled", payload).ConfigureAwait(false));
         }
 
         if (trueHdrPreviewEnabled.HasValue)
         {
             var payload = new Dictionary<string, object?> { ["enabled"] = trueHdrPreviewEnabled.Value };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetTrueHdrPreviewEnabled", "SetTrueHdrPreviewEnabled", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetTrueHdrPreviewEnabled", "SetTrueHdrPreviewEnabled", payload).ConfigureAwait(false));
         }
 
         if (audioEnabled.HasValue)
         {
             var payload = new Dictionary<string, object?> { ["enabled"] = audioEnabled.Value };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetAudioEnabled", "SetAudioEnabled", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetAudioEnabled", "SetAudioEnabled", payload).ConfigureAwait(false));
         }
 
         if (audioPreviewEnabled.HasValue)
         {
             var payload = new Dictionary<string, object?> { ["enabled"] = audioPreviewEnabled.Value };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetAudioPreviewEnabled", "SetAudioPreviewEnabled", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetAudioPreviewEnabled", "SetAudioPreviewEnabled", payload).ConfigureAwait(false));
         }
 
         if (!string.IsNullOrWhiteSpace(outputPath))
         {
             var payload = new Dictionary<string, object?> { ["outputPath"] = outputPath };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetOutputPath", "SetOutputPath", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetOutputPath", "SetOutputPath", payload).ConfigureAwait(false));
         }
 
         return results.Count == 0
@@ -53,16 +52,22 @@ public static class PipelineSettingsTools
             : string.Join(Environment.NewLine, results);
     }
 
-    private static async Task<string> ExecuteAndFormatAsync(
+    [McpServerTool, Description("Set device audio mode to HDMI or analog")]
+    public static async Task<string> configure_audio_mode(
         PipeClient pipeClient,
-        string commandName,
-        string label,
-        Dictionary<string, object?>? payload = null)
+        [Description("Audio mode: hdmi or analog")] string mode)
     {
-        var response = await pipeClient.SendCommandAsync(commandName, payload).ConfigureAwait(false);
-        var status = ResponseFormatter.IsSuccess(response) ? "OK" : "ERROR";
-        var message = ResponseFormatter.Get(response, "Message", "No message.");
-        return $"[{status}] {label}: {message}";
+        var payload = new Dictionary<string, object?> { ["mode"] = mode.ToLowerInvariant() };
+        return await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetDeviceAudioMode", "SetDeviceAudioMode", payload).ConfigureAwait(false);
+    }
+
+    [McpServerTool, Description("Set analog audio input gain (0-100%)")]
+    public static async Task<string> configure_analog_gain(
+        PipeClient pipeClient,
+        [Description("Gain value as a percentage (0-100)")] double gainPercent)
+    {
+        var payload = new Dictionary<string, object?> { ["gain"] = gainPercent };
+        return await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetAnalogAudioGain", "SetAnalogAudioGain", payload).ConfigureAwait(false);
     }
 
 }

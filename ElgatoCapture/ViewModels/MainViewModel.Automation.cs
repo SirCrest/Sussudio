@@ -33,7 +33,7 @@ public partial class MainViewModel
         => InvokeOnUiThreadAsync(() => _captureService.GetRecordingStats(), cancellationToken);
     public VideoSourceProbeResult ProbeVideoSource() => _captureService.ProbeVideoSource();
     public PreviewColorProbeResult ProbePreviewColor() => _captureService.ProbePreviewColor();
-    public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath) => _captureService.CapturePreviewFrameAsync(outputPath);
+    public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default) => _captureService.CapturePreviewFrameAsync(outputPath, cancellationToken);
     public CaptureSettings BuildCurrentSettings() => BuildCaptureSettings();
 
     // ── Flashback playback commands ──────────────────────────────────────
@@ -41,56 +41,58 @@ public partial class MainViewModel
     internal FlashbackPlaybackController? FlashbackPlaybackController
         => _captureService.FlashbackPlaybackController;
 
+    /// <summary>
+    /// Returns the active flashback playback controller if it exists and is not disabled.
+    /// </summary>
+    private bool TryGetActiveFlashback([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out FlashbackPlaybackController? controller)
+    {
+        controller = _captureService.FlashbackPlaybackController;
+        return controller is { State: not FlashbackPlaybackState.Disabled };
+    }
+
     public bool FlashbackBeginScrub(TimeSpan position)
     {
-        var c = _captureService.FlashbackPlaybackController;
-        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        if (!TryGetActiveFlashback(out var c)) return false;
         c.BeginScrub(position);
         return true;
     }
 
     public void FlashbackUpdateScrub(TimeSpan position)
     {
-        var c = _captureService.FlashbackPlaybackController;
-        if (c is { State: not FlashbackPlaybackState.Disabled }) c.UpdateScrub(position);
+        if (TryGetActiveFlashback(out var c)) c.UpdateScrub(position);
     }
 
     public bool FlashbackEndScrub()
     {
-        var c = _captureService.FlashbackPlaybackController;
-        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        if (!TryGetActiveFlashback(out var c)) return false;
         c.EndScrub();
         return true;
     }
 
     public bool FlashbackPlay()
     {
-        var c = _captureService.FlashbackPlaybackController;
-        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        if (!TryGetActiveFlashback(out var c)) return false;
         c.Play();
         return true;
     }
 
     public bool FlashbackPause()
     {
-        var c = _captureService.FlashbackPlaybackController;
-        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        if (!TryGetActiveFlashback(out var c)) return false;
         c.Pause();
         return true;
     }
 
     public bool FlashbackGoLive()
     {
-        var c = _captureService.FlashbackPlaybackController;
-        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        if (!TryGetActiveFlashback(out var c)) return false;
         c.GoLive();
         return true;
     }
 
     public bool FlashbackNudge(TimeSpan delta)
     {
-        var c = _captureService.FlashbackPlaybackController;
-        if (c is not { State: not FlashbackPlaybackState.Disabled }) return false;
+        if (!TryGetActiveFlashback(out var c)) return false;
         c.NudgePosition(delta);
         return true;
     }

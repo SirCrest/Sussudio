@@ -16,7 +16,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private readonly IProcessSupervisor _processSupervisor;
     private readonly RecordingArtifactManager _artifactManager = new();
 
-    private bool _isDisposed;
+    private int _isDisposed;
     private bool _isInitialized;
     private bool _isRecording;
     private bool _isVideoPreviewActive;
@@ -33,6 +33,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private FlashbackExporter? _flashbackExporter;
     private FlashbackPlaybackController? _flashbackPlaybackController;
     private volatile bool _flashbackEnabled = true;
+    private bool _hasAv1Nvenc;
+    private bool _pendingFlashbackSettingsChange;
+    private long _flashbackRecordingStartBytes;
     private WasapiAudioCapture? _wasapiAudioCapture;
     private WasapiAudioCapture? _microphoneCapture;
     private string? _micMonitorDeviceId;
@@ -132,32 +135,88 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     }
 
     /// <summary>
+    /// Updates flashback-specific fields in the active capture settings without
+    /// requiring a full session restart. Call before <see cref="RestartFlashbackAsync"/>
+    /// so the rebuild uses the latest values.
+    /// </summary>
+    public void UpdateFlashbackSettings(int bufferMinutes, bool gpuDecode)
+    {
+        if (_currentSettings != null)
+        {
+            _currentSettings.FlashbackBufferMinutes = bufferMinutes;
+            _currentSettings.FlashbackGpuDecode = gpuDecode;
+        }
+        // If a flashback-backed recording is active, the restart will be deferred —
+        // flag it so the stop-recording path knows to do a full rebuild.
+        if (_isRecording && IsFlashbackRecordingBackendActive())
+            _pendingFlashbackSettingsChange = true;
+    }
+
+    /// <summary>
     /// Tears down the running flashback encoder and buffer, then rebuilds
     /// with current settings. Purges all existing segments because encoding
     /// parameters (bitrate, codec, etc.) may have changed.
     /// </summary>
-    public async Task RestartFlashbackAsync(CancellationToken cancellationToken = default)
-    {
-        if (_isRecording && IsFlashbackRecordingBackendActive())
+    public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)
+        => RunTransitionAsync(_sessionState, async transitionToken =>
         {
-            Logger.Log("FLASHBACK_RESTART_BLOCKED reason=recording_active");
-            return;
-        }
+            if (_isRecording && IsFlashbackRecordingBackendActive())
+            {
+                Logger.Log("FLASHBACK_RESTART_BLOCKED reason=recording_active");
+                return;
+            }
 
-        Logger.Log("FLASHBACK_RESTART_BEGIN");
-        await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
+            Logger.Log("FLASHBACK_RESTART_BEGIN");
+            await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
 
-        var unifiedVideoCapture = _unifiedVideoCapture;
-        var settings = _currentSettings;
-        if (!_flashbackEnabled || unifiedVideoCapture == null || settings == null)
+            var unifiedVideoCapture = _unifiedVideoCapture;
+            var settings = _currentSettings;
+            if (!_flashbackEnabled || unifiedVideoCapture == null || settings == null)
+            {
+                Logger.Log($"FLASHBACK_RESTART_TEARDOWN_ONLY enabled={_flashbackEnabled} capture={unifiedVideoCapture != null} settings={settings != null}");
+                return;
+            }
+
+            await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, transitionToken).ConfigureAwait(false);
+            Logger.Log("FLASHBACK_RESTART_DONE");
+        }, cancellationToken);
+
+    /// <summary>
+    /// Updates the recording format and cycles the flashback encoder so the buffer
+    /// uses the new codec.  No-op if not previewing or if a recording is active.
+    /// </summary>
+    public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)
+        => RunTransitionAsync(_sessionState, async transitionToken =>
         {
-            Logger.Log($"FLASHBACK_RESTART_TEARDOWN_ONLY enabled={_flashbackEnabled} capture={unifiedVideoCapture != null} settings={settings != null}");
-            return;
-        }
+            if (_currentSettings == null || format == _currentSettings.Format)
+                return;
 
-        await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, settings, cancellationToken).ConfigureAwait(false);
-        Logger.Log("FLASHBACK_RESTART_DONE");
-    }
+            if (_isRecording)
+            {
+                Logger.Log($"FLASHBACK_FORMAT_CHANGE_BLOCKED reason=recording_active format={format}");
+                _currentSettings.Format = format;
+                if (IsFlashbackRecordingBackendActive())
+                    _pendingFlashbackSettingsChange = true;
+                return;
+            }
+
+            Logger.Log($"FLASHBACK_FORMAT_CHANGE_BEGIN old={_currentSettings.Format} new={format}");
+            _currentSettings.Format = format;
+
+            if (_flashbackSink != null)
+            {
+                try
+                {
+                    await CycleFlashbackBufferAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL error='{ex.Message}'");
+                }
+            }
+
+            Logger.Log($"FLASHBACK_FORMAT_CHANGE_DONE format={format}");
+        }, cancellationToken);
 
     public void SetPreviewVolume(float volume)
     {
@@ -238,26 +297,37 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         try
         {
             FinalizeResult result;
+            IReadOnlyList<string>? segmentPaths = null;
+            string? tsPath = null;
+
             if (flashbackSink != null)
             {
-                var segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint);
-                if (segmentPaths.Count > 0)
+                segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint);
+                if (segmentPaths.Count == 0)
+                    segmentPaths = null;
+            }
+
+            // Fallback: single-file export if no segments available
+            if (segmentPaths == null)
+            {
+                tsPath = bufferManager?.ActiveFilePath;
+                if (string.IsNullOrWhiteSpace(tsPath))
                 {
-                    result = await exporter.ExportSegmentsAsync(segmentPaths, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+                    result = FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
                     _lastExportResult = result;
                     return result;
                 }
             }
 
-            // Fallback: single-file export if no segments available
-            var tsPath = bufferManager?.ActiveFilePath;
-            if (string.IsNullOrWhiteSpace(tsPath))
+            var request = new FlashbackExportRequest
             {
-                result = FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
-                _lastExportResult = result;
-                return result;
-            }
-            result = await exporter.ExportAsync(tsPath, inPoint, outPoint, outputPath, true, progress, ct).ConfigureAwait(false);
+                SegmentPaths = segmentPaths,
+                InputTsPath = tsPath,
+                InPoint = inPoint,
+                OutPoint = outPoint,
+                OutputPath = outputPath,
+            };
+            result = await exporter.ExportAsync(request, progress, ct).ConfigureAwait(false);
             _lastExportResult = result;
             return result;
         }
@@ -365,12 +435,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         CaptureSettings settings)
     {
         var isP010 = unifiedVideoCapture.IsP010;
-        // AV1 in MPEG-TS is not supported (muxer writes bin_data, decoder can't
-        // find the video stream). Fall back to HEVC for flashback .ts segments.
+        // Flashback requires real-time hardware encoding. For AV1, fall back to
+        // HEVC NVENC if av1_nvenc isn't available (the UI enables AV1 when any
+        // AV1 encoder is present, including software-only like libsvtav1).
         var codecName = settings.Format switch
         {
             RecordingFormat.HevcMp4 => "hevc_nvenc",
-            RecordingFormat.Av1Mp4 => "hevc_nvenc",
+            RecordingFormat.Av1Mp4 => _hasAv1Nvenc ? "av1_nvenc" : "hevc_nvenc",
             _ => isP010 ? "hevc_nvenc" : "h264_nvenc" // H264 can't encode P010
         };
         var audioDeviceId = settings.AudioEnabled
@@ -450,7 +521,31 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         Logger.Log("FLASHBACK_PREVIEW_INIT_BEGIN");
 
-        var bufferManager = new FlashbackBufferManager();
+        // Cache AV1 NVENC availability on first flashback init (async-safe here)
+        if (!_hasAv1Nvenc)
+        {
+            try
+            {
+                var support = await FfmpegRuntimeLocator.GetEncoderSupportAsync().ConfigureAwait(false);
+                _hasAv1Nvenc = support.HasAv1Nvenc;
+            }
+            catch { /* Assume unavailable — will fall back to HEVC */ }
+        }
+
+        var bufferMinutes = settings.FlashbackBufferMinutes > 0 ? settings.FlashbackBufferMinutes : 5;
+        var bufferDuration = TimeSpan.FromMinutes(bufferMinutes);
+        // Segment duration must be shorter than buffer duration so completed segments
+        // can be evicted. Use half the buffer, clamped to [0.5, 5] minutes.
+        // - Lower bound 0.5min: for 1-min buffer, ensures at least 1 completed segment
+        //   exists before the buffer fills (2 segments × 0.5min = 1min).
+        // - Upper bound 5min: for large buffers (15-30min), keeps eviction granular
+        //   so users don't lose 15min of history in one eviction step.
+        var segmentDuration = TimeSpan.FromMinutes(Math.Clamp(bufferMinutes / 2.0, 0.5, 5.0));
+        var bufferManager = new FlashbackBufferManager(new FlashbackBufferOptions
+        {
+            BufferDuration = bufferDuration,
+            SegmentDuration = segmentDuration
+        });
         bufferManager.Initialize(Guid.NewGuid().ToString("N"));
         var flashbackSink = new FlashbackEncoderSink(bufferManager);
         var flashbackExporter = new FlashbackExporter();
@@ -492,6 +587,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
             // Create playback controller for timeline scrubbing/playback
             var playbackController = new FlashbackPlaybackController(bufferManager);
+            playbackController.GpuDecodeEnabled = settings.FlashbackGpuDecode;
             if (_previewFrameSink != null && unifiedVideoCapture != null)
             {
                 playbackController.Initialize(_previewFrameSink, unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);
@@ -606,7 +702,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     /// replaced; the buffer manager continues accumulating segments.
     /// Falls back to full teardown+rebuild if sink-only cycle fails.
     /// </summary>
-    private async Task CycleFlashbackBufferAsync(CancellationToken cancellationToken)
+    private async Task CycleFlashbackBufferAsync(CancellationToken cancellationToken, bool purgeSegments = false)
     {
         var unifiedVideoCapture = _unifiedVideoCapture;
         var bufferManager = _flashbackBufferManager;
@@ -656,13 +752,41 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             Logger.Log($"FLASHBACK_CYCLE_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
         }
 
+        // When the codec/format changed, purge stale segments (incompatible with
+        // new encoder) and reset PTS so the new encoder starts fresh from 0.
+        // After stop-recording, keep everything — segments, PTS range, and
+        // buffer state — so the user can immediately scrub/export DVR history.
+        if (purgeSegments)
+        {
+            bufferManager.ResetLatestPts();
+            bufferManager.PurgeCompletedSegments();
+
+            // If some segments couldn't be deleted (e.g., playback has files locked),
+            // fall back to full teardown to avoid mixed-codec segments in the buffer.
+            if (bufferManager.SegmentCount > 0)
+            {
+                Logger.Log($"FLASHBACK_CYCLE_PURGE_INCOMPLETE remaining={bufferManager.SegmentCount} — falling back to full teardown");
+                await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
+                await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+                Logger.Log("FLASHBACK_BUFFER_CYCLE_DONE mode=purge_fallback_rebuild");
+                return;
+            }
+        }
+
+        // Ensure the new sink gets a fresh segment file (not the old sink's active path).
+        bufferManager.FinalizeActiveSegmentForCycle();
+
         // Create and start a new encoder sink on the same buffer manager
         var newSink = new FlashbackEncoderSink(bufferManager);
         try
         {
+            // When preserving DVR history (no purge), continue PTS from where
+            // the old sink left off so new segments don't overlap existing ones.
+            var ptsOffset = purgeSegments ? TimeSpan.Zero : bufferManager.LatestPts;
             await newSink.StartAsync(
                 CreateFlashbackSessionContext(unifiedVideoCapture, _currentSettings),
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken,
+                ptsBaseOffset: ptsOffset).ConfigureAwait(false);
 
             newSink.FrameEncoded += OnFlashbackFrameEncoded;
             _flashbackSink = newSink;
@@ -796,6 +920,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             finally
             {
                 _sessionState = CaptureSessionState.Faulted;
+
                 StatusChanged?.Invoke(this, $"Video capture error: {ex.Message}");
                 ErrorOccurred?.Invoke(this, ex);
                 Interlocked.Exchange(ref _fatalCleanupInProgress, 0);
@@ -1089,7 +1214,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         };
     }
 
-    public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath)
+    public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default)
     {
         var d3dSink = _previewFrameSink as D3D11PreviewRenderer;
         if (d3dSink == null || !d3dSink.IsRendering)
@@ -1101,6 +1226,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             });
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
         return d3dSink.CaptureNextFrameAsync(outputPath);
     }
 
@@ -1425,6 +1551,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     _recordingContext = fbRecordingContext;
                     _activeRecordingSettings = settings;
                     _isRecording = true;
+                    _flashbackRecordingStartBytes = _flashbackBufferManager?.TotalBytesWritten ?? 0;
                     _lastOutputPath = fbRecordingContext.FinalOutputPath;
                     _lastFinalizeStatus = "Recording";
                     _lastFinalizeUtc = null;
@@ -1648,9 +1775,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 ownedWasapiAudioCapture = null;
                 ownedUnifiedVideoCapture = null;
             }
-            catch
+            catch (Exception ex)
             {
-                // SkipCpuReadback stays true — it was enabled at preview start, not recording start.
+                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in CaptureService.StartRecordingAsync: {ex.Message}");
 
                 if (sinkAttachedForAudioOnly && _wasapiAudioCapture != null)
                 {
@@ -1919,7 +2046,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _activeRecordingSettings = null;
             _recordingContext = null;
             _avSyncBaselineDriftMs = double.NaN;
-            _sessionState = _isDisposed ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;
+            _sessionState = _isDisposed != 0 ? CaptureSessionState.Disposed : CaptureSessionState.Uninitialized;
 
             if (cancellationRequested || transitionToken.IsCancellationRequested)
             {
@@ -1951,10 +2078,23 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 fbResult = FinalizeResult.Failure(fbOutputPath, $"Flashback recording finalize failed: {ex.Message}");
             }
 
-            // Cycle to fresh .ts buffer
+            // If settings changed during recording (format, buffer duration, etc.),
+            // do a full restart to apply them. Otherwise just cycle the sink to
+            // preserve DVR history.
             try
             {
-                await CycleFlashbackBufferAsync(cancellationToken).ConfigureAwait(false);
+                if (_pendingFlashbackSettingsChange)
+                {
+                    _pendingFlashbackSettingsChange = false;
+                    Logger.Log("FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING");
+                    await DisposeFlashbackPreviewBackendAsync(cancellationToken, purgeSegments: true).ConfigureAwait(false);
+                    if (_flashbackEnabled && _unifiedVideoCapture != null && _currentSettings != null)
+                        await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+                }
+                else
+                {
+                    await CycleFlashbackBufferAsync(cancellationToken).ConfigureAwait(false);
+                }
             }
             catch (Exception ex)
             {
@@ -2334,7 +2474,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private CaptureSessionState ResolveSteadyState()
     {
-        if (_isDisposed) return CaptureSessionState.Disposed;
+        if (_isDisposed != 0) return CaptureSessionState.Disposed;
         if (_isRecording) return CaptureSessionState.Recording;
         if (_isVideoPreviewActive || _isAudioPreviewActive) return CaptureSessionState.Previewing;
         return _isInitialized ? CaptureSessionState.Ready : CaptureSessionState.Uninitialized;
@@ -2536,7 +2676,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private void ThrowIfDisposed()
     {
-        if (_isDisposed)
+        if (_isDisposed != 0)
         {
             throw new ObjectDisposedException(nameof(CaptureService));
         }
@@ -2544,24 +2684,23 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     public void Dispose()
     {
-        if (_isDisposed) return;
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
         try
         {
-            CleanupAsync(CancellationToken.None).GetAwaiter().GetResult();
+            Task.Run(() => CleanupAsync(CancellationToken.None)).GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
             Logger.Log($"CaptureService.Dispose cleanup warning: {ex.Message}");
         }
 
-        _isDisposed = true;
         _sessionTransitionLock.Dispose();
         _sessionState = CaptureSessionState.Disposed;
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_isDisposed) return;
+        if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) != 0) return;
         try
         {
             await CleanupAsync(CancellationToken.None).ConfigureAwait(false);
@@ -2571,7 +2710,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             Logger.Log($"CaptureService.DisposeAsync cleanup warning: {ex.Message}");
         }
 
-        _isDisposed = true;
         _sessionTransitionLock.Dispose();
         _sessionState = CaptureSessionState.Disposed;
     }

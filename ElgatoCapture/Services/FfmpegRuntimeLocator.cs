@@ -257,9 +257,9 @@ internal static class FfmpegRuntimeLocator
             resolvedPath = output.Split('\n', StringSplitOptions.RemoveEmptyEntries)[0].Trim();
             return !string.IsNullOrWhiteSpace(resolvedPath);
         }
-        catch
+        catch (Exception ex)
         {
-            /* Best-effort: where.exe/which probe may fail (not found, access denied) — treat as unresolved */
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in FfmpegRuntimeLocator path probe: {ex.Message}");
             return false;
         }
     }

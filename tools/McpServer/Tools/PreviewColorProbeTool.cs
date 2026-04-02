@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
+using ElgatoCapture.Tools;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -12,7 +13,7 @@ public static class PreviewColorProbeTool
     public static async Task<string> probe_preview_color(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("ProbePreviewColor").ConfigureAwait(false);
-        if (!ResponseFormatter.IsSuccess(response))
+        if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
             return GetMessage(response);
         }
@@ -115,11 +116,11 @@ public static class PreviewColorProbeTool
 
     private static string GetMessage(JsonElement response)
     {
-        return ResponseFormatter.Get(response, "Message", "Command failed.");
+        return AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
     }
 
     private static string Get(JsonElement el, string prop, string fallback = "N/A")
     {
-        return ResponseFormatter.Get(el, prop, fallback);
+        return AutomationSnapshotFormatter.Get(el, prop, fallback);
     }
 }

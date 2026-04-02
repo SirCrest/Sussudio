@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
+using ElgatoCapture.Tools;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -12,7 +13,7 @@ public static class VerificationTools
     public static async Task<string> verify_recording(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("VerifyLastRecording", responseTimeoutMs: 60000).ConfigureAwait(false);
-        var message = ResponseFormatter.Get(response, "Message", "No message.");
+        var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
 
         if (!TryGetVerification(response, out var verification))
         {
@@ -20,12 +21,12 @@ public static class VerificationTools
         }
 
         var builder = new StringBuilder();
-        builder.AppendLine(ResponseFormatter.IsSuccess(response) ? "== Recording Verification: PASS ==" : "== Recording Verification: FAIL ==");
+        builder.AppendLine(AutomationSnapshotFormatter.IsSuccess(response) ? "== Recording Verification: PASS ==" : "== Recording Verification: FAIL ==");
         builder.AppendLine($"Message: {message}");
-        builder.AppendLine($"Output: {ResponseFormatter.Get(verification, "OutputPath")} | Exists: {ResponseFormatter.Get(verification, "FileExists")} | Size: {ResponseFormatter.Get(verification, "FileSizeBytes")} bytes");
-        builder.AppendLine($"Mode: {ResponseFormatter.Get(verification, "VerificationMode")} | Codec: {ResponseFormatter.Get(verification, "DetectedVideoCodec")} | Pixel Format: {ResponseFormatter.Get(verification, "DetectedPixelFormat")}");
-        builder.AppendLine($"Resolution: {ResponseFormatter.Get(verification, "DetectedWidth")} x {ResponseFormatter.Get(verification, "DetectedHeight")} | FPS: {ResponseFormatter.Get(verification, "DetectedFrameRate")}");
-        builder.AppendLine($"HDR: Level={ResponseFormatter.Get(verification, "HdrVerificationLevel")} Metadata={ResponseFormatter.Get(verification, "HdrMetadataPresent")} Colorimetry={ResponseFormatter.Get(verification, "HdrColorimetryValid")} Mastering={ResponseFormatter.Get(verification, "HdrMasteringMetadataPresent")}");
+        builder.AppendLine($"Output: {AutomationSnapshotFormatter.Get(verification, "OutputPath")} | Exists: {AutomationSnapshotFormatter.Get(verification, "FileExists")} | Size: {AutomationSnapshotFormatter.Get(verification, "FileSizeBytes")} bytes");
+        builder.AppendLine($"Mode: {AutomationSnapshotFormatter.Get(verification, "VerificationMode")} | Codec: {AutomationSnapshotFormatter.Get(verification, "DetectedVideoCodec")} | Pixel Format: {AutomationSnapshotFormatter.Get(verification, "DetectedPixelFormat")}");
+        builder.AppendLine($"Resolution: {AutomationSnapshotFormatter.Get(verification, "DetectedWidth")} x {AutomationSnapshotFormatter.Get(verification, "DetectedHeight")} | FPS: {AutomationSnapshotFormatter.Get(verification, "DetectedFrameRate")}");
+        builder.AppendLine($"HDR: Level={AutomationSnapshotFormatter.Get(verification, "HdrVerificationLevel")} Metadata={AutomationSnapshotFormatter.Get(verification, "HdrMetadataPresent")} Colorimetry={AutomationSnapshotFormatter.Get(verification, "HdrColorimetryValid")} Mastering={AutomationSnapshotFormatter.Get(verification, "HdrMasteringMetadataPresent")}");
 
         if (verification.TryGetProperty("Mismatches", out var mismatches) && mismatches.ValueKind == JsonValueKind.Array)
         {
@@ -79,13 +80,13 @@ public static class VerificationTools
 
         var response = await pipeClient.SendCommandAsync("AssertSnapshot", payload).ConfigureAwait(false);
         var builder = new StringBuilder();
-        builder.AppendLine(ResponseFormatter.IsSuccess(response) ? "Snapshot assertions: PASS" : "Snapshot assertions: FAIL");
-        builder.AppendLine($"Message: {ResponseFormatter.Get(response, "Message", "No message.")}");
+        builder.AppendLine(AutomationSnapshotFormatter.IsSuccess(response) ? "Snapshot assertions: PASS" : "Snapshot assertions: FAIL");
+        builder.AppendLine($"Message: {AutomationSnapshotFormatter.Get(response, "Message", "No message.")}");
 
         if (response.TryGetProperty("Data", out var data) && data.ValueKind == JsonValueKind.Object)
         {
-            builder.AppendLine($"Assertions: {ResponseFormatter.Get(data, "assertions")}");
-            builder.AppendLine($"Passed: {ResponseFormatter.Get(data, "passed")}");
+            builder.AppendLine($"Assertions: {AutomationSnapshotFormatter.Get(data, "assertions")}");
+            builder.AppendLine($"Passed: {AutomationSnapshotFormatter.Get(data, "passed")}");
 
             if (data.TryGetProperty("failures", out var failures) && failures.ValueKind == JsonValueKind.Array)
             {
@@ -99,6 +100,30 @@ public static class VerificationTools
                     : $"Failures: {string.Join("; ", failureList)}");
             }
         }
+
+        return builder.ToString().TrimEnd();
+    }
+
+    [McpServerTool, Description("Run ffprobe validation on an arbitrary file path. Checks codec, resolution, HDR metadata.")]
+    public static async Task<string> verify_file(
+        PipeClient pipeClient,
+        [Description("Absolute path to the media file to verify")] string filePath)
+    {
+        var payload = new Dictionary<string, object?> { ["filePath"] = filePath };
+        var response = await pipeClient.SendCommandAsync("VerifyFile", payload, responseTimeoutMs: 60000).ConfigureAwait(false);
+        var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
+
+        if (!TryGetVerification(response, out var verification))
+        {
+            return message;
+        }
+
+        var builder = new StringBuilder();
+        builder.AppendLine(AutomationSnapshotFormatter.IsSuccess(response) ? "== File Verification: PASS ==" : "== File Verification: FAIL ==");
+        builder.AppendLine($"Message: {message}");
+        builder.AppendLine($"File: {filePath} | Exists: {AutomationSnapshotFormatter.Get(verification, "FileExists")} | Size: {AutomationSnapshotFormatter.Get(verification, "FileSizeBytes")} bytes");
+        builder.AppendLine($"Codec: {AutomationSnapshotFormatter.Get(verification, "DetectedVideoCodec")} | Pixel Format: {AutomationSnapshotFormatter.Get(verification, "DetectedPixelFormat")}");
+        builder.AppendLine($"Resolution: {AutomationSnapshotFormatter.Get(verification, "DetectedWidth")} x {AutomationSnapshotFormatter.Get(verification, "DetectedHeight")} | FPS: {AutomationSnapshotFormatter.Get(verification, "DetectedFrameRate")}");
 
         return builder.ToString().TrimEnd();
     }

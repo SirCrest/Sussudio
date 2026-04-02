@@ -1,4 +1,5 @@
 using System.Globalization;
+using ElgatoCapture.Tools;
 
 namespace EcCtl;
 
@@ -116,7 +117,7 @@ internal static class Program
     {
         public bool Json { get; private set; }
         public bool ShowHelp { get; private set; }
-        public string PipeName { get; private set; } = PipeTransport.DefaultPipeName;
+        public string PipeName { get; private set; } = AutomationPipeProtocol.DefaultPipeName;
         public int? ResponseTimeoutMs { get; private set; }
         public IReadOnlyList<string> Arguments { get; private set; } = Array.Empty<string>();
 

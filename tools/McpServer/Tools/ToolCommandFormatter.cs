@@ -27,9 +27,10 @@ internal static class ToolCommandFormatter
         PipeClient pipeClient,
         string commandName,
         string label,
-        Dictionary<string, object?>? payload = null)
+        Dictionary<string, object?>? payload = null,
+        int? responseTimeoutMs = null)
     {
-        var response = await pipeClient.SendCommandAsync(commandName, payload).ConfigureAwait(false);
+        var response = await pipeClient.SendCommandAsync(commandName, payload, responseTimeoutMs).ConfigureAwait(false);
         var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
         var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
         return $"[{status}] {label}: {message}";

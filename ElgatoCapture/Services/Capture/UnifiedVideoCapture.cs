@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace ElgatoCapture.Services;
 
-internal sealed class UnifiedVideoCapture : IAsyncDisposable
+internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 {
     private readonly object _sync = new();
     private MfSourceReaderVideoCapture? _capture;
@@ -350,53 +350,58 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable
         }
 
         readCts?.Cancel();
-        if (capture != null)
+        try
         {
-            await capture.StopAsync().ConfigureAwait(false);
-            Volatile.Write(ref _negotiatedFormat, capture.NegotiatedFormat);
-            _isP010 = capture.IsP010;
-            _width = capture.Width;
-            _height = capture.Height;
-            _fps = capture.Fps;
-            var captureDrops = capture.FramesDropped;
-            var localDrops = Interlocked.Read(ref _videoFramesDropped);
-            Interlocked.Exchange(ref _videoFramesDropped, Math.Max(captureDrops, localDrops));
-        }
-
-        lock (_sync)
-        {
-            mjpegPipelineToStop = _mjpegPipeline;
-            if (mjpegPipelineToStop != null)
+            if (capture != null)
             {
-                _previewSink = null;
-                _pixelFormatDetectedCallback = null;
-            }
-        }
-
-        if (mjpegPipelineToStop != null)
-        {
-            if (!mjpegPipelineToStop.TryStop(TimeSpan.FromSeconds(5), out var failureReason))
-            {
-                var stopException = new InvalidOperationException(
-                    $"CPU MJPEG pipeline stop did not quiesce cleanly: {failureReason ?? "unknown"}");
-                SignalFatalError(
-                    stopException,
-                    $"UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='{failureReason ?? "unknown"}'");
-                throw stopException;
+                await capture.StopAsync().ConfigureAwait(false);
+                Volatile.Write(ref _negotiatedFormat, capture.NegotiatedFormat);
+                _isP010 = capture.IsP010;
+                _width = capture.Width;
+                _height = capture.Height;
+                _fps = capture.Fps;
+                var captureDrops = capture.FramesDropped;
+                var localDrops = Interlocked.Read(ref _videoFramesDropped);
+                Interlocked.Exchange(ref _videoFramesDropped, Math.Max(captureDrops, localDrops));
             }
 
             lock (_sync)
             {
-                if (ReferenceEquals(_mjpegPipeline, mjpegPipelineToStop))
+                mjpegPipelineToStop = _mjpegPipeline;
+                if (mjpegPipelineToStop != null)
                 {
-                    _mjpegPipeline = null;
+                    _previewSink = null;
+                    _pixelFormatDetectedCallback = null;
                 }
             }
 
-            mjpegPipelineToStop.Dispose();
-        }
+            if (mjpegPipelineToStop != null)
+            {
+                if (!mjpegPipelineToStop.TryStop(TimeSpan.FromSeconds(5), out var failureReason))
+                {
+                    var stopException = new InvalidOperationException(
+                        $"CPU MJPEG pipeline stop did not quiesce cleanly: {failureReason ?? "unknown"}");
+                    SignalFatalError(
+                        stopException,
+                        $"UNIFIED_VIDEO_MJPEG_STOP_FAIL reason='{failureReason ?? "unknown"}'");
+                    throw stopException;
+                }
 
-        readCts?.Dispose();
+                lock (_sync)
+                {
+                    if (ReferenceEquals(_mjpegPipeline, mjpegPipelineToStop))
+                    {
+                        _mjpegPipeline = null;
+                    }
+                }
+
+                mjpegPipelineToStop.Dispose();
+            }
+        }
+        finally
+        {
+            readCts?.Dispose();
+        }
     }
 
     public async ValueTask DisposeAsync()

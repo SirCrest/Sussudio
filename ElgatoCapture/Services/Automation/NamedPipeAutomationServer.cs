@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Threading;
@@ -49,6 +50,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         {
             PropertyNameCaseInsensitive = true
         };
+        _jsonOptions.Converters.Add(new JsonStringEnumConverter());
         _requestTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "ELGATOCAPTURE_AUTOMATION_REQUEST_TIMEOUT_MS",
             defaultValue: 300000,

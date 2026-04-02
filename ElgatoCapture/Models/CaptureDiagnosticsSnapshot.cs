@@ -1,8 +1,14 @@
 using System;
+using System.Collections.Generic;
 
 namespace ElgatoCapture.Models;
 
-public sealed class CaptureDiagnosticsSnapshot
+/// <summary>
+/// Core capture diagnostics shared by both the lightweight diagnostics snapshot
+/// and the full health snapshot.  CaptureHealthSnapshot extends this with
+/// flashback playback/encoder detail, source signal metadata, and AV-sync data.
+/// </summary>
+public class CaptureDiagnosticsSnapshot
 {
     public DateTimeOffset TimestampUtc { get; init; } = DateTimeOffset.UtcNow;
     public CaptureSessionState SessionState { get; init; }

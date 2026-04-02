@@ -207,9 +207,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 {
                     await RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    /* Best-effort: snapshot refresh after verification is non-fatal — state is already committed */
+                    System.Diagnostics.Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub post-verification snapshot refresh: {ex.Message}");
                 }
             }
         }
@@ -252,9 +252,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 {
                     await RefreshSnapshotAsync(cancellationToken).ConfigureAwait(false);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    /* Best-effort: snapshot refresh after verification is non-fatal — state is already committed */
+                    System.Diagnostics.Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub post-verification snapshot refresh: {ex.Message}");
                 }
             }
         }
@@ -431,9 +431,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 lastOutputSize = new FileInfo(captureRuntime.LastOutputPath).Length;
                 lastOutputExists = true;
             }
-            catch
+            catch (Exception ex)
             {
-                /* Best-effort: output file may not exist yet or be locked — diagnostics can proceed without it */
+                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in AutomationDiagnosticsHub output file probe: {ex.Message}");
             }
         }
 

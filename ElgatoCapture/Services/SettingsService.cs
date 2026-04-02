@@ -27,6 +27,8 @@ public class UserSettings
     public bool? IsStatsVisible { get; set; }
     public string? SelectedDeviceAudioMode { get; set; }
     public double? AnalogAudioGainPercent { get; set; }
+    public bool? FlashbackGpuDecode { get; set; }
+    public int? FlashbackBufferMinutes { get; set; }
 }
 
 [JsonSerializable(typeof(UserSettings))]
@@ -35,23 +37,24 @@ internal partial class SettingsJsonContext : JsonSerializerContext;
 
 public static class SettingsService
 {
-    private static readonly string SettingsDirectory =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElgatoCapture");
+    private static string GetSettingsDirectory()
+        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElgatoCapture");
 
-    private static readonly string SettingsFilePath =
-        Path.Combine(SettingsDirectory, "settings.json");
+    private static string GetSettingsFilePath()
+        => Path.Combine(GetSettingsDirectory(), "settings.json");
 
     public static UserSettings Load()
     {
+        var settingsFilePath = GetSettingsFilePath();
         try
         {
-            if (!File.Exists(SettingsFilePath))
+            if (!File.Exists(settingsFilePath))
             {
                 Logger.Log("SETTINGS_LOAD: no settings file found, using defaults.");
                 return new UserSettings();
             }
 
-            var json = File.ReadAllText(SettingsFilePath);
+            var json = File.ReadAllText(settingsFilePath);
             var settings = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.UserSettings);
             if (settings == null)
             {
@@ -59,7 +62,7 @@ public static class SettingsService
                 return new UserSettings();
             }
 
-            Logger.Log($"SETTINGS_LOAD: loaded from {SettingsFilePath}");
+            Logger.Log($"SETTINGS_LOAD: loaded from {settingsFilePath}");
             return settings;
         }
         catch (Exception ex)
@@ -71,12 +74,14 @@ public static class SettingsService
 
     public static void Save(UserSettings settings)
     {
+        var settingsDirectory = GetSettingsDirectory();
+        var settingsFilePath = GetSettingsFilePath();
         try
         {
-            Directory.CreateDirectory(SettingsDirectory);
+            Directory.CreateDirectory(settingsDirectory);
             var json = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.UserSettings);
-            File.WriteAllText(SettingsFilePath, json);
-            Logger.Log($"SETTINGS_SAVE: saved to {SettingsFilePath}");
+            File.WriteAllText(settingsFilePath, json);
+            Logger.Log($"SETTINGS_SAVE: saved to {settingsFilePath}");
         }
         catch (Exception ex)
         {

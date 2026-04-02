@@ -89,7 +89,7 @@ public class MediaFormat
                 IsHdr);
         }
 
-        return HashCode.Combine(Width, Height, Math.Round(FrameRateExact, 3), PixelFormat, IsHdr);
+        return HashCode.Combine(Width, Height, Math.Round(FrameRateExact, 0), PixelFormat, IsHdr);
     }
 
     public static int GetPixelFormatPriority(string? pixelFormat)
@@ -99,12 +99,12 @@ public class MediaFormat
             return 100;
         }
 
-        if (pixelFormat.Equals("YUY2", StringComparison.OrdinalIgnoreCase))
+        if (pixelFormat.Equals("NV12", StringComparison.OrdinalIgnoreCase))
         {
             return 0;
         }
 
-        if (pixelFormat.Equals("NV12", StringComparison.OrdinalIgnoreCase))
+        if (pixelFormat.Equals("YUY2", StringComparison.OrdinalIgnoreCase))
         {
             return 1;
         }
@@ -163,5 +163,19 @@ public class MediaFormat
                pixelFormat.Contains("Y416", StringComparison.OrdinalIgnoreCase) ||
                pixelFormat.Contains("R10G10B10", StringComparison.OrdinalIgnoreCase) ||
                pixelFormat.Contains("XR10", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Maps a <see cref="RecordingFormat"/> to the corresponding NVENC encoder codec name
+    /// (e.g. "hevc_nvenc", "av1_nvenc", "h264_nvenc").
+    /// </summary>
+    public static string MapNvencCodecName(RecordingFormat format)
+    {
+        return format switch
+        {
+            RecordingFormat.HevcMp4 => "hevc_nvenc",
+            RecordingFormat.Av1Mp4 => "av1_nvenc",
+            _ => "h264_nvenc"
+        };
     }
 }

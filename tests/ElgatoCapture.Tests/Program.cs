@@ -266,11 +266,11 @@ static partial class Program
 
             // --- Tool CommandMap & Formatter Alignment ---
             await RunCheckAsync(
-                "MCP PipeClient CommandMap covers every AutomationCommandKind enum value",
-                McpPipeClient_CommandMap_CoversEveryAutomationCommandKind),
+                "Shared AutomationPipeProtocol CommandMap covers every AutomationCommandKind enum value",
+                SharedProtocol_CommandMap_CoversEveryAutomationCommandKind),
             await RunCheckAsync(
-                "ecctl PipeTransport CommandMap covers every AutomationCommandKind enum value",
-                EcctlPipeTransport_CommandMap_CoversEveryAutomationCommandKind),
+                "MCP PipeClient delegates to shared protocol for command resolution",
+                PipeClient_UsesSharedProtocol_ForCommandResolution),
             await RunCheckAsync(
                 "ResponseFormatter.IsSuccess correctly parses success and failure JSON",
                 ResponseFormatter_IsSuccess_ParsesSuccessAndFailureJson),
@@ -281,8 +281,8 @@ static partial class Program
                 "ecctl Formatters snapshot fields align with MCP ResponseFormatter",
                 EcctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter),
             await RunCheckAsync(
-                "AutomationClient CommandMap covers every AutomationCommandKind enum value",
-                AutomationClient_CommandMap_CoversEveryAutomationCommandKind),
+                "AutomationClient delegates to shared protocol for command resolution",
+                AutomationClient_UsesSharedProtocol_ForCommandResolution),
             await RunCheckAsync(
                 "ecctl CommandHandlers route core command groups",
                 EcctlCommandHandlers_RouteCoreCommandGroups),
@@ -937,17 +937,17 @@ static partial class Program
         try
         {
             var mcpAssembly = loadContext.LoadFromAssemblyPath(mcpAssemblyPath);
-            var formatterType = mcpAssembly.GetType("McpServer.ResponseFormatter")
-                ?? throw new InvalidOperationException("McpServer.ResponseFormatter type not found.");
-            var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.Public | BindingFlags.Static)
-                ?? throw new InvalidOperationException("ResponseFormatter.FormatSnapshot not found.");
+            var formatterType = mcpAssembly.GetType("ElgatoCapture.Tools.AutomationSnapshotFormatter")
+                ?? throw new InvalidOperationException("ElgatoCapture.Tools.AutomationSnapshotFormatter type not found.");
+            var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.NonPublic | BindingFlags.Static)
+                ?? throw new InvalidOperationException("AutomationSnapshotFormatter.FormatSnapshot not found.");
 
             const string json = """
                                 {"Snapshot":{"SessionState":"Ready","StatusText":"Idle","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":true,"IsRecording":false,"SelectedResolution":"3840x2160","SelectedFrameRate":120,"SelectedRecordingFormat":"HEVC","SelectedQuality":"High","SelectedPreset":"P5","SelectedSplitEncodeMode":"Auto","SelectedVideoFormat":"MJPG","ShowAllCaptureOptions":true,"PreviewVolumePercent":42.5,"IsStatsVisible":true,"IsHdrEnabled":false,"IsHdrAvailable":true,"HdrOutputActive":false,"HdrRuntimeState":"Inactive","RequestedPipelineMode":"SDR","ActivePipelineMode":"SDR","PipelineModeMatched":true,"IsAudioEnabled":true,"IsAudioPreviewEnabled":false,"IsCustomAudioInputEnabled":false,"AudioPeak":0,"AudioClipping":false,"AudioSignalPresent":false,"AudioReaderActive":false,"AudioFramesArrived":0,"AudioFramesWrittenToSink":0,"VideoReaderActive":true,"IngestVideoFramesArrived":120,"IngestVideoFramesWrittenToSink":120,"EncoderVideoFramesEnqueued":0,"EncoderVideoFramesEncoded":0,"FfmpegVideoQueueDepth":0,"VideoDropsQueueSaturated":0,"IngestLastVideoFrameAgeMs":5,"EncoderLastEnqueueAgeMs":0,"EncoderLastWriteAgeMs":0,"MemoryPreference":"Gpu","VideoRequestedSubtype":"MJPG","VideoNegotiatedSubtype":"MJPG","VideoIngestErrorCount":0,"SourceReaderReadOutstanding":false,"SourceReaderReadOutstandingMs":0,"SourceReaderLastFrameTickMs":0,"SourceReaderFrameChannelDepth":0,"WasapiCaptureCallbackCount":0,"WasapiCaptureCallbackAvgIntervalMs":0,"WasapiCaptureCallbackMaxIntervalMs":0,"WasapiCaptureCallbackSilenceCount":0,"WasapiCaptureLastCallbackTickMs":0,"WasapiCaptureAudioLevelEventsFired":0,"WasapiPlaybackRenderCallbackCount":0,"WasapiPlaybackRenderSilenceCount":0,"WasapiPlaybackQueueDepth":0,"WasapiPlaybackQueueDropCount":0,"WasapiPlaybackLastRenderTickMs":0,"OutputPath":"","RecordingTime":"00:00:00","RecordingSizeInfo":"0 B","RecordingBitrateInfo":"0 Mbps","RecordingBackend":"None","AudioPathMode":"None","MuxResult":"NotAttempted","LastOutputPath":"","LastOutputSizeBytes":0,"LastFinalizeStatus":"None","PerformanceScore":100,"PerformancePerfectionMet":true,"PerformanceSummary":"OK","EstimatedPipelineLatencyMs":1,"CaptureCadenceObservedFps":120,"ExpectedCaptureFrameRate":120,"CaptureCadenceSampleCount":300,"CaptureCadenceAverageIntervalMs":8.3,"CaptureCadenceP95IntervalMs":8.5,"CaptureCadenceMaxIntervalMs":9.0,"CaptureCadenceJitterStdDevMs":0.1,"CaptureCadenceSevereGapCount":0,"CaptureCadenceEstimatedDroppedFrames":0,"CaptureCadenceEstimatedDropPercent":0,"MjpegDecodeSampleCount":300,"MjpegDecodeAvgMs":2.1,"MjpegDecodeP95Ms":3.4,"MjpegDecodeMaxMs":5.6,"MjpegInteropCopySampleCount":300,"MjpegInteropCopyAvgMs":0.9,"MjpegInteropCopyP95Ms":1.4,"MjpegInteropCopyMaxMs":2.2,"MjpegCallbackSampleCount":300,"MjpegCallbackAvgMs":4.5,"MjpegCallbackP95Ms":6.7,"MjpegCallbackMaxMs":9.1,"MjpegDecoderCount":2,"MjpegReorderSampleCount":300,"MjpegReorderAvgMs":0.4,"MjpegReorderP95Ms":0.8,"MjpegReorderMaxMs":1.2,"MjpegPipelineSampleCount":300,"MjpegPipelineAvgMs":5.1,"MjpegPipelineP95Ms":7.0,"MjpegPipelineMaxMs":9.4,"MjpegTotalDecoded":301,"MjpegTotalEmitted":300,"MjpegTotalDropped":1,"MjpegReorderSkips":2,"MjpegReorderBufferDepth":1,"MjpegPerDecoder":[{"WorkerIndex":0,"SampleCount":150,"AvgMs":2.0,"P95Ms":3.0,"MaxMs":4.0},{"WorkerIndex":1,"SampleCount":151,"AvgMs":2.2,"P95Ms":3.2,"MaxMs":4.2}],"PreviewRendererMode":"D3D11VideoProcessor","PreviewStartupState":"Rendering","PreviewFirstVisualConfirmed":true,"PreviewD3DFramesSubmitted":120,"PreviewD3DFramesRendered":120,"PreviewD3DFramesDropped":0,"PreviewD3DInputColorSpace":"BT.709","PreviewD3DOutputColorSpace":"sRGB","PreviewCadenceObservedFps":120,"DetectedSourceFrameRate":120,"SourceWidth":3840,"SourceHeight":2160,"SourceIsHdr":false,"SourceTelemetryAvailability":"Available","SourceTelemetryConfidence":"High"}}
                                 """;
             using var document = JsonDocument.Parse(json);
-            var output = formatSnapshot.Invoke(null, new object[] { document.RootElement })?.ToString()
-                ?? throw new InvalidOperationException("ResponseFormatter.FormatSnapshot returned null.");
+            var output = formatSnapshot.Invoke(null, new object[] { document.RootElement, false })?.ToString()
+                ?? throw new InvalidOperationException("AutomationSnapshotFormatter.FormatSnapshot returned null.");
 
             AssertContains(output, "== MJPEG Pipeline Timing ==");
             AssertContains(output, "Preset: P5");
@@ -976,8 +976,7 @@ static partial class Program
     private static Task AutomationCommandMaps_StayAligned_ForAdvancedMcpControls()
     {
         var contractsText = ReadRepoFile("ElgatoCapture/Models/AutomationContracts.cs");
-        var automationClientText = ReadRepoFile("tools/AutomationClient/Program.cs");
-        var pipeClientText = ReadRepoFile("tools/McpServer/PipeClient.cs");
+        var protocolText = ReadRepoFile("tools/Common/AutomationPipeProtocol.cs");
         var scriptText = ReadRepoFile("tools/send-automation-command.ps1");
 
         AssertContains(contractsText, "SetPreset");
@@ -988,21 +987,13 @@ static partial class Program
         AssertContains(contractsText, "SetStatsVisible");
         AssertContains(contractsText, "GetCaptureOptions");
 
-        AssertContains(automationClientText, "[\"SetPreset\"] = 30");
-        AssertContains(automationClientText, "[\"SetSplitEncodeMode\"] = 31");
-        AssertContains(automationClientText, "[\"SetMjpegDecoderCount\"] = 32");
-        AssertContains(automationClientText, "[\"SetShowAllCaptureOptions\"] = 33");
-        AssertContains(automationClientText, "[\"SetPreviewVolume\"] = 34");
-        AssertContains(automationClientText, "[\"SetStatsVisible\"] = 35");
-        AssertContains(automationClientText, "[\"GetCaptureOptions\"] = 29");
-
-        AssertContains(pipeClientText, "[\"SetPreset\"] = 30");
-        AssertContains(pipeClientText, "[\"SetSplitEncodeMode\"] = 31");
-        AssertContains(pipeClientText, "[\"SetMjpegDecoderCount\"] = 32");
-        AssertContains(pipeClientText, "[\"SetShowAllCaptureOptions\"] = 33");
-        AssertContains(pipeClientText, "[\"SetPreviewVolume\"] = 34");
-        AssertContains(pipeClientText, "[\"SetStatsVisible\"] = 35");
-        AssertContains(pipeClientText, "[\"GetCaptureOptions\"] = 29");
+        AssertContains(protocolText, "[\"SetPreset\"] = 30");
+        AssertContains(protocolText, "[\"SetSplitEncodeMode\"] = 31");
+        AssertContains(protocolText, "[\"SetMjpegDecoderCount\"] = 32");
+        AssertContains(protocolText, "[\"SetShowAllCaptureOptions\"] = 33");
+        AssertContains(protocolText, "[\"SetPreviewVolume\"] = 34");
+        AssertContains(protocolText, "[\"SetStatsVisible\"] = 35");
+        AssertContains(protocolText, "[\"GetCaptureOptions\"] = 29");
 
         AssertContains(scriptText, "\"setpreset\" { return 30 }");
         AssertContains(scriptText, "\"setsplitencodemode\" { return 31 }");
@@ -1018,8 +1009,8 @@ static partial class Program
     private static Task McpToolSurface_KeepsCaptureOptionsSeparateFromRawState()
     {
         var captureSettingsToolsText = ReadRepoFile("tools/McpServer/Tools/CaptureSettingsTools.cs");
-        var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTool.cs");
-        var captureOptionsToolText = ReadRepoFile("tools/McpServer/Tools/CaptureOptionsTool.cs");
+        var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
+        var captureOptionsToolText = ReadRepoFile("tools/McpServer/Tools/CaptureOptionsTools.cs");
         var uiSettingsToolText = ReadRepoFile("tools/McpServer/Tools/UiSettingsTools.cs");
         var snapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
 
@@ -2197,7 +2188,7 @@ static partial class Program
 
     // ── Tool CommandMap & Formatter Alignment tests ──
 
-    private static Task McpPipeClient_CommandMap_CoversEveryAutomationCommandKind()
+    private static Task SharedProtocol_CommandMap_CoversEveryAutomationCommandKind()
     {
         var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
         var enumNames = Enum.GetNames(enumType);
@@ -2206,22 +2197,22 @@ static partial class Program
         if (enumNames.Length == 0)
             throw new InvalidOperationException("AutomationCommandKind enum has no members.");
 
-        var pipeClientText = ReadRepoFile("tools/McpServer/PipeClient.cs");
+        var protocolText = ReadRepoFile("tools/Common/AutomationPipeProtocol.cs");
 
         for (int i = 0; i < enumNames.Length; i++)
         {
             var name = enumNames[i];
             var ordinal = Convert.ToInt32(enumValues.GetValue(i));
             var expectedEntry = $"[\"{name}\"] = {ordinal}";
-            AssertContains(pipeClientText, expectedEntry);
+            AssertContains(protocolText, expectedEntry);
         }
 
         var mapEntryCount = 0;
         var inMap = false;
-        foreach (var line in pipeClientText.Split('\n'))
+        foreach (var line in protocolText.Split('\n'))
         {
             var trimmed = line.Trim();
-            if (trimmed.Contains("CommandMap = new"))
+            if (trimmed.Contains("CommandMap") && trimmed.Contains("{ get;"))
                 inMap = true;
             if (inMap && trimmed.StartsWith("[\"") && trimmed.Contains("] ="))
                 mapEntryCount++;
@@ -2230,53 +2221,26 @@ static partial class Program
         }
 
         AssertEqual(enumNames.Length, mapEntryCount,
-            "MCP PipeClient CommandMap entry count vs AutomationCommandKind enum count");
+            "AutomationPipeProtocol CommandMap entry count vs AutomationCommandKind enum count");
 
         return Task.CompletedTask;
     }
 
-    private static Task EcctlPipeTransport_CommandMap_CoversEveryAutomationCommandKind()
+    private static Task PipeClient_UsesSharedProtocol_ForCommandResolution()
     {
-        var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
-        var enumNames = Enum.GetNames(enumType);
-        var enumValues = Enum.GetValues(enumType);
+        var pipeClientText = ReadRepoFile("tools/McpServer/PipeClient.cs");
 
-        if (enumNames.Length == 0)
-            throw new InvalidOperationException("AutomationCommandKind enum has no members.");
-
-        var pipeTransportText = ReadRepoFile("tools/ecctl/PipeTransport.cs");
-
-        for (int i = 0; i < enumNames.Length; i++)
-        {
-            var name = enumNames[i];
-            var ordinal = Convert.ToInt32(enumValues.GetValue(i));
-            var expectedEntry = $"[\"{name}\"] = {ordinal}";
-            AssertContains(pipeTransportText, expectedEntry);
-        }
-
-        var mapEntryCount = 0;
-        var inMap = false;
-        foreach (var line in pipeTransportText.Split('\n'))
-        {
-            var trimmed = line.Trim();
-            if (trimmed.Contains("CommandMap = new"))
-                inMap = true;
-            if (inMap && trimmed.StartsWith("[\"") && trimmed.Contains("] ="))
-                mapEntryCount++;
-            if (inMap && trimmed == "};")
-                inMap = false;
-        }
-
-        AssertEqual(enumNames.Length, mapEntryCount,
-            "ecctl PipeTransport CommandMap entry count vs AutomationCommandKind enum count");
+        // PipeClient should delegate to AutomationPipeProtocol, not have its own CommandMap
+        AssertContains(pipeClientText, "AutomationPipeProtocol");
+        AssertDoesNotContain(pipeClientText, "CommandMap = new");
 
         return Task.CompletedTask;
     }
 
     private static Task ResponseFormatter_IsSuccess_ParsesSuccessAndFailureJson()
     {
-        var formatterText = ReadRepoFile("tools/McpServer/ResponseFormatter.cs");
-        AssertContains(formatterText, "public static bool IsSuccess(JsonElement response)");
+        var formatterText = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
+        AssertContains(formatterText, "internal static bool IsSuccess(JsonElement response)");
         AssertContains(formatterText, "success.ValueKind == JsonValueKind.True");
 
         using (var docTrue = JsonDocument.Parse("{\"Success\": true, \"Message\": \"ok\"}"))
@@ -2311,8 +2275,8 @@ static partial class Program
 
     private static Task ResponseFormatter_Get_HandlesAllJsonValueKinds()
     {
-        var formatterText = ReadRepoFile("tools/McpServer/ResponseFormatter.cs");
-        AssertContains(formatterText, "public static string Get(JsonElement el, string prop, string fallback = \"N/A\")");
+        var formatterText = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
+        AssertContains(formatterText, "internal static string Get(JsonElement element, string propertyName, string fallback = \"N/A\")");
 
         var json = @"{
             ""str"": ""hello"",
@@ -2362,14 +2326,14 @@ static partial class Program
 
     private static Task EcctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter()
     {
-        var mcpText = ReadRepoFile("tools/McpServer/ResponseFormatter.cs");
+        var mcpText = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
         var ecctlText = ReadRepoFile("tools/ecctl/Formatters.cs");
 
         var mcpFields = ExtractSnapshotFields(mcpText);
         var ecctlFields = ExtractSnapshotFields(ecctlText);
 
         if (mcpFields.Count == 0)
-            throw new InvalidOperationException("Failed to extract any snapshot fields from MCP ResponseFormatter.");
+            throw new InvalidOperationException("Failed to extract any snapshot fields from AutomationSnapshotFormatter.");
         if (ecctlFields.Count == 0)
             throw new InvalidOperationException("Failed to extract any snapshot fields from ecctl Formatters.");
 
@@ -2383,28 +2347,20 @@ static partial class Program
         if (missingInEcctl.Count > 0)
         {
             throw new InvalidOperationException(
-                $"MCP ResponseFormatter references {missingInEcctl.Count} snapshot field(s) " +
+                $"AutomationSnapshotFormatter references {missingInEcctl.Count} snapshot field(s) " +
                 $"missing from ecctl Formatters: {string.Join(", ", missingInEcctl)}");
         }
 
         return Task.CompletedTask;
     }
 
-    private static Task AutomationClient_CommandMap_CoversEveryAutomationCommandKind()
+    private static Task AutomationClient_UsesSharedProtocol_ForCommandResolution()
     {
-        var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
-        var enumNames = Enum.GetNames(enumType);
-        var enumValues = Enum.GetValues(enumType);
-
         var clientText = ReadRepoFile("tools/AutomationClient/Program.cs");
 
-        for (int i = 0; i < enumNames.Length; i++)
-        {
-            var name = enumNames[i];
-            var ordinal = Convert.ToInt32(enumValues.GetValue(i));
-            var expectedEntry = $"[\"{name}\"] = {ordinal}";
-            AssertContains(clientText, expectedEntry);
-        }
+        // AutomationClient should delegate to AutomationPipeProtocol, not have its own CommandMap
+        AssertContains(clientText, "AutomationPipeProtocol");
+        AssertDoesNotContain(clientText, "CommandMap = new");
 
         return Task.CompletedTask;
     }
@@ -2453,19 +2409,27 @@ static partial class Program
         string? finalPath = null)
     {
         var settings = BuildSettings(hdrEnabled: false);
+        // Build a RecordingContextRequest and use the RecordingContext constructor
+        var requestType = RequireType("ElgatoCapture.Services.RecordingContextRequest");
+        var request = RuntimeHelpers.GetUninitializedObject(requestType);
+        SetPropertyBackingField(request, "Settings", settings);
+        SetPropertyBackingField(request, "UsePostMuxAudio", usePostMuxAudio);
+        SetPropertyBackingField(request, "EffectiveFrameRate", 60.0);
+        SetPropertyBackingField(request, "FrameRateArg", "60");
+        SetPropertyBackingField(request, "EffectiveWidth", 1920u);
+        SetPropertyBackingField(request, "EffectiveHeight", 1080u);
+        SetPropertyBackingField(request, "VideoInputPixelFormat", "nv12");
+
         var contextType = RequireType("ElgatoCapture.Services.RecordingContext");
-        var context = RuntimeHelpers.GetUninitializedObject(contextType);
-        SetPropertyBackingField(context, "Settings", settings);
-        SetPropertyBackingField(context, "VideoOutputPath", videoPath ?? "/tmp/video.mp4");
-        SetPropertyBackingField(context, "FinalOutputPath", finalPath ?? "/tmp/final.mp4");
-        SetPropertyBackingField(context, "AudioTempPath", audioTempPath);
-        SetPropertyBackingField(context, "UsePostMuxAudio", usePostMuxAudio);
-        SetPropertyBackingField(context, "EffectiveFrameRate", 60.0);
-        SetPropertyBackingField(context, "FrameRateArg", "60");
-        SetPropertyBackingField(context, "EffectiveWidth", 1920u);
-        SetPropertyBackingField(context, "EffectiveHeight", 1080u);
-        SetPropertyBackingField(context, "VideoInputPixelFormat", "nv12");
-        return context;
+        var ctor = contextType.GetConstructors()[0];
+        return ctor.Invoke(new object?[]
+        {
+            request,
+            videoPath ?? "/tmp/video.mp4",
+            finalPath ?? "/tmp/final.mp4",
+            audioTempPath,
+            false // hdrPipelineActive
+        });
     }
 
     private static void SetPropertyBackingField(object instance, string propertyName, object? value)

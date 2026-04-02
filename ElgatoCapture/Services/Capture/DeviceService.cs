@@ -239,8 +239,8 @@ public class DeviceService
             IsHdr = f.IsHdr
         }).ToList();
 
-    private static readonly string FormatCacheDirectory =
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElgatoCapture");
+    private static string GetFormatCacheDirectory()
+        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElgatoCapture");
 
     private static string SanitizeDeviceIdForFilename(string deviceId)
     {
@@ -256,7 +256,7 @@ public class DeviceService
 
     private static string GetCacheFilePath(string deviceId)
     {
-        return Path.Combine(FormatCacheDirectory, $"format_cache_{SanitizeDeviceIdForFilename(deviceId)}.json");
+        return Path.Combine(GetFormatCacheDirectory(), $"format_cache_{SanitizeDeviceIdForFilename(deviceId)}.json");
     }
 
     private static void TryDeleteFormatCache(string deviceId)
@@ -270,9 +270,9 @@ public class DeviceService
                 Logger.Log($"FORMAT_CACHE: deleted corrupt cache for {deviceId}");
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Best-effort delete
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in DeviceService.TryDeleteCorruptCache: {ex.Message}");
         }
     }
 
@@ -322,7 +322,7 @@ public class DeviceService
     {
         try
         {
-            Directory.CreateDirectory(FormatCacheDirectory);
+            Directory.CreateDirectory(GetFormatCacheDirectory());
             var cache = new DeviceFormatCacheFile
             {
                 DeviceId = device.Id,
@@ -600,9 +600,6 @@ public class DeviceService
 
         return token.ToUpperInvariant();
     }
-
-    public Task<List<AudioInputDevice>> EnumerateAudioCaptureDevicesAsync()
-        => MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync();
 
     private sealed record DeviceCandidate(
         string SourceName,

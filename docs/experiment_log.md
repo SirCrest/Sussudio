@@ -2836,3 +2836,47 @@ I2C_WR 0x4A reg=0x0200 val=[07 00]   (finalize)
 - ffprobe Evidence:
   - N/A (no new recording artifact generated in this verification pass)
 - Conclusion: Failed flashback finalization now leaves the segment artifacts intact for diagnosis/recovery instead of deleting them during cleanup, and the final validated build/test/log pass stayed green.
+
+## E-Smoke-Test-2026-03-30 - Full Smoke Test & Bug Fix Session
+- Timestamp (UTC): 2026-03-30T20:30:00Z
+- Commit Hash: (pending commit)
+- Goal: Full smoke test of Flashback branch, identify and fix all discovered bugs
+
+### Bugs Found & Fixed
+
+**B1 - P010 requested when HDR off** (FIXED)
+- Root cause: `UpdateSelectedFormat` and `SelectPreferredFrameRateFormat` did not filter out HDR pixel formats when `IsHdrEnabled=false`. P010 was selected via `ThenByDescending(IsHdrModeCandidate)`.
+- Fix: Filter to SDR-only candidates when HDR is off in `UpdateSelectedFormat`, `SelectPreferredAutoFrameRateFormat`, `GetAutoEligibleFormats`, and frame rate option builder. Also swapped NV12/YUY2 priority in `GetPixelFormatPriority` (NV12 is the native UVC format).
+- Files: `MainViewModel.DeviceManagement.cs`, `MediaFormat.cs`
+- Verified: `ReqSubtype=NV12 NegSubtype=NV12` (was P010→NV12 fallback)
+
+**B2 - Second recording truncation** (FIXED)
+- Root cause: After buffer cycle, new `FlashbackEncoderSink` starts PTS from 0 but `_latestPtsTicks` in `FlashbackBufferManager` retained old value. Monotonic guard blocked all new PTS updates until they exceeded old maximum.
+- Fix: Reset `_latestPtsTicks` and purge completed segments during cycle. New encoder starts clean with PTS 0.
+- Files: `FlashbackBufferManager.cs` (`ResetLatestPts`, `PurgeCompletedSegments`), `CaptureService.cs` (call during cycle)
+- Verified: 3 consecutive recordings all produce ~10s files (was 0.68s for 2nd recording)
+
+**B3 - Flashback encoder ignores format change** (FIXED)
+- Root cause: Flashback encoder codec locked at preview start. Changing recording format in UI didn't restart encoder.
+- Fix: `CaptureService.UpdateRecordingFormatAsync` updates `_currentSettings.Format` and cycles the flashback buffer. Called from `OnSelectedRecordingFormatChanged` in ViewModel.
+- Files: `CaptureService.cs`, `MainViewModel.Settings.cs`
+- Verified: Switching AV1→H.264 cycles encoder to `h264_nvenc`, recording produces H.264 file
+
+**B4 - Recording shows 0B during flashback recording** (FIXED)
+- Root cause: `GetRecordingStats` checked `_libavSink.OutputBytes` (null for flashback) then file size (0 until export).
+- Fix: When flashback recording active, return `bufferManager.TotalBytesWritten` as estimate. Added `IsFlashbackEstimate` flag to `RecordingStats`.
+- Files: `CaptureService.Snapshots.cs`, `RecordingStats.cs`
+- Verified: Recording shows `53 MB | 8 Mbps` during flashback recording, perf score stays 100
+
+**B5 - Named pipe error 1314 spam** (FIXED)
+- Root cause: `CreateNamedPipe` with explicit security descriptor failed repeatedly (error 1314 = privilege not held). Logged every ~30s.
+- Fix: Added `_explicitSecurityFailed` flag to skip retry after first failure.
+- Files: `NamedPipeAutomationServer.cs`
+- Verified: 1 log entry (was 25+)
+
+**B6 - VTABLE_DIAG traces** (NOT A BUG)
+- Already gated by `#if DEBUG` and one-shot flag. Won't appear in release builds.
+
+### Smoke Test Results (30-minute monitoring in progress)
+- T+0: Score=100, Buffer=68.9s, Working Set=337MB, 0 drops, 0 gaps
+- Monitoring at 5, 10, 15, 20, 25, 30 minute intervals

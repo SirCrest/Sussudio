@@ -406,6 +406,17 @@ internal static class MfDeviceEnumerator
                         "IMFActivate.ActivateObject(IMFMediaSource)");
                     if (activatedObject is IMFMediaSource mediaSource)
                     {
+                        // Release remaining activate objects that we won't visit
+                        for (var j = i + 1; j < activateCount; j++)
+                        {
+                            var remainingPtr = Marshal.ReadIntPtr(activateArray, j * IntPtr.Size);
+                            if (remainingPtr != IntPtr.Zero)
+                            {
+                                try { Marshal.Release(remainingPtr); }
+                                catch { /* Best effort. */ }
+                            }
+                        }
+
                         return mediaSource;
                     }
 

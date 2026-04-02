@@ -31,23 +31,6 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    // ── FlashbackSegment ──
-
-    private static Task FlashbackSegment_DefaultState_IsBuffer()
-    {
-        var segmentType = RequireType("ElgatoCapture.Models.FlashbackSegment");
-        var segment = RuntimeHelpers.GetUninitializedObject(segmentType);
-
-        var stateEnumType = RequireType("ElgatoCapture.Models.FlashbackSegmentState");
-        var bufferValue = Enum.Parse(stateEnumType, "Buffer");
-        var actualState = GetPropertyValue(segment, "State");
-
-        // GetUninitializedObject zeros all fields; State(0) should be Buffer if Buffer=0
-        AssertEqual(Convert.ToInt32(bufferValue), Convert.ToInt32(actualState), "FlashbackSegment default State");
-
-        return Task.CompletedTask;
-    }
-
     // ── FlashbackEncoderSink pure logic ──
 
     private static Task FlashbackEncoderSink_ResolveFrameRateParts_ParsesFractionalRates()

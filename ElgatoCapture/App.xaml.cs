@@ -78,9 +78,9 @@ namespace ElgatoCapture
                         exeMtimeUtc = File.GetLastWriteTimeUtc(exePath).ToString("o");
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Best-effort.
+                    System.Diagnostics.Trace.TraceWarning($"Suppressed exception in App.OnLaunched exe mtime probe: {ex.Message}");
                 }
 
                 var assembly = Assembly.GetExecutingAssembly();
@@ -93,9 +93,9 @@ namespace ElgatoCapture
                     $"assembly_version='{assemblyName.Version}' " +
                     $"base_dir='{AppContext.BaseDirectory}'");
             }
-            catch
+            catch (Exception ex)
             {
-                // Best-effort.
+                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in App.OnLaunched startup logging: {ex.Message}");
             }
 
             _window = new MainWindow();

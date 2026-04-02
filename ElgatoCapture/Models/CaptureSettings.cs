@@ -65,6 +65,8 @@ public class CaptureSettings
     public AudioPathMode AudioPathMode { get; set; } = AudioPathMode.PostMuxDefault;
     public RecordingPipelineOptions PipelineOptions { get; set; } = new();
     public bool ForceMjpegDecode { get; set; }
+    public bool FlashbackGpuDecode { get; set; } = true;
+    public int FlashbackBufferMinutes { get; set; } = 5;
     public int MjpegDecoderCount { get; set; } = 4;
 
     public bool UseMjpegHighFrameRateMode =>

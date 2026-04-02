@@ -31,6 +31,28 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
     private static readonly object FfmpegInitSync = new();
     private static bool _ffmpegInitialized;
+    // Must be a static field to prevent GC collection while FFmpeg holds the delegate pointer.
+    private static av_log_set_callback_callback? _ffmpegLogCallback;
+
+    private static unsafe void FfmpegLogCallbackImpl(void* avcl, int level, string fmt, byte* vl)
+    {
+        // Only capture errors and above to avoid flooding
+        if (level > ffmpeg.AV_LOG_ERROR) return;
+
+        try
+        {
+            // Log the raw format string — va_list formatting is unreliable across platforms
+            var msg = fmt?.TrimEnd('\n', '\r');
+            if (!string.IsNullOrEmpty(msg))
+            {
+                Logger.Log($"FFMPEG_LOG [{level}] {msg}");
+            }
+        }
+        catch
+        {
+            // Best effort — never crash in a log callback
+        }
+    }
 
     private AVFormatContext* _formatCtx;
     private AVCodecContext* _videoCodecCtx;
@@ -105,6 +127,19 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     public bool UseCudaHardwareFrames => _useCudaHardwareFrames;
     public long NextVideoPts => _nextVideoPts;
 
+    /// <summary>
+    /// Sets initial PTS counters for video (frame units) and audio (sample units).
+    /// Used when continuing encoding after a sink-only cycle so file-level
+    /// timestamps continue from the previous session.
+    /// Must be called after <see cref="Initialize"/> and before encoding any frames.
+    /// </summary>
+    public void SetInitialPts(long videoPts, long audioPts)
+    {
+        Interlocked.Exchange(ref _nextVideoPts, videoPts);
+        Interlocked.Exchange(ref _nextAudioPts, audioPts);
+        Interlocked.Exchange(ref _nextMicPts, audioPts);
+    }
+
     public void SkipVideoFrame() { Interlocked.Increment(ref _nextVideoPts); }
 
     public static void InitializeFFmpeg(bool requireNativeRuntime = false)
@@ -134,6 +169,16 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             try
             {
                 Logger.Log($"LIBAV_INIT root_path='{ffmpeg.RootPath}' avcodec_version={ffmpeg.avcodec_version()}");
+
+                // Route FFmpeg internal logs (especially D3D11VA errors) to our logger.
+                // Keep a static reference to prevent GC collection of the delegate.
+                _ffmpegLogCallback = FfmpegLogCallbackImpl;
+                unsafe
+                {
+                    ffmpeg.av_log_set_level(ffmpeg.AV_LOG_VERBOSE);
+                    ffmpeg.av_log_set_callback(_ffmpegLogCallback);
+                }
+
                 _ffmpegInitialized = true;
             }
             catch (Exception ex)
@@ -259,7 +304,10 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             {
                 if (options.ContainerFormat == "mp4")
                 {
-                    ThrowIfError(ffmpeg.av_dict_set(&muxerOptions, "movflags", "+faststart", 0), "av_dict_set(movflags)");
+                    var movflags = options.FragmentedMp4
+                        ? "frag_keyframe+empty_moov"
+                        : "+faststart";
+                    ThrowIfError(ffmpeg.av_dict_set(&muxerOptions, "movflags", movflags, 0), "av_dict_set(movflags)");
                 }
                 ThrowIfError(ffmpeg.avformat_write_header(_formatCtx, &muxerOptions), "avformat_write_header");
                 _headerWritten = true;
@@ -393,6 +441,12 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             }
 
             ThrowIfError(sendResult, "avcodec_send_frame");
+
+            // Reset pict_type after send so the forced-keyframe flag doesn't stick.
+            // _videoFrame is reused across calls and av_frame_make_writable does NOT
+            // clear pict_type, so without this every subsequent frame would be I-frame.
+            _videoFrame->pict_type = AVPictureType.AV_PICTURE_TYPE_NONE;
+
             DrainEncoderPackets();
             _encodedFrameCount++;
         }
@@ -539,6 +593,12 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         if (refResult < 0)
         {
             throw new InvalidOperationException($"av_frame_ref(cuda) failed: code={refResult} msg='{GetErrorString(refResult)}'");
+        }
+
+        if (_forceNextKeyframe)
+        {
+            _hwFrame->pict_type = AVPictureType.AV_PICTURE_TYPE_I;
+            _forceNextKeyframe = false;
         }
 
         _hwFrame->pts = Interlocked.Increment(ref _nextVideoPts) - 1;
@@ -702,7 +762,6 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         var options = _options ?? throw new InvalidOperationException("Encoder options are not initialized.");
         var previousPath = options.OutputPath;
         var previousEncodedFrames = _encodedFrameCount;
-        var previousTotalBytes = _totalBytesWritten;
 
         var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(newPath));
         if (!string.IsNullOrWhiteSpace(outputDirectory))
@@ -734,6 +793,11 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         {
             ThrowIfError(ffmpeg.av_write_trailer(_formatCtx), "av_write_trailer(rotate)");
         }
+
+        // Capture total bytes AFTER drains and trailer so the count includes
+        // all bytes flushed to the completed segment, but BEFORE the reset
+        // in ReinitializeOutputContext / ResetSegmentRuntimeState.
+        var previousTotalBytes = _totalBytesWritten;
 
         CloseCurrentOutputIo();
         FreeCurrentOutputContext();
@@ -2364,7 +2428,10 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         {
             if (containerFormat == "mp4")
             {
-                ThrowIfError(ffmpeg.av_dict_set(&muxerOptions, "movflags", "+faststart", 0), "av_dict_set(movflags,rotate)");
+                var movflags = (_options?.FragmentedMp4 ?? false)
+                    ? "frag_keyframe+empty_moov"
+                    : "+faststart";
+                ThrowIfError(ffmpeg.av_dict_set(&muxerOptions, "movflags", movflags, 0), "av_dict_set(movflags,rotate)");
             }
             ThrowIfError(ffmpeg.avformat_write_header(_formatCtx, &muxerOptions), "avformat_write_header(rotate)");
             _headerWritten = true;
@@ -3062,6 +3129,11 @@ internal sealed record LibAvEncoderOptions
     public required bool IsP010 { get; init; }
     public string? NvencPreset { get; init; }
     public int GopSize { get; init; } = -1;
+    /// <summary>
+    /// Use frag_keyframe+empty_moov instead of faststart for MP4.
+    /// Required for flashback segments that are read while still being written.
+    /// </summary>
+    public bool FragmentedMp4 { get; init; }
     public bool AudioEnabled { get; init; }
     public int AudioSampleRate { get; init; } = 48_000;
     public int AudioChannels { get; init; } = 2;

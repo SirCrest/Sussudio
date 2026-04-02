@@ -336,6 +336,16 @@ public sealed partial class MainWindow
 
         // Flashback defaults (set in code-behind to avoid XAML parse issues with Toggled handler)
         FlashbackEnabledToggle.IsOn = true;
+        FlashbackGpuDecodeToggle.IsOn = ViewModel.FlashbackGpuDecode;
+        // Sync buffer duration combo to saved setting
+        foreach (ComboBoxItem item in FlashbackBufferDurationCombo.Items)
+        {
+            if (item.Tag is string tag && tag == ViewModel.FlashbackBufferMinutes.ToString())
+            {
+                FlashbackBufferDurationCombo.SelectedItem = item;
+                break;
+            }
+        }
 
         // Bind all collections to ComboBoxes
         DeviceComboBox.ItemsSource = ViewModel.Devices;
@@ -630,6 +640,7 @@ public sealed partial class MainWindow
         CustomAudioToggle.Click += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsChecked == true;
         MicrophoneToggle.Click += (s, e) => ViewModel.IsMicrophoneEnabled = MicrophoneToggle.IsChecked == true;
         ShowAllCaptureOptionsToggle.Click += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsChecked == true;
+        FlashbackGpuDecodeToggle.Toggled += (s, e) => ViewModel.FlashbackGpuDecode = FlashbackGpuDecodeToggle.IsOn;
         AnalogAudioGainSlider.ValueChanged += (s, e) =>
         {
             ViewModel.AnalogAudioGainPercent = e.NewValue;

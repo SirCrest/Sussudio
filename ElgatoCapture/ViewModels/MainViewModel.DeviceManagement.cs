@@ -38,7 +38,7 @@ public partial class MainViewModel
             var previousAudioId = SelectedAudioInputDevice?.Id;
             var previousMicrophoneId = SelectedMicrophoneDevice?.Id;
             var audioDevices = FilterOutCaptureCardAudio(
-                (await _deviceService.EnumerateAudioCaptureDevicesAsync()).ToList());
+                (await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync()).ToList());
 
             ReplaceCollection(AudioInputDevices, audioDevices);
             ReplaceCollection(MicrophoneDevices, audioDevices);
@@ -70,7 +70,7 @@ public partial class MainViewModel
             var previousAudioId = SelectedAudioInputDevice?.Id;
             var previousMicrophoneId = SelectedMicrophoneDevice?.Id;
             var previousDeviceId = SelectedDevice?.Id;
-            var audioDevices = (await _deviceService.EnumerateAudioCaptureDevicesAsync()).ToList();
+            var audioDevices = (await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync()).ToList();
             var devices = await _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
             discoveryStopwatch.Stop();
 
@@ -490,6 +490,14 @@ public partial class MainViewModel
         if (IsHdrEnabled)
         {
             candidates = candidates.Where(IsHdrModeCandidate).ToList();
+        }
+        else
+        {
+            // When HDR is off, exclude 10-bit formats (P010/P016) so the source reader
+            // requests an 8-bit subtype (NV12) rather than triggering a P010→NV12 fallback.
+            var sdrCandidates = candidates.Where(f => !IsHdrModeCandidate(f)).ToList();
+            if (sdrCandidates.Count > 0)
+                candidates = sdrCandidates;
         }
 
         if (candidates.Count == 0)
@@ -950,11 +958,20 @@ public partial class MainViewModel
                 .Select(group =>
                 {
                     var allFormats = group.ToList();
-                    var hdrSupported = allFormats.Any(IsHdrModeCandidate);
-                    var enabled = !IsHdrEnabled || hdrSupported;
-                    var selectionPool = IsHdrEnabled && hdrSupported
-                        ? allFormats.Where(IsHdrModeCandidate).ToList()
-                        : allFormats;
+                    var hdrFormats = allFormats.Where(IsHdrModeCandidate).ToList();
+                    var sdrFormats = allFormats.Where(f => !IsHdrModeCandidate(f)).ToList();
+                    // In HDR mode, only enable rates with HDR-capable formats.
+                    // In SDR mode, enable if 8-bit formats exist. Also enable if only
+                    // 10-bit formats exist for this rate (e.g., 4K HFR paths that only
+                    // advertise P010) — UpdateSelectedFormat handles the fallback.
+                    var enabled = IsHdrEnabled ? hdrFormats.Count > 0 : allFormats.Count > 0;
+                    List<MediaFormat> selectionPool;
+                    if (IsHdrEnabled && hdrFormats.Count > 0)
+                        selectionPool = hdrFormats;
+                    else if (!IsHdrEnabled && sdrFormats.Count > 0)
+                        selectionPool = sdrFormats;
+                    else
+                        selectionPool = allFormats;
                     var preferred = SelectPreferredFrameRateFormat(selectionPool, group.Key, timingFamily);
                     var numerator = preferred.FrameRateNumerator > 0 ? preferred.FrameRateNumerator : (uint?)null;
                     var denominator = preferred.FrameRateDenominator > 0 ? preferred.FrameRateDenominator : (uint?)null;
@@ -1261,7 +1278,7 @@ public partial class MainViewModel
         }
 
         var filtered = formats
-            .Where(format => !IsHdrEnabled || IsHdrModeCandidate(format))
+            .Where(format => IsHdrEnabled ? IsHdrModeCandidate(format) : !IsHdrModeCandidate(format))
             .ToList();
         return filtered.Count > 0 ? filtered : formats;
     }
@@ -1309,7 +1326,7 @@ public partial class MainViewModel
 
         var selectionPool = formats
             .Where(format =>
-                (!IsHdrEnabled || IsHdrModeCandidate(format)) &&
+                (IsHdrEnabled ? IsHdrModeCandidate(format) : !IsHdrModeCandidate(format)) &&
                 GetFriendlyFrameRateBucket(format.FrameRateExact) == preferredFriendlyBucket)
             .ToList();
         if (selectionPool.Count == 0)

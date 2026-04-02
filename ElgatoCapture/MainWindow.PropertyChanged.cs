@@ -540,6 +540,27 @@ public sealed partial class MainWindow
             case nameof(MainViewModel.IsDiskWarningActive):
                 DiskWarningInfoBar.IsOpen = ViewModel.IsDiskWarningActive;
                 break;
+
+            case nameof(MainViewModel.FlashbackGpuDecode):
+                if (FlashbackGpuDecodeToggle.IsOn != ViewModel.FlashbackGpuDecode)
+                    FlashbackGpuDecodeToggle.IsOn = ViewModel.FlashbackGpuDecode;
+                break;
+
+            case nameof(MainViewModel.FlashbackBufferMinutes):
+                if (FlashbackBufferDurationCombo.SelectedItem is not ComboBoxItem current ||
+                    current.Tag is not string currentTag ||
+                    currentTag != ViewModel.FlashbackBufferMinutes.ToString())
+                {
+                    foreach (ComboBoxItem item in FlashbackBufferDurationCombo.Items)
+                    {
+                        if (item.Tag is string tag && tag == ViewModel.FlashbackBufferMinutes.ToString())
+                        {
+                            FlashbackBufferDurationCombo.SelectedItem = item;
+                            break;
+                        }
+                    }
+                }
+                break;
         }
     }
 }

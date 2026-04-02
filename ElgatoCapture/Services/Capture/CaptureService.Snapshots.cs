@@ -24,6 +24,17 @@ public partial class CaptureService
                 return new RecordingStats(_libavSink.OutputBytes, 0);
             }
 
+            // Flashback recording: the output file doesn't exist until export-on-stop.
+            // Report estimated size from the flashback buffer bytes written since recording start.
+            if (_isRecording && IsFlashbackRecordingBackendActive())
+            {
+                var bufferManager = _flashbackBufferManager;
+                if (bufferManager != null)
+                {
+                    return new RecordingStats(bufferManager.TotalBytesWritten - _flashbackRecordingStartBytes, 0, isFlashbackEstimate: true);
+                }
+            }
+
             var path = _recordingContext?.VideoOutputPath ?? _lastOutputPath;
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -48,73 +59,13 @@ public partial class CaptureService
 
     public CaptureDiagnosticsSnapshot GetDiagnosticsSnapshot()
     {
-        var health = GetHealthSnapshot();
-        return new CaptureDiagnosticsSnapshot
-        {
-            TimestampUtc = health.TimestampUtc,
-            SessionState = health.SessionState,
-            IsRecording = health.IsRecording,
-            RecordingBackend = health.RecordingBackend,
-            FlashbackActive = health.FlashbackActive,
-            FlashbackSegmentCount = health.FlashbackSegmentCount,
-            FlashbackDiskBytes = health.FlashbackDiskBytes,
-            FlashbackBufferedDurationMs = health.FlashbackBufferedDurationMs,
-            AudioPathMode = health.AudioPathMode,
-            MuxResult = health.MuxResult,
-            CaptureCadenceSampleCount = health.CaptureCadenceSampleCount,
-            CaptureCadenceObservedFps = health.CaptureCadenceObservedFps,
-            CaptureCadenceExpectedIntervalMs = health.CaptureCadenceExpectedIntervalMs,
-            CaptureCadenceAverageIntervalMs = health.CaptureCadenceAverageIntervalMs,
-            CaptureCadenceP95IntervalMs = health.CaptureCadenceP95IntervalMs,
-            CaptureCadenceMaxIntervalMs = health.CaptureCadenceMaxIntervalMs,
-            CaptureCadenceJitterStdDevMs = health.CaptureCadenceJitterStdDevMs,
-            CaptureCadenceSevereGapCount = health.CaptureCadenceSevereGapCount,
-            CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,
-            CaptureCadenceEstimatedDropPercent = health.CaptureCadenceEstimatedDropPercent,
-            MjpegDecodeSampleCount = health.MjpegDecodeSampleCount,
-            MjpegDecodeAvgMs = health.MjpegDecodeAvgMs,
-            MjpegDecodeP95Ms = health.MjpegDecodeP95Ms,
-            MjpegDecodeMaxMs = health.MjpegDecodeMaxMs,
-            MjpegInteropCopySampleCount = health.MjpegInteropCopySampleCount,
-            MjpegInteropCopyAvgMs = health.MjpegInteropCopyAvgMs,
-            MjpegInteropCopyP95Ms = health.MjpegInteropCopyP95Ms,
-            MjpegInteropCopyMaxMs = health.MjpegInteropCopyMaxMs,
-            MjpegCallbackSampleCount = health.MjpegCallbackSampleCount,
-            MjpegCallbackAvgMs = health.MjpegCallbackAvgMs,
-            MjpegCallbackP95Ms = health.MjpegCallbackP95Ms,
-            MjpegCallbackMaxMs = health.MjpegCallbackMaxMs,
-            MjpegDecoderCount = health.MjpegDecoderCount,
-            MjpegReorderSampleCount = health.MjpegReorderSampleCount,
-            MjpegReorderAvgMs = health.MjpegReorderAvgMs,
-            MjpegReorderP95Ms = health.MjpegReorderP95Ms,
-            MjpegReorderMaxMs = health.MjpegReorderMaxMs,
-            MjpegPipelineSampleCount = health.MjpegPipelineSampleCount,
-            MjpegPipelineAvgMs = health.MjpegPipelineAvgMs,
-            MjpegPipelineP95Ms = health.MjpegPipelineP95Ms,
-            MjpegPipelineMaxMs = health.MjpegPipelineMaxMs,
-            MjpegTotalDecoded = health.MjpegTotalDecoded,
-            MjpegTotalEmitted = health.MjpegTotalEmitted,
-            MjpegTotalDropped = health.MjpegTotalDropped,
-            MjpegReorderSkips = health.MjpegReorderSkips,
-            MjpegReorderBufferDepth = health.MjpegReorderBufferDepth,
-            MjpegPerDecoder = health.MjpegPerDecoder
-        };
+        // CaptureHealthSnapshot inherits from CaptureDiagnosticsSnapshot,
+        // so the full snapshot satisfies the diagnostics contract directly.
+        return GetHealthSnapshot();
     }
 
     private static string? ResolveEncoderCodecName(CaptureSettings? settings)
-    {
-        if (settings == null)
-        {
-            return null;
-        }
-
-        return settings.Format switch
-        {
-            RecordingFormat.HevcMp4 => "hevc_nvenc",
-            RecordingFormat.Av1Mp4 => "av1_nvenc",
-            _ => "h264_nvenc"
-        };
-    }
+        => settings == null ? null : MediaFormat.MapNvencCodecName(settings.Format);
 
     private static string? ResolveEncoderOutputPixelFormat(RecordingContext? context, CaptureSettings? settings)
     {
@@ -323,7 +274,7 @@ public partial class CaptureService
             MfSourceReaderFramesDelivered = mfSourceReaderFramesDelivered,
             MfSourceReaderFramesDropped = mfSourceReaderFramesDropped,
             MfSourceReaderNegotiatedFormat = mfSourceReaderNegotiatedFormat,
-            SessionState = _sessionState.ToString(),
+            SessionState = _sessionState,
             SourceReaderReadOutstanding = unifiedVideoCapture?.SourceReaderReadOutstanding ?? false,
             SourceReaderReadOutstandingMs = unifiedVideoCapture?.SourceReaderReadOutstandingMs ?? 0,
             SourceReaderLastFrameTickMs = unifiedVideoCapture?.SourceReaderLastFrameTickMs ?? 0,

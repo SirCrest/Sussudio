@@ -23,11 +23,29 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     private bool _disposed;
 
     /// <summary>
+    /// Exports a flashback range to .mp4 based on the request parameters.
+    /// Uses multi-segment export when <see cref="FlashbackExportRequest.SegmentPaths"/> is set,
+    /// otherwise falls back to single-file export from <see cref="FlashbackExportRequest.InputTsPath"/>.
+    /// </summary>
+    public Task<FinalizeResult> ExportAsync(
+        FlashbackExportRequest request,
+        IProgress<ExportProgress>? progress,
+        CancellationToken ct)
+    {
+        if (request.SegmentPaths is { Count: > 0 })
+            return ExportSegmentsAsync(request.SegmentPaths, request.InPoint, request.OutPoint,
+                request.OutputPath, request.FastStart, progress, ct);
+
+        return ExportSingleAsync(request.InputTsPath!, request.InPoint, request.OutPoint,
+            request.OutputPath, request.FastStart, progress, ct);
+    }
+
+    /// <summary>
     /// Exports a time range from the flashback .ts file to an .mp4 file.
     /// Seeks to the nearest keyframe before <paramref name="inPoint"/> and copies packets
     /// until <paramref name="outPoint"/> is reached.
     /// </summary>
-    public Task<FinalizeResult> ExportAsync(
+    private Task<FinalizeResult> ExportSingleAsync(
         string inputTsPath,
         TimeSpan inPoint,
         TimeSpan outPoint,
@@ -52,23 +70,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     }
 
     /// <summary>
-    /// Exports all content from the flashback .ts file to an .mp4 file (full remux).
-    /// </summary>
-    public Task<FinalizeResult> ExportFullAsync(
-        string inputTsPath,
-        string outputPath,
-        bool fastStart,
-        IProgress<ExportProgress>? progress,
-        CancellationToken ct)
-    {
-        return ExportAsync(inputTsPath, TimeSpan.Zero, TimeSpan.MaxValue, outputPath, fastStart, progress, ct);
-    }
-
-    /// <summary>
     /// Exports a time range spanning multiple .ts segment files to a single .mp4 file.
     /// Opens segments sequentially, remapping PTS for continuous output.
     /// </summary>
-    public Task<FinalizeResult> ExportSegmentsAsync(
+    private Task<FinalizeResult> ExportSegmentsAsync(
         IReadOnlyList<string> segmentPaths,
         TimeSpan inPoint,
         TimeSpan outPoint,
@@ -106,18 +111,26 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         // and release _exportLock before we acquire it.
         try { _disposeCts?.Cancel(); } catch (ObjectDisposedException) { /* Best-effort: CTS may already be disposed if Dispose races */ }
 
-        _exportLock.Wait(TimeSpan.FromSeconds(5));
-        try
+        var acquired = _exportLock.Wait(TimeSpan.FromSeconds(5));
+        if (acquired)
         {
-            CleanupNativeState();
+            try
+            {
+                CleanupNativeState();
+            }
+            finally
+            {
+                _exportLock.Release();
+            }
         }
-        finally
+        else
         {
-            _exportLock.Release();
-            _exportLock.Dispose();
-            _disposeCts?.Dispose();
-            _disposeCts = null;
+            Logger.Log("FLASHBACK_EXPORT_DISPOSE_WARN reason='lock_timeout' — native state leaked to avoid use-after-free");
         }
+
+        _exportLock.Dispose();
+        _disposeCts?.Dispose();
+        _disposeCts = null;
         _disposed = true;
         GC.SuppressFinalize(this);
     }
@@ -297,6 +310,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             if (!allBasesDiscovered && bufferedPackets.Count >= MaxBufferedPackets)
                             {
                                 allBasesDiscovered = true;
+                                globalMinBaseUs ??= 0; // Silent streams never set a base — default to 0
                                 var discoveredCount = 0;
                                 for (var i = 0; i < streamCount; i++) { if (hasTimestampBase[i]) discoveredCount++; }
                                 Logger.Log($"FLASHBACK_EXPORT_PARTIAL_BASE_FLUSH buffered={bufferedPackets.Count} streams_discovered={discoveredCount}/{streamCount}");
@@ -304,31 +318,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
                             if (allBasesDiscovered)
                             {
-                                // Flush buffer with final globalMinBaseUs
-                                for (int bi = 0; bi < bufferedPackets.Count; bi++)
-                                {
-                                    var buffPkt = (AVPacket*)bufferedPackets[bi];
-                                    var si = bufferedStreamIndices[bi];
-                                    var oi = streamMap[si];
-                                    var outStr = _activeOutputContext->streams[oi];
-                                    var bTs = ffmpeg.av_rescale_q(globalMinBaseUs!.Value, usTimeBase, outStr->time_base);
-                                    if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
-                                        buffPkt->pts -= bTs;
-                                    if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
-                                        buffPkt->dts -= bTs;
-                                    if (buffPkt->pts < 0) buffPkt->pts = 0;
-                                    if (buffPkt->dts < 0) buffPkt->dts = 0;
-                                    buffPkt->pos = -1;
-                                    buffPkt->stream_index = oi;
-                                    ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
-                                    packetCounts[si]++;
-                                    totalPackets++;
-                                    // Free clone struct (data already unreffed by write)
-                                    ffmpeg.av_packet_free(&buffPkt);
-                                    bufferedPackets[bi] = IntPtr.Zero;
-                                }
-                                bufferedPackets.Clear();
-                                bufferedStreamIndices.Clear();
+                                totalPackets += FlushBufferedPackets(
+                                    bufferedPackets, bufferedStreamIndices, streamMap,
+                                    globalMinBaseUs!.Value, usTimeBase, packetCounts);
                             }
                             continue;
                         }
@@ -356,34 +348,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 }
 
                 // Phase 1 EOF: flush buffered packets with best-known base if not all streams discovered
+                if (!allBasesDiscovered && bufferedPackets.Count > 0)
+                {
+                    globalMinBaseUs ??= 0; // No stream ever produced a base — default to 0
+                }
                 if (!allBasesDiscovered && globalMinBaseUs.HasValue && bufferedPackets.Count > 0)
                 {
                     var discoveredCount = 0;
                     for (int i = 0; i < streamCount; i++) { if (hasTimestampBase[i]) discoveredCount++; }
                     Logger.Log($"FLASHBACK_EXPORT_PARTIAL_BASE_FLUSH streams_discovered={discoveredCount}/{streamCount} buffered={bufferedPackets.Count}");
-                    for (int bi = 0; bi < bufferedPackets.Count; bi++)
-                    {
-                        var buffPkt = (AVPacket*)bufferedPackets[bi];
-                        var si = bufferedStreamIndices[bi];
-                        var oi = streamMap[si];
-                        var outStr = _activeOutputContext->streams[oi];
-                        var bTs = ffmpeg.av_rescale_q(globalMinBaseUs!.Value, usTimeBase, outStr->time_base);
-                        if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
-                            buffPkt->pts -= bTs;
-                        if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
-                            buffPkt->dts -= bTs;
-                        if (buffPkt->pts < 0) buffPkt->pts = 0;
-                        if (buffPkt->dts < 0) buffPkt->dts = 0;
-                        buffPkt->pos = -1;
-                        buffPkt->stream_index = oi;
-                        ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
-                        packetCounts[si]++;
-                        totalPackets++;
-                        ffmpeg.av_packet_free(&buffPkt);
-                        bufferedPackets[bi] = IntPtr.Zero;
-                    }
-                    bufferedPackets.Clear();
-                    bufferedStreamIndices.Clear();
+                    totalPackets += FlushBufferedPackets(
+                        bufferedPackets, bufferedStreamIndices, streamMap,
+                        globalMinBaseUs!.Value, usTimeBase, packetCounts);
                 }
             }
             finally
@@ -460,7 +436,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
         finally
         {
-            _exportLock.Release();
+            try { _exportLock.Release(); } catch (ObjectDisposedException) { }
         }
     }
 
@@ -566,6 +542,19 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
                         streamCount = checked((int)_activeInputContext->nb_streams);
                     }
+                    else
+                    {
+                        // Validate that this segment's stream layout matches the first segment's.
+                        // Mismatched layouts (e.g. microphone toggled mid-capture) would cause
+                        // packet->stream_index to map incorrectly, producing corrupt output.
+                        var segNbStreams = checked((int)_activeInputContext->nb_streams);
+                        if (segNbStreams != streamCount)
+                        {
+                            Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_count_mismatch' expected={streamCount} actual={segNbStreams}");
+                            CloseActiveInput();
+                            continue;
+                        }
+                    }
 
                     // Seek to inPoint in first segment
                     if (isFirst && inPoint > TimeSpan.Zero)
@@ -646,7 +635,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                     if (streamMap[i] >= 0 && !segHasTimestampBase[i]) { segAllBasesDiscovered = false; break; }
                                 }
                                 if (!segAllBasesDiscovered && segBufferedPackets.Count >= MaxBufferedPackets)
+                                {
+                                    segMinBaseUs ??= 0; // Silent streams never set a base — default to 0
                                     segAllBasesDiscovered = true;
+                                }
 
                                 if (segAllBasesDiscovered)
                                 {
@@ -848,8 +840,48 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
         finally
         {
-            _exportLock.Release();
+            try { _exportLock.Release(); } catch (ObjectDisposedException) { }
         }
+    }
+
+    /// <summary>
+    /// Flushes all buffered packets by subtracting <paramref name="globalMinBaseUs"/> from PTS/DTS,
+    /// clamping negative values to zero, and writing each packet to the active output context.
+    /// Frees all packet clones and clears both lists. Returns the number of packets written.
+    /// </summary>
+    private long FlushBufferedPackets(
+        List<IntPtr> bufferedPackets,
+        List<int> bufferedStreamIndices,
+        int[] streamMap,
+        long globalMinBaseUs,
+        AVRational usTimeBase,
+        long[] packetCounts)
+    {
+        long flushed = 0;
+        for (int bi = 0; bi < bufferedPackets.Count; bi++)
+        {
+            var buffPkt = (AVPacket*)bufferedPackets[bi];
+            var si = bufferedStreamIndices[bi];
+            var oi = streamMap[si];
+            var outStr = _activeOutputContext->streams[oi];
+            var bTs = ffmpeg.av_rescale_q(globalMinBaseUs, usTimeBase, outStr->time_base);
+            if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
+                buffPkt->pts -= bTs;
+            if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
+                buffPkt->dts -= bTs;
+            if (buffPkt->pts < 0) buffPkt->pts = 0;
+            if (buffPkt->dts < 0) buffPkt->dts = 0;
+            buffPkt->pos = -1;
+            buffPkt->stream_index = oi;
+            ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
+            packetCounts[si]++;
+            flushed++;
+            ffmpeg.av_packet_free(&buffPkt);
+            bufferedPackets[bi] = IntPtr.Zero;
+        }
+        bufferedPackets.Clear();
+        bufferedStreamIndices.Clear();
+        return flushed;
     }
 
     private static bool TryResolveTimestampBase(AVPacket* packet, out long timestampBase)

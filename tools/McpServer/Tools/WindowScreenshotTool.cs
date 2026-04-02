@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using ElgatoCapture.Tools;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -22,9 +23,9 @@ public static class WindowScreenshotTool
         };
 
         var response = await pipeClient.SendCommandAsync("CaptureWindowScreenshot", payload).ConfigureAwait(false);
-        if (!ResponseFormatter.IsSuccess(response))
+        if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return ResponseFormatter.Get(response, "Message", "Screenshot failed.");
+            return AutomationSnapshotFormatter.Get(response, "Message", "Screenshot failed.");
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Object)
@@ -32,10 +33,10 @@ public static class WindowScreenshotTool
             return "No screenshot data returned.";
         }
 
-        var filePath = ResponseFormatter.Get(data, "FilePath", "N/A");
-        var width = ResponseFormatter.Get(data, "CapturedWidth", "?");
-        var height = ResponseFormatter.Get(data, "CapturedHeight", "?");
-        var fileSize = ResponseFormatter.Get(data, "FileSizeBytes", "0");
+        var filePath = AutomationSnapshotFormatter.Get(data, "FilePath", "N/A");
+        var width = AutomationSnapshotFormatter.Get(data, "CapturedWidth", "?");
+        var height = AutomationSnapshotFormatter.Get(data, "CapturedHeight", "?");
+        var fileSize = AutomationSnapshotFormatter.Get(data, "FileSizeBytes", "0");
 
         return $"Window screenshot saved: {filePath} ({width}x{height}, {fileSize} bytes)";
     }

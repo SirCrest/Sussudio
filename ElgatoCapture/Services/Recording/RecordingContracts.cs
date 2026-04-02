@@ -34,21 +34,41 @@ public sealed class RecordingContextRequest
 
 public sealed class RecordingContext
 {
-    public required CaptureSettings Settings { get; init; }
-    public required string VideoOutputPath { get; init; }
-    public required string FinalOutputPath { get; init; }
-    public string? AudioTempPath { get; init; }
-    public bool UsePostMuxAudio { get; init; }
-    public string? AudioDeviceName { get; init; }
-    public string? MicrophoneDeviceName { get; init; }
-    public double EffectiveFrameRate { get; init; }
-    public string FrameRateArg { get; init; } = "30";
-    public uint EffectiveWidth { get; init; }
-    public uint EffectiveHeight { get; init; }
-    public string VideoInputPixelFormat { get; init; } = "nv12";
-    public bool HdrPipelineActive { get; init; }
-    public bool IsFullRangeInput { get; init; }
-    public GpuPipelineHandles GpuHandles { get; init; }
+    public RecordingContext(
+        RecordingContextRequest request,
+        string videoOutputPath,
+        string finalOutputPath,
+        string? audioTempPath,
+        bool hdrPipelineActive)
+    {
+        Request = request ?? throw new ArgumentNullException(nameof(request));
+        VideoOutputPath = videoOutputPath;
+        FinalOutputPath = finalOutputPath;
+        AudioTempPath = audioTempPath;
+        HdrPipelineActive = hdrPipelineActive;
+    }
+
+    /// <summary>The original request that produced this context.</summary>
+    public RecordingContextRequest Request { get; }
+
+    // ── Extra fields not present on the request ─────────────────────
+    public string VideoOutputPath { get; }
+    public string FinalOutputPath { get; }
+    public string? AudioTempPath { get; }
+    public bool HdrPipelineActive { get; }
+
+    // ── Forwarding properties from Request ──────────────────────────
+    public CaptureSettings Settings => Request.Settings;
+    public bool UsePostMuxAudio => Request.UsePostMuxAudio;
+    public string? AudioDeviceName => Request.AudioDeviceName;
+    public string? MicrophoneDeviceName => Request.MicrophoneDeviceName;
+    public double EffectiveFrameRate => Request.EffectiveFrameRate;
+    public string FrameRateArg => Request.FrameRateArg;
+    public uint EffectiveWidth => Request.EffectiveWidth;
+    public uint EffectiveHeight => Request.EffectiveHeight;
+    public string VideoInputPixelFormat => Request.VideoInputPixelFormat;
+    public bool IsFullRangeInput => Request.IsFullRangeInput;
+    public GpuPipelineHandles GpuHandles => Request.GpuHandles;
 
     // Convenience accessors for existing consumers.
     public IntPtr D3D11DevicePtr => GpuHandles.D3D11DevicePtr;

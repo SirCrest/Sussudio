@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using System.Text.Json;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -25,72 +24,60 @@ public static class CaptureSettingsTools
         if (!string.IsNullOrWhiteSpace(resolution))
         {
             var payload = new Dictionary<string, object?> { ["resolution"] = resolution };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetResolution", "SetResolution", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetResolution", "SetResolution", payload).ConfigureAwait(false));
         }
 
         if (frameRate.HasValue)
         {
             var payload = new Dictionary<string, object?> { ["frameRate"] = frameRate.Value };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetFrameRate", "SetFrameRate", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetFrameRate", "SetFrameRate", payload).ConfigureAwait(false));
         }
 
         if (!string.IsNullOrWhiteSpace(videoFormat))
         {
             var payload = new Dictionary<string, object?> { ["videoFormat"] = videoFormat };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetVideoFormat", "SetVideoFormat", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetVideoFormat", "SetVideoFormat", payload).ConfigureAwait(false));
         }
 
         if (!string.IsNullOrWhiteSpace(format))
         {
             var payload = new Dictionary<string, object?> { ["format"] = format };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetRecordingFormat", "SetRecordingFormat", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetRecordingFormat", "SetRecordingFormat", payload).ConfigureAwait(false));
         }
 
         if (!string.IsNullOrWhiteSpace(quality))
         {
             var payload = new Dictionary<string, object?> { ["quality"] = quality };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetQuality", "SetQuality", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetQuality", "SetQuality", payload).ConfigureAwait(false));
         }
 
         if (bitrateMbps.HasValue)
         {
             var payload = new Dictionary<string, object?> { ["bitrateMbps"] = bitrateMbps.Value };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetCustomBitrate", "SetCustomBitrate", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetCustomBitrate", "SetCustomBitrate", payload).ConfigureAwait(false));
         }
 
         if (!string.IsNullOrWhiteSpace(preset))
         {
             var payload = new Dictionary<string, object?> { ["preset"] = preset };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetPreset", "SetPreset", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetPreset", "SetPreset", payload).ConfigureAwait(false));
         }
 
         if (!string.IsNullOrWhiteSpace(splitEncodeMode))
         {
             var payload = new Dictionary<string, object?> { ["splitEncodeMode"] = splitEncodeMode };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetSplitEncodeMode", "SetSplitEncodeMode", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetSplitEncodeMode", "SetSplitEncodeMode", payload).ConfigureAwait(false));
         }
 
         if (mjpegDecoderCount.HasValue)
         {
             var payload = new Dictionary<string, object?> { ["decoderCount"] = mjpegDecoderCount.Value };
-            results.Add(await ExecuteAndFormatAsync(pipeClient, "SetMjpegDecoderCount", "SetMjpegDecoderCount", payload).ConfigureAwait(false));
+            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetMjpegDecoderCount", "SetMjpegDecoderCount", payload).ConfigureAwait(false));
         }
 
         return results.Count == 0
             ? "No capture setting changes requested."
             : string.Join(Environment.NewLine, results);
-    }
-
-    private static async Task<string> ExecuteAndFormatAsync(
-        PipeClient pipeClient,
-        string commandName,
-        string label,
-        Dictionary<string, object?>? payload = null)
-    {
-        var response = await pipeClient.SendCommandAsync(commandName, payload).ConfigureAwait(false);
-        var status = ResponseFormatter.IsSuccess(response) ? "OK" : "ERROR";
-        var message = ResponseFormatter.Get(response, "Message", "No message.");
-        return $"[{status}] {label}: {message}";
     }
 
 }

@@ -88,7 +88,14 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             if (*p == AVPixelFormat.AV_PIX_FMT_D3D11)
                 return AVPixelFormat.AV_PIX_FMT_D3D11;
         }
-        // D3D11 not offered — return first format (software fallback)
+        // D3D11 not offered — log the available formats for diagnostics
+        var offered = new System.Text.StringBuilder();
+        for (var p = fmt; *p != AVPixelFormat.AV_PIX_FMT_NONE; p++)
+        {
+            if (offered.Length > 0) offered.Append(',');
+            offered.Append((int)*p);
+        }
+        Logger.Log($"FLASHBACK_DECODER_D3D11VA_NOT_OFFERED formats=[{offered}] fallback={(int)*fmt}");
         return *fmt;
     }
 
@@ -242,9 +249,9 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                        $"hw_accel={((_isD3D11HwAccelerated ? "D3D11VA" : "Software"))} " +
                        $"audio={(_audioStreamIndex >= 0 ? "yes" : "no")}");
         }
-        catch
+        catch (Exception ex)
         {
-            // Clean up on failure
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in FlashbackDecoder.OpenFile: {ex.Message}");
             CloseFileCore();
             throw;
         }
@@ -381,7 +388,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 // Decoder needs more packets
                 if (!FeedNextVideoPacket())
                 {
-                    // Temporary EOF on live .ts — do NOT enter drain mode.
+                    // Temporary EOF on live fMP4 — do NOT enter drain mode.
                     // The encoder is still appending; drain mode is permanent and
                     // would prevent decoding any future frames.
                     return false;
@@ -441,7 +448,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
         // Determine pixel format and HDR status
         _decodedPixelFormat = (AVPixelFormat)codecPar->format;
-        _isHdr = codecPar->codec_id == AVCodecID.AV_CODEC_ID_HEVC &&
+        _isHdr = (codecPar->codec_id == AVCodecID.AV_CODEC_ID_HEVC ||
+                  codecPar->codec_id == AVCodecID.AV_CODEC_ID_AV1) &&
                  (_decodedPixelFormat == AVPixelFormat.AV_PIX_FMT_YUV420P10LE ||
                   _decodedPixelFormat == AVPixelFormat.AV_PIX_FMT_P010LE);
 
@@ -730,7 +738,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             {
                 // Clear AVIO EOF flag so subsequent reads can see newly appended data.
                 // Without this, C stdio's fread EOF is cached and av_read_frame keeps
-                // returning EOF even after the encoder writes more to the .ts file.
+                // returning EOF even after the encoder writes more to the file.
                 if (_formatCtx->pb != null)
                     _formatCtx->pb->eof_reached = 0;
                 return false;
@@ -771,8 +779,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     /// </summary>
     private void DecodeAndDeliverAudioPacket(AVPacket* packet)
     {
-        if (AudioChunkCallback == null) return; // skip audio decode during scrub — save CPU
-
+        // Always feed packets to the codec so it tracks PTS position correctly.
+        // During seek/scrub (callback null), we decode but discard the output.
+        // This ensures audio and video codecs are at the same position when
+        // playback starts — no suppression or drift compensation needed.
         var sendResult = ffmpeg.avcodec_send_packet(_audioCodecCtx, packet);
         if (sendResult < 0 && sendResult != ffmpeg.AVERROR(ffmpeg.EAGAIN))
             return;
@@ -780,8 +790,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         while (ffmpeg.avcodec_receive_frame(_audioCodecCtx, _audioFrame) == 0)
         {
             var callback = AudioChunkCallback;
+            if (callback == null)
+                continue; // Codec advanced, but no delivery during seek/scrub
             var chunk = ConvertAndOutputAudioFrame();
-            if (callback != null && chunk.ValidLength > 0)
+            if (chunk.ValidLength > 0)
             {
                 try
                 {
@@ -834,6 +846,19 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                     }
                 }
             }
+        }
+
+        // Check actual frame format — D3D11VA may silently fall back to software
+        // (get_format callback runs on first decode, not during avcodec_open2).
+        var actualFormat = (AVPixelFormat)_videoFrame->format;
+        if (_isD3D11HwAccelerated && actualFormat != AVPixelFormat.AV_PIX_FMT_D3D11)
+        {
+            Logger.Log($"FLASHBACK_DECODER_D3D11VA_FALLBACK actual_fmt={actualFormat} — switching to software path");
+            _isD3D11HwAccelerated = false;
+            _decodedPixelFormat = actualFormat;
+            var targetFmt = _isHdr ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
+            _needsConvert = actualFormat != targetFmt;
+            AllocateVideoOutputBuffers();
         }
 
         if (_isD3D11HwAccelerated)

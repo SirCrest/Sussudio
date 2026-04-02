@@ -62,6 +62,13 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
     public event EventHandler<long>? FrameEncoded;
 
+    /// <summary>
+    /// Invoked on the encoding thread when the encoding loop fails fatally.
+    /// Allows CaptureService to immediately surface the failure to the UI
+    /// instead of silently dropping all subsequent frames until Stop is called.
+    /// </summary>
+    public Action<Exception>? OnEncodingFailed { get; set; }
+
     public long DroppedVideoFrames =>
         Interlocked.Read(ref _droppedVideoFrames) +
         Interlocked.Read(ref _gpuFramesDropped) +
@@ -538,14 +545,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     }
 
     private static string MapCodecName(RecordingFormat format)
-    {
-        return format switch
-        {
-            RecordingFormat.HevcMp4 => "hevc_nvenc",
-            RecordingFormat.Av1Mp4 => "av1_nvenc",
-            _ => "h264_nvenc"
-        };
-    }
+        => MediaFormat.MapNvencCodecName(format);
 
     private static (int? Numerator, int? Denominator) ResolveFrameRateParts(RecordingContext context)
     {
@@ -640,7 +640,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var (frameRateNumerator, frameRateDenominator) = ResolveFrameRateParts(context);
         return new LibAvEncoderOptions
         {
-            OutputPath = context.FinalOutputPath,
+            OutputPath = context.VideoOutputPath,
             CodecName = MapCodecName(context.Settings.Format),
             Width = checked((int)context.EffectiveWidth),
             Height = checked((int)context.EffectiveHeight),
@@ -735,6 +735,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         {
             _encodingFailure = ex;
             lock (_sync) { _started = false; }
+            Logger.Log($"LIBAV_SINK_ENCODING_LOOP_FAIL type={ex.GetType().Name} msg={ex.Message}");
             ReturnRemainingBuffers(_videoQueue);
             ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
             ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
@@ -747,6 +748,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             catch
             {
                 // Preserve the original failure.
+            }
+
+            try
+            {
+                OnEncodingFailed?.Invoke(ex);
+            }
+            catch
+            {
+                // Best effort — callback must not mask the original failure.
             }
         }
     }
@@ -977,7 +987,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         if (queue.Reader.TryRead(out var evictedPacket))
         {
             Interlocked.Decrement(ref _audioQueueDepth);
-            Interlocked.Increment(ref _audioDropsBacklogEviction);
+            var evicted = Interlocked.Increment(ref _audioDropsBacklogEviction);
+            if (evicted == 1 || evicted % 120 == 0)
+            {
+                // Log evicted audio bytes so A/V drift from dropped audio is traceable.
+                Logger.Log(
+                    $"LIBAV_SINK_AUDIO_EVICT evicted={evicted} dropped_bytes={evictedPacket.Length} " +
+                    $"queue_depth={Volatile.Read(ref _audioQueueDepth)}");
+            }
+
             ReturnBuffer(evictedPacket.Buffer);
             if (queue.Writer.TryWrite(packet))
             {
@@ -1009,7 +1027,14 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         if (queue.Reader.TryRead(out var evictedPacket))
         {
             Interlocked.Decrement(ref _microphoneQueueDepth);
-            Interlocked.Increment(ref _microphoneDropsBacklogEviction);
+            var evicted = Interlocked.Increment(ref _microphoneDropsBacklogEviction);
+            if (evicted == 1 || evicted % 120 == 0)
+            {
+                Logger.Log(
+                    $"LIBAV_SINK_MIC_EVICT evicted={evicted} dropped_bytes={evictedPacket.Length} " +
+                    $"queue_depth={Volatile.Read(ref _microphoneQueueDepth)}");
+            }
+
             ReturnBuffer(evictedPacket.Buffer);
             if (queue.Writer.TryWrite(packet))
             {

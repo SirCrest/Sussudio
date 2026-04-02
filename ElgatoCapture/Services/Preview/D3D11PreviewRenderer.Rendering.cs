@@ -14,7 +14,6 @@ using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Mathematics;
 using WinRT;
-
 namespace ElgatoCapture.Services;
 
 internal sealed partial class D3D11PreviewRenderer
@@ -1890,6 +1889,11 @@ internal sealed partial class D3D11PreviewRenderer
             throw new InvalidOperationException("D3D11 device state is incomplete for HDR shader input texture creation.");
         }
 
+        if (_hdrPlaneViewsUnavailable)
+        {
+            return;
+        }
+
         if (_hdrInputTexture != null &&
             _hdrStagingTexture != null &&
             _hdrYPlaneSRV != null &&
@@ -1940,11 +1944,22 @@ internal sealed partial class D3D11PreviewRenderer
 
         _hdrYPlaneSRV = CreateHdrPlaneView(Format.R16_UNorm, planeSlice: 0);
         _hdrUVPlaneSRV = CreateHdrPlaneView(Format.R16G16_UNorm, planeSlice: 1);
+
+        if (_hdrYPlaneSRV == null && _hdrUVPlaneSRV == null)
+        {
+            _hdrInputTexture.Dispose();
+            _hdrInputTexture = null;
+            _hdrStagingTexture.Dispose();
+            _hdrStagingTexture = null;
+            _hdrPlaneViewsUnavailable = true;
+            return;
+        }
+
         _hdrInputConfiguredWidth = width;
         _hdrInputConfiguredHeight = height;
     }
 
-    private ID3D11ShaderResourceView CreateHdrPlaneView(Format format, uint planeSlice)
+    private ID3D11ShaderResourceView? CreateHdrPlaneView(Format format, uint planeSlice)
     {
         if (_device == null || _hdrInputTexture == null)
         {
@@ -1966,16 +1981,8 @@ internal sealed partial class D3D11PreviewRenderer
             return _device3.CreateShaderResourceView1(_hdrInputTexture, srvDesc);
         }
 
-        var fallbackDesc = new ShaderResourceViewDescription(
-            _hdrInputTexture,
-            ShaderResourceViewDimension.Texture2D,
-            format,
-            0,
-            1,
-            0,
-            1);
-
-        return _device.CreateShaderResourceView(_hdrInputTexture, fallbackDesc);
+        Logger.Log("D3D11_RENDERER_WARN Device3 not available for P010 plane views — HDR shader path disabled, falling back to VideoProcessor");
+        return null;
     }
 
     private void EnsureSwapChainRTV()
@@ -2194,6 +2201,7 @@ internal sealed partial class D3D11PreviewRenderer
         _hdrInputTexture = null;
         _hdrInputConfiguredWidth = 0;
         _hdrInputConfiguredHeight = 0;
+        _hdrPlaneViewsUnavailable = false;
         _videoProcessor?.Dispose();
         _videoProcessor = null;
         _videoProcessorEnumerator?.Dispose();

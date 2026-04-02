@@ -627,4 +627,182 @@ public sealed partial class MainWindow
 
         return value;
     }
+    private StatsSnapshot GetStatsSnapshot()
+    {
+        var health = ViewModel.GetCaptureHealthSnapshot();
+        var d3d = _d3dRenderer;
+        var presentCadence = d3d?.GetPresentCadenceMetrics(_previewMinPresentationIntervalMs);
+        var pipelineLatency = d3d?.GetEstimatedPipelineLatencyMs() ?? 0;
+        var sourceDropPercent = Sanitize(health.CaptureCadenceEstimatedDropPercent);
+        var previewSlowPercent = Sanitize(presentCadence?.SlowFramePercent ?? 0);
+        var performanceScore = Math.Clamp(100.0 - sourceDropPercent - previewSlowPercent, 0.0, 100.0);
+        var telemetryDetails = new List<SourceTelemetryDetailEntry>(health.SourceTelemetryDetails);
+        var captureCardFormat = health.ReaderSourceSubtype ?? health.NegotiatedPixelFormat;
+        if (!string.IsNullOrWhiteSpace(captureCardFormat))
+        {
+            telemetryDetails.Add(new SourceTelemetryDetailEntry("Capture Card / UVC", "Capture Format", captureCardFormat));
+        }
+
+        return new StatsSnapshot(
+            SourceCadenceSamples: health.CaptureCadenceSampleCount,
+            SourceObservedFps: Sanitize(health.CaptureCadenceObservedFps),
+            SourceExpectedFps: Sanitize(health.ExpectedFrameRate),
+            SourceAvgIntervalMs: Sanitize(health.CaptureCadenceAverageIntervalMs),
+            SourceP95IntervalMs: Sanitize(health.CaptureCadenceP95IntervalMs),
+            SourceMaxIntervalMs: Sanitize(health.CaptureCadenceMaxIntervalMs),
+            SourceJitterMs: Sanitize(health.CaptureCadenceJitterStdDevMs),
+            SourceSevereGaps: health.CaptureCadenceSevereGapCount,
+            SourceEstDrops: health.CaptureCadenceEstimatedDroppedFrames,
+            SourceEstDropPct: sourceDropPercent,
+            PreviewCadenceSamples: presentCadence?.SampleCount ?? 0,
+            PreviewObservedFps: Sanitize(presentCadence?.ObservedFps ?? 0),
+            PreviewAvgIntervalMs: Sanitize(presentCadence?.AverageIntervalMs ?? 0),
+            PreviewP95IntervalMs: Sanitize(presentCadence?.P95IntervalMs ?? 0),
+            PreviewSlowFrames: presentCadence?.SlowFrameCount ?? 0,
+            PreviewSlowPct: previewSlowPercent,
+            PipelineLatencyMs: Sanitize(pipelineLatency),
+            SourceFramesDelivered: health.VideoFramesArrived,
+            SourceFramesDropped: health.VideoFramesDropped,
+            RendererFramesSubmitted: d3d?.FramesSubmitted ?? 0,
+            RendererFramesRendered: d3d?.FramesRendered ?? 0,
+            RendererFramesDropped: d3d?.FramesDropped ?? 0,
+            PerformanceScore: performanceScore,
+            Previewing: ViewModel.IsPreviewing,
+            Recording: ViewModel.IsRecording,
+            SourceWidth: health.SourceWidth,
+            SourceHeight: health.SourceHeight,
+            SourceFrameRateExact: health.SourceFrameRateExact,
+            SourceIsHdr: health.SourceIsHdr,
+            SourceVideoFormat: health.SourceVideoFormat,
+            SourceColorimetry: health.SourceColorimetry,
+            ReaderSourceSubtype: health.ReaderSourceSubtype,
+            NegotiatedPixelFormat: health.NegotiatedPixelFormat,
+            TelemetryOrigin: health.SourceTelemetryOrigin.ToString(),
+            TelemetryConfidence: health.SourceTelemetryConfidence.ToString(),
+            SourceTelemetryDetails: telemetryDetails,
+            DiagnosticSummary: health.SourceTelemetryDiagnosticSummary,
+            AvSyncCaptureDriftMs: health.AvSyncCaptureDriftMs,
+            AvSyncCaptureDriftRateMsPerSec: health.AvSyncCaptureDriftRateMsPerSec,
+            AvSyncEncoderDriftMs: health.AvSyncEncoderDriftMs,
+            AvSyncEncoderCorrectionSamples: health.AvSyncEncoderCorrectionSamples,
+            EncoderCodecName: health.EncoderCodecName,
+            EncoderWidth: health.EncoderWidth,
+            EncoderHeight: health.EncoderHeight,
+            EncoderFrameRate: health.EncoderFrameRate,
+            EncoderTargetBitRate: health.EncoderTargetBitRate);
+    }
+    private TextBlock CreateDiagnosticGroupHeader(string title)
+    {
+        return new TextBlock
+        {
+            Text = title,
+            Margin = new Thickness(0, 8, 0, 2),
+            Style = (Style)StatsDockPanel.Resources["DockStatsSectionHeaderStyle"]
+        };
+    }
+    private static List<(string Label, string Value)> ParseDiagnosticSummary(string summary)
+    {
+        if (!summary.StartsWith("nativexu:", StringComparison.OrdinalIgnoreCase))
+        {
+            return new List<(string Label, string Value)>
+            {
+                ("Summary", summary.Trim())
+            };
+        }
+
+        var result = new List<(string Label, string Value)>();
+        var parts = summary.Split(':');
+
+        foreach (var part in parts)
+        {
+            if (string.IsNullOrWhiteSpace(part))
+            {
+                continue;
+            }
+
+            var eqIndex = part.IndexOf('=');
+            if (eqIndex > 0)
+            {
+                var key = part[..eqIndex].Trim();
+                var val = part[(eqIndex + 1)..].Trim();
+                var label = key switch
+                {
+                    "vic" => "VIC Code",
+                    "vfreq" => "Vert Freq",
+                    "quant" => "Quantization",
+                    "hdr2sdr" => "HDR to SDR",
+                    "eotf" => "EOTF",
+                    "fw" => "Firmware",
+                    "audiofmt" => "Audio Format",
+                    "audiosrate" => "Audio Sample Rate",
+                    "inputsrc" => "Input Source",
+                    "usbproto" => "USB Protocol",
+                    "usbcdc" => "USB CDC",
+                    "usblinkst" => "USB Link State",
+                    "usbspeed" => "USB Speed",
+                    "txhpd" => "TX Hot Plug",
+                    "txvrr" => "TX VRR",
+                    "uvctiming" => "UVC Timing",
+                    "uvcfmt" => "UVC Format",
+                    "uvcerr" => "UVC Error",
+                    "hdcpmode" => "HDCP Mode",
+                    "hdcpver" => "HDCP Version",
+                    "rxtxhdcp" => "RX/TX HDCP",
+                    "hdr2sdrext" => "HDR2SDR Status",
+                    "hdr2sdrcolor" => "HDR2SDR Color",
+                    "colorrangesetting" => "Color Range",
+                    "vtem" => "VTEM (VRR)",
+                    "biterr" => "Bit Errors",
+                    "rawtiming" => "Raw Timing",
+                    _ => key
+                };
+                result.Add((label, val));
+                continue;
+            }
+
+            var entry = part switch
+            {
+                "nativexu" => ("Origin", "NativeXu"),
+                "hdr" => ("HDR", "Yes"),
+                "sdr" => ("HDR", "No"),
+                "unknown" => ("HDR", "Unknown"),
+                _ when part.Contains('x') && part.Length > 3 && char.IsDigit(part[0]) => ("Resolution", part),
+                _ when double.TryParse(part, NumberStyles.Float, CultureInfo.InvariantCulture, out var fps) && fps > 0 =>
+                    ("Frame Rate", $"{fps:0.##} Hz"),
+                _ => ("Info", part)
+            };
+            result.Add(entry);
+        }
+
+        return result;
+    }
+    private Border CreateDiagnosticRow(string label, string value, bool alt)
+    {
+        var grid = new Grid();
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+        var labelBlock = new TextBlock
+        {
+            Text = label,
+            Style = (Style)StatsDockPanel.Resources["DockStatsLabelStyle"]
+        };
+
+        var valueBlock = new TextBlock
+        {
+            Text = value,
+            Style = (Style)StatsDockPanel.Resources["DockStatsValueStyle"],
+            HorizontalAlignment = HorizontalAlignment.Right
+        };
+        Grid.SetColumn(valueBlock, 1);
+
+        grid.Children.Add(labelBlock);
+        grid.Children.Add(valueBlock);
+
+        return new Border
+        {
+            Style = (Style)StatsDockPanel.Resources[alt ? "DockStatsRowAltStyle" : "DockStatsRowStyle"],
+            Child = grid
+        };
+    }
 }

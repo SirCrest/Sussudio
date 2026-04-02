@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ElgatoCapture.Models;
 using ElgatoCapture.Services;
 
 namespace ElgatoCapture.ViewModels;
@@ -25,6 +26,18 @@ public partial class MainViewModel
     partial void OnSelectedRecordingFormatChanged(string value)
     {
         SaveSettings();
+
+        // Cycle the flashback encoder so the buffer uses the new codec.
+        if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
+        {
+            var format = value switch
+            {
+                "HEVC" => RecordingFormat.HevcMp4,
+                "AV1" => RecordingFormat.Av1Mp4,
+                _ => RecordingFormat.H264Mp4
+            };
+            _ = _captureService.UpdateRecordingFormatAsync(format);
+        }
     }
 
     partial void OnCustomBitrateMbpsChanged(double value)
@@ -136,6 +149,16 @@ public partial class MainViewModel
                 AnalogAudioGainPercent = Math.Clamp(settings.AnalogAudioGainPercent.Value, 0.0, 100.0);
             }
 
+            if (settings.FlashbackGpuDecode.HasValue)
+            {
+                FlashbackGpuDecode = settings.FlashbackGpuDecode.Value;
+            }
+
+            if (settings.FlashbackBufferMinutes.HasValue)
+            {
+                FlashbackBufferMinutes = Math.Clamp(settings.FlashbackBufferMinutes.Value, 1, 30);
+            }
+
             // Defer device selection until RefreshDevicesAsync populates the device list
             _pendingSavedDeviceId = settings.SelectedDeviceId;
             _pendingSavedAudioDeviceId = settings.SelectedAudioInputDeviceId;
@@ -184,6 +207,8 @@ public partial class MainViewModel
                 IsStatsVisible = IsStatsVisible,
                 SelectedDeviceAudioMode = SelectedDeviceAudioMode,
                 AnalogAudioGainPercent = AnalogAudioGainPercent,
+                FlashbackGpuDecode = FlashbackGpuDecode,
+                FlashbackBufferMinutes = FlashbackBufferMinutes,
             };
 
             SettingsService.Save(settings);
@@ -278,6 +303,32 @@ public partial class MainViewModel
 
     partial void OnIsStatsVisibleChanged(bool value)
     {
+        SaveSettings();
+    }
+
+    partial void OnFlashbackBufferMinutesChanged(int value)
+    {
+        SaveSettings();
+
+        // Push into the active CaptureSettings so RestartFlashbackAsync sees the new value.
+        _captureService.UpdateFlashbackSettings(FlashbackBufferMinutes, FlashbackGpuDecode);
+
+        // Restart the flashback backend so the new duration takes effect immediately.
+        if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
+        {
+            _ = RestartFlashbackAsync();
+        }
+    }
+
+    partial void OnFlashbackGpuDecodeChanged(bool value)
+    {
+        // Push into CaptureSettings so rebuilds (e.g., after buffer-duration restart
+        // or format-change cycle) use the latest GPU decode preference.
+        _captureService.UpdateFlashbackSettings(FlashbackBufferMinutes, FlashbackGpuDecode);
+
+        var controller = _captureService.FlashbackPlaybackController;
+        if (controller != null)
+            controller.GpuDecodeEnabled = value;
         SaveSettings();
     }
 

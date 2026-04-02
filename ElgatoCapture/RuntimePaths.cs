@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
@@ -31,9 +32,9 @@ public static class RuntimePaths
             {
                 return EnsureDirectory(Path.GetFullPath(envOverride));
             }
-            catch
+            catch (Exception ex)
             {
-                /* Best-effort: env var path may be malformed or inaccessible — fall back to default */
+                Trace.TraceWarning($"RuntimePaths: env var '{LogRootEnvVar}' path resolution failed, falling back to default: {ex.Message}");
             }
         }
 
@@ -45,9 +46,9 @@ public static class RuntimePaths
             {
                 return EnsureDirectory(Path.Combine(repoRoot, "temp", "logs"));
             }
-            catch
+            catch (Exception ex)
             {
-                /* Best-effort: repo-local log dir creation may fail (permissions) — fall back to %LOCALAPPDATA% */
+                Trace.TraceWarning($"RuntimePaths: repo-local log dir creation failed, falling back to %%LOCALAPPDATA%%: {ex.Message}");
             }
         }
 
@@ -85,9 +86,9 @@ public static class RuntimePaths
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            /* Best-effort: latest-build parent resolution may fail — fall back to cwd */
+            Trace.TraceWarning($"RuntimePaths: latest-build parent resolution failed, falling back to cwd: {ex.Message}");
         }
 
         return Directory.GetCurrentDirectory();
@@ -100,9 +101,9 @@ public static class RuntimePaths
         {
             current = new DirectoryInfo(startPath);
         }
-        catch
+        catch (Exception ex)
         {
-            /* Best-effort: path may be invalid or inaccessible — treat as no repo root found */
+            Trace.TraceWarning($"RuntimePaths: path '{startPath}' is invalid or inaccessible: {ex.Message}");
             return null;
         }
 
@@ -130,9 +131,9 @@ public static class RuntimePaths
                     return current.Parent?.FullName ?? full;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                /* Best-effort: directory may be inaccessible (permissions/junction) — skip and continue walking parents */
+                Trace.TraceWarning($"RuntimePaths: directory inaccessible during repo root search, skipping: {ex.Message}");
             }
 
             current = current.Parent;
@@ -153,9 +154,9 @@ public static class RuntimePaths
             var full = Path.GetFullPath(candidate);
             paths.Add(full);
         }
-        catch
+        catch (Exception ex)
         {
-            /* Best-effort: candidate path may be malformed — skip it */
+            Trace.TraceWarning($"RuntimePaths: candidate path '{candidate}' is malformed, skipping: {ex.Message}");
         }
     }
 

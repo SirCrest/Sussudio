@@ -226,7 +226,7 @@ public sealed class AutomationSnapshot
     public bool IsAudioPreviewEnabled { get; init; }
     public bool IsCustomAudioInputEnabled { get; init; }
 
-    public string SessionState { get; init; } = "Unknown";
+    public CaptureSessionState SessionState { get; init; } = CaptureSessionState.Uninitialized;
     public string StatusText { get; init; } = string.Empty;
     public double PerformanceScore { get; init; }
     public bool PerformancePerfectionMet { get; init; }
@@ -785,7 +785,7 @@ public sealed class CaptureRuntimeSnapshot
     public string VideoRequestedSubtype { get; init; } = "unknown";
     public string VideoNegotiatedSubtype { get; init; } = "unknown";
     public string PreviewColorMetadata { get; init; } = "None";
-    public string SessionState { get; init; } = "Unknown";
+    public CaptureSessionState SessionState { get; init; } = CaptureSessionState.Uninitialized;
 
     // Thread health probes
     public bool SourceReaderReadOutstanding { get; init; }

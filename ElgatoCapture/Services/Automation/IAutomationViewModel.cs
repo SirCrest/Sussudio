@@ -86,5 +86,5 @@ public interface IAutomationViewModel
 
     VideoSourceProbeResult ProbeVideoSource();
     PreviewColorProbeResult ProbePreviewColor();
-    Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath);
+    Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default);
 }

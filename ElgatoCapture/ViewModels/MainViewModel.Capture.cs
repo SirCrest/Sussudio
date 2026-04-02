@@ -392,6 +392,8 @@ public partial class MainViewModel
                 ? SelectedFormat?.PixelFormat
                 : SelectedVideoFormat,
             ForceMjpegDecode = string.Equals(SelectedVideoFormat, "MJPG", StringComparison.OrdinalIgnoreCase),
+            FlashbackGpuDecode = FlashbackGpuDecode,
+            FlashbackBufferMinutes = FlashbackBufferMinutes,
             Format = format,
             Quality = quality,
             NvencPreset = SelectedPreset,

@@ -15,6 +15,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private readonly object _indexLock = new();
     private readonly FlashbackBufferOptions _options;
     private string? _sessionId;
+    private string? _segmentExtension;
     private string? _activeSegmentPath;
     private long _latestPtsTicks;
     private long _validStartPtsTicks;
@@ -90,6 +91,71 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     public bool EvictionPaused => Volatile.Read(ref _evictionPauseCount) > 0;
 
+    /// <summary>
+    /// Resets the latest PTS tracker to zero.  Called during sink cycling so
+    /// the new encoder's PTS (starting from 0) can advance <see cref="_latestPtsTicks"/>
+    /// naturally without being blocked by the monotonic guard.
+    /// </summary>
+    public void ResetLatestPts()
+    {
+        Interlocked.Exchange(ref _latestPtsTicks, 0);
+    }
+
+    /// <summary>
+    /// Prepares the buffer for a sink-only cycle (new encoder, same buffer).
+    /// Nulls the active segment path so the next <see cref="GetFilePath"/> generates
+    /// a fresh file instead of reusing/overwriting the previous sink's segment.
+    /// </summary>
+    public void FinalizeActiveSegmentForCycle()
+    {
+        lock (_indexLock)
+        {
+            _activeSegmentPath = null;
+            _previousActiveSegmentBytes = 0;
+        }
+    }
+
+    /// <summary>
+    /// Deletes all completed segment files and clears the index.
+    /// Called during sink cycling to prevent stale segments with overlapping PTS.
+    /// </summary>
+    public void PurgeCompletedSegments()
+    {
+        lock (_indexLock)
+        {
+            long freedBytes = 0;
+            for (int i = _completedSegments.Count - 1; i >= 0; i--)
+            {
+                if (TryDeleteFile(_completedSegments[i].Path))
+                {
+                    freedBytes += _completedSegments[i].SizeBytes;
+                    _completedSegments.RemoveAt(i);
+                }
+            }
+
+            // Also delete the active segment file (it has stale data)
+            if (_activeSegmentPath != null && TryDeleteFile(_activeSegmentPath))
+                _activeSegmentPath = null; // Force new path generation on next GetFilePath()
+
+            if (_completedSegments.Count == 0)
+            {
+                // Full purge succeeded — reset all counters
+                _completedSegmentBytes = 0;
+                Interlocked.Exchange(ref _validStartPtsTicks, 0);
+                _totalDiskBytes = 0;
+                _totalBytesWritten = 0;
+                _previousActiveSegmentBytes = 0;
+            }
+            else
+            {
+                // Partial purge — adjust byte counters for what we freed
+                _completedSegmentBytes -= freedBytes;
+                _totalDiskBytes -= freedBytes;
+                Logger.Log($"FLASHBACK_PURGE_PARTIAL freed={freedBytes} remaining_segments={_completedSegments.Count}");
+            }
+        }
+    }
+
     public long MaxDiskBytes => _options.MaxDiskBytes;
 
     /// <summary>
@@ -150,8 +216,14 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
-            _recordingEndPts = TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks));
             var newCount = Interlocked.Decrement(ref _evictionPauseCount);
+            // Only capture end PTS on the final resume (outermost pause/resume pair).
+            // With nested pauses (e.g. export during recording), an inner resume must
+            // not overwrite the end PTS — the outermost resume captures the true range.
+            if (newCount == 0)
+            {
+                _recordingEndPts = TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks));
+            }
             if (newCount < 0)
             {
                 Interlocked.CompareExchange(ref _evictionPauseCount, 0, newCount);
@@ -186,6 +258,9 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
         }
     }
+
+    /// <summary>Sets the file extension for new segments (e.g. ".ts" or ".mp4").</summary>
+    public void SetSegmentExtension(string extension) => _segmentExtension = extension;
 
     public void Initialize(string sessionId)
     {
@@ -261,7 +336,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             if (string.IsNullOrWhiteSpace(_sessionId))
                 throw new InvalidOperationException("Flashback buffer manager has not been initialized.");
 
-            var path = Path.Combine(_options.TempDirectory, $"fb_{_sessionId}_{_nextSegmentIndex:D4}.ts");
+            var ext = _segmentExtension ?? ".mp4";
+            var path = Path.Combine(_options.TempDirectory, $"fb_{_sessionId}_{_nextSegmentIndex:D4}{ext}");
             _nextSegmentIndex++;
             _activeSegmentPath = path;
             return path;
