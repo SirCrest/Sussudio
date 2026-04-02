@@ -56,7 +56,6 @@ internal sealed partial class D3D11PreviewRenderer
                         var swapChain = _swapChain;
                         if (swapChain != null && _swapChainBound)
                         {
-                            ResizeSwapChainIfNeeded(swapChain);
                             ApplyCompositionScaleTransform(swapChain);
                         }
                     }
@@ -2133,42 +2132,6 @@ internal sealed partial class D3D11PreviewRenderer
         {
             // Dispatcher may be shut down — safe to ignore during cleanup.
         }
-    }
-
-    private void ResizeSwapChainIfNeeded(IDXGISwapChain1 swapChain)
-    {
-        var newWidth = Volatile.Read(ref _panelPixelWidth);
-        var newHeight = Volatile.Read(ref _panelPixelHeight);
-
-        if (newWidth <= 0 || newHeight <= 0) return;
-        if (newWidth == _configuredOutputWidth && newHeight == _configuredOutputHeight) return;
-
-        // Release all back buffer references before ResizeBuffers
-        _outputView?.Dispose();
-        _outputView = null;
-        _swapChainRTV?.Dispose();
-        _swapChainRTV = null;
-        _swapChainBackBuffer?.Dispose();
-        _swapChainBackBuffer = null;
-
-        swapChain.ResizeBuffers(0, (uint)newWidth, (uint)newHeight, Format.Unknown, SwapChainFlags.None);
-        _configuredOutputWidth = newWidth;
-        _configuredOutputHeight = newHeight;
-
-        // Re-acquire back buffer. RecreateOutputView requires the video processor
-        // pipeline, which is created lazily on first frame. If it's not ready yet
-        // (resize before first frame), just get the back buffer and RTV.
-        if (_videoProcessorEnumerator != null)
-        {
-            RecreateOutputView();
-        }
-        else
-        {
-            _swapChainBackBuffer = swapChain.GetBuffer<ID3D11Texture2D>(0);
-            EnsureSwapChainRTV();
-        }
-
-        Logger.Log($"D3D11 preview swap chain resized to {newWidth}x{newHeight}.");
     }
 
     private void ApplyCompositionScaleTransform(IDXGISwapChain1 swapChain)
