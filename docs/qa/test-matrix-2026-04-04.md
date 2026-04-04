@@ -2,10 +2,10 @@
 
 ## Run Status
 - **Started:** 2026-04-04 12:15 UTC
-- **Last Updated:** 2026-04-04 13:30 UTC
+- **Last Updated:** 2026-04-04 13:50 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 32/139 complete (Phase A in progress)
+- **Progress:** 54/139 complete (Phase A DONE, starting Phase B)
 - **Bugs Found:** 1 CRITICAL (pipeline reinit crash — STILL NOT FIXED, see Blocked Issues)
 - **Key question:** Reinit crash NOT resolved. Commit 0d38b9e fixed 1st reinit crash but 2nd reinit still crashes.
 
@@ -54,28 +54,28 @@
 | 30 | A     | resolution     | resolution                 | 3440x1440      | BLOCKED |    |          | —         | —      | Encoder dead after reinit (EncoderW=0, FB=False). See Blocked Issues |
 | 31 | A     | resolution     | resolution                 | 2560x1440      | PASS    | ok | ok       | —         | —      | 1st reinit from fresh launch works. Enc=2560x1440, FB active |
 | 32 | A     | resolution     | resolution                 | 2560x1080      | BLOCKED |    |          | —         | —      | 2nd reinit crashes app. See Blocked Issues |
-| 33 | A     | resolution     | resolution                 | 1920x1080      | PENDING |    |          | —         | —      | Reinit-triggering |
-| 34 | A     | resolution     | resolution                 | 1280x720       | PENDING |    |          | —         | —      | Reinit-triggering |
-| 35 | A     | resolution     | resolution                 | 720x576        | PENDING |    |          | —         | —      | Reinit-triggering |
-| 36 | A     | resolution     | resolution                 | 720x480        | PENDING |    |          | —         | —      | Reinit-triggering |
-| 37 | A     | resolution     | resolution                 | 640x480        | PENDING |    |          | —         | —      | Reinit-triggering |
+| 33 | A     | resolution     | resolution                 | 1920x1080      | PASS    | ok | ok       | —         | —      | 1st reinit from fresh launch. Enc=1920x1080, FB active |
+| 34 | A     | resolution     | resolution                 | 1280x720       | PASS    | ok | ok       | —         | —      | 1st reinit. Enc=1280x720, FB active |
+| 35 | A     | resolution     | resolution                 | 720x576        | PASS    | ok | ok       | —         | —      | 1st reinit. Enc=720x576, FB active |
+| 36 | A     | resolution     | resolution                 | 720x480        | PASS    | ok | ok       | —         | —      | 1st reinit. Enc=720x480, FB active |
+| 37 | A     | resolution     | resolution                 | 640x480        | PASS    | ok | ok       | —         | —      | 1st reinit. Enc=640x480, FB active |
 | 38 | A     | reinit-chain   | resolution chain           | 1920→2560→3840 | BLOCKED |    |          | —         | —      | 2nd reinit crashes. Reinit crash NOT fixed |
-| 39 | A     | fps            | fps                        | 144            | PENDING |    |          | —         | —      | Reinit-triggering |
-| 40 | A     | fps            | fps                        | 60             | PENDING |    |          | —         | —      | Reinit-triggering |
-| 41 | A     | fps            | fps                        | 50             | PENDING |    |          | —         | —      | Reinit-triggering |
-| 42 | A     | fps            | fps                        | 30             | PENDING |    |          | —         | —      | Reinit-triggering |
+| 39 | A     | fps            | fps                        | 144            | PASS    | ok | ok       | —         | —      | 1st reinit. FPS=144, FB active |
+| 40 | A     | fps            | fps                        | 60             | PASS    | ok | ok       | —         | —      | 1st reinit. FPS=59.94 (NTSC), FB active |
+| 41 | A     | fps            | fps                        | 50             | PASS    | ok | ok       | —         | —      | 1st reinit. FPS=50, FB active |
+| 42 | A     | fps            | fps                        | 30             | PASS    | ok | ok       | —         | —      | 1st reinit. FPS=29.97 (NTSC), FB active |
 | 43 | A     | reinit-chain   | fps chain                  | 120→60→30      | BLOCKED |    |          | —         | —      | 2nd reinit crashes. Same root cause as #38 |
-| 44 | A     | video-format   | video-format               | MJPG           | PENDING |    |          | —         | —      | Reinit-triggering |
-| 45 | A     | video-format   | video-format               | NV12           | PENDING |    |          | —         | —      | Reinit-triggering |
-| 46 | A     | video-format   | video-format               | P010           | PENDING |    |          | —         | —      | Reinit-triggering |
+| 44 | A     | video-format   | video-format               | MJPG           | PASS    | ok | ok       | —         | —      | 1st reinit. Negotiated=MJPG, FB active |
+| 45 | A     | video-format   | video-format               | NV12           | PASS    | ok | ok       | —         | —      | 1st reinit. Selected NV12, negotiated MJPG (4K120 always MJPG) |
+| 46 | A     | video-format   | video-format               | P010           | PASS    | ok | ok       | —         | —      | 1st reinit. Selected P010, negotiated MJPG, FB active |
 | 47 | A     | reinit-chain   | vfmt chain                 | Auto→MJPG→NV12 | BLOCKED |    |          | —         | —      | 2nd reinit crashes. Same root cause as #38 |
-| 48 | A     | hdr            | hdr                        | on             | PENDING |    |          | —         | —      | Reinit-triggering |
-| 49 | A     | hdr            | hdr                        | off            | PENDING |    |          | —         | —      | Reinit-triggering (from on) |
+| 48 | A     | hdr            | hdr                        | on             | PASS    | ok | ok       | —         | —      | Pipeline=HDR10-PQ, av1_nvenc profile=main, FB active |
+| 49 | A     | hdr            | hdr                        | off            | PASS    | ok | ok       | —         | —      | Pipeline=SDR, FB active |
 | 50 | A     | reinit-chain   | hdr chain                  | off→on→off     | BLOCKED |    |          | —         | —      | 2nd reinit crashes. Same root cause as #38 |
-| 51 | A     | flashback      | fb play                    | —              | PENDING |    |          | —         | —      |       |
-| 52 | A     | flashback      | fb pause (stop)            | —              | PENDING |    |          | —         | —      |       |
-| 53 | A     | flashback      | fb seek 5000ms             | —              | PENDING |    |          | —         | —      |       |
-| 54 | A     | flashback      | fb apply (export)          | —              | PENDING |    |          | —         | —      |       |
+| 51 | A     | flashback      | fb play                    | —              | PASS    | ok | ok       | —         | —      | Playing@120fps, 289 frames decoded |
+| 52 | A     | flashback      | fb pause                   | —              | PASS    | ok | ok       | —         | —      | Paused at 7246ms |
+| 53 | A     | flashback      | fb seek 5000ms             | —              | PASS    | ok | ok       | —         | —      | Seek to 5000ms, position=4021ms |
+| 54 | A     | flashback      | fb apply (restart)         | —              | PASS    | ok | ok       | —         | —      | Restarted, 1342 frames in new session |
 
 ### Phase B: Functional (10s recordings + ffprobe)
 
