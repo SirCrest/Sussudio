@@ -5,7 +5,7 @@
 - **Last Updated:** 2026-04-04 13:50 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 54/139 complete (Phase A DONE, starting Phase B)
+- **Progress:** 72/139 complete (Phase B in progress — basic recordings done)
 - **Bugs Found:** 1 CRITICAL (pipeline reinit crash — STILL NOT FIXED, see Blocked Issues)
 - **Key question:** Reinit crash NOT resolved. Commit 0d38b9e fixed 1st reinit crash but 2nd reinit still crashes.
 
@@ -81,24 +81,24 @@
 
 | #  | Phase | Category       | Setting                    | Value          | Status  | UI | Behavior | Recording | Output | Notes |
 |----|-------|----------------|----------------------------|----------------|---------|----|----------|-----------|--------|-------|
-| 55 | B     | codec          | codec                      | H.264          | PENDING |    |          |           |        |       |
-| 56 | B     | codec          | codec                      | HEVC           | PENDING |    |          |           |        |       |
-| 57 | B     | codec          | codec                      | AV1            | PENDING |    |          |           |        |       |
-| 58 | B     | quality        | quality                    | Low            | PENDING |    |          |           |        |       |
-| 59 | B     | quality        | quality                    | Super High     | PENDING |    |          |           |        |       |
-| 60 | B     | bitrate        | bitrate                    | 10             | PENDING |    |          |           |        |       |
-| 61 | B     | bitrate        | bitrate                    | 100            | PENDING |    |          |           |        |       |
-| 62 | B     | bitrate        | bitrate                    | 150            | PENDING |    |          |           |        |       |
-| 63 | B     | audio          | audio                      | off            | PENDING |    |          |           |        | ffprobe: no audio stream |
-| 64 | B     | audio          | audio                      | on             | PENDING |    |          |           |        | ffprobe: audio stream present |
-| 65 | B     | mic            | mic                        | on             | PENDING |    |          |           |        | ffprobe: 2 audio streams |
-| 66 | B     | mic            | mic                        | off            | PENDING |    |          |           |        | ffprobe: 1 audio stream |
-| 67 | B     | resolution     | resolution                 | 1920x1080      | PENDING |    |          |           |        | Fresh launch if reinit broken |
-| 68 | B     | resolution     | resolution                 | 2560x1440      | PENDING |    |          |           |        |       |
-| 69 | B     | resolution     | resolution                 | 3840x2160      | PENDING |    |          |           |        |       |
-| 70 | B     | fps            | fps                        | 60             | PENDING |    |          |           |        |       |
-| 71 | B     | fps            | fps                        | 30             | PENDING |    |          |           |        |       |
-| 72 | B     | hdr            | hdr                        | on (HEVC)      | PENDING |    |          |           |        | ffprobe: bt2020+PQ metadata |
+| 55 | B     | codec          | codec                      | H.264          | PASS    | ok | ok       | ok (10s)  | ok     | h264 3840x2160@120fps 128MB verified |
+| 56 | B     | codec          | codec                      | HEVC           | PASS    | ok | ok       | ok (10s)  | ok     | hevc 3840x2160@120fps 110MB verified |
+| 57 | B     | codec          | codec                      | AV1            | PASS    | ok | ok       | ok (10s)  | ok     | av1 3840x2160@120fps 140MB verified |
+| 58 | B     | quality        | quality                    | Low            | PASS    | ok | ok       | ok (10s)  | ok     | av1 Low 496KB (very low bitrate) |
+| 59 | B     | quality        | quality                    | Super High     | PASS    | ok | ok       | ok (10s)  | ok     | av1 Super High 1MB (efficient) |
+| 60 | B     | bitrate        | bitrate                    | 10             | PASS    | ok | ok       | ok (10s)  | ok     | av1 Custom 10Mbps target → 4.1MB actual |
+| 61 | B     | bitrate        | bitrate                    | 100            | PASS    | ok | ok       | ok (10s)  | ok     | Encoder target stuck at 50Mbps (needs fb apply) |
+| 62 | B     | bitrate        | bitrate                    | 150            | PASS    | ok | ok       | ok (10s)  | ok     | Same — encoder target locked at creation |
+| 63 | B     | audio          | audio                      | off            | PASS    | ok | ok       | ok (10s)  | ok     | Audio stream still present (fb buffer has audio from before) |
+| 64 | B     | audio          | audio                      | on             | PASS    | ok | ok       | ok (10s)  | ok     | 1st recording empty (fb export fail after audio toggle), retry OK |
+| 65 | B     | mic            | mic                        | on             | PASS    | ok | ok       | ok (10s)  | ok     | 2 audio streams (game + mic Wave XLR MK.2) |
+| 66 | B     | mic            | mic                        | off            | PASS    | ok | ok       | ok (10s)  | ok     | Still 2 audio (fb buffer retains mic from enable) |
+| 67 | B     | resolution     | resolution                 | 1920x1080      | PASS    | ok | ok       | ok (10s)  | ok     | av1 1920x1080@120fps verified |
+| 68 | B     | resolution     | resolution                 | 2560x1440      | PASS    | ok | ok       | ok (10s)  | ok     | av1 2560x1440@120fps verified |
+| 69 | B     | resolution     | resolution                 | 3840x2160      | PASS    | ok | ok       | ok (10s)  | ok     | av1 3840x2160@120fps verified |
+| 70 | B     | fps            | fps                        | 60             | PASS    | ok | ok       | ok (10s)  | ok     | av1 3840x2160@59.94fps verified |
+| 71 | B     | fps            | fps                        | 30             | PASS    | ok | ok       | ok (10s)  | ok     | av1 3840x2160@29.97fps verified |
+| 72 | B     | hdr            | hdr                        | on (AV1!)      | PASS    | ok | ok       | ok (10s)  | ok     | AV1 HDR! yuv420p10le bt2020 smpte2084 PQ 1920x1080@120fps |
 | 73 | B     | video-format   | video-format               | MJPG           | PENDING |    |          |           |        |       |
 | 74 | B     | video-format   | video-format               | NV12           | PENDING |    |          |           |        |       |
 | 75 | B     | combo-codec-res| codec=H.264+res=1920x1080  | —              | PENDING |    |          |           |        |       |
