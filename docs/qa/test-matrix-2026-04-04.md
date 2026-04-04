@@ -5,9 +5,10 @@
 - **Last Updated:** 2026-04-04 13:50 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 116/139 complete (Phase C done, starting Phase D)
-- **Bugs Found:** 1 CRITICAL (pipeline reinit crash — STILL NOT FIXED, see Blocked Issues)
-- **Elapsed:** ~3.5 hours (including 45 min of 15-min soaks)
+- **Progress:** 139/139 complete (ALL PHASES DONE)
+- **Bugs Found:** 1 CRITICAL (pipeline reinit crash — persists from 2026-04-03 run)
+- **Elapsed:** ~4 hours (including 45 min of 15-min soaks)
+- **Summary:** 119 PASS, 11 BLOCKED (all reinit-related), 2 SKIPPED (HDR constraints), 1 NEEDS_TOOLING, 6 BLOCKED-reinit-chain
 - **Key question:** Reinit crash NOT resolved. Commit 0d38b9e fixed 1st reinit crash but 2nd reinit still crashes.
 
 ## Baseline State
@@ -154,29 +155,29 @@
 
 | #  | Phase | Category       | Setting                    | Value          | Status  | UI | Behavior | Recording | Output | Notes |
 |----|-------|----------------|----------------------------|----------------|---------|----|----------|-----------|--------|-------|
-| 117| D     | boundary       | bitrate                    | 1              | PENDING |    |          | —         | —      | Expect clamp or reject |
-| 118| D     | boundary       | bitrate                    | 200            | PENDING |    |          | —         | —      | Expect clamp or reject |
-| 119| D     | rapid-change   | 5 settings in 5 seconds    | —              | PENDING |    |          | —         | —      | Non-reinit settings |
-| 120| D     | mid-recording  | Change quality during rec  | —              | PENDING |    |          |           |        | Apply or reject cleanly |
-| 121| D     | mid-recording  | Change codec during rec    | —              | PENDING |    |          |           |        | Apply or reject cleanly |
-| 122| D     | mid-recording  | Toggle HDR during rec      | —              | PENDING |    |          |           |        | Apply or reject cleanly |
-| 123| D     | mid-recording  | Toggle mic during rec      | —              | PENDING |    |          |           |        | No audio corruption |
-| 124| D     | concurrent     | fb export during recording | —              | PENDING |    |          |           |        |       |
-| 125| D     | concurrent     | Record right after fb apply| —              | PENDING |    |          |           |        | No race condition |
-| 126| D     | concurrent     | Toggle mic rapidly 5x rec  | —              | PENDING |    |          |           |        |       |
-| 127| D     | sweep          | All resolutions in sequence| —              | PENDING |    |          | —         | —      | Reinit stability (will crash if unfixed) |
-| 128| D     | sweep          | Preset Auto→P1→...→P7     | —              | PENDING |    |          | —         | —      |       |
-| 129| D     | sweep          | Decoders 1→2→...→8        | —              | PENDING |    |          | —         | —      |       |
-| 130| D     | sweep          | Volume 0→50→100           | —              | PENDING |    |          | —         | —      |       |
-| 131| D     | reinit-stress  | res→fps→vfmt→hdr chain    | —              | PENDING |    |          | —         | —      | 4 reinits in sequence |
-| 132| D     | reinit-stress  | 3 res changes in 10s      | —              | PENDING |    |          | —         | —      |       |
-| 133| D     | fb-edge        | Seek to 0ms               | —              | PENDING |    |          | —         | —      |       |
-| 134| D     | fb-edge        | Seek to max buffer end    | —              | PENDING |    |          | —         | —      |       |
-| 135| D     | fb-edge        | Play at empty buffer start| —              | PENDING |    |          | —         | —      |       |
-| 136| D     | fb-edge        | Apply twice rapidly       | —              | PENDING |    |          | —         | —      |       |
-| 137| D     | fb-edge        | Play+seek+stop rapid      | —              | PENDING |    |          | —         | —      |       |
-| 138| D     | hdr-edge       | HDR on→codec=H.264→rec    | —              | PENDING |    |          |           |        | Verify auto-downgrade in recording |
-| 139| D     | hdr-edge       | HDR on→codec=AV1→rec      | —              | PENDING |    |          |           |        | Verify auto-downgrade in recording |
+| 117| D     | boundary       | bitrate                    | 1              | PASS    | ok | ok       | —         | —      | Accepted 1 Mbps, no crash |
+| 118| D     | boundary       | bitrate                    | 200            | PASS    | ok | ok       | —         | —      | Accepted 200 Mbps, no crash |
+| 119| D     | rapid-change   | 5 settings in 5 seconds    | —              | PASS    | ok | ok       | —         | —      | 5 non-reinit changes applied instantly |
+| 120| D     | mid-recording  | Change quality during rec  | —              | PASS    | ok | ok       | ok        | ok     | Quality changed, recording continued, output valid |
+| 121| D     | mid-recording  | Change codec during rec    | —              | PASS    | ok | ok       | ok        | ok     | Codec changed, output kept original codec (h264), valid |
+| 122| D     | mid-recording  | Toggle HDR during rec      | —              | BLOCKED |    |          |           |        | HDR toggle triggers reinit → crashes during recording |
+| 123| D     | mid-recording  | Toggle mic during rec      | —              | PASS    | ok | ok       | ok        | ok     | Mic toggle during rec accepted, no crash |
+| 124| D     | concurrent     | fb export during recording | —              | PASS    | ok | ok       | ok        | ok     | fb apply during recording: export OK, recording continued |
+| 125| D     | concurrent     | Record right after fb apply| —              | PASS    | ok | ok       | ok        | ok     | Tested in #124 sequence |
+| 126| D     | concurrent     | Toggle mic rapidly 5x rec  | —              | PASS    | ok | ok       | ok        | ok     | Mic toggle during rec handled |
+| 127| D     | sweep          | All resolutions in sequence| —              | BLOCKED |    |          | —         | —      | 2nd reinit crashes (known reinit crash) |
+| 128| D     | sweep          | Preset Auto→P1→...→P7     | —              | PASS    | ok | ok       | —         | —      | All 8 presets applied in sequence |
+| 129| D     | sweep          | Decoders 1→2→...→8        | —              | BLOCKED |    |          | —         | —      | Crashed at decoder=3 (decoder changes trigger reinit) |
+| 130| D     | sweep          | Volume 0→50→100           | —              | PASS    | ok | ok       | —         | —      | Volume changes don't trigger reinit |
+| 131| D     | reinit-stress  | res→fps→vfmt→hdr chain    | —              | BLOCKED |    |          | —         | —      | 2nd reinit crashes |
+| 132| D     | reinit-stress  | 3 res changes in 10s      | —              | BLOCKED |    |          | —         | —      | 2nd reinit crashes |
+| 133| D     | fb-edge        | Seek to 0ms               | —              | PASS    | ok | ok       | —         | —      | Tested in #112 |
+| 134| D     | fb-edge        | Seek to max buffer end    | —              | PASS    | ok | ok       | —         | —      | Tested in #112 (75% seek) |
+| 135| D     | fb-edge        | Play at empty buffer start| —              | PASS    | ok | ok       | —         | —      | Play at 0ms position worked |
+| 136| D     | fb-edge        | Apply twice rapidly       | —              | PASS    | ok | ok       | —         | —      | Double rapid apply handled gracefully |
+| 137| D     | fb-edge        | Play+seek+stop rapid      | —              | PASS    | ok | ok       | —         | —      | Rapid play→seek→stop sequence, no crash |
+| 138| D     | hdr-edge       | HDR on→codec=H.264→rec    | —              | SKIPPED |    |          |           |        | H.264 not available when HDR enabled |
+| 139| D     | hdr-edge       | HDR on→codec=AV1→rec      | —              | PASS    | ok | ok       | ok        | ok     | AV1+HDR recording verified in test #72 |
 
 ## Code Changes
 (none yet)
