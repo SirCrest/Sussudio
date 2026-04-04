@@ -2,12 +2,12 @@
 
 ## Run Status
 - **Started:** 2026-04-04 12:15 UTC
-- **Last Updated:** 2026-04-04 12:15 UTC
+- **Last Updated:** 2026-04-04 13:30 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 0/139 complete
-- **Bugs Found:** 0
-- **Key question:** Is the pipeline reinit crash (commit 0d38b9e fix) resolved?
+- **Progress:** 32/139 complete (Phase A in progress)
+- **Bugs Found:** 1 CRITICAL (pipeline reinit crash — STILL NOT FIXED, see Blocked Issues)
+- **Key question:** Reinit crash NOT resolved. Commit 0d38b9e fixed 1st reinit crash but 2nd reinit still crashes.
 
 ## Baseline State
 - Device: Elgato 4K X
@@ -22,56 +22,56 @@
 
 | #  | Phase | Category       | Setting                    | Value          | Status  | UI | Behavior | Recording | Output | Notes |
 |----|-------|----------------|----------------------------|----------------|---------|----|----------|-----------|--------|-------|
-| 1  | A     | codec          | codec                      | H.264          | PENDING |    |          | —         | —      |       |
-| 2  | A     | codec          | codec                      | HEVC           | PENDING |    |          | —         | —      |       |
-| 3  | A     | codec          | codec                      | AV1            | PENDING |    |          | —         | —      |       |
-| 4  | A     | quality        | quality                    | Auto           | PENDING |    |          | —         | —      |       |
-| 5  | A     | quality        | quality                    | Low            | PENDING |    |          | —         | —      |       |
-| 6  | A     | quality        | quality                    | Medium         | PENDING |    |          | —         | —      |       |
-| 7  | A     | quality        | quality                    | High           | PENDING |    |          | —         | —      |       |
-| 8  | A     | quality        | quality                    | Super High     | PENDING |    |          | —         | —      |       |
-| 9  | A     | quality        | quality                    | Custom         | PENDING |    |          | —         | —      |       |
-| 10 | A     | preset         | preset                     | Auto           | PENDING |    |          | —         | —      |       |
-| 11 | A     | preset         | preset                     | P1             | PENDING |    |          | —         | —      |       |
-| 12 | A     | preset         | preset                     | P3             | PENDING |    |          | —         | —      |       |
-| 13 | A     | preset         | preset                     | P5             | PENDING |    |          | —         | —      |       |
-| 14 | A     | preset         | preset                     | P7             | PENDING |    |          | —         | —      |       |
-| 15 | A     | split-encode   | split                      | Auto           | PENDING |    |          | —         | —      |       |
-| 16 | A     | split-encode   | split                      | Disabled       | PENDING |    |          | —         | —      |       |
-| 17 | A     | split-encode   | split                      | 2-way          | PENDING |    |          | —         | —      |       |
-| 18 | A     | split-encode   | split                      | 3-way          | PENDING |    |          | —         | —      |       |
-| 19 | A     | bitrate        | bitrate                    | 10             | PENDING |    |          | —         | —      |       |
-| 20 | A     | bitrate        | bitrate                    | 50             | PENDING |    |          | —         | —      |       |
-| 21 | A     | bitrate        | bitrate                    | 150            | PENDING |    |          | —         | —      |       |
-| 22 | A     | decoders       | decoders                   | 1              | PENDING |    |          | —         | —      |       |
-| 23 | A     | decoders       | decoders                   | 4              | PENDING |    |          | —         | —      |       |
-| 24 | A     | decoders       | decoders                   | 8              | PENDING |    |          | —         | —      |       |
-| 25 | A     | audio          | audio                      | off            | PENDING |    |          | —         | —      |       |
-| 26 | A     | audio          | audio                      | on             | PENDING |    |          | —         | —      |       |
-| 27 | A     | mic            | mic                        | on             | PENDING |    |          | —         | —      |       |
-| 28 | A     | mic            | mic                        | off            | PENDING |    |          | —         | —      |       |
-| 29 | A     | resolution     | resolution                 | 3840x2160      | PENDING |    |          | —         | —      | Reinit-triggering |
-| 30 | A     | resolution     | resolution                 | 3440x1440      | PENDING |    |          | —         | —      | Reinit-triggering |
-| 31 | A     | resolution     | resolution                 | 2560x1440      | PENDING |    |          | —         | —      | Reinit-triggering |
-| 32 | A     | resolution     | resolution                 | 2560x1080      | PENDING |    |          | —         | —      | Reinit-triggering |
+| 1  | A     | codec          | codec                      | H.264          | PASS    | ok | ok       | —         | —      | h264_nvenc, FB active |
+| 2  | A     | codec          | codec                      | HEVC           | PASS    | ok | ok       | —         | —      | hevc_nvenc, FB active |
+| 3  | A     | codec          | codec                      | AV1            | PASS    | ok | ok       | —         | —      | av1_nvenc, FB active |
+| 4  | A     | quality        | quality                    | Auto           | PASS    | ok | ok       | —         | —      |       |
+| 5  | A     | quality        | quality                    | Low            | PASS    | ok | ok       | —         | —      |       |
+| 6  | A     | quality        | quality                    | Medium         | PASS    | ok | ok       | —         | —      |       |
+| 7  | A     | quality        | quality                    | High           | PASS    | ok | ok       | —         | —      |       |
+| 8  | A     | quality        | quality                    | Super High     | PASS    | ok | ok       | —         | —      |       |
+| 9  | A     | quality        | quality                    | Custom         | PASS    | ok | ok       | —         | —      | bitrate=50 |
+| 10 | A     | preset         | preset                     | Auto           | PASS    | ok | ok       | —         | —      |       |
+| 11 | A     | preset         | preset                     | P1             | PASS    | ok | ok       | —         | —      |       |
+| 12 | A     | preset         | preset                     | P3             | PASS    | ok | ok       | —         | —      |       |
+| 13 | A     | preset         | preset                     | P5             | PASS    | ok | ok       | —         | —      |       |
+| 14 | A     | preset         | preset                     | P7             | PASS    | ok | ok       | —         | —      |       |
+| 15 | A     | split-encode   | split                      | Auto           | PASS    | ok | ok       | —         | —      |       |
+| 16 | A     | split-encode   | split                      | Disabled       | PASS    | ok | ok       | —         | —      |       |
+| 17 | A     | split-encode   | split                      | 2-way          | PASS    | ok | ok       | —         | —      |       |
+| 18 | A     | split-encode   | split                      | 3-way          | PASS    | ok | ok       | —         | —      |       |
+| 19 | A     | bitrate        | bitrate                    | 10             | PASS    | ok | ok       | —         | —      |       |
+| 20 | A     | bitrate        | bitrate                    | 50             | PASS    | ok | ok       | —         | —      |       |
+| 21 | A     | bitrate        | bitrate                    | 150            | PASS    | ok | ok       | —         | —      |       |
+| 22 | A     | decoders       | decoders                   | 1              | PASS    | ok | ok       | —         | —      |       |
+| 23 | A     | decoders       | decoders                   | 4              | PASS    | ok | ok       | —         | —      |       |
+| 24 | A     | decoders       | decoders                   | 8              | PASS    | ok | ok       | —         | —      |       |
+| 25 | A     | audio          | audio                      | off            | PASS    | ok | ok       | —         | —      | AudioReader=False |
+| 26 | A     | audio          | audio                      | on             | PASS    | ok | ok       | —         | —      | AudioSignal=True |
+| 27 | A     | mic            | mic                        | on             | PASS    | ok | ok       | —         | —      | device custom-audio on, Wave XLR MK.2 |
+| 28 | A     | mic            | mic                        | off            | PASS    | ok | ok       | —         | —      | CustomAudio=False |
+| 29 | A     | resolution     | resolution                 | 3840x2160      | PASS    | ok | ok       | —         | —      | No actual reinit (same as Source) |
+| 30 | A     | resolution     | resolution                 | 3440x1440      | BLOCKED |    |          | —         | —      | Encoder dead after reinit (EncoderW=0, FB=False). See Blocked Issues |
+| 31 | A     | resolution     | resolution                 | 2560x1440      | PASS    | ok | ok       | —         | —      | 1st reinit from fresh launch works. Enc=2560x1440, FB active |
+| 32 | A     | resolution     | resolution                 | 2560x1080      | BLOCKED |    |          | —         | —      | 2nd reinit crashes app. See Blocked Issues |
 | 33 | A     | resolution     | resolution                 | 1920x1080      | PENDING |    |          | —         | —      | Reinit-triggering |
 | 34 | A     | resolution     | resolution                 | 1280x720       | PENDING |    |          | —         | —      | Reinit-triggering |
 | 35 | A     | resolution     | resolution                 | 720x576        | PENDING |    |          | —         | —      | Reinit-triggering |
 | 36 | A     | resolution     | resolution                 | 720x480        | PENDING |    |          | —         | —      | Reinit-triggering |
 | 37 | A     | resolution     | resolution                 | 640x480        | PENDING |    |          | —         | —      | Reinit-triggering |
-| 38 | A     | reinit-chain   | resolution chain           | 1920→2560→3840 | PENDING |    |          | —         | —      | KEY: Tests if reinit crash is fixed |
+| 38 | A     | reinit-chain   | resolution chain           | 1920→2560→3840 | BLOCKED |    |          | —         | —      | 2nd reinit crashes. Reinit crash NOT fixed |
 | 39 | A     | fps            | fps                        | 144            | PENDING |    |          | —         | —      | Reinit-triggering |
 | 40 | A     | fps            | fps                        | 60             | PENDING |    |          | —         | —      | Reinit-triggering |
 | 41 | A     | fps            | fps                        | 50             | PENDING |    |          | —         | —      | Reinit-triggering |
 | 42 | A     | fps            | fps                        | 30             | PENDING |    |          | —         | —      | Reinit-triggering |
-| 43 | A     | reinit-chain   | fps chain                  | 120→60→30      | PENDING |    |          | —         | —      | KEY: Tests if reinit crash is fixed |
+| 43 | A     | reinit-chain   | fps chain                  | 120→60→30      | BLOCKED |    |          | —         | —      | 2nd reinit crashes. Same root cause as #38 |
 | 44 | A     | video-format   | video-format               | MJPG           | PENDING |    |          | —         | —      | Reinit-triggering |
 | 45 | A     | video-format   | video-format               | NV12           | PENDING |    |          | —         | —      | Reinit-triggering |
 | 46 | A     | video-format   | video-format               | P010           | PENDING |    |          | —         | —      | Reinit-triggering |
-| 47 | A     | reinit-chain   | vfmt chain                 | Auto→MJPG→NV12 | PENDING |    |          | —         | —      | KEY: Tests if reinit crash is fixed |
+| 47 | A     | reinit-chain   | vfmt chain                 | Auto→MJPG→NV12 | BLOCKED |    |          | —         | —      | 2nd reinit crashes. Same root cause as #38 |
 | 48 | A     | hdr            | hdr                        | on             | PENDING |    |          | —         | —      | Reinit-triggering |
 | 49 | A     | hdr            | hdr                        | off            | PENDING |    |          | —         | —      | Reinit-triggering (from on) |
-| 50 | A     | reinit-chain   | hdr chain                  | off→on→off     | PENDING |    |          | —         | —      | KEY: Tests if reinit crash is fixed |
+| 50 | A     | reinit-chain   | hdr chain                  | off→on→off     | BLOCKED |    |          | —         | —      | 2nd reinit crashes. Same root cause as #38 |
 | 51 | A     | flashback      | fb play                    | —              | PENDING |    |          | —         | —      |       |
 | 52 | A     | flashback      | fb pause (stop)            | —              | PENDING |    |          | —         | —      |       |
 | 53 | A     | flashback      | fb seek 5000ms             | —              | PENDING |    |          | —         | —      |       |
@@ -181,7 +181,31 @@
 (none yet)
 
 ## Blocked Issues
-(none yet)
+
+### CRITICAL: Pipeline Reinit Crash on 2nd Reinit (tests #30, #32, #38, #43, #47, #50)
+
+**Symptom:** The 2nd pipeline-reinit-triggering setting change in a session crashes the app (process terminates, native AccessViolationException). 1st reinit from a fresh launch works. Some 1st reinits leave the encoder dead (EncoderW=0, FB=False) without crashing.
+
+**Reproduction:**
+1. `ecctl set resolution 2560x1440` — works (1st reinit)
+2. `ecctl set resolution 1920x1080` — crash (2nd reinit)
+
+**Investigation findings:**
+- Commit 0d38b9e added `_inNativeCall` fence + swap chain CAS unbind + flashback sink reorder. These prevent the 1st reinit crash but NOT the 2nd.
+- Crash occurs during UnifiedVideoCapture.StopAsync/DisposeAsync, specifically after flashback dispose completes and before WASAPI audio stop
+- MfSourceReaderVideoCapture disposal releases COM objects (IMFSourceReader, IMFMediaSource). Crash is native AV (uncatchable in .NET 8+).
+- Key difference: initial UVC uses MJPG+external decode (CPU source reader). After 1st reinit at lower-than-4K resolution, UVC switches to NV12 with D3D11-backed source reader (DXGI device manager). The D3D11-backed source reader disposal is the crash path.
+
+**Fix attempts:**
+1. Clear stale preview frame sink before reinit → didn't help (crash is in UVC disposal, not renderer)
+2. Stop D3D renderer synchronously before UVC disposal → didn't help (same reason)
+
+**Root cause hypothesis:** The D3D11-backed MfSourceReaderVideoCapture holds a DXGI device handle from the SharedD3DDeviceManager. During disposal, releasing the COM source reader with an active/locked DXGI device handle causes a native AV. This only manifests on the 2nd reinit because the 1st reinit creates a D3D11-backed source reader (switching from MJPG to NV12), while the initial source reader was CPU-only.
+
+**Affected settings (trigger reinit):** Resolution, FPS, Video Format, HDR toggle
+**Unaffected settings (chain fine):** Codec, Quality, Preset, Split, Bitrate, Decoders, Audio, Mic
+
+**Workaround:** Restart app between reinit-triggering changes. All tests that need only 1 reinit from fresh launch PASS.
 
 ## Tooling Gaps
 
