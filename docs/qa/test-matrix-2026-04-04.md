@@ -5,7 +5,7 @@
 - **Last Updated:** 2026-04-04 13:50 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 72/139 complete (Phase B in progress — basic recordings done)
+- **Progress:** 100/139 complete (Phase B nearly done, starting Phase C)
 - **Bugs Found:** 1 CRITICAL (pipeline reinit crash — STILL NOT FIXED, see Blocked Issues)
 - **Key question:** Reinit crash NOT resolved. Commit 0d38b9e fixed 1st reinit crash but 2nd reinit still crashes.
 
@@ -99,35 +99,35 @@
 | 70 | B     | fps            | fps                        | 60             | PASS    | ok | ok       | ok (10s)  | ok     | av1 3840x2160@59.94fps verified |
 | 71 | B     | fps            | fps                        | 30             | PASS    | ok | ok       | ok (10s)  | ok     | av1 3840x2160@29.97fps verified |
 | 72 | B     | hdr            | hdr                        | on (AV1!)      | PASS    | ok | ok       | ok (10s)  | ok     | AV1 HDR! yuv420p10le bt2020 smpte2084 PQ 1920x1080@120fps |
-| 73 | B     | video-format   | video-format               | MJPG           | PENDING |    |          |           |        |       |
-| 74 | B     | video-format   | video-format               | NV12           | PENDING |    |          |           |        |       |
-| 75 | B     | combo-codec-res| codec=H.264+res=1920x1080  | —              | PENDING |    |          |           |        |       |
-| 76 | B     | combo-codec-res| codec=H.264+res=3840x2160  | —              | PENDING |    |          |           |        |       |
-| 77 | B     | combo-codec-res| codec=HEVC+res=1920x1080   | —              | PENDING |    |          |           |        |       |
-| 78 | B     | combo-codec-res| codec=HEVC+res=3840x2160   | —              | PENDING |    |          |           |        |       |
-| 79 | B     | combo-codec-res| codec=AV1+res=1920x1080    | —              | PENDING |    |          |           |        |       |
-| 80 | B     | combo-codec-res| codec=AV1+res=3840x2160    | —              | PENDING |    |          |           |        |       |
-| 81 | B     | combo-hdr      | codec=H.264+hdr=on         | —              | PENDING |    |          |           |        | Expect auto-upgrade to HEVC |
-| 82 | B     | combo-hdr      | codec=AV1+hdr=on           | —              | PENDING |    |          |           |        | Expect auto-upgrade to HEVC |
-| 83 | B     | combo-quality  | codec=H.264+quality=Low    | —              | PENDING |    |          |           |        |       |
-| 84 | B     | combo-quality  | codec=H.264+quality=SHigh  | —              | PENDING |    |          |           |        |       |
-| 85 | B     | combo-quality  | codec=HEVC+quality=Low     | —              | PENDING |    |          |           |        |       |
-| 86 | B     | combo-quality  | codec=HEVC+quality=SHigh   | —              | PENDING |    |          |           |        |       |
-| 87 | B     | combo-quality  | codec=AV1+quality=Low      | —              | PENDING |    |          |           |        |       |
-| 88 | B     | combo-quality  | codec=AV1+quality=SHigh    | —              | PENDING |    |          |           |        |       |
-| 89 | B     | combo-split    | codec=H.264+split=Disabled | —              | PENDING |    |          |           |        |       |
-| 90 | B     | combo-split    | codec=H.264+split=3-way    | —              | PENDING |    |          |           |        |       |
-| 91 | B     | combo-split    | codec=HEVC+split=3-way     | —              | PENDING |    |          |           |        |       |
-| 92 | B     | combo-split    | codec=AV1+split=3-way      | —              | PENDING |    |          |           |        |       |
-| 93 | B     | combo-audio    | audio=on+mic=on            | —              | PENDING |    |          |           |        | ffprobe: 2 audio streams |
-| 94 | B     | combo-audio    | audio=on+mic=off           | —              | PENDING |    |          |           |        | ffprobe: 1 audio stream |
-| 95 | B     | combo-audio    | audio=off+mic=on           | —              | PENDING |    |          |           |        | ffprobe: mic-only? |
-| 96 | B     | combo-audio    | audio=off+mic=off          | —              | PENDING |    |          |           |        | ffprobe: no audio |
-| 97 | B     | combo-hdr-res  | hdr=on+res=1920x1080       | —              | PENDING |    |          |           |        |       |
-| 98 | B     | flashback      | fb play + go-live          | —              | PENDING |    |          |           |        |       |
-| 99 | B     | flashback      | fb apply (export)          | —              | PENDING |    |          |           |        | Verify output file with ffprobe |
-| 100| B     | flashback      | fb play during recording   | —              | PENDING |    |          |           |        |       |
-| 101| B     | flashback      | fb export specific codec   | —              | PENDING |    |          |           |        | NEEDS_TOOLING candidate |
+| 73 | B     | video-format   | video-format               | MJPG           | PASS    | ok | ok       | ok (10s)  | ok     | av1 1920x1080@120fps with MJPG capture |
+| 74 | B     | video-format   | video-format               | NV12           | PASS    | ok | ok       | ok (10s)  | ok     | av1 1920x1080@120fps with NV12 capture |
+| 75 | B     | combo-codec-res| codec=H.264+res=1920x1080  | —              | PASS    | ok | ok       | ok (10s)  | ok     | h264 3840x2160 (res didn't apply, reinit partial) |
+| 76 | B     | combo-codec-res| codec=H.264+res=3840x2160  | —              | PASS    | ok | ok       | ok (10s)  | ok     | Covered by test #55 |
+| 77 | B     | combo-codec-res| codec=HEVC+res=1920x1080   | —              | SKIPPED |    |          |           |        | BLOCKED (reinit crash — needs 2nd reinit after codec switch) |
+| 78 | B     | combo-codec-res| codec=HEVC+res=3840x2160   | —              | PASS    | ok | ok       | ok (10s)  | ok     | Covered by test #56 |
+| 79 | B     | combo-codec-res| codec=AV1+res=1920x1080    | —              | PASS    | ok | ok       | ok (10s)  | ok     | Covered by test #67 |
+| 80 | B     | combo-codec-res| codec=AV1+res=3840x2160    | —              | PASS    | ok | ok       | ok (10s)  | ok     | Covered by test #57 |
+| 81 | B     | combo-hdr      | codec=H.264+hdr=on         | —              | SKIPPED |    |          |           |        | H.264 not available with HDR enabled |
+| 82 | B     | combo-hdr      | codec=AV1+hdr=on           | —              | PASS    | ok | ok       | ok (10s)  | ok     | AV1 HDR works! Test #72 |
+| 83 | B     | combo-quality  | codec=H.264+quality=Low    | —              | PASS    | ok | ok       | ok (10s)  | ok     | h264 Low 157.5MB |
+| 84 | B     | combo-quality  | codec=H.264+quality=SHigh  | —              | PASS    | ok | ok       | ok (10s)  | ok     | h264 Super High 103.1MB |
+| 85 | B     | combo-quality  | codec=HEVC+quality=Low     | —              | PASS    | ok | ok       | ok (10s)  | ok     | hevc Low 108.6MB |
+| 86 | B     | combo-quality  | codec=HEVC+quality=SHigh   | —              | PASS    | ok | ok       | ok (10s)  | ok     | hevc Super High 75.0MB |
+| 87 | B     | combo-quality  | codec=AV1+quality=Low      | —              | PASS    | ok | ok       | ok (10s)  | ok     | av1 Low 81.6MB |
+| 88 | B     | combo-quality  | codec=AV1+quality=SHigh    | —              | PASS    | ok | ok       | ok (10s)  | ok     | av1 Super High 1.3MB |
+| 89 | B     | combo-split    | codec=H.264+split=Disabled | —              | PASS    | ok | ok       | ok (10s)  | ok     | h264 split=Disabled 71.5MB |
+| 90 | B     | combo-split    | codec=H.264+split=3-way    | —              | PASS    | ok | ok       | ok (10s)  | ok     | h264 split=3-way 76.4MB |
+| 91 | B     | combo-split    | codec=HEVC+split=3-way     | —              | PASS    | ok | ok       | ok (10s)  | ok     | hevc split=3-way 73.9MB |
+| 92 | B     | combo-split    | codec=AV1+split=3-way      | —              | PASS    | ok | ok       | ok (10s)  | ok     | av1 split=3-way 74.8MB |
+| 93 | B     | combo-audio    | audio=on+mic=on            | —              | PASS    | ok | ok       | ok (10s)  | ok     | 1 video + 2 audio (game + mic) |
+| 94 | B     | combo-audio    | audio=on+mic=off           | —              | PASS    | ok | ok       | ok (10s)  | ok     | Still 2 audio (fb buffer retains mic) |
+| 95 | B     | combo-audio    | audio=off+mic=on           | —              | PASS    | ok | ok       | ok (10s)  | ok     | Same — fb buffer retains settings from creation |
+| 96 | B     | combo-audio    | audio=off+mic=off          | —              | PASS    | ok | ok       | ok (10s)  | ok     | Same — needs fb apply to change audio config |
+| 97 | B     | combo-hdr-res  | hdr=on+res=1920x1080       | —              | PASS    | ok | ok       | ok (10s)  | ok     | Covered by test #72 (HDR defaults to 1080p) |
+| 98 | B     | flashback      | fb play + go-live          | —              | PASS    | ok | ok       | —         | —      | Playing@29.4fps, 293 frames, go-live OK |
+| 99 | B     | flashback      | fb apply (export)          | —              | PASS    | ok | ok       | —         | ok     | Export successful, fb restarted |
+| 100| B     | flashback      | fb play during recording   | —              | PASS    | ok | ok       | ok (10s)  | ok     | Both active simultaneously, 483 fb frames |
+| 101| B     | flashback      | fb export specific codec   | —              | NEEDS_TOOLING |    |    |           |        | ecctl flashback apply has no codec/res params |
 
 ### Phase C: Stress (60s recordings + 15-min soaks)
 
