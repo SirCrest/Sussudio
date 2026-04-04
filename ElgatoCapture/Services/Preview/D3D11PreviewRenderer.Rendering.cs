@@ -31,8 +31,11 @@ internal sealed partial class D3D11PreviewRenderer
 
                 if (Interlocked.CompareExchange(ref _sharedDeviceResetPending, 0, 1) == 1)
                 {
-                    var stalePending = Interlocked.Exchange(ref _pendingFrame, null);
-                    stalePending?.Dispose();
+                    while (_pendingFrames.TryDequeue(out var stale))
+                    {
+                        stale.Dispose();
+                    }
+
                     try
                     {
                         InitializeD3D();
@@ -71,11 +74,10 @@ internal sealed partial class D3D11PreviewRenderer
                     }
                 }
 
-                var frame = Interlocked.Exchange(ref _pendingFrame, null);
-                if (frame == null)
+                if (!_pendingFrames.TryDequeue(out var frame))
                 {
                     _frameReadyEvent.Reset();
-                    if (Volatile.Read(ref _pendingFrame) != null ||
+                    if (!_pendingFrames.IsEmpty ||
                         Volatile.Read(ref _compositionTransformDirty) != 0 ||
                         Volatile.Read(ref _sharedDeviceResetPending) != 0)
                     {
@@ -93,6 +95,13 @@ internal sealed partial class D3D11PreviewRenderer
                 try
                 {
                     RenderFrame(frame);
+
+                    // Keep the event set while more frames are queued so the
+                    // render thread drains the elastic buffer without waiting.
+                    if (!_pendingFrames.IsEmpty)
+                    {
+                        _frameReadyEvent.Set();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -110,7 +119,7 @@ internal sealed partial class D3D11PreviewRenderer
                     frame.Dispose();
                 }
 
-                if (Volatile.Read(ref _pendingFrame) == null &&
+                if (_pendingFrames.IsEmpty &&
                     Volatile.Read(ref _compositionTransformDirty) == 0 &&
                     Volatile.Read(ref _sharedDeviceResetPending) == 0)
                 {
@@ -124,8 +133,11 @@ internal sealed partial class D3D11PreviewRenderer
         }
         finally
         {
-            var pending = Interlocked.Exchange(ref _pendingFrame, null);
-            pending?.Dispose();
+            while (_pendingFrames.TryDequeue(out var stale))
+            {
+                stale.Dispose();
+            }
+
             FailPendingFrameCapture("Render thread exited before frame capture completed.");
             CleanupD3DResources();
             Interlocked.Exchange(ref _isRendering, 0);
@@ -2233,8 +2245,10 @@ internal sealed partial class D3D11PreviewRenderer
         if (Volatile.Read(ref _stopRequested) != 0) return;
 
         CleanupD3DResources();
-        var stalePending = Interlocked.Exchange(ref _pendingFrame, null);
-        stalePending?.Dispose();
+        while (_pendingFrames.TryDequeue(out var stalePending))
+        {
+            stalePending.Dispose();
+        }
 
         // Re-check: Stop() may have been called during cleanup. Proceeding
         // into InitializeD3D→BindSwapChainToPanel would dispatch to the UI

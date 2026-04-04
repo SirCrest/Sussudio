@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -297,7 +298,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     private readonly object _lifecycleLock = new();
 
     private Thread? _renderThread;
-    private PendingFrame? _pendingFrame;
+    private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();
+    private const int MaxPendingFrames = 3;
     private int _swapChainBound; // 0=unbound, 1=bound; use Interlocked.CompareExchange to claim unbind
 
     private int _disposed;
@@ -420,6 +422,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     public long FramesSubmitted => Interlocked.Read(ref _framesSubmitted);
     public long FramesRendered => Interlocked.Read(ref _framesRendered);
     public long FramesDropped => Interlocked.Read(ref _framesDropped);
+    public int PendingFrameCount => _pendingFrames.Count;
     public bool IsRendering => Volatile.Read(ref _isRendering) != 0;
     public bool IsHdrCapableSwapChain => _hdrCapableSwapChain;
     public string RendererMode => Volatile.Read(ref _rendererMode);
@@ -630,8 +633,11 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             }
         }
 
-        var pending = Interlocked.Exchange(ref _pendingFrame, null);
-        pending?.Dispose();
+        while (_pendingFrames.TryDequeue(out var stale))
+        {
+            stale.Dispose();
+        }
+
         FailPendingFrameCapture("Preview renderer stopped before frame capture completed.");
         Volatile.Write(ref _rendererMode, RendererModeNone);
         ResetPresentCadence();
@@ -820,11 +826,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
 
     private void EnqueuePendingFrame(PendingFrame frame)
     {
-        var previous = Interlocked.Exchange(ref _pendingFrame, frame);
-        if (previous != null)
+        _pendingFrames.Enqueue(frame);
+
+        // Trim oldest frames if the queue exceeds the elastic limit.
+        // Under normal operation the render thread keeps up and the queue
+        // stays at 0-1 (no added latency). The extra slots only absorb
+        // brief render hiccups instead of dropping frames.
+        while (_pendingFrames.Count > MaxPendingFrames)
         {
-            previous.Dispose();
-            Interlocked.Increment(ref _framesDropped);
+            if (_pendingFrames.TryDequeue(out var oldest))
+            {
+                oldest.Dispose();
+                Interlocked.Increment(ref _framesDropped);
+            }
         }
 
         Volatile.Write(ref _naturalWidth, frame.Width);

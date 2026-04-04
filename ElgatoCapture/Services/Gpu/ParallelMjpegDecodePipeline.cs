@@ -116,7 +116,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         _height = height;
         _emitCallback = emitCallback;
         _fatalErrorCallback = fatalErrorCallback;
-        _reorderCapacity = Math.Max(16, _decoderCount * 4);
+        _reorderCapacity = Math.Max(32, _decoderCount * 8);
         _reorderRing = new DecodedFrame[_reorderCapacity];
         _reorderFlags = new int[_reorderCapacity];
         _decoders = new SoftwareMjpegDecoder[_decoderCount];
@@ -138,7 +138,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                 _decoders[i] = new SoftwareMjpegDecoder();
                 _decoders[i].Initialize(width, height);
                 _perDecoderDecodeTimeMs[i] = new double[300];
-                _workerQueues[i] = Channel.CreateBounded<MjpegWorkItem>(new BoundedChannelOptions(2)
+                _workerQueues[i] = Channel.CreateBounded<MjpegWorkItem>(new BoundedChannelOptions(4)
                 {
                     SingleReader = true,
                     SingleWriter = false,
@@ -187,10 +187,10 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         {
             ArrayPool<byte>.Shared.Return(buffer);
             var dropped = Interlocked.Increment(ref _totalFramesDropped);
-            if (dropped % 120 == 0)
+            if (dropped == 1 || dropped % 30 == 0)
             {
                 Logger.Log(
-                    $"MJPEG_PIPELINE_DROP worker={workerIndex} dropped={dropped} queue_capacity=2 seq={seq}");
+                    $"MJPEG_PIPELINE_DROP worker={workerIndex} dropped={dropped} queue_capacity=4 seq={seq}");
             }
         }
     }
@@ -422,7 +422,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     {
         while (!_stopped || HasAliveWorkers() || Volatile.Read(ref _reorderBufferDepth) > 0)
         {
-            _emitSignal.WaitOne(50);
+            _emitSignal.WaitOne(8);
 
             var emittedAny = DrainReadyFrames();
             DetectAndResetStall(emittedAny);
@@ -503,16 +503,46 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             return;
         }
 
-        if (nowTickMs - missingSince <= 50)
+        // At high buffer depth (near capacity), skip immediately — the frame
+        // is clearly lost and waiting only compounds lag. Otherwise use a
+        // short 17ms threshold (~2 frame periods at 120fps).
+        var nearFull = depth >= _reorderCapacity - 2;
+        var thresholdMs = nearFull ? 0 : 17;
+
+        if (nowTickMs - missingSince <= thresholdMs)
         {
             return;
         }
 
-        var skippedSeq = _nextEmitSeq;
-        _nextEmitSeq++;
-        Interlocked.Increment(ref _reorderSkips);
+        // Batch-skip all consecutive missing seqs in one pass so we don't
+        // pay the stall threshold N times for N consecutive drops.
+        var skippedCount = 0;
+        while (true)
+        {
+            var slot = (int)(_nextEmitSeq % (uint)_reorderCapacity);
+            if (Volatile.Read(ref _reorderFlags[slot]) != 0)
+            {
+                break; // next frame is ready — stop skipping
+            }
+
+            _nextEmitSeq++;
+            skippedCount++;
+            Interlocked.Increment(ref _reorderSkips);
+
+            // Don't skip past all buffered frames — leave at least one to emit.
+            if (Volatile.Read(ref _reorderBufferDepth) <= 1)
+            {
+                break;
+            }
+        }
+
         Interlocked.Exchange(ref _missingSeqSinceTickMs, nowTickMs);
-        Logger.Log($"MJPEG_REORDER_SKIP seq={skippedSeq} depth={Volatile.Read(ref _reorderBufferDepth)} threshold_ms=50");
+        if (skippedCount > 0)
+        {
+            Logger.Log(
+                $"MJPEG_REORDER_SKIP count={skippedCount} nextEmit={_nextEmitSeq} " +
+                $"depth={Volatile.Read(ref _reorderBufferDepth)} threshold_ms={thresholdMs}");
+        }
     }
 
     private void DrainRemainingFramesInOrder()

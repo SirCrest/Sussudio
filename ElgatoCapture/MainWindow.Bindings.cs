@@ -402,10 +402,19 @@ public sealed partial class MainWindow
         };
         PreviewVolumeSlider.PointerCaptureLost += (s, e) =>
         {
-            if (!_isVolumeFadingIn)
+            if (_isVolumeFadingIn)
             {
-                ViewModel.SavePreviewVolume();
+                // User explicitly grabbed the slider during entrance fade-in.
+                // Pause the animation so it doesn't overwrite their choice
+                // (Stop() would snap properties back to base values).
+                _entranceStoryboard?.Pause();
+                _entranceStoryboard = null;
+                _isVolumeFadingIn = false;
+                ViewModel.SuppressVolumeSave = false;
+                ViewModel.VolumeSaveOverride = null;
+                _savedPreviewVolume = ViewModel.PreviewVolume;
             }
+            ViewModel.SavePreviewVolume();
         };
         SyncMicrophoneVolumeControls(ViewModel.MicrophoneVolume);
         MicVolumeSlider.ValueChanged += (s, e) =>
@@ -720,7 +729,7 @@ public sealed partial class MainWindow
     }
     private Storyboard CreateMicMeterRowStoryboard(bool showing)
     {
-        var durationMs = showing ? 200 : 150;
+        var durationMs = showing ? 350 : 250;
         var easing = new CubicEase { EasingMode = showing ? EasingMode.EaseOut : EasingMode.EaseIn };
         var duration = TimeSpan.FromMilliseconds(durationMs);
 
@@ -814,7 +823,7 @@ public sealed partial class MainWindow
             PresetColumn.Width = new GridLength(0);
             SplitColumn.Width = new GridLength(0);
             Grid.SetRow(VideoFormatPanel, 1);
-            Grid.SetColumn(VideoFormatPanel, 0);
+            Grid.SetColumn(VideoFormatPanel, 1);
             Grid.SetRow(PresetPanel, 1);
             Grid.SetColumn(PresetPanel, 2);
             Grid.SetRow(SplitPanel, 1);
@@ -841,8 +850,16 @@ public sealed partial class MainWindow
     {
         var selectedFormat = VideoFormatComboBox.SelectedItem as string ?? ViewModel.SelectedVideoFormat;
         var selectedFrameRate = GetSelectedFriendlyFrameRate();
+
+        // Show decoder count when MJPG is explicitly selected, OR when auto
+        // resolves to a format that would use the parallel MJPEG pipeline
+        // (i.e. the device's native format is MJPG at high frame rates).
+        var isExplicitMjpg = string.Equals(selectedFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
+        var isAutoWithMjpgDevice = string.Equals(selectedFormat, "Auto", StringComparison.OrdinalIgnoreCase)
+            && string.Equals(ViewModel.SelectedFormat?.PixelFormat, "MJPG", StringComparison.OrdinalIgnoreCase);
+
         DecoderCountPanel.Visibility =
-            string.Equals(selectedFormat, "MJPG", StringComparison.OrdinalIgnoreCase) && selectedFrameRate >= 90
+            (isExplicitMjpg || isAutoWithMjpgDevice) && selectedFrameRate >= 90
                 ? Visibility.Visible
                 : Visibility.Collapsed;
     }

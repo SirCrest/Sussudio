@@ -167,7 +167,7 @@ public sealed partial class MainWindow
     private const double StatsDockPanelWidth = 300;
     private Storyboard CreateStatsDockStoryboard(bool showing)
     {
-        var durationMs = showing ? 250 : 200;
+        var durationMs = showing ? 400 : 300;
         var easing = new CubicEase { EasingMode = showing ? EasingMode.EaseOut : EasingMode.EaseIn };
         var duration = TimeSpan.FromMilliseconds(durationMs);
 
@@ -351,18 +351,27 @@ public sealed partial class MainWindow
         var effectiveFps = effectiveFrameTimeMs > 0 ? 1000.0 / effectiveFrameTimeMs : 0;
 
         SetRow("Throughput", $"{effectiveFrameTimeMs:0.00}ms ({effectiveFps:0}fps peak)");
-        SetRow("Decode", $"{mjpeg.DecodeAvgMs:0.00}ms avg ({mjpeg.DecoderCount} threads)");
-        SetRow("Reorder", $"{mjpeg.ReorderAvgMs:0.00}ms avg");
-        SetRow("Pipeline", $"{mjpeg.PipelineAvgMs:0.00}ms avg");
+        SetRow("Decode", $"{mjpeg.DecodeAvgMs:0.00} / {mjpeg.DecodeP95Ms:0.00}ms  avg/P95 ({mjpeg.DecoderCount}T)");
+        SetRow("Reorder", $"{mjpeg.ReorderAvgMs:0.00} / {mjpeg.ReorderP95Ms:0.00}ms  avg/P95");
+        SetRow("Pipeline", $"{mjpeg.PipelineAvgMs:0.00} / {mjpeg.PipelineP95Ms:0.00}ms  avg/P95");
         SetRow("Frames", $"{mjpeg.TotalEmitted:N0} emitted / {mjpeg.TotalDropped:N0} dropped");
+
+        var bufferInfo = $"reorder={mjpeg.ReorderBufferDepth}";
+        if (_d3dRenderer != null)
+        {
+            bufferInfo += $"  preview={_d3dRenderer.PendingFrameCount}";
+        }
+
         if (mjpeg.ReorderSkips > 0)
         {
-            SetRow("Skips", $"{mjpeg.ReorderSkips:N0}");
+            bufferInfo += $"  skips={mjpeg.ReorderSkips:N0}";
         }
+
+        SetRow("Buffers", bufferInfo);
 
         foreach (var worker in mjpeg.PerDecoder)
         {
-            SetRow($"Thread {worker.WorkerIndex}", $"{worker.AvgMs:0.00}ms");
+            SetRow($"Thread {worker.WorkerIndex}", $"{worker.AvgMs:0.00} / {worker.P95Ms:0.00}ms");
         }
 
         CollapseDiagnosticRows(_decodeRowPool, startIndex: rowIndex);

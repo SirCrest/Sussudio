@@ -246,12 +246,16 @@ public partial class MainViewModel
 
             // Reinitialize the device with new settings
             IsInitialized = false;
+            Logger.LogFatalBreadcrumb($"REINIT phase=init_device reason={reason}");
             await InitializeDeviceAsync();
+            Logger.LogFatalBreadcrumb($"REINIT phase=init_device_done reason={reason}");
 
             // Restart preview
             if (IsInitialized && shouldRestartPreview && !_cancelPreviewRestartAfterReinitialize)
             {
+                Logger.LogFatalBreadcrumb($"REINIT phase=start_preview reason={reason}");
                 await StartPreviewAsync(userInitiated: false);
+                Logger.LogFatalBreadcrumb($"REINIT phase=start_preview_done reason={reason}");
 
                 StatusText = $"Preview: {SelectedFormat.Width}x{SelectedFormat.Height}@{SelectedFormat.FrameRate}fps";
             }
@@ -388,10 +392,8 @@ public partial class MainViewModel
             RequestedFrameRateArg = requestedFrameRateArg,
             RequestedFrameRateNumerator = requestedFrameRateNumerator,
             RequestedFrameRateDenominator = requestedFrameRateDenominator,
-            RequestedPixelFormat = string.Equals(SelectedVideoFormat, "Auto", StringComparison.OrdinalIgnoreCase)
-                ? SelectedFormat?.PixelFormat
-                : SelectedVideoFormat,
-            ForceMjpegDecode = string.Equals(SelectedVideoFormat, "MJPG", StringComparison.OrdinalIgnoreCase),
+            RequestedPixelFormat = ResolveRequestedPixelFormat(),
+            ForceMjpegDecode = ShouldForceMjpegDecode(),
             FlashbackGpuDecode = FlashbackGpuDecode,
             FlashbackBufferMinutes = FlashbackBufferMinutes,
             Format = format,
@@ -422,5 +424,51 @@ public partial class MainViewModel
         }
 
         return settings;
+    }
+
+    /// <summary>
+    /// Resolves the pixel format to request from the source reader. On auto at
+    /// 4K HFR, forces MJPG so the parallel decode pipeline is used instead of
+    /// MF's single-pipeline internal MJPG→NV12 decode.
+    /// </summary>
+    private string? ResolveRequestedPixelFormat()
+    {
+        if (!string.Equals(SelectedVideoFormat, "Auto", StringComparison.OrdinalIgnoreCase))
+        {
+            return SelectedVideoFormat;
+        }
+
+        var format = SelectedFormat;
+        if (format != null &&
+            !IsHdrEnabled &&
+            format.Width >= 3840 &&
+            format.Height >= 2160 &&
+            format.FrameRateExact >= 100)
+        {
+            return "MJPG";
+        }
+
+        return format?.PixelFormat;
+    }
+
+    private bool ShouldForceMjpegDecode()
+    {
+        if (string.Equals(SelectedVideoFormat, "MJPG", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // On auto at 4K HFR, force parallel MJPEG decode.
+        if (string.Equals(SelectedVideoFormat, "Auto", StringComparison.OrdinalIgnoreCase))
+        {
+            var format = SelectedFormat;
+            return format != null &&
+                   !IsHdrEnabled &&
+                   format.Width >= 3840 &&
+                   format.Height >= 2160 &&
+                   format.FrameRateExact >= 100;
+        }
+
+        return false;
     }
 }
