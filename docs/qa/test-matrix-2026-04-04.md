@@ -5,8 +5,9 @@
 - **Last Updated:** 2026-04-04 13:50 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 100/139 complete (Phase B nearly done, starting Phase C)
+- **Progress:** 107/139 complete (Phase C stress tests in progress)
 - **Bugs Found:** 1 CRITICAL (pipeline reinit crash — STILL NOT FIXED, see Blocked Issues)
+- **Elapsed:** ~2.5 hours
 - **Key question:** Reinit crash NOT resolved. Commit 0d38b9e fixed 1st reinit crash but 2nd reinit still crashes.
 
 ## Baseline State
@@ -133,13 +134,13 @@
 
 | #  | Phase | Category       | Setting                    | Value          | Status  | UI | Behavior | Recording | Output | Notes |
 |----|-------|----------------|----------------------------|----------------|---------|----|----------|-----------|--------|-------|
-| 102| C     | stress-codec   | H.264 Source 120fps SHigh  | 60s            | PENDING |    |          |           |        | Frame count ± 5% |
-| 103| C     | stress-codec   | HEVC Source 120fps SHigh   | 60s            | PENDING |    |          |           |        | Frame count ± 5% |
-| 104| C     | stress-codec   | AV1 Source 120fps SHigh    | 60s            | PENDING |    |          |           |        | Frame count ± 5% |
-| 105| C     | stress-res     | 1920x1080 60s              | 60s            | PENDING |    |          |           |        |       |
-| 106| C     | stress-res     | 2560x1440 60s              | 60s            | PENDING |    |          |           |        |       |
-| 107| C     | stress-hdr     | HDR+HEVC 60s               | 60s            | PENDING |    |          |           |        | HDR metadata intact after 60s |
-| 108| C     | fb-rotation    | H.264 15-min soak          | 15min          | PENDING |    |          |           |        | Buffer rotation, memory stable |
+| 102| C     | stress-codec   | H.264 Source 120fps SHigh  | 60s            | PASS    | ok | ok       | ok (60s)  | ok     | h264 3840x2160@120fps 452MB verified |
+| 103| C     | stress-codec   | HEVC Source 120fps SHigh   | 60s            | PASS    | ok | ok       | ok (60s)  | ok     | hevc 3840x2160@120fps 404MB verified |
+| 104| C     | stress-codec   | AV1 Source 120fps SHigh    | 60s            | PASS    | ok | ok       | ok (60s)  | ok     | av1 3840x2160@120fps 445MB verified |
+| 105| C     | stress-res     | 1920x1080 60s              | 60s            | PENDING |    |          |           |        | Needs restart |
+| 106| C     | stress-res     | 2560x1440 60s              | 60s            | PENDING |    |          |           |        | Needs restart |
+| 107| C     | stress-hdr     | HDR+HEVC 60s               | 60s            | PENDING |    |          |           |        | Needs restart |
+| 108| C     | fb-rotation    | H.264 15-min soak          | 15min          | PASS    | ok | ok       | ok (15m)  | ok     | 114302 frames, 0 drops, rotation@300s, memory +39MB (1374→1413), export OK |
 | 109| C     | fb-rotation    | HEVC 15-min soak           | 15min          | PENDING |    |          |           |        | Buffer rotation, memory stable |
 | 110| C     | fb-rotation    | AV1 15-min soak            | 15min          | PENDING |    |          |           |        | Buffer rotation, memory stable |
 | 111| C     | fb-rotation    | AV1 4K120 max-res 15-min   | 15min          | PENDING |    |          |           |        | Peak load rotation stress |
