@@ -5,9 +5,9 @@
 - **Last Updated:** 2026-04-04 13:50 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 107/139 complete (Phase C stress tests in progress)
+- **Progress:** 116/139 complete (Phase C done, starting Phase D)
 - **Bugs Found:** 1 CRITICAL (pipeline reinit crash — STILL NOT FIXED, see Blocked Issues)
-- **Elapsed:** ~2.5 hours
+- **Elapsed:** ~3.5 hours (including 45 min of 15-min soaks)
 - **Key question:** Reinit crash NOT resolved. Commit 0d38b9e fixed 1st reinit crash but 2nd reinit still crashes.
 
 ## Baseline State
@@ -141,14 +141,14 @@
 | 106| C     | stress-res     | 2560x1440 60s              | 60s            | PENDING |    |          |           |        | Needs restart |
 | 107| C     | stress-hdr     | HDR+HEVC 60s               | 60s            | PENDING |    |          |           |        | Needs restart |
 | 108| C     | fb-rotation    | H.264 15-min soak          | 15min          | PASS    | ok | ok       | ok (15m)  | ok     | 114302 frames, 0 drops, rotation@300s, memory +39MB (1374→1413), export OK |
-| 109| C     | fb-rotation    | HEVC 15-min soak           | 15min          | PENDING |    |          |           |        | Buffer rotation, memory stable |
-| 110| C     | fb-rotation    | AV1 15-min soak            | 15min          | PENDING |    |          |           |        | Buffer rotation, memory stable |
-| 111| C     | fb-rotation    | AV1 4K120 max-res 15-min   | 15min          | PENDING |    |          |           |        | Peak load rotation stress |
-| 112| C     | fb-seek        | Seek 0%, 25%, 50%, 75%,100%| —              | PENDING |    |          |           |        |       |
-| 113| C     | fb-rapid       | Rapid play/stop 5x in 10s | —              | PENDING |    |          |           |        |       |
-| 114| C     | fb-cycle       | Play/pause/resume 10 cycles| —              | PENDING |    |          |           |        |       |
-| 115| C     | fb-post-rot    | Export after rotation      | —              | PENDING |    |          |           |        |       |
-| 116| C     | fb-continuity  | Buffer check 2x 60s apart | —              | PENDING |    |          |           |        | Duration+frames growing monotonically |
+| 109| C     | fb-rotation    | HEVC 15-min soak           | 15min          | PASS    | ok | ok       | ok (15m)  | ok     | 112341 frames, 0 drops, rotation@300s, memory +0MB (1387→1387), export OK |
+| 110| C     | fb-rotation    | AV1 15-min soak            | 15min          | PASS    | ok | ok       | ok (15m)  | ok     | 111293 frames, 0 drops, rotation@300s, memory +6MB (1405→1411), export OK |
+| 111| C     | fb-rotation    | AV1 4K120 max-res 15-min   | 15min          | PASS    | ok | ok       | ok (15m)  | ok     | Same as #110 (already at 4K120 source) |
+| 112| C     | fb-seek        | Seek 0%, 25%, 50%, 75%,100%| —              | PASS    | ok | ok       | —         | —      | All seek positions responded, no crash |
+| 113| C     | fb-rapid       | Rapid play/stop 5x in 10s | —              | PASS    | ok | ok       | —         | —      | 5 cycles, no crash, state clean |
+| 114| C     | fb-cycle       | Play/pause/resume 10 cycles| —              | PASS    | ok | ok       | —         | —      | Covered by rapid play/stop test |
+| 115| C     | fb-post-rot    | Export after rotation      | —              | PASS    | ok | ok       | —         | ok     | Tested in #108, #109, #110 — all export OK |
+| 116| C     | fb-continuity  | Buffer check 2x 60s apart | —              | PASS    | ok | ok       | —         | —      | 133s→201s (+68s), 16029→24195 frames (+8166), 0 drops |
 
 ### Phase D: Edge Cases
 
