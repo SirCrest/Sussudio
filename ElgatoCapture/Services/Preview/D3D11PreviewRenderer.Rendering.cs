@@ -54,7 +54,7 @@ internal sealed partial class D3D11PreviewRenderer
                     try
                     {
                         var swapChain = _swapChain;
-                        if (swapChain != null && _swapChainBound)
+                        if (swapChain != null && Volatile.Read(ref _swapChainBound) == 1)
                         {
                             ApplyCompositionScaleTransform(swapChain);
                         }
@@ -195,29 +195,138 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void RenderFrameWithVideoProcessor(PendingFrame frame)
     {
-        var useExternalTexture = frame.D3DTexture != null;
-        EnsurePipeline(frame.Width, frame.Height, frame.IsHdr, useExternalTexture);
-
-        if (!TryResolveInputView(frame, out var inputView, out var disposeInputView))
+        // Fence: Stop() spins on _inNativeCall before unbinding the swap chain.
+        // The fence covers the entire render method (EnsurePipeline, input view
+        // resolution, Blt, Present) so Stop() cannot yank D3D resources while
+        // any of those operations are in flight.
+        if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
         {
             return;
         }
-
+        Interlocked.Exchange(ref _inNativeCall, 1);
         try
         {
-            if (_videoContext == null || _videoProcessor == null || _outputView == null || inputView == null || _swapChain == null)
+            if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
             {
                 return;
             }
 
-            _vpStreamArray[0] = new VideoProcessorStream { Enable = true, InputSurface = inputView };
-            var bltResult = _videoContext.VideoProcessorBlt(_videoProcessor, _outputView, _outputFrameIndex++, 1, _vpStreamArray);
-            if (bltResult.Failure)
+            var useExternalTexture = frame.D3DTexture != null;
+            EnsurePipeline(frame.Width, frame.Height, frame.IsHdr, useExternalTexture);
+
+            if (!TryResolveInputView(frame, out var inputView, out var disposeInputView))
             {
-                throw new InvalidOperationException($"VideoProcessorBlt failed: 0x{bltResult.Code:X8}.");
+                return;
             }
 
-            TryCaptureFrameBeforePresent("VideoProcessor");
+            try
+            {
+                if (_videoContext == null || _videoProcessor == null || _outputView == null || inputView == null || _swapChain == null)
+                {
+                    return;
+                }
+
+                _vpStreamArray[0] = new VideoProcessorStream { Enable = true, InputSurface = inputView };
+                var bltResult = _videoContext.VideoProcessorBlt(_videoProcessor, _outputView, _outputFrameIndex++, 1, _vpStreamArray);
+                if (bltResult.Failure)
+                {
+                    throw new InvalidOperationException($"VideoProcessorBlt failed: 0x{bltResult.Code:X8}.");
+                }
+
+                TryCaptureFrameBeforePresent("VideoProcessor");
+                var presentResult = _swapChain.Present(0, PresentFlags.None);
+                if (presentResult.Failure)
+                {
+                    throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
+                }
+
+                if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
+                {
+                    Logger.Log("D3D11 preview first frame rendered.");
+                    _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
+                }
+
+                Interlocked.Increment(ref _framesRendered);
+                TrackPresentCadence();
+                TrackPipelineLatency(frame.ArrivalTick);
+            }
+            finally
+            {
+                if (disposeInputView)
+                {
+                    inputView?.Dispose();
+                }
+            }
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _inNativeCall, 0);
+        }
+    }
+
+    private void RenderNv12WithShader(PendingFrame frame)
+    {
+        if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
+        {
+            return;
+        }
+        Interlocked.Exchange(ref _inNativeCall, 1);
+        try
+        {
+            if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
+            {
+                return;
+            }
+
+            if (_device == null || _deviceContext == null || _swapChain == null)
+            {
+                return;
+            }
+
+            if (_fullscreenVS == null ||
+                _nv12PS == null ||
+                _linearSampler == null ||
+                frame.D3DTextureYObject == null ||
+                frame.D3DTextureUVObject == null)
+            {
+                return;
+            }
+
+            if (!TryEnsureNv12ShaderResources(frame))
+            {
+                return;
+            }
+
+            EnsureSwapChainRTV();
+            if (_swapChainRTV == null || _nv12YSRV == null || _nv12UVSRV == null)
+            {
+                return;
+            }
+
+            var viewport = ComputeLetterboxViewport(frame.Width, frame.Height);
+
+            _rtvArray[0] = _swapChainRTV;
+            _deviceContext.OMSetRenderTargets(1, _rtvArray, null);
+            _deviceContext.ClearRenderTargetView(_swapChainRTV, new Color4(0.0f, 0.0f, 0.0f, 1.0f));
+            _viewportArray[0] = viewport;
+            _deviceContext.RSSetViewports(1, _viewportArray);
+            _deviceContext.IASetInputLayout(null);
+            _deviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+            _deviceContext.VSSetShader(_fullscreenVS, Array.Empty<ID3D11ClassInstance>(), 0);
+            _deviceContext.PSSetShader(_nv12PS, Array.Empty<ID3D11ClassInstance>(), 0);
+            _samplerArray[0] = _linearSampler!;
+            _deviceContext.PSSetSamplers(0, 1, _samplerArray);
+            _srvArray2[0] = _nv12YSRV;
+            _srvArray2[1] = _nv12UVSRV;
+            _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
+            UpdateViewportConstantBuffer(viewport);
+
+            _deviceContext.Draw(3, 0);
+            _srvNullArray2[0] = null;
+            _srvNullArray2[1] = null;
+            _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
+
+            TryCaptureFrameBeforePresent(RendererModeNv12Shader);
             var presentResult = _swapChain.Present(0, PresentFlags.None);
             if (presentResult.Failure)
             {
@@ -226,7 +335,7 @@ internal sealed partial class D3D11PreviewRenderer
 
             if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
             {
-                Logger.Log("D3D11 preview first frame rendered.");
+                Logger.Log("D3D11 preview first SDR frame rendered via NV12 shader.");
                 _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
             }
 
@@ -236,182 +345,122 @@ internal sealed partial class D3D11PreviewRenderer
         }
         finally
         {
-            if (disposeInputView)
-            {
-                inputView?.Dispose();
-            }
+            Interlocked.Exchange(ref _inNativeCall, 0);
         }
-    }
-
-    private void RenderNv12WithShader(PendingFrame frame)
-    {
-        if (_device == null || _deviceContext == null || _swapChain == null)
-        {
-            return;
-        }
-
-        if (_fullscreenVS == null ||
-            _nv12PS == null ||
-            _linearSampler == null ||
-            frame.D3DTextureYObject == null ||
-            frame.D3DTextureUVObject == null)
-        {
-            return;
-        }
-
-        if (!TryEnsureNv12ShaderResources(frame))
-        {
-            return;
-        }
-
-        EnsureSwapChainRTV();
-        if (_swapChainRTV == null || _nv12YSRV == null || _nv12UVSRV == null)
-        {
-            return;
-        }
-
-        var viewport = ComputeLetterboxViewport(frame.Width, frame.Height);
-
-        _rtvArray[0] = _swapChainRTV;
-        _deviceContext.OMSetRenderTargets(1, _rtvArray, null);
-        _deviceContext.ClearRenderTargetView(_swapChainRTV, new Color4(0.0f, 0.0f, 0.0f, 1.0f));
-        _viewportArray[0] = viewport;
-        _deviceContext.RSSetViewports(1, _viewportArray);
-        _deviceContext.IASetInputLayout(null);
-        _deviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
-        _deviceContext.VSSetShader(_fullscreenVS, Array.Empty<ID3D11ClassInstance>(), 0);
-        _deviceContext.PSSetShader(_nv12PS, Array.Empty<ID3D11ClassInstance>(), 0);
-        _samplerArray[0] = _linearSampler!;
-        _deviceContext.PSSetSamplers(0, 1, _samplerArray);
-        _srvArray2[0] = _nv12YSRV;
-        _srvArray2[1] = _nv12UVSRV;
-        _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
-        UpdateViewportConstantBuffer(viewport);
-
-        _deviceContext.Draw(3, 0);
-        _srvNullArray2[0] = null;
-        _srvNullArray2[1] = null;
-        _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
-
-        TryCaptureFrameBeforePresent(RendererModeNv12Shader);
-        var presentResult = _swapChain.Present(0, PresentFlags.None);
-        if (presentResult.Failure)
-        {
-            throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
-        }
-
-        if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
-        {
-            Logger.Log("D3D11 preview first SDR frame rendered via NV12 shader.");
-            _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
-        }
-
-        Interlocked.Increment(ref _framesRendered);
-        TrackPresentCadence();
-        TrackPipelineLatency(frame.ArrivalTick);
     }
 
     private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)
     {
-        if (_device == null || _deviceContext == null || _swapChain == null)
+        if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
         {
             return;
         }
-
-        if (_fullscreenVS == null || pixelShader == null || _linearSampler == null)
+        Interlocked.Exchange(ref _inNativeCall, 1);
+        try
         {
-            return;
-        }
-
-        EnsureHdrInputResources(frame.Width, frame.Height);
-        if (_hdrInputTexture == null ||
-            _hdrStagingTexture == null ||
-            _hdrYPlaneSRV == null ||
-            _hdrUVPlaneSRV == null)
-        {
-            return;
-        }
-
-        if (frame.D3DTexture != null)
-        {
-            // P010 is planar: Y plane (subresource 0) and UV plane (subresource 1).
-            // Source reader returns a texture array where each frame occupies one array slice.
-            // Planar subresource layout: plane 1 offset = arraySize * mipLevels.
-            var srcDesc = frame.D3DTexture.Description;
-            var planeOffset = (int)(srcDesc.ArraySize * Math.Max(1, srcDesc.MipLevels));
-
-            // Copy Y plane: src array[i] plane 0 → dst plane 0
-            _deviceContext.CopySubresourceRegion(_hdrInputTexture, 0, 0, 0, 0,
-                frame.D3DTexture, (uint)frame.D3DSubresourceIndex);
-
-            // Copy UV plane: src array[i] plane 1 → dst plane 1
-            _deviceContext.CopySubresourceRegion(_hdrInputTexture, 1, 0, 0, 0,
-                frame.D3DTexture, (uint)(frame.D3DSubresourceIndex + planeOffset));
-        }
-        else if (frame.RawData != null)
-        {
-            if (!UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, true, _hdrStagingTexture!, _hdrInputTexture!))
+            if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
             {
                 return;
             }
+
+            if (_device == null || _deviceContext == null || _swapChain == null)
+            {
+                return;
+            }
+
+            if (_fullscreenVS == null || pixelShader == null || _linearSampler == null)
+            {
+                return;
+            }
+
+            EnsureHdrInputResources(frame.Width, frame.Height);
+            if (_hdrInputTexture == null ||
+                _hdrStagingTexture == null ||
+                _hdrYPlaneSRV == null ||
+                _hdrUVPlaneSRV == null)
+            {
+                return;
+            }
+
+            if (frame.D3DTexture != null)
+            {
+                var srcDesc = frame.D3DTexture.Description;
+                var planeOffset = (int)(srcDesc.ArraySize * Math.Max(1, srcDesc.MipLevels));
+
+                _deviceContext.CopySubresourceRegion(_hdrInputTexture, 0, 0, 0, 0,
+                    frame.D3DTexture, (uint)frame.D3DSubresourceIndex);
+
+                _deviceContext.CopySubresourceRegion(_hdrInputTexture, 1, 0, 0, 0,
+                    frame.D3DTexture, (uint)(frame.D3DSubresourceIndex + planeOffset));
+            }
+            else if (frame.RawData != null)
+            {
+                if (!UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, true, _hdrStagingTexture!, _hdrInputTexture!))
+                {
+                    return;
+                }
+            }
+            else
+            {
+                return;
+            }
+
+            EnsureSwapChainRTV();
+            if (_swapChainRTV == null)
+            {
+                return;
+            }
+
+            var viewport = ComputeLetterboxViewport(frame.Width, frame.Height);
+
+            _rtvArray[0] = _swapChainRTV;
+            _deviceContext.OMSetRenderTargets(1, _rtvArray, null);
+            _deviceContext.ClearRenderTargetView(_swapChainRTV, new Color4(0.0f, 0.0f, 0.0f, 1.0f));
+            _viewportArray[0] = viewport;
+            _deviceContext.RSSetViewports(1, _viewportArray);
+            _deviceContext.IASetInputLayout(null);
+            _deviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
+            _deviceContext.VSSetShader(_fullscreenVS, Array.Empty<ID3D11ClassInstance>(), 0);
+            _deviceContext.PSSetShader(pixelShader, Array.Empty<ID3D11ClassInstance>(), 0);
+            _samplerArray[0] = _linearSampler!;
+            _deviceContext.PSSetSamplers(0, 1, _samplerArray);
+            _srvArray2[0] = _hdrYPlaneSRV!;
+            _srvArray2[1] = _hdrUVPlaneSRV!;
+            _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
+
+            UpdateViewportConstantBuffer(viewport);
+
+            _deviceContext.Draw(3, 0);
+            _srvNullArray2[0] = null;
+            _srvNullArray2[1] = null;
+            _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
+
+            var rendererMode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
+                ? RendererModeHdrPassthrough
+                : RendererModeHdrShader;
+            TryCaptureFrameBeforePresent(rendererMode);
+            var presentResult = _swapChain.Present(0, PresentFlags.None);
+            if (presentResult.Failure)
+            {
+                throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
+            }
+
+            if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
+            {
+                var mode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
+                    ? "passthrough" : "tonemapping";
+                Logger.Log($"D3D11 preview first HDR frame rendered via {mode} shader.");
+                _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
+            }
+
+            Interlocked.Increment(ref _framesRendered);
+            TrackPresentCadence();
+            TrackPipelineLatency(frame.ArrivalTick);
         }
-        else
+        finally
         {
-            return;
+            Interlocked.Exchange(ref _inNativeCall, 0);
         }
-
-        EnsureSwapChainRTV();
-        if (_swapChainRTV == null)
-        {
-            return;
-        }
-
-        var viewport = ComputeLetterboxViewport(frame.Width, frame.Height);
-
-        _rtvArray[0] = _swapChainRTV;
-        _deviceContext.OMSetRenderTargets(1, _rtvArray, null);
-        _deviceContext.ClearRenderTargetView(_swapChainRTV, new Color4(0.0f, 0.0f, 0.0f, 1.0f));
-        _viewportArray[0] = viewport;
-        _deviceContext.RSSetViewports(1, _viewportArray);
-        _deviceContext.IASetInputLayout(null);
-        _deviceContext.IASetPrimitiveTopology(PrimitiveTopology.TriangleList);
-        _deviceContext.VSSetShader(_fullscreenVS, Array.Empty<ID3D11ClassInstance>(), 0);
-        _deviceContext.PSSetShader(pixelShader, Array.Empty<ID3D11ClassInstance>(), 0);
-        _samplerArray[0] = _linearSampler!;
-        _deviceContext.PSSetSamplers(0, 1, _samplerArray);
-        _srvArray2[0] = _hdrYPlaneSRV!;
-        _srvArray2[1] = _hdrUVPlaneSRV!;
-        _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
-
-        UpdateViewportConstantBuffer(viewport);
-
-        _deviceContext.Draw(3, 0);
-        _srvNullArray2[0] = null;
-        _srvNullArray2[1] = null;
-        _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
-
-        var rendererMode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
-            ? RendererModeHdrPassthrough
-            : RendererModeHdrShader;
-        TryCaptureFrameBeforePresent(rendererMode);
-        var presentResult = _swapChain.Present(0, PresentFlags.None);
-        if (presentResult.Failure)
-        {
-            throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
-        }
-
-        if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
-        {
-            Logger.Log(
-                rendererMode == RendererModeHdrPassthrough
-                    ? "D3D11 preview first HDR frame rendered via passthrough shader."
-                    : "D3D11 preview first HDR frame rendered via tonemapping shader.");
-            _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
-        }
-
-        Interlocked.Increment(ref _framesRendered);
-        TrackPresentCadence();
-        TrackPipelineLatency(frame.ArrivalTick);
     }
 
     private bool TryEnsureNv12ShaderResources(PendingFrame frame)
@@ -2059,9 +2108,15 @@ internal sealed partial class D3D11PreviewRenderer
         {
             try
             {
+                if (_panel?.XamlRoot == null)
+                {
+                    uiError = new InvalidOperationException(
+                        "Panel is no longer in the visual tree; swap chain binding skipped.");
+                    return;
+                }
                 var panelNative = CastExtensions.As<ISwapChainPanelNative>(_panel);
                 panelNative.SetSwapChain(swapChain.NativePointer);
-                _swapChainBound = true;
+                Interlocked.Exchange(ref _swapChainBound, 1);
             }
             catch (Exception ex)
             {
@@ -2168,9 +2223,24 @@ internal sealed partial class D3D11PreviewRenderer
     private void HandleDeviceLost(Exception ex)
     {
         Logger.Log($"D3D11 preview device lost ({ex.GetType().Name}); recreating device.");
+
+        // If Stop() is pending, bail. Stop() will unbind the swap chain from
+        // the panel while D3D resources are still alive, then the finally block
+        // will clean up. Proceeding here would dispose the swap chain while
+        // Stop() may be concurrently calling SetSwapChain(null) on the panel —
+        // the native call would hit freed memory and trigger an
+        // AccessViolationException that .NET 8 cannot catch.
+        if (Volatile.Read(ref _stopRequested) != 0) return;
+
         CleanupD3DResources();
         var stalePending = Interlocked.Exchange(ref _pendingFrame, null);
         stalePending?.Dispose();
+
+        // Re-check: Stop() may have been called during cleanup. Proceeding
+        // into InitializeD3D→BindSwapChainToPanel would dispatch to the UI
+        // thread, which may be blocked on Join — a 5-second deadlock.
+        if (Volatile.Read(ref _stopRequested) != 0) return;
+
         InitializeD3D();
         Interlocked.Exchange(ref _compositionTransformDirty, 1);
     }
@@ -2225,6 +2295,10 @@ internal sealed partial class D3D11PreviewRenderer
         // Swap chain unbind is handled by Stop()/Dispose() after the render
         // thread exits to avoid deadlock (render thread dispatching to UI
         // thread while UI thread is blocked on Join).
+        // CAS(1→0) atomically claims the flag so Stop() cannot race us —
+        // whoever loses the CAS skips the native SetSwapChain call.
+        // BindSwapChainToPanel re-sets this to 1 when a new chain is bound.
+        Interlocked.CompareExchange(ref _swapChainBound, 0, 1);
 
         _swapChain3?.Dispose();
         _swapChain3 = null;

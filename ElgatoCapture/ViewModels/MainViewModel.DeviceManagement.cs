@@ -563,11 +563,23 @@ public partial class MainViewModel
         string? targetFormat;
         if (IsHdrEnabled)
         {
-            targetFormat = formats.FirstOrDefault(format =>
-                string.Equals(format, HevcRecordingFormat, StringComparison.OrdinalIgnoreCase))
-                ?? formats.FirstOrDefault(format =>
-                    string.Equals(format, Av1RecordingFormat, StringComparison.OrdinalIgnoreCase))
-                ?? formats.FirstOrDefault();
+            // Preserve the user's codec when it already supports HDR (AV1 or HEVC).
+            // Only override to HEVC/AV1 when the current selection is incompatible
+            // (e.g. H.264, which has no 10-bit HDR profile on nvenc).
+            if (!string.IsNullOrWhiteSpace(SelectedRecordingFormat) &&
+                formats.Any(format => string.Equals(format, SelectedRecordingFormat, StringComparison.OrdinalIgnoreCase)) &&
+                IsHdrCompatibleRecordingFormat(SelectedRecordingFormat))
+            {
+                targetFormat = SelectedRecordingFormat;
+            }
+            else
+            {
+                targetFormat = formats.FirstOrDefault(format =>
+                    string.Equals(format, HevcRecordingFormat, StringComparison.OrdinalIgnoreCase))
+                    ?? formats.FirstOrDefault(format =>
+                        string.Equals(format, Av1RecordingFormat, StringComparison.OrdinalIgnoreCase))
+                    ?? formats.FirstOrDefault();
+            }
         }
         else
         {
@@ -800,6 +812,11 @@ public partial class MainViewModel
 
         if (selected == null)
         {
+            // The capture card (e.g. 4K X) cannot deliver HDR at every resolution+FPS
+            // combination due to USB bandwidth limits. When HDR is enabled, we pick the
+            // highest resolution that still supports the user's chosen frame rate in HDR
+            // mode, which may be lower than the source resolution. This is an intentional
+            // hardware-driven trade-off: preserve frame rate, drop resolution.
             selected = IsHdrEnabled
                 ? SelectHdrResolutionOption(options, desiredSelection, previousRate, out hdrHint)
                 : options.FirstOrDefault(option =>

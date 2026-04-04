@@ -298,11 +298,12 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
 
     private Thread? _renderThread;
     private PendingFrame? _pendingFrame;
-    private volatile bool _swapChainBound;
+    private int _swapChainBound; // 0=unbound, 1=bound; use Interlocked.CompareExchange to claim unbind
 
     private int _disposed;
     private int _stopRequested;
     private int _isRendering;
+    private int _inNativeCall; // 1 while render thread is between guard-check and Present return
     private int _compositionTransformDirty;
     private int _firstFrameRaised;
 
@@ -570,15 +571,32 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             Interlocked.Exchange(ref _stopRequested, 1);
         }
 
+        // Wait for any in-flight native render call (VideoProcessorBlt / Present)
+        // to complete before we unbind the swap chain. The render thread sets
+        // _inNativeCall=1 before entering the native call block and clears it after.
+        // Without this gate, the CAS unbind below can yank the swap chain while
+        // the render thread is inside a native D3D call, causing an unrecoverable
+        // AccessViolationException (.NET 8 cannot catch corrupted-state exceptions).
+        {
+            var sw = new SpinWait();
+            while (Volatile.Read(ref _inNativeCall) != 0)
+            {
+                sw.SpinOnce();
+            }
+        }
+
         // Unbind swap chain from panel BEFORE joining the render thread.
         // The render thread releases the swap chain and D3D device during cleanup.
         // If we unbind after that, the panel holds a stale DXGI reference and
         // SetSwapChain (either null or new chain) hits an AccessViolationException
         // — a corrupted-state exception .NET Core cannot catch.
         // Unbinding first, while D3D resources are still alive, avoids this.
-        if (_swapChainBound)
+        //
+        // CAS(1→0) ensures exactly one thread performs the unbind. The render
+        // thread's CleanupD3DResources also CAS's this flag before disposing the
+        // swap chain — whoever loses the race skips the native call entirely.
+        if (Interlocked.CompareExchange(ref _swapChainBound, 0, 1) == 1)
         {
-            _swapChainBound = false;
             try
             {
                 if (_dispatcherQueue.HasThreadAccess)
@@ -600,6 +618,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             }
         }
 
+        // Wake the render thread AFTER the swap chain is safely unbound so it
+        // sees _stopRequested and exits without attempting to Present.
         _frameReadyEvent.Set();
         if (Thread.CurrentThread != renderThread)
         {

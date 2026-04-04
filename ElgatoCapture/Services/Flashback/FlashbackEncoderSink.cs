@@ -339,7 +339,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             };
         }
 
-        var (startPts, endPts) = _bufferManager.ResumeEviction();
+        // Capture end PTS BEFORE resuming eviction. When an outer pause is held
+        // (FinalizeFlashbackRecordingAsync), ResumeEviction won't reach count=0 and
+        // therefore won't snapshot the end PTS. Even if count does reach 0, the
+        // stored _recordingEndPts may be stale from a previous recording. Always
+        // use the live LatestPts as the authoritative recording end time.
+        var endPts = _bufferManager.LatestPts;
+        var (startPts, _) = _bufferManager.ResumeEviction();
         LastRecordingStartPts = startPts;
         LastRecordingEndPts = endPts;
 
@@ -852,12 +858,30 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader)
     {
         var drainedAny = false;
+        var w = _width;
+        var h = _height;
+        if (w <= 0 || h <= 0)
+        {
+            return false;
+        }
+        var expectedNv12Size = w * h * 3 / 2;
+
         while (reader.TryRead(out var packet))
         {
             Interlocked.Decrement(ref _videoQueueDepth);
             try
             {
-                _encoder.SendVideoFrame(packet.Buffer.AsSpan(0, packet.Length), _width, _height);
+                // Defense-in-depth: if a stale frame from a previous resolution
+                // leaks through during a reinit cycle, drop it rather than sending
+                // mismatched dimensions to the encoder (which could crash in native code).
+                if (expectedNv12Size > 0 && packet.Length != expectedNv12Size)
+                {
+                    Interlocked.Increment(ref _droppedVideoFrames);
+                    Logger.Log($"FLASHBACK_SINK_FRAME_SIZE_MISMATCH expected={expectedNv12Size} actual={packet.Length} w={w} h={h}");
+                    continue;
+                }
+
+                _encoder.SendVideoFrame(packet.Buffer.AsSpan(0, packet.Length), w, h);
                 OnVideoFrameEncoded();
             }
             finally

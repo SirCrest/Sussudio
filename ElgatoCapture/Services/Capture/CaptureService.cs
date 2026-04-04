@@ -147,6 +147,20 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _currentSettings.FlashbackBufferMinutes = bufferMinutes;
             _currentSettings.FlashbackGpuDecode = gpuDecode;
         }
+        if (_isRecording && IsFlashbackRecordingBackendActive())
+            _pendingFlashbackSettingsChange = true;
+    }
+
+    /// <summary>
+    /// Updates encoding-related fields in the active capture settings so that
+    /// <see cref="RestartFlashbackAsync"/> picks up the latest bitrate/quality/preset.
+    /// </summary>
+    public void UpdateEncodingSettings(CaptureSettings source)
+    {
+        if (_currentSettings == null) return;
+        _currentSettings.CustomBitrateMbps = source.CustomBitrateMbps;
+        _currentSettings.AudioEnabled = source.AudioEnabled;
+        _currentSettings.MicrophoneEnabled = source.MicrophoneEnabled;
         // If a flashback-backed recording is active, the restart will be deferred —
         // flag it so the stop-recording path knows to do a full rebuild.
         if (_isRecording && IsFlashbackRecordingBackendActive())
@@ -450,6 +464,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             : null;
         var frameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
         var d3dManager = unifiedVideoCapture.D3DManager;
+        // When the software MJPEG decode pipeline is active, frames arrive as CPU NV12
+        // buffers (not D3D11 textures). Passing D3D device pointers would cause the
+        // encoder to initialize hw_frames, but SendVideoFrame would then feed a software
+        // frame into an nvenc context expecting D3D11 textures — crashing in the driver.
+        var useGpuEncoding = !unifiedVideoCapture.IsSoftwareMjpegPipelineActive;
 
         // NTSC rational frame rate correction — DISABLED.
         // The HDMI source outputs 119.88fps but the capture card delivers at ~120fps
@@ -505,8 +524,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             HdrMasterDisplayMetadata = settings.HdrMasterDisplayMetadata,
             HdrMaxCll = settings.HdrMaxCll,
             HdrMaxFall = settings.HdrMaxFall,
-            D3D11DevicePtr = d3dManager?.Device?.NativePointer ?? IntPtr.Zero,
-            D3D11DeviceContextPtr = d3dManager?.ImmediateContext?.NativePointer ?? IntPtr.Zero,
+            D3D11DevicePtr = useGpuEncoding ? (d3dManager?.Device?.NativePointer ?? IntPtr.Zero) : IntPtr.Zero,
+            D3D11DeviceContextPtr = useGpuEncoding ? (d3dManager?.ImmediateContext?.NativePointer ?? IntPtr.Zero) : IntPtr.Zero,
             AudioEnabled = settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId),
             MicrophoneEnabled = settings.MicrophoneEnabled && !string.IsNullOrWhiteSpace(settings.MicrophoneDeviceId)
         };
@@ -629,10 +648,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         var flashbackExporter = _flashbackExporter;
         var flashbackPlaybackController = _flashbackPlaybackController;
 
-        _flashbackSink = null;
-        _flashbackBufferManager = null;
-        _flashbackExporter = null;
-        _flashbackPlaybackController = null;
+        // Do NOT null the fields yet — the encoding loop may still be running
+        // and code that checks _flashbackSink (e.g. IsFlashbackActive) must see
+        // a consistent state until the sink is fully drained and stopped.
 
         Logger.Log($"FLASHBACK_PREVIEW_DISPOSE_BEGIN purge={purgeSegments} has_sink={flashbackSink != null} has_buffer={flashbackBufferManager != null} has_controller={flashbackPlaybackController != null}");
 
@@ -649,6 +667,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
         }
 
+        // Detach feeds first — stops new frames from entering the sink
         _microphoneCapture?.SetAudioWriter(null);
         _wasapiAudioCapture?.DetachFlashbackSink();
         _unifiedVideoCapture?.SetFlashbackSink(null);
@@ -658,6 +677,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;
             try
             {
+                // StopAsync waits for the encoding loop to fully drain and exit
                 await flashbackSink.StopAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -674,6 +694,14 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 Logger.Log($"FLASHBACK_PREVIEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
             }
         }
+
+        // Now that the sink is fully stopped and disposed, clear the fields.
+        // Any concurrent reader of _flashbackSink sees either the old (valid)
+        // value or null — never a half-disposed object.
+        _flashbackSink = null;
+        _flashbackBufferManager = null;
+        _flashbackExporter = null;
+        _flashbackPlaybackController = null;
 
         if (flashbackBufferManager != null)
         {
@@ -1310,8 +1338,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             WasapiAudioCapture? wasapiCapture = null;
             try
             {
+                Logger.LogFatalBreadcrumb($"PREVIEW_START phase=create_uvc");
                 unifiedVideoCapture = new UnifiedVideoCapture();
                 AttachUnifiedVideoCapture(unifiedVideoCapture);
+                Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_uvc {(int)settings.Width}x{(int)settings.Height}@{settings.FrameRate:0.###} p010={requireP010} pxfmt={settings.RequestedPixelFormat} mjpeg_hfr={useMjpegHighFrameRateMode}");
                 await unifiedVideoCapture.InitializeAsync(
                     _currentDevice.Id,
                     (int)settings.Width,
@@ -1321,9 +1351,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     settings.RequestedPixelFormat,
                     useMjpegHighFrameRateMode,
                     settings.MjpegDecoderCount).ConfigureAwait(false);
+                Logger.LogFatalBreadcrumb($"PREVIEW_START phase=init_done");
                 unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
                 TryApplySharedPreviewDevice(unifiedVideoCapture, _previewFrameSink);
+                Logger.LogFatalBreadcrumb($"PREVIEW_START phase=starting");
                 unifiedVideoCapture.Start();
+                Logger.LogFatalBreadcrumb($"PREVIEW_START phase=started");
                 // Skip Lock2D by default — preview uses GPU textures via SubmitTexture,
                 // never CPU bytes. Lock2D causes GPU pipeline stalls (~5% cadence drops
                 // at 120fps, worse at 4K). The existing guards (hasTexture, !frameData.IsEmpty)
@@ -1554,9 +1587,28 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                             GpuHandles = GpuPipelineHandles.None
                         }).ConfigureAwait(false);
 
-                    EnsureFlashbackRecordingTopologyMatches(_flashbackSink,
-                        audioEnabled: settings.AudioEnabled,
-                        microphoneEnabled: settings.MicrophoneEnabled);
+                    // If audio/microphone topology changed since flashback was started,
+                    // auto-restart the flashback backend to match the new settings.
+                    if (_flashbackSink.AudioEnabled != settings.AudioEnabled ||
+                        _flashbackSink.MicrophoneEnabled != settings.MicrophoneEnabled)
+                    {
+                        Logger.Log($"FLASHBACK_TOPOLOGY_MISMATCH_AUTO_RESTART " +
+                            $"audio={settings.AudioEnabled} (was {_flashbackSink.AudioEnabled}) " +
+                            $"mic={settings.MicrophoneEnabled} (was {_flashbackSink.MicrophoneEnabled})");
+
+                        await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+
+                        var uvc = _unifiedVideoCapture;
+                        if (uvc != null)
+                        {
+                            await EnsureFlashbackPreviewBackendAsync(uvc, settings, transitionToken).ConfigureAwait(false);
+                        }
+
+                        if (_flashbackSink == null)
+                        {
+                            throw new InvalidOperationException("Failed to restart flashback backend for new audio topology.");
+                        }
+                    }
 
                     _flashbackSink.BeginRecording(fbRecordingContext.FinalOutputPath);
                     _recordingSink = _flashbackSink;
