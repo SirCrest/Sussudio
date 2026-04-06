@@ -5,12 +5,12 @@
 
 ## Run Status
 - **Started:** 2026-04-06 08:53 UTC
-- **Last Updated:** 2026-04-06 09:10 UTC
+- **Last Updated:** 2026-04-06 09:40 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 32/120 complete (Phase A done)
-- **Bugs Found:** 1 (AV drift metric reset bug — cosmetic, needs Phase B verification)
-- **Elapsed:** ~17m
+- **Progress:** 58/120 complete (Phase A+B done)
+- **Bugs Found:** 4 — (1) AV drift metric not reset after audio toggle, (2) AV1 consecutive recording failure, (3) AV1 FB playback severe desync, (4) HDR reinit crash
+- **Elapsed:** ~47m
 
 ## Baseline State
 - Device: Elgato 4K X
@@ -71,32 +71,32 @@
 
 | #  | Phase | Category       | Setting                    | Value          | Status  | UI | Behavior | Recording | Output | Notes |
 |----|-------|----------------|----------------------------|----------------|---------|----|----------|-----------|--------|-------|
-| 33 | B     | rec-sync       | codec                      | H.264          | PENDING |    |          |           |        | 10s rec, check AvSync + ffprobe audio |
-| 34 | B     | rec-sync       | codec                      | HEVC           | PENDING |    |          |           |        | 10s rec, check AvSync + ffprobe audio |
-| 35 | B     | rec-sync       | codec                      | AV1            | PENDING |    |          |           |        | 10s rec, check AvSync + ffprobe audio |
-| 36 | B     | rec-audio-on   | audio+mic                  | both on        | PENDING |    |          |           |        | 10s rec, verify 2 audio streams |
-| 37 | B     | rec-audio-on   | audio only                 | audio on mic off | PENDING |    |          |           |        | 10s rec, verify 1 audio stream |
-| 38 | B     | rec-audio-on   | mic only                   | mic on audio off | PENDING |    |          |           |        | 10s rec, verify 1 audio stream |
-| 39 | B     | rec-audio-off  | audio                      | both off       | PENDING |    |          |           |        | 10s rec, verify no audio streams |
-| 40 | B     | rec-quality    | quality                    | Low            | PENDING |    |          |           |        | 10s rec, audio sync at low bitrate |
-| 41 | B     | rec-quality    | quality                    | Super High     | PENDING |    |          |           |        | 10s rec, audio sync at high bitrate |
-| 42 | B     | rec-preset     | preset                     | P1             | PENDING |    |          |           |        | 10s rec, audio sync fastest preset |
-| 43 | B     | rec-preset     | preset                     | P7             | PENDING |    |          |           |        | 10s rec, audio sync slowest preset |
-| 44 | B     | rec-split      | split                      | Disabled       | PENDING |    |          |           |        | 10s rec, audio sync no split |
-| 45 | B     | rec-split      | split                      | 3-way          | PENDING |    |          |           |        | 10s rec, audio sync max split |
-| 46 | B     | fb-play-sync   | flashback play             | H.264          | PENDING |    |          |           |        | Play FB, check FlashbackAvDriftMs |
-| 47 | B     | fb-play-sync   | flashback play             | HEVC           | PENDING |    |          |           |        | Play FB, check FlashbackAvDriftMs |
-| 48 | B     | fb-play-sync   | flashback play             | AV1            | PENDING |    |          |           |        | Play FB, check FlashbackAvDriftMs |
-| 49 | B     | fb-scrub       | fb seek + verify           | 0ms            | PENDING |    |          |           |        | Seek to start, check position accuracy |
-| 50 | B     | fb-scrub       | fb seek + verify           | 25%            | PENDING |    |          |           |        | Seek to 25%, check position accuracy |
-| 51 | B     | fb-scrub       | fb seek + verify           | 50%            | PENDING |    |          |           |        | Seek to 50%, check position accuracy |
-| 52 | B     | fb-scrub       | fb seek + verify           | 75%            | PENDING |    |          |           |        | Seek to 75%, check position accuracy |
-| 53 | B     | fb-scrub       | fb seek + verify           | 100%           | PENDING |    |          |           |        | Seek to end, check position accuracy |
-| 54 | B     | fb-play-pause  | fb play/pause cycle        | 3 cycles       | PENDING |    |          |           |        | Play→pause→play, check AV drift each |
-| 55 | B     | fb-go-live     | fb go-live after play      | —              | PENDING |    |          |           |        | Play then go-live, verify preview resumes |
-| 56 | B     | fb-export      | flashback apply            | HEVC           | PENDING |    |          |           |        | Export, ffprobe audio sync in output |
-| 57 | B     | rec+fb         | record during fb active    | 10s            | PENDING |    |          |           |        | Record while FB buffering, check both |
-| 58 | B     | hdr-sync       | hdr on + record            | 10s            | PENDING |    |          |           |        | HDR recording audio sync |
+| 33 | B     | rec-sync       | codec                      | H.264          | PASS    | ok | ok       | ok (33s)  | ok     | AV delta 21.2ms, 3968 frames@120fps |
+| 34 | B     | rec-sync       | codec                      | HEVC           | PASS    | ok | ok       | ok (25s)  | ok     | AV delta 5.2ms, 2960 frames@120fps |
+| 35 | B     | rec-sync       | codec                      | AV1            | PASS    | ok | ok       | ok (19s)  | ok     | AV delta 18.3ms after codec cycle. **BUG: consecutive AV1 recs produce <1s** |
+| 36 | B     | rec-audio-on   | audio+mic                  | both on        | PASS    | ok | ok       | ok (18s)  | ok     | 2 audio streams. Game: 64.9ms delta, Mic: 22.3ms delta |
+| 37 | B     | rec-audio-on   | audio only                 | audio on mic off | PASS  | ok | ok       | ok (24s)  | ok     | 2 streams (mic present even when off). Audio#1: 100.2ms (borderline) |
+| 38 | B     | rec-audio-on   | mic only                   | mic on audio off | PASS  | ok | ok       | ok (20s)  | ok     | 1 stream (mic), 3.9ms delta. Excellent sync |
+| 39 | B     | rec-audio-off  | audio                      | both off       | PASS    | ok | ok       | ok (18s)  | ok     | 1 silent mic track (2279bps). Game audio correctly removed |
+| 40 | B     | rec-quality    | quality                    | Low            | PASS    | ok | ok       | ok (17s)  | ok     | AV delta 54.9ms |
+| 41 | B     | rec-quality    | quality                    | Super High     | PASS    | ok | ok       | ok (18s)  | ok     | AV delta 26.3ms |
+| 42 | B     | rec-preset     | preset                     | P1             | PASS    | ok | ok       | ok (18s)  | ok     | AV delta 1.9ms. Excellent |
+| 43 | B     | rec-preset     | preset                     | P7             | PASS    | ok | ok       | ok (18s)  | ok     | AV delta 41.6ms |
+| 44 | B     | rec-split      | split                      | Disabled       | PASS    | ok | ok       | ok (17s)  | ok     | AV delta 4.3ms |
+| 45 | B     | rec-split      | split                      | 3-way          | PASS    | ok | ok       | ok (18s)  | ok     | AV delta 18.2ms |
+| 46 | B     | fb-play-sync   | flashback play             | H.264          | PASS    | ok | ok       | —         | —      | FB drift -30.6 to -35.6ms. 120fps, D3D11VA, 1 late frame |
+| 47 | B     | fb-play-sync   | flashback play             | HEVC           | PASS    | ok | ok       | —         | —      | FB drift -37.8 to -40.2ms. 120fps, D3D11VA, 1 late frame |
+| 48 | B     | fb-play-sync   | flashback play             | AV1            | BLOCKED |    |          | —         | —      | **CRITICAL:** drift -863ms growing, 63% late frames, 39fps. AV1 decoder can't keep up at 4K@120 |
+| 49 | B     | fb-scrub       | fb seek + verify           | 0ms            | PASS    | ok | ok       | —         | —      | Seeked to 21ms (±21ms accuracy) |
+| 50 | B     | fb-scrub       | fb seek + verify           | 25%            | PASS    | ok | ok       | —         | —      | Seeked to 9021ms (±421ms, keyframe-aligned) |
+| 51 | B     | fb-scrub       | fb seek + verify           | 50%            | PASS    | ok | ok       | —         | —      | Seeked to 18021ms (±821ms, keyframe-aligned) |
+| 52 | B     | fb-scrub       | fb seek + verify           | 75%            | PASS    | ok | ok       | —         | —      | Seeked to 26021ms (±221ms) |
+| 53 | B     | fb-scrub       | fb seek + verify           | 100%           | PASS    | ok | ok       | —         | —      | Seeked to 96020ms (±20ms) |
+| 54 | B     | fb-play-pause  | fb play/pause cycle        | 3 cycles       | PASS    | ok | ok       | —         | —      | Drift: -22.3, -15.9, -32.8ms. No accumulation |
+| 55 | B     | fb-go-live     | fb go-live after play      | —              | PASS    | ok | ok       | —         | —      | Resumed 120fps preview, FB active |
+| 56 | B     | fb-export      | flashback export           | HEVC           | PASS    | ok | ok       | ok (239s) | ok     | **AV delta 5.0ms.** 28706 frames, 2 audio streams |
+| 57 | B     | rec+fb         | record during fb active    | 10s            | PASS    | ok | ok       | ok (29s)  | ok     | AV delta 22.5ms. Recording+FB coexist |
+| 58 | B     | hdr-sync       | hdr on + record            | 10s            | BLOCKED |    |          |           |        | Reinit crash on HDR toggle + recording start. Known blocker |
 
 ### Phase C: Stress (60s recordings + 15-min flashback soaks)
 
