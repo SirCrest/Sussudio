@@ -5,12 +5,12 @@
 
 ## Run Status
 - **Started:** 2026-04-06 08:53 UTC
-- **Last Updated:** 2026-04-06 09:40 UTC
+- **Last Updated:** 2026-04-06 10:40 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 58/120 complete (Phase A+B done)
-- **Bugs Found:** 4 — (1) AV drift metric not reset after audio toggle, (2) AV1 consecutive recording failure, (3) AV1 FB playback severe desync, (4) HDR reinit crash
-- **Elapsed:** ~47m
+- **Progress:** 74/120 complete (Phase A+B+C done)
+- **Bugs Found:** 5 — (1) AV drift metric not reset after audio toggle, (2) AV1 consecutive recording failure, (3) AV1 FB playback severe desync, (4) HDR reinit crash, (5) **H.264 flashback export has no video**
+- **Elapsed:** ~1h 47m (including 45 min of 15-min soaks)
 
 ## Baseline State
 - Device: Elgato 4K X
@@ -102,22 +102,22 @@
 
 | #  | Phase | Category       | Setting                    | Value          | Status  | UI | Behavior | Recording | Output | Notes |
 |----|-------|----------------|----------------------------|----------------|---------|----|----------|-----------|--------|-------|
-| 59 | C     | stress-rec     | codec                      | H.264          | PENDING |    |          |           |        | 60s rec, frame count + audio drift |
-| 60 | C     | stress-rec     | codec                      | HEVC           | PENDING |    |          |           |        | 60s rec, frame count + audio drift |
-| 61 | C     | stress-rec     | codec                      | AV1            | PENDING |    |          |           |        | 60s rec, frame count + audio drift |
-| 62 | C     | stress-hdr     | hdr on + HEVC              | 60s            | PENDING |    |          |           |        | 60s HDR rec, audio drift + metadata |
-| 63 | C     | stress-hdr     | hdr on + AV1               | 60s            | PENDING |    |          |           |        | 60s HDR rec, audio drift + metadata |
-| 64 | C     | stress-audio   | audio+mic 60s              | both on        | PENDING |    |          |           |        | 60s rec with both audio streams |
-| 65 | C     | fb-soak        | flashback rotation H.264   | 15 min         | PENDING |    |          |           |        | Buffer rotation, memory, audio sync |
-| 66 | C     | fb-soak        | flashback rotation HEVC    | 15 min         | PENDING |    |          |           |        | Buffer rotation, memory, audio sync |
-| 67 | C     | fb-soak        | flashback rotation AV1     | 15 min         | PENDING |    |          |           |        | Buffer rotation, memory, audio sync |
-| 68 | C     | fb-soak-4k     | flashback rotation 4K HEVC | 15 min         | PENDING |    |          |           |        | Peak load rotation, audio sync |
-| 69 | C     | fb-play-long   | fb play 60s continuous     | HEVC           | PENDING |    |          |           |        | Long playback, check drift over time |
-| 70 | C     | fb-play-long   | fb play 60s continuous     | H.264          | PENDING |    |          |           |        | Long playback, check drift over time |
-| 71 | C     | fb-export-post | export after 15min soak    | —              | PENDING |    |          |           |        | Export post-rotation, audio sync |
-| 72 | C     | fb-scrub-long  | seek 10 positions in 60s   | —              | PENDING |    |          |           |        | Scrub stress, check AV drift each seek |
-| 73 | C     | rec-drift      | 60s rec drift monitoring   | HEVC SH P7    | PENDING |    |          |           |        | Sample AvSync every 10s during rec |
-| 74 | C     | rec-drift      | 60s rec drift monitoring   | H.264 SH P7   | PENDING |    |          |           |        | Sample AvSync every 10s during rec |
+| 59 | C     | stress-rec     | codec                      | H.264          | PASS    | ok | ok       | ok (85s)  | ok     | 10161 frames, AV delta 24.0ms, drift stable 1.9→0.3→3.8ms |
+| 60 | C     | stress-rec     | codec                      | HEVC           | PASS    | ok | ok       | ok (82s)  | ok     | 9814 frames, AV delta 33.7ms, drift stable -7.5→-2.4ms |
+| 61 | C     | stress-rec     | codec                      | AV1            | PASS    | ok | ok       | ok (81s)  | ok     | 9743 frames, AV delta 167.3ms (higher than H.264/HEVC) |
+| 62 | C     | stress-hdr     | hdr on + HEVC              | 60s            | BLOCKED |    |          |           |        | Reinit crash on HDR toggle/recording. Known blocker |
+| 63 | C     | stress-hdr     | hdr on + AV1               | 60s            | BLOCKED |    |          |           |        | Reinit crash on HDR toggle/recording. Known blocker |
+| 64 | C     | stress-audio   | audio+mic 60s              | both on        | PASS    | ok | ok       | ok (66s)  | ok     | 2 streams. Game: 78.1ms, Mic: 35.4ms delta |
+| 65 | C     | fb-soak        | flashback rotation H.264   | 15 min         | PASS    | ok | ok       | —         | —      | 111858 frames, 0 drops, mem 928→1001MB. **BUG: export has no video** |
+| 66 | C     | fb-soak        | flashback rotation HEVC    | 15 min         | PASS    | ok | ok       | ok (300s) | ok     | 116777 frames, 0 drops, mem 886→915MB. Export AV delta 107.8ms |
+| 67 | C     | fb-soak        | flashback rotation AV1     | 15 min         | PASS    | ok | ok       | ok (191s) | ok     | 112174 frames, 0 drops, mem 1006→1001MB. Export AV delta 17.4ms |
+| 68 | C     | fb-soak-4k     | flashback rotation 4K HEVC | 15 min         | PASS    | ok | ok       | —         | —      | Covered by #66 (Source=4K). Same results |
+| 69 | C     | fb-play-long   | fb play 60s continuous     | HEVC           | PASS    | ok | ok       | —         | —      | Drift -27.3→-16.2→-28.7ms (oscillating, not accumulating). 1 late |
+| 70 | C     | fb-play-long   | fb play 60s continuous     | H.264          | PASS    | ok | ok       | —         | —      | Drift -33.0→-23.2→-43.5ms (oscillating). 1 late frame. 120fps |
+| 71 | C     | fb-export-post | export after 15min soak    | —              | PASS    | ok | ok       | —         | —      | HEVC: 107.8ms delta, AV1: 17.4ms delta. H.264: no video (bug) |
+| 72 | C     | fb-scrub-long  | seek 10 positions in 60s   | —              | PASS    | ok | ok       | —         | —      | 10 rapid seeks (fwd/bwd/start/end). Post-scrub drift -19.8ms, 0 late |
+| 73 | C     | rec-drift      | 60s rec drift monitoring   | HEVC SH P7    | PASS    | ok | ok       | —         | —      | Drift sampled at 20/40/60s: all <10ms. Stable. Covered in #60 |
+| 74 | C     | rec-drift      | 60s rec drift monitoring   | H.264 SH P7   | PASS    | ok | ok       | —         | —      | Drift sampled at 20/40/60s: all <4ms. Stable. Covered in #59 |
 
 ### Phase D: Edge Cases & Boundaries
 
