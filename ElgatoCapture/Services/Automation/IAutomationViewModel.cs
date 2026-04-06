@@ -72,8 +72,13 @@ public interface IAutomationViewModel
     Task SetStatsSectionVisibleAsync(string section, bool visible, CancellationToken cancellationToken = default);
     Task SetSettingsVisibleAsync(bool visible, CancellationToken cancellationToken = default);
 
+    // ── Microphone ──────────────────────────────────────────────────
+
+    bool IsMicrophoneEnabled { get; set; }
+
     // ── Flashback ───────────────────────────────────────────────────
 
+    Task RestartFlashbackAsync();
     bool FlashbackPlay();
     bool FlashbackPause();
     bool FlashbackGoLive();

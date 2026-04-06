@@ -531,6 +531,13 @@ public partial class MainViewModel
         SelectedFormat = SelectPreferredFrameRateFormat(rateCandidates, friendlyBucket, timingFamily);
     }
 
+    /// <summary>
+    /// H.264 is intentionally excluded from HDR recording: the nvenc H.264
+    /// encoder has no 10-bit profile, so it cannot carry bt2020/PQ metadata.
+    /// Only HEVC (Main 10) and AV1 (main profile, 10-bit) support HDR output.
+    /// When HDR is enabled, <see cref="RebuildRecordingFormatOptions"/> filters
+    /// the codec list to these two formats and the UI hides H.264.
+    /// </summary>
     private static bool IsHdrCompatibleRecordingFormat(string format)
         => format.Contains("HEVC", StringComparison.OrdinalIgnoreCase) ||
            format.Contains("AV1", StringComparison.OrdinalIgnoreCase);

@@ -47,6 +47,31 @@ public sealed partial class MainWindow
         Logger.Log($"PREVIEW_REINIT_ANIMATE_OUT reason={reason}");
         await AnimatePreviewOutAsync();
     }
+    private Task ViewModel_PreviewRendererStopRequested()
+    {
+        // Stop the render thread before the capture pipeline teardown. This ensures
+        // no native D3D calls (VideoProcessorBlt/Present) are in flight when
+        // UnifiedVideoCapture disposes the shared D3D11 device and DXGI manager.
+        //
+        // IMPORTANT: Do NOT dispose or recreate the renderer. Keep the same instance
+        // alive so that Start() can reuse it during reinit. Creating a new renderer
+        // and calling SetSwapChain on the same SwapChainPanel triggers an
+        // AccessViolationException in WinUI 3's native ISwapChainPanelNative — the
+        // panel's COM backing gets corrupted across QI calls from different objects.
+        // Reusing the same renderer avoids this because Start() internally calls
+        // Stop() then reinitializes D3D, performing the unbind→rebind within the
+        // same COM wrapper lifetime.
+        var renderer = _d3dRenderer;
+        if (renderer != null)
+        {
+            Logger.Log("PREVIEW_REINIT_RENDERER_STOP: stopping render thread before pipeline teardown");
+            ViewModel.SetPreviewFrameSink(null);
+            renderer.StopRenderThread();
+        }
+
+        return Task.CompletedTask;
+    }
+
     private void ViewModel_PreviewStopRequested(object? sender, EventArgs e)
     {
         _previewStopRequestedByUser = _previewStopRequestedByUser || !ViewModel.IsPreviewReinitializing;
@@ -108,7 +133,13 @@ public sealed partial class MainWindow
                 {
                     StopPreviewStartupWatchdog();
                     StopPreviewStartupOverlay();
-                    await StopPreviewRendererAsync();
+                    // During reinit, the renderer is kept alive (render thread stopped
+                    // by ViewModel_PreviewRendererStopRequested, instance preserved).
+                    // StartPreviewRendererAsync will reuse it via Start().
+                    if (!ViewModel.IsPreviewReinitializing)
+                    {
+                        await StopPreviewRendererAsync();
+                    }
                     if (!ViewModel.IsPreviewReinitializing && !_isPreviewReinitAnimating)
                     {
                         ResetPreviewContentTransform();

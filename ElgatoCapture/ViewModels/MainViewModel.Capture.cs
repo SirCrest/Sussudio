@@ -225,6 +225,18 @@ public partial class MainViewModel
         if (SelectedDevice == null || SelectedFormat == null)
             return;
 
+        // If a flashback encoder cycle (codec/quality/bitrate change) is still
+        // in progress, wait for it to release the session transition lock before
+        // we attempt the reinit. Without this, the reinit can read stale encoder
+        // settings or partially fail because the transition lock is contended.
+        var pendingCycle = _pendingFlashbackCycleTask;
+        if (pendingCycle != null)
+        {
+            try { await pendingCycle.ConfigureAwait(false); }
+            catch { /* cycle errors don't block reinit */ }
+            _pendingFlashbackCycleTask = null;
+        }
+
         await _previewReinitializeGate.WaitAsync();
         var shouldRestartPreview = IsPreviewing;
         try
@@ -237,6 +249,16 @@ public partial class MainViewModel
                 IsPreviewReinitializing = true;
                 _cancelPreviewRestartAfterReinitialize = false;
                 await NotifyPreviewReinitRequestedAsync(reason);
+
+                // Stop the D3D11 renderer BEFORE tearing down the capture pipeline.
+                // The renderer shares the D3D11 device with the MF source reader via
+                // SharedD3DDeviceManager. If the renderer is still calling
+                // VideoProcessorBlt/Present when UnifiedVideoCapture.DisposeAsync
+                // releases the source reader and DXGI device manager, the concurrent
+                // native calls race and trigger an uncatchable AccessViolationException.
+                // The flashback encoder drain (DisposeFlashbackPreviewBackendAsync)
+                // widens this window to hundreds of milliseconds.
+                await NotifyRendererStopAsync();
             }
 
             if (IsPreviewing)

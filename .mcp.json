@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "elgatocapture": {
-      "command": "dotnet",
-      "args": ["run", "--project", "tools/McpServer/McpServer.csproj"]
+      "command": "cmd",
+      "args": ["/c", "tools\\McpServer\\bin\\Debug\\net8.0\\McpServer.exe"]
     }
   }
 }

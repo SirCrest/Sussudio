@@ -109,6 +109,12 @@ public sealed partial class MainWindow
         ViewModel.MicrophoneMeterActivated -= EnsureAudioMeterTimerRunning;
         _audioMeterAnimationTimer?.Stop();
         _audioMeterAnimationTimer = null;
+        _liveSignalDebounceTimer?.Stop();
+        _liveSignalDebounceTimer = null;
+        _liveSignalHideDebounceTimer?.Stop();
+        _liveSignalHideDebounceTimer = null;
+        StopFullScreenAutoHideTimer();
+        StopFlashbackStatusPolling();
         StopStatsDockPolling();
         HideStatsDockPanel(immediate: true);
         StopMicMeterRowAnimation();
@@ -125,6 +131,7 @@ public sealed partial class MainWindow
         ViewModel.PreviewStartRequested -= ViewModel_PreviewStartRequested;
         ViewModel.PreviewStopRequested -= ViewModel_PreviewStopRequested;
         ViewModel.PreviewReinitRequested -= ViewModel_PreviewReinitRequested;
+        ViewModel.PreviewRendererStopRequested -= ViewModel_PreviewRendererStopRequested;
 
         try
         {

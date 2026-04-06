@@ -283,6 +283,15 @@ public sealed partial class MainWindow
 
         storyboard.Completed += (_, _) =>
         {
+            _entranceStoryboard = null;
+            if (!_isVolumeFadingIn)
+            {
+                // User already cancelled the fade-in via slider interaction.
+                // Just clean up suppression flags; don't overwrite their choice.
+                ViewModel.SuppressVolumeSave = false;
+                ViewModel.VolumeSaveOverride = null;
+                return;
+            }
             _isVolumeFadingIn = false;
             ViewModel.SuppressVolumeSave = false;
             ViewModel.VolumeSaveOverride = null;
@@ -292,6 +301,7 @@ public sealed partial class MainWindow
             }
         };
 
+        _entranceStoryboard = storyboard;
         storyboard.Begin();
 
         // 6. Control bar shadow depth fade-in (Composition animation, compositor thread)
@@ -504,7 +514,7 @@ public sealed partial class MainWindow
         var fade = new DoubleAnimation
         {
             From = 0, To = 1,
-            Duration = TimeSpan.FromMilliseconds(300),
+            Duration = TimeSpan.FromMilliseconds(450),
             EasingFunction = easing
         };
         Storyboard.SetTarget(fade, LiveSignalInfoPanel);
@@ -514,7 +524,7 @@ public sealed partial class MainWindow
         var scaleX = new DoubleAnimation
         {
             From = 0.92, To = 1.0,
-            Duration = TimeSpan.FromMilliseconds(300),
+            Duration = TimeSpan.FromMilliseconds(450),
             EasingFunction = easing,
             EnableDependentAnimation = true
         };
@@ -525,7 +535,7 @@ public sealed partial class MainWindow
         var scaleY = new DoubleAnimation
         {
             From = 0.92, To = 1.0,
-            Duration = TimeSpan.FromMilliseconds(300),
+            Duration = TimeSpan.FromMilliseconds(450),
             EasingFunction = easing,
             EnableDependentAnimation = true
         };
@@ -543,7 +553,7 @@ public sealed partial class MainWindow
         var fade = new DoubleAnimation
         {
             From = 1, To = 0,
-            Duration = TimeSpan.FromMilliseconds(200),
+            Duration = TimeSpan.FromMilliseconds(300),
             EasingFunction = easing
         };
         Storyboard.SetTarget(fade, LiveSignalInfoPanel);
@@ -617,7 +627,7 @@ public sealed partial class MainWindow
     private void AnimateSettingsShelf(bool show)
     {
         _isSettingsShelfAnimating = true;
-        var durationMs = show ? 250 : 200;
+        var durationMs = show ? 400 : 300;
         var easing = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn };
         var duration = TimeSpan.FromMilliseconds(durationMs);
 

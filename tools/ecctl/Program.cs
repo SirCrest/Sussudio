@@ -78,6 +78,7 @@ internal static class Program
         Console.WriteLine("  set gain <value>");
         Console.WriteLine("  set output <path>");
         Console.WriteLine("  set show-all on|off");
+        Console.WriteLine("  set mic on|off");
         Console.WriteLine();
         Console.WriteLine("Device:");
         Console.WriteLine("  device list");
@@ -86,10 +87,11 @@ internal static class Program
         Console.WriteLine("  device custom-audio on|off");
         Console.WriteLine();
         Console.WriteLine("Flashback:");
-        Console.WriteLine("  flashback play");
+        Console.WriteLine("  flashback play [<ms>]");
         Console.WriteLine("  flashback pause");
         Console.WriteLine("  flashback go-live");
         Console.WriteLine("  flashback seek <ms>");
+        Console.WriteLine("  flashback apply");
         Console.WriteLine();
         Console.WriteLine("Window:");
         Console.WriteLine("  window close|minimize|maximize|restore|center");

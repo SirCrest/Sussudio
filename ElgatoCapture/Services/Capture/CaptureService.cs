@@ -93,6 +93,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     public event EventHandler<string>? StatusChanged;
     public event EventHandler<Exception>? ErrorOccurred;
+    public event Action? PreCleanupRequested;
     public event EventHandler<ulong>? FrameCaptured;
     public event EventHandler<AudioLevelEventArgs>? AudioLevelUpdated;
     public event EventHandler<AudioLevelEventArgs>? MicrophoneAudioLevelUpdated;
@@ -231,6 +232,65 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
 
             Logger.Log($"FLASHBACK_FORMAT_CHANGE_DONE format={format}");
+        }, cancellationToken);
+
+    /// <summary>
+    /// Cycles the flashback encoder when encoder-affecting settings change
+    /// (bitrate, quality, preset). Updates <see cref="_currentSettings"/> and
+    /// restarts the flashback buffer so new recordings use the updated params.
+    /// No-op if not previewing or recording is active.
+    /// </summary>
+    public Task CycleFlashbackEncoderSettingsAsync(
+        VideoQuality? quality = null,
+        double? customBitrateMbps = null,
+        string? nvencPreset = null,
+        CancellationToken cancellationToken = default)
+        => RunTransitionAsync(_sessionState, async transitionToken =>
+        {
+            if (_currentSettings == null) return;
+
+            var changed = false;
+            if (quality.HasValue && quality.Value != _currentSettings.Quality)
+            {
+                _currentSettings.Quality = quality.Value;
+                changed = true;
+            }
+            if (customBitrateMbps.HasValue && Math.Abs(customBitrateMbps.Value - _currentSettings.CustomBitrateMbps) > 0.01)
+            {
+                _currentSettings.CustomBitrateMbps = customBitrateMbps.Value;
+                changed = true;
+            }
+            if (nvencPreset != null && !string.Equals(nvencPreset, _currentSettings.NvencPreset, StringComparison.OrdinalIgnoreCase))
+            {
+                _currentSettings.NvencPreset = nvencPreset;
+                changed = true;
+            }
+
+            if (!changed) return;
+
+            if (_isRecording)
+            {
+                Logger.Log("FLASHBACK_ENCODER_SETTINGS_CHANGE_BLOCKED reason=recording_active");
+                if (IsFlashbackRecordingBackendActive())
+                    _pendingFlashbackSettingsChange = true;
+                return;
+            }
+
+            Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_BEGIN quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset}");
+
+            if (_flashbackSink != null)
+            {
+                try
+                {
+                    await CycleFlashbackBufferAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL error='{ex.Message}'");
+                }
+            }
+
+            Logger.Log("FLASHBACK_ENCODER_SETTINGS_CHANGE_DONE");
         }, cancellationToken);
 
     public void SetPreviewVolume(float volume)
@@ -942,6 +1002,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             try
             {
+                // Stop the preview renderer before disposing the shared D3D11
+                // device. Same race as the reinit crash: the renderer may be
+                // calling VideoProcessorBlt/Present on the shared device when
+                // CleanupAsync disposes it.
+                try { PreCleanupRequested?.Invoke(); }
+                catch (Exception preEx) { Logger.Log($"PreCleanupRequested handler warning: {preEx.Message}"); }
+
                 await CleanupAsync(CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception cleanupEx)

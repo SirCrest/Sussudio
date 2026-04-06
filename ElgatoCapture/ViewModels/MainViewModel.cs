@@ -138,6 +138,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private double? _pendingSavedAnalogAudioGainPercent;
     private bool _isRefreshingDeviceAudioControls;
     private CancellationTokenSource? _gainFlashDebounceCts;
+    private CancellationTokenSource? _gainXuDebounceCts;
     private CancellationTokenSource? _exportCts;
     [ObservableProperty]
     public partial bool IsRecordingTransitioning { get; set; }
@@ -423,10 +424,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private int _disposeState;
     private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);
     private bool _cancelPreviewRestartAfterReinitialize;
+    private Task? _pendingFlashbackCycleTask;
 
     public event EventHandler? PreviewStartRequested;
     public event EventHandler? PreviewStopRequested;
     public event Func<string, Task>? PreviewReinitRequested;
+    public event Func<Task>? PreviewRendererStopRequested;
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
@@ -453,6 +456,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         _captureService.StatusChanged += OnCaptureStatusChanged;
         _captureService.ErrorOccurred += OnCaptureError;
+        _captureService.PreCleanupRequested += OnCapturePreCleanupRequested;
         _captureService.FrameCaptured += OnFrameCaptured;
         _captureService.AudioLevelUpdated += OnAudioLevelUpdated;
         _captureService.MicrophoneAudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
@@ -471,8 +475,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void EnqueueUiOperation(Func<Task> operation, string operationName)
     {
+        if (Volatile.Read(ref _disposeState) != 0) return;
         _dispatcherQueue.TryEnqueue(() =>
         {
+            if (Volatile.Read(ref _disposeState) != 0) return;
             _ = ExecuteUiOperationAsync(operation, operationName);
         });
     }
@@ -501,6 +507,20 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         foreach (Func<string, Task> handler in handlers.GetInvocationList())
         {
             await handler(reason);
+        }
+    }
+
+    private async Task NotifyRendererStopAsync()
+    {
+        var handlers = PreviewRendererStopRequested;
+        if (handlers == null)
+        {
+            return;
+        }
+
+        foreach (Func<Task> handler in handlers.GetInvocationList())
+        {
+            await handler();
         }
     }
 
@@ -763,6 +783,22 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         });
     }
 
+    private void OnCapturePreCleanupRequested()
+    {
+        // Fires on a background thread before CaptureService.CleanupAsync disposes
+        // the shared D3D11 device. Stop the renderer first to prevent the same race
+        // as the reinit crash (renderer calling native D3D on a dying device).
+        var handlers = PreviewRendererStopRequested;
+        if (handlers != null)
+        {
+            foreach (Func<Task> handler in handlers.GetInvocationList())
+            {
+                try { handler().GetAwaiter().GetResult(); }
+                catch (Exception ex) { Logger.Log($"PreCleanup renderer stop warning: {ex.Message}"); }
+            }
+        }
+    }
+
     private void OnFrameCaptured(object? sender, ulong frameCount)
     {
         // Could update frame count display if needed
@@ -939,7 +975,25 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             return;
         }
 
-        EnqueueUiOperation(() => ApplyAnalogAudioGainAsync("analog audio gain change"), "analog audio gain change");
+        // Debounce the XU write to avoid flooding the hardware with commands
+        // while the user drags the slider (same hazard class as AT SET bricking).
+        var oldCts = _gainXuDebounceCts;
+        oldCts?.Cancel();
+        oldCts?.Dispose();
+        var cts = new CancellationTokenSource();
+        _gainXuDebounceCts = cts;
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(200, cts.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
+            }
+            EnqueueUiOperation(() => ApplyAnalogAudioGainAsync("analog audio gain change"), "analog audio gain change");
+        });
         SaveSettings();
     }
 
@@ -953,7 +1007,14 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             IsAudioPreviewEnabled = true;
             if (IsPreviewing && IsInitialized)
             {
-                EnqueueUiOperation(() => _sessionCoordinator.StartAudioPreviewAsync(), "audio preview restart");
+                EnqueueUiOperation(async () =>
+                {
+                    await _sessionCoordinator.StartAudioPreviewAsync();
+                    // Cycle the flashback encoder so it reconnects its audio feed.
+                    // Without this, the first recording after audio off→on produces
+                    // an empty file because the flashback sink's audio path is stale.
+                    await _captureService.RestartFlashbackAsync();
+                }, "audio preview restart + flashback cycle");
             }
         }
         else
@@ -1135,10 +1196,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _exportCts?.Dispose();
         _gainFlashDebounceCts?.Cancel();
         _gainFlashDebounceCts?.Dispose();
+        _gainXuDebounceCts?.Cancel();
+        _gainXuDebounceCts?.Dispose();
         _timer?.Stop();
         _deviceService.FormatProbeCompleted -= OnDeviceFormatProbeCompleted;
         _captureService.StatusChanged -= OnCaptureStatusChanged;
         _captureService.ErrorOccurred -= OnCaptureError;
+        _captureService.PreCleanupRequested -= OnCapturePreCleanupRequested;
         _captureService.FrameCaptured -= OnFrameCaptured;
         _captureService.AudioLevelUpdated -= OnAudioLevelUpdated;
         _captureService.MicrophoneAudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;

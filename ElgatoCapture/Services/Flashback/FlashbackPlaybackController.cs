@@ -219,16 +219,20 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- In/Out point helpers ---
 
-    public void SetInPoint()
+    public TimeSpan SetInPoint()
     {
-        InPoint = PlaybackPosition;
-        Logger.Log($"FLASHBACK_PLAYBACK_SET_IN pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
+        var pos = PlaybackPosition;
+        InPoint = pos;
+        Logger.Log($"FLASHBACK_PLAYBACK_SET_IN pos_ms={(long)pos.TotalMilliseconds}");
+        return pos;
     }
 
-    public void SetOutPoint()
+    public TimeSpan SetOutPoint()
     {
-        OutPoint = PlaybackPosition;
-        Logger.Log($"FLASHBACK_PLAYBACK_SET_OUT pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
+        var pos = PlaybackPosition;
+        OutPoint = pos;
+        Logger.Log($"FLASHBACK_PLAYBACK_SET_OUT pos_ms={(long)pos.TotalMilliseconds}");
+        return pos;
     }
 
     public void ClearInOutPoints()

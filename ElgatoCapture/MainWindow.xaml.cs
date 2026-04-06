@@ -115,6 +115,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private DispatcherQueueTimer? _liveSignalHideDebounceTimer;
     private double _savedPreviewVolume;
     private bool _isVolumeFadingIn;
+    private Storyboard? _entranceStoryboard;
     private bool _isSettingsShelfAnimating;
     private bool _isFlashbackTimelineAnimating;
     private bool _isFlashbackScrubbing;
@@ -148,7 +149,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private bool _syncingMicrophoneVolumeControls;
     private int _selectedDecoderCount = 4;
     private LinearGradientBrush? _audioMeterColorBrush;
-    private DispatcherTimer? _audioMeterAnimationTimer;
+    private DispatcherQueueTimer? _audioMeterAnimationTimer;
     private readonly List<DiagnosticRowSlot> _decodeRowPool = new();
     private readonly List<DiagnosticRowSlot> _gpuRowPool = new();
     private readonly List<DiagnosticsPoolSlot> _diagnosticsRowPool = new();
@@ -357,6 +358,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         ViewModel.PreviewStartRequested += ViewModel_PreviewStartRequested;
         ViewModel.PreviewStopRequested += ViewModel_PreviewStopRequested;
         ViewModel.PreviewReinitRequested += ViewModel_PreviewReinitRequested;
+        ViewModel.PreviewRendererStopRequested += ViewModel_PreviewRendererStopRequested;
 
         // Wire up UI controls to ViewModel
         SetupBindings();

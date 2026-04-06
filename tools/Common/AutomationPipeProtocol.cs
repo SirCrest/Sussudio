@@ -62,7 +62,9 @@ internal static class AutomationPipeProtocol
             ["FlashbackAction"] = 41,
             ["FlashbackExport"] = 42,
             ["FlashbackGetSegments"] = 43,
-            ["VerifyFile"] = 44
+            ["VerifyFile"] = 44,
+            ["RestartFlashback"] = 45,
+            ["SetMicrophoneEnabled"] = 46
         };
 
     internal static string? GetConfiguredAuthToken(string? explicitAuthToken = null)
@@ -81,7 +83,8 @@ internal static class AutomationPipeProtocol
         return commandName switch
         {
             "WaitForCondition" or "VerifyLastRecording" or "CapturePreviewFrame" or
-            "CaptureWindowScreenshot" or "FlashbackExport" or "VerifyFile" => ExtendedResponseTimeoutMs,
+            "CaptureWindowScreenshot" or "FlashbackExport" or "VerifyFile" or
+            "RestartFlashback" => ExtendedResponseTimeoutMs,
             _ => DefaultResponseTimeoutMs
         };
     }

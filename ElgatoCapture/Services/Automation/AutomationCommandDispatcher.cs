@@ -236,7 +236,17 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         case AutomationFlashbackAction.Play:
                             if (!_viewModel.FlashbackPlay())
                                 throw new InvalidOperationException("Flashback is not active.");
-                            return CreateAcknowledgedResponse(correlationId, "Flashback play requested.");
+                            var playPositionMs = GetDouble(payload, "positionMs");
+                            if (playPositionMs.HasValue)
+                            {
+                                var playPosition = TimeSpan.FromMilliseconds(playPositionMs.Value);
+                                _viewModel.FlashbackBeginScrub(playPosition);
+                                _viewModel.FlashbackEndScrub();
+                            }
+                            return CreateAcknowledgedResponse(correlationId,
+                                playPositionMs.HasValue
+                                    ? $"Flashback play at {playPositionMs.Value:0}ms requested."
+                                    : "Flashback play requested.");
                         case AutomationFlashbackAction.Pause:
                             if (!_viewModel.FlashbackPause())
                                 throw new InvalidOperationException("Flashback is not active.");
@@ -550,6 +560,19 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var maxEntries = GetInt(payload, "maxEntries") ?? 240;
                     var timeline = _diagnosticsHub.GetPerformanceTimeline(maxEntries);
                     return CreateResponse(correlationId, "Performance timeline retrieved.", data: timeline);
+                }
+
+                case AutomationCommandKind.RestartFlashback:
+                {
+                    await _viewModel.RestartFlashbackAsync().ConfigureAwait(false);
+                    return CreateResponse(correlationId, "Flashback restarted.");
+                }
+
+                case AutomationCommandKind.SetMicrophoneEnabled:
+                {
+                    var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
+                    _viewModel.IsMicrophoneEnabled = enabled;
+                    return CreateResponse(correlationId, $"Microphone {(enabled ? "enabled" : "disabled")}.");
                 }
 
                 default:

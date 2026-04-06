@@ -50,7 +50,9 @@ public enum AutomationCommandKind
     FlashbackAction = 41,
     FlashbackExport = 42,
     FlashbackGetSegments = 43,
-    VerifyFile = 44
+    VerifyFile = 44,
+    RestartFlashback = 45,
+    SetMicrophoneEnabled = 46
 }
 
 public enum AutomationFlashbackAction

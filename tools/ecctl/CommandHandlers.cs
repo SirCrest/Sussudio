@@ -122,7 +122,7 @@ internal static class CommandHandlers
         {
             "resolution" => SendSetValueAsync(context, "SetResolution", "resolution", JoinRemaining(context.Rest, 1), "set resolution <value>"),
             "fps" => SendSetValueAsync(context, "SetFrameRate", "frameRate", ParseDouble(RequireWord(context.Rest, 1, "set fps <value>")), "set fps <value>"),
-            "format" => SendSetValueAsync(context, "SetRecordingFormat", "format", JoinRemaining(context.Rest, 1), "set format <value>"),
+            "format" => SendSetValueAsync(context, "SetRecordingFormat", "format", NormalizeRecordingFormat(JoinRemaining(context.Rest, 1)), "set format <value>"),
             "quality" => SendSetValueAsync(context, "SetQuality", "quality", JoinRemaining(context.Rest, 1), "set quality <value>"),
             "bitrate" => SendSetValueAsync(context, "SetCustomBitrate", "bitrateMbps", ParseDouble(RequireWord(context.Rest, 1, "set bitrate <value>")), "set bitrate <value>"),
             "preset" => SendSetValueAsync(context, "SetPreset", "preset", JoinRemaining(context.Rest, 1), "set preset <value>"),
@@ -138,6 +138,7 @@ internal static class CommandHandlers
             "gain" => SendSetValueAsync(context, "SetAnalogAudioGain", "gain", ParseDouble(RequireWord(context.Rest, 1, "set gain <value>")), "set gain <value>"),
             "output" => SendSetValueAsync(context, "SetOutputPath", "outputPath", JoinRemaining(context.Rest, 1), "set output <path>"),
             "show-all" => SendSetValueAsync(context, "SetShowAllCaptureOptions", "enabled", ParseOnOff(RequireWord(context.Rest, 1, "set show-all on|off")), "set show-all on|off"),
+            "mic" or "microphone" => SendSetValueAsync(context, "SetMicrophoneEnabled", "enabled", ParseOnOff(RequireWord(context.Rest, 1, "set mic on|off")), "set mic on|off"),
             _ => throw new UsageException($"Unknown set command '{subcommand}'.")
         };
     }
@@ -359,12 +360,19 @@ internal static class CommandHandlers
 
     private static Task<int> HandleFlashbackAsync(CommandContext context)
     {
-        var subcommand = RequireWord(context.Rest, 0, "flashback play|pause|go-live|seek|export|segments").ToLowerInvariant();
+        var subcommand = RequireWord(context.Rest, 0, "flashback play|pause|go-live|seek|export|segments|apply").ToLowerInvariant();
         switch (subcommand)
         {
+            case "apply":
+            case "restart":
+                return HandleSimpleCommandAsync(context, "RestartFlashback", includeData: false);
             case "play":
-                return HandleSimpleCommandAsync(context, "FlashbackAction",
-                    new Dictionary<string, object?> { ["action"] = "play" }, includeData: false);
+            {
+                var playPayload = new Dictionary<string, object?> { ["action"] = "play" };
+                if (context.Rest.Count >= 2)
+                    playPayload["positionMs"] = ParseDouble(context.Rest[1]);
+                return HandleSimpleCommandAsync(context, "FlashbackAction", playPayload, includeData: false);
+            }
             case "pause":
                 return HandleSimpleCommandAsync(context, "FlashbackAction",
                     new Dictionary<string, object?> { ["action"] = "pause" }, includeData: false);
@@ -551,6 +559,17 @@ internal static class CommandHandlers
             "show" => true,
             "hide" => false,
             _ => throw new UsageException(usage)
+        };
+    }
+
+    private static string NormalizeRecordingFormat(string value)
+    {
+        return value.Trim().ToLowerInvariant() switch
+        {
+            "h264" or "h.264" or "avc" => "H.264",
+            "hevc" or "h265" or "h.265" => "HEVC",
+            "av1" => "AV1",
+            _ => value, // pass through as-is for server-side validation
         };
     }
 

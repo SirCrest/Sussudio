@@ -404,11 +404,11 @@ public sealed partial class MainWindow
 
         var translationAnim = compositor.CreateVector3KeyFrameAnimation();
         translationAnim.InsertKeyFrame(1f, Vector3.Zero, easing);
-        translationAnim.Duration = TimeSpan.FromMilliseconds(250);
+        translationAnim.Duration = TimeSpan.FromMilliseconds(400);
 
         var opacityAnim = compositor.CreateScalarKeyFrameAnimation();
         opacityAnim.InsertKeyFrame(1f, 1f, easing);
-        opacityAnim.Duration = TimeSpan.FromMilliseconds(250);
+        opacityAnim.Duration = TimeSpan.FromMilliseconds(400);
 
         visual.StartAnimation("Translation", translationAnim);
         visual.StartAnimation("Opacity", opacityAnim);
@@ -429,11 +429,11 @@ public sealed partial class MainWindow
 
         var translationAnim = compositor.CreateVector3KeyFrameAnimation();
         translationAnim.InsertKeyFrame(1f, new Vector3(0, hideOffset, 0), easing);
-        translationAnim.Duration = TimeSpan.FromMilliseconds(200);
+        translationAnim.Duration = TimeSpan.FromMilliseconds(300);
 
         var opacityAnim = compositor.CreateScalarKeyFrameAnimation();
         opacityAnim.InsertKeyFrame(1f, 0f, easing);
-        opacityAnim.Duration = TimeSpan.FromMilliseconds(200);
+        opacityAnim.Duration = TimeSpan.FromMilliseconds(300);
 
         var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
         visual.StartAnimation("Translation", translationAnim);
@@ -454,7 +454,7 @@ public sealed partial class MainWindow
 
     private void OnFullScreenPointerActivity(object sender, PointerRoutedEventArgs e)
     {
-        if (!_isFullScreen || _isFullScreenTransitioning) return;
+        if (_isWindowClosing || !_isFullScreen || _isFullScreenTransitioning) return;
 
         var position = e.GetCurrentPoint((UIElement)Content).Position;
         var contentHeight = ((FrameworkElement)Content).ActualHeight;
@@ -481,7 +481,7 @@ public sealed partial class MainWindow
     private void OnFullScreenControlsPointerExited(object sender, PointerRoutedEventArgs e)
     {
         _fullScreenPointerOverControls = false;
-        if (_isFullScreen && _fullScreenControlsVisible)
+        if (!_isWindowClosing && _isFullScreen && _fullScreenControlsVisible)
         {
             ResetFullScreenAutoHideTimer();
         }
@@ -508,6 +508,7 @@ public sealed partial class MainWindow
     private void StopFullScreenAutoHideTimer()
     {
         _fullScreenAutoHideTimer?.Stop();
+        _fullScreenAutoHideTimer = null;
     }
     #endregion
 }

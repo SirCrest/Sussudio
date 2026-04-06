@@ -310,12 +310,6 @@ public sealed partial class MainWindow
             $"received={BuildPreviewStartupSignalList(_previewStartupReceivedSignals)} " +
             $"missing={BuildPreviewStartupMissingSignals()}");
     }
-    private void EnsurePreviewPlaybackStarted(string reason, bool recoveryAttempt)
-    {
-        Logger.Log(
-            $"PREVIEW_START_PLAY_SKIPPED attempt={_previewStartupAttemptId ?? "none"} " +
-            $"reason={reason} mode=D3D11");
-    }
     private void SchedulePreviewStartupFailureStop(string reason)
     {
         if (_isWindowClosing)

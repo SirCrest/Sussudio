@@ -97,10 +97,10 @@ public partial class MainViewModel
         return true;
     }
 
-    public void FlashbackSetInPoint()
+    public TimeSpan? FlashbackSetInPoint()
         => _captureService.FlashbackPlaybackController?.SetInPoint();
 
-    public void FlashbackSetOutPoint()
+    public TimeSpan? FlashbackSetOutPoint()
         => _captureService.FlashbackPlaybackController?.SetOutPoint();
 
     public void FlashbackClearInOutPoints()
@@ -306,6 +306,7 @@ public partial class MainViewModel
 
     public async Task RestartFlashbackAsync()
     {
+        _captureService.UpdateEncodingSettings(BuildCaptureSettings());
         await _captureService.RestartFlashbackAsync().ConfigureAwait(false);
         _flashbackBitrateSamples.Clear();
     }

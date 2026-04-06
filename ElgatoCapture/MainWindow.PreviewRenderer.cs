@@ -310,9 +310,6 @@ public sealed partial class MainWindow
         var useD3dRenderer = ViewModel.IsPreviewing;
         if (useD3dRenderer)
         {
-            // D3D11 Video Processor preview path
-            var renderer = new D3D11PreviewRenderer(PreviewSwapChainPanel, _dispatcherQueue);
-            renderer.FirstFrameRendered += OnD3DRendererFirstFrameRendered;
             var settings = ViewModel.BuildCurrentSettings();
             var sourceProbe = ViewModel.ProbeVideoSource();
             var isHdr = settings != null && HdrOutputPolicy.IsEnabled(settings);
@@ -326,14 +323,36 @@ public sealed partial class MainWindow
             var rendererHeight = negotiatedHeight > 0 ? negotiatedHeight : height;
             var rendererFps = negotiatedFps > 0 ? negotiatedFps : fps;
             _previewMinPresentationIntervalMs = Math.Max(1L, (long)Math.Round(1000.0 / rendererFps));
+
+            // Reuse the existing renderer during reinit to avoid recreating the
+            // ISwapChainPanelNative COM wrapper. WinUI 3 corrupts the panel's
+            // native backing when SetSwapChain is called from a different renderer
+            // instance — even with proper unbind/rebind ordering. Reusing the same
+            // instance keeps the COM wrapper stable across Stop→Start cycles.
+            var reusingRenderer = _d3dRenderer != null && _isPreviewReinitAnimating;
+            D3D11PreviewRenderer renderer;
+            if (reusingRenderer)
+            {
+                renderer = _d3dRenderer!;
+                Logger.Log("PREVIEW_REINIT_RENDERER_REUSE: reusing existing renderer instance");
+            }
+            else
+            {
+                renderer = new D3D11PreviewRenderer(PreviewSwapChainPanel, _dispatcherQueue);
+                renderer.FirstFrameRendered += OnD3DRendererFirstFrameRendered;
+                _d3dRenderer = renderer;
+            }
+
             renderer.SetExpectedFrameRate(rendererFps);
 
-            // Wire SizeChanged and make panel visible BEFORE starting the render
-            // thread so the renderer has the panel's pixel dimensions from the start.
-            _d3dRenderer = renderer;
-            SetupVideoFrameShadow();
-            PreviewSwapChainPanel.SizeChanged += OnPreviewSwapChainPanelSizeChanged;
-            PreviewContentGrid.SizeChanged += OnPreviewContentGridSizeChanged;
+            if (!reusingRenderer)
+            {
+                // Wire SizeChanged and make panel visible BEFORE starting the render
+                // thread so the renderer has the panel's pixel dimensions from the start.
+                SetupVideoFrameShadow();
+                PreviewSwapChainPanel.SizeChanged += OnPreviewSwapChainPanelSizeChanged;
+                PreviewContentGrid.SizeChanged += OnPreviewContentGridSizeChanged;
+            }
             SetGpuPreviewVisibility(Visibility.Visible);
             PreviewImage.Visibility = Visibility.Collapsed;
 

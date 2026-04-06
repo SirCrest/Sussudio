@@ -154,7 +154,9 @@ public sealed partial class MainWindow
     }
     private void InitializeAudioMeterBrushes()
     {
-        _audioMeterAnimationTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(16) };
+        _audioMeterAnimationTimer = _dispatcherQueue.CreateTimer();
+        _audioMeterAnimationTimer.Interval = TimeSpan.FromMilliseconds(16);
+        _audioMeterAnimationTimer.IsRepeating = true;
         _audioMeterAnimationTimer.Tick += (_, _) => AnimateAudioMeterTick();
 
         _audioMeterColorBrush = (LinearGradientBrush)AudioMeterFill.Background;
@@ -176,7 +178,7 @@ public sealed partial class MainWindow
     }
     private void EnsureAudioMeterTimerRunning()
     {
-        if (_audioMeterAnimationTimer is { IsEnabled: false })
+        if (_audioMeterAnimationTimer is { IsRunning: false })
         {
             _audioMeterAnimationTimer.Start();
         }

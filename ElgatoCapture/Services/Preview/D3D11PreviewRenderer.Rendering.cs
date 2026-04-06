@@ -2314,10 +2314,25 @@ internal sealed partial class D3D11PreviewRenderer
         // BindSwapChainToPanel re-sets this to 1 when a new chain is bound.
         Interlocked.CompareExchange(ref _swapChainBound, 0, 1);
 
-        _swapChain3?.Dispose();
-        _swapChain3 = null;
-        _swapChain?.Dispose();
-        _swapChain = null;
+        // When StopRenderThread() is used (reinit path), the swap chain must
+        // NOT be disposed — the XAML panel still holds a native reference to it.
+        // Disposing it causes an AccessViolationException when the new renderer
+        // calls SetSwapChain(newPtr) on the same panel. The old chain is leaked
+        // intentionally; the new renderer overwrites the panel binding.
+        if (Volatile.Read(ref _skipSwapChainDisposal) == 0)
+        {
+            _swapChain3?.Dispose();
+            _swapChain3 = null;
+            _swapChain?.Dispose();
+            _swapChain = null;
+        }
+        else
+        {
+            // Detach references without disposing — let the COM ref from the
+            // panel prevent the chain from being freed prematurely.
+            _swapChain3 = null;
+            _swapChain = null;
+        }
         _factory?.Dispose();
         _factory = null;
         _videoContext1?.Dispose();

@@ -1,0 +1,242 @@
+=== ELGATOCAPTURE SYSTEMATIC TEST RUN ===
+Started: Thu Apr  2 02:10:10 PDT 2026
+
+--- Pre-test state ---
+Preview=True Recording=False PerfScore=100 FlashbackActive=True Encoder=h264_nvenc EncoderRes=1920x1080 EncoderFps=120.00048000192001 Bitrate=5000000 FlashbackDropped=22 Memory=309MB
+
+--- PHASE 1: Codec cycling at 1080p60 ---
+=== TEST 1: H.264 1080p 60fps 20Mbps ===
+  Setting: set format h264
+Recording format 'h264' is not available.
+  Setting: set resolution 1920x1080
+Resolution change requested: 1920x1080.
+  Setting: set fps 60
+Frame rate change requested: 60.
+  Setting: set bitrate 20
+Custom bitrate change requested: 20 Mbps.
+  Setting: set quality custom
+Quality change requested: custom.
+  State: Preview=True Recording=False PerfScore=65 FlashbackActive=True Encoder=h264_nvenc EncoderRes=1920x1080 EncoderFps=59.94005994005994 Bitrate=5000000 FlashbackDropped=0 Memory=345MB
+  Starting 5s recording...
+Recording start requested.
+Recording stop requested.
+  Verify: Output file is empty: C:\Users\crest\Videos\Capture_2026-04-02_02-10-19_H264.mp4
+{
+  "Verification": {
+    "TimestampUtc": "2026-04-02T09:10:28.4461537\u002B00:00",
+    "Succeeded": false,
+    "Message": "Output file is empty: C:\\Users\\crest\\Videos\\Capture_2026-04-02_02-10-19_H264.mp4",
+    "OutputPath": "C:\\Users\\crest\\Videos\\Capture_2026-04-02_02-10-19_H264.mp4",
+    "FileExists": true,
+    "FileSizeBytes": 0,
+    "VerificationMode": "none",
+    "DetectedContainer": null,
+    "DetectedVideoCodec": null,
+    "DetectedPixelFormat": null,
+    "DetectedColorPrimaries": null,
+    "DetectedColorTransfer": null,
+    "DetectedColorSpace": null,
+    "DetectedHdrSideDataTypes": [],
+    "HdrMetadataPresent": null,
+    "HdrColorimetryValid": null,
+    "HdrMasteringMetadataPresent": null,
+    "HdrVerificationLevel": "NotHdr",
+    "DetectedWidth": null,
+    "DetectedHeight": null,
+    "DetectedFrameRate": null,
+    "CadenceSampleCount": null,
+    "CadenceObservedFps": null,
+    "CadenceExpectedIntervalMs": null,
+    "CadenceAverageIntervalMs": null,
+    "CadenceP95IntervalMs": null,
+    "CadenceMaxIntervalMs": null,
+    "CadenceJitterStdDevMs": null,
+    "CadenceSevereGapCount": null,
+    "CadenceSevereGapPercent": null,
+    "CadenceEstimatedDroppedFrames": null,
+    "CadenceEstimatedDropPercent": null,
+    "PrimaryMismatchCode": "output-empty",
+    "PrimaryMismatchExpected": null,
+    "PrimaryMismatchActual": null,
+    "Mismatches": [
+      "output-empty"
+    ],
+    "HdrParity": null
+  },
+  "HdrParity": null
+}
+  Final state: Preview=True Recording=False PerfScore=45 FlashbackActive=True Encoder=h264_nvenc EncoderRes=1920x1080 EncoderFps=59.94005994005994 Bitrate=5000000 FlashbackDropped=0 Memory=356MB
+  PASS
+
+=== TEST 2: HEVC 1080p 60fps 20Mbps ===
+  Setting: set format hevc
+Recording format change requested: hevc.
+  State: Preview=True Recording=False PerfScore=51.448056537102474 FlashbackActive=True Encoder=hevc_nvenc EncoderRes=1920x1080 EncoderFps=59.94005994005994 Bitrate=5000000 FlashbackDropped=0 Memory=353MB
+  Starting 5s recording...
+Recording start requested.
+Recording stop requested.
+  Verify: Strict verification passed.
+{
+  "Verification": {
+    "TimestampUtc": "2026-04-02T09:10:45.4989983\u002B00:00",
+    "Succeeded": true,
+    "Message": "Strict verification passed.",
+    "OutputPath": "C:\\Users\\crest\\Videos\\Capture_2026-04-02_02-10-33_HEVC.mp4",
+    "FileExists": true,
+    "FileSizeBytes": 4313232,
+    "VerificationMode": "ffprobe",
+    "DetectedContainer": "mov,mp4,m4a,3gp,3g2,mj2",
+    "DetectedVideoCodec": "hevc",
+    "DetectedPixelFormat": "yuv420p",
+    "DetectedColorPrimaries": "unknown",
+    "DetectedColorTransfer": "unknown",
+    "DetectedColorSpace": "unknown",
+    "DetectedHdrSideDataTypes": [],
+    "HdrMetadataPresent": null,
+    "HdrColorimetryValid": null,
+    "HdrMasteringMetadataPresent": null,
+    "HdrVerificationLevel": "NotHdr",
+    "DetectedWidth": 1920,
+    "DetectedHeight": 1080,
+    "DetectedFrameRate": 59.940166678538354,
+    "CadenceSampleCount": 373,
+    "CadenceObservedFps": 59.94011131183996,
+    "CadenceExpectedIntervalMs": 16.683333333333334,
+    "CadenceAverageIntervalMs": 16.683319034852545,
+    "CadenceP95IntervalMs": 16.689000000000398,
+    "CadenceMaxIntervalMs": 16.689000000000398,
+    "CadenceJitterStdDevMs": 0.005675551927762115,
+    "CadenceSevereGapCount": 0,
+    "CadenceSevereGapPercent": 0,
+    "CadenceEstimatedDroppedFrames": 0,
+    "CadenceEstimatedDropPercent": 0,
+    "PrimaryMismatchCode": null,
+    "PrimaryMismatchExpected": null,
+    "PrimaryMismatchActual": null,
+    "Mismatches": [],
+    "HdrParity": {
+      "Requested": false,
+      "Activated": false,
+      "Verified": true,
+      "Downgraded": false,
+      "VerificationLevel": "NotHdr",
+      "Status": "NotRequested",
+      "MismatchTaxonomy": []
+    }
+  },
+  "HdrParity": {
+    "Requested": false,
+    "Activated": false,
+    "Verified": true,
+    "Downgraded": false,
+    "VerificationLevel": "NotHdr",
+    "Status": "NotRequested",
+    "MismatchTaxonomy": []
+  }
+}
+  Final state: Preview=True Recording=False PerfScore=100 FlashbackActive=True Encoder=hevc_nvenc EncoderRes=1920x1080 EncoderFps=59.94005994005994 Bitrate=5000000 FlashbackDropped=0 Memory=356MB
+  PASS
+
+=== TEST 3: AV1 1080p 60fps 20Mbps ===
+  Setting: set format av1
+Recording format change requested: av1.
+  State: Preview=True Recording=False PerfScore=100 FlashbackActive=True Encoder=av1_nvenc EncoderRes=1920x1080 EncoderFps=59.94005994005994 Bitrate=5000000 FlashbackDropped=0 Memory=360MB
+  Starting 5s recording...
+Recording start requested.
+Recording stop requested.
+  Verify: Strict verification passed.
+{
+  "Verification": {
+    "TimestampUtc": "2026-04-02T09:11:08.6095324\u002B00:00",
+    "Succeeded": true,
+    "Message": "Strict verification passed.",
+    "OutputPath": "C:\\Users\\crest\\Videos\\Capture_2026-04-02_02-10-50_AV1.mp4",
+    "FileExists": true,
+    "FileSizeBytes": 4850605,
+    "VerificationMode": "ffprobe",
+    "DetectedContainer": "mov,mp4,m4a,3gp,3g2,mj2",
+    "DetectedVideoCodec": "av1",
+    "DetectedPixelFormat": "yuv420p",
+    "DetectedColorPrimaries": "unknown",
+    "DetectedColorTransfer": "unknown",
+    "DetectedColorSpace": "unknown",
+    "DetectedHdrSideDataTypes": [],
+    "HdrMetadataPresent": null,
+    "HdrColorimetryValid": null,
+    "HdrMasteringMetadataPresent": null,
+    "HdrVerificationLevel": "NotHdr",
+    "DetectedWidth": 1920,
+    "DetectedHeight": 1080,
+    "DetectedFrameRate": 59.94005994005994,
+    "CadenceSampleCount": 400,
+    "CadenceObservedFps": 59.940062934069104,
+    "CadenceExpectedIntervalMs": 16.683333333333334,
+    "CadenceAverageIntervalMs": 16.68333249999999,
+    "CadenceP95IntervalMs": 16.684000000000143,
+    "CadenceMaxIntervalMs": 16.684000000000587,
+    "CadenceJitterStdDevMs": 0.00047110906380382756,
+    "CadenceSevereGapCount": 0,
+    "CadenceSevereGapPercent": 0,
+    "CadenceEstimatedDroppedFrames": 0,
+    "CadenceEstimatedDropPercent": 0,
+    "PrimaryMismatchCode": null,
+    "PrimaryMismatchExpected": null,
+    "PrimaryMismatchActual": null,
+    "Mismatches": [],
+    "HdrParity": {
+      "Requested": false,
+      "Activated": false,
+      "Verified": true,
+      "Downgraded": false,
+      "VerificationLevel": "NotHdr",
+      "Status": "NotRequested",
+      "MismatchTaxonomy": []
+    }
+  },
+  "HdrParity": {
+    "Requested": false,
+    "Activated": false,
+    "Verified": true,
+    "Downgraded": false,
+    "VerificationLevel": "NotHdr",
+    "Status": "NotRequested",
+    "MismatchTaxonomy": []
+  }
+}
+  Final state: Preview=True Recording=False PerfScore=100 FlashbackActive=True Encoder=av1_nvenc EncoderRes=1920x1080 EncoderFps=59.94005994005994 Bitrate=5000000 FlashbackDropped=0 Memory=360MB
+  PASS
+
+--- PHASE 2: Resolution cycling (H.264 60fps 20Mbps) ---
+=== TEST 4: H.264 4K 60fps 50Mbps ===
+  Setting: set format h264
+Recording format 'h264' is not available.
+  Setting: set resolution 3840x2160
+Resolution change requested: 3840x2160.
+  Setting: set bitrate 50
+Pipe is broken.
+  State: FAILED TO GET STATE
+  !! APP CRASHED after settings change !!
+=== TEST 5: H.264 1440p 60fps 30Mbps ===
+  !! APP CRASHED before test !!
+=== TEST 6: H.264 720p 60fps 10Mbps ===
+  !! APP CRASHED before test !!
+=== TEST 7: H.264 480p 60fps 5Mbps ===
+  !! APP CRASHED before test !!
+--- PHASE 3: FPS cycling (H.264 1080p 20Mbps) ---
+=== TEST 8: H.264 1080p 120fps 20Mbps ===
+  !! APP CRASHED before test !!
+=== TEST 9: H.264 1080p 240fps 20Mbps ===
+  !! APP CRASHED before test !!
+=== TEST 10: H.264 1080p 144fps 20Mbps ===
+  !! APP CRASHED before test !!
+--- PHASE 4: Bitrate extremes (H.264 1080p60) ---
+=== TEST 11: H.264 1080p 60fps 1Mbps (very low) ===
+  !! APP CRASHED before test !!
+=== TEST 12: H.264 1080p 60fps 100Mbps (very high) ===
+  !! APP CRASHED before test !!
+
+=== SUMMARY ===
+Tests run: 12
+Passed: 3
+Failed: 9
+Finished: Thu Apr  2 02:12:09 PDT 2026

@@ -30,7 +30,7 @@ public sealed partial class MainWindow
     private void AnimateFlashbackTimeline(bool show)
     {
         _isFlashbackTimelineAnimating = true;
-        var durationMs = show ? 250 : 200;
+        var durationMs = show ? 400 : 300;
         var easing = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn };
         var duration = TimeSpan.FromMilliseconds(durationMs);
 
@@ -218,13 +218,13 @@ public sealed partial class MainWindow
     }
     private void FlashbackInButton_Click(object sender, RoutedEventArgs e)
     {
-        ViewModel.FlashbackSetInPoint();
-        ViewModel.FlashbackInPoint = ViewModel.FlashbackPlaybackPosition;
+        var pos = ViewModel.FlashbackSetInPoint();
+        if (pos.HasValue) ViewModel.FlashbackInPoint = pos.Value;
     }
     private void FlashbackOutButton_Click(object sender, RoutedEventArgs e)
     {
-        ViewModel.FlashbackSetOutPoint();
-        ViewModel.FlashbackOutPoint = ViewModel.FlashbackPlaybackPosition;
+        var pos = ViewModel.FlashbackSetOutPoint();
+        if (pos.HasValue) ViewModel.FlashbackOutPoint = pos.Value;
     }
     private void FlashbackClearButton_Click(object sender, RoutedEventArgs e)
     {

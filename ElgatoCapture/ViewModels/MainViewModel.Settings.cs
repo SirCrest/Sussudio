@@ -28,6 +28,10 @@ public partial class MainViewModel
         SaveSettings();
 
         // Cycle the flashback encoder so the buffer uses the new codec.
+        // Track the task so ReinitializeDeviceAsync can await it — otherwise
+        // a rapid codec→resolution change sequence can race: the codec cycle
+        // holds the session transition lock while the reinit tries to acquire it,
+        // causing the reinit to read stale settings or fail silently.
         if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
         {
             var format = value switch
@@ -36,13 +40,19 @@ public partial class MainViewModel
                 "AV1" => RecordingFormat.Av1Mp4,
                 _ => RecordingFormat.H264Mp4
             };
-            _ = _captureService.UpdateRecordingFormatAsync(format);
+            _pendingFlashbackCycleTask = _captureService.UpdateRecordingFormatAsync(format);
         }
     }
 
     partial void OnCustomBitrateMbpsChanged(double value)
     {
         SaveSettings();
+
+        // Cycle the flashback encoder so the buffer uses the new bitrate.
+        if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
+        {
+            _ = _captureService.CycleFlashbackEncoderSettingsAsync(customBitrateMbps: value);
+        }
     }
 
     private void LoadSettings()
@@ -337,11 +347,33 @@ public partial class MainViewModel
     {
         IsCustomBitrateVisible = value == "Custom";
         SaveSettings();
+
+        // Cycle the flashback encoder so the buffer uses the new quality level.
+        if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
+        {
+            var quality = value switch
+            {
+                "Auto" => VideoQuality.Auto,
+                "Low" => VideoQuality.Low,
+                "Medium" => VideoQuality.Medium,
+                "High" => VideoQuality.High,
+                "Super High" => VideoQuality.SuperHigh,
+                "Custom" => VideoQuality.Custom,
+                _ => VideoQuality.High
+            };
+            _ = _captureService.CycleFlashbackEncoderSettingsAsync(quality: quality);
+        }
     }
 
     partial void OnSelectedPresetChanged(string value)
     {
         SaveSettings();
+
+        // Cycle the flashback encoder so the buffer uses the new preset.
+        if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
+        {
+            _ = _captureService.CycleFlashbackEncoderSettingsAsync(nvencPreset: value);
+        }
     }
 
     partial void OnSelectedSplitEncodeModeChanged(string value)

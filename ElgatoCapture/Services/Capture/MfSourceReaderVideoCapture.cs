@@ -343,7 +343,25 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             _isHighFrameRateMjpegMode = useConvertedMjpegNv12 || useRawMjpgOutput;
             _strictD3DOutputRequired = useConvertedMjpegNv12;
             _strictTextureOutputRequired = useConvertedMjpegNv12;
-            Volatile.Write(ref _nativeInputFormat, (useConvertedMjpegNv12 || useRawMjpgOutput) ? "MJPG" : SubtypeGuidToName(negotiatedSubtype));
+            var nativeFormatName = SubtypeGuidToName(negotiatedSubtype);
+            if (!useConvertedMjpegNv12 && !useRawMjpgOutput)
+            {
+                // Bandwidth heuristic: raw uncompressed NV12/YUY2 at this res+fps may exceed USB 3.0 (~5 Gbps).
+                // If so, the device must be delivering compressed (MJPG) regardless of what MF negotiated.
+                var rawBitsPerSecond = (double)negotiatedWidth * negotiatedHeight * 1.5 * negotiatedFps * 8;
+                const double usb30BandwidthBits = 5e9;
+                if (rawBitsPerSecond > usb30BandwidthBits &&
+                    !string.Equals(nativeFormatName, "MJPG", StringComparison.OrdinalIgnoreCase))
+                {
+                    Log($"MF_NATIVE_FORMAT_OVERRIDE negotiated={nativeFormatName} raw_bps={rawBitsPerSecond:0} usb_bps={usb30BandwidthBits:0} => MJPG");
+                    nativeFormatName = "MJPG";
+                }
+            }
+            else
+            {
+                nativeFormatName = "MJPG";
+            }
+            Volatile.Write(ref _nativeInputFormat, nativeFormatName);
             Volatile.Write(ref _negotiatedFormat, negotiatedDescription);
             Interlocked.Exchange(ref _framesDelivered, 0);
             Interlocked.Exchange(ref _framesDropped, 0);

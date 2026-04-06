@@ -308,6 +308,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     private int _inNativeCall; // 1 while render thread is between guard-check and Present return
     private int _compositionTransformDirty;
     private int _firstFrameRaised;
+    private int _skipSwapChainDisposal; // 1 = CleanupD3DResources should not dispose the swap chain
 
     private int _panelPixelWidth;
     private int _panelPixelHeight;
@@ -555,6 +556,67 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         }
 
         Logger.Log($"D3D11 preview renderer start width={width} height={height} fps={fps:0.###} hdr={isHdr}.");
+    }
+
+    /// <summary>
+    /// Stops the render thread and waits for it to exit, but does NOT unbind
+    /// the swap chain from the XAML panel. Use this when the renderer will be
+    /// replaced by a new instance on the same SwapChainPanel during reinit —
+    /// the new renderer's BindSwapChainToPanel will overwrite the binding.
+    /// Calling SetSwapChain(null) then SetSwapChain(newPtr) in quick succession
+    /// on the same panel triggers an AccessViolationException in WinUI 3.
+    /// </summary>
+    public void StopRenderThread()
+    {
+        Thread? renderThread;
+        lock (_lifecycleLock)
+        {
+            renderThread = _renderThread;
+            _renderThread = null;
+            if (renderThread == null)
+            {
+                FailPendingFrameCapture("Preview renderer is not running.");
+                Volatile.Write(ref _rendererMode, RendererModeNone);
+                ResetPresentCadence();
+                return;
+            }
+            Interlocked.Exchange(ref _stopRequested, 1);
+        }
+
+        // Wait for any in-flight native render call to complete.
+        {
+            var sw = new SpinWait();
+            while (Volatile.Read(ref _inNativeCall) != 0)
+            {
+                sw.SpinOnce();
+            }
+        }
+
+        // Do NOT unbind or dispose the swap chain — the new renderer will
+        // overwrite the panel binding with its own chain. Disposing the old
+        // chain while the panel still holds a native reference triggers an
+        // AccessViolationException in WinUI 3's ISwapChainPanelNative.
+        Interlocked.Exchange(ref _skipSwapChainDisposal, 1);
+
+        _frameReadyEvent.Set();
+        if (Thread.CurrentThread != renderThread)
+        {
+            if (!renderThread.Join(TimeSpan.FromSeconds(3)))
+            {
+                Logger.Log("D3D11 preview renderer stop (render-thread-only) wait exceeded 3s; waiting until render thread exits.");
+                renderThread.Join();
+            }
+        }
+
+        while (_pendingFrames.TryDequeue(out var stale))
+        {
+            stale.Dispose();
+        }
+
+        FailPendingFrameCapture("Preview renderer stopped before frame capture completed.");
+        Volatile.Write(ref _rendererMode, RendererModeNone);
+        ResetPresentCadence();
+        Logger.Log("D3D11 preview renderer render thread stopped (swap chain still bound).");
     }
 
     public void Stop()
