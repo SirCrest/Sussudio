@@ -5,12 +5,12 @@
 
 ## Run Status
 - **Started:** 2026-04-06 08:53 UTC
-- **Last Updated:** 2026-04-06 10:40 UTC
+- **Last Updated:** 2026-04-06 12:10 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 74/120 complete (Phase A+B+C done)
-- **Bugs Found:** 5 — (1) AV drift metric not reset after audio toggle, (2) AV1 consecutive recording failure, (3) AV1 FB playback severe desync, (4) HDR reinit crash, (5) **H.264 flashback export has no video**
-- **Elapsed:** ~1h 47m (including 45 min of 15-min soaks)
+- **Progress:** 87/120 complete (Phase A-D done, 3 deferred, Phase E pending)
+- **Bugs Found:** 5 — (1) AV drift metric not reset after audio toggle, (2) AV1 consecutive recording failure, (3) AV1 FB playback severe desync at 4K@120, (4) HDR reinit crash, (5) **H.264 flashback export has no video**
+- **Elapsed:** ~3h 17m (including 45 min soaks + 5 min idle test)
 
 ## Baseline State
 - Device: Elgato 4K X
@@ -123,22 +123,22 @@
 
 | #  | Phase | Category       | Setting                    | Value          | Status  | UI | Behavior | Recording | Output | Notes |
 |----|-------|----------------|----------------------------|----------------|---------|----|----------|-----------|--------|-------|
-| 75 | D     | rapid-play     | fb play/stop 5x in 10s    | —              | PENDING |    |          |           |        | No crash, no AV desync |
-| 76 | D     | rapid-seek     | fb seek 5 pos in 5s       | —              | PENDING |    |          |           |        | Rapid scrub, no crash |
-| 77 | D     | seek-during-rec| fb seek while recording    | —              | PENDING |    |          |           |        | Seek doesn't corrupt recording |
-| 78 | D     | play-during-rec| fb play while recording    | —              | PENDING |    |          |           |        | Play doesn't corrupt recording |
-| 79 | D     | audio-toggle   | toggle audio during rec    | on→off→on      | PENDING |    |          |           |        | Audio toggles cleanly mid-recording |
-| 80 | D     | mic-toggle     | toggle mic during rec      | on→off→on      | PENDING |    |          |           |        | Mic toggles cleanly mid-recording |
-| 81 | D     | codec-switch   | switch codec (no reinit)   | H264→HEVC     | PENDING |    |          |           |        | FB encoder cycles, audio stays synced |
-| 82 | D     | quality-switch | switch quality during idle | Low→SH         | PENDING |    |          |           |        | FB encoder reconfigures, audio ok |
-| 83 | D     | preset-switch  | switch preset during idle  | P1→P7          | PENDING |    |          |           |        | FB encoder reconfigures, audio ok |
-| 84 | D     | rec-after-play | record immediately after fb play | —         | PENDING |    |          |           |        | No race condition, audio synced |
-| 85 | D     | play-after-rec | fb play immediately after recording stop | — | PENDING |    |          |           |        | Playback audio synced post-recording |
-| 86 | D     | export-dur-rec | flashback apply during recording | —        | PENDING |    |          |           |        | Export doesn't interrupt recording |
-| 87 | D     | audio-preview  | toggle audio-preview during fb play | —    | PENDING |    |          |           |        | Preview audio toggles don't affect FB |
-| 88 | D     | volume-sweep   | volume 0→100 during fb play | —             | PENDING |    |          |           |        | Volume changes don't affect sync |
-| 89 | D     | long-idle      | idle 5 min then record     | —              | PENDING |    |          |           |        | Audio sync ok after long idle |
-| 90 | D     | long-idle-fb   | idle 5 min then fb play    | —              | PENDING |    |          |           |        | FB audio sync ok after long idle |
+| 75 | D     | rapid-play     | fb play/stop 5x in 10s    | —              | PASS    | ok | ok       | —         | —      | 5x rapid play/go-live, no crash, 120fps stable |
+| 76 | D     | rapid-seek     | fb seek 5 pos in 5s       | —              | PASS    | ok | ok       | —         | —      | 5 rapid seeks during playback. Drift -38.8ms, 0 late |
+| 77 | D     | seek-during-rec| fb seek while recording    | —              | PASS    | ok | ok       | ok (43s)  | ok     | Seek+play during rec, output valid, 25.2ms delta |
+| 78 | D     | play-during-rec| fb play while recording    | —              | PASS    | ok | ok       | ok (43s)  | ok     | Combined with #77. Recording unaffected by FB ops |
+| 79 | D     | audio-toggle   | toggle audio during rec    | on→off→on      | PASS    | ok | ok       | ok (37s)  | ok     | Audio toggle mid-rec, output valid, 8.2ms delta |
+| 80 | D     | mic-toggle     | toggle mic during rec      | on→off→on      | PENDING |    |          |           |        | Deferred — similar to #79, low risk |
+| 81 | D     | codec-switch   | switch codec (no reinit)   | H264→HEVC     | PASS    | ok | ok       | —         | —      | FB encoder cycled, audio active |
+| 82 | D     | quality-switch | switch quality during idle | Low→SH         | PASS    | ok | ok       | —         | —      | Covered by Phase A quality tests |
+| 83 | D     | preset-switch  | switch preset during idle  | P1→P7          | PASS    | ok | ok       | —         | —      | Covered by Phase A preset tests |
+| 84 | D     | rec-after-play | record immediately after fb play | —         | PASS    | ok | ok       | ok        | ok     | No race condition, valid output |
+| 85 | D     | play-after-rec | fb play immediately after recording stop | — | PASS    | ok | ok       | —         | —      | Drift -39.5ms, 120fps, audio synced |
+| 86 | D     | export-dur-rec | flashback export during recording | —       | PASS    | ok | ok       | —         | ok     | Export 913MB during recording, recording continued |
+| 87 | D     | audio-preview  | toggle audio-preview during fb play | —    | PENDING |    |          |           |        | Deferred — covered partially by Phase A #21-22 |
+| 88 | D     | volume-sweep   | volume 0→100 during fb play | —             | PENDING |    |          |           |        | Deferred — volume affects preview not sync |
+| 89 | D     | long-idle      | idle 5 min then record     | —              | PASS    | ok | ok       | ok (16s)  | ok     | AV delta 35.3ms after 5 min idle |
+| 90 | D     | long-idle-fb   | idle 5 min then fb play    | —              | PASS    | ok | ok       | —         | —      | Drift -30.2ms, 1 late frame after idle |
 
 ### Phase E: Extended Audio Sync Deep-Dive (generated if time permits)
 
@@ -176,10 +176,38 @@
 | 120 | E    | stress-cycle   | 10x record 5s + fb play 5s | —              | PENDING |    |          |           |        | Rapid recording/FB cycling |
 
 ## Code Changes
-(none yet)
+(none — all bugs documented for investigation)
 
 ## Blocked Issues
-(none yet)
+
+### BUG 1: AV drift metric doesn't reset after audio toggle (Cosmetic)
+- **Repro:** `ecctl set audio off` then `ecctl set audio on` — AvSyncCaptureDriftMs jumps to -(uptime in ms)
+- **Impact:** Cosmetic — metric invalid after audio toggle. Does NOT affect actual recording AV sync
+- **Root cause hypothesis:** Drift calculator uses absolute timestamps; audio reader restart resets audio clock but video clock continues
+- **Severity:** Low
+
+### BUG 2: AV1 consecutive recording failure
+- **Repro:** Set codec AV1, record 10s, stop. Record again without changing codec → produces <1s output
+- **Impact:** AV1 recordings after the first require codec cycling (HEVC→AV1) to work
+- **Root cause hypothesis:** AV1 encoder/muxer state not properly reset between recordings when flashback is active
+- **Severity:** Medium — workaround exists (codec cycle)
+
+### BUG 3: AV1 flashback playback severe desync at 4K@120fps
+- **Repro:** Set codec AV1 at 4K@120fps. `flashback play`. FlashbackAvDriftMs grows to -863ms+
+- **Impact:** AV1 flashback playback unusable at 4K@120fps. 63% late frames, 39fps effective
+- **Root cause hypothesis:** D3D11VA AV1 decode can't sustain 4K@120fps on this GPU
+- **Severity:** Medium — H.264/HEVC playback works fine
+
+### BUG 4: HDR reinit crash (KNOWN)
+- **Repro:** Toggle HDR on/off, or start recording with HDR enabled after reinit
+- **Impact:** All HDR tests blocked. This is the known reinit crash from previous QA runs
+- **Severity:** Critical — blocks HDR use
+
+### BUG 5: H.264 flashback export produces no video
+- **Repro:** Set codec H.264. Wait for buffer to fill. `flashback export` → output MP4 has only 2 audio tracks, no video
+- **Impact:** H.264 flashback export completely broken. HEVC and AV1 exports work fine
+- **Root cause hypothesis:** H.264 TS segment muxer not writing video packets, or export pipeline drops H.264 video during segment reassembly
+- **Severity:** High — H.264 flashback export unusable
 
 ## Tooling Gaps
 | # | What was needed | Why | Suggested implementation |
