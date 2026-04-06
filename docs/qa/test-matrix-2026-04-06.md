@@ -190,7 +190,9 @@
 ### BUG 2: AV1 consecutive recording failure
 - **Repro:** Set codec AV1, record 10s, stop. Record again without changing codec → produces <1s output
 - **Impact:** AV1 recordings after the first require codec cycling (HEVC→AV1) to work
-- **Root cause hypothesis:** AV1 encoder/muxer state not properly reset between recordings when flashback is active
+- **Root cause (investigated):** In `LibAvEncoder.cs`, `ReinitializeHdrBitstreamFilter()` (line ~2504) frees the BSF context via `av_bsf_free()` without fully draining buffered packets first. AV1's OBU framing requires more BSF buffering than H.264/HEVC, so packets are lost during segment rotation. The encoder state and new BSF are then out of sync, causing the second recording to lose almost all frames.
+- **Key files:** `LibAvEncoder.cs:753-821` (RotateOutput), `LibAvEncoder.cs:2504-2518` (ReinitializeHdrBitstreamFilter), `FlashbackEncoderSink.cs:22` (single reused encoder)
+- **Fix direction:** Drain BSF packets explicitly before freeing (`DrainBsfPacketsWithoutWrite()` call before `av_bsf_free`), or flush encoder with null frame before rotation
 - **Severity:** Medium — workaround exists (codec cycle)
 
 ### BUG 3: AV1 flashback playback severe desync at 4K@120fps
