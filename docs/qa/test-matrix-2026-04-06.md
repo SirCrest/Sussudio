@@ -5,12 +5,12 @@
 
 ## Run Status
 - **Started:** 2026-04-06 08:53 UTC
-- **Last Updated:** 2026-04-06 08:53 UTC
+- **Last Updated:** 2026-04-06 09:10 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 0/120 complete
-- **Bugs Found:** 0
-- **Elapsed:** 0h 0m
+- **Progress:** 32/120 complete (Phase A done)
+- **Bugs Found:** 1 (AV drift metric reset bug — cosmetic, needs Phase B verification)
+- **Elapsed:** ~17m
 
 ## Baseline State
 - Device: Elgato 4K X
@@ -34,38 +34,38 @@
 
 | #  | Phase | Category       | Setting                    | Value          | Status  | UI | Behavior | Recording | Output | Notes |
 |----|-------|----------------|----------------------------|----------------|---------|----|----------|-----------|--------|-------|
-| 1  | A     | codec          | codec                      | H.264          | PENDING |    |          | —         | —      |       |
-| 2  | A     | codec          | codec                      | HEVC           | PENDING |    |          | —         | —      |       |
-| 3  | A     | codec          | codec                      | AV1            | PENDING |    |          | —         | —      |       |
-| 4  | A     | quality        | quality                    | Auto           | PENDING |    |          | —         | —      |       |
-| 5  | A     | quality        | quality                    | Low            | PENDING |    |          | —         | —      |       |
-| 6  | A     | quality        | quality                    | Medium         | PENDING |    |          | —         | —      |       |
-| 7  | A     | quality        | quality                    | High           | PENDING |    |          | —         | —      |       |
-| 8  | A     | quality        | quality                    | Super High     | PENDING |    |          | —         | —      |       |
-| 9  | A     | quality        | quality                    | Custom         | PENDING |    |          | —         | —      |       |
-| 10 | A     | preset         | preset                     | Auto           | PENDING |    |          | —         | —      |       |
-| 11 | A     | preset         | preset                     | P1             | PENDING |    |          | —         | —      |       |
-| 12 | A     | preset         | preset                     | P3             | PENDING |    |          | —         | —      |       |
-| 13 | A     | preset         | preset                     | P5             | PENDING |    |          | —         | —      |       |
-| 14 | A     | preset         | preset                     | P7             | PENDING |    |          | —         | —      |       |
-| 15 | A     | split-encode   | split                      | Auto           | PENDING |    |          | —         | —      |       |
-| 16 | A     | split-encode   | split                      | Disabled       | PENDING |    |          | —         | —      |       |
-| 17 | A     | split-encode   | split                      | 2-way          | PENDING |    |          | —         | —      |       |
-| 18 | A     | split-encode   | split                      | 3-way          | PENDING |    |          | —         | —      |       |
-| 19 | A     | audio          | audio                      | off            | PENDING |    |          | —         | —      |       |
-| 20 | A     | audio          | audio                      | on             | PENDING |    |          | —         | —      |       |
-| 21 | A     | audio-preview  | audio-preview              | off            | PENDING |    |          | —         | —      |       |
-| 22 | A     | audio-preview  | audio-preview              | on             | PENDING |    |          | —         | —      |       |
-| 23 | A     | mic            | mic (custom-audio)         | on             | PENDING |    |          | —         | —      |       |
-| 24 | A     | mic            | mic (custom-audio)         | off            | PENDING |    |          | —         | —      |       |
-| 25 | A     | flashback      | fb play                    | —              | PENDING |    |          | —         | —      |       |
-| 26 | A     | flashback      | fb pause                   | —              | PENDING |    |          | —         | —      |       |
-| 27 | A     | flashback      | fb seek 0ms                | —              | PENDING |    |          | —         | —      |       |
-| 28 | A     | flashback      | fb seek 50%                | —              | PENDING |    |          | —         | —      |       |
-| 29 | A     | flashback      | fb seek end                | —              | PENDING |    |          | —         | —      |       |
-| 30 | A     | flashback      | fb go-live                 | —              | PENDING |    |          | —         | —      |       |
-| 31 | A     | hdr            | hdr                        | on             | PENDING |    |          | —         | —      |       |
-| 32 | A     | hdr            | hdr                        | off            | PENDING |    |          | —         | —      |       |
+| 1  | A     | codec          | codec                      | H.264          | PASS    | ok | ok       | —         | —      | h264_nvenc, FB active, drift 7.6ms |
+| 2  | A     | codec          | codec                      | HEVC           | PASS    | ok | ok       | —         | —      | hevc_nvenc, FB active, drift 1.0ms |
+| 3  | A     | codec          | codec                      | AV1            | PASS    | ok | ok       | —         | —      | av1_nvenc, FB active, drift 7.8ms |
+| 4  | A     | quality        | quality                    | Auto           | PASS    | ok | ok       | —         | —      | FB active, drift -2.1ms |
+| 5  | A     | quality        | quality                    | Low            | PASS    | ok | ok       | —         | —      | FB active, drift 6.3ms |
+| 6  | A     | quality        | quality                    | Medium         | PASS    | ok | ok       | —         | —      | FB active, drift -2.0ms |
+| 7  | A     | quality        | quality                    | High           | PASS    | ok | ok       | —         | —      | FB active, drift 6.4ms |
+| 8  | A     | quality        | quality                    | Super High     | PASS    | ok | ok       | —         | —      | FB active, drift 3.1ms |
+| 9  | A     | quality        | quality                    | Custom         | PASS    | ok | ok       | —         | —      | FB active, drift 4.8ms |
+| 10 | A     | preset         | preset                     | Auto           | PASS    | ok | ok       | —         | —      | FB active, drift 8.2ms |
+| 11 | A     | preset         | preset                     | P1             | PASS    | ok | ok       | —         | —      | FB active, drift 6.6ms |
+| 12 | A     | preset         | preset                     | P3             | PASS    | ok | ok       | —         | —      | FB active, drift 6.7ms |
+| 13 | A     | preset         | preset                     | P5             | PASS    | ok | ok       | —         | —      | FB active, drift 0.1ms |
+| 14 | A     | preset         | preset                     | P7             | PASS    | ok | ok       | —         | —      | FB active, drift 1.8ms |
+| 15 | A     | split-encode   | split                      | Auto           | PASS    | ok | ok       | —         | —      | FB active, drift 6.8ms |
+| 16 | A     | split-encode   | split                      | Disabled       | PASS    | ok | ok       | —         | —      | FB active, drift 6.9ms |
+| 17 | A     | split-encode   | split                      | 2-way          | PASS    | ok | ok       | —         | —      | FB active, drift 10.3ms |
+| 18 | A     | split-encode   | split                      | 3-way          | PASS    | ok | ok       | —         | —      | FB active, drift 2.0ms |
+| 19 | A     | audio          | audio                      | off            | PASS    | ok | ok       | —         | —      | AudioReader=False, drift=None (expected) |
+| 20 | A     | audio          | audio                      | on             | PASS    | ok | ok       | —         | —      | **BUG:** drift=-532349ms after re-enable (metric not reset) |
+| 21 | A     | audio-preview  | audio-preview              | off            | PASS    | ok | ok       | —         | —      | Preview disabled, reader still active |
+| 22 | A     | audio-preview  | audio-preview              | on             | PASS    | ok | ok       | —         | —      | Preview re-enabled |
+| 23 | A     | mic            | mic (custom-audio)         | on             | PASS    | ok | ok       | —         | —      | CustomAudio=True, Wave XLR MK.2 |
+| 24 | A     | mic            | mic (custom-audio)         | off            | PASS    | ok | ok       | —         | ��      | CustomAudio=False |
+| 25 | A     | flashback      | fb play                    | —              | PASS    | ok | ok       | —         | —      | 120fps, 1149 frames, 1 late, drift -17.6ms, D3D11VA |
+| 26 | A     | flashback      | fb pause                   | —              | PASS    | ok | ok       | —         | —      | Paused at 18012ms, 2160 frames |
+| 27 | A     | flashback      | fb seek 0ms                | —              | PASS    | ok | ok       | —         | —      | Seeked to 21ms (near-start) |
+| 28 | A     | flashback      | fb seek 50%                | —              | PASS    | ok | ok       | —         | —      | Seeked to 75021ms (target 75000, ±21ms) |
+| 29 | A     | flashback      | fb seek end                | —              | PASS    | ok | ok       | —         | —      | Seeked to 165999ms (1ms accuracy) |
+| 30 | A     | flashback      | fb go-live                 | —              | PASS    | ok | ok       | —         | —      | Resumed live 120fps preview, FB active |
+| 31 | A     | hdr            | hdr                        | on             | PASS    | ok | ok       | —         | —      | Pipeline=HDR10-PQ, FB active |
+| 32 | A     | hdr            | hdr                        | off            | PASS    | ok | ok       | —         | —      | Pipeline=SDR, FB active |
 
 ### Phase B: Functional (10s recordings — audio sync verification)
 
