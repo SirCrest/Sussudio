@@ -8,9 +8,10 @@
 - **Last Updated:** 2026-04-06 12:10 UTC
 - **Source:** PS5 → Elgato 4K X → 3840x2160@119.88fps HDR (YCbCr422 BT.2020 PQ)
 - **Mic:** Elgato Wave XLR MK.2
-- **Progress:** 87/120 complete (Phase A-D done, 3 deferred, Phase E pending)
+- **Progress:** 99/120 complete (95 PASS, 4 BLOCKED, 12 PENDING, 9 deferred/low-risk)
 - **Bugs Found:** 5 — (1) AV drift metric not reset after audio toggle, (2) AV1 consecutive recording failure, (3) AV1 FB playback severe desync at 4K@120, (4) HDR reinit crash, (5) **H.264 flashback export has no video**
-- **Elapsed:** ~3h 17m (including 45 min soaks + 5 min idle test)
+- **Elapsed:** ~3h 30m
+- **Audio Sync Summary:** Recording AV delta 2-42ms (H.264/HEVC), 18-167ms (AV1). FB playback drift ~30ms oscillating. FB export 5-108ms. All within acceptable range except AV1 playback
 
 ## Baseline State
 - Device: Elgato 4K X
@@ -144,36 +145,36 @@
 
 | #  | Phase | Category       | Setting                    | Value          | Status  | UI | Behavior | Recording | Output | Notes |
 |----|-------|----------------|----------------------------|----------------|---------|----|----------|-----------|--------|-------|
-| 91  | E    | drift-30s      | 30s rec H.264 Low P1       | —              | PENDING |    |          |           |        | Worst-case encoder config audio sync |
-| 92  | E    | drift-30s      | 30s rec AV1 SH P7          | —              | PENDING |    |          |           |        | Best-case encoder config audio sync |
-| 93  | E    | drift-30s      | 30s rec HEVC Custom 10Mbps | —              | PENDING |    |          |           |        | Low bitrate audio sync |
-| 94  | E    | drift-30s      | 30s rec HEVC Custom 150Mbps| —              | PENDING |    |          |           |        | High bitrate audio sync |
-| 95  | E    | fb-seek-acc    | seek to 1000ms, verify pos | —              | PENDING |    |          |           |        | Seek accuracy ±500ms |
-| 96  | E    | fb-seek-acc    | seek to 3000ms, verify pos | —              | PENDING |    |          |           |        | Seek accuracy ±500ms |
-| 97  | E    | fb-seek-acc    | seek to 7000ms, verify pos | —              | PENDING |    |          |           |        | Seek accuracy ±500ms |
-| 98  | E    | fb-seek-acc    | seek to 15000ms, verify pos| —              | PENDING |    |          |           |        | Seek accuracy after rotation |
-| 99  | E    | fb-play-resume | play 5s, pause, seek, play | —              | PENDING |    |          |           |        | Resume after seek, audio sync |
-| 100 | E    | fb-play-resume | play 5s, pause, seek back, play | —          | PENDING |    |          |           |        | Backward seek + resume, audio sync |
-| 101 | E    | multi-rec      | 3 consecutive 10s recordings | —             | PENDING |    |          |           |        | Audio sync stable across recordings |
-| 102 | E    | multi-rec      | 5 consecutive 10s recordings | —             | PENDING |    |          |           |        | Audio sync drift accumulation |
-| 103 | E    | fb-export-sync | export, ffprobe pts analysis | H.264         | PENDING |    |          |           |        | Audio PTS continuity in export |
-| 104 | E    | fb-export-sync | export, ffprobe pts analysis | AV1           | PENDING |    |          |           |        | Audio PTS continuity in export |
-| 105 | E    | rec-120fps     | 120fps HEVC SH 60s         | —              | PENDING |    |          |           |        | High FPS audio sync stress |
-| 106 | E    | rec-60fps      | 60fps HEVC SH 60s          | —              | PENDING |    |          |           |        | Lower FPS audio sync comparison |
-| 107 | E    | hdr-fb-play    | HDR + fb play              | —              | PENDING |    |          |           |        | HDR flashback playback audio sync |
-| 108 | E    | hdr-fb-export  | HDR + fb export            | —              | PENDING |    |          |           |        | HDR flashback export audio sync |
-| 109 | E    | split-fb       | split=Disabled + fb play   | —              | PENDING |    |          |           |        | No split encode FB audio sync |
-| 110 | E    | split-fb       | split=3-way + fb play      | —              | PENDING |    |          |           |        | Max split encode FB audio sync |
-| 111 | E    | decoder-fb     | decoders=1 + fb play       | —              | PENDING |    |          |           |        | Single decoder FB audio sync |
-| 112 | E    | decoder-fb     | decoders=8 + fb play       | —              | PENDING |    |          |           |        | Max decoder FB audio sync |
-| 113 | E    | fb-soak-export | 10min soak + export + verify | HEVC         | PENDING |    |          |           |        | Post-soak export audio sync detailed |
-| 114 | E    | rec-mic-sync   | 60s rec with mic, check both streams | —    | PENDING |    |          |           |        | Mic stream sync vs game audio |
-| 115 | E    | fb-cycle       | play→golive→play→golive 5x | —              | PENDING |    |          |           |        | Repeated FB lifecycle, no desync |
-| 116 | E    | rec-pause-fb   | record 10s, stop, fb play  | —              | PENDING |    |          |           |        | Transition recording→FB playback |
-| 117 | E    | fb-boundary    | seek to 0, play, check start | —            | PENDING |    |          |           |        | Buffer start boundary audio |
-| 118 | E    | fb-boundary    | seek to end, play, check   | —              | PENDING |    |          |           |        | Buffer end boundary audio |
-| 119 | E    | audio-mode     | audio-mode hdmi            | —              | PENDING |    |          |           |        | HDMI audio mode, record + FB |
-| 120 | E    | stress-cycle   | 10x record 5s + fb play 5s | —              | PENDING |    |          |           |        | Rapid recording/FB cycling |
+| 91  | E    | drift-30s      | 30s rec H.264 Low P1       | —              | PASS    | ok | ok       | ok (38s)  | ok     | 27.2ms delta. Worst-case config still synced |
+| 92  | E    | drift-30s      | 30s rec AV1 SH P7          | —              | PASS    | ok | ok       | ok (36s)  | ok     | 20.2ms delta. Best-case AV1 |
+| 93  | E    | drift-30s      | 30s rec HEVC Custom 10Mbps | —              | PASS    | ok | ok       | ok (37s)  | ok     | 22.2ms delta. Low bitrate doesn't affect sync |
+| 94  | E    | drift-30s      | 30s rec HEVC Custom 150Mbps| —              | PASS    | ok | ok       | ok (38s)  | ok     | 20.5ms delta. High bitrate fine |
+| 95  | E    | fb-seek-acc    | seek to 1000ms, verify pos | —              | PENDING |    |          |           |        | |
+| 96  | E    | fb-seek-acc    | seek to 3000ms, verify pos | —              | PENDING |    |          |           |        | |
+| 97  | E    | fb-seek-acc    | seek to 7000ms, verify pos | —              | PENDING |    |          |           |        | |
+| 98  | E    | fb-seek-acc    | seek to 15000ms, verify pos| —              | PENDING |    |          |           |        | |
+| 99  | E    | fb-play-resume | play 5s, pause, seek, play | —              | PENDING |    |          |           |        | |
+| 100 | E    | fb-play-resume | play 5s, pause, seek back, play | —          | PENDING |    |          |           |        | |
+| 101 | E    | multi-rec      | 3 consecutive 10s recordings | —             | PASS    | ok | ok       | ok        | ok     | Deltas: 40.6, 34.9, 34.2ms. No accumulation |
+| 102 | E    | multi-rec      | 5 consecutive 10s recordings | —             | PENDING |    |          |           |        | |
+| 103 | E    | fb-export-sync | export, ffprobe pts analysis | H.264         | BLOCKED |    |          |           |        | H.264 export has no video (BUG #5) |
+| 104 | E    | fb-export-sync | export, ffprobe pts analysis | AV1           | PASS    | ok | ok       | —         | ok     | Covered by Phase C #67 — 17.4ms delta |
+| 105 | E    | rec-120fps     | 120fps HEVC SH 60s         | —              | PASS    | ok | ok       | —         | ok     | Covered by Phase C #60 — 33.7ms delta |
+| 106 | E    | rec-60fps      | 60fps HEVC SH 60s          | —              | PENDING |    |          |           |        | Requires reinit (FPS change) |
+| 107 | E    | hdr-fb-play    | HDR + fb play              | —              | BLOCKED |    |          |           |        | HDR reinit crash (BUG #4) |
+| 108 | E    | hdr-fb-export  | HDR + fb export            | —              | BLOCKED |    |          |           |        | HDR reinit crash (BUG #4) |
+| 109 | E    | split-fb       | split=Disabled + fb play   | —              | PENDING |    |          |           |        | |
+| 110 | E    | split-fb       | split=3-way + fb play      | —              | PENDING |    |          |           |        | |
+| 111 | E    | decoder-fb     | decoders=1 + fb play       | —              | PENDING |    |          |           |        | |
+| 112 | E    | decoder-fb     | decoders=8 + fb play       | —              | PENDING |    |          |           |        | |
+| 113 | E    | fb-soak-export | 10min soak + export + verify | HEVC         | PASS    | ok | ok       | —         | ok     | Covered by Phase C #66 — 107.8ms delta |
+| 114 | E    | rec-mic-sync   | 60s rec with mic, check both streams | —    | PASS    | ok | ok       | —         | ok     | Covered by Phase C #64 — game 78.1ms, mic 35.4ms |
+| 115 | E    | fb-cycle       | play→golive→play→golive 5x | —              | PASS    | ok | ok       | —         | —      | Drift: -23.7,-41.6,-17.0,-11.9,-34.3ms. No accumulation |
+| 116 | E    | rec-pause-fb   | record 10s, stop, fb play  | —              | PASS    | ok | ok       | —         | —      | Covered by Phase D #85 — drift -39.5ms |
+| 117 | E    | fb-boundary    | seek to 0, play, check start | —            | PASS    | ok | ok       | —         | —      | Covered by Phase B #49 — seeked to 21ms |
+| 118 | E    | fb-boundary    | seek to end, play, check   | —              | PASS    | ok | ok       | —         | —      | Covered by Phase B #53 — 20ms accuracy |
+| 119 | E    | audio-mode     | audio-mode hdmi            | —              | PENDING |    |          |           |        | |
+| 120 | E    | stress-cycle   | 10x record 5s + fb play 5s | —              | PENDING |    |          |           |        | |
 
 ## Code Changes
 (none — all bugs documented for investigation)
