@@ -187,30 +187,30 @@
 - **Root cause hypothesis:** Drift calculator uses absolute timestamps; audio reader restart resets audio clock but video clock continues
 - **Severity:** Low
 
-### BUG 2: AV1 consecutive recording failure
+### BUG 2: AV1 consecutive recording failure — OPEN
 - **Repro:** Set codec AV1, record 10s, stop. Record again without changing codec → produces <1s output
 - **Impact:** AV1 recordings after the first require codec cycling (HEVC→AV1) to work
-- **Root cause (investigated):** In `LibAvEncoder.cs`, `ReinitializeHdrBitstreamFilter()` (line ~2504) frees the BSF context via `av_bsf_free()` without fully draining buffered packets first. AV1's OBU framing requires more BSF buffering than H.264/HEVC, so packets are lost during segment rotation. The encoder state and new BSF are then out of sync, causing the second recording to lose almost all frames.
-- **Key files:** `LibAvEncoder.cs:753-821` (RotateOutput), `LibAvEncoder.cs:2504-2518` (ReinitializeHdrBitstreamFilter), `FlashbackEncoderSink.cs:22` (single reused encoder)
-- **Fix direction:** Drain BSF packets explicitly before freeing (`DrainBsfPacketsWithoutWrite()` call before `av_bsf_free`), or flush encoder with null frame before rotation
-- **Severity:** Medium — workaround exists (codec cycle)
+- **Root cause (corrected):** NOT BSF-related (BSF is HDR-only, tests were SDR). After first recording's `ForceRotateForExport`, a new segment starts. Second recording's PTS range (e.g. 62-78s buffer time) doesn't align with the new segment's file-level PTS (~44s). Export seeks past the segment's content and captures only trailing packets. Coordinate space mismatch between buffer PTS and file PTS after recording-triggered rotation.
+- **Key files:** `CaptureService.cs:362` (ExportFlashbackCoreAsync), `FlashbackEncoderSink.cs:996` (ForceRotateForExport), segment PTS tracking
+- **Severity:** Medium — workaround exists (codec cycle). May affect all codecs under specific rotation timing
 
-### BUG 3: AV1 flashback playback severe desync at 4K@120fps
+### BUG 3: AV1 flashback playback severe desync at 4K@120fps — FIXED (commit be7ef75)
 - **Repro:** Set codec AV1 at 4K@120fps. `flashback play`. FlashbackAvDriftMs grows to -863ms+
-- **Impact:** AV1 flashback playback unusable at 4K@120fps. 63% late frames, 39fps effective
-- **Root cause hypothesis:** D3D11VA AV1 decode can't sustain 4K@120fps on this GPU
-- **Severity:** Medium — H.264/HEVC playback works fine
+- **Root cause:** D3D11VA AV1 decode takes ~25ms/frame but frame interval is 8.33ms. PaceFrameInterval shrinks delay to 0 but never skipped frames, so drift grew unbounded.
+- **Fix:** Added frame skip logic in PaceAndDecodeFrame. When drift exceeds 200ms, decode-and-discard up to 30 frames to catch up. Maintains audio sync at cost of visual smoothness.
+- **Severity:** Medium — H.264/HEVC playback works fine, AV1 now gracefully degrades
 
 ### BUG 4: HDR reinit crash (KNOWN)
 - **Repro:** Toggle HDR on/off, or start recording with HDR enabled after reinit
 - **Impact:** All HDR tests blocked. This is the known reinit crash from previous QA runs
 - **Severity:** Critical — blocks HDR use
 
-### BUG 5: H.264 flashback export produces no video
-- **Repro:** Set codec H.264. Wait for buffer to fill. `flashback export` → output MP4 has only 2 audio tracks, no video
-- **Impact:** H.264 flashback export completely broken. HEVC and AV1 exports work fine
-- **Root cause hypothesis:** H.264 TS segment muxer not writing video packets, or export pipeline drops H.264 video during segment reassembly
-- **Severity:** High — H.264 flashback export unusable
+### BUG 5: H.264 flashback export produces no video — FIXED (commit be7ef75)
+- **Repro:** Set codec H.264. Wait for buffer rotation (>5 min). `flashback export` → output MP4 has only audio
+- **Root cause:** Rotated TS segments start mid-stream. Default probesize (5MB) insufficient for 4K@120fps H.264 to find the first IDR frame with SPS/PPS. avformat_find_stream_info returned width=0 height=0, and CopyTemplateStreams skipped the video stream for all subsequent segments.
+- **Fix:** (1) Increased probesize to 20MB and max_analyze_duration to 5s. (2) Added fallback: if first segment has incomplete video params, skip it and use next segment as template.
+- **Verified:** Multi-segment H.264 export now produces valid video (300s, 36002 frames, 26ms AV delta)
+- **Severity:** High → FIXED
 
 ## Tooling Gaps
 | # | What was needed | Why | Suggested implementation |
