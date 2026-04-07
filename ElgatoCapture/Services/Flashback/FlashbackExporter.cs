@@ -532,10 +532,44 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     {
                         // Create output from first segment's streams
                         videoStreamIndex = FindVideoStreamIndex(_activeInputContext);
+
+                        // Log input stream details for diagnostics
+                        var inputNbStreams = checked((int)_activeInputContext->nb_streams);
+                        for (var si = 0; si < inputNbStreams; si++)
+                        {
+                            var inStr = _activeInputContext->streams[si];
+                            var codecId = inStr->codecpar->codec_id;
+                            var codecType = inStr->codecpar->codec_type;
+                            Logger.Log($"FLASHBACK_EXPORT_INPUT_STREAM idx={si} type={codecType} codec_id={codecId} " +
+                                $"w={inStr->codecpar->width} h={inStr->codecpar->height} " +
+                                $"extradata_size={inStr->codecpar->extradata_size} " +
+                                $"sample_rate={inStr->codecpar->sample_rate} channels={inStr->codecpar->ch_layout.nb_channels}");
+                        }
+
+                        // If the video stream has incomplete params (width=0 or height=0),
+                        // the TS segment likely started mid-stream without SPS/PPS (H.264
+                        // from RotateOutput with NVENC pipeline latency). Try the next
+                        // segment as the template source instead.
+                        var videoHasValidParams = videoStreamIndex >= 0 &&
+                            _activeInputContext->streams[videoStreamIndex]->codecpar->width > 0 &&
+                            _activeInputContext->streams[videoStreamIndex]->codecpar->height > 0;
+
+                        if (!videoHasValidParams && segIdx < segmentPaths.Count - 1)
+                        {
+                            Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_params_incomplete' seg={segIdx} " +
+                                $"w={_activeInputContext->streams[videoStreamIndex]->codecpar->width} " +
+                                $"h={_activeInputContext->streams[videoStreamIndex]->codecpar->height} " +
+                                $"extradata={_activeInputContext->streams[videoStreamIndex]->codecpar->extradata_size} " +
+                                $"trying_next_segment");
+                            CloseActiveInput();
+                            continue;
+                        }
+
                         CreateOutputContext(tmpPath, fastStart);
                         streamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext);
+                        Logger.Log($"FLASHBACK_EXPORT_STREAM_MAP video_idx={videoStreamIndex} map=[{string.Join(",", streamMap)}]");
                         OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
-                        streamCount = checked((int)_activeInputContext->nb_streams);
+                        streamCount = inputNbStreams;
                     }
                     else
                     {
@@ -782,7 +816,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     progress?.Report(new ExportProgress(segIdx + 1, segmentPaths.Count,
                         totalEstimatedBytes > 0 ? 100.0 * bytesProcessed / totalEstimatedBytes : 100.0 * (segIdx + 1) / segmentPaths.Count));
 
-                    Logger.Log($"FLASHBACK_EXPORT_SEGMENT_DONE seg={segIdx}/{segmentPaths.Count} path='{Path.GetFileName(segPath)}' packets={totalPackets}");
+                    Logger.Log($"FLASHBACK_EXPORT_SEGMENT_DONE seg={segIdx}/{segmentPaths.Count} path='{Path.GetFileName(segPath)}' packets={totalPackets} seg_max_pts_us={segMaxPtsUs} seg_abs_max_pts_us={segAbsMaxPtsUs} bases_discovered={segAllBasesDiscovered}");
 
                     // If outPoint was hit, stop processing more segments
                     // Use absolute PTS (not rebased) since outPtsLimitUs is in absolute encoder time
@@ -943,6 +977,15 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         try
         {
             ThrowIfError(ffmpeg.avformat_open_input(&inputContext, inputPath, null, null), "avformat_open_input");
+
+            // Increase probe size for TS segments that may start mid-stream.
+            // H.264 TS segments from RotateOutput may not have SPS/PPS at the very start
+            // (NVENC pipeline latency can push the first IDR several frames in).
+            // Default probesize (5MB) may not be enough for 4K@120fps H.264 — increase
+            // to 20MB so avformat_find_stream_info can find the first IDR and extract
+            // video dimensions and extradata.
+            inputContext->probesize = 20 * 1024 * 1024;
+            inputContext->max_analyze_duration = 5 * ffmpeg.AV_TIME_BASE; // 5 seconds
         }
         catch
         {

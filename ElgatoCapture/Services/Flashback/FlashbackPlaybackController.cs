@@ -871,6 +871,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     /// Decodes and submits the next frame at real-time pace.
     /// Decode-first structure: do the work, then wait for the remainder of the frame interval.
     /// Uses sleep + spin-wait hybrid for sub-millisecond accuracy at 120fps.
+    /// When the decoder can't keep up (drift > 200ms), skips frames without display
+    /// to maintain audio synchronization.
     /// Returns true if still playing, false if transitioned to another state.
     /// </summary>
     private bool PaceAndDecodeFrame(
@@ -885,6 +887,48 @@ internal sealed class FlashbackPlaybackController : IDisposable
             if (!decoder.TryDecodeNextVideoFrame(out var videoFrame))
             {
                 return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart);
+            }
+
+            // Frame skip: when video falls significantly behind audio, decode-and-discard
+            // frames to catch up rather than falling further behind. This handles codecs
+            // whose decode time exceeds the frame interval (e.g. AV1 at 4K@120fps where
+            // each decode takes ~25ms but frame interval is 8.33ms).
+            const double FrameSkipThresholdMs = 200.0;
+            const int MaxSkipFrames = 30; // cap to prevent infinite skip loops
+            var audioClockPts = Volatile.Read(ref _audioClockPtsTicks);
+            if (audioClockPts > 0)
+            {
+                var audioClockWall = Volatile.Read(ref _audioClockWallTicks);
+                var wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
+                var wallElapsedTicks = (long)((double)wallElapsed / Stopwatch.Frequency * TimeSpan.TicksPerSecond);
+                var extrapolatedAudioTicks = audioClockPts + wallElapsedTicks;
+                var driftMs = (videoFrame.Pts.Ticks - extrapolatedAudioTicks) / (double)TimeSpan.TicksPerMillisecond;
+
+                if (driftMs < -FrameSkipThresholdMs)
+                {
+                    var skipped = 0;
+                    while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)
+                    {
+                        // Release the frame without displaying it
+                        FlashbackDecoder.ReleaseHeldFrame(videoFrame);
+                        Interlocked.Increment(ref _playbackDroppedFrames);
+                        skipped++;
+
+                        if (!decoder.TryDecodeNextVideoFrame(out videoFrame))
+                            return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart);
+
+                        // Recompute drift with the new frame's PTS
+                        wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
+                        wallElapsedTicks = (long)((double)wallElapsed / Stopwatch.Frequency * TimeSpan.TicksPerSecond);
+                        extrapolatedAudioTicks = audioClockPts + wallElapsedTicks;
+                        driftMs = (videoFrame.Pts.Ticks - extrapolatedAudioTicks) / (double)TimeSpan.TicksPerMillisecond;
+                    }
+
+                    if (skipped > 0)
+                    {
+                        Logger.Log($"FLASHBACK_PLAYBACK_FRAME_SKIP count={skipped} drift_after_ms={driftMs:F1}");
+                    }
+                }
             }
 
             ReleasePreviousHeldFrame();
