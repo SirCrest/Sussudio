@@ -112,15 +112,20 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         try { _disposeCts?.Cancel(); } catch (ObjectDisposedException) { /* Best-effort: CTS may already be disposed if Dispose races */ }
 
         // Wait for the export task to release the lock. The CTS is cancelled so
-        // the task must exit — waiting indefinitely is safe and avoids use-after-free.
-        _exportLock.Wait();
+        // the task should exit promptly. Timeout prevents app hang if FFmpeg is stuck.
+        var lockAcquired = _exportLock.Wait(TimeSpan.FromSeconds(10));
+        if (!lockAcquired)
+        {
+            Logger.Log("FLASHBACK_EXPORT_DISPOSE: timed out waiting for export lock (10s)");
+        }
         try
         {
             CleanupNativeState();
         }
         finally
         {
-            _exportLock.Release();
+            if (lockAcquired)
+                _exportLock.Release();
         }
 
         _exportLock.Dispose();

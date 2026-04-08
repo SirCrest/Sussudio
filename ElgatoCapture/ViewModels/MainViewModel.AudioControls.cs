@@ -261,7 +261,9 @@ public partial class MainViewModel
         StatusText = $"Analog audio gain set to {gainPercent:0}%";
         WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = gainPercent);
 
-        _gainFlashDebounceCts?.Cancel();
+        var oldCts = _gainFlashDebounceCts;
+        oldCts?.Cancel();
+        oldCts?.Dispose();
         var cts = new CancellationTokenSource();
         _gainFlashDebounceCts = cts;
         _ = Task.Run(async () =>

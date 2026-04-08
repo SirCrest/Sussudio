@@ -51,7 +51,8 @@ public partial class MainViewModel
         // Cycle the flashback encoder so the buffer uses the new bitrate.
         if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
         {
-            _ = _captureService.CycleFlashbackEncoderSettingsAsync(customBitrateMbps: value);
+            _ = _captureService.CycleFlashbackEncoderSettingsAsync(customBitrateMbps: value)
+                .ContinueWith(t => Logger.Log($"CycleFlashbackEncoder(bitrate) failed: {t.Exception!.InnerException?.Message}"), TaskContinuationOptions.OnlyOnFaulted);
         }
     }
 
@@ -361,7 +362,8 @@ public partial class MainViewModel
                 "Custom" => VideoQuality.Custom,
                 _ => VideoQuality.High
             };
-            _ = _captureService.CycleFlashbackEncoderSettingsAsync(quality: quality);
+            _ = _captureService.CycleFlashbackEncoderSettingsAsync(quality: quality)
+                .ContinueWith(t => Logger.Log($"CycleFlashbackEncoder(quality) failed: {t.Exception!.InnerException?.Message}"), TaskContinuationOptions.OnlyOnFaulted);
         }
     }
 
@@ -372,7 +374,8 @@ public partial class MainViewModel
         // Cycle the flashback encoder so the buffer uses the new preset.
         if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
         {
-            _ = _captureService.CycleFlashbackEncoderSettingsAsync(nvencPreset: value);
+            _ = _captureService.CycleFlashbackEncoderSettingsAsync(nvencPreset: value)
+                .ContinueWith(t => Logger.Log($"CycleFlashbackEncoder(preset) failed: {t.Exception!.InnerException?.Message}"), TaskContinuationOptions.OnlyOnFaulted);
         }
     }
 

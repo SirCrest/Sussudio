@@ -36,8 +36,7 @@ internal sealed class AudioDeviceWatcher : IMMNotificationClient, IDisposable
             return;
         }
 
-        _debounceTimer?.Dispose();
-        _debounceTimer = new Timer(_ =>
+        var newTimer = new Timer(_ =>
         {
             if (Volatile.Read(ref _disposed) != 0) return;
             try
@@ -49,6 +48,7 @@ internal sealed class AudioDeviceWatcher : IMMNotificationClient, IDisposable
                 Logger.Log($"AudioDeviceWatcher: callback error — {ex.Message}");
             }
         }, null, DebounceMs, Timeout.Infinite);
+        Interlocked.Exchange(ref _debounceTimer, newTimer)?.Dispose();
     }
 
     int IMMNotificationClient.OnDeviceStateChanged(string deviceId, uint newState)

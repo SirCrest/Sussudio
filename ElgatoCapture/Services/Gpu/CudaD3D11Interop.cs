@@ -372,6 +372,7 @@ internal sealed unsafe class CudaD3D11InteropBridge : IDisposable
         if (Interlocked.Exchange(ref _disposed, 1) != 0)
             return;
 
+        // 1. Unregister CUDA resources while context is still alive
         if (_registeredResourceY != IntPtr.Zero)
         {
             TryUnregisterResource(_registeredResourceY);
@@ -384,18 +385,26 @@ internal sealed unsafe class CudaD3D11InteropBridge : IDisposable
             _registeredResourceUV = IntPtr.Zero;
         }
 
-        cuDevicePrimaryCtxRelease(_cuDevice);
-
-        _defaultTexture?.Dispose();
-        _defaultTexture = null;
+        // 2. Dispose D3D11 textures (CUDA no longer references them)
         _helperTextureY?.Dispose();
         _helperTextureY = null;
         _helperTextureUV?.Dispose();
         _helperTextureUV = null;
         _stagingTexture?.Dispose();
         _stagingTexture = null;
+        _defaultTexture?.Dispose();
+        _defaultTexture = null;
+
+        // 3. Release CUDA primary context after all CUDA and D3D11 resources are freed
+        cuDevicePrimaryCtxRelease(_cuDevice);
+
+        // 4. Release COM references obtained in the constructor. ImmediateContext and
+        // QueryInterfaceOrNull both AddRef, so we must Dispose (Release) to balance.
+        // Each consumer holds its own refcounted reference — releasing ours does not
+        // affect other consumers (preview renderer, encoder) of the same device.
         _multithread?.Dispose();
         _deviceContext?.Dispose();
+
         _initialized = false;
         Logger.Log($"CUDA_D3D11_INTEROP_DISPOSED zero_copy={_zeroCopyAvailable}");
     }

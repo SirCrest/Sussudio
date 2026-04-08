@@ -37,6 +37,8 @@ internal partial class SettingsJsonContext : JsonSerializerContext;
 
 public static class SettingsService
 {
+    private static readonly object _lock = new();
+
     private static string GetSettingsDirectory()
         => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElgatoCapture");
 
@@ -46,29 +48,32 @@ public static class SettingsService
     public static UserSettings Load()
     {
         var settingsFilePath = GetSettingsFilePath();
-        try
+        lock (_lock)
         {
-            if (!File.Exists(settingsFilePath))
+            try
             {
-                Logger.Log("SETTINGS_LOAD: no settings file found, using defaults.");
+                if (!File.Exists(settingsFilePath))
+                {
+                    Logger.Log("SETTINGS_LOAD: no settings file found, using defaults.");
+                    return new UserSettings();
+                }
+
+                var json = File.ReadAllText(settingsFilePath);
+                var settings = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.UserSettings);
+                if (settings == null)
+                {
+                    Logger.Log("SETTINGS_LOAD: deserialization returned null, using defaults.");
+                    return new UserSettings();
+                }
+
+                Logger.Log($"SETTINGS_LOAD: loaded from {settingsFilePath}");
+                return settings;
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"SETTINGS_LOAD: failed to load ({ex.GetType().Name}: {ex.Message}), using defaults.");
                 return new UserSettings();
             }
-
-            var json = File.ReadAllText(settingsFilePath);
-            var settings = JsonSerializer.Deserialize(json, SettingsJsonContext.Default.UserSettings);
-            if (settings == null)
-            {
-                Logger.Log("SETTINGS_LOAD: deserialization returned null, using defaults.");
-                return new UserSettings();
-            }
-
-            Logger.Log($"SETTINGS_LOAD: loaded from {settingsFilePath}");
-            return settings;
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"SETTINGS_LOAD: failed to load ({ex.GetType().Name}: {ex.Message}), using defaults.");
-            return new UserSettings();
         }
     }
 
@@ -76,16 +81,21 @@ public static class SettingsService
     {
         var settingsDirectory = GetSettingsDirectory();
         var settingsFilePath = GetSettingsFilePath();
-        try
+        lock (_lock)
         {
-            Directory.CreateDirectory(settingsDirectory);
-            var json = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.UserSettings);
-            File.WriteAllText(settingsFilePath, json);
-            Logger.Log($"SETTINGS_SAVE: saved to {settingsFilePath}");
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"SETTINGS_SAVE: failed ({ex.GetType().Name}: {ex.Message})");
+            try
+            {
+                Directory.CreateDirectory(settingsDirectory);
+                var json = JsonSerializer.Serialize(settings, SettingsJsonContext.Default.UserSettings);
+                var tempPath = settingsFilePath + ".tmp";
+                File.WriteAllText(tempPath, json);
+                File.Move(tempPath, settingsFilePath, overwrite: true);
+                Logger.Log($"SETTINGS_SAVE: saved to {settingsFilePath}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"SETTINGS_SAVE: failed ({ex.GetType().Name}: {ex.Message})");
+            }
         }
     }
 }

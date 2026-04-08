@@ -510,6 +510,11 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             (uint)subresourceIndex,
             null);
 
+        // CopySubresourceRegion is void — after a TDR (GPU device-removed), the call
+        // silently no-ops and subsequent frames encode from stale/garbage texture data.
+        // Proactively check device health to fail fast rather than corrupt the recording.
+        CheckDeviceRemoved(options.D3D11DevicePtr);
+
         // Construct the AVFrame manually (bypass FFmpeg's pool which doesn't support
         // individual textures). The pool texture outlives the frame, so use no-op free.
         ffmpeg.av_frame_unref(_hwFrame);
@@ -3112,6 +3117,34 @@ ValidateHdrOptions:
     {
         Logger.Log(message);
         return new InvalidOperationException(message);
+    }
+
+    /// <summary>
+    /// Checks ID3D11Device::GetDeviceRemovedReason (vtable slot 39) to detect TDR.
+    /// CopySubresourceRegion is void-return, so after a device-removed event all
+    /// context calls silently no-op. This proactive check surfaces the error before
+    /// NVENC encodes from stale/garbage textures, allowing the caller to finalize
+    /// the recording and preserve already-encoded data.
+    /// </summary>
+    private static void CheckDeviceRemoved(IntPtr d3d11Device)
+    {
+        if (d3d11Device == IntPtr.Zero)
+            return;
+
+        var deviceVtable = *(IntPtr*)d3d11Device;
+        // ID3D11Device vtable layout: IUnknown (0-2) + ID3D11Device methods (3+).
+        // CreateTexture2D = slot 5 (validated elsewhere in this file).
+        // GetDeviceRemovedReason = slot 39 (3 IUnknown + 36 ID3D11Device methods before it).
+        var getDeviceRemovedReason =
+            (delegate* unmanaged[Stdcall]<IntPtr, int>)*(IntPtr*)(deviceVtable + 39 * IntPtr.Size);
+        var hr = getDeviceRemovedReason(d3d11Device);
+
+        if (hr < 0)
+        {
+            throw CreateLibAvException(
+                $"LIBAV_ENCODER_DEVICE_REMOVED hr=0x{unchecked((uint)hr):X8} " +
+                "msg=GPU device was removed (TDR). Recording will be finalized with frames encoded so far.");
+        }
     }
 }
 

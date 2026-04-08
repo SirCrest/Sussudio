@@ -253,7 +253,9 @@ public partial class MainViewModel
                 _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
             });
 
-            _exportCts?.Cancel();
+            var oldExportCts = _exportCts;
+            oldExportCts?.Cancel();
+            oldExportCts?.Dispose();
             _exportCts = new CancellationTokenSource();
             var ct = _exportCts.Token;
 

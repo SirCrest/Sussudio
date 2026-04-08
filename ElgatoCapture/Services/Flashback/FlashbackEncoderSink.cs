@@ -1012,11 +1012,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
         _workAvailable.Set();
 
-        // Keep timeout short — this blocks the caller (CaptureService) synchronously.
-        // Changing to async would require updating all callers.
-        if (!tcs.Task.Wait(TimeSpan.FromSeconds(3)))
+        // AV1 encoding is significantly slower than H.264/HEVC — drain can take
+        // much longer at 4K@120fps with a deep queue. Use a longer timeout for AV1.
+        var codecName = _sessionContext?.CodecName ?? string.Empty;
+        var isSlowCodec = codecName.Contains("av1", StringComparison.OrdinalIgnoreCase);
+        var timeoutSeconds = isSlowCodec ? 10 : 3;
+        if (!tcs.Task.Wait(TimeSpan.FromSeconds(timeoutSeconds)))
         {
-            Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT");
+            Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT codec={codecName} timeout_s={timeoutSeconds} vq={Volatile.Read(ref _videoQueueDepth)} aq={Volatile.Read(ref _audioQueueDepth)}");
             return Array.Empty<string>();
         }
 

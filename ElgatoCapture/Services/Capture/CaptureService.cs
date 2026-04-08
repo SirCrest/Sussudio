@@ -379,7 +379,24 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint);
                 if (segmentPaths.Count == 0)
-                    segmentPaths = null;
+                {
+                    // ForceRotate timed out (AV1 encoder can be too slow to drain
+                    // within the 3-second window). Completed segments before the
+                    // active one are already finalized — query them directly.
+                    // NOTE: The encoding thread may still be completing the rotation.
+                    // This returns only already-completed segments — the live-edge
+                    // segment may be missed if it hasn't been finalized yet. This is
+                    // acceptable: the previous behavior returned a near-empty file.
+                    segmentPaths = bufferManager?.GetValidSegmentPaths(inPoint, outPoint);
+                    if (segmentPaths is { Count: > 0 })
+                    {
+                        Logger.Log($"FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK segments={segmentPaths.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)outPoint.TotalMilliseconds}");
+                    }
+                    else
+                    {
+                        segmentPaths = null;
+                    }
+                }
             }
 
             // Fallback: single-file export if no segments available
@@ -1989,6 +2006,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
                     wasapiCapture.Start();
                     _wasapiAudioCapture = wasapiCapture;
+                    _avSyncBaselineDriftMs = double.NaN;
                     Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
                     Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
                 }
@@ -2727,12 +2745,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     {
         var cts = _telemetryPollCts;
         _telemetryPollCts = null;
-        if (cts != null)
-        {
-            cts.Cancel();
-            cts.Dispose();
-        }
+        cts?.Cancel();
         _telemetryPollTask = null;
+        // Do not Dispose the CTS here — the poll task may still be checking
+        // the token between Cancel and its own exit. Let GC finalize instead of
+        // risking ObjectDisposedException in the poll loop's Task.Delay.
     }
 
     private static SourceSignalTelemetrySnapshot MergeTelemetryWithFallback(

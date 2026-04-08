@@ -299,7 +299,7 @@ internal sealed class NativeXuAudioControlService
                 }
 
                 // Give firmware time to commit the write before verifying
-                Thread.Sleep(100);
+                await Task.Delay(100, cancellationToken).ConfigureAwait(false);
 
                 if (!TryReadRawPayload(candidate, out var verifyRawPayload))
                 {

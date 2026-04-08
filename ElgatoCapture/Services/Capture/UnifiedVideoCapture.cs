@@ -25,6 +25,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private bool _isHighFrameRateMjpegMode;
     private bool _strictPreviewTextureRequired;
     private int _fatalErrorSignaled;
+    private int _consecutiveTextureFailures;
+    private const int MaxConsecutiveTextureFailures = 5;
     private int _width;
     private int _height;
     private double _fps;
@@ -210,6 +212,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             Interlocked.Exchange(ref _recordingFramesDelivered, 0);
             Interlocked.Exchange(ref _lastVideoFrameArrivedTick, 0);
             Interlocked.Exchange(ref _fatalErrorSignaled, 0);
+            Interlocked.Exchange(ref _consecutiveTextureFailures, 0);
             Interlocked.Exchange(ref _pixelFormatObserverFired, 0);
         }
 
@@ -538,6 +541,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 {
                     previewSink.SubmitTexture(gpuTexture, gpuSubresource, width, height, isP010, arrivalTick);
                     textureSubmitted = true;
+                    Interlocked.Exchange(ref _consecutiveTextureFailures, 0);
                 }
                 catch (Exception ex)
                 {
@@ -548,12 +552,21 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             if (!textureSubmitted &&
                 Volatile.Read(ref _strictPreviewTextureRequired))
             {
+                var failures = Interlocked.Increment(ref _consecutiveTextureFailures);
                 Interlocked.Increment(ref _videoFramesDropped);
-                SignalFatalError(
-                    new InvalidOperationException(
-                        $"4K120 MJPG mode requires D3D preview textures, but texture delivery failed for native_input='{_nativeInputFormat}' negotiated='{_negotiatedFormat}'."),
-                    "UNIFIED_VIDEO_PREVIEW_TEXTURE_REQUIRED " +
-                    $"native_input='{_nativeInputFormat}' negotiated='{_negotiatedFormat}'");
+
+                if (failures >= MaxConsecutiveTextureFailures)
+                {
+                    SignalFatalError(
+                        new InvalidOperationException(
+                            $"4K120 MJPG mode requires D3D preview textures, but texture delivery failed {failures} consecutive times for native_input='{_nativeInputFormat}' negotiated='{_negotiatedFormat}'."),
+                        $"UNIFIED_VIDEO_PREVIEW_TEXTURE_REQUIRED consecutive={failures} " +
+                        $"native_input='{_nativeInputFormat}' negotiated='{_negotiatedFormat}'");
+                }
+                else
+                {
+                    Logger.Log($"UNIFIED_VIDEO_PREVIEW_TEXTURE_GRACE consecutive={failures}/{MaxConsecutiveTextureFailures}");
+                }
             }
             else if (!textureSubmitted && !frameData.IsEmpty)
             {
