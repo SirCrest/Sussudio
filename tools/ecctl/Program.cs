@@ -52,6 +52,7 @@ internal static class Program
         Console.WriteLine("  options [--json]");
         Console.WriteLine("  timeline [--max N] [--json]");
         Console.WriteLine("  memory [--json]");
+        Console.WriteLine("  presentmon [--seconds N] [--pid PID|--process NAME] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
         Console.WriteLine();
         Console.WriteLine("Control:");
         Console.WriteLine("  preview start|stop");

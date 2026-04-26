@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using ElgatoCapture.Tools;
 
 namespace EcCtl;
 
@@ -15,6 +16,7 @@ internal static class CommandHandlers
             "options" => HandleOptionsAsync(context),
             "timeline" => HandleTimelineAsync(context),
             "memory" => HandleMemoryAsync(context),
+            "presentmon" => HandlePresentMonAsync(context),
             "preview" => HandlePreviewAsync(context),
             "record" => HandleRecordAsync(context),
             "screenshot" => HandleCaptureAsync(context, "CaptureWindowScreenshot", "temp/window_screenshot.png"),
@@ -80,6 +82,33 @@ internal static class CommandHandlers
 
         var response = await context.Transport.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
         return WriteResponse(response, json, Formatters.FormatMemory);
+    }
+
+    private static async Task<int> HandlePresentMonAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        var seconds = ParseOptionalIntFlag(context.Rest, "--seconds") ?? 10;
+        var pid = ParseOptionalIntFlag(context.Rest, "--pid");
+        var processName = ParseOptionalStringFlag(context.Rest, "--process") ?? "ElgatoCapture";
+        var presentMonPath = ParseOptionalStringFlag(context.Rest, "--presentmon");
+        var outputPath = ParseOptionalStringFlag(context.Rest, "--output");
+        var keepCsv = ConsumeFlag(context.Rest, "--keep-csv");
+        var noGpuVideo = ConsumeFlag(context.Rest, "--no-gpu-video");
+        EnsureNoArgs(context.Rest, "presentmon [--seconds N] [--pid PID|--process NAME] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
+
+        var result = await PresentMonProbe.RunAsync(new PresentMonProbeOptions
+        {
+            ProcessId = pid,
+            ProcessName = processName,
+            DurationSeconds = seconds,
+            PresentMonPath = presentMonPath,
+            OutputFile = outputPath,
+            KeepCsv = keepCsv,
+            TrackGpuVideo = !noGpuVideo
+        }).ConfigureAwait(false);
+
+        Console.WriteLine(json ? PrettyJson(result) : PresentMonProbe.Format(result));
+        return result.Success ? 0 : 3;
     }
 
     private static Task<int> HandlePreviewAsync(CommandContext context)
@@ -495,6 +524,28 @@ internal static class CommandHandlers
         args.RemoveAt(index);
         return value;
     }
+
+    private static string? ParseOptionalStringFlag(List<string> args, string flag)
+    {
+        var index = args.FindIndex(arg => string.Equals(arg, flag, StringComparison.OrdinalIgnoreCase));
+        if (index < 0)
+        {
+            return null;
+        }
+
+        if (index + 1 >= args.Count)
+        {
+            throw new UsageException($"Missing value for {flag}.");
+        }
+
+        var value = args[index + 1];
+        args.RemoveAt(index + 1);
+        args.RemoveAt(index);
+        return value;
+    }
+
+    private static string PrettyJson<T>(T value)
+        => JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
 
     private static string RequireWord(IReadOnlyList<string> args, int index, string usage)
     {
