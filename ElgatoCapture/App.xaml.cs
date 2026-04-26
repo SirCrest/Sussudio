@@ -1,9 +1,18 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using ElgatoCapture.Services;
 using Microsoft.UI.Xaml;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture
 {
@@ -41,6 +50,7 @@ namespace ElgatoCapture
                 return;
             }
 
+            TryEmergencyStopRecording("UI");
             Logger.LogFatalBreadcrumb("Fatal UI unhandled exception. Terminating process.", e.Exception);
             Environment.FailFast($"Fatal UI unhandled exception: {e.Message}", e.Exception);
         }
@@ -58,10 +68,56 @@ namespace ElgatoCapture
             }
             Logger.Log($"IsTerminating: {e.IsTerminating}");
 
-            if (!e.IsTerminating && e.ExceptionObject is Exception unhandledEx && !IsRecoverableUnhandled(unhandledEx))
+            if (e.ExceptionObject is Exception unhandledEx)
             {
-                Logger.LogFatalBreadcrumb("Escalating non-terminating AppDomain unhandled exception to fail-fast.", unhandledEx);
-                Environment.FailFast("Fatal AppDomain unhandled exception", unhandledEx);
+                var recoverable = IsRecoverableUnhandled(unhandledEx);
+                if (e.IsTerminating || !recoverable)
+                {
+                    TryEmergencyStopRecording("AppDomain");
+                }
+
+                if (!e.IsTerminating && !recoverable)
+                {
+                    Logger.LogFatalBreadcrumb("Escalating non-terminating AppDomain unhandled exception to fail-fast.", unhandledEx);
+                    Environment.FailFast("Fatal AppDomain unhandled exception", unhandledEx);
+                }
+            }
+        }
+
+        // Best-effort: give the mux up to 3 seconds to write the moov atom before
+        // FailFast kills the process. Better to try and fail than guarantee a
+        // truncated MP4. A corrupted-state exception may still bypass this path
+        // (AVE is uncatchable in .NET 8+), but ordinary unhandled exceptions on
+        // a background thread are recoverable here.
+        private void TryEmergencyStopRecording(string source)
+        {
+            try
+            {
+                if (_window is not MainWindow mainWindow) return;
+                var viewModel = mainWindow.ViewModel;
+                if (viewModel == null) return;
+
+                Logger.LogFatalBreadcrumb($"EMERGENCY_FINALIZE_ATTEMPT source={source}");
+                var task = viewModel.StopRecordingForEmergencyAsync();
+                var finished = task.Wait(TimeSpan.FromSeconds(3));
+                if (finished)
+                {
+                    try
+                    {
+                        task.GetAwaiter().GetResult();
+                    }
+                    catch (Exception inner)
+                    {
+                        Logger.Log($"EMERGENCY_FINALIZE_INNER_FAIL msg={inner.Message}");
+                    }
+                }
+
+                Logger.LogFatalBreadcrumb(
+                    finished ? "EMERGENCY_FINALIZE_DONE" : "EMERGENCY_FINALIZE_TIMEOUT");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"EMERGENCY_FINALIZE_OUTER_FAIL msg={ex.Message}");
             }
         }
 

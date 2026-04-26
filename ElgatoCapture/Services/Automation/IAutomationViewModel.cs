@@ -4,12 +4,16 @@ using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Automation;
 
 /// <summary>
 /// Abstraction over MainViewModel consumed by the automation layer.
-/// Lives in ElgatoCapture.Services so the dependency arrow points
+/// Lives in ElgatoCapture.Services.Automation so the dependency arrow points
 /// inward (Services defines the contract, ViewModels implements it).
 /// </summary>
 public interface IAutomationViewModel
@@ -74,22 +78,22 @@ public interface IAutomationViewModel
 
     // ── Microphone ──────────────────────────────────────────────────
 
-    bool IsMicrophoneEnabled { get; set; }
+    Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
 
     // ── Flashback ───────────────────────────────────────────────────
 
-    Task RestartFlashbackAsync();
-    bool FlashbackPlay();
-    bool FlashbackPause();
-    bool FlashbackGoLive();
-    bool FlashbackBeginScrub(TimeSpan position);
-    bool FlashbackEndScrub();
+    Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
+    Task RestartFlashbackAsync(CancellationToken cancellationToken = default);
+    Task<bool> ExecuteFlashbackActionAsync(
+        AutomationFlashbackAction action,
+        TimeSpan? position = null,
+        CancellationToken cancellationToken = default);
     Task<FinalizeResult> ExportFlashbackAutomationAsync(double seconds, string outputPath, CancellationToken ct);
-    IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments();
+    Task<IReadOnlyList<FlashbackSegmentInfo>> GetFlashbackSegmentsAsync(CancellationToken cancellationToken = default);
 
     // ── Probes ──────────────────────────────────────────────────────
 
-    VideoSourceProbeResult ProbeVideoSource();
-    PreviewColorProbeResult ProbePreviewColor();
+    Task<VideoSourceProbeResult> ProbeVideoSourceAsync(CancellationToken cancellationToken = default);
+    Task<PreviewColorProbeResult> ProbePreviewColorAsync(CancellationToken cancellationToken = default);
     Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default);
 }

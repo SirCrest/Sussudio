@@ -5,8 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using Windows.Storage;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Runtime;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Recording;
 
 public sealed class RecordingArtifactManager
 {

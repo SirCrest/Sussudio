@@ -2,8 +2,9 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ElgatoCapture.Services.Runtime;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Configuration;
 
 public class UserSettings
 {

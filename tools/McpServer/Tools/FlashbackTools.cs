@@ -9,6 +9,18 @@ namespace McpServer.Tools;
 [McpServerToolType]
 public static class FlashbackTools
 {
+    [McpServerTool, Description("Enable or disable the Flashback rolling buffer. Disable it before dedicated LibAv recording verification.")]
+    public static async Task<string> flashback_enabled(
+        PipeClient pipeClient,
+        [Description("True to enable Flashback, false to disable it")] bool enabled)
+    {
+        return await ToolCommandFormatter.ExecuteAndFormatAsync(
+            pipeClient,
+            commandName: "SetFlashbackEnabled",
+            label: "SetFlashbackEnabled",
+            payload: new Dictionary<string, object?> { ["enabled"] = enabled }).ConfigureAwait(false);
+    }
+
     [McpServerTool, Description("Control flashback playback: play, pause, go_live, or seek to a position in milliseconds")]
     public static async Task<string> flashback_action(
         PipeClient pipeClient,

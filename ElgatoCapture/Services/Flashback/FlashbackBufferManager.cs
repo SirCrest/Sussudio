@@ -1,10 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Flashback;
 
 /// <summary>
 /// Manages a single MPEG-TS flashback buffer file.
@@ -12,9 +16,16 @@ namespace ElgatoCapture.Services;
 /// </summary>
 internal sealed class FlashbackBufferManager : IDisposable
 {
+    private static readonly TimeSpan StaleSessionMinAge = TimeSpan.FromHours(12);
+    private const int MaxStaleSessionDirectoryScansPerInit = 64;
+    private const int MaxStaleSessionDirectoriesPerInit = 16;
+    private const int MaxStaleRootSegmentFileScansPerInit = 512;
+    private const int MaxStaleRootSegmentFilesPerInit = 128;
+    private const string RecoveryPreserveMarkerFileName = ".flashback-recovery-preserve";
     private readonly object _indexLock = new();
     private readonly FlashbackBufferOptions _options;
     private string? _sessionId;
+    private string? _sessionDirectory;
     private string? _segmentExtension;
     private string? _activeSegmentPath;
     private long _latestPtsTicks;
@@ -90,6 +101,29 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     public bool EvictionPaused => Volatile.Read(ref _evictionPauseCount) > 0;
+
+    public void MarkSessionPreservedForRecovery()
+    {
+        lock (_indexLock)
+        {
+            if (string.IsNullOrWhiteSpace(_sessionDirectory))
+            {
+                return;
+            }
+
+            try
+            {
+                Directory.CreateDirectory(_sessionDirectory);
+                var markerPath = Path.Combine(_sessionDirectory, RecoveryPreserveMarkerFileName);
+                File.WriteAllText(markerPath, DateTimeOffset.UtcNow.ToString("O"));
+                Logger.Log($"FLASHBACK_RECOVERY_PRESERVE_MARKER dir='{_sessionDirectory}'");
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_RECOVERY_PRESERVE_MARKER_WARN dir='{_sessionDirectory}' type={ex.GetType().Name} msg={ex.Message}");
+            }
+        }
+    }
 
     /// <summary>
     /// Resets the latest PTS tracker to zero.  Called during sink cycling so
@@ -274,19 +308,13 @@ internal sealed class FlashbackBufferManager : IDisposable
             ThrowIfDisposed();
 
             Directory.CreateDirectory(_options.TempDirectory);
+            var sessionDirectory = Path.Combine(_options.TempDirectory, sessionId);
+            Directory.CreateDirectory(sessionDirectory);
 
             // Clean up orphaned export temp files from previous sessions
             FlashbackExporter.CleanupOrphanedTempFiles(_options.TempDirectory);
-
-            // Clean up stale files from previous sessions
-            var staleDeleted = 0;
-            foreach (var filePath in Directory.EnumerateFiles(_options.TempDirectory, "fb_*.*", SearchOption.TopDirectoryOnly))
-            {
-                if (TryDeleteFile(filePath))
-                {
-                    staleDeleted++;
-                }
-            }
+            CleanupStaleRootSegmentFiles(_options.TempDirectory);
+            CleanupStaleSessionDirectories(_options.TempDirectory, sessionDirectory);
 
             _activeSegmentPath = null;
             _completedSegments.Clear();
@@ -299,9 +327,10 @@ internal sealed class FlashbackBufferManager : IDisposable
             _previousActiveSegmentBytes = 0;
             Interlocked.Exchange(ref _evictionPauseCount, 0);
             _sessionId = sessionId;
+            _sessionDirectory = sessionDirectory;
 
             Logger.Log(
-                $"FLASHBACK_BUFFER_INIT session='{sessionId}' temp_dir='{_options.TempDirectory}' stale_deleted={staleDeleted}");
+                $"FLASHBACK_BUFFER_INIT session='{sessionId}' temp_dir='{_options.TempDirectory}' session_dir='{sessionDirectory}'");
         }
     }
 
@@ -335,12 +364,146 @@ internal sealed class FlashbackBufferManager : IDisposable
             ThrowIfDisposed();
             if (string.IsNullOrWhiteSpace(_sessionId))
                 throw new InvalidOperationException("Flashback buffer manager has not been initialized.");
+            if (string.IsNullOrWhiteSpace(_sessionDirectory))
+                throw new InvalidOperationException("Flashback buffer manager session directory has not been initialized.");
 
             var ext = _segmentExtension ?? ".mp4";
-            var path = Path.Combine(_options.TempDirectory, $"fb_{_sessionId}_{_nextSegmentIndex:D4}{ext}");
+            var path = Path.Combine(_sessionDirectory, $"fb_{_sessionId}_{_nextSegmentIndex:D4}{ext}");
             _nextSegmentIndex++;
             _activeSegmentPath = path;
             return path;
+        }
+    }
+
+    private static void CleanupStaleSessionDirectories(string tempDirectory, string currentSessionDirectory)
+    {
+        try
+        {
+            var currentFullPath = Path.GetFullPath(currentSessionDirectory);
+            var nowUtc = DateTime.UtcNow;
+            var scannedCount = 0;
+            var deletedCount = 0;
+            long freedBytes = 0;
+
+            foreach (var directory in Directory.EnumerateDirectories(tempDirectory))
+            {
+                if (scannedCount >= MaxStaleSessionDirectoryScansPerInit ||
+                    deletedCount >= MaxStaleSessionDirectoriesPerInit)
+                {
+                    break;
+                }
+
+                scannedCount++;
+
+                var fullPath = Path.GetFullPath(directory);
+                if (string.Equals(fullPath, currentFullPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var info = new DirectoryInfo(fullPath);
+                if (!info.Exists)
+                {
+                    continue;
+                }
+
+                if (File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName)))
+                {
+                    Logger.Log($"FLASHBACK_STALE_SESSION_PRESERVE_SKIP dir='{fullPath}'");
+                    continue;
+                }
+
+                var latestActivityUtc = info.LastWriteTimeUtc;
+                long directoryBytes = 0;
+                var looksLikeFlashbackSession = false;
+                foreach (var file in info.EnumerateFiles("fb_*", SearchOption.TopDirectoryOnly))
+                {
+                    looksLikeFlashbackSession = true;
+                    latestActivityUtc = latestActivityUtc > file.LastWriteTimeUtc
+                        ? latestActivityUtc
+                        : file.LastWriteTimeUtc;
+                    directoryBytes += file.Length;
+                }
+
+                if (!looksLikeFlashbackSession && info.EnumerateFileSystemInfos().Any())
+                {
+                    continue;
+                }
+
+                if (nowUtc - latestActivityUtc < StaleSessionMinAge)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    Directory.Delete(fullPath, recursive: true);
+                    deletedCount++;
+                    freedBytes += directoryBytes;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_STALE_SESSION_DELETE_WARN dir='{fullPath}' type={ex.GetType().Name} msg={ex.Message}");
+                }
+            }
+
+            if (deletedCount > 0)
+            {
+                Logger.Log($"FLASHBACK_STALE_SESSION_CLEANUP deleted={deletedCount} freed_bytes={freedBytes}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_STALE_SESSION_CLEANUP_WARN type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private static void CleanupStaleRootSegmentFiles(string tempDirectory)
+    {
+        try
+        {
+            var nowUtc = DateTime.UtcNow;
+            var scannedCount = 0;
+            var deletedCount = 0;
+            long freedBytes = 0;
+
+            foreach (var filePath in Directory.EnumerateFiles(tempDirectory, "fb_*", SearchOption.TopDirectoryOnly))
+            {
+                if (scannedCount >= MaxStaleRootSegmentFileScansPerInit ||
+                    deletedCount >= MaxStaleRootSegmentFilesPerInit)
+                {
+                    break;
+                }
+
+                scannedCount++;
+
+                var info = new FileInfo(filePath);
+                if (!info.Exists || nowUtc - info.LastWriteTimeUtc < StaleSessionMinAge)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var length = info.Length;
+                    info.Delete();
+                    deletedCount++;
+                    freedBytes += length;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_STALE_ROOT_SEGMENT_DELETE_WARN file='{filePath}' type={ex.GetType().Name} msg={ex.Message}");
+                }
+            }
+
+            if (deletedCount > 0)
+            {
+                Logger.Log($"FLASHBACK_STALE_ROOT_SEGMENT_CLEANUP deleted={deletedCount} freed_bytes={freedBytes}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_STALE_ROOT_SEGMENT_CLEANUP_WARN type={ex.GetType().Name} msg={ex.Message}");
         }
     }
 
@@ -642,7 +805,17 @@ internal sealed class FlashbackBufferManager : IDisposable
 
             _disposed = true;
             Logger.Log($"FLASHBACK_BUFFER_DISPOSE file={_activeSegmentPath != null} segments={_completedSegments.Count}");
-            PurgeAllSegments();
+            if (!string.IsNullOrWhiteSpace(_sessionDirectory))
+            {
+                try
+                {
+                    Directory.Delete(_sessionDirectory, recursive: false);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_BUFFER_SESSIONDIR_DELETE_WARN dir='{_sessionDirectory}' type={ex.GetType().Name} msg={ex.Message}");
+                }
+            }
         }
     }
 

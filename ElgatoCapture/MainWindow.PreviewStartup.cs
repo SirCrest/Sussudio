@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -21,6 +20,16 @@ using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
 using WinRT.Interop;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture;
 
@@ -332,7 +341,8 @@ public sealed partial class MainWindow
                 }
 
                 Logger.Log($"PREVIEW_START_FAILURE_STOP begin reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
-                await ViewModel.StopPreviewAsync(userInitiated: true);
+                // Preview startup failed — pipeline state is unclean; force full teardown.
+                await ViewModel.StopPreviewAsync(userInitiated: true, teardownPipeline: true);
                 ViewModel.StatusText = $"Preview startup failed: {reason}";
                 Logger.Log($"PREVIEW_START_FAILURE_STOP completed reason={reason} attempt={_previewStartupAttemptId ?? "none"}");
             }

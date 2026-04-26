@@ -5,8 +5,11 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using FFmpeg.AutoGen;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Flashback;
 
 /// <summary>
 /// Video+audio decoder for Flashback .ts files.

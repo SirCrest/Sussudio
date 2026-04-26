@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using ElgatoCapture.Tools;
@@ -92,7 +93,11 @@ public static class PreviewColorProbeTool
 
             if (yMax > 235 || yMin < 16)
             {
-                builder.AppendLine($"Diagnosis: Data uses FULL range (0-255). {above235Pct:0.1}% super-white, {below16Pct:0.1}% super-black.");
+                builder.AppendLine(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Diagnosis: Data uses FULL range (0-255). {0:0.0}% super-white, {1:0.0}% super-black.",
+                    above235Pct,
+                    below16Pct));
                 builder.AppendLine($"  If MF_MT_VIDEO_NOMINAL_RANGE=Wide(16-235), range mismatch will clip highlights/shadows.");
             }
             else

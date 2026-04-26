@@ -3,6 +3,8 @@ using System.Reflection;
 using System.Runtime.Loader;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Threading.Channels;
+using System.Xml.Linq;
 
 static partial class Program
 {
@@ -70,20 +72,119 @@ static partial class Program
                 "FFmpeg runtime locator prefers app-local ffmpeg folder",
                 FfmpegRuntimeLocator_PrefersAppLocalRuntimeFolder),
             await RunCheckAsync(
-                "MCP formatter renders MJPEG timing section when fields exist",
-                McpFormatter_RendersMjpegTimingSection_WhenFieldsExist),
+                "Shared automation formatter renders MJPEG timing section when fields exist",
+                SharedFormatter_RendersMjpegTimingSection_WhenFieldsExist),
             await RunCheckAsync(
                 "Automation command maps stay aligned for advanced MCP controls",
                 AutomationCommandMaps_StayAligned_ForAdvancedMcpControls),
             await RunCheckAsync(
+                "Dedicated LibAv verification script uses flashback-off strict workflow",
+                DedicatedLibAvVerificationScript_UsesFlashbackOffAndStrictVerification),
+            await RunCheckAsync(
+                "App wires recoverable and fatal unhandled exception policy",
+                App_Xaml_WiresUnhandledExceptionPolicy),
+            await RunCheckAsync(
+                "Bool converters preserve inversion and visibility mappings",
+                BoolConverters_PreserveInversionAndVisibilityMappings),
+            await RunCheckAsync(
+                "Display formatters map source HDR states",
+                DisplayFormatters_FormatSourceHdr_MapsKnownAndUnknownStates),
+            await RunCheckAsync(
+                "Logging JSON context serializes structured snapshot payloads",
+                LoggingJsonContext_SerializesStructuredSnapshotPayloads),
+            await RunCheckAsync(
                 "UI automation commands are not blocked on device readiness",
                 UiAutomationCommands_AreNotBlockedOnDeviceReadiness),
+            await RunCheckAsync(
+                "Automation dispatcher ready-device gate classifies commands",
+                AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands),
+            await RunCheckAsync(
+                "Automation dispatcher authorization contract is token-gated",
+                AutomationCommandDispatcher_AuthorizesConfiguredTokens),
+            await RunCheckAsync(
+                "Automation pipe server gates default security fallback on auth token",
+                NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken),
+            await RunCheckAsync(
+                "MainWindow wires automation pipe auth fallback policy",
+                MainWindowAutomation_WiresPipeAuthFallbackPolicy),
+            await RunCheckAsync(
+                "Stream Deck scope documents automation auth envelope",
+                StreamDeckPluginScope_DocumentsAutomationAuthEnvelope),
             await RunCheckAsync(
                 "Automation preview volume persists through the settings path",
                 AutomationPreviewVolume_PersistsThroughSettingsPath),
             await RunCheckAsync(
                 "Automation UI settings persist through the settings path",
                 AutomationUiSettings_PersistThroughSettingsPath),
+            await RunCheckAsync(
+                "Automation recording transitions use shared lifecycle gate",
+                MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate),
+            await RunCheckAsync(
+                "Automation flashback and probe commands use async view-model surface",
+                MainViewModelAutomation_UsesAsyncFlashbackAndProbeSurface),
+            await RunCheckAsync(
+                "Flashback mutations route through capture coordinator",
+                MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator),
+            await RunCheckAsync(
+                "Retained flashback preview pipeline recycles on settings changes",
+                CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange),
+            await RunCheckAsync(
+                "Flashback lifecycle logs use outcome names",
+                CaptureService_FlashbackLifecycleLogs_UseOutcomeNames),
+            await RunCheckAsync(
+                "Flashback enable/disable preserves preview state",
+                CaptureService_FlashbackEnableDisable_PreservesPreviewState),
+            await RunCheckAsync(
+                "Capture session coordinator exposes expected lifecycle API",
+                CaptureSessionCoordinator_HasExpectedPublicMethods),
+            await RunCheckAsync(
+                "Capture session coordinator command kind covers flashback commands",
+                CaptureSessionCoordinator_CaptureCommandKind_HasExpectedValues),
+            await RunCheckAsync(
+                "Capture session snapshot exposes lifecycle contract",
+                CaptureSessionCoordinator_CaptureSessionSnapshot_HasFullContract),
+            await RunCheckAsync(
+                "Capture session coordinator coalesces flashback encoder cycles",
+                CaptureSessionCoordinator_CoalescesFlashbackEncoderCycles),
+            await RunCheckAsync(
+                "Capture session coordinator propagates flashback mutation cancellation",
+                CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation),
+            await RunCheckAsync(
+                "Service namespaces follow service folders",
+                ServiceNamespaces_FollowServiceFolders),
+            await RunCheckAsync(
+                "AutomationCommandKind source ownership is model-aligned",
+                AutomationCommandKind_SourceOwnership_IsModelAligned),
+            await RunCheckAsync(
+                "Diagnostics snapshot refresh is serialized for recording responses",
+                DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses),
+            await RunCheckAsync(
+                "Automation SetRecordingEnabled uses recording-sized client timeout",
+                AutomationProtocol_SetRecordingUsesRecordingSizedTimeout),
+            await RunCheckAsync(
+                "Recording start and stop failures propagate to callers",
+                MainViewModelCapture_RecordingFailuresPropagateToCallers),
+            await RunCheckAsync(
+                "Window close cancels until recording stop completes",
+                MainWindowClose_CancelsCloseUntilRecordingStopCompletes),
+            await RunCheckAsync(
+                "External FFmpeg and HDR probes use bounded process supervision",
+                ExternalProcessProbes_UseBoundedProcessSupervisor),
+            await RunCheckAsync(
+                "Recording stop propagates unified video stop failures",
+                RecordingStop_PropagatesUnifiedVideoStopFailure),
+            await RunCheckAsync(
+                "Preview stop compatibility overloads are preserved",
+                PreviewStopCompatibilityOverloads_ArePreserved),
+            await RunCheckAsync(
+                "Preview stop API surface has no default-literal ambiguity",
+                PreviewStopApiSurface_HasNoDefaultLiteralAmbiguity),
+            await RunCheckAsync(
+                "Emergency recording stop does not dispatch to blocked UI thread",
+                EmergencyRecordingStop_DoesNotDispatchBackToBlockedUiThread),
+            await RunCheckAsync(
+                "Flashback buffer manager cleans stale session directories",
+                FlashbackBufferManager_CleansStaleSessionDirectories),
             await RunCheckAsync(
                 "Project file preserves main's English-only publish locale policy",
                 ProjectFile_PreservesEnglishOnlyPublishLocalePolicy),
@@ -106,20 +207,122 @@ static partial class Program
                 "Preview backend log reflects video-only fallback",
                 PreviewBackendLog_ReflectsVideoOnlyFallback),
             await RunCheckAsync(
+                "MainViewModel audio controls map analog gain curve and clamp endpoints",
+                MainViewModelAudioControls_MapsAnalogGainCurveAndClamps),
+            await RunCheckAsync(
+                "MainViewModel audio controls preserve routing persistence and device guards",
+                MainViewModelAudioControls_PreserveRoutingPersistenceAndDeviceGuards),
+            await RunCheckAsync(
                 "Live pixel format surfaces prefer source subtype over decoded output",
                 LivePixelFormatSurfaces_PreferReaderSourceSubtype),
             await RunCheckAsync(
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
+                "Frame-time overlay uses detected-FPS bounded range",
+                FrameTimeOverlay_UsesDetectedFpsBoundedRange),
+            await RunCheckAsync(
+                "D3D preview diagnostics expose swap-chain and render timing contract",
+                D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming),
+            await RunCheckAsync(
                 "MCP raw app state keeps capture options separate",
                 McpToolSurface_KeepsCaptureOptionsSeparateFromRawState),
+            await RunCheckAsync(
+                "MCP host tool schema uses PipeClient as a service",
+                McpHostToolSchema_UsesPipeClientAsService),
+            await RunCheckAsync(
+                "MCP capture settings tool routes provided settings",
+                McpCaptureSettingsTools_RouteProvidedSettings),
+            await RunCheckAsync(
+                "MCP recording tool routes recording toggle",
+                McpRecordingTools_RouteRecordingToggle),
+            await RunCheckAsync(
+                "MCP flashback tool routes enable toggle",
+                McpFlashbackTools_RouteEnableToggle),
+            await RunCheckAsync(
+                "MCP tool command formatter batches pending commands",
+                McpToolCommandFormatter_BatchesPendingCommands),
+            await RunCheckAsync(
+                "MCP device tool routes refresh selections and custom audio",
+                McpDeviceTools_RouteRefreshSelectionsAndCustomAudio),
+            await RunCheckAsync(
+                "MCP pipeline settings tool routes pipeline and audio commands",
+                McpPipelineSettingsTools_RoutePipelineAndAudioCommands),
+            await RunCheckAsync(
+                "MCP UI settings tools route UI commands",
+                McpUiSettingsTools_RouteUiCommands),
+            await RunCheckAsync(
+                "MCP verification tools format verification responses",
+                McpVerificationTools_FormatVerificationResponses),
+            await RunCheckAsync(
+                "MCP wait tool routes condition waits",
+                McpWaitTools_RouteConditionWaits),
+            await RunCheckAsync(
+                "MCP window screenshot tool formats screenshot responses",
+                McpWindowScreenshotTool_FormatsScreenshotResponses),
+            await RunCheckAsync(
+                "MCP window tool routes window actions",
+                McpWindowTools_RouteWindowActions),
+            await RunCheckAsync(
+                "MCP preview color probe tool formats probe responses",
+                McpPreviewColorProbeTool_FormatsProbeResponses),
+            await RunCheckAsync(
+                "MCP preview tool routes preview toggle",
+                McpPreviewTools_RoutePreviewToggle),
+            await RunCheckAsync(
+                "MCP video source probe tool formats probe responses",
+                McpVideoSourceProbeTool_FormatsProbeResponses),
             await RunCheckAsync(
                 "Unified video capture CPU MJPEG emit reports NV12",
                 UnifiedVideoCapture_CpuMjpegEmitReportsNv12),
             await RunCheckAsync(
                 "Unified video capture retains MJPEG pipeline on stop failure",
                 UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails),
+            await RunCheckAsync(
+                "Pooled video frame leases return buffer after final release",
+                PooledVideoFrame_LeaseLifecycle_ReturnsBufferAfterLastRelease),
+            await RunCheckAsync(
+                "Pooled video frame rejects leases after return",
+                PooledVideoFrame_AddLeaseAfterReturn_Throws),
+            await RunCheckAsync(
+                "Pooled video frame closes new leases after owner release",
+                PooledVideoFrame_OwnerDisposeClosesNewLeasesButExistingLeaseRemainsReadable),
+            await RunCheckAsync(
+                "MJPEG pooled frame fanout exposes lease contracts",
+                MjpegPooledFrameFanout_ExposesLeaseContracts),
+            await RunCheckAsync(
+                "MJPEG shared reorder does not synthesize recording skips",
+                ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips),
+            await RunCheckAsync(
+                "MJPEG known losses signal fatal instead of strict skips",
+                ParallelMjpegDecodePipeline_KnownLossSignalsFatalInsteadOfSkipping),
+            await RunCheckAsync(
+                "MJPEG packet hash current duplicate run lowers unique FPS",
+                FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps),
+            await RunCheckAsync(
+                "Decoded visual cadence uses exact high resolution crop pixels",
+                VisualCadenceTracker_UsesExactHighResolutionCropPixels),
+            await RunCheckAsync(
+                "MJPEG leased video packets release queued leases",
+                MjpegLeasedVideoPackets_ReleaseQueuedLeases),
+            await RunCheckAsync(
+                "MJPEG preview jitter exposes adaptive deadline policy",
+                MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy),
+            await RunCheckAsync(
+                "MJPEG preview jitter drops soft deadline overflow to recover latency",
+                MjpegPreviewJitter_DropsSoftDeadlineOverflowToRecoverLatency),
+            await RunCheckAsync(
+                "MJPEG preview jitter drops expired frames below target depth",
+                MjpegPreviewJitter_DropsExpiredFramesBelowTargetDepth),
+            await RunCheckAsync(
+                "MJPEG preview jitter skips missing preview sequence after deadline",
+                MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline),
+            await RunCheckAsync(
+                "D3D preview pending frame releases queued lease",
+                D3DPreviewPendingFrame_ReleasesQueuedLease),
+            await RunCheckAsync(
+                "Recording video queues fail explicitly instead of evicting frames",
+                RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames),
             await RunCheckAsync(
                 "MJPG HFR mode only activates for SDR 4K120-style settings",
                 CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest),
@@ -152,7 +355,24 @@ static partial class Program
                 "RollbackAsync is safe with null context",
                 ArtifactManager_RollbackAsync_SafeWithNullContext),
 
+            // --- RecordingStats ---
+            await RunCheckAsync(
+                "RecordingStats computes totals and preserves estimate flag",
+                RecordingStats_ComputesTotalsAndPreservesEstimateFlag),
+
             // --- CaptureSettings ---
+            await RunCheckAsync(
+                "Capture mode options preserve display text and metadata",
+                CaptureModeOptions_PreserveDisplayTextAndMetadata),
+            await RunCheckAsync(
+                "Capture settings defaults preserve output and pipeline contracts",
+                CaptureSettings_DefaultsAndOutputContracts),
+            await RunCheckAsync(
+                "Capture settings MJPEG HFR mode handles force case and instance state",
+                CaptureSettings_MjpegHighFrameRateMode_HandlesForceCaseAndInstanceState),
+            await RunCheckAsync(
+                "Encoder support computes availability and preferred encoders",
+                EncoderSupport_ComputesAvailabilityAndPreferredEncoders),
             await RunCheckAsync(
                 "GetTargetBitrate scales by resolution and frame rate",
                 CaptureSettings_GetTargetBitrate_ScalesByResolutionAndFrameRate),
@@ -182,6 +402,9 @@ static partial class Program
             await RunCheckAsync(
                 "FlashbackBufferManager eviction pause and resume are balanced",
                 FlashbackBufferManager_EvictionPauseResume_Balanced),
+            await RunCheckAsync(
+                "FlashbackBufferManager removes stale legacy root segments",
+                FlashbackBufferManager_RemovesStaleLegacyRootSegments),
 
             // --- GpuPipelineHandles ---
             await RunCheckAsync(
@@ -192,6 +415,23 @@ static partial class Program
             await RunCheckAsync(
                 "RecordingContextRequest defaults match RecordingContext defaults",
                 RecordingContextRequest_DefaultsMatchRecordingContextDefaults),
+
+            // --- Device Models ---
+            await RunCheckAsync(
+                "AudioInputDevice display name falls back to unknown",
+                AudioInputDevice_DisplayName_UsesNameOrUnknownFallback),
+            await RunCheckAsync(
+                "AudioLevelEventArgs exposes peak RMS and clipped state",
+                AudioLevelEventArgs_ExposesPeakRmsAndClippedState),
+            await RunCheckAsync(
+                "CaptureDevice preserves display and metadata defaults",
+                CaptureDevice_DisplayNameAndDefaults_PreserveDeviceMetadata),
+            await RunCheckAsync(
+                "CaptureDiagnosticsSnapshot preserves diagnostics telemetry contract",
+                CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry),
+            await RunCheckAsync(
+                "CaptureHealthSnapshot extends diagnostics with health telemetry",
+                CaptureHealthSnapshot_ExtendsDiagnosticsWithFlashbackSourceAndAvSync),
 
             // --- MediaFormat ---
             await RunCheckAsync(
@@ -206,8 +446,8 @@ static partial class Program
 
             // --- AutomationContracts ---
             await RunCheckAsync(
-                "AutomationCommandKind has sequential values 0 through 44",
-                AutomationCommandKind_HasSequentialValues_0Through44),
+                "AutomationCommandKind has sequential values 0 through 47",
+                AutomationCommandKind_HasSequentialValues_0Through47),
             await RunCheckAsync(
                 "AutomationWindowAction has expected values",
                 AutomationWindowAction_HasExpectedValues),
@@ -227,6 +467,9 @@ static partial class Program
             await RunCheckAsync(
                 "SourceSignalTelemetrySnapshot properties round-trip",
                 SourceSignalTelemetrySnapshot_PropertiesRoundTrip),
+            await RunCheckAsync(
+                "SourceSignalTelemetrySnapshot preserves full telemetry contract",
+                SourceSignalTelemetrySnapshot_PreservesFullTelemetryContract),
 
             // --- HdrOutputPolicy ---
             await RunCheckAsync(
@@ -238,13 +481,25 @@ static partial class Program
             await RunCheckAsync(
                 "HdrOutputPolicy returns false for non-Hdr10Pq mode",
                 HdrOutputPolicy_ReturnsFalse_WhenNotHdr10Pq),
+            await RunCheckAsync(
+                "HdrOutputPolicy force-off env disables HDR output",
+                HdrOutputPolicy_ReturnsFalse_WhenForceOffEnvSet),
+            await RunCheckAsync(
+                "HdrOutputPolicy ignores removed legacy enabled env switch",
+                HdrOutputPolicy_IgnoresLegacyEnabledEnvSwitch),
 
             // --- FlashbackPlaybackState enum ---
+            await RunCheckAsync(
+                "Flashback models preserve buffer session and export contracts",
+                FlashbackModels_PreserveBufferSessionExportContracts),
             await RunCheckAsync(
                 "FlashbackPlaybackState enum has all expected states",
                 FlashbackPlaybackState_HasAllExpectedStates),
 
             // --- RecordingPipelineOptions ---
+            await RunCheckAsync(
+                "Recording pipeline options preserve defaults and capacity bounds",
+                RecordingPipelineOptions_DefaultsAndCapacityBounds),
             await RunCheckAsync(
                 "RecordingPipelineOptions resolves video queue capacity from frame rate",
                 RecordingPipelineOptions_ResolvesVideoQueueCapacity),
@@ -265,6 +520,15 @@ static partial class Program
                 ProcessSpec_DefaultTimeout_Is30Seconds),
 
             // --- Tool CommandMap & Formatter Alignment ---
+            await RunCheckAsync(
+                "Automation pipe protocol resolves commands timeouts auth and envelopes",
+                AutomationPipeProtocol_ResolvesCommandsTimeoutsAuthAndEnvelopes),
+            await RunCheckAsync(
+                "Automation response state parses status and retry contracts",
+                AutomationResponseState_ParsesStatusAndRetryContracts),
+            await RunCheckAsync(
+                "Automation snapshot formatter formats core sections and typed accessors",
+                AutomationSnapshotFormatter_FormatsCoreSectionsAndTypedAccessors),
             await RunCheckAsync(
                 "Shared AutomationPipeProtocol CommandMap covers every AutomationCommandKind enum value",
                 SharedProtocol_CommandMap_CoversEveryAutomationCommandKind),
@@ -287,11 +551,17 @@ static partial class Program
                 "ecctl CommandHandlers route core command groups",
                 EcctlCommandHandlers_RouteCoreCommandGroups),
             await RunCheckAsync(
+                "PresentMon parser selects dominant non-artifact swap chain",
+                PresentMonParser_SelectsDominantNonArtifactSwapChain),
+            await RunCheckAsync(
                 "ecctl Formatters emit core snapshot sections",
                 EcctlFormatters_EmitCoreSnapshotSections),
             await RunCheckAsync(
                 "ecctl PipeTransport exposes advanced automation command ids",
-                EcctlPipeTransport_ExposesAdvancedAutomationCommandIds)
+                EcctlPipeTransport_ExposesAdvancedAutomationCommandIds),
+            await RunCheckAsync(
+                "RTK I2C probe guards unsafe native paths",
+                RtkI2cProbe_GuardsUnsafeNativePaths)
         };
 
         var failed = results.Where(r => !r.Passed).ToList();
@@ -319,7 +589,7 @@ static partial class Program
             return Path.GetFullPath(args[0]);
         }
 
-        var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+        var root = GetRepoRoot();
         return Path.Combine(
             root,
             "ElgatoCapture",
@@ -340,13 +610,15 @@ static partial class Program
         }
         catch (Exception ex)
         {
-            return new CheckResult(name, false, ex.Message);
+            return new CheckResult(name, false, ex is TargetInvocationException { InnerException: { } inner }
+                ? $"{inner.GetType().Name}: {inner.Message}"
+                : ex.Message);
         }
     }
 
     private static async Task GetRuntimeSnapshot_UsesObservedTelemetryStateInsteadOfInferredCounts()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: true);
 
@@ -371,7 +643,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_PreservesReaderSourceSubtype_WhenObservedFramesAreDecoded()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -389,7 +661,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_TelemetryAlignment_Mismatch_WhenSourceModeDiffersFromRequest()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: true);
 
@@ -417,7 +689,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_TelemetryAlignment_Unavailable_WhenTelemetryUnavailable()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -447,9 +719,9 @@ static partial class Program
 
     private static async Task NativeXuTelemetry_AcceptsKnown4kXProductRevisions()
     {
-        var provider = CreateInstance("ElgatoCapture.Services.NativeXuAtCommandProvider");
+        var provider = CreateInstance("ElgatoCapture.Services.Telemetry.NativeXuAtCommandProvider");
 
-        foreach (var productId in new[] { "009b", "009c" })
+        foreach (var productId in new[] { "009b", "009c", "009d" })
         {
             var device = BuildDevice($"\\\\?\\usb#vid_0fd9&pid_{productId}&mi_00#synthetic#{Guid.NewGuid():N}\\global");
             var readAsync = provider.GetType().GetMethod(
@@ -485,7 +757,7 @@ static partial class Program
 
     private static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -578,7 +850,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_PipelineParity_Ready_WhenHdrRequestedAndIdle()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: true);
 
@@ -595,7 +867,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_PipelineParity_Violation_WhenHdrRequestedButIngressIsSdr()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: true);
 
@@ -617,7 +889,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -637,7 +909,7 @@ static partial class Program
 
     private static async Task GetHealthSnapshot_UsesCachedMjpegTimingMetricsWhenCaptureIsGone()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -701,6 +973,10 @@ static partial class Program
         AssertEqual(101L, GetLongProperty(snapshot, "MjpegTotalDecoded"), "MjpegTotalDecoded");
         AssertEqual(97L, GetLongProperty(snapshot, "MjpegTotalEmitted"), "MjpegTotalEmitted");
         AssertEqual(4L, GetLongProperty(snapshot, "MjpegTotalDropped"), "MjpegTotalDropped");
+        AssertEqual(0L, GetLongProperty(snapshot, "MjpegCompressedFramesQueued"), "MjpegCompressedFramesQueued");
+        AssertEqual(0L, GetLongProperty(snapshot, "MjpegCompressedDropsQueueFull"), "MjpegCompressedDropsQueueFull");
+        AssertEqual(0L, GetLongProperty(snapshot, "MjpegCompressedDropsDisposed"), "MjpegCompressedDropsDisposed");
+        AssertEqual(0L, GetLongProperty(snapshot, "MjpegDecodeFailures"), "MjpegDecodeFailures");
         AssertEqual(2L, GetLongProperty(snapshot, "MjpegReorderSkips"), "MjpegReorderSkips");
         AssertEqual(1L, GetLongProperty(snapshot, "MjpegReorderBufferDepth"), "MjpegReorderBufferDepth");
         AssertEqual(0.7, GetDoubleProperty(snapshot, "MjpegReorderAvgMs"), "MjpegReorderAvgMs");
@@ -718,7 +994,7 @@ static partial class Program
 
     private static async Task GetDiagnosticsSnapshot_PropagatesMjpegTimingMetrics()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -783,6 +1059,9 @@ static partial class Program
         AssertEqual(400L, GetLongProperty(snapshot, "MjpegTotalDecoded"), "MjpegTotalDecoded");
         AssertEqual(390L, GetLongProperty(snapshot, "MjpegTotalEmitted"), "MjpegTotalEmitted");
         AssertEqual(10L, GetLongProperty(snapshot, "MjpegTotalDropped"), "MjpegTotalDropped");
+        AssertEqual(0L, GetLongProperty(snapshot, "MjpegCompressedFramesDequeued"), "MjpegCompressedFramesDequeued");
+        AssertEqual(0L, GetLongProperty(snapshot, "MjpegCompressedDropsByteBudget"), "MjpegCompressedDropsByteBudget");
+        AssertEqual(0L, GetLongProperty(snapshot, "MjpegEmitFailures"), "MjpegEmitFailures");
         AssertEqual(3L, GetLongProperty(snapshot, "MjpegReorderSkips"), "MjpegReorderSkips");
         AssertEqual(2L, GetLongProperty(snapshot, "MjpegReorderBufferDepth"), "MjpegReorderBufferDepth");
         AssertEqual(7.4, GetDoubleProperty(snapshot, "MjpegPipelineAvgMs"), "MjpegPipelineAvgMs");
@@ -807,8 +1086,51 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("MjpegTotalDecoded"), "AutomationSnapshot.MjpegTotalDecoded");
         AssertNotNull(snapshotType.GetProperty("MjpegTotalEmitted"), "AutomationSnapshot.MjpegTotalEmitted");
         AssertNotNull(snapshotType.GetProperty("MjpegTotalDropped"), "AutomationSnapshot.MjpegTotalDropped");
+        AssertNotNull(snapshotType.GetProperty("MjpegCompressedFramesQueued"), "AutomationSnapshot.MjpegCompressedFramesQueued");
+        AssertNotNull(snapshotType.GetProperty("MjpegCompressedFramesDequeued"), "AutomationSnapshot.MjpegCompressedFramesDequeued");
+        AssertNotNull(snapshotType.GetProperty("MjpegCompressedDropsQueueFull"), "AutomationSnapshot.MjpegCompressedDropsQueueFull");
+        AssertNotNull(snapshotType.GetProperty("MjpegCompressedDropsByteBudget"), "AutomationSnapshot.MjpegCompressedDropsByteBudget");
+        AssertNotNull(snapshotType.GetProperty("MjpegCompressedDropsDisposed"), "AutomationSnapshot.MjpegCompressedDropsDisposed");
+        AssertNotNull(snapshotType.GetProperty("MjpegDecodeFailures"), "AutomationSnapshot.MjpegDecodeFailures");
+        AssertNotNull(snapshotType.GetProperty("MjpegReorderCollisions"), "AutomationSnapshot.MjpegReorderCollisions");
+        AssertNotNull(snapshotType.GetProperty("MjpegEmitFailures"), "AutomationSnapshot.MjpegEmitFailures");
+        AssertNotNull(snapshotType.GetProperty("MjpegCompressedQueueDepth"), "AutomationSnapshot.MjpegCompressedQueueDepth");
+        AssertNotNull(snapshotType.GetProperty("MjpegCompressedQueueBytes"), "AutomationSnapshot.MjpegCompressedQueueBytes");
+        AssertNotNull(snapshotType.GetProperty("MjpegCompressedQueueByteBudget"), "AutomationSnapshot.MjpegCompressedQueueByteBudget");
         AssertNotNull(snapshotType.GetProperty("MjpegReorderSkips"), "AutomationSnapshot.MjpegReorderSkips");
         AssertNotNull(snapshotType.GetProperty("MjpegReorderBufferDepth"), "AutomationSnapshot.MjpegReorderBufferDepth");
+        AssertNotNull(snapshotType.GetProperty("RecordingVideoFramesSubmittedToEncoder"), "AutomationSnapshot.RecordingVideoFramesSubmittedToEncoder");
+        AssertNotNull(snapshotType.GetProperty("RecordingVideoEncoderPts"), "AutomationSnapshot.RecordingVideoEncoderPts");
+        AssertNotNull(snapshotType.GetProperty("RecordingVideoEncoderPacketsWritten"), "AutomationSnapshot.RecordingVideoEncoderPacketsWritten");
+        AssertNotNull(snapshotType.GetProperty("RecordingVideoEncoderDroppedFrames"), "AutomationSnapshot.RecordingVideoEncoderDroppedFrames");
+        AssertNotNull(snapshotType.GetProperty("RecordingVideoSequenceGaps"), "AutomationSnapshot.RecordingVideoSequenceGaps");
+        AssertNotNull(snapshotType.GetProperty("RecordingVideoQueueOldestFrameAgeMs"), "AutomationSnapshot.RecordingVideoQueueOldestFrameAgeMs");
+        AssertNotNull(snapshotType.GetProperty("RecordingVideoQueueLatencyP95Ms"), "AutomationSnapshot.RecordingVideoQueueLatencyP95Ms");
+        AssertNotNull(snapshotType.GetProperty("RecordingVideoBackpressureWaitMs"), "AutomationSnapshot.RecordingVideoBackpressureWaitMs");
+        AssertNotNull(snapshotType.GetProperty("RecordingVideoBackpressureEvents"), "AutomationSnapshot.RecordingVideoBackpressureEvents");
+        AssertNotNull(snapshotType.GetProperty("FlashbackVideoFramesSubmittedToEncoder"), "AutomationSnapshot.FlashbackVideoFramesSubmittedToEncoder");
+        AssertNotNull(snapshotType.GetProperty("FlashbackVideoEncoderPacketsWritten"), "AutomationSnapshot.FlashbackVideoEncoderPacketsWritten");
+        AssertNotNull(snapshotType.GetProperty("FlashbackVideoSequenceGaps"), "AutomationSnapshot.FlashbackVideoSequenceGaps");
+        AssertNotNull(snapshotType.GetProperty("FlashbackVideoQueueOldestFrameAgeMs"), "AutomationSnapshot.FlashbackVideoQueueOldestFrameAgeMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackVideoQueueLatencyP95Ms"), "AutomationSnapshot.FlashbackVideoQueueLatencyP95Ms");
+        AssertNotNull(snapshotType.GetProperty("FlashbackVideoBackpressureWaitMs"), "AutomationSnapshot.FlashbackVideoBackpressureWaitMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackVideoBackpressureEvents"), "AutomationSnapshot.FlashbackVideoBackpressureEvents");
+        AssertNotNull(snapshotType.GetProperty("MjpegPacketHashSampleCount"), "AutomationSnapshot.MjpegPacketHashSampleCount");
+        AssertNotNull(snapshotType.GetProperty("MjpegPacketHashInputObservedFps"), "AutomationSnapshot.MjpegPacketHashInputObservedFps");
+        AssertNotNull(snapshotType.GetProperty("MjpegPacketHashUniqueObservedFps"), "AutomationSnapshot.MjpegPacketHashUniqueObservedFps");
+        AssertNotNull(snapshotType.GetProperty("MjpegPacketHashDuplicateFramePercent"), "AutomationSnapshot.MjpegPacketHashDuplicateFramePercent");
+        AssertNotNull(snapshotType.GetProperty("MjpegPacketHashPattern"), "AutomationSnapshot.MjpegPacketHashPattern");
+        AssertNotNull(snapshotType.GetProperty("MjpegPacketHashRecentDuplicateFlags"), "AutomationSnapshot.MjpegPacketHashRecentDuplicateFlags");
+        AssertNotNull(snapshotType.GetProperty("VisualCadenceSampleCount"), "AutomationSnapshot.VisualCadenceSampleCount");
+        AssertNotNull(snapshotType.GetProperty("VisualCadenceChangeObservedFps"), "AutomationSnapshot.VisualCadenceChangeObservedFps");
+        AssertNotNull(snapshotType.GetProperty("VisualCadenceRepeatFramePercent"), "AutomationSnapshot.VisualCadenceRepeatFramePercent");
+        AssertNotNull(snapshotType.GetProperty("VisualCadenceMotionConfidence"), "AutomationSnapshot.VisualCadenceMotionConfidence");
+        AssertNotNull(snapshotType.GetProperty("VisualCadenceRecentChangeIntervalsMs"), "AutomationSnapshot.VisualCadenceRecentChangeIntervalsMs");
+        AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceSampleCount"), "AutomationSnapshot.VisualCenterCadenceSampleCount");
+        AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceChangeObservedFps"), "AutomationSnapshot.VisualCenterCadenceChangeObservedFps");
+        AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceRepeatFramePercent"), "AutomationSnapshot.VisualCenterCadenceRepeatFramePercent");
+        AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceMotionConfidence"), "AutomationSnapshot.VisualCenterCadenceMotionConfidence");
+        AssertNotNull(snapshotType.GetProperty("VisualCenterCadenceRecentChangeIntervalsMs"), "AutomationSnapshot.VisualCenterCadenceRecentChangeIntervalsMs");
 
         var perDecoderProperty = snapshotType.GetProperty("MjpegPerDecoder")
             ?? throw new InvalidOperationException("AutomationSnapshot.MjpegPerDecoder missing.");
@@ -873,7 +1195,7 @@ static partial class Program
             File.WriteAllBytes(Path.Combine(localFfmpegDir, "ffmpeg.exe"), Array.Empty<byte>());
             File.WriteAllBytes(Path.Combine(localFfmpegDir, "ffprobe.exe"), Array.Empty<byte>());
 
-            var locatorType = RequireType("ElgatoCapture.Services.FfmpegRuntimeLocator");
+            var locatorType = RequireType("ElgatoCapture.Services.Runtime.FfmpegRuntimeLocator");
             var resolveRuntime = locatorType.GetMethod(
                                      "TryResolveNativeRuntimeRoot",
                                      BindingFlags.Static | BindingFlags.NonPublic,
@@ -913,95 +1235,76 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task McpFormatter_RendersMjpegTimingSection_WhenFieldsExist()
+    private static Task SharedFormatter_RendersMjpegTimingSection_WhenFieldsExist()
     {
-        var root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
-        var mcpAssemblyPath = Path.Combine(root, "tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll");
-        if (!File.Exists(mcpAssemblyPath))
-        {
-            return Task.CompletedTask;
-        }
+        var toolAssembly = LoadToolAssembly(Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll"));
+        var formatterType = toolAssembly.GetType("ElgatoCapture.Tools.AutomationSnapshotFormatter")
+            ?? throw new InvalidOperationException("ElgatoCapture.Tools.AutomationSnapshotFormatter type not found.");
+        var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("AutomationSnapshotFormatter.FormatSnapshot not found.");
 
-        var mcpAssemblyDirectory = Path.GetDirectoryName(mcpAssemblyPath)
-            ?? throw new InvalidOperationException("McpServer assembly directory was not found.");
-        var loadContext = AssemblyLoadContext.Default;
-        Assembly? ResolveMcpDependency(AssemblyLoadContext context, AssemblyName assemblyName)
-        {
-            var dependencyPath = Path.Combine(mcpAssemblyDirectory, $"{assemblyName.Name}.dll");
-            return File.Exists(dependencyPath)
-                ? context.LoadFromAssemblyPath(dependencyPath)
-                : null;
-        }
+        const string json = """
+                            {"Snapshot":{"SessionState":"Ready","StatusText":"Idle","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":true,"IsRecording":false,"SelectedResolution":"3840x2160","SelectedFrameRate":120,"SelectedRecordingFormat":"HEVC","SelectedQuality":"High","SelectedPreset":"P5","SelectedSplitEncodeMode":"Auto","SelectedVideoFormat":"MJPG","ShowAllCaptureOptions":true,"PreviewVolumePercent":42.5,"IsStatsVisible":true,"IsHdrEnabled":false,"IsHdrAvailable":true,"HdrOutputActive":false,"HdrRuntimeState":"Inactive","RequestedPipelineMode":"SDR","ActivePipelineMode":"SDR","PipelineModeMatched":true,"IsAudioEnabled":true,"IsAudioPreviewEnabled":false,"IsCustomAudioInputEnabled":false,"AudioPeak":0,"AudioClipping":false,"AudioSignalPresent":false,"AudioReaderActive":false,"AudioFramesArrived":0,"AudioFramesWrittenToSink":0,"VideoReaderActive":true,"IngestVideoFramesArrived":120,"IngestVideoFramesWrittenToSink":120,"EncoderVideoFramesEnqueued":0,"EncoderVideoFramesEncoded":0,"FfmpegVideoQueueDepth":0,"VideoDropsQueueSaturated":0,"IngestLastVideoFrameAgeMs":5,"EncoderLastEnqueueAgeMs":0,"EncoderLastWriteAgeMs":0,"MemoryPreference":"Gpu","VideoRequestedSubtype":"MJPG","VideoNegotiatedSubtype":"MJPG","VideoIngestErrorCount":0,"SourceReaderReadOutstanding":false,"SourceReaderReadOutstandingMs":0,"SourceReaderLastFrameTickMs":0,"SourceReaderFrameChannelDepth":0,"WasapiCaptureCallbackCount":0,"WasapiCaptureCallbackAvgIntervalMs":0,"WasapiCaptureCallbackMaxIntervalMs":0,"WasapiCaptureCallbackSilenceCount":0,"WasapiCaptureLastCallbackTickMs":0,"WasapiCaptureAudioLevelEventsFired":0,"WasapiPlaybackRenderCallbackCount":0,"WasapiPlaybackRenderSilenceCount":0,"WasapiPlaybackQueueDepth":0,"WasapiPlaybackQueueDropCount":0,"WasapiPlaybackLastRenderTickMs":0,"OutputPath":"","RecordingTime":"00:00:00","RecordingSizeInfo":"0 B","RecordingBitrateInfo":"0 Mbps","RecordingBackend":"None","AudioPathMode":"None","MuxResult":"NotAttempted","LastOutputPath":"","LastOutputSizeBytes":0,"LastFinalizeStatus":"None","PerformanceScore":100,"PerformancePerfectionMet":true,"PerformanceSummary":"OK","EstimatedPipelineLatencyMs":1,"CaptureCadenceObservedFps":120,"ExpectedCaptureFrameRate":120,"CaptureCadenceSampleCount":300,"CaptureCadenceAverageIntervalMs":8.3,"CaptureCadenceP95IntervalMs":8.5,"CaptureCadenceMaxIntervalMs":9.0,"CaptureCadenceJitterStdDevMs":0.1,"CaptureCadenceSevereGapCount":0,"CaptureCadenceEstimatedDroppedFrames":0,"CaptureCadenceEstimatedDropPercent":0,"MjpegDecodeSampleCount":300,"MjpegDecodeAvgMs":2.1,"MjpegDecodeP95Ms":3.4,"MjpegDecodeMaxMs":5.6,"MjpegInteropCopySampleCount":300,"MjpegInteropCopyAvgMs":0.9,"MjpegInteropCopyP95Ms":1.4,"MjpegInteropCopyMaxMs":2.2,"MjpegCallbackSampleCount":300,"MjpegCallbackAvgMs":4.5,"MjpegCallbackP95Ms":6.7,"MjpegCallbackMaxMs":9.1,"MjpegDecoderCount":2,"MjpegReorderSampleCount":300,"MjpegReorderAvgMs":0.4,"MjpegReorderP95Ms":0.8,"MjpegReorderMaxMs":1.2,"MjpegPipelineSampleCount":300,"MjpegPipelineAvgMs":5.1,"MjpegPipelineP95Ms":7.0,"MjpegPipelineMaxMs":9.4,"MjpegTotalDecoded":301,"MjpegTotalEmitted":300,"MjpegTotalDropped":1,"MjpegReorderSkips":2,"MjpegReorderBufferDepth":1,"MjpegPerDecoder":[{"WorkerIndex":0,"SampleCount":150,"AvgMs":2.0,"P95Ms":3.0,"MaxMs":4.0},{"WorkerIndex":1,"SampleCount":151,"AvgMs":2.2,"P95Ms":3.2,"MaxMs":4.2}],"PreviewRendererMode":"D3D11VideoProcessor","PreviewStartupState":"Rendering","PreviewFirstVisualConfirmed":true,"PreviewD3DFramesSubmitted":120,"PreviewD3DFramesRendered":120,"PreviewD3DFramesDropped":0,"PreviewD3DInputColorSpace":"BT.709","PreviewD3DOutputColorSpace":"sRGB","PreviewCadenceObservedFps":120,"DetectedSourceFrameRate":120,"SourceWidth":3840,"SourceHeight":2160,"SourceIsHdr":false,"SourceTelemetryAvailability":"Available","SourceTelemetryConfidence":"High"}}
+                            """;
+        using var document = JsonDocument.Parse(json);
+        var output = formatSnapshot.Invoke(null, new object[] { document.RootElement, false })?.ToString()
+            ?? throw new InvalidOperationException("AutomationSnapshotFormatter.FormatSnapshot returned null.");
 
-        loadContext.Resolving += ResolveMcpDependency;
-        try
-        {
-            var mcpAssembly = loadContext.LoadFromAssemblyPath(mcpAssemblyPath);
-            var formatterType = mcpAssembly.GetType("ElgatoCapture.Tools.AutomationSnapshotFormatter")
-                ?? throw new InvalidOperationException("ElgatoCapture.Tools.AutomationSnapshotFormatter type not found.");
-            var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.NonPublic | BindingFlags.Static)
-                ?? throw new InvalidOperationException("AutomationSnapshotFormatter.FormatSnapshot not found.");
-
-            const string json = """
-                                {"Snapshot":{"SessionState":"Ready","StatusText":"Idle","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":true,"IsRecording":false,"SelectedResolution":"3840x2160","SelectedFrameRate":120,"SelectedRecordingFormat":"HEVC","SelectedQuality":"High","SelectedPreset":"P5","SelectedSplitEncodeMode":"Auto","SelectedVideoFormat":"MJPG","ShowAllCaptureOptions":true,"PreviewVolumePercent":42.5,"IsStatsVisible":true,"IsHdrEnabled":false,"IsHdrAvailable":true,"HdrOutputActive":false,"HdrRuntimeState":"Inactive","RequestedPipelineMode":"SDR","ActivePipelineMode":"SDR","PipelineModeMatched":true,"IsAudioEnabled":true,"IsAudioPreviewEnabled":false,"IsCustomAudioInputEnabled":false,"AudioPeak":0,"AudioClipping":false,"AudioSignalPresent":false,"AudioReaderActive":false,"AudioFramesArrived":0,"AudioFramesWrittenToSink":0,"VideoReaderActive":true,"IngestVideoFramesArrived":120,"IngestVideoFramesWrittenToSink":120,"EncoderVideoFramesEnqueued":0,"EncoderVideoFramesEncoded":0,"FfmpegVideoQueueDepth":0,"VideoDropsQueueSaturated":0,"IngestLastVideoFrameAgeMs":5,"EncoderLastEnqueueAgeMs":0,"EncoderLastWriteAgeMs":0,"MemoryPreference":"Gpu","VideoRequestedSubtype":"MJPG","VideoNegotiatedSubtype":"MJPG","VideoIngestErrorCount":0,"SourceReaderReadOutstanding":false,"SourceReaderReadOutstandingMs":0,"SourceReaderLastFrameTickMs":0,"SourceReaderFrameChannelDepth":0,"WasapiCaptureCallbackCount":0,"WasapiCaptureCallbackAvgIntervalMs":0,"WasapiCaptureCallbackMaxIntervalMs":0,"WasapiCaptureCallbackSilenceCount":0,"WasapiCaptureLastCallbackTickMs":0,"WasapiCaptureAudioLevelEventsFired":0,"WasapiPlaybackRenderCallbackCount":0,"WasapiPlaybackRenderSilenceCount":0,"WasapiPlaybackQueueDepth":0,"WasapiPlaybackQueueDropCount":0,"WasapiPlaybackLastRenderTickMs":0,"OutputPath":"","RecordingTime":"00:00:00","RecordingSizeInfo":"0 B","RecordingBitrateInfo":"0 Mbps","RecordingBackend":"None","AudioPathMode":"None","MuxResult":"NotAttempted","LastOutputPath":"","LastOutputSizeBytes":0,"LastFinalizeStatus":"None","PerformanceScore":100,"PerformancePerfectionMet":true,"PerformanceSummary":"OK","EstimatedPipelineLatencyMs":1,"CaptureCadenceObservedFps":120,"ExpectedCaptureFrameRate":120,"CaptureCadenceSampleCount":300,"CaptureCadenceAverageIntervalMs":8.3,"CaptureCadenceP95IntervalMs":8.5,"CaptureCadenceMaxIntervalMs":9.0,"CaptureCadenceJitterStdDevMs":0.1,"CaptureCadenceSevereGapCount":0,"CaptureCadenceEstimatedDroppedFrames":0,"CaptureCadenceEstimatedDropPercent":0,"MjpegDecodeSampleCount":300,"MjpegDecodeAvgMs":2.1,"MjpegDecodeP95Ms":3.4,"MjpegDecodeMaxMs":5.6,"MjpegInteropCopySampleCount":300,"MjpegInteropCopyAvgMs":0.9,"MjpegInteropCopyP95Ms":1.4,"MjpegInteropCopyMaxMs":2.2,"MjpegCallbackSampleCount":300,"MjpegCallbackAvgMs":4.5,"MjpegCallbackP95Ms":6.7,"MjpegCallbackMaxMs":9.1,"MjpegDecoderCount":2,"MjpegReorderSampleCount":300,"MjpegReorderAvgMs":0.4,"MjpegReorderP95Ms":0.8,"MjpegReorderMaxMs":1.2,"MjpegPipelineSampleCount":300,"MjpegPipelineAvgMs":5.1,"MjpegPipelineP95Ms":7.0,"MjpegPipelineMaxMs":9.4,"MjpegTotalDecoded":301,"MjpegTotalEmitted":300,"MjpegTotalDropped":1,"MjpegReorderSkips":2,"MjpegReorderBufferDepth":1,"MjpegPerDecoder":[{"WorkerIndex":0,"SampleCount":150,"AvgMs":2.0,"P95Ms":3.0,"MaxMs":4.0},{"WorkerIndex":1,"SampleCount":151,"AvgMs":2.2,"P95Ms":3.2,"MaxMs":4.2}],"PreviewRendererMode":"D3D11VideoProcessor","PreviewStartupState":"Rendering","PreviewFirstVisualConfirmed":true,"PreviewD3DFramesSubmitted":120,"PreviewD3DFramesRendered":120,"PreviewD3DFramesDropped":0,"PreviewD3DInputColorSpace":"BT.709","PreviewD3DOutputColorSpace":"sRGB","PreviewCadenceObservedFps":120,"DetectedSourceFrameRate":120,"SourceWidth":3840,"SourceHeight":2160,"SourceIsHdr":false,"SourceTelemetryAvailability":"Available","SourceTelemetryConfidence":"High"}}
-                                """;
-            using var document = JsonDocument.Parse(json);
-            var output = formatSnapshot.Invoke(null, new object[] { document.RootElement, false })?.ToString()
-                ?? throw new InvalidOperationException("AutomationSnapshotFormatter.FormatSnapshot returned null.");
-
-            AssertContains(output, "== MJPEG Pipeline Timing ==");
-            AssertContains(output, "Preset: P5");
-            AssertContains(output, "Video Format: MJPG | Split Encode: Auto | MJPEG Decoders: 2");
-            AssertContains(output, "UI: Show All Options=true | Preview Volume=42.5% | Stats Visible=true");
-            AssertContains(output, "Decode: avg=2.1ms");
-            AssertContains(output, "Interop Copy: avg=0.9ms");
-            AssertContains(output, "Total Callback: avg=4.5ms");
-            AssertContains(output, "Decoders: 2 | Decoded=301 Emitted=300 Dropped=1");
-            AssertContains(output, "Reorder: avg=0.4ms");
-            AssertContains(output, "Pipeline: avg=5.1ms");
-            AssertContains(output, "Decoder[0]: avg=2.0ms");
-            AssertContains(output, "Decoder[1]: avg=2.2ms");
-        }
-        catch (Exception ex) when (ex is FileLoadException or FileNotFoundException)
-        {
-            return Task.CompletedTask;
-        }
-        finally
-        {
-            loadContext.Resolving -= ResolveMcpDependency;
-        }
+        AssertContains(output, "== MJPEG Pipeline Timing ==");
+        AssertContains(output, "Preset: P5");
+        AssertContains(output, "Video Format: MJPG | Split Encode: Auto | MJPEG Decoders: 2");
+        AssertContains(output, "UI: Show All Options=true | Preview Volume=42.5% | Stats Visible=true");
+        AssertContains(output, "Decode: avg=2.1ms");
+        AssertContains(output, "Interop Copy: avg=0.9ms");
+        AssertContains(output, "Total Callback: avg=4.5ms");
+        AssertContains(output, "Decoders: 2 | Decoded=301 Emitted=300 Dropped=1");
+        AssertContains(output, "Reorder: avg=0.4ms");
+        AssertContains(output, "Pipeline: avg=5.1ms");
+        AssertContains(output, "Decoder[0]: avg=2.0ms");
+        AssertContains(output, "Decoder[1]: avg=2.2ms");
         return Task.CompletedTask;
     }
 
     private static Task AutomationCommandMaps_StayAligned_ForAdvancedMcpControls()
     {
-        var contractsText = ReadRepoFile("ElgatoCapture/Models/AutomationContracts.cs");
+        var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var protocolType = RequireType("ElgatoCapture.Tools.AutomationPipeProtocol");
         var protocolText = ReadRepoFile("tools/Common/AutomationPipeProtocol.cs");
         var scriptText = ReadRepoFile("tools/send-automation-command.ps1");
+        var resolveCommand = protocolType.GetMethod(
+            "ResolveCommand",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("AutomationPipeProtocol.ResolveCommand not found.");
 
-        AssertContains(contractsText, "SetPreset");
-        AssertContains(contractsText, "SetSplitEncodeMode");
-        AssertContains(contractsText, "SetMjpegDecoderCount");
-        AssertContains(contractsText, "SetShowAllCaptureOptions");
-        AssertContains(contractsText, "SetPreviewVolume");
-        AssertContains(contractsText, "SetStatsVisible");
-        AssertContains(contractsText, "GetCaptureOptions");
+        foreach (var (name, ordinal) in new[]
+        {
+            ("GetCaptureOptions", 29),
+            ("SetPreset", 30),
+            ("SetSplitEncodeMode", 31),
+            ("SetMjpegDecoderCount", 32),
+            ("SetShowAllCaptureOptions", 33),
+            ("SetPreviewVolume", 34),
+            ("SetStatsVisible", 35)
+        })
+        {
+            AssertEqual(ordinal, Convert.ToInt32(Enum.Parse(enumType, name)), $"AutomationCommandKind.{name}");
+            AssertEqual(ordinal, Convert.ToInt32(resolveCommand.Invoke(null, new object?[] { name })), $"AutomationPipeProtocol.ResolveCommand({name})");
+        }
 
-        AssertContains(protocolText, "[\"SetPreset\"] = 30");
-        AssertContains(protocolText, "[\"SetSplitEncodeMode\"] = 31");
-        AssertContains(protocolText, "[\"SetMjpegDecoderCount\"] = 32");
-        AssertContains(protocolText, "[\"SetShowAllCaptureOptions\"] = 33");
-        AssertContains(protocolText, "[\"SetPreviewVolume\"] = 34");
-        AssertContains(protocolText, "[\"SetStatsVisible\"] = 35");
-        AssertContains(protocolText, "[\"GetCaptureOptions\"] = 29");
+        AssertContains(protocolText, "Enum.GetValues<AutomationCommandKind>()");
 
-        AssertContains(scriptText, "\"setpreset\" { return 30 }");
-        AssertContains(scriptText, "\"setsplitencodemode\" { return 31 }");
-        AssertContains(scriptText, "\"setmjpegdecodercount\" { return 32 }");
-        AssertContains(scriptText, "\"setshowallcaptureoptions\" { return 33 }");
-        AssertContains(scriptText, "\"setpreviewvolume\" { return 34 }");
-        AssertContains(scriptText, "\"setstatsvisible\" { return 35 }");
-        AssertContains(scriptText, "\"getcaptureoptions\" { return 29 }");
+        AssertContains(scriptText, "AutomationClient\\AutomationClient.csproj");
+        AssertContains(scriptText, "Get-AutomationClientInputWriteTimeUtc");
+        AssertContains(scriptText, "Test-AutomationClientBuildFresh");
+        AssertContains(scriptText, "AutomationClient build failed with exit code $LASTEXITCODE.");
+        AssertContains(scriptText, "AutomationClient build output is stale after rebuild");
+        AssertContains(scriptText, "$_.FullName -notmatch \"\\\\(bin|obj)\\\\\"");
+        AssertContains(scriptText, "\"--command\", $Command");
+        AssertContains(scriptText, "$payloadBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($PayloadJson))");
+        AssertContains(scriptText, "\"--payload-base64\", $payloadBase64");
+        AssertContains(scriptText, "[int]$ResponseTimeoutMs = 0");
+        AssertContains(scriptText, "\"--response-timeout-ms\", $ResponseTimeoutMs");
+        AssertDoesNotContain(scriptText, "function Resolve-AutomationCommand");
 
         return Task.CompletedTask;
     }
@@ -1061,7 +1364,7 @@ static partial class Program
     private static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
         var settingsPartialText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Settings.cs").Replace("\r\n", "\n");
-        var settingsServiceText = ReadRepoFile("ElgatoCapture/Services/SettingsService.cs").Replace("\r\n", "\n");
+        var settingsServiceText = ReadRepoFile("ElgatoCapture/Services/Configuration/SettingsService.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? ShowAllCaptureOptions { get; set; }");
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
@@ -1124,7 +1427,7 @@ static partial class Program
 
     private static async Task AudioPreview_RemainsInactive_WhenNoAudioCaptureDeviceExists()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         SetPropertyOrBackingField(device, "AudioDeviceId", null);
         SetPropertyOrBackingField(device, "AudioDeviceName", null);
@@ -1232,6 +1535,44 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FrameTimeOverlay_UsesDetectedFpsBoundedRange()
+    {
+        var statsOverlayText = ReadRepoFile("ElgatoCapture/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var mainWindowXaml = ReadRepoFile("ElgatoCapture/MainWindow.xaml").Replace("\r\n", "\n");
+
+        AssertContains(statsOverlayText, "ResolveFrameTimeRange(snapshot.SourceExpectedFps)");
+        AssertContains(statsOverlayText, "fps * 0.75");
+        AssertContains(statsOverlayText, "fps * 1.25");
+        AssertContains(statsOverlayText, "RoundToNearestFive");
+        AssertContains(statsOverlayText, "(samples[i] - range.MinMs) / range.SpanMs");
+        AssertContains(statsOverlayText, "UpdateFrameTimeExpectedLine");
+        AssertContains(mainWindowXaml, "x:Name=\"FrameTime_ExpectedLine\"");
+
+        var mainWindowType = RequireType("ElgatoCapture.MainWindow");
+        var resolveRange = mainWindowType.GetMethod("ResolveFrameTimeRange", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ResolveFrameTimeRange was not found.");
+
+        var range120 = resolveRange.Invoke(null, new object[] { 120.0 })
+            ?? throw new InvalidOperationException("ResolveFrameTimeRange returned null for 120fps.");
+        AssertNearlyEqual(1000.0 / 150.0, GetDoubleProperty(range120, "MinMs"), 0.0001, "120fps MinMs");
+        AssertNearlyEqual(1000.0 / 90.0, GetDoubleProperty(range120, "MaxMs"), 0.0001, "120fps MaxMs");
+        AssertNearlyEqual(1000.0 / 120.0, GetDoubleProperty(range120, "ExpectedMs"), 0.0001, "120fps ExpectedMs");
+        AssertEqual(90.0, GetDoubleProperty(range120, "LowerFpsLabel"), "120fps lower label");
+        AssertEqual(150.0, GetDoubleProperty(range120, "UpperFpsLabel"), "120fps upper label");
+
+        var normalizedExpected = (GetDoubleProperty(range120, "ExpectedMs") - GetDoubleProperty(range120, "MinMs")) /
+                                 GetDoubleProperty(range120, "SpanMs");
+        AssertNearlyEqual(0.375, normalizedExpected, 0.0001, "120fps expected-line normalization");
+
+        var fallbackRange = resolveRange.Invoke(null, new object[] { 0.0 })
+            ?? throw new InvalidOperationException("ResolveFrameTimeRange returned null for fallback fps.");
+        AssertNearlyEqual(1000.0 / 75.0, GetDoubleProperty(fallbackRange, "MinMs"), 0.0001, "fallback MinMs");
+        AssertNearlyEqual(1000.0 / 45.0, GetDoubleProperty(fallbackRange, "MaxMs"), 0.0001, "fallback MaxMs");
+        AssertNearlyEqual(1000.0 / 60.0, GetDoubleProperty(fallbackRange, "ExpectedMs"), 0.0001, "fallback ExpectedMs");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest()
     {
         var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
@@ -1255,7 +1596,7 @@ static partial class Program
 
     private static Task UnifiedVideoCapture_CpuMjpegEmitReportsNv12()
     {
-        var unifiedVideoCapture = CreateInstance("ElgatoCapture.Services.UnifiedVideoCapture");
+        var unifiedVideoCapture = CreateInstance("ElgatoCapture.Services.Capture.UnifiedVideoCapture");
         var observed = string.Empty;
 
         var setObserver = unifiedVideoCapture.GetType().GetMethod("SetPixelFormatDetectedCallback", BindingFlags.Public | BindingFlags.Instance)
@@ -1264,8 +1605,31 @@ static partial class Program
 
         var emitMethod = unifiedVideoCapture.GetType().GetMethod("OnMjpegPipelineFrameEmitted", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("OnMjpegPipelineFrameEmitted method not found.");
-        var emit = (ClosedMjpegEmitDelegate)emitMethod.CreateDelegate(typeof(ClosedMjpegEmitDelegate), unifiedVideoCapture);
-        emit(new byte[6].AsSpan(), 2, 2, 0);
+        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
+        var rentMethod = frameType.GetMethod("Rent", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("PooledVideoFrame.Rent method not found.");
+        var frame = rentMethod.Invoke(
+            null,
+            new object[]
+            {
+                0L,
+                0L,
+                0L,
+                2,
+                2,
+                Enum.Parse(formatType, "Nv12"),
+                6
+            })
+            ?? throw new InvalidOperationException("PooledVideoFrame.Rent returned null.");
+        try
+        {
+            emitMethod.Invoke(unifiedVideoCapture, new[] { frame });
+        }
+        finally
+        {
+            ((IDisposable)frame).Dispose();
+        }
 
         AssertEqual("NV12", observed, "UnifiedVideoCapture.OnMjpegPipelineFrameEmitted observer format");
         return Task.CompletedTask;
@@ -1273,8 +1637,8 @@ static partial class Program
 
     private static async Task UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails()
     {
-        var unifiedVideoCapture = CreateInstance("ElgatoCapture.Services.UnifiedVideoCapture");
-        var pipelineType = RequireType("ElgatoCapture.Services.ParallelMjpegDecodePipeline");
+        var unifiedVideoCapture = CreateInstance("ElgatoCapture.Services.Capture.UnifiedVideoCapture");
+        var pipelineType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline");
         var pipeline = CreateUninitializedObject(pipelineType);
         SeedPipelineStopFailureState(pipeline, pipelineType);
 
@@ -1316,9 +1680,86 @@ static partial class Program
         }
     }
 
+    private static Task FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps()
+    {
+        var tracker = CreateInstance("ElgatoCapture.Services.Capture.FrameFingerprintCadenceTracker");
+        var trackerType = tracker.GetType();
+        var recordFrame = trackerType.GetMethod("RecordFrame", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.RecordFrame not found.");
+        var getMetrics = trackerType.GetMethod("GetMetrics", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.GetMetrics not found.");
+
+        var intervalTicks = Math.Max(1, Stopwatch.Frequency / 120);
+        var tick = Stopwatch.Frequency;
+        for (ulong hash = 1; hash <= 120; hash++)
+        {
+            recordFrame.Invoke(tracker, new object?[] { hash, tick });
+            tick += intervalTicks;
+        }
+
+        var repeatedHash = 120UL;
+        for (var i = 0; i < 90; i++)
+        {
+            recordFrame.Invoke(tracker, new object?[] { repeatedHash, tick });
+            tick += intervalTicks;
+        }
+
+        var metrics = getMetrics.Invoke(tracker, new object?[] { 180 })
+            ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.GetMetrics returned null.");
+
+        AssertEqual("DuplicateRun", GetStringProperty(metrics, "Pattern"), "packet hash pattern during trailing duplicate run");
+        AssertEqual(true, GetBoolProperty(metrics, "LastFrameDuplicate"), "packet hash last-frame duplicate state");
+
+        var duplicatePercent = GetDoubleProperty(metrics, "DuplicateFramePercent");
+        if (duplicatePercent < 40)
+        {
+            throw new InvalidOperationException($"Duplicate percent did not reflect recent duplicate run: {duplicatePercent:0.00}%.");
+        }
+
+        var uniqueFps = GetDoubleProperty(metrics, "UniqueObservedFps");
+        if (uniqueFps >= 80)
+        {
+            throw new InvalidOperationException($"Unique FPS stayed stale during duplicate run: {uniqueFps:0.00} fps.");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task VisualCadenceTracker_UsesExactHighResolutionCropPixels()
+    {
+        var trackerSource = ReadRepoFile("ElgatoCapture/Services/Capture/VisualCadenceTracker.cs").Replace("\r\n", "\n");
+        var captureSource = ReadRepoFile("ElgatoCapture/Services/Capture/UnifiedVideoCapture.cs").Replace("\r\n", "\n");
+
+        AssertContains(trackerSource, "DefaultSampleColumns = 640");
+        AssertContains(trackerSource, "DefaultSampleRows = 360");
+        AssertContains(trackerSource, "sampleX = cropX + Math.Max(0, (cropWidth - sampleWidth) / 2)");
+        AssertContains(trackerSource, "sampleY = cropY + Math.Max(0, (cropHeight - sampleHeight) / 2)");
+        AssertContains(trackerSource, "var x = sampleX + col;");
+        AssertContains(trackerSource, "var y = sampleY + row;");
+        AssertContains(trackerSource, "if (previous[i + byteIndex] != current[i + byteIndex])");
+        AssertContains(trackerSource, "_lastSample = new byte[_sampleSize * 2]");
+        AssertContains(trackerSource, "destination[index++] = frame[lumaOffset];");
+        AssertContains(trackerSource, "if (bytesPerLuma == 2)");
+        AssertContains(trackerSource, "ComputeChangedPixelCount(_lastSample, _currentSample, sampleLength, bytesPerLuma)");
+        AssertContains(trackerSource, "AddValueSample(_deltaWindow, ref _deltaCount, ref _deltaIndex, delta)");
+        AssertContains(trackerSource, "if (delta > 0)");
+        AssertDoesNotContain(trackerSource, "ChangeThreshold");
+        AssertDoesNotContain(trackerSource, "ComputeAverageDelta");
+
+        AssertContains(captureSource, "previewFrameProbe: null");
+        AssertContains(captureSource, "frame.ArrivalTick");
+        AssertContains(captureSource, "cropLeft: 0.25");
+        AssertContains(captureSource, "cropWidth: 0.5");
+        AssertContains(captureSource, "sampleColumns: 320");
+        AssertContains(captureSource, "cropLeft: 0.375");
+        AssertContains(captureSource, "cropWidth: 0.25");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task CaptureService_StrictHfrFatalHandler_ClearsActiveSessionState()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.CaptureService");
+        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -1367,7 +1808,7 @@ static partial class Program
 
     private static Task FinalizeResult_Success_ProducesEmptyPreservedList()
     {
-        var resultType = RequireType("ElgatoCapture.Services.FinalizeResult");
+        var resultType = RequireType("ElgatoCapture.Services.Recording.FinalizeResult");
         var successMethod = resultType.GetMethod("Success", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("FinalizeResult.Success not found");
         var result = successMethod.Invoke(null, new object[] { "/path/output.mp4", "Stopped" })!;
@@ -1383,7 +1824,7 @@ static partial class Program
 
     private static Task FinalizeResult_Failure_DeduplicatesAndFiltersArtifacts()
     {
-        var resultType = RequireType("ElgatoCapture.Services.FinalizeResult");
+        var resultType = RequireType("ElgatoCapture.Services.Recording.FinalizeResult");
         var failureMethod = resultType.GetMethod("Failure", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("FinalizeResult.Failure not found");
 
@@ -1402,7 +1843,7 @@ static partial class Program
 
     private static Task ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled()
     {
-        var manager = CreateInstance("ElgatoCapture.Services.RecordingArtifactManager");
+        var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
         var context = BuildRecordingContext(usePostMuxAudio: false, finalPath: "/out/video.mp4");
 
         var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
@@ -1428,7 +1869,7 @@ static partial class Program
             File.WriteAllText(audioPath, "audio-data");
             File.WriteAllBytes(finalPath, Array.Empty<byte>()); // empty placeholder
 
-            var manager = CreateInstance("ElgatoCapture.Services.RecordingArtifactManager");
+            var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
             var context = BuildRecordingContext(
                 usePostMuxAudio: true,
                 videoPath: videoPath,
@@ -1468,7 +1909,7 @@ static partial class Program
             File.WriteAllText(audioPath, "a");
             File.WriteAllText(finalPath, "f");
 
-            var manager = CreateInstance("ElgatoCapture.Services.RecordingArtifactManager");
+            var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
             var context = BuildRecordingContext(
                 usePostMuxAudio: true,
                 videoPath: videoPath,
@@ -1498,11 +1939,11 @@ static partial class Program
 
     private static Task ArtifactManager_RollbackAsync_SafeWithNullContext()
     {
-        var manager = CreateInstance("ElgatoCapture.Services.RecordingArtifactManager");
+        var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
         var rollbackMethod = manager.GetType().GetMethod("RollbackAsync")
             ?? throw new InvalidOperationException("RollbackAsync not found");
 
-        var contextType = RequireType("ElgatoCapture.Services.RecordingContext");
+        var contextType = RequireType("ElgatoCapture.Services.Recording.RecordingContext");
         var task = rollbackMethod.Invoke(manager, new object?[] { null, CancellationToken.None }) as Task
             ?? throw new InvalidOperationException("RollbackAsync did not return Task");
         task.GetAwaiter().GetResult();
@@ -1639,7 +2080,7 @@ static partial class Program
         SetPropertyBackingField(options, "TempDirectory", tempDir);
         SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
 
-        var managerType = RequireType("ElgatoCapture.Services.FlashbackBufferManager");
+        var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
         var manager = RuntimeHelpers.GetUninitializedObject(managerType);
         SetPrivateField(manager, "_options", options);
         SetPrivateField(manager, "_indexLock", new object());
@@ -1784,11 +2225,60 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackBufferManager_RemovesStaleLegacyRootSegments()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_legacy_cleanup_{Guid.NewGuid():N}");
+        object? manager = null;
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var staleRootSegment = Path.Combine(tempDir, "fb_legacy_0001.ts");
+            var recentRootSegment = Path.Combine(tempDir, "fb_recent_0001.ts");
+            var unrelatedFile = Path.Combine(tempDir, "unrelated.ts");
+            File.WriteAllText(staleRootSegment, "stale");
+            File.WriteAllText(recentRootSegment, "recent");
+            File.WriteAllText(unrelatedFile, "keep");
+
+            File.SetLastWriteTimeUtc(staleRootSegment, DateTime.UtcNow - TimeSpan.FromHours(13));
+            File.SetLastWriteTimeUtc(recentRootSegment, DateTime.UtcNow);
+            File.SetLastWriteTimeUtc(unrelatedFile, DateTime.UtcNow - TimeSpan.FromHours(13));
+
+            var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+            var options = RuntimeHelpers.GetUninitializedObject(optionsType);
+            SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
+            SetPropertyBackingField(options, "TempDirectory", tempDir);
+            SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
+
+            var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+            manager = Activator.CreateInstance(managerType, new[] { options })!;
+            var initialize = managerType.GetMethod("Initialize")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.Initialize not found.");
+            initialize.Invoke(manager, new object[] { "current-session" });
+
+            AssertEqual(false, File.Exists(staleRootSegment), "Stale root fb_* segment removed");
+            AssertEqual(true, File.Exists(recentRootSegment), "Recent root fb_* segment preserved");
+            AssertEqual(true, File.Exists(unrelatedFile), "Unrelated root file preserved");
+            AssertEqual(true, Directory.Exists(Path.Combine(tempDir, "current-session")), "Current session directory created");
+        }
+        finally
+        {
+            if (manager is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
     // ── GpuPipelineHandles / RecordingContextRequest tests ──
 
     private static Task GpuPipelineHandles_None_ReturnsZeroedStruct()
     {
-        var handlesType = RequireType("ElgatoCapture.Services.GpuPipelineHandles");
+        var handlesType = RequireType("ElgatoCapture.Services.Recording.GpuPipelineHandles");
         var noneProp = handlesType.GetProperty("None", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("GpuPipelineHandles.None not found");
         var none = noneProp.GetValue(null)!;
@@ -1803,7 +2293,7 @@ static partial class Program
 
     private static Task RecordingContextRequest_DefaultsMatchRecordingContextDefaults()
     {
-        var request = CreateInstance("ElgatoCapture.Services.RecordingContextRequest");
+        var request = CreateInstance("ElgatoCapture.Services.Recording.RecordingContextRequest");
         AssertEqual("30", GetStringProperty(request, "FrameRateArg"), "FrameRateArg default");
         AssertEqual("nv12", GetStringProperty(request, "VideoInputPixelFormat"), "VideoInputPixelFormat default");
         AssertEqual(false, GetBoolProperty(request, "IsFullRangeInput"), "IsFullRangeInput default");
@@ -1880,22 +2370,78 @@ static partial class Program
 
     // --- AutomationContracts tests ---
 
-    private static Task AutomationCommandKind_HasSequentialValues_0Through44()
+    private static Task AutomationCommandKind_HasSequentialValues_0Through47()
     {
         var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
-        var values = Enum.GetValues(enumType);
-        AssertEqual(45, values.Length, "AutomationCommandKind value count");
+        var expectedCommands = ExpectedAutomationCommands();
+        AssertEqual(expectedCommands.Length, Enum.GetValues(enumType).Length, "AutomationCommandKind value count");
 
-        for (int i = 0; i < 45; i++)
+        for (int i = 0; i < expectedCommands.Length; i++)
         {
-            var found = Enum.IsDefined(enumType, i);
-            if (!found)
+            var (name, value) = expectedCommands[i];
+            var parsed = Enum.Parse(enumType, name);
+            AssertEqual(value, Convert.ToInt32(parsed), $"AutomationCommandKind.{name}");
+            if (!Enum.IsDefined(enumType, value))
+            {
                 throw new InvalidOperationException(
-                    $"AutomationCommandKind missing sequential value {i}.");
+                    $"AutomationCommandKind missing sequential value {value}.");
+            }
         }
 
         return Task.CompletedTask;
     }
+
+    private static (string Name, int Value)[] ExpectedAutomationCommands() =>
+    [
+        ("Authenticate", 0),
+        ("GetSnapshot", 1),
+        ("GetDiagnostics", 2),
+        ("RefreshDevices", 3),
+        ("SelectDevice", 4),
+        ("SelectAudioInputDevice", 5),
+        ("SetCustomAudioInput", 6),
+        ("SetResolution", 7),
+        ("SetFrameRate", 8),
+        ("SetRecordingFormat", 9),
+        ("SetQuality", 10),
+        ("SetCustomBitrate", 11),
+        ("SetHdrEnabled", 12),
+        ("SetAudioEnabled", 13),
+        ("SetAudioPreviewEnabled", 14),
+        ("SetOutputPath", 15),
+        ("SetPreviewEnabled", 16),
+        ("SetRecordingEnabled", 17),
+        ("ArmClose", 18),
+        ("WindowAction", 19),
+        ("WaitForCondition", 20),
+        ("VerifyLastRecording", 21),
+        ("AssertSnapshot", 22),
+        ("SetTrueHdrPreviewEnabled", 23),
+        ("ProbeVideoSource", 24),
+        ("ProbePreviewColor", 25),
+        ("CapturePreviewFrame", 26),
+        ("CaptureWindowScreenshot", 27),
+        ("SetVideoFormat", 28),
+        ("GetCaptureOptions", 29),
+        ("SetPreset", 30),
+        ("SetSplitEncodeMode", 31),
+        ("SetMjpegDecoderCount", 32),
+        ("SetShowAllCaptureOptions", 33),
+        ("SetPreviewVolume", 34),
+        ("SetStatsVisible", 35),
+        ("SetDeviceAudioMode", 36),
+        ("GetPerformanceTimeline", 37),
+        ("SetStatsSectionVisible", 38),
+        ("SetAnalogAudioGain", 39),
+        ("SetSettingsVisible", 40),
+        ("FlashbackAction", 41),
+        ("FlashbackExport", 42),
+        ("FlashbackGetSegments", 43),
+        ("VerifyFile", 44),
+        ("RestartFlashback", 45),
+        ("SetMicrophoneEnabled", 46),
+        ("SetFlashbackEnabled", 47)
+    ];
 
     private static Task AutomationWindowAction_HasExpectedValues()
     {
@@ -2023,30 +2569,24 @@ static partial class Program
 
     private static Task HdrOutputPolicy_ReturnsTrue_WhenHdrAndHdr10PqRequested()
     {
-        var policyType = RequireType("ElgatoCapture.Services.HdrOutputPolicy");
-        var method = policyType.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static)
-            ?? throw new InvalidOperationException("HdrOutputPolicy.IsEnabled not found");
-
-        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
-        SetPropertyOrBackingField(settings, "HdrEnabled", true);
-        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("ElgatoCapture.Models.HdrOutputMode", "Hdr10Pq"));
-
-        var result = (bool)method.Invoke(null, new[] { settings })!;
-        AssertEqual(true, result, "HDR enabled + Hdr10Pq should return true");
+        var previousForceOff = Environment.GetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF");
+        try
+        {
+            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", null);
+            var result = InvokeHdrOutputPolicy(hdrEnabled: true, hdrOutputMode: "Hdr10Pq");
+            AssertEqual(true, result, "HDR enabled + Hdr10Pq should return true");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", previousForceOff);
+        }
 
         return Task.CompletedTask;
     }
 
     private static Task HdrOutputPolicy_ReturnsFalse_WhenHdrDisabled()
     {
-        var policyType = RequireType("ElgatoCapture.Services.HdrOutputPolicy");
-        var method = policyType.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static)!;
-
-        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
-        SetPropertyOrBackingField(settings, "HdrEnabled", false);
-        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("ElgatoCapture.Models.HdrOutputMode", "Hdr10Pq"));
-
-        var result = (bool)method.Invoke(null, new[] { settings })!;
+        var result = InvokeHdrOutputPolicy(hdrEnabled: false, hdrOutputMode: "Hdr10Pq");
         AssertEqual(false, result, "HDR disabled should return false");
 
         return Task.CompletedTask;
@@ -2054,17 +2594,60 @@ static partial class Program
 
     private static Task HdrOutputPolicy_ReturnsFalse_WhenNotHdr10Pq()
     {
-        var policyType = RequireType("ElgatoCapture.Services.HdrOutputPolicy");
-        var method = policyType.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static)!;
-
-        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
-        SetPropertyOrBackingField(settings, "HdrEnabled", true);
-        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("ElgatoCapture.Models.HdrOutputMode", "Off"));
-
-        var result = (bool)method.Invoke(null, new[] { settings })!;
+        var result = InvokeHdrOutputPolicy(hdrEnabled: true, hdrOutputMode: "Off");
         AssertEqual(false, result, "HdrOutputMode=Off should return false");
 
         return Task.CompletedTask;
+    }
+
+    private static Task HdrOutputPolicy_ReturnsFalse_WhenForceOffEnvSet()
+    {
+        var previousForceOff = Environment.GetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF");
+        try
+        {
+            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", "true");
+            var result = InvokeHdrOutputPolicy(hdrEnabled: true, hdrOutputMode: "Hdr10Pq");
+            AssertEqual(false, result, "force-off env switch should disable HDR output");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", previousForceOff);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task HdrOutputPolicy_IgnoresLegacyEnabledEnvSwitch()
+    {
+        var previousForceOff = Environment.GetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF");
+        var previousLegacyEnabled = Environment.GetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_ENABLED");
+        try
+        {
+            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", null);
+            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_ENABLED", "false");
+            var result = InvokeHdrOutputPolicy(hdrEnabled: true, hdrOutputMode: "Hdr10Pq");
+            AssertEqual(true, result, "legacy enabled env switch should no longer disable HDR output");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", previousForceOff);
+            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_ENABLED", previousLegacyEnabled);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static bool InvokeHdrOutputPolicy(bool hdrEnabled, string hdrOutputMode)
+    {
+        var policyType = RequireType("ElgatoCapture.Services.Capture.HdrOutputPolicy");
+        var method = policyType.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static)
+            ?? throw new InvalidOperationException("HdrOutputPolicy.IsEnabled not found");
+
+        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "HdrEnabled", hdrEnabled);
+        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("ElgatoCapture.Models.HdrOutputMode", hdrOutputMode));
+
+        return (bool)method.Invoke(null, new[] { settings })!;
     }
 
     // ── FlashbackPlaybackState enum test ──
@@ -2116,7 +2699,7 @@ static partial class Program
 
     private static Task NvmlSnapshot_ComputedProperties_ConvertUnits()
     {
-        var snapshotType = RequireType("ElgatoCapture.Services.NvmlSnapshot");
+        var snapshotType = RequireType("ElgatoCapture.Services.Gpu.NvmlSnapshot");
         // Constructor: GpuName, GpuUtil%, MemUtil%, NvdecUtil%, NvencUtil%, PcieTxKB, PcieRxKB,
         //              VramUsedB, VramTotalB, TempC, PowerMw, ClockMHz, MemClockMHz
         var snapshot = Activator.CreateInstance(snapshotType,
@@ -2155,7 +2738,7 @@ static partial class Program
 
     private static Task CaptureSessionSnapshot_DefaultState()
     {
-        var snapshotType = RequireType("ElgatoCapture.Services.CaptureSessionSnapshot");
+        var snapshotType = RequireType("ElgatoCapture.Services.Capture.CaptureSessionSnapshot");
         var snapshot = RuntimeHelpers.GetUninitializedObject(snapshotType);
 
         AssertEqual(false, GetBoolProperty(snapshot, "IsRecording"), "IsRecording default");
@@ -2169,11 +2752,11 @@ static partial class Program
 
     private static Task ProcessSpec_DefaultTimeout_Is30Seconds()
     {
-        var specType = RequireType("ElgatoCapture.Services.ProcessSpec");
+        var specType = RequireType("ElgatoCapture.Services.Runtime.ProcessSpec");
         var spec = RuntimeHelpers.GetUninitializedObject(specType);
         // ProcessSpec uses init-only with defaults — GetUninitializedObject bypasses ctor
         // So test the contract by checking the source
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/ProcessSupervisor.cs");
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Runtime/ProcessSupervisor.cs");
         AssertContains(sourceText, "public int TimeoutMs { get; init; } = 30_000;");
         AssertContains(sourceText, "public string Arguments { get; init; } = string.Empty;");
 
@@ -2192,35 +2775,33 @@ static partial class Program
     {
         var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
         var enumNames = Enum.GetNames(enumType);
-        var enumValues = Enum.GetValues(enumType);
+        var expectedCommands = ExpectedAutomationCommands();
+        var protocolType = RequireType("ElgatoCapture.Tools.AutomationPipeProtocol");
 
         if (enumNames.Length == 0)
             throw new InvalidOperationException("AutomationCommandKind enum has no members.");
 
-        var protocolText = ReadRepoFile("tools/Common/AutomationPipeProtocol.cs");
+        var commandMapProperty = protocolType.GetProperty(
+            "CommandMap",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("AutomationPipeProtocol.CommandMap not found.");
+        var commandMap = commandMapProperty.GetValue(null) as IReadOnlyDictionary<string, int>
+            ?? throw new InvalidOperationException("AutomationPipeProtocol.CommandMap has an unexpected shape.");
 
-        for (int i = 0; i < enumNames.Length; i++)
+        AssertEqual(expectedCommands.Length, commandMap.Count,
+            "AutomationPipeProtocol CommandMap entry count vs golden command table");
+        foreach (var (name, ordinal) in expectedCommands)
         {
-            var name = enumNames[i];
-            var ordinal = Convert.ToInt32(enumValues.GetValue(i));
-            var expectedEntry = $"[\"{name}\"] = {ordinal}";
-            AssertContains(protocolText, expectedEntry);
+            if (!commandMap.TryGetValue(name, out var mappedOrdinal))
+            {
+                throw new InvalidOperationException($"AutomationPipeProtocol.CommandMap missing '{name}'.");
+            }
+
+            AssertEqual(ordinal, mappedOrdinal, $"AutomationPipeProtocol.CommandMap[{name}]");
+            AssertEqual(ordinal, Convert.ToInt32(Enum.Parse(enumType, name)), $"AutomationCommandKind.{name}");
         }
 
-        var mapEntryCount = 0;
-        var inMap = false;
-        foreach (var line in protocolText.Split('\n'))
-        {
-            var trimmed = line.Trim();
-            if (trimmed.Contains("CommandMap") && trimmed.Contains("{ get;"))
-                inMap = true;
-            if (inMap && trimmed.StartsWith("[\"") && trimmed.Contains("] ="))
-                mapEntryCount++;
-            if (inMap && trimmed == "};")
-                inMap = false;
-        }
-
-        AssertEqual(enumNames.Length, mapEntryCount,
+        AssertEqual(enumNames.Length, commandMap.Count,
             "AutomationPipeProtocol CommandMap entry count vs AutomationCommandKind enum count");
 
         return Task.CompletedTask;
@@ -2239,35 +2820,22 @@ static partial class Program
 
     private static Task ResponseFormatter_IsSuccess_ParsesSuccessAndFailureJson()
     {
-        var formatterText = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
-        AssertContains(formatterText, "internal static bool IsSuccess(JsonElement response)");
-        AssertContains(formatterText, "success.ValueKind == JsonValueKind.True");
+        var formatterType = RequireSharedToolType("ElgatoCapture.Tools.AutomationSnapshotFormatter");
+        var isSuccess = RequireNonPublicStaticMethod(formatterType, "IsSuccess");
 
         using (var docTrue = JsonDocument.Parse("{\"Success\": true, \"Message\": \"ok\"}"))
         {
-            var el = docTrue.RootElement;
-            var isSuccess = el.ValueKind == JsonValueKind.Object &&
-                            el.TryGetProperty("Success", out var s) &&
-                            s.ValueKind == JsonValueKind.True;
-            AssertEqual(true, isSuccess, "IsSuccess with Success=true");
+            AssertEqual(true, (bool)isSuccess.Invoke(null, new object[] { docTrue.RootElement })!, "IsSuccess with Success=true");
         }
 
         using (var docFalse = JsonDocument.Parse("{\"Success\": false, \"Message\": \"fail\"}"))
         {
-            var el = docFalse.RootElement;
-            var isSuccess = el.ValueKind == JsonValueKind.Object &&
-                            el.TryGetProperty("Success", out var s) &&
-                            s.ValueKind == JsonValueKind.True;
-            AssertEqual(false, isSuccess, "IsSuccess with Success=false");
+            AssertEqual(false, (bool)isSuccess.Invoke(null, new object[] { docFalse.RootElement })!, "IsSuccess with Success=false");
         }
 
         using (var docMissing = JsonDocument.Parse("{\"Message\": \"no success field\"}"))
         {
-            var el = docMissing.RootElement;
-            var isSuccess = el.ValueKind == JsonValueKind.Object &&
-                            el.TryGetProperty("Success", out var s) &&
-                            s.ValueKind == JsonValueKind.True;
-            AssertEqual(false, isSuccess, "IsSuccess with missing Success property");
+            AssertEqual(false, (bool)isSuccess.Invoke(null, new object[] { docMissing.RootElement })!, "IsSuccess with missing Success property");
         }
 
         return Task.CompletedTask;
@@ -2275,8 +2843,8 @@ static partial class Program
 
     private static Task ResponseFormatter_Get_HandlesAllJsonValueKinds()
     {
-        var formatterText = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
-        AssertContains(formatterText, "internal static string Get(JsonElement element, string propertyName, string fallback = \"N/A\")");
+        var formatterType = RequireSharedToolType("ElgatoCapture.Tools.AutomationSnapshotFormatter");
+        var get = RequireNonPublicStaticMethod(formatterType, "Get");
 
         var json = @"{
             ""str"": ""hello"",
@@ -2293,33 +2861,15 @@ static partial class Program
         using var doc = JsonDocument.Parse(json);
         var el = doc.RootElement;
 
-        string Get(JsonElement element, string prop, string fallback = "N/A")
-        {
-            if (element.ValueKind != JsonValueKind.Object || !element.TryGetProperty(prop, out var value))
-                return fallback;
-            if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
-                return fallback;
-            return value.ValueKind switch
-            {
-                JsonValueKind.String => value.GetString() ?? fallback,
-                JsonValueKind.True => "true",
-                JsonValueKind.False => "false",
-                JsonValueKind.Number => value.ToString(),
-                JsonValueKind.Array => value.GetArrayLength() == 0 ? fallback : value.ToString(),
-                JsonValueKind.Object => value.ToString(),
-                _ => fallback
-            };
-        }
-
-        AssertEqual("hello", Get(el, "str"), "Get string value");
-        AssertEqual("42", Get(el, "num"), "Get number value");
-        AssertEqual("true", Get(el, "boolTrue"), "Get bool true");
-        AssertEqual("false", Get(el, "boolFalse"), "Get bool false");
-        AssertEqual("N/A", Get(el, "nullVal"), "Get null value");
-        AssertEqual("N/A", Get(el, "nonExistent"), "Get missing property");
-        AssertEqual("custom", Get(el, "nonExistent", "custom"), "Get missing with custom fallback");
-        AssertEqual("N/A", Get(el, "emptyArr"), "Get empty array");
-        AssertEqual("", Get(el, "emptyStr"), "Get empty string");
+        AssertEqual("hello", (string)get.Invoke(null, new object[] { el, "str", "N/A" })!, "Get string value");
+        AssertEqual("42", (string)get.Invoke(null, new object[] { el, "num", "N/A" })!, "Get number value");
+        AssertEqual("true", (string)get.Invoke(null, new object[] { el, "boolTrue", "N/A" })!, "Get bool true");
+        AssertEqual("false", (string)get.Invoke(null, new object[] { el, "boolFalse", "N/A" })!, "Get bool false");
+        AssertEqual("N/A", (string)get.Invoke(null, new object[] { el, "nullVal", "N/A" })!, "Get null value");
+        AssertEqual("N/A", (string)get.Invoke(null, new object[] { el, "nonExistent", "N/A" })!, "Get missing property");
+        AssertEqual("custom", (string)get.Invoke(null, new object[] { el, "nonExistent", "custom" })!, "Get missing with custom fallback");
+        AssertEqual("N/A", (string)get.Invoke(null, new object[] { el, "emptyArr", "N/A" })!, "Get empty array");
+        AssertEqual("", (string)get.Invoke(null, new object[] { el, "emptyStr", "N/A" })!, "Get empty string");
 
         return Task.CompletedTask;
     }
@@ -2360,7 +2910,131 @@ static partial class Program
 
         // AutomationClient should delegate to AutomationPipeProtocol, not have its own CommandMap
         AssertContains(clientText, "AutomationPipeProtocol");
+        AssertContains(clientText, "--payload-base64");
+        AssertContains(clientText, "Convert.FromBase64String(options.PayloadBase64)");
         AssertDoesNotContain(clientText, "CommandMap = new");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task PresentMonParser_SelectsDominantNonArtifactSwapChain()
+    {
+        var toolAssembly = LoadToolAssembly(Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll"));
+        var probeType = toolAssembly.GetType("ElgatoCapture.Tools.PresentMonProbe")
+            ?? throw new InvalidOperationException("ElgatoCapture.Tools.PresentMonProbe type not found.");
+        var parseCsv = probeType.GetMethod(
+                "ParseCsv",
+                BindingFlags.Static | BindingFlags.NonPublic,
+                binder: null,
+                types: new[] { typeof(string) },
+                modifiers: null)
+            ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv(string) not found.");
+        var parseCsvWithExpectedSwapChain = probeType.GetMethod(
+                "ParseCsv",
+                BindingFlags.Static | BindingFlags.NonPublic,
+                binder: null,
+                types: new[] { typeof(string), typeof(string) },
+                modifiers: null)
+            ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv(string,string) not found.");
+
+        var csvPath = Path.Combine(Path.GetTempPath(), $"presentmon_parser_{Guid.NewGuid():N}.csv");
+        File.WriteAllText(
+            csvPath,
+            """
+            Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,PresentFlags,AllowsTearing,PresentMode,TimeInMs,MsBetweenPresents,MsBetweenDisplayChange,DisplayedTime,MsUntilDisplayed,MsInPresentAPI,MsCPUBusy,MsGPUBusy,MsGPUTime,DisplayLatency
+            ElgatoCapture.exe,1234,0xABC,DXGI,0,0,0,Composed: Flip,0.0000,8.3333,8.3333,NA,16.0000,0.0700,8.2500,2.0000,7.0000,NA
+            ElgatoCapture.exe,1234,0xABC,DXGI,0,0,0,Composed: Flip,8.3333,8.3334,8.3334,NA,16.1000,0.0710,8.2600,2.1000,7.1000,NA
+            ElgatoCapture.exe,1234,0x0,Other,-1,0,0,Composed: Flip,1000.0000,999.0000,999.0000,NA,16.2000,0.0800,999.0000,2.2000,7.2000,NA
+            """);
+
+        try
+        {
+            var summary = parseCsv.Invoke(null, new object[] { csvPath })
+                ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv returned null.");
+
+            AssertEqual(2, GetIntProperty(summary, "SampleCount"), "selected PresentMon sample count");
+            AssertEqual(3, GetIntProperty(summary, "RawSampleCount"), "raw PresentMon sample count");
+            AssertEqual(1, GetIntProperty(summary, "ExcludedSampleCount"), "excluded PresentMon sample count");
+            AssertEqual("0xABC", GetStringProperty(summary, "SelectedSwapChainAddress"), "selected PresentMon swap chain");
+
+            var betweenPresents = GetPropertyValue(summary, "BetweenPresentsMs")
+                ?? throw new InvalidOperationException("BetweenPresentsMs was null.");
+            AssertNearlyEqual(8.33335, GetDoubleProperty(betweenPresents, "Average"), 0.0001, "selected PresentMon average");
+            AssertNearlyEqual(8.3334, GetDoubleProperty(betweenPresents, "Max"), 0.0001, "selected PresentMon max");
+
+            var swapChains = GetPropertyValue(summary, "SwapChains")
+                ?? throw new InvalidOperationException("SwapChains was null.");
+            AssertEqual(2, GetCountProperty(swapChains), "PresentMon swap chain summary count");
+
+            File.WriteAllText(
+                csvPath,
+                """
+                Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,PresentFlags,AllowsTearing,PresentMode,TimeInMs,MsBetweenPresents,MsBetweenDisplayChange,DisplayedTime,MsUntilDisplayed,MsInPresentAPI,MsCPUBusy,MsGPUBusy,MsGPUTime,DisplayLatency
+                ElgatoCapture.exe,1234,0xAAA,DXGI,0,0,0,Composed: Flip,0.0000,99.0000,99.0000,8.3333,16.0000,0.0700,8.2500,2.0000,7.0000,20.0000
+                ElgatoCapture.exe,1234,0x0000000000000BBB,DXGI,0,0,0,Composed: Flip,8.3333,8.3333,8.3333,8.3333,16.1000,0.0710,8.2600,2.1000,7.1000,20.1000
+                """);
+
+            var expectedSwapChainSummary = parseCsvWithExpectedSwapChain.Invoke(null, new object[] { csvPath, "0xbbb" })
+                ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv returned null for expected swap-chain CSV.");
+            AssertEqual("0xBBB", GetStringProperty(expectedSwapChainSummary, "SelectedSwapChainAddress"), "expected PresentMon selected swap chain");
+            AssertEqual(true, GetBoolProperty(expectedSwapChainSummary, "ExpectedSwapChainMatched"), "expected PresentMon swap chain matched");
+            var expectedBetweenPresents = GetPropertyValue(expectedSwapChainSummary, "BetweenPresentsMs")
+                ?? throw new InvalidOperationException("expected BetweenPresentsMs was null.");
+            AssertNearlyEqual(8.3333, GetDoubleProperty(expectedBetweenPresents, "Average"), 0.0001, "expected swap-chain PresentMon average");
+
+            var missingExpectedSwapChainSummary = parseCsvWithExpectedSwapChain.Invoke(null, new object[] { csvPath, "0xCCC" })
+                ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv returned null for missing expected swap-chain CSV.");
+            AssertEqual(0, GetIntProperty(missingExpectedSwapChainSummary, "SampleCount"), "missing expected PresentMon sample count");
+            AssertEqual(2, GetIntProperty(missingExpectedSwapChainSummary, "RawSampleCount"), "missing expected raw PresentMon sample count");
+            AssertEqual(2, GetIntProperty(missingExpectedSwapChainSummary, "ExcludedSampleCount"), "missing expected excluded PresentMon sample count");
+            AssertEqual("0xCCC", GetStringProperty(missingExpectedSwapChainSummary, "ExpectedSwapChainAddress"), "missing expected PresentMon swap chain");
+            AssertEqual(false, GetBoolProperty(missingExpectedSwapChainSummary, "ExpectedSwapChainMatched"), "missing expected PresentMon swap chain matched");
+            AssertEqual(string.Empty, GetStringProperty(missingExpectedSwapChainSummary, "SelectedSwapChainAddress"), "missing expected selected PresentMon swap chain");
+
+            File.WriteAllText(
+                csvPath,
+                """
+                Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,PresentFlags,AllowsTearing,PresentMode,CPUStartTime,FrameTime,CPUBusy,CPUWait,GPULatency,GPUTime,GPUBusy,GPUWait,VideoBusy,DisplayLatency,DisplayedTime
+                ElgatoCapture.exe,1234,0xDEF,DXGI,0,0,0,Composed: Flip,0.0000,9.0000,8.9000,0.1000,3.0000,6.0000,2.0000,4.0000,7.0000,22.0000,8.3333
+                ElgatoCapture.exe,1234,0xDEF,DXGI,0,0,0,Composed: Flip,9.0000,7.6666,7.5000,0.1666,3.0000,6.5000,2.5000,4.0000,7.0000,22.5000,8.3334
+                """);
+
+            var v2Summary = parseCsv.Invoke(null, new object[] { csvPath })
+                ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv returned null for v2 CSV.");
+            var v2BetweenPresents = GetPropertyValue(v2Summary, "BetweenPresentsMs")
+                ?? throw new InvalidOperationException("v2 BetweenPresentsMs was null.");
+            var v2CpuBusy = GetPropertyValue(v2Summary, "CpuBusyMs")
+                ?? throw new InvalidOperationException("v2 CpuBusyMs was null.");
+            var v2GpuBusy = GetPropertyValue(v2Summary, "GpuBusyMs")
+                ?? throw new InvalidOperationException("v2 GpuBusyMs was null.");
+            var v2GpuTime = GetPropertyValue(v2Summary, "GpuTimeMs")
+                ?? throw new InvalidOperationException("v2 GpuTimeMs was null.");
+            AssertNearlyEqual(8.3333, GetDoubleProperty(v2BetweenPresents, "Average"), 0.0001, "v2 PresentMon frame time average");
+            AssertNearlyEqual(8.2, GetDoubleProperty(v2CpuBusy, "Average"), 0.0001, "v2 PresentMon CPU busy average");
+            AssertNearlyEqual(2.25, GetDoubleProperty(v2GpuBusy, "Average"), 0.0001, "v2 PresentMon GPU busy average");
+            AssertNearlyEqual(6.25, GetDoubleProperty(v2GpuTime, "Average"), 0.0001, "v2 PresentMon GPU time average");
+
+            File.WriteAllText(
+                csvPath,
+                """
+                Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,PresentFlags,AllowsTearing,PresentMode,TimeInMs,MsBetweenPresents,MsBetweenDisplayChange,DisplayedTime,MsUntilDisplayed,MsInPresentAPI,MsCPUBusy,MsGPUBusy,MsGPUTime,DisplayLatency
+                ElgatoCapture.exe,1234,0x0,Other,-1,0,0,Composed: Flip,1000.0000,999.0000,999.0000,NA,16.2000,0.0800,999.0000,2.2000,7.2000,NA
+                """);
+
+            var artifactOnlySummary = parseCsv.Invoke(null, new object[] { csvPath })
+                ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv returned null for artifact-only CSV.");
+            AssertEqual(0, GetIntProperty(artifactOnlySummary, "SampleCount"), "artifact-only selected sample count");
+            AssertEqual(1, GetIntProperty(artifactOnlySummary, "RawSampleCount"), "artifact-only raw sample count");
+            AssertEqual(1, GetIntProperty(artifactOnlySummary, "ExcludedSampleCount"), "artifact-only excluded sample count");
+            AssertEqual(string.Empty, GetStringProperty(artifactOnlySummary, "SelectedSwapChainAddress"), "artifact-only selected swap chain");
+        }
+        finally
+        {
+            if (File.Exists(csvPath))
+            {
+                File.Delete(csvPath);
+            }
+        }
 
         return Task.CompletedTask;
     }
@@ -2410,7 +3084,7 @@ static partial class Program
     {
         var settings = BuildSettings(hdrEnabled: false);
         // Build a RecordingContextRequest and use the RecordingContext constructor
-        var requestType = RequireType("ElgatoCapture.Services.RecordingContextRequest");
+        var requestType = RequireType("ElgatoCapture.Services.Recording.RecordingContextRequest");
         var request = RuntimeHelpers.GetUninitializedObject(requestType);
         SetPropertyBackingField(request, "Settings", settings);
         SetPropertyBackingField(request, "UsePostMuxAudio", usePostMuxAudio);
@@ -2420,7 +3094,7 @@ static partial class Program
         SetPropertyBackingField(request, "EffectiveHeight", 1080u);
         SetPropertyBackingField(request, "VideoInputPixelFormat", "nv12");
 
-        var contextType = RequireType("ElgatoCapture.Services.RecordingContext");
+        var contextType = RequireType("ElgatoCapture.Services.Recording.RecordingContext");
         var ctor = contextType.GetConstructors()[0];
         return ctor.Invoke(new object?[]
         {
@@ -2571,7 +3245,21 @@ static partial class Program
         => RuntimeHelpers.GetUninitializedObject(type);
 
     private static string GetRepoRoot()
-        => Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", ".."));
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory != null)
+        {
+            if (File.Exists(Path.Combine(directory.FullName, "ElgatoCapture.slnx")))
+            {
+                return directory.FullName;
+            }
+
+            directory = directory.Parent;
+        }
+
+        throw new InvalidOperationException(
+            $"Could not locate repository root from '{AppContext.BaseDirectory}'.");
+    }
 
     private static string ReadRepoFile(string relativePath)
         => File.ReadAllText(Path.Combine(GetRepoRoot(), relativePath));
@@ -2629,11 +3317,13 @@ static partial class Program
 
     private static void SeedPipelineStopFailureState(object pipeline, Type pipelineType)
     {
-        SetPrivateField(pipeline, "_workerQueues", CreateEmptyArrayFieldValue(pipelineType, "_workerQueues"));
+        SetPrivateField(pipeline, "_workQueue", CreateUnboundedChannelFieldValue(pipelineType, "_workQueue"));
         SetPrivateField(pipeline, "_workers", Array.Empty<Thread>());
         SetPrivateField(pipeline, "_decoders", CreateEmptyArrayFieldValue(pipelineType, "_decoders"));
-        SetPrivateField(pipeline, "_reorderRing", CreateSizedArrayFieldValue(pipelineType, "_reorderRing", 16));
-        SetPrivateField(pipeline, "_reorderFlags", new int[16]);
+        SetPrivateField(pipeline, "_reorderFrames", Activator.CreateInstance(typeof(SortedDictionary<,>).MakeGenericType(
+            typeof(long),
+            RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline+DecodedFrame")))!);
+        SetPrivateField(pipeline, "_reorderLock", new object());
         SetPrivateField(pipeline, "_emitSignal", new AutoResetEvent(false));
     }
 
@@ -2644,6 +3334,21 @@ static partial class Program
         var elementType = field.FieldType.GetElementType()
             ?? throw new InvalidOperationException($"Field '{fieldName}' on '{declaringType.Name}' was not an array.");
         return Array.CreateInstance(elementType, 0);
+    }
+
+    private static object CreateUnboundedChannelFieldValue(Type declaringType, string fieldName)
+    {
+        var field = declaringType.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException($"Missing private field '{fieldName}' on '{declaringType.Name}'.");
+        var itemType = field.FieldType.GetGenericArguments().SingleOrDefault()
+            ?? throw new InvalidOperationException($"Field '{fieldName}' on '{declaringType.Name}' was not a generic channel.");
+        var method = typeof(Channel).GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(candidate =>
+                candidate.Name == nameof(Channel.CreateUnbounded) &&
+                candidate.IsGenericMethodDefinition &&
+                candidate.GetParameters().Length == 0);
+        return method.MakeGenericMethod(itemType).Invoke(null, null)
+               ?? throw new InvalidOperationException($"Failed to create channel for '{fieldName}'.");
     }
 
     private static object CreateSizedArrayFieldValue(Type declaringType, string fieldName, int length)
@@ -2745,6 +3450,15 @@ static partial class Program
         }
     }
 
+    private static void AssertNearlyEqual(double expected, double actual, double tolerance, string fieldName)
+    {
+        if (Math.Abs(expected - actual) > tolerance)
+        {
+            throw new InvalidOperationException(
+                $"Assertion failed for {fieldName}: expected '{expected}', actual '{actual}', tolerance '{tolerance}'.");
+        }
+    }
+
     private static void AssertContains(string value, string token)
     {
         if (value.IndexOf(token, StringComparison.OrdinalIgnoreCase) < 0)
@@ -2785,7 +3499,7 @@ static partial class Program
         double callbackP95Ms,
         double callbackMaxMs)
     {
-        var type = RequireType("ElgatoCapture.Services.UnifiedVideoCapture+MjpegPipelineTimingMetrics");
+        var type = RequireType("ElgatoCapture.Services.Capture.UnifiedVideoCapture+MjpegPipelineTimingMetrics");
         return Activator.CreateInstance(
                    type,
                    decodeSampleCount,
@@ -2822,11 +3536,22 @@ static partial class Program
         long totalDropped,
         long reorderSkips,
         int reorderBufferDepth,
-        object[] perDecoder)
+        object[] perDecoder,
+        long compressedFramesQueued = 0,
+        long compressedFramesDequeued = 0,
+        long compressedDropsQueueFull = 0,
+        long compressedDropsByteBudget = 0,
+        long compressedDropsDisposed = 0,
+        long decodeFailures = 0,
+        long reorderCollisions = 0,
+        long emitFailures = 0,
+        int compressedQueueDepth = 0,
+        long compressedQueueBytes = 0,
+        long compressedQueueByteBudget = 0)
     {
-        var type = RequireType("ElgatoCapture.Services.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
+        var type = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
         var perDecoderArray = Array.CreateInstance(
-            RequireType("ElgatoCapture.Services.ParallelMjpegDecodePipeline+PerDecoderMetrics"),
+            RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics"),
             perDecoder.Length);
         for (var i = 0; i < perDecoder.Length; i++)
         {
@@ -2851,6 +3576,17 @@ static partial class Program
                    totalDecoded,
                    totalEmitted,
                    totalDropped,
+                   compressedFramesQueued,
+                   compressedFramesDequeued,
+                   compressedDropsQueueFull,
+                   compressedDropsByteBudget,
+                   compressedDropsDisposed,
+                   decodeFailures,
+                   reorderCollisions,
+                   emitFailures,
+                   compressedQueueDepth,
+                   compressedQueueBytes,
+                   compressedQueueByteBudget,
                    reorderSkips,
                    reorderBufferDepth,
                    perDecoderArray)
@@ -2864,48 +3600,263 @@ static partial class Program
         double p95Ms,
         double maxMs)
     {
-        var type = RequireType("ElgatoCapture.Services.ParallelMjpegDecodePipeline+PerDecoderMetrics");
+        var type = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics");
         return Activator.CreateInstance(type, workerIndex, sampleCount, avgMs, p95Ms, maxMs)
                ?? throw new InvalidOperationException("Failed to create per-decoder MJPEG metrics.");
     }
 
     private delegate void ClosedMjpegEmitDelegate(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick);
 
+    private static readonly Dictionary<string, Assembly> ToolAssemblyCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, Assembly> IsolatedToolAssemblyCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<string, AssemblyLoadContext> IsolatedToolAssemblyContexts = new(StringComparer.OrdinalIgnoreCase);
+
     private static Assembly LoadToolAssembly(string relativeAssemblyPath)
     {
-        var fullPath = Path.Combine(GetRepoRoot(), relativeAssemblyPath);
-        return AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
+        var fullPath = Path.GetFullPath(Path.Combine(GetRepoRoot(), relativeAssemblyPath));
+        if (ToolAssemblyCache.TryGetValue(fullPath, out var cached))
+        {
+            return cached;
+        }
+
+        RequireFreshToolAssembly(relativeAssemblyPath, fullPath);
+        var assemblyDirectory = Path.GetDirectoryName(fullPath)
+                                ?? throw new InvalidOperationException($"Tool assembly directory not found for '{fullPath}'.");
+
+        Assembly? ResolveToolAssemblyDependency(AssemblyLoadContext context, AssemblyName assemblyName)
+        {
+            var dependencyPath = Path.Combine(assemblyDirectory, $"{assemblyName.Name}.dll");
+            return File.Exists(dependencyPath)
+                ? context.LoadFromAssemblyPath(dependencyPath)
+                : null;
+        }
+
+        AssemblyLoadContext.Default.Resolving += ResolveToolAssemblyDependency;
+        try
+        {
+            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(fullPath);
+            ToolAssemblyCache[fullPath] = assembly;
+            return assembly;
+        }
+        finally
+        {
+            AssemblyLoadContext.Default.Resolving -= ResolveToolAssemblyDependency;
+        }
+    }
+
+    private static Assembly LoadToolAssemblyIsolated(string relativeAssemblyPath)
+    {
+        var fullPath = Path.GetFullPath(Path.Combine(GetRepoRoot(), relativeAssemblyPath));
+        if (IsolatedToolAssemblyCache.TryGetValue(fullPath, out var cached))
+        {
+            return cached;
+        }
+
+        RequireFreshToolAssembly(relativeAssemblyPath, fullPath);
+        var loadContext = new ToolAssemblyLoadContext(fullPath);
+        var assembly = loadContext.LoadFromAssemblyPath(fullPath);
+        IsolatedToolAssemblyCache[fullPath] = assembly;
+        IsolatedToolAssemblyContexts[fullPath] = loadContext;
+        return assembly;
+    }
+
+    private sealed class ToolAssemblyLoadContext : AssemblyLoadContext
+    {
+        private readonly AssemblyDependencyResolver _resolver;
+
+        public ToolAssemblyLoadContext(string mainAssemblyToLoadPath)
+            : base(isCollectible: false)
+        {
+            _resolver = new AssemblyDependencyResolver(mainAssemblyToLoadPath);
+        }
+
+        protected override Assembly? Load(AssemblyName assemblyName)
+        {
+            var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
+            return assemblyPath != null ? LoadFromAssemblyPath(assemblyPath) : null;
+        }
+    }
+
+    private static void RequireFreshToolAssembly(string relativeAssemblyPath, string fullPath)
+    {
+        if (!File.Exists(fullPath))
+        {
+            throw new InvalidOperationException(
+                $"Required tool assembly was not found: {relativeAssemblyPath}. Build it first with: {GetToolBuildCommand(relativeAssemblyPath)}");
+        }
+
+        var assemblyWriteTime = File.GetLastWriteTimeUtc(fullPath);
+        var newestInputWriteTime = GetNewestToolInputWriteTimeUtc(relativeAssemblyPath);
+        if (newestInputWriteTime > assemblyWriteTime)
+        {
+            throw new InvalidOperationException(
+                $"Required tool assembly is stale: {relativeAssemblyPath}. Build it again with: {GetToolBuildCommand(relativeAssemblyPath)}");
+        }
+    }
+
+    private static DateTime GetNewestToolInputWriteTimeUtc(string relativeAssemblyPath)
+    {
+        var root = GetRepoRoot();
+        var projectDirectory = GetToolProjectDirectory(relativeAssemblyPath);
+        var inputDirectories = EnumerateToolInputDirectories(projectDirectory)
+            .Concat(EnumerateToolInputDirectories(Path.Combine(root, "tools", "Common")))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var inputFiles = inputDirectories
+            .SelectMany(Directory.EnumerateFiles)
+            .Concat(EnumerateToolProjectCompileIncludes(projectDirectory))
+            .Append(Path.Combine(root, "ElgatoCapture", "Models", "AutomationCommandKind.cs"))
+            .Where(file => File.Exists(file) && IsToolInputFile(file))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
+
+        var newest = DateTime.MinValue;
+        foreach (var file in inputFiles)
+        {
+            var writeTime = File.GetLastWriteTimeUtc(file);
+            if (writeTime > newest)
+            {
+                newest = writeTime;
+            }
+        }
+
+        foreach (var directory in inputDirectories)
+        {
+            var writeTime = Directory.GetLastWriteTimeUtc(directory);
+            if (writeTime > newest)
+            {
+                newest = writeTime;
+            }
+        }
+
+        return newest;
+    }
+
+    private static IEnumerable<string> EnumerateToolProjectCompileIncludes(string projectDirectory)
+    {
+        foreach (var projectFile in Directory.EnumerateFiles(projectDirectory, "*.csproj"))
+        {
+            XDocument project;
+            try
+            {
+                project = XDocument.Load(projectFile);
+            }
+            catch
+            {
+                continue;
+            }
+
+            var projectFileDirectory = Path.GetDirectoryName(projectFile)
+                                       ?? throw new InvalidOperationException($"Project directory not found for '{projectFile}'.");
+            foreach (var include in project.Descendants()
+                         .Where(element => string.Equals(element.Name.LocalName, "Compile", StringComparison.OrdinalIgnoreCase))
+                         .Select(element => element.Attribute("Include")?.Value)
+                         .Where(value => !string.IsNullOrWhiteSpace(value)))
+            {
+                var expanded = include!.Replace('\\', Path.DirectorySeparatorChar);
+                if (expanded.Contains('*'))
+                {
+                    continue;
+                }
+
+                yield return Path.GetFullPath(Path.Combine(projectFileDirectory, expanded));
+            }
+        }
+    }
+
+    private static string GetToolProjectDirectory(string relativeAssemblyPath)
+    {
+        var root = GetRepoRoot();
+        var normalized = relativeAssemblyPath.Replace('\\', '/');
+        if (normalized.StartsWith("tools/ecctl/", StringComparison.OrdinalIgnoreCase))
+        {
+            return Path.Combine(root, "tools", "ecctl");
+        }
+
+        if (normalized.StartsWith("tools/McpServer/", StringComparison.OrdinalIgnoreCase))
+        {
+            return Path.Combine(root, "tools", "McpServer");
+        }
+
+        if (normalized.StartsWith("tools/AutomationClient/", StringComparison.OrdinalIgnoreCase))
+        {
+            return Path.Combine(root, "tools", "AutomationClient");
+        }
+
+        if (normalized.StartsWith("tools/NativeXuAudioProbe/", StringComparison.OrdinalIgnoreCase))
+        {
+            return Path.Combine(root, "tools", "NativeXuAudioProbe");
+        }
+
+        throw new InvalidOperationException($"No tool project mapping is configured for '{relativeAssemblyPath}'.");
+    }
+
+    private static string GetToolBuildCommand(string relativeAssemblyPath)
+    {
+        var normalized = relativeAssemblyPath.Replace('\\', '/');
+        if (normalized.StartsWith("tools/ecctl/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "dotnet build tools/ecctl/ecctl.csproj -c Debug --no-restore";
+        }
+
+        if (normalized.StartsWith("tools/McpServer/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "dotnet build tools/McpServer/McpServer.csproj -c Debug --no-restore";
+        }
+
+        if (normalized.StartsWith("tools/AutomationClient/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "dotnet build tools/AutomationClient/AutomationClient.csproj -c Debug --no-restore";
+        }
+
+        if (normalized.StartsWith("tools/NativeXuAudioProbe/", StringComparison.OrdinalIgnoreCase))
+        {
+            return "dotnet build tools/NativeXuAudioProbe/NativeXuAudioProbe.csproj -c Debug --no-restore";
+        }
+
+        return "dotnet build";
+    }
+
+    private static bool IsToolInputFile(string file)
+    {
+        var extension = Path.GetExtension(file);
+        return extension.Equals(".cs", StringComparison.OrdinalIgnoreCase) ||
+               extension.Equals(".csproj", StringComparison.OrdinalIgnoreCase) ||
+               extension.Equals(".props", StringComparison.OrdinalIgnoreCase) ||
+               extension.Equals(".targets", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IEnumerable<string> EnumerateToolInputDirectories(string directory)
+    {
+        if (!Directory.Exists(directory))
+        {
+            yield break;
+        }
+
+        yield return directory;
+        foreach (var childDirectory in Directory.EnumerateDirectories(directory))
+        {
+            var name = Path.GetFileName(childDirectory);
+            if (name.Equals("bin", StringComparison.OrdinalIgnoreCase) ||
+                name.Equals("obj", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            foreach (var nestedDirectory in EnumerateToolInputDirectories(childDirectory))
+            {
+                yield return nestedDirectory;
+            }
+        }
     }
 
     private static async Task<JsonElement> CapturePipeRequestAsync(string pipeName, Func<Task> clientAction)
     {
-        using var serverPipe = new System.IO.Pipes.NamedPipeServerStream(
-            pipeName,
-            System.IO.Pipes.PipeDirection.InOut,
-            1,
-            System.IO.Pipes.PipeTransmissionMode.Byte,
-            System.IO.Pipes.PipeOptions.Asynchronous);
-
-        var clientTask = Task.Run(async () =>
-        {
-            try { await clientAction().ConfigureAwait(false); }
-            catch { /* Client may fail when server responds with synthetic data */ }
-        });
-
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-        await serverPipe.WaitForConnectionAsync(cts.Token).ConfigureAwait(false);
-
-        using var reader = new StreamReader(serverPipe, leaveOpen: true);
-        var requestLine = await reader.ReadLineAsync().ConfigureAwait(false)
-            ?? throw new InvalidOperationException("No request received on pipe.");
-
-        // Send a synthetic success response so the client completes
-        using var writer = new StreamWriter(serverPipe, leaveOpen: true) { AutoFlush = true };
-        await writer.WriteLineAsync("{\"Success\":true}").ConfigureAwait(false);
-
-        await clientTask.ConfigureAwait(false);
-
-        using var doc = JsonDocument.Parse(requestLine);
-        return doc.RootElement.Clone();
+        var requests = await CapturePipeRequestsAsync(
+                pipeName,
+                expectedCount: 1,
+                clientAction,
+                _ => "{\"Success\":true}")
+            .ConfigureAwait(false);
+        return requests[0];
     }
 }

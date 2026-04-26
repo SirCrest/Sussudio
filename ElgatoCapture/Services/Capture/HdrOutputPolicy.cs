@@ -1,7 +1,8 @@
 using System;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Runtime;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Capture;
 
 internal static class HdrOutputPolicy
 {
@@ -19,15 +20,6 @@ internal static class HdrOutputPolicy
         {
             Logger.Log("HDR output requested but ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF disables the HDR pipeline.");
             return false;
-        }
-
-        if (EnvironmentHelpers.TryGetBoolFromEnv("ELGATOCAPTURE_HDR_OUTPUT_ENABLED", out var legacyEnabled))
-        {
-            if (!legacyEnabled)
-            {
-                Logger.Log("HDR output requested but ELGATOCAPTURE_HDR_OUTPUT_ENABLED is set to false.");
-                return false;
-            }
         }
 
         return true;

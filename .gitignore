@@ -42,6 +42,7 @@ latest-build/
 
 # Claude Code local settings
 .claude/
+.claude-profile
 
 # All experimental/diagnostic artifacts (regenerable)
 artifacts/
@@ -57,3 +58,6 @@ temp/*
 !temp/.gitkeep
 ElgatoCapture/ffmpeg/*.dll
 .desloppify/
+.duat/
+.codex/skills/duat/
+presentmon-*.json

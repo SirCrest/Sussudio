@@ -1,5 +1,8 @@
 using System.Diagnostics;
+using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -175,6 +178,56 @@ static partial class Program
         AssertNotNull(widthProp, "SoftwareMjpegDecoder.Width");
         AssertNotNull(heightProp, "SoftwareMjpegDecoder.Height");
         AssertNotNull(nv12SizeProp, "SoftwareMjpegDecoder.Nv12Size");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
+    {
+        var source = ReadRepoFile("ElgatoCapture/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
+        AssertContains(source, "SortedDictionary<long, DecodedFrame>");
+        AssertContains(source, "DefaultDecodedReorderByteBudget");
+        AssertContains(source, "TryAddDecodedFrame");
+        AssertContains(source, "seqNo != _nextEmitSeq");
+        AssertContains(source, "MarkKnownMissing");
+        AssertContains(source, "MJPEG_PIPELINE_FATAL_MISSING");
+        AssertEqual(false, source.Contains("_reorderRing", StringComparison.Ordinal), "shared reorder must not use a fixed modulo ring");
+        AssertEqual(false, source.Contains("_reorderFlags", StringComparison.Ordinal), "shared reorder must not use fixed slot flags");
+        AssertEqual(false, source.Contains("reorder_collision", StringComparison.Ordinal), "slow decoded frames must not fatal via modulo slot collision");
+        AssertEqual(false, source.Contains("TryConsumeKnownMissing", StringComparison.Ordinal), "known MJPEG loss must not be consumed as a strict skip");
+        AssertEqual(false, source.Contains("SkipFrameCallback", StringComparison.Ordinal), "strict MJPEG path must not expose skip callbacks");
+        AssertEqual(false, source.Contains("NotifySkippedFrame", StringComparison.Ordinal), "strict MJPEG path must not synthesize skip callbacks");
+        AssertEqual(false, source.Contains("reorder_missing", StringComparison.Ordinal), "shared reorder skip reason removed");
+        AssertEqual(false, source.Contains("skippedSeq = _nextEmitSeq++", StringComparison.Ordinal), "shared reorder must not synthesize timeout skips");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ParallelMjpegDecodePipeline_KnownLossSignalsFatalInsteadOfSkipping()
+    {
+        var pipelineType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);
+        using var fatalSignaled = new ManualResetEventSlim(false);
+        using var emitSignal = new AutoResetEvent(false);
+        Exception? fatalException = null;
+
+        SetPrivateField(pipeline, "_workQueue", CreateUnboundedChannelFieldValue(pipelineType, "_workQueue"));
+        SetPrivateField(pipeline, "_emitSignal", emitSignal);
+        SetPrivateField(pipeline, "_reorderLock", new object());
+        SetPrivateField(pipeline, "_fatalErrorCallback", new Action<Exception>(ex =>
+        {
+            fatalException = ex;
+            fatalSignaled.Set();
+        }));
+        SetPrivateField(pipeline, "_nextEmitSeq", 0L);
+
+        InvokeNonPublicInstanceMethod(pipeline, "MarkKnownMissing", new object?[] { 0L, "compressed_queue_full" });
+        AssertEqual(true, fatalSignaled.Wait(TimeSpan.FromSeconds(2)), "known MJPEG loss fatal callback signaled");
+        AssertNotNull(fatalException, "known MJPEG loss fatal exception");
+        AssertContains(fatalException!.Message, "CPU MJPEG pipeline lost delivered frame 0: compressed_queue_full");
+        AssertEqual(1, GetIntPrivateField(pipeline, "_stopRequested"), "known loss stops pipeline");
+        AssertEqual(1, GetIntPrivateField(pipeline, "_fatalErrorSignaled"), "known loss signals fatal once");
 
         return Task.CompletedTask;
     }

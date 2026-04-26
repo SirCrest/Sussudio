@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -21,6 +20,16 @@ using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
 using WinRT.Interop;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture;
 
@@ -646,6 +655,8 @@ public sealed partial class MainWindow
         AudioPreviewToggle.Unchecked += (s, e) => ViewModel.IsAudioPreviewEnabled = false;
         StatsToggle.Checked += StatsToggle_Checked;
         StatsToggle.Unchecked += StatsToggle_Unchecked;
+        FrameTimeOverlayToggle.Checked += FrameTimeOverlayToggle_Checked;
+        FrameTimeOverlayToggle.Unchecked += FrameTimeOverlayToggle_Unchecked;
         CustomAudioToggle.Click += (s, e) => ViewModel.IsCustomAudioInputEnabled = CustomAudioToggle.IsChecked == true;
         MicrophoneToggle.Click += (s, e) => ViewModel.IsMicrophoneEnabled = MicrophoneToggle.IsChecked == true;
         ShowAllCaptureOptionsToggle.Click += (s, e) => ViewModel.ShowAllCaptureOptions = ShowAllCaptureOptionsToggle.IsChecked == true;
@@ -806,6 +817,7 @@ public sealed partial class MainWindow
         HdrPreviewToggleLabel.Visibility = vis;
         AudioPreviewToggleLabel.Visibility = vis;
         StatsToggleLabel.Visibility = vis;
+        FrameTimeOverlayToggleLabel.Visibility = vis;
         // Record button is always a circle when idle — no label mode
     }
     private void CaptureSettingsGrid_SizeChanged(object sender, SizeChangedEventArgs e)

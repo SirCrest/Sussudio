@@ -11,12 +11,29 @@ exposes everything needed.
 - Named pipe: `ElgatoCaptureAutomation`
 - JSON line protocol: one `NamedPipeClientStream` connection per command
 - UTF-8 encoding, newline-delimited request/response
-- Request: `{"command": <int>, "correlationId": "<guid>", "payload": {...}}`
+- Request: `{"command": <int>, "correlationId": "<guid>", "authToken": "<token-or-null>", "payload": {...}}`
 - Response: `{"Success": bool, "Status": "ok|error|not_ready", "Data": {...}, "Snapshot": {...}}`
+- If `ELGATOCAPTURE_AUTOMATION_TOKEN` is configured for the app, every command
+  must include the matching `authToken`. Use the same envelope shape as
+  `AutomationPipeProtocol.CreateRequestEnvelope`.
 - Retry on `Status: "not_ready"` using `RetryAfterMs` hint
 - Standard timeout: 15s, long ops (export/verify): 60s
 
-Reference implementation: `tools/ecctl/PipeTransport.cs` (simplest client).
+Reference implementation: `tools/Common/AutomationPipeClient.cs` with
+`tools/Common/AutomationPipeProtocol.cs` (shared envelope/auth behavior).
+
+## Authentication
+
+- App token environment variable: `ELGATOCAPTURE_AUTOMATION_TOKEN`
+- If the app is launched with a token, every request must include the matching
+  top-level `authToken`.
+- If no token is configured, local automation is available only when the app
+  can create the explicit per-user pipe security boundary. If that boundary
+  cannot be established, automation is disabled instead of opening a default
+  security pipe; configure `ELGATOCAPTURE_AUTOMATION_TOKEN` to allow the
+  token-required fallback mode.
+- Store the token in connection settings, not per-action settings.
+- Use `Authenticate` during startup to validate saved connection settings.
 
 ## SDK
 
@@ -114,7 +131,8 @@ com.elgato.capture/
 - **Screenshot**: output directory override (default: app's output path)
 - **Status Display**: which fields to show (resolution, codec, FPS, HDR)
 - **Set Codec**: which codecs to cycle through
-- **Connection**: pipe name override (default: `ElgatoCaptureAutomation`)
+- **Connection**: pipe name override (default: `ElgatoCaptureAutomation`) and
+  optional auth token, normally sourced from `ELGATOCAPTURE_AUTOMATION_TOKEN`
 
 ## Error Handling
 
@@ -122,6 +140,8 @@ com.elgato.capture/
   all buttons. Retry connection every 5 seconds.
 - **App not ready**: `Status: "not_ready"` response. Same as disconnected
   display. Retry using `RetryAfterMs`.
+- **Unauthorized**: `ErrorCode: "unauthorized"` response. Show a connection
+  settings error and do not retry until the token changes.
 - **Command fails**: `Success: false`. Flash error state on the button for 2
   seconds, then revert to current state.
 - **Export in progress**: `FlashbackExport` blocks until complete (up to 60s
@@ -137,11 +157,13 @@ com.elgato.capture/
 
 ## Dependencies on Main App
 
-None. The pipe server and command protocol are stable and already consumed by
-three clients (ecctl, McpServer, AutomationClient). The plugin is client #4.
-No app-side changes required for Tier 1 or Tier 2. Tier 3's device selection
-may benefit from a dedicated `GetDeviceList` command if `GetCaptureOptions`
-is too heavy for frequent polling, but that's an optimization, not a blocker.
+None beyond honoring the existing pipe auth contract. The pipe server and
+command protocol are stable and already consumed by three clients (ecctl,
+McpServer, AutomationClient). The plugin is client #4. If the app is launched
+with `ELGATOCAPTURE_AUTOMATION_TOKEN`, the plugin must send the same token in
+the request envelope. Tier 3's device selection may benefit from a dedicated
+`GetDeviceList` command if `GetCaptureOptions` is too heavy for frequent
+polling, but that's an optimization, not a blocker.
 
 ## Estimated Scope
 

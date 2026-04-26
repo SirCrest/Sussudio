@@ -4,7 +4,16 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture.ViewModels;
 
@@ -40,7 +49,7 @@ public partial class MainViewModel
                 "AV1" => RecordingFormat.Av1Mp4,
                 _ => RecordingFormat.H264Mp4
             };
-            _pendingFlashbackCycleTask = _captureService.UpdateRecordingFormatAsync(format);
+            _pendingFlashbackCycleTask = _sessionCoordinator.UpdateRecordingFormatAsync(format);
         }
     }
 
@@ -51,8 +60,7 @@ public partial class MainViewModel
         // Cycle the flashback encoder so the buffer uses the new bitrate.
         if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
         {
-            _ = _captureService.CycleFlashbackEncoderSettingsAsync(customBitrateMbps: value)
-                .ContinueWith(t => Logger.Log($"CycleFlashbackEncoder(bitrate) failed: {t.Exception!.InnerException?.Message}"), TaskContinuationOptions.OnlyOnFaulted);
+            TrackFlashbackEncoderSettingsCycle("bitrate");
         }
     }
 
@@ -322,12 +330,16 @@ public partial class MainViewModel
         SaveSettings();
 
         // Push into the active CaptureSettings so RestartFlashbackAsync sees the new value.
-        _captureService.UpdateFlashbackSettings(FlashbackBufferMinutes, FlashbackGpuDecode);
+        var updateTask = _sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode);
 
         // Restart the flashback backend so the new duration takes effect immediately.
         if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
         {
-            _ = RestartFlashbackAsync();
+            _ = RestartFlashbackAfterSettingsUpdateAsync(updateTask);
+        }
+        else
+        {
+            TrackFlashbackCoordinatorTask(updateTask, "UpdateFlashbackSettings(buffer)");
         }
     }
 
@@ -335,12 +347,55 @@ public partial class MainViewModel
     {
         // Push into CaptureSettings so rebuilds (e.g., after buffer-duration restart
         // or format-change cycle) use the latest GPU decode preference.
-        _captureService.UpdateFlashbackSettings(FlashbackBufferMinutes, FlashbackGpuDecode);
-
-        var controller = _captureService.FlashbackPlaybackController;
-        if (controller != null)
-            controller.GpuDecodeEnabled = value;
+        TrackFlashbackCoordinatorTask(
+            _sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode),
+            "UpdateFlashbackSettings(gpu)");
         SaveSettings();
+    }
+
+    private async Task RestartFlashbackAfterSettingsUpdateAsync(Task settingsUpdateTask)
+    {
+        try
+        {
+            await settingsUpdateTask.ConfigureAwait(false);
+            await RestartFlashbackAsync().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"RestartFlashbackAfterSettingsUpdate failed: {ex.Message}");
+        }
+    }
+
+    private static void TrackFlashbackCoordinatorTask(Task task, string description)
+    {
+        _ = task.ContinueWith(
+            t => Logger.Log($"{description} failed: {t.Exception!.InnerException?.Message}"),
+            TaskContinuationOptions.OnlyOnFaulted);
+    }
+
+    private void TrackFlashbackEncoderSettingsCycle(string description)
+    {
+        _ = _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
+                quality: ParseVideoQuality(SelectedQuality),
+                customBitrateMbps: CustomBitrateMbps,
+                nvencPreset: SelectedPreset)
+            .ContinueWith(
+                t => Logger.Log($"CycleFlashbackEncoder({description}) failed: {t.Exception!.InnerException?.Message}"),
+                TaskContinuationOptions.OnlyOnFaulted);
+    }
+
+    private static VideoQuality ParseVideoQuality(string value)
+    {
+        return value switch
+        {
+            "Auto" => VideoQuality.Auto,
+            "Low" => VideoQuality.Low,
+            "Medium" => VideoQuality.Medium,
+            "High" => VideoQuality.High,
+            "Super High" => VideoQuality.SuperHigh,
+            "Custom" => VideoQuality.Custom,
+            _ => VideoQuality.High
+        };
     }
 
 
@@ -352,18 +407,7 @@ public partial class MainViewModel
         // Cycle the flashback encoder so the buffer uses the new quality level.
         if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
         {
-            var quality = value switch
-            {
-                "Auto" => VideoQuality.Auto,
-                "Low" => VideoQuality.Low,
-                "Medium" => VideoQuality.Medium,
-                "High" => VideoQuality.High,
-                "Super High" => VideoQuality.SuperHigh,
-                "Custom" => VideoQuality.Custom,
-                _ => VideoQuality.High
-            };
-            _ = _captureService.CycleFlashbackEncoderSettingsAsync(quality: quality)
-                .ContinueWith(t => Logger.Log($"CycleFlashbackEncoder(quality) failed: {t.Exception!.InnerException?.Message}"), TaskContinuationOptions.OnlyOnFaulted);
+            TrackFlashbackEncoderSettingsCycle("quality");
         }
     }
 
@@ -374,8 +418,7 @@ public partial class MainViewModel
         // Cycle the flashback encoder so the buffer uses the new preset.
         if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
         {
-            _ = _captureService.CycleFlashbackEncoderSettingsAsync(nvencPreset: value)
-                .ContinueWith(t => Logger.Log($"CycleFlashbackEncoder(preset) failed: {t.Exception!.InnerException?.Message}"), TaskContinuationOptions.OnlyOnFaulted);
+            TrackFlashbackEncoderSettingsCycle("preset");
         }
     }
 

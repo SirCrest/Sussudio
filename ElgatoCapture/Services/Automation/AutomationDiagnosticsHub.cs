@@ -6,8 +6,12 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Automation;
 
 public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 {
@@ -19,6 +23,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private readonly Dictionary<string, long> _eventThrottleTicks = new(StringComparer.Ordinal);
     private readonly HashSet<string> _activeAlerts = new(StringComparer.Ordinal);
     private readonly SemaphoreSlim _verificationGate = new(1, 1);
+    private readonly SemaphoreSlim _refreshGate = new(1, 1);
 
     private AutomationSnapshot _latestSnapshot = new();
     private RecordingVerificationResult? _lastVerification;
@@ -124,6 +129,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             return _latestSnapshot;
         }
     }
+
+    public Task<AutomationSnapshot> RefreshSnapshotNowAsync(CancellationToken cancellationToken = default)
+        => RefreshSnapshotAsync(cancellationToken);
 
     public IReadOnlyList<PerformanceTimelineEntry> GetPerformanceTimeline(int maxEntries = 240)
     {
@@ -314,7 +322,20 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
     }
 
-    private async Task RefreshSnapshotAsync(CancellationToken cancellationToken)
+    private async Task<AutomationSnapshot> RefreshSnapshotAsync(CancellationToken cancellationToken)
+    {
+        await _refreshGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            return await RefreshSnapshotCoreAsync(cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _refreshGate.Release();
+        }
+    }
+
+    private async Task<AutomationSnapshot> RefreshSnapshotCoreAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -604,7 +625,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             VideoNegotiatedSubtype = captureRuntime.VideoNegotiatedSubtype,
             PreviewAdapterColorMetadata = captureRuntime.PreviewColorMetadata,
             EncoderVideoFramesEnqueued = health.VideoFramesEnqueued,
-            EncoderVideoFramesEncoded = (long)(health.VideoFramesArrived > 0 ? health.VideoFramesArrived - health.VideoFramesDropped : 0),
+            EncoderVideoFramesEncoded = health.VideoFramesConverted,
             EncoderLastEnqueueAgeMs = health.LastVideoEnqueueAgeMs,
             EncoderLastWriteAgeMs = health.LastVideoWriteAgeMs,
             RecordingBackend = captureRuntime.RecordingBackend,
@@ -692,11 +713,26 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PreviewBlankSuspected = previewRuntime.BlankSuspected,
             PreviewStalled = previewRuntime.StallSuspected,
             PreviewRendererMode = previewRuntime.RendererMode,
+            PreviewD3DSwapChainAddress = previewRuntime.D3DSwapChainAddress,
             PreviewD3DFramesSubmitted = previewRuntime.D3DFramesSubmitted,
             PreviewD3DFramesRendered = previewRuntime.D3DFramesRendered,
             PreviewD3DFramesDropped = previewRuntime.D3DFramesDropped,
+            PreviewD3DPendingFrameCount = previewRuntime.D3DPendingFrameCount,
             PreviewD3DInputColorSpace = previewRuntime.D3DInputColorSpace,
             PreviewD3DOutputColorSpace = previewRuntime.D3DOutputColorSpace,
+            PreviewD3DCpuTimingSampleCount = previewRuntime.D3DCpuTimingSampleCount,
+            PreviewD3DInputUploadCpuAvgMs = previewRuntime.D3DInputUploadCpuAvgMs,
+            PreviewD3DInputUploadCpuP95Ms = previewRuntime.D3DInputUploadCpuP95Ms,
+            PreviewD3DInputUploadCpuMaxMs = previewRuntime.D3DInputUploadCpuMaxMs,
+            PreviewD3DRenderSubmitCpuAvgMs = previewRuntime.D3DRenderSubmitCpuAvgMs,
+            PreviewD3DRenderSubmitCpuP95Ms = previewRuntime.D3DRenderSubmitCpuP95Ms,
+            PreviewD3DRenderSubmitCpuMaxMs = previewRuntime.D3DRenderSubmitCpuMaxMs,
+            PreviewD3DPresentCallAvgMs = previewRuntime.D3DPresentCallAvgMs,
+            PreviewD3DPresentCallP95Ms = previewRuntime.D3DPresentCallP95Ms,
+            PreviewD3DPresentCallMaxMs = previewRuntime.D3DPresentCallMaxMs,
+            PreviewD3DTotalFrameCpuAvgMs = previewRuntime.D3DTotalFrameCpuAvgMs,
+            PreviewD3DTotalFrameCpuP95Ms = previewRuntime.D3DTotalFrameCpuP95Ms,
+            PreviewD3DTotalFrameCpuMaxMs = previewRuntime.D3DTotalFrameCpuMaxMs,
             PreviewGpuPlaybackState = previewRuntime.GpuPlaybackState,
             PreviewGpuNaturalVideoWidth = previewRuntime.GpuNaturalVideoWidth,
             PreviewGpuNaturalVideoHeight = previewRuntime.GpuNaturalVideoHeight,
@@ -716,6 +752,61 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             VideoFramesEnqueued = health.VideoFramesEnqueued,
             VideoDropsQueueSaturated = health.VideoDropsQueueSaturated,
             VideoDropsBacklogEviction = health.VideoDropsBacklogEviction,
+            RecordingEncodingFailed = health.RecordingEncodingFailed,
+            RecordingEncodingFailureType = health.RecordingEncodingFailureType,
+            RecordingEncodingFailureMessage = health.RecordingEncodingFailureMessage,
+            RecordingVideoQueueCapacity = health.RecordingVideoQueueCapacity,
+            RecordingVideoQueueMaxDepth = health.RecordingVideoQueueMaxDepth,
+            RecordingVideoFramesSubmittedToEncoder = health.RecordingVideoFramesSubmittedToEncoder,
+            RecordingVideoEncoderPts = health.RecordingVideoEncoderPts,
+            RecordingVideoEncoderPacketsWritten = health.RecordingVideoEncoderPacketsWritten,
+            RecordingVideoEncoderDroppedFrames = health.RecordingVideoEncoderDroppedFrames,
+            RecordingVideoSequenceGaps = health.RecordingVideoSequenceGaps,
+            RecordingVideoQueueOldestFrameAgeMs = health.RecordingVideoQueueOldestFrameAgeMs,
+            RecordingVideoQueueLastLatencyMs = health.RecordingVideoQueueLastLatencyMs,
+            RecordingVideoQueueLatencySampleCount = health.RecordingVideoQueueLatencySampleCount,
+            RecordingVideoQueueLatencyAvgMs = health.RecordingVideoQueueLatencyAvgMs,
+            RecordingVideoQueueLatencyP95Ms = health.RecordingVideoQueueLatencyP95Ms,
+            RecordingVideoQueueLatencyMaxMs = health.RecordingVideoQueueLatencyMaxMs,
+            RecordingVideoBackpressureWaitMs = health.RecordingVideoBackpressureWaitMs,
+            RecordingVideoBackpressureEvents = health.RecordingVideoBackpressureEvents,
+            RecordingVideoBackpressureLastWaitMs = health.RecordingVideoBackpressureLastWaitMs,
+            RecordingVideoBackpressureMaxWaitMs = health.RecordingVideoBackpressureMaxWaitMs,
+            RecordingGpuQueueDepth = health.RecordingGpuQueueDepth,
+            RecordingGpuQueueCapacity = health.RecordingGpuQueueCapacity,
+            RecordingGpuQueueMaxDepth = health.RecordingGpuQueueMaxDepth,
+            RecordingGpuFramesEnqueued = health.RecordingGpuFramesEnqueued,
+            RecordingGpuFramesDropped = health.RecordingGpuFramesDropped,
+            RecordingCudaQueueDepth = health.RecordingCudaQueueDepth,
+            RecordingCudaQueueCapacity = health.RecordingCudaQueueCapacity,
+            RecordingCudaQueueMaxDepth = health.RecordingCudaQueueMaxDepth,
+            RecordingCudaFramesEnqueued = health.RecordingCudaFramesEnqueued,
+            RecordingCudaFramesDropped = health.RecordingCudaFramesDropped,
+            FlashbackEncodingFailed = health.FlashbackEncodingFailed,
+            FlashbackEncodingFailureType = health.FlashbackEncodingFailureType,
+            FlashbackEncodingFailureMessage = health.FlashbackEncodingFailureMessage,
+            FlashbackVideoQueueCapacity = health.FlashbackVideoQueueCapacity,
+            FlashbackVideoQueueMaxDepth = health.FlashbackVideoQueueMaxDepth,
+            FlashbackVideoFramesSubmittedToEncoder = health.FlashbackVideoFramesSubmittedToEncoder,
+            FlashbackVideoEncoderPts = health.FlashbackVideoEncoderPts,
+            FlashbackVideoEncoderPacketsWritten = health.FlashbackVideoEncoderPacketsWritten,
+            FlashbackVideoEncoderDroppedFrames = health.FlashbackVideoEncoderDroppedFrames,
+            FlashbackVideoSequenceGaps = health.FlashbackVideoSequenceGaps,
+            FlashbackVideoQueueOldestFrameAgeMs = health.FlashbackVideoQueueOldestFrameAgeMs,
+            FlashbackVideoQueueLastLatencyMs = health.FlashbackVideoQueueLastLatencyMs,
+            FlashbackVideoQueueLatencySampleCount = health.FlashbackVideoQueueLatencySampleCount,
+            FlashbackVideoQueueLatencyAvgMs = health.FlashbackVideoQueueLatencyAvgMs,
+            FlashbackVideoQueueLatencyP95Ms = health.FlashbackVideoQueueLatencyP95Ms,
+            FlashbackVideoQueueLatencyMaxMs = health.FlashbackVideoQueueLatencyMaxMs,
+            FlashbackVideoBackpressureWaitMs = health.FlashbackVideoBackpressureWaitMs,
+            FlashbackVideoBackpressureEvents = health.FlashbackVideoBackpressureEvents,
+            FlashbackVideoBackpressureLastWaitMs = health.FlashbackVideoBackpressureLastWaitMs,
+            FlashbackVideoBackpressureMaxWaitMs = health.FlashbackVideoBackpressureMaxWaitMs,
+            FlashbackGpuQueueDepth = health.FlashbackGpuQueueDepth,
+            FlashbackGpuQueueCapacity = health.FlashbackGpuQueueCapacity,
+            FlashbackGpuQueueMaxDepth = health.FlashbackGpuQueueMaxDepth,
+            FlashbackGpuFramesEnqueued = health.FlashbackGpuFramesEnqueued,
+            FlashbackGpuFramesDropped = health.FlashbackGpuFramesDropped,
             AudioDropsQueueSaturated = health.AudioDropsQueueSaturated,
             AudioDropsBacklogEviction = health.AudioDropsBacklogEviction,
             AudioChunksDropped = health.AudioChunksDropped,
@@ -757,8 +848,83 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             MjpegTotalDecoded = health.MjpegTotalDecoded,
             MjpegTotalEmitted = health.MjpegTotalEmitted,
             MjpegTotalDropped = health.MjpegTotalDropped,
+            MjpegCompressedFramesQueued = health.MjpegCompressedFramesQueued,
+            MjpegCompressedFramesDequeued = health.MjpegCompressedFramesDequeued,
+            MjpegCompressedDropsQueueFull = health.MjpegCompressedDropsQueueFull,
+            MjpegCompressedDropsByteBudget = health.MjpegCompressedDropsByteBudget,
+            MjpegCompressedDropsDisposed = health.MjpegCompressedDropsDisposed,
+            MjpegDecodeFailures = health.MjpegDecodeFailures,
+            MjpegReorderCollisions = health.MjpegReorderCollisions,
+            MjpegEmitFailures = health.MjpegEmitFailures,
+            MjpegCompressedQueueDepth = health.MjpegCompressedQueueDepth,
+            MjpegCompressedQueueBytes = health.MjpegCompressedQueueBytes,
+            MjpegCompressedQueueByteBudget = health.MjpegCompressedQueueByteBudget,
             MjpegReorderSkips = health.MjpegReorderSkips,
             MjpegReorderBufferDepth = health.MjpegReorderBufferDepth,
+            MjpegPreviewJitterEnabled = health.MjpegPreviewJitterEnabled,
+            MjpegPreviewJitterTargetDepth = health.MjpegPreviewJitterTargetDepth,
+            MjpegPreviewJitterMaxDepth = health.MjpegPreviewJitterMaxDepth,
+            MjpegPreviewJitterQueueDepth = health.MjpegPreviewJitterQueueDepth,
+            MjpegPreviewJitterTotalQueued = health.MjpegPreviewJitterTotalQueued,
+            MjpegPreviewJitterTotalSubmitted = health.MjpegPreviewJitterTotalSubmitted,
+            MjpegPreviewJitterTotalDropped = health.MjpegPreviewJitterTotalDropped,
+            MjpegPreviewJitterUnderflowCount = health.MjpegPreviewJitterUnderflowCount,
+            MjpegPreviewJitterInputSampleCount = health.MjpegPreviewJitterInputSampleCount,
+            MjpegPreviewJitterInputAvgMs = health.MjpegPreviewJitterInputAvgMs,
+            MjpegPreviewJitterInputP95Ms = health.MjpegPreviewJitterInputP95Ms,
+            MjpegPreviewJitterInputMaxMs = health.MjpegPreviewJitterInputMaxMs,
+            MjpegPreviewJitterOutputSampleCount = health.MjpegPreviewJitterOutputSampleCount,
+            MjpegPreviewJitterOutputAvgMs = health.MjpegPreviewJitterOutputAvgMs,
+            MjpegPreviewJitterOutputP95Ms = health.MjpegPreviewJitterOutputP95Ms,
+            MjpegPreviewJitterOutputMaxMs = health.MjpegPreviewJitterOutputMaxMs,
+            MjpegPreviewJitterLatencySampleCount = health.MjpegPreviewJitterLatencySampleCount,
+            MjpegPreviewJitterLatencyAvgMs = health.MjpegPreviewJitterLatencyAvgMs,
+            MjpegPreviewJitterLatencyP95Ms = health.MjpegPreviewJitterLatencyP95Ms,
+            MjpegPreviewJitterLatencyMaxMs = health.MjpegPreviewJitterLatencyMaxMs,
+            MjpegPreviewJitterDeadlineDropCount = health.MjpegPreviewJitterDeadlineDropCount,
+            MjpegPreviewJitterTargetIncreaseCount = health.MjpegPreviewJitterTargetIncreaseCount,
+            MjpegPreviewJitterTargetDecreaseCount = health.MjpegPreviewJitterTargetDecreaseCount,
+            MjpegPacketHashSampleCount = health.MjpegPacketHashSampleCount,
+            MjpegPacketHashUniqueFrameCount = health.MjpegPacketHashUniqueFrameCount,
+            MjpegPacketHashDuplicateFrameCount = health.MjpegPacketHashDuplicateFrameCount,
+            MjpegPacketHashLongestDuplicateRun = health.MjpegPacketHashLongestDuplicateRun,
+            MjpegPacketHashInputObservedFps = health.MjpegPacketHashInputObservedFps,
+            MjpegPacketHashUniqueObservedFps = health.MjpegPacketHashUniqueObservedFps,
+            MjpegPacketHashDuplicateFramePercent = health.MjpegPacketHashDuplicateFramePercent,
+            MjpegPacketHashLastHash = health.MjpegPacketHashLastHash,
+            MjpegPacketHashLastFrameDuplicate = health.MjpegPacketHashLastFrameDuplicate,
+            MjpegPacketHashPattern = health.MjpegPacketHashPattern,
+            MjpegPacketHashRecentInputIntervalsMs = health.MjpegPacketHashRecentInputIntervalsMs,
+            MjpegPacketHashRecentUniqueIntervalsMs = health.MjpegPacketHashRecentUniqueIntervalsMs,
+            MjpegPacketHashRecentDuplicateFlags = health.MjpegPacketHashRecentDuplicateFlags,
+            VisualCadenceSampleCount = health.VisualCadenceSampleCount,
+            VisualCadenceChangedFrameCount = health.VisualCadenceChangedFrameCount,
+            VisualCadenceRepeatFrameCount = health.VisualCadenceRepeatFrameCount,
+            VisualCadenceLongestRepeatRun = health.VisualCadenceLongestRepeatRun,
+            VisualCadenceOutputObservedFps = health.VisualCadenceOutputObservedFps,
+            VisualCadenceChangeObservedFps = health.VisualCadenceChangeObservedFps,
+            VisualCadenceRepeatFramePercent = health.VisualCadenceRepeatFramePercent,
+            VisualCadenceLastDelta = health.VisualCadenceLastDelta,
+            VisualCadenceAverageDelta = health.VisualCadenceAverageDelta,
+            VisualCadenceP95Delta = health.VisualCadenceP95Delta,
+            VisualCadenceMotionScore = health.VisualCadenceMotionScore,
+            VisualCadenceMotionConfidence = health.VisualCadenceMotionConfidence,
+            VisualCadenceRecentOutputIntervalsMs = health.VisualCadenceRecentOutputIntervalsMs,
+            VisualCadenceRecentChangeIntervalsMs = health.VisualCadenceRecentChangeIntervalsMs,
+            VisualCenterCadenceSampleCount = health.VisualCenterCadenceSampleCount,
+            VisualCenterCadenceChangedFrameCount = health.VisualCenterCadenceChangedFrameCount,
+            VisualCenterCadenceRepeatFrameCount = health.VisualCenterCadenceRepeatFrameCount,
+            VisualCenterCadenceLongestRepeatRun = health.VisualCenterCadenceLongestRepeatRun,
+            VisualCenterCadenceOutputObservedFps = health.VisualCenterCadenceOutputObservedFps,
+            VisualCenterCadenceChangeObservedFps = health.VisualCenterCadenceChangeObservedFps,
+            VisualCenterCadenceRepeatFramePercent = health.VisualCenterCadenceRepeatFramePercent,
+            VisualCenterCadenceLastDelta = health.VisualCenterCadenceLastDelta,
+            VisualCenterCadenceAverageDelta = health.VisualCenterCadenceAverageDelta,
+            VisualCenterCadenceP95Delta = health.VisualCenterCadenceP95Delta,
+            VisualCenterCadenceMotionScore = health.VisualCenterCadenceMotionScore,
+            VisualCenterCadenceMotionConfidence = health.VisualCenterCadenceMotionConfidence,
+            VisualCenterCadenceRecentOutputIntervalsMs = health.VisualCenterCadenceRecentOutputIntervalsMs,
+            VisualCenterCadenceRecentChangeIntervalsMs = health.VisualCenterCadenceRecentChangeIntervalsMs,
             MjpegPerDecoder = health.MjpegPerDecoder is { Length: > 0 } perDecoder
                 ? Array.ConvertAll(
                     perDecoder,
@@ -903,6 +1069,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 }
             });
         }
+
+        return snapshot;
     }
 
     private void UpdateAlerts(AutomationSnapshot snapshot)

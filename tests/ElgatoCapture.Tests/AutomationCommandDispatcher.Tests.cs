@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 static partial class Program
@@ -132,6 +133,9 @@ static partial class Program
         var authenticate = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "Authenticate") })!;
         AssertEqual(false, authenticate, "Authenticate does not require ready devices");
 
+        var setFlashbackEnabled = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetFlashbackEnabled") })!;
+        AssertEqual(false, setFlashbackEnabled, "SetFlashbackEnabled does not require ready devices");
+
         // Capture configuration commands SHOULD require ready devices
         var setResolution = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "SetResolution") })!;
         AssertEqual(true, setResolution, "SetResolution requires ready devices");
@@ -141,4 +145,122 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static async Task AutomationCommandDispatcher_AuthorizesConfiguredTokens()
+    {
+        var noTokenDispatcher = CreateAutomationCommandDispatcher(authToken: null);
+        var noTokenResponse = await ExecuteAutomationCommandAsync(
+            noTokenDispatcher,
+            CreateAutomationCommandRequest("Authenticate", authToken: null, payloadJson: "{}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(noTokenResponse, success: true, errorCode: null, status: "ok", "no configured token accepts unauthenticated authenticate");
+
+        var tokenDispatcher = CreateAutomationCommandDispatcher(authToken: "secret");
+        var matchingTopLevelResponse = await ExecuteAutomationCommandAsync(
+            tokenDispatcher,
+            CreateAutomationCommandRequest("Authenticate", authToken: "secret", payloadJson: "{}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(matchingTopLevelResponse, success: true, errorCode: null, status: "ok", "matching top-level token is authorized");
+
+        var matchingPayloadResponse = await ExecuteAutomationCommandAsync(
+            tokenDispatcher,
+            CreateAutomationCommandRequest("Authenticate", authToken: null, payloadJson: "{\"authToken\":\"secret\"}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(matchingPayloadResponse, success: true, errorCode: null, status: "ok", "payload fallback token is authorized");
+
+        var missingTokenResponse = await ExecuteAutomationCommandAsync(
+            tokenDispatcher,
+            CreateAutomationCommandRequest("Authenticate", authToken: null, payloadJson: "{}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(missingTokenResponse, success: false, errorCode: "unauthorized", status: "error", "missing token is rejected");
+
+        var wrongTokenResponse = await ExecuteAutomationCommandAsync(
+            tokenDispatcher,
+            CreateAutomationCommandRequest("Authenticate", authToken: "wrong", payloadJson: "{\"authToken\":\"secret\"}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(wrongTokenResponse, success: false, errorCode: "unauthorized", status: "error", "wrong top-level token is rejected before payload fallback");
+
+        var protectedCommandResponse = await ExecuteAutomationCommandAsync(
+            tokenDispatcher,
+            CreateAutomationCommandRequest("GetSnapshot", authToken: null, payloadJson: "{}"))
+            .ConfigureAwait(false);
+        AssertAutomationResponse(protectedCommandResponse, success: false, errorCode: "unauthorized", status: "error", "missing token rejects non-authenticate command");
+
+        var dispatcherText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationCommandDispatcher.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(dispatcherText, "if (string.IsNullOrWhiteSpace(_authToken))\n        {\n            return true;\n        }");
+        AssertContains(dispatcherText, "var providedToken = request.AuthToken;");
+        AssertContains(dispatcherText, "providedToken = GetString(request.Payload, \"authToken\");");
+        AssertContains(dispatcherText, "return string.Equals(_authToken, providedToken, StringComparison.Ordinal);");
+        AssertContains(dispatcherText, "errorCode: authorized ? null : \"unauthorized\"");
+        AssertContains(dispatcherText, "errorCode: \"unauthorized\"");
+        AssertContains(dispatcherText, "status: authorized ? \"ok\" : \"error\"");
+
+    }
+
+    private static object CreateAutomationCommandDispatcher(string? authToken)
+    {
+        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
+        var viewModelType = RequireType("ElgatoCapture.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("ElgatoCapture.Services.Automation.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("ElgatoCapture.Services.Automation.IAutomationWindowControl");
+        var constructor = dispatcherType.GetConstructors()
+            .Single(ctor => ctor.GetParameters().Length == 4);
+
+        return constructor.Invoke(new[]
+        {
+            CreateThrowingProxy(viewModelType),
+            CreateThrowingProxy(diagnosticsType),
+            CreateThrowingProxy(windowControlType),
+            authToken
+        });
+    }
+
+    private static object CreateAutomationCommandRequest(
+        string commandName,
+        string? authToken,
+        string payloadJson)
+    {
+        var requestType = RequireType("ElgatoCapture.Models.AutomationCommandRequest");
+        var commandType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var request = Activator.CreateInstance(requestType)
+                      ?? throw new InvalidOperationException("Failed to create AutomationCommandRequest.");
+        using var payload = JsonDocument.Parse(payloadJson);
+        SetPropertyBackingField(request, "Command", Enum.Parse(commandType, commandName));
+        SetPropertyBackingField(request, "CorrelationId", Guid.NewGuid().ToString("N"));
+        SetPropertyBackingField(request, "AuthToken", authToken);
+        SetPropertyBackingField(request, "Payload", payload.RootElement.Clone());
+        return request;
+    }
+
+    private static async Task<object> ExecuteAutomationCommandAsync(object dispatcher, object request)
+    {
+        var execute = dispatcher.GetType().GetMethod("ExecuteAsync", BindingFlags.Instance | BindingFlags.Public)
+                      ?? throw new InvalidOperationException("AutomationCommandDispatcher.ExecuteAsync was not found.");
+        var task = (Task)execute.Invoke(dispatcher, new object[] { request, CancellationToken.None })!;
+        await task.ConfigureAwait(false);
+        return task.GetType().GetProperty("Result")?.GetValue(task)
+               ?? throw new InvalidOperationException("AutomationCommandDispatcher.ExecuteAsync returned no result.");
+    }
+
+    private static void AssertAutomationResponse(
+        object response,
+        bool success,
+        string? errorCode,
+        string status,
+        string scenario)
+    {
+        AssertEqual(success, (bool)GetPublicProperty(response, "Success")!, $"{scenario}: Success");
+        AssertEqual(errorCode, (string?)GetPublicProperty(response, "ErrorCode"), $"{scenario}: ErrorCode");
+        AssertEqual(status, (string)GetPublicProperty(response, "Status")!, $"{scenario}: Status");
+    }
+
+    private static object? GetPublicProperty(object instance, string propertyName)
+    {
+        var property = instance.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)
+                       ?? throw new InvalidOperationException($"{instance.GetType().Name}.{propertyName} was not found.");
+        return property.GetValue(instance);
+    }
+
 }

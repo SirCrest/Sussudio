@@ -6,7 +6,16 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture.ViewModels;
 
@@ -59,8 +68,9 @@ public partial class MainViewModel
         }
     }
 
-    public async Task RefreshDevicesAsync()
+    public async Task RefreshDevicesAsync(CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         StatusText = "Scanning for devices...";
 
         try
@@ -71,7 +81,9 @@ public partial class MainViewModel
             var previousMicrophoneId = SelectedMicrophoneDevice?.Id;
             var previousDeviceId = SelectedDevice?.Id;
             var audioDevices = (await MfDeviceEnumerator.EnumerateAudioCaptureEndpointsAsync()).ToList();
+            cancellationToken.ThrowIfCancellationRequested();
             var devices = await _deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
+            cancellationToken.ThrowIfCancellationRequested();
             discoveryStopwatch.Stop();
 
             var captureCardAudioId = (devices.FirstOrDefault(d => d.Id == previousDeviceId) ?? devices.FirstOrDefault())?.AudioDeviceId;
@@ -133,7 +145,11 @@ public partial class MainViewModel
                 // Auto-start preview (StartPreviewAsync will initialize device if needed)
                 try
                 {
-                    await StartPreviewAsync(userInitiated: false);
+                    await StartPreviewAsync(userInitiated: false, cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -146,6 +162,11 @@ public partial class MainViewModel
                 SelectedDevice = null;
                 StatusText = "No compatible video capture devices found (see log for discovery summary)";
             }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            StatusText = "Device scan canceled";
+            throw;
         }
         catch (Exception ex)
         {
@@ -164,9 +185,63 @@ public partial class MainViewModel
 
     partial void OnSelectedDeviceChanged(CaptureDevice? value)
     {
+        CancelPendingAudioControlWork();
         RebuildSelectedDeviceCapabilities(value, resetTelemetryState: true);
-        EnqueueUiOperation(() => RefreshDeviceAudioControlsAsync(applySavedState: true), "device audio controls refresh");
+        var refreshCts = new CancellationTokenSource();
+        var refreshToken = refreshCts.Token;
+        _deviceAudioRefreshCts = refreshCts;
+        var enqueued = EnqueueUiOperation(async () =>
+        {
+            try
+            {
+                if (Volatile.Read(ref _disposeState) == 0)
+                {
+                    await RefreshDeviceAudioControlsAsync(value, applySavedState: true, refreshToken).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Log("Device audio controls refresh canceled because selected device changed");
+            }
+            finally
+            {
+                if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))
+                {
+                    _deviceAudioRefreshCts = null;
+                }
+
+                refreshCts.Dispose();
+            }
+        }, "device audio controls refresh", allowDuringDispose: true);
+        if (!enqueued)
+        {
+            if (ReferenceEquals(_deviceAudioRefreshCts, refreshCts))
+            {
+                _deviceAudioRefreshCts = null;
+            }
+
+            refreshCts.Dispose();
+        }
         SaveSettings();
+    }
+
+    private void CancelPendingAudioControlWork()
+    {
+        var flashCts = _gainFlashDebounceCts;
+        _gainFlashDebounceCts = null;
+        flashCts?.Cancel();
+
+        var xuCts = _gainXuDebounceCts;
+        _gainXuDebounceCts = null;
+        xuCts?.Cancel();
+
+        var modeCts = _deviceAudioModeCts;
+        _deviceAudioModeCts = null;
+        modeCts?.Cancel();
+
+        var refreshCts = _deviceAudioRefreshCts;
+        _deviceAudioRefreshCts = null;
+        refreshCts?.Cancel();
     }
 
     private void RebuildSelectedDeviceCapabilities(CaptureDevice? device, bool resetTelemetryState)

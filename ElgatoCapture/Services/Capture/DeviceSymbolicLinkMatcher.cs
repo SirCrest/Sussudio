@@ -1,6 +1,6 @@
 using System;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Capture;
 
 internal static class DeviceSymbolicLinkMatcher
 {

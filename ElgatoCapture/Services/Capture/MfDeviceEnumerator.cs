@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Audio;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Capture;
 
 internal static class MfDeviceEnumerator
 {

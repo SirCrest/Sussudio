@@ -2,8 +2,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
+using ElgatoCapture.Services.Recording;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Gpu;
 
 public sealed record NvmlSnapshot(
     string? GpuName,
@@ -41,6 +42,7 @@ public sealed class NvmlMonitor : IDisposable
     private readonly string? _gpuName;
     private readonly Timer? _pollTimer;
     private NvmlSnapshot? _latestSnapshot;
+    private int _pollInProgress;
     private bool _disposed;
 
     public NvmlMonitor(int pollIntervalMs = 500)
@@ -77,8 +79,9 @@ public sealed class NvmlMonitor : IDisposable
 
             Logger.Log($"NVML_MONITOR_INIT available=true gpu='{_gpuName}'");
 
-            // Initial poll + start timer
-            Poll(null);
+            // Avoid polling synchronously during startup/GPU pipeline transitions.
+            // NVML driver calls can raise corrupted-state access violations that
+            // bypass managed catch blocks; keep polling serialized and delayed.
             _pollTimer = new Timer(Poll, null, pollIntervalMs, pollIntervalMs);
         }
         catch (Exception ex)
@@ -95,6 +98,9 @@ public sealed class NvmlMonitor : IDisposable
     private void Poll(object? state)
     {
         if (!_available || _disposed)
+            return;
+
+        if (Interlocked.Exchange(ref _pollInProgress, 1) != 0)
             return;
 
         try
@@ -154,6 +160,10 @@ public sealed class NvmlMonitor : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"NVML_MONITOR_POLL_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _pollInProgress, 0);
         }
     }
 

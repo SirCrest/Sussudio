@@ -67,7 +67,7 @@ public class CaptureSettings
     public bool ForceMjpegDecode { get; set; }
     public bool FlashbackGpuDecode { get; set; } = true;
     public int FlashbackBufferMinutes { get; set; } = 5;
-    public int MjpegDecoderCount { get; set; } = 4;
+    public int MjpegDecoderCount { get; set; } = 6;
 
     public bool UseMjpegHighFrameRateMode =>
         IsMjpegHighFrameRateMode(RequestedPixelFormat, Width, Height, FrameRate, HdrEnabled, ForceMjpegDecode);

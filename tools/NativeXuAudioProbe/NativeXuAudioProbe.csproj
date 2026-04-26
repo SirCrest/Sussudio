@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\ElgatoCapture\ElgatoCapture.csproj" />
+    <Compile Include="..\..\ElgatoCapture\Models\SourceSignalTelemetrySnapshot.cs" Link="Shared\Models\SourceSignalTelemetrySnapshot.cs" />
+    <Compile Include="..\..\ElgatoCapture\Services\Audio\NativeXuAudioControlService.cs" Link="Shared\Services\Audio\NativeXuAudioControlService.cs" />
+    <Compile Include="..\..\ElgatoCapture\Services\Devices\KsExtensionUnitNative.cs" Link="Shared\Services\Devices\KsExtensionUnitNative.cs" />
+    <Compile Include="..\..\ElgatoCapture\Services\Telemetry\ISourceSignalTelemetryProvider.cs" Link="Shared\Services\Telemetry\ISourceSignalTelemetryProvider.cs" />
+    <Compile Include="..\..\ElgatoCapture\Services\Telemetry\NativeXuAtCommandProvider.cs" Link="Shared\Services\Telemetry\NativeXuAtCommandProvider.cs" />
   </ItemGroup>
 </Project>

@@ -20,13 +20,19 @@ static partial class Program
             "CleanupAsync",
             "StartAudioPreviewAsync",
             "UpdateAudioMonitoringAsync",
-            "UpdateAudioInputAsync"
+            "UpdateAudioInputAsync",
+            "RestartFlashbackAsync",
+            "UpdateRecordingFormatAsync",
+            "CycleFlashbackEncoderSettingsAsync",
+            "SetFlashbackEnabledAsync",
+            "UpdateFlashbackSettingsAsync"
         };
 
         foreach (var methodName in expectedMethods)
         {
-            var method = coordinatorType.GetMethod(methodName,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+            var method = Array.Find(
+                coordinatorType.GetMethods(BindingFlags.Public | BindingFlags.Instance),
+                method => method.Name == methodName);
             AssertNotNull(method, $"CaptureSessionCoordinator.{methodName}");
         }
 
@@ -53,7 +59,10 @@ static partial class Program
         var expectedValues = new[]
         {
             "Initialize", "StartVideoPreview", "StopVideoPreview",
-            "StartRecording", "StopRecording", "Cleanup"
+            "StartRecording", "StopRecording", "Cleanup",
+            "SetFlashbackEnabled", "UpdateFlashbackSettings",
+            "RestartFlashback", "UpdateFlashbackRecordingFormat",
+            "CycleFlashbackEncoderSettings"
         };
 
         foreach (var value in expectedValues)
@@ -89,6 +98,53 @@ static partial class Program
         AssertEqual(false, GetBoolProperty(snapshot, "IsRecording"), "Default IsRecording");
         AssertEqual(false, GetBoolProperty(snapshot, "IsInitialized"), "Default IsInitialized");
         AssertEqual(0, Convert.ToInt32(GetPropertyValue(snapshot, "PendingCommands")), "Default PendingCommands");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureSessionCoordinator_CoalescesFlashbackEncoderCycles()
+    {
+        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+            .Replace("\r\n", "\n");
+        var cycleMethod = ExtractTextBetween(
+            coordinatorText,
+            "public Task CycleFlashbackEncoderSettingsAsync",
+            "public Task SetFlashbackEnabledAsync");
+        var queueProcessor = ExtractTextBetween(
+            coordinatorText,
+            "private async Task ProcessQueueAsync",
+            "private void UpdateSnapshot");
+
+        AssertContains(coordinatorText, "_latestFlashbackEncoderCycleGeneration");
+        AssertContains(cycleMethod, "coalesceLatest: true");
+        AssertContains(queueProcessor, "Volatile.Read(ref _latestFlashbackEncoderCycleGeneration)");
+        AssertContains(queueProcessor, "CAP-COORD-SKIP");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation()
+    {
+        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+            .Replace("\r\n", "\n");
+        var restartNoSettings = ExtractTextBetween(
+            coordinatorText,
+            "public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)",
+            "public Task RestartFlashbackAsync(CaptureSettings settings");
+        var restartWithSettings = ExtractTextBetween(
+            coordinatorText,
+            "public Task RestartFlashbackAsync(CaptureSettings settings",
+            "public Task UpdateRecordingFormatAsync");
+        var setFlashbackEnabled = ExtractTextBetween(
+            coordinatorText,
+            "public Task SetFlashbackEnabledAsync",
+            "public Task UpdateFlashbackSettingsAsync");
+
+        AssertContains(restartNoSettings, "propagateCancellationToOperation: true");
+        AssertContains(restartWithSettings, "propagateCancellationToOperation: true");
+        AssertContains(restartWithSettings, "ct => _captureService.RestartFlashbackAsync(settings, ct)");
+        AssertDoesNotContain(restartWithSettings, "_captureService.UpdateEncodingSettings(settings)");
+        AssertContains(setFlashbackEnabled, "propagateCancellationToOperation: true");
 
         return Task.CompletedTask;
     }

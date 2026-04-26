@@ -13,8 +13,8 @@ using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Mathematics;
-using WinRT;
-namespace ElgatoCapture.Services;
+
+namespace ElgatoCapture.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
@@ -207,6 +207,11 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void RenderFrameWithVideoProcessor(PendingFrame frame)
     {
+        var totalStart = Stopwatch.GetTimestamp();
+        long inputUploadTicks = 0;
+        long renderTicks = 0;
+        long presentTicks = 0;
+
         // Fence: Stop() spins on _inNativeCall before unbinding the swap chain.
         // The fence covers the entire render method (EnsurePipeline, input view
         // resolution, Blt, Present) so Stop() cannot yank D3D resources while
@@ -226,10 +231,12 @@ internal sealed partial class D3D11PreviewRenderer
             var useExternalTexture = frame.D3DTexture != null;
             EnsurePipeline(frame.Width, frame.Height, frame.IsHdr, useExternalTexture);
 
+            var inputStart = Stopwatch.GetTimestamp();
             if (!TryResolveInputView(frame, out var inputView, out var disposeInputView))
             {
                 return;
             }
+            inputUploadTicks += Stopwatch.GetTimestamp() - inputStart;
 
             try
             {
@@ -239,14 +246,18 @@ internal sealed partial class D3D11PreviewRenderer
                 }
 
                 _vpStreamArray[0] = new VideoProcessorStream { Enable = true, InputSurface = inputView };
+                var renderStart = Stopwatch.GetTimestamp();
                 var bltResult = _videoContext.VideoProcessorBlt(_videoProcessor, _outputView, _outputFrameIndex++, 1, _vpStreamArray);
+                renderTicks += Stopwatch.GetTimestamp() - renderStart;
                 if (bltResult.Failure)
                 {
                     throw new InvalidOperationException($"VideoProcessorBlt failed: 0x{bltResult.Code:X8}.");
                 }
 
                 TryCaptureFrameBeforePresent("VideoProcessor");
+                var presentStart = Stopwatch.GetTimestamp();
                 var presentResult = _swapChain.Present(0, PresentFlags.None);
+                presentTicks += Stopwatch.GetTimestamp() - presentStart;
                 if (presentResult.Failure)
                 {
                     throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
@@ -261,6 +272,7 @@ internal sealed partial class D3D11PreviewRenderer
                 Interlocked.Increment(ref _framesRendered);
                 TrackPresentCadence();
                 TrackPipelineLatency(frame.ArrivalTick);
+                TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
             }
             finally
             {
@@ -278,6 +290,11 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void RenderNv12WithShader(PendingFrame frame)
     {
+        var totalStart = Stopwatch.GetTimestamp();
+        long inputUploadTicks = 0;
+        long renderTicks = 0;
+        long presentTicks = 0;
+
         if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
         {
             return;
@@ -304,10 +321,12 @@ internal sealed partial class D3D11PreviewRenderer
                 return;
             }
 
+            var inputStart = Stopwatch.GetTimestamp();
             if (!TryEnsureNv12ShaderResources(frame))
             {
                 return;
             }
+            inputUploadTicks += Stopwatch.GetTimestamp() - inputStart;
 
             EnsureSwapChainRTV();
             if (_swapChainRTV == null || _nv12YSRV == null || _nv12UVSRV == null)
@@ -333,13 +352,17 @@ internal sealed partial class D3D11PreviewRenderer
             _deviceContext.PSSetShaderResources(0, 2, _srvArray2);
             UpdateViewportConstantBuffer(viewport);
 
+            var renderStart = Stopwatch.GetTimestamp();
             _deviceContext.Draw(3, 0);
+            renderTicks += Stopwatch.GetTimestamp() - renderStart;
             _srvNullArray2[0] = null;
             _srvNullArray2[1] = null;
             _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
             TryCaptureFrameBeforePresent(RendererModeNv12Shader);
+            var presentStart = Stopwatch.GetTimestamp();
             var presentResult = _swapChain.Present(0, PresentFlags.None);
+            presentTicks += Stopwatch.GetTimestamp() - presentStart;
             if (presentResult.Failure)
             {
                 throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
@@ -354,6 +377,7 @@ internal sealed partial class D3D11PreviewRenderer
             Interlocked.Increment(ref _framesRendered);
             TrackPresentCadence();
             TrackPipelineLatency(frame.ArrivalTick);
+            TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
         }
         finally
         {
@@ -363,6 +387,11 @@ internal sealed partial class D3D11PreviewRenderer
 
     private void RenderHdrFrameWithShader(PendingFrame frame, ID3D11PixelShader pixelShader)
     {
+        var totalStart = Stopwatch.GetTimestamp();
+        long inputUploadTicks = 0;
+        long renderTicks = 0;
+        long presentTicks = 0;
+
         if (Volatile.Read(ref _stopRequested) != 0 || Volatile.Read(ref _swapChainBound) == 0)
         {
             return;
@@ -385,6 +414,7 @@ internal sealed partial class D3D11PreviewRenderer
                 return;
             }
 
+            var inputStart = Stopwatch.GetTimestamp();
             EnsureHdrInputResources(frame.Width, frame.Height);
             if (_hdrInputTexture == null ||
                 _hdrStagingTexture == null ||
@@ -393,9 +423,11 @@ internal sealed partial class D3D11PreviewRenderer
             {
                 return;
             }
+            inputUploadTicks += Stopwatch.GetTimestamp() - inputStart;
 
             if (frame.D3DTexture != null)
             {
+                inputStart = Stopwatch.GetTimestamp();
                 var srcDesc = frame.D3DTexture.Description;
                 var planeOffset = (int)(srcDesc.ArraySize * Math.Max(1, srcDesc.MipLevels));
 
@@ -404,13 +436,25 @@ internal sealed partial class D3D11PreviewRenderer
 
                 _deviceContext.CopySubresourceRegion(_hdrInputTexture, 1, 0, 0, 0,
                     frame.D3DTexture, (uint)(frame.D3DSubresourceIndex + planeOffset));
+                inputUploadTicks += Stopwatch.GetTimestamp() - inputStart;
             }
             else if (frame.RawData != null)
             {
+                inputStart = Stopwatch.GetTimestamp();
                 if (!UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, true, _hdrStagingTexture!, _hdrInputTexture!))
                 {
                     return;
                 }
+                inputUploadTicks += Stopwatch.GetTimestamp() - inputStart;
+            }
+            else if (frame.FrameLease != null)
+            {
+                inputStart = Stopwatch.GetTimestamp();
+                if (!UploadRawFrameToTexture(frame.FrameLease.Memory.Span, frame.Width, frame.Height, true, _hdrStagingTexture!, _hdrInputTexture!))
+                {
+                    return;
+                }
+                inputUploadTicks += Stopwatch.GetTimestamp() - inputStart;
             }
             else
             {
@@ -442,7 +486,9 @@ internal sealed partial class D3D11PreviewRenderer
 
             UpdateViewportConstantBuffer(viewport);
 
+            var renderStart = Stopwatch.GetTimestamp();
             _deviceContext.Draw(3, 0);
+            renderTicks += Stopwatch.GetTimestamp() - renderStart;
             _srvNullArray2[0] = null;
             _srvNullArray2[1] = null;
             _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
@@ -451,7 +497,9 @@ internal sealed partial class D3D11PreviewRenderer
                 ? RendererModeHdrPassthrough
                 : RendererModeHdrShader;
             TryCaptureFrameBeforePresent(rendererMode);
+            var presentStart = Stopwatch.GetTimestamp();
             var presentResult = _swapChain.Present(0, PresentFlags.None);
+            presentTicks += Stopwatch.GetTimestamp() - presentStart;
             if (presentResult.Failure)
             {
                 throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
@@ -468,6 +516,7 @@ internal sealed partial class D3D11PreviewRenderer
             Interlocked.Increment(ref _framesRendered);
             TrackPresentCadence();
             TrackPipelineLatency(frame.ArrivalTick);
+            TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
         }
         finally
         {
@@ -1299,8 +1348,21 @@ internal sealed partial class D3D11PreviewRenderer
             return false;
         }
 
-        if (frame.RawData == null ||
-            !UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, frame.IsHdr, _stagingTexture, _inputTexture))
+        if (frame.RawData != null)
+        {
+            if (!UploadRawFrameToTexture(frame.RawData, frame.RawDataLength, frame.Width, frame.Height, frame.IsHdr, _stagingTexture, _inputTexture))
+            {
+                return false;
+            }
+        }
+        else if (frame.FrameLease != null)
+        {
+            if (!UploadRawFrameToTexture(frame.FrameLease.Memory.Span, frame.Width, frame.Height, frame.IsHdr, _stagingTexture, _inputTexture))
+            {
+                return false;
+            }
+        }
+        else
         {
             return false;
         }
@@ -1338,6 +1400,11 @@ internal sealed partial class D3D11PreviewRenderer
     private unsafe bool UploadRawFrameToTexture(
         byte[] data, int dataLength, int width, int height, bool isHdr,
         ID3D11Texture2D stagingTexture, ID3D11Texture2D inputTexture)
+        => UploadRawFrameToTexture(data.AsSpan(0, Math.Min(dataLength, data.Length)), width, height, isHdr, stagingTexture, inputTexture);
+
+    private unsafe bool UploadRawFrameToTexture(
+        ReadOnlySpan<byte> data, int width, int height, bool isHdr,
+        ID3D11Texture2D stagingTexture, ID3D11Texture2D inputTexture)
     {
         if (_deviceContext == null)
         {
@@ -1347,10 +1414,10 @@ internal sealed partial class D3D11PreviewRenderer
         var rowBytes = isHdr ? width * 2 : width;
         var uvRows = height / 2;
         var expectedBytes = (rowBytes * height) + (rowBytes * uvRows);
-        if (dataLength < expectedBytes)
+        if (data.Length < expectedBytes)
         {
             Logger.Log(
-                $"D3D11 preview raw frame too small: expected={expectedBytes} actual={dataLength} hdr={isHdr}.");
+                $"D3D11 preview raw frame too small: expected={expectedBytes} actual={data.Length} hdr={isHdr}.");
             return false;
         }
 
@@ -2126,8 +2193,9 @@ internal sealed partial class D3D11PreviewRenderer
                         "Panel is no longer in the visual tree; swap chain binding skipped.");
                     return;
                 }
-                var panelNative = CastExtensions.As<ISwapChainPanelNative>(_panel);
+                var panelNative = WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel);
                 panelNative.SetSwapChain(swapChain.NativePointer);
+                Interlocked.Exchange(ref _swapChainAddress, swapChain.NativePointer.ToInt64());
                 Interlocked.Exchange(ref _swapChainBound, 1);
             }
             catch (Exception ex)
@@ -2177,7 +2245,7 @@ internal sealed partial class D3D11PreviewRenderer
                         return;
                     }
 
-                    var panelNative = CastExtensions.As<ISwapChainPanelNative>(_panel);
+                    var panelNative = WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel);
                     panelNative.SetSwapChain(IntPtr.Zero);
                 }
                 catch
@@ -2313,6 +2381,7 @@ internal sealed partial class D3D11PreviewRenderer
         // whoever loses the CAS skips the native SetSwapChain call.
         // BindSwapChainToPanel re-sets this to 1 when a new chain is bound.
         Interlocked.CompareExchange(ref _swapChainBound, 0, 1);
+        Interlocked.Exchange(ref _swapChainAddress, 0);
 
         // When StopRenderThread() is used (reinit path), the swap chain must
         // NOT be disposed — the XAML panel still holds a native reference to it.
@@ -2384,13 +2453,13 @@ internal sealed partial class D3D11PreviewRenderer
         int fitWidth, fitHeight;
         if (srcAspect > dstAspect)
         {
-            // Source is wider â€” letterbox (bars top/bottom)
+            // Source is wider - letterbox (bars top/bottom)
             fitWidth = dstWidth;
             fitHeight = (int)(dstWidth / srcAspect);
         }
         else
         {
-            // Source is taller â€” pillarbox (bars left/right)
+            // Source is taller - pillarbox (bars left/right)
             fitHeight = dstHeight;
             fitWidth = (int)(dstHeight * srcAspect);
         }

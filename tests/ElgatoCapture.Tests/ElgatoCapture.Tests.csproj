@@ -6,4 +6,10 @@
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="9.0.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\tools\Common\AutomationPipeSecurityPolicy.cs" Link="Common\AutomationPipeSecurityPolicy.cs" />
+  </ItemGroup>
 </Project>

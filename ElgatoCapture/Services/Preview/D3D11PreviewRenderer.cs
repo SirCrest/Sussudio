@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
@@ -9,14 +9,15 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Capture;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Mathematics;
-using WinRT;
-namespace ElgatoCapture.Services;
+
+namespace ElgatoCapture.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
 {
@@ -212,6 +213,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             int height,
             bool isHdr,
             long arrivalTick,
+            PooledVideoFrameLease? frameLease = null,
             IntPtr d3dTextureY = default,
             IntPtr d3dTextureUV = default,
             ID3D11Texture2D? d3dTextureYObject = null,
@@ -225,6 +227,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             Height = height;
             IsHdr = isHdr;
             ArrivalTick = arrivalTick;
+            FrameLease = frameLease;
             D3DTextureY = d3dTextureY;
             D3DTextureUV = d3dTextureUV;
             D3DTextureYObject = d3dTextureYObject;
@@ -239,6 +242,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         public ID3D11Texture2D? D3DTextureUVObject { get; private set; }
         public byte[]? RawData { get; private set; }
         public int RawDataLength { get; private set; }
+        public PooledVideoFrameLease? FrameLease { get; private set; }
         public int Width { get; }
         public int Height { get; }
         public bool IsHdr { get; }
@@ -278,6 +282,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
                 RawData = null;
                 RawDataLength = 0;
             }
+
+            FrameLease?.Dispose();
+            FrameLease = null;
         }
     }
 
@@ -291,6 +298,18 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         double JitterStdDevMs,
         long SlowFrameCount,
         double SlowFramePercent);
+
+    public readonly record struct CpuStageTimingMetrics(
+        int SampleCount,
+        double AverageMs,
+        double P95Ms,
+        double MaxMs);
+
+    public readonly record struct RenderCpuTimingMetrics(
+        CpuStageTimingMetrics InputUpload,
+        CpuStageTimingMetrics RenderSubmit,
+        CpuStageTimingMetrics PresentCall,
+        CpuStageTimingMetrics TotalFrame);
 
     private readonly SwapChainPanel _panel;
     private readonly DispatcherQueue _dispatcherQueue;
@@ -335,6 +354,13 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     private double[] _pipelineLatencyWindowMs = new double[1200];
     private int _pipelineLatencyCount;
     private int _pipelineLatencyIndex;
+    private readonly object _renderCpuTimingLock = new();
+    private double[] _inputUploadCpuTimingWindowMs = new double[1200];
+    private double[] _renderSubmitCpuTimingWindowMs = new double[1200];
+    private double[] _presentCallTimingWindowMs = new double[1200];
+    private double[] _renderTotalCpuTimingWindowMs = new double[1200];
+    private int _renderCpuTimingCount;
+    private int _renderCpuTimingIndex;
 
     private TaskCompletionSource<PreviewFrameCaptureResult>? _frameCaptureRequest;
     private int _frameCaptureEncodeInProgress;
@@ -354,6 +380,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     private IDXGIFactory2? _factory;
     private IDXGISwapChain1? _swapChain;
     private IDXGISwapChain3? _swapChain3;
+    private long _swapChainAddress;
     private ID3D11Texture2D? _swapChainBackBuffer;
     private ID3D11RenderTargetView? _swapChainRTV;
     private ID3D11Texture2D? _inputTexture;
@@ -431,6 +458,14 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     public string OutputColorSpaceLabel => _outputColorSpaceLabel;
     public int NaturalWidth => Volatile.Read(ref _naturalWidth);
     public int NaturalHeight => Volatile.Read(ref _naturalHeight);
+    public string SwapChainAddress
+    {
+        get
+        {
+            var address = Interlocked.Read(ref _swapChainAddress);
+            return address == 0 ? string.Empty : $"0x{address:X}";
+        }
+    }
 
     public void SetHdrPassthroughEnabled(bool enabled)
     {
@@ -541,6 +576,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             Volatile.Write(ref _rendererMode, RendererModeNone);
 
             Interlocked.Exchange(ref _stopRequested, 0);
+            Interlocked.Exchange(ref _skipSwapChainDisposal, 0);
             Interlocked.Exchange(ref _compositionTransformDirty, 1);
             Interlocked.Exchange(ref _firstFrameRaised, 0);
             Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
@@ -657,18 +693,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         // — a corrupted-state exception .NET Core cannot catch.
         // Unbinding first, while D3D resources are still alive, avoids this.
         //
-        // CAS(1→0) ensures exactly one thread performs the unbind. The render
+        // CAS(1->0) ensures exactly one thread performs the unbind. The render
         // thread's CleanupD3DResources also CAS's this flag before disposing the
         // swap chain — whoever loses the race skips the native call entirely.
         if (Interlocked.CompareExchange(ref _swapChainBound, 0, 1) == 1)
         {
+            Interlocked.Exchange(ref _swapChainAddress, 0);
             try
             {
                 if (_dispatcherQueue.HasThreadAccess)
                 {
                     if (_panel?.XamlRoot != null)
                     {
-                        var panelNative = CastExtensions.As<ISwapChainPanelNative>(_panel);
+                        var panelNative = WinRT.CastExtensions.As<ISwapChainPanelNative>(_panel);
                         panelNative.SetSwapChain(IntPtr.Zero);
                     }
                 }
@@ -758,6 +795,34 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
 
         var frame = new PendingFrame(null, 0, copied, dataLength, width, height, isHdr, arrivalTick);
         EnqueuePendingFrame(frame);
+    }
+
+    public void SubmitRawFrameLease(PooledVideoFrameLease frame, bool isHdr)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+
+        if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
+        {
+            frame.Dispose();
+            return;
+        }
+
+        if (frame.Length <= 0 || frame.Width <= 0 || frame.Height <= 0)
+        {
+            frame.Dispose();
+            return;
+        }
+
+        EnqueuePendingFrame(new PendingFrame(
+            null,
+            0,
+            null,
+            frame.Length,
+            frame.Width,
+            frame.Height,
+            isHdr,
+            frame.ArrivalTick,
+            frameLease: frame));
     }
 
     public void SubmitTexture(IntPtr d3dTexture, int subresourceIndex, int width, int height, bool isHdr, long arrivalTick = 0)
@@ -888,24 +953,37 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
 
     private void EnqueuePendingFrame(PendingFrame frame)
     {
-        _pendingFrames.Enqueue(frame);
-
-        // Trim oldest frames if the queue exceeds the elastic limit.
-        // Under normal operation the render thread keeps up and the queue
-        // stays at 0-1 (no added latency). The extra slots only absorb
-        // brief render hiccups instead of dropping frames.
-        while (_pendingFrames.Count > MaxPendingFrames)
+        lock (_lifecycleLock)
         {
-            if (_pendingFrames.TryDequeue(out var oldest))
+            if (Volatile.Read(ref _disposed) != 0 ||
+                Volatile.Read(ref _stopRequested) != 0 ||
+                _renderThread == null)
             {
-                oldest.Dispose();
+                frame.Dispose();
                 Interlocked.Increment(ref _framesDropped);
+                return;
             }
+
+            _pendingFrames.Enqueue(frame);
+
+            // Trim oldest frames if the queue exceeds the elastic limit.
+            // Under normal operation the render thread keeps up and the queue
+            // stays at 0-1 (no added latency). The extra slots only absorb
+            // brief render hiccups instead of dropping frames.
+            while (_pendingFrames.Count > MaxPendingFrames)
+            {
+                if (_pendingFrames.TryDequeue(out var oldest))
+                {
+                    oldest.Dispose();
+                    Interlocked.Increment(ref _framesDropped);
+                }
+            }
+
+            Volatile.Write(ref _naturalWidth, frame.Width);
+            Volatile.Write(ref _naturalHeight, frame.Height);
+            Interlocked.Increment(ref _framesSubmitted);
         }
 
-        Volatile.Write(ref _naturalWidth, frame.Width);
-        Volatile.Write(ref _naturalHeight, frame.Height);
-        Interlocked.Increment(ref _framesSubmitted);
         _frameReadyEvent.Set();
     }
 
@@ -1017,6 +1095,61 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         }
     }
 
+    public double[] GetRecentPresentIntervalsMs(int maxSamples)
+    {
+        lock (_presentCadenceLock)
+        {
+            return CopyRecentRing(_presentIntervalWindowMs, _presentIntervalCount, _presentIntervalIndex, maxSamples);
+        }
+    }
+
+    public double[] GetRecentPipelineLatencyMs(int maxSamples)
+    {
+        lock (_pipelineLatencyLock)
+        {
+            return CopyRecentRing(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, maxSamples);
+        }
+    }
+
+    public RenderCpuTimingMetrics GetRenderCpuTimingMetrics()
+    {
+        double[] uploadSamples;
+        double[] renderSamples;
+        double[] presentSamples;
+        double[] totalSamples;
+        lock (_renderCpuTimingLock)
+        {
+            uploadSamples = CopyRecentRing(_inputUploadCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            renderSamples = CopyRecentRing(_renderSubmitCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            presentSamples = CopyRecentRing(_presentCallTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+            totalSamples = CopyRecentRing(_renderTotalCpuTimingWindowMs, _renderCpuTimingCount, _renderCpuTimingIndex, _renderCpuTimingCount);
+        }
+
+        return new RenderCpuTimingMetrics(
+            SummarizeCpuStageTiming(uploadSamples),
+            SummarizeCpuStageTiming(renderSamples),
+            SummarizeCpuStageTiming(presentSamples),
+            SummarizeCpuStageTiming(totalSamples));
+    }
+
+    private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)
+    {
+        var take = Math.Min(Math.Max(0, maxSamples), count);
+        if (take <= 0)
+        {
+            return Array.Empty<double>();
+        }
+
+        var result = new double[take];
+        var start = (index - take + window.Length) % window.Length;
+        for (var i = 0; i < take; i++)
+        {
+            result[i] = window[(start + i) % window.Length];
+        }
+
+        return result;
+    }
+
     private void TrackPresentCadence()
     {
         var nowTick = Stopwatch.GetTimestamp();
@@ -1067,6 +1200,42 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         }
     }
 
+    private void TrackRenderCpuTiming(long inputUploadTicks, long renderSubmitTicks, long presentCallTicks, long totalTicks)
+    {
+        if (totalTicks <= 0)
+        {
+            return;
+        }
+
+        var inputUploadMs = TicksToMs(inputUploadTicks);
+        var renderSubmitMs = TicksToMs(renderSubmitTicks);
+        var presentCallMs = TicksToMs(presentCallTicks);
+        var totalMs = TicksToMs(totalTicks);
+        if (!IsValidRenderCpuStageMs(totalMs))
+        {
+            return;
+        }
+
+        lock (_renderCpuTimingLock)
+        {
+            _inputUploadCpuTimingWindowMs[_renderCpuTimingIndex] = IsValidRenderCpuStageMs(inputUploadMs) ? inputUploadMs : 0;
+            _renderSubmitCpuTimingWindowMs[_renderCpuTimingIndex] = IsValidRenderCpuStageMs(renderSubmitMs) ? renderSubmitMs : 0;
+            _presentCallTimingWindowMs[_renderCpuTimingIndex] = IsValidRenderCpuStageMs(presentCallMs) ? presentCallMs : 0;
+            _renderTotalCpuTimingWindowMs[_renderCpuTimingIndex] = totalMs;
+            _renderCpuTimingIndex = (_renderCpuTimingIndex + 1) % _renderTotalCpuTimingWindowMs.Length;
+            if (_renderCpuTimingCount < _renderTotalCpuTimingWindowMs.Length)
+            {
+                _renderCpuTimingCount++;
+            }
+        }
+    }
+
+    private static double TicksToMs(long ticks)
+        => ticks <= 0 ? 0 : ticks * 1000.0 / Stopwatch.Frequency;
+
+    private static bool IsValidRenderCpuStageMs(double value)
+        => value >= 0 && value <= 5000 && !double.IsNaN(value) && !double.IsInfinity(value);
+
     public void SetExpectedFrameRate(double fps)
     {
         if (fps <= 0) return;
@@ -1090,6 +1259,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
                 _pipelineLatencyIndex = 0;
             }
         }
+
+        lock (_renderCpuTimingLock)
+        {
+            if (_renderTotalCpuTimingWindowMs.Length != targetSize)
+            {
+                _inputUploadCpuTimingWindowMs = new double[targetSize];
+                _renderSubmitCpuTimingWindowMs = new double[targetSize];
+                _presentCallTimingWindowMs = new double[targetSize];
+                _renderTotalCpuTimingWindowMs = new double[targetSize];
+                _renderCpuTimingCount = 0;
+                _renderCpuTimingIndex = 0;
+            }
+        }
     }
 
     private void ResetPresentCadence()
@@ -1108,6 +1290,44 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             _pipelineLatencyCount = 0;
             _pipelineLatencyIndex = 0;
         }
+
+        lock (_renderCpuTimingLock)
+        {
+            Array.Clear(_inputUploadCpuTimingWindowMs, 0, _inputUploadCpuTimingWindowMs.Length);
+            Array.Clear(_renderSubmitCpuTimingWindowMs, 0, _renderSubmitCpuTimingWindowMs.Length);
+            Array.Clear(_presentCallTimingWindowMs, 0, _presentCallTimingWindowMs.Length);
+            Array.Clear(_renderTotalCpuTimingWindowMs, 0, _renderTotalCpuTimingWindowMs.Length);
+            _renderCpuTimingCount = 0;
+            _renderCpuTimingIndex = 0;
+        }
+    }
+
+    private static CpuStageTimingMetrics SummarizeCpuStageTiming(double[] samples)
+    {
+        if (samples.Length == 0)
+        {
+            return new CpuStageTimingMetrics(0, 0, 0, 0);
+        }
+
+        var sorted = (double[])samples.Clone();
+        Array.Sort(sorted);
+        var sum = 0.0;
+        var max = 0.0;
+        for (var i = 0; i < sorted.Length; i++)
+        {
+            sum += sorted[i];
+            if (sorted[i] > max)
+            {
+                max = sorted[i];
+            }
+        }
+
+        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
+        return new CpuStageTimingMetrics(
+            sorted.Length,
+            sum / sorted.Length,
+            sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)],
+            max);
     }
 
 }

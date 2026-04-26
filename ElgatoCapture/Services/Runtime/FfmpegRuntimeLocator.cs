@@ -6,18 +6,26 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Recording;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Runtime;
 
 internal static class FfmpegRuntimeLocator
 {
-    // ── Encoder capability probes (moved from legacy FFmpegEncoderService) ──
+    // Encoder capability probes.
 
     private static Task<EncoderSupport>? _encoderProbeTask;
     private static readonly object EncoderProbeLock = new();
     private static Task<SplitEncodeSupport>? _splitEncodeSupportTask;
     private static readonly object SplitEncodeSupportLock = new();
     private static readonly Lazy<string> CachedFfmpegPath = new(() => FindToolPath("ffmpeg.exe"));
+    private const int ProbeTimeoutMs = 10_000;
+
+    private readonly record struct ProbeCommandResult(
+        string Output,
+        int ExitCode,
+        bool Started,
+        bool TimedOut);
 
     public static Task<EncoderSupport> GetEncoderSupportAsync()
     {
@@ -43,6 +51,14 @@ internal static class FfmpegRuntimeLocator
         try
         {
             var result = await RunProbeCommandAsync(ffmpegPath, "-hide_banner -encoders");
+            if (!result.Started || result.TimedOut || result.ExitCode != 0)
+            {
+                Logger.Log(
+                    "FFmpeg encoder probe did not complete successfully: " +
+                    $"started={result.Started} timedOut={result.TimedOut} exitCode={result.ExitCode}");
+                return EncoderSupport.Empty;
+            }
+
             var output = result.Output;
             var support = new EncoderSupport
             {
@@ -95,29 +111,25 @@ internal static class FfmpegRuntimeLocator
             $"-split_encode_mode {mode} " +
             "-frames:v 1 -an -f null NUL";
         var result = await RunProbeCommandAsync(ffmpegPath, probeArgs).ConfigureAwait(false);
-        return result.ExitCode == 0;
+        return result.Started && !result.TimedOut && result.ExitCode == 0;
     }
 
-    private static async Task<(string Output, int ExitCode)> RunProbeCommandAsync(string fileName, string arguments)
+    private static async Task<ProbeCommandResult> RunProbeCommandAsync(string fileName, string arguments)
     {
-        var startInfo = new ProcessStartInfo
+        var result = await new ProcessSupervisor().RunAsync(new ProcessSpec
         {
             FileName = fileName,
             Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-        using var process = Process.Start(startInfo);
-        if (process == null)
-            return (string.Empty, -1);
-        var stdoutTask = process.StandardOutput.ReadToEndAsync();
-        var stderrTask = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync().ConfigureAwait(false);
-        var output = (await stdoutTask.ConfigureAwait(false)) + Environment.NewLine +
-                     (await stderrTask.ConfigureAwait(false));
-        return (output, process.ExitCode);
+            TimeoutMs = ProbeTimeoutMs
+        }).ConfigureAwait(false);
+
+        if (!result.Started)
+        {
+            return new ProbeCommandResult(string.Empty, -1, Started: false, TimedOut: false);
+        }
+
+        var output = result.StdOut + Environment.NewLine + result.StdErr;
+        return new ProbeCommandResult(output, result.ExitCode ?? -1, Started: true, TimedOut: result.TimedOut);
     }
     private static readonly string[] RequiredNativeLibraryPatterns =
     {
@@ -247,8 +259,21 @@ internal static class FfmpegRuntimeLocator
                 return false;
             }
 
+            if (!proc.WaitForExit(5000))
+            {
+                try
+                {
+                    proc.Kill(entireProcessTree: true);
+                }
+                catch
+                {
+                    // Best-effort: where.exe may have already exited.
+                }
+
+                return false;
+            }
+
             var output = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit();
             if (proc.ExitCode != 0 || string.IsNullOrWhiteSpace(output))
             {
                 return false;

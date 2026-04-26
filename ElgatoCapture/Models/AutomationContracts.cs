@@ -4,57 +4,6 @@ using System.Text.Json;
 
 namespace ElgatoCapture.Models;
 
-public enum AutomationCommandKind
-{
-    Authenticate = 0,
-    GetSnapshot = 1,
-    GetDiagnostics = 2,
-    RefreshDevices = 3,
-    SelectDevice = 4,
-    SelectAudioInputDevice = 5,
-    SetCustomAudioInput = 6,
-    SetResolution = 7,
-    SetFrameRate = 8,
-    SetRecordingFormat = 9,
-    SetQuality = 10,
-    SetCustomBitrate = 11,
-    SetHdrEnabled = 12,
-    SetAudioEnabled = 13,
-    SetAudioPreviewEnabled = 14,
-    SetOutputPath = 15,
-    SetPreviewEnabled = 16,
-    SetRecordingEnabled = 17,
-    ArmClose = 18,
-    WindowAction = 19,
-    WaitForCondition = 20,
-    VerifyLastRecording = 21,
-    AssertSnapshot = 22,
-    SetTrueHdrPreviewEnabled = 23,
-    ProbeVideoSource = 24,
-    ProbePreviewColor = 25,
-    CapturePreviewFrame = 26,
-    CaptureWindowScreenshot = 27,
-    SetVideoFormat = 28,
-    GetCaptureOptions = 29,
-    SetPreset = 30,
-    SetSplitEncodeMode = 31,
-    SetMjpegDecoderCount = 32,
-    SetShowAllCaptureOptions = 33,
-    SetPreviewVolume = 34,
-    SetStatsVisible = 35,
-    SetDeviceAudioMode = 36,
-    GetPerformanceTimeline = 37,
-    SetStatsSectionVisible = 38,
-    SetAnalogAudioGain = 39,
-    SetSettingsVisible = 40,
-    FlashbackAction = 41,
-    FlashbackExport = 42,
-    FlashbackGetSegments = 43,
-    VerifyFile = 44,
-    RestartFlashback = 45,
-    SetMicrophoneEnabled = 46
-}
-
 public enum AutomationFlashbackAction
 {
     Play,
@@ -448,11 +397,26 @@ public sealed class AutomationSnapshot
     public bool PreviewBlankSuspected { get; init; }
     public bool PreviewStalled { get; init; }
     public string PreviewRendererMode { get; init; } = "None";
+    public string PreviewD3DSwapChainAddress { get; init; } = string.Empty;
     public long PreviewD3DFramesSubmitted { get; init; }
     public long PreviewD3DFramesRendered { get; init; }
     public long PreviewD3DFramesDropped { get; init; }
+    public int PreviewD3DPendingFrameCount { get; init; }
     public string PreviewD3DInputColorSpace { get; init; } = "None";
     public string PreviewD3DOutputColorSpace { get; init; } = "None";
+    public int PreviewD3DCpuTimingSampleCount { get; init; }
+    public double PreviewD3DInputUploadCpuAvgMs { get; init; }
+    public double PreviewD3DInputUploadCpuP95Ms { get; init; }
+    public double PreviewD3DInputUploadCpuMaxMs { get; init; }
+    public double PreviewD3DRenderSubmitCpuAvgMs { get; init; }
+    public double PreviewD3DRenderSubmitCpuP95Ms { get; init; }
+    public double PreviewD3DRenderSubmitCpuMaxMs { get; init; }
+    public double PreviewD3DPresentCallAvgMs { get; init; }
+    public double PreviewD3DPresentCallP95Ms { get; init; }
+    public double PreviewD3DPresentCallMaxMs { get; init; }
+    public double PreviewD3DTotalFrameCpuAvgMs { get; init; }
+    public double PreviewD3DTotalFrameCpuP95Ms { get; init; }
+    public double PreviewD3DTotalFrameCpuMaxMs { get; init; }
     public string PreviewGpuPlaybackState { get; init; } = "None";
     public int PreviewGpuNaturalVideoWidth { get; init; }
     public int PreviewGpuNaturalVideoHeight { get; init; }
@@ -474,6 +438,61 @@ public sealed class AutomationSnapshot
     public long VideoFramesEnqueued { get; init; }
     public long VideoDropsQueueSaturated { get; init; }
     public long VideoDropsBacklogEviction { get; init; }
+    public bool RecordingEncodingFailed { get; init; }
+    public string? RecordingEncodingFailureType { get; init; }
+    public string? RecordingEncodingFailureMessage { get; init; }
+    public int RecordingVideoQueueCapacity { get; init; }
+    public int RecordingVideoQueueMaxDepth { get; init; }
+    public long RecordingVideoFramesSubmittedToEncoder { get; init; }
+    public long RecordingVideoEncoderPts { get; init; }
+    public long RecordingVideoEncoderPacketsWritten { get; init; }
+    public long RecordingVideoEncoderDroppedFrames { get; init; }
+    public long RecordingVideoSequenceGaps { get; init; }
+    public long RecordingVideoQueueOldestFrameAgeMs { get; init; }
+    public long RecordingVideoQueueLastLatencyMs { get; init; }
+    public int RecordingVideoQueueLatencySampleCount { get; init; }
+    public double RecordingVideoQueueLatencyAvgMs { get; init; }
+    public double RecordingVideoQueueLatencyP95Ms { get; init; }
+    public double RecordingVideoQueueLatencyMaxMs { get; init; }
+    public long RecordingVideoBackpressureWaitMs { get; init; }
+    public long RecordingVideoBackpressureEvents { get; init; }
+    public long RecordingVideoBackpressureLastWaitMs { get; init; }
+    public long RecordingVideoBackpressureMaxWaitMs { get; init; }
+    public int RecordingGpuQueueDepth { get; init; }
+    public int RecordingGpuQueueCapacity { get; init; }
+    public int RecordingGpuQueueMaxDepth { get; init; }
+    public long RecordingGpuFramesEnqueued { get; init; }
+    public long RecordingGpuFramesDropped { get; init; }
+    public int RecordingCudaQueueDepth { get; init; }
+    public int RecordingCudaQueueCapacity { get; init; }
+    public int RecordingCudaQueueMaxDepth { get; init; }
+    public long RecordingCudaFramesEnqueued { get; init; }
+    public long RecordingCudaFramesDropped { get; init; }
+    public bool FlashbackEncodingFailed { get; init; }
+    public string? FlashbackEncodingFailureType { get; init; }
+    public string? FlashbackEncodingFailureMessage { get; init; }
+    public int FlashbackVideoQueueCapacity { get; init; }
+    public int FlashbackVideoQueueMaxDepth { get; init; }
+    public long FlashbackVideoFramesSubmittedToEncoder { get; init; }
+    public long FlashbackVideoEncoderPts { get; init; }
+    public long FlashbackVideoEncoderPacketsWritten { get; init; }
+    public long FlashbackVideoEncoderDroppedFrames { get; init; }
+    public long FlashbackVideoSequenceGaps { get; init; }
+    public long FlashbackVideoQueueOldestFrameAgeMs { get; init; }
+    public long FlashbackVideoQueueLastLatencyMs { get; init; }
+    public int FlashbackVideoQueueLatencySampleCount { get; init; }
+    public double FlashbackVideoQueueLatencyAvgMs { get; init; }
+    public double FlashbackVideoQueueLatencyP95Ms { get; init; }
+    public double FlashbackVideoQueueLatencyMaxMs { get; init; }
+    public long FlashbackVideoBackpressureWaitMs { get; init; }
+    public long FlashbackVideoBackpressureEvents { get; init; }
+    public long FlashbackVideoBackpressureLastWaitMs { get; init; }
+    public long FlashbackVideoBackpressureMaxWaitMs { get; init; }
+    public int FlashbackGpuQueueDepth { get; init; }
+    public int FlashbackGpuQueueCapacity { get; init; }
+    public int FlashbackGpuQueueMaxDepth { get; init; }
+    public long FlashbackGpuFramesEnqueued { get; init; }
+    public long FlashbackGpuFramesDropped { get; init; }
     public long AudioDropsQueueSaturated { get; init; }
     public long AudioDropsBacklogEviction { get; init; }
     public long AudioChunksDropped { get; init; }
@@ -515,8 +534,83 @@ public sealed class AutomationSnapshot
     public long MjpegTotalDecoded { get; init; }
     public long MjpegTotalEmitted { get; init; }
     public long MjpegTotalDropped { get; init; }
+    public long MjpegCompressedFramesQueued { get; init; }
+    public long MjpegCompressedFramesDequeued { get; init; }
+    public long MjpegCompressedDropsQueueFull { get; init; }
+    public long MjpegCompressedDropsByteBudget { get; init; }
+    public long MjpegCompressedDropsDisposed { get; init; }
+    public long MjpegDecodeFailures { get; init; }
+    public long MjpegReorderCollisions { get; init; }
+    public long MjpegEmitFailures { get; init; }
+    public int MjpegCompressedQueueDepth { get; init; }
+    public long MjpegCompressedQueueBytes { get; init; }
+    public long MjpegCompressedQueueByteBudget { get; init; }
     public long MjpegReorderSkips { get; init; }
     public int MjpegReorderBufferDepth { get; init; }
+    public bool MjpegPreviewJitterEnabled { get; init; }
+    public int MjpegPreviewJitterTargetDepth { get; init; }
+    public int MjpegPreviewJitterMaxDepth { get; init; }
+    public int MjpegPreviewJitterQueueDepth { get; init; }
+    public long MjpegPreviewJitterTotalQueued { get; init; }
+    public long MjpegPreviewJitterTotalSubmitted { get; init; }
+    public long MjpegPreviewJitterTotalDropped { get; init; }
+    public long MjpegPreviewJitterUnderflowCount { get; init; }
+    public int MjpegPreviewJitterInputSampleCount { get; init; }
+    public double MjpegPreviewJitterInputAvgMs { get; init; }
+    public double MjpegPreviewJitterInputP95Ms { get; init; }
+    public double MjpegPreviewJitterInputMaxMs { get; init; }
+    public int MjpegPreviewJitterOutputSampleCount { get; init; }
+    public double MjpegPreviewJitterOutputAvgMs { get; init; }
+    public double MjpegPreviewJitterOutputP95Ms { get; init; }
+    public double MjpegPreviewJitterOutputMaxMs { get; init; }
+    public int MjpegPreviewJitterLatencySampleCount { get; init; }
+    public double MjpegPreviewJitterLatencyAvgMs { get; init; }
+    public double MjpegPreviewJitterLatencyP95Ms { get; init; }
+    public double MjpegPreviewJitterLatencyMaxMs { get; init; }
+    public long MjpegPreviewJitterDeadlineDropCount { get; init; }
+    public long MjpegPreviewJitterTargetIncreaseCount { get; init; }
+    public long MjpegPreviewJitterTargetDecreaseCount { get; init; }
+    public int MjpegPacketHashSampleCount { get; init; }
+    public long MjpegPacketHashUniqueFrameCount { get; init; }
+    public long MjpegPacketHashDuplicateFrameCount { get; init; }
+    public long MjpegPacketHashLongestDuplicateRun { get; init; }
+    public double MjpegPacketHashInputObservedFps { get; init; }
+    public double MjpegPacketHashUniqueObservedFps { get; init; }
+    public double MjpegPacketHashDuplicateFramePercent { get; init; }
+    public string MjpegPacketHashLastHash { get; init; } = string.Empty;
+    public bool MjpegPacketHashLastFrameDuplicate { get; init; }
+    public string MjpegPacketHashPattern { get; init; } = "NoSamples";
+    public double[] MjpegPacketHashRecentInputIntervalsMs { get; init; } = Array.Empty<double>();
+    public double[] MjpegPacketHashRecentUniqueIntervalsMs { get; init; } = Array.Empty<double>();
+    public int[] MjpegPacketHashRecentDuplicateFlags { get; init; } = Array.Empty<int>();
+    public int VisualCadenceSampleCount { get; init; }
+    public long VisualCadenceChangedFrameCount { get; init; }
+    public long VisualCadenceRepeatFrameCount { get; init; }
+    public long VisualCadenceLongestRepeatRun { get; init; }
+    public double VisualCadenceOutputObservedFps { get; init; }
+    public double VisualCadenceChangeObservedFps { get; init; }
+    public double VisualCadenceRepeatFramePercent { get; init; }
+    public double VisualCadenceLastDelta { get; init; }
+    public double VisualCadenceAverageDelta { get; init; }
+    public double VisualCadenceP95Delta { get; init; }
+    public double VisualCadenceMotionScore { get; init; }
+    public string VisualCadenceMotionConfidence { get; init; } = "NoSamples";
+    public double[] VisualCadenceRecentOutputIntervalsMs { get; init; } = Array.Empty<double>();
+    public double[] VisualCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();
+    public int VisualCenterCadenceSampleCount { get; init; }
+    public long VisualCenterCadenceChangedFrameCount { get; init; }
+    public long VisualCenterCadenceRepeatFrameCount { get; init; }
+    public long VisualCenterCadenceLongestRepeatRun { get; init; }
+    public double VisualCenterCadenceOutputObservedFps { get; init; }
+    public double VisualCenterCadenceChangeObservedFps { get; init; }
+    public double VisualCenterCadenceRepeatFramePercent { get; init; }
+    public double VisualCenterCadenceLastDelta { get; init; }
+    public double VisualCenterCadenceAverageDelta { get; init; }
+    public double VisualCenterCadenceP95Delta { get; init; }
+    public double VisualCenterCadenceMotionScore { get; init; }
+    public string VisualCenterCadenceMotionConfidence { get; init; } = "NoSamples";
+    public double[] VisualCenterCadenceRecentOutputIntervalsMs { get; init; } = Array.Empty<double>();
+    public double[] VisualCenterCadenceRecentChangeIntervalsMs { get; init; } = Array.Empty<double>();
     public MjpegDecoderAutomationSnapshot[] MjpegPerDecoder { get; init; } = Array.Empty<MjpegDecoderAutomationSnapshot>();
 
     public long RecordingVideoBytes { get; init; }
@@ -750,11 +844,26 @@ public sealed class PreviewRuntimeSnapshot
     public bool StallSuspected { get; init; }
     public string RendererMode { get; init; } = "None";
     public string PreviewColorMetadata { get; init; } = "None";
+    public string D3DSwapChainAddress { get; init; } = string.Empty;
     public long D3DFramesSubmitted { get; init; }
     public long D3DFramesRendered { get; init; }
     public long D3DFramesDropped { get; init; }
+    public int D3DPendingFrameCount { get; init; }
     public string D3DInputColorSpace { get; init; } = "None";
     public string D3DOutputColorSpace { get; init; } = "None";
+    public int D3DCpuTimingSampleCount { get; init; }
+    public double D3DInputUploadCpuAvgMs { get; init; }
+    public double D3DInputUploadCpuP95Ms { get; init; }
+    public double D3DInputUploadCpuMaxMs { get; init; }
+    public double D3DRenderSubmitCpuAvgMs { get; init; }
+    public double D3DRenderSubmitCpuP95Ms { get; init; }
+    public double D3DRenderSubmitCpuMaxMs { get; init; }
+    public double D3DPresentCallAvgMs { get; init; }
+    public double D3DPresentCallP95Ms { get; init; }
+    public double D3DPresentCallMaxMs { get; init; }
+    public double D3DTotalFrameCpuAvgMs { get; init; }
+    public double D3DTotalFrameCpuP95Ms { get; init; }
+    public double D3DTotalFrameCpuMaxMs { get; init; }
     public double EstimatedPipelineLatencyMs { get; init; }
 
     // GPU MediaPlayer metrics (only meaningful when GpuActive == true)

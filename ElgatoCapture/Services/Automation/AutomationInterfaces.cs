@@ -3,8 +3,12 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Automation;
 
 public interface IAutomationWindowControl
 {
@@ -21,6 +25,7 @@ public interface IAutomationWindowControl
 public interface IAutomationDiagnosticsHub : IDisposable, IAsyncDisposable
 {
     AutomationSnapshot GetLatestSnapshot();
+    Task<AutomationSnapshot> RefreshSnapshotNowAsync(CancellationToken cancellationToken = default);
     IReadOnlyList<PerformanceTimelineEntry> GetPerformanceTimeline(int maxEntries = 240);
     IReadOnlyList<DiagnosticsEvent> GetRecentEvents(int maxEvents = 100);
     Task<RecordingVerificationResult> VerifyLastRecordingAsync(CancellationToken cancellationToken = default);

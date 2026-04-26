@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text.Json;
 using ElgatoCapture.Tools;
 
@@ -5,72 +6,76 @@ namespace McpServer;
 
 public sealed class PipeClient
 {
+    private readonly string _pipeName;
+
+    public PipeClient()
+        : this(null)
+    {
+    }
+
+    internal PipeClient(string? pipeName)
+    {
+        _pipeName = string.IsNullOrWhiteSpace(pipeName)
+            ? AutomationPipeProtocol.DefaultPipeName
+            : pipeName;
+    }
+
     public async Task<JsonElement> SendCommandAsync(
         string commandName,
         Dictionary<string, object?>? payload = null,
         int? responseTimeoutMs = null)
     {
-        if (!AutomationPipeProtocol.TryGetCommandValue(commandName, out var commandValue))
-        {
-            return CreateSyntheticError(
-                $"Unknown automation command '{commandName}'.",
-                "unknown-command");
-        }
-
-        var effectivePayload = payload ?? new Dictionary<string, object?>(StringComparer.Ordinal);
         var effectiveResponseTimeoutMs = responseTimeoutMs ?? AutomationPipeProtocol.GetDefaultResponseTimeout(commandName);
 
-        for (var attempt = 0; ; attempt++)
+        try
         {
-            try
-            {
-                var request = AutomationPipeProtocol.CreateRequestEnvelope(commandValue, effectivePayload);
+            var result = await AutomationPipeClient.SendCommandWithResultAsync(
+                    _pipeName,
+                    commandName,
+                    payload,
+                    AutomationPipeProtocol.DefaultConnectTimeoutMs,
+                    effectiveResponseTimeoutMs,
+                    includeResponseElement: true)
+                .ConfigureAwait(false);
 
-                var requestJson = JsonSerializer.Serialize(request);
-                var responseLine = await SendAsync(
-                    requestJson,
-                    effectiveResponseTimeoutMs).ConfigureAwait(false);
-
-                using var responseDocument = JsonDocument.Parse(responseLine);
-                var response = responseDocument.RootElement.Clone();
-
-                if (!AutomationResponseState.TryRead(response, out var success, out var status, out var retryAfterMs))
-                {
-                    return response;
-                }
-
-                if (success)
-                {
-                    return response;
-                }
-
-                if (!string.Equals(status, "not_ready", StringComparison.OrdinalIgnoreCase) ||
-                    attempt >= AutomationPipeProtocol.DefaultNotReadyRetries)
-                {
-                    return response;
-                }
-
-                var delayMs = Math.Clamp(retryAfterMs ?? AutomationPipeProtocol.DefaultNotReadyDelayMs, 100, 30000);
-                await Task.Delay(delayMs).ConfigureAwait(false);
-            }
-            catch (AutomationPipeConnectException)
-            {
-                return CreateSyntheticError(
-                    "ElgatoCapture is not running or not responding. Start the app and try again.",
-                    "pipe-connect-failed");
-            }
-            catch (AutomationPipeResponseTimeoutException ex)
-            {
-                return CreateSyntheticError(ex.Message, "pipe-response-timeout");
-            }
-            catch (AutomationPipeProtocolException ex)
-            {
-                return CreateSyntheticError(ex.Message, "pipe-protocol-error");
-            }
-            catch (Exception ex)
-            {
-                return CreateSyntheticError(ex.Message, "pipe-client-error");
-            }
+            return result.ResponseElement
+                ?? throw new JsonException("Automation pipe returned invalid JSON.");
+        }
+        catch (AutomationPipeConnectException)
+        {
+            return CreateSyntheticError(
+                "ElgatoCapture is not running or not responding. Start the app and try again.",
+                "pipe-connect-failed");
+        }
+        catch (AutomationPipeResponseTimeoutException ex)
+        {
+            return CreateSyntheticError(ex.Message, "pipe-response-timeout");
+        }
+        catch (AutomationPipeProtocolException ex)
+        {
+            return CreateSyntheticError(ex.Message, "pipe-protocol-error");
+        }
+        catch (ArgumentException ex)
+        {
+            return CreateSyntheticError(ex.Message, "unknown-command");
+        }
+        catch (JsonException ex)
+        {
+            return CreateSyntheticError(
+                $"Automation pipe returned invalid JSON: {ex.Message}",
+                "pipe-invalid-json");
+        }
+        catch (IOException ex)
+        {
+            return CreateSyntheticError(
+                $"Automation pipe I/O failed ({ex.GetType().Name}): {ex.Message}",
+                "pipe-io-error");
+        }
+        catch (OperationCanceledException ex)
+        {
+            return CreateSyntheticError(
+                $"Automation pipe request canceled: {ex.Message}",
+                "pipe-canceled");
         }
     }
 
@@ -95,12 +100,4 @@ public sealed class PipeClient
         return responseDocument.RootElement.Clone();
     }
 
-    private static async Task<string> SendAsync(string requestJson, int responseTimeoutMs)
-    {
-        return await AutomationPipeClient.SendRequestAsync(
-            AutomationPipeProtocol.DefaultPipeName,
-            requestJson,
-            AutomationPipeProtocol.DefaultConnectTimeoutMs,
-            responseTimeoutMs).ConfigureAwait(false);
-    }
 }

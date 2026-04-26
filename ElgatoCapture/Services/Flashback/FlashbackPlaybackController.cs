@@ -5,8 +5,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Flashback;
 
 internal sealed class FlashbackPlaybackController : IDisposable
 {
@@ -248,7 +251,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (Interlocked.CompareExchange(ref _disposedFlag, 1, 0) != 0) return;
 
-        Logger.Log($"FLASHBACK_PLAYBACK_DISPOSE_BEGIN state={_state} initialized={_initialized}");
+        Logger.Log($"FLASHBACK_PLAYBACK_DISPOSE_REQUEST state={_state} initialized={_initialized}");
         StopPlaybackThread();
         Logger.Log("FLASHBACK_PLAYBACK_DISPOSED");
     }

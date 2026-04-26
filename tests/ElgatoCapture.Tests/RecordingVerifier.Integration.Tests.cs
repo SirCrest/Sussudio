@@ -55,8 +55,8 @@ static partial class Program
         /// </summary>
         public object CreateProxy()
         {
-            var supervisorType = RequireType("ElgatoCapture.Services.IProcessSupervisor");
-            var specType = RequireType("ElgatoCapture.Services.ProcessSpec");
+            var supervisorType = RequireType("ElgatoCapture.Services.Runtime.IProcessSupervisor");
+            var specType = RequireType("ElgatoCapture.Services.Runtime.ProcessSpec");
 
             // Use the generic DispatchProxy.Create<T, TProxy>() method
             var createMethod = typeof(DispatchProxy).GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -103,7 +103,7 @@ static partial class Program
 
         private static object CreateProcessRunResult(bool started, int exitCode, string stdOut)
         {
-            var resultType = RequireType("ElgatoCapture.Services.ProcessRunResult");
+            var resultType = RequireType("ElgatoCapture.Services.Runtime.ProcessRunResult");
             var result = RuntimeHelpers.GetUninitializedObject(resultType);
             SetPropertyBackingField(result, "Started", started);
             SetPropertyBackingField(result, "TimedOut", false);
@@ -195,7 +195,7 @@ static partial class Program
     private static object CreateVerifierWithFake(object fakeSupervisor)
     {
         var verifierType = RequireType("ElgatoCapture.Services.Recording.RecordingVerifier");
-        var supervisorType = RequireType("ElgatoCapture.Services.IProcessSupervisor");
+        var supervisorType = RequireType("ElgatoCapture.Services.Runtime.IProcessSupervisor");
         var ctor = verifierType.GetConstructor(
             BindingFlags.Instance | BindingFlags.NonPublic,
             binder: null,

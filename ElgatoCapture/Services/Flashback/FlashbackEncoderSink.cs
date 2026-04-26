@@ -8,17 +8,28 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using Windows.Graphics.Imaging;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Flashback;
 
-internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncoder, IGpuVideoFrameEncoder
+internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder
 {
     private const int VideoQueueCapacity = 180;
     private const int AudioQueueCapacity = 1800;
     private const int GpuQueueCapacity = 8;
+    private const int QueueBackpressureTimeoutMs = 250;
     private const int StopTimeoutMs = 30_000;
+    private const int DisposeTimeoutMs = 1_000;
+    private const int VideoQueueLatencyWindowSize = 256;
 
     private readonly object _sync = new();
+    private readonly object _videoQueueSync = new();
+    private readonly object _videoQueueLatencySync = new();
+    private readonly object _videoSequenceSync = new();
+    private readonly Queue<long> _videoQueueEnqueueTicks = new();
     private readonly LibAvEncoder _encoder = new();
     private readonly FlashbackBufferManager _bufferManager;
     private readonly ManualResetEventSlim _workAvailable = new(false, 100);
@@ -38,6 +49,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private volatile bool _started;
     private volatile bool _disposed;
     private bool _gpuEncodingEnabled;
+    private int _disposeFinalized;
+    private int _deferredDisposeScheduled;
 
     private bool _forceRotateRequested;
     private volatile TaskCompletionSource<IReadOnlyList<string>>? _forceRotateTcs;
@@ -48,6 +61,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private long _droppedVideoFrames;
     private long _encodedVideoFrames;
     private long _videoFramesEnqueued;
+    private long _videoFramesSubmittedToEncoder;
     private long _videoDropsQueueSaturated;
     private long _videoDropsBacklogEviction;
     private long _audioSamplesReceived;
@@ -61,12 +75,23 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private Action<Exception>? _onFatalError;
     private bool _forceRotateDraining;
     private int _videoQueueDepth;
+    private int _videoQueueMaxDepth;
     private int _audioQueueDepth;
     private int _microphoneQueueDepth;
     private int _gpuQueueDepth;
+    private int _gpuQueueMaxDepth;
     private long _lastVideoEnqueueTick;
     private long _lastVideoWriteTick;
-    private long _lastBurstEvictionTick;
+    private long _lastVideoQueueLatencyMs;
+    private long _videoBackpressureWaitMs;
+    private long _videoBackpressureEvents;
+    private long _lastVideoBackpressureWaitMs;
+    private long _maxVideoBackpressureWaitMs;
+    private long _videoSequenceGaps;
+    private long _lastVideoSequenceNumber = -1;
+    private readonly double[] _videoQueueLatencySamples = new double[VideoQueueLatencyWindowSize];
+    private int _videoQueueLatencySampleCount;
+    private int _videoQueueLatencySampleIndex;
     private string? _tsFilePath;
     private string? _recordingOutputPath;
     private int _recordingActive;
@@ -103,10 +128,17 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public long TotalBytesWritten => _bufferManager.TotalBytesWritten;
 
     public int VideoQueueCount => Volatile.Read(ref _videoQueueDepth);
+    public int VideoQueueCapacityFrames => VideoQueueCapacity;
+    public int VideoQueueMaxDepth => Volatile.Read(ref _videoQueueMaxDepth);
 
     public int AudioQueueCount => Volatile.Read(ref _audioQueueDepth);
 
     public long VideoFramesEnqueuedCount => Interlocked.Read(ref _videoFramesEnqueued);
+    public long VideoFramesSubmittedToEncoder => Interlocked.Read(ref _videoFramesSubmittedToEncoder);
+    public long VideoEncoderPts => _encoder.NextVideoPts;
+    public long VideoEncoderPacketsWritten => _encoder.VideoPacketsWritten;
+    public long VideoEncoderDroppedFrames => _encoder.DroppedFrameCount;
+    public long VideoSequenceGaps => Interlocked.Read(ref _videoSequenceGaps);
 
     public long VideoDropsQueueSaturated => Interlocked.Read(ref _videoDropsQueueSaturated);
 
@@ -119,8 +151,26 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public long LastVideoEnqueueTick => Interlocked.Read(ref _lastVideoEnqueueTick);
 
     public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
+    public long LastVideoQueueLatencyMs => Interlocked.Read(ref _lastVideoQueueLatencyMs);
+    public long VideoQueueOldestFrameAgeMs => GetVideoQueueOldestFrameAgeMs();
+    public int VideoQueueLatencySampleCount => GetVideoQueueLatencyMetrics().SampleCount;
+    public double VideoQueueLatencyAvgMs => GetVideoQueueLatencyMetrics().AverageMs;
+    public double VideoQueueLatencyP95Ms => GetVideoQueueLatencyMetrics().P95Ms;
+    public double VideoQueueLatencyMaxMs => GetVideoQueueLatencyMetrics().MaxMs;
+    public long VideoBackpressureWaitMs => Interlocked.Read(ref _videoBackpressureWaitMs);
+    public long VideoBackpressureEvents => Interlocked.Read(ref _videoBackpressureEvents);
+    public long LastVideoBackpressureWaitMs => Interlocked.Read(ref _lastVideoBackpressureWaitMs);
+    public long MaxVideoBackpressureWaitMs => Interlocked.Read(ref _maxVideoBackpressureWaitMs);
 
     public bool GpuEncodingEnabled => Volatile.Read(ref _gpuEncodingEnabled);
+    public int GpuQueueCount => Volatile.Read(ref _gpuQueueDepth);
+    public int GpuQueueCapacityFrames => GpuQueueCapacity;
+    public int GpuQueueMaxDepth => Volatile.Read(ref _gpuQueueMaxDepth);
+    public long GpuFramesEnqueued => Interlocked.Read(ref _gpuFramesEnqueued);
+    public long GpuFramesDropped => Interlocked.Read(ref _gpuFramesDropped);
+    public bool EncodingFailed => Volatile.Read(ref _encodingFailure) != null;
+    public string? EncodingFailureType => Volatile.Read(ref _encodingFailure)?.GetType().Name;
+    public string? EncodingFailureMessage => Volatile.Read(ref _encodingFailure)?.Message;
 
     public bool AudioEnabled => Volatile.Read(ref _audioEnabled);
 
@@ -137,6 +187,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public int EncoderWidth => _width;
     public int EncoderHeight => _height;
     public double EncoderFrameRate => _sessionContext?.FrameRate ?? 0;
+    internal Task EncodingCompletionTask => _encodingTask ?? Task.CompletedTask;
 
     public Task StartAsync(FlashbackSessionContext context, CancellationToken cancellationToken = default, TimeSpan ptsBaseOffset = default)
     {
@@ -283,7 +334,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 _started = false;
             }
 
-            _bufferManager.PurgeAllSegments();
+            if (_ownsBufferManager)
+            {
+                _bufferManager.PurgeAllSegments();
+            }
             _encoder.Dispose();
             throw;
         }
@@ -297,127 +351,260 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     public TimeSpan LastRecordingStartPts { get; private set; }
     public TimeSpan LastRecordingEndPts { get; private set; }
+    public bool IsRecordingActive => Volatile.Read(ref _recordingActive) != 0;
+    public bool IsForceRotateActive =>
+        Volatile.Read(ref _forceRotateRequested) ||
+        Volatile.Read(ref _forceRotateDraining);
+
+    public bool CanBeginRecording
+    {
+        get
+        {
+            lock (_sync)
+            {
+                return !_disposed &&
+                       _started &&
+                       _encodingFailure == null &&
+                       !IsForceRotateActive &&
+                       _encodingTask?.IsCompleted != true;
+            }
+        }
+    }
+
+    public bool WaitForForceRotateIdle(TimeSpan timeout)
+    {
+        var timeoutMs = Math.Max(0, (long)timeout.TotalMilliseconds);
+        var deadlineTick = Environment.TickCount64 + timeoutMs;
+        while (IsForceRotateActive)
+        {
+            if (timeoutMs == 0 || Environment.TickCount64 >= deadlineTick)
+            {
+                return false;
+            }
+
+            _workAvailable.Set();
+            Thread.Sleep(10);
+        }
+
+        return true;
+    }
 
     public void BeginRecording(string outputPath)
     {
         lock (_sync)
         {
-            if (_disposed || !_started) return;
-        }
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(FlashbackEncoderSink));
+            }
 
-        if (_encodingFailure != null)
-            throw new InvalidOperationException("Cannot begin recording: encoding loop has failed", _encodingFailure);
-        if (_encodingTask?.IsCompleted == true && _encodingTask.IsFaulted)
-            throw new InvalidOperationException("Cannot begin recording: encoding task has terminated");
+            if (_encodingFailure != null)
+            {
+                throw new InvalidOperationException("Cannot begin recording: encoding loop has failed", _encodingFailure);
+            }
+
+            if (!_started)
+            {
+                throw new InvalidOperationException("Cannot begin recording: flashback encoder is not running.");
+            }
+
+            if (_encodingTask?.IsCompleted == true)
+            {
+                throw new InvalidOperationException("Cannot begin recording: encoding task has terminated.");
+            }
+
+            if (IsForceRotateActive)
+            {
+                throw new InvalidOperationException("Cannot begin recording: flashback export rotation is still draining.");
+            }
+        }
 
         _recordingOutputPath = outputPath ?? string.Empty;
         Volatile.Write(ref _recordingActive, 1);
         _bufferManager.PauseEviction();
-        Logger.Log($"FLASHBACK_RECORDING_BEGIN output='{_recordingOutputPath}'");
+        Logger.Log($"FLASHBACK_RECORDING_ACTIVE output='{_recordingOutputPath}'");
+    }
+
+    public void CancelRecordingStartRollback(string reason)
+    {
+        if (Interlocked.Exchange(ref _recordingActive, 0) != 0)
+        {
+            _bufferManager.ResumeEviction();
+            Logger.Log($"FLASHBACK_RECORDING_START_ROLLBACK reason='{reason}'");
+        }
     }
 
     public async Task<FinalizeResult> EndRecordingAsync(CancellationToken cancellationToken)
     {
-        cancellationToken.ThrowIfCancellationRequested();
-        Volatile.Write(ref _recordingActive, 0);
-
-        // Give encoding loop time to drain remaining queued frames
-        await Task.Delay(100, cancellationToken).ConfigureAwait(false);
-
-        // Check if the encoding loop crashed during the recording
-        var failure = _encodingFailure;
-        if (failure != null)
+        var wasRecording = Interlocked.Exchange(ref _recordingActive, 0) != 0;
+        try
         {
-            _bufferManager.ResumeEviction();
-            Logger.Log($"FLASHBACK_RECORDING_END_FAIL error='{failure.Message}'");
+            cancellationToken.ThrowIfCancellationRequested();
+
+            // Give encoding loop time to drain remaining queued frames.
+            await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+
+            // Check if the encoding loop crashed during the recording
+            var failure = _encodingFailure;
+            if (failure != null)
+            {
+                Logger.Log($"FLASHBACK_RECORDING_FAIL error='{failure.Message}'");
+                return new FinalizeResult
+                {
+                    Succeeded = false,
+                    OutputPath = _recordingOutputPath ?? string.Empty,
+                    StatusMessage = $"Flashback recording failed: {failure.Message}",
+                    PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()
+                };
+            }
+
+            // Capture end PTS BEFORE resuming eviction. When an outer pause is held
+            // (FinalizeFlashbackRecordingAsync), ResumeEviction won't reach count=0 and
+            // therefore won't snapshot the end PTS. Even if count does reach 0, the
+            // stored _recordingEndPts may be stale from a previous recording. Always
+            // use the live LatestPts as the authoritative recording end time.
+            var endPts = _bufferManager.LatestPts;
+            LastRecordingEndPts = endPts;
+
             return new FinalizeResult
             {
-                Succeeded = false,
+                Succeeded = true,
                 OutputPath = _recordingOutputPath ?? string.Empty,
-                StatusMessage = $"Flashback recording failed: {failure.Message}",
+                StatusMessage = "Flashback recording ready (single .ts file)",
                 PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()
             };
         }
-
-        // Capture end PTS BEFORE resuming eviction. When an outer pause is held
-        // (FinalizeFlashbackRecordingAsync), ResumeEviction won't reach count=0 and
-        // therefore won't snapshot the end PTS. Even if count does reach 0, the
-        // stored _recordingEndPts may be stale from a previous recording. Always
-        // use the live LatestPts as the authoritative recording end time.
-        var endPts = _bufferManager.LatestPts;
-        var (startPts, _) = _bufferManager.ResumeEviction();
-        LastRecordingStartPts = startPts;
-        LastRecordingEndPts = endPts;
-
-        Logger.Log($"FLASHBACK_RECORDING_END output='{_recordingOutputPath}' start_pts_ms={(long)startPts.TotalMilliseconds} end_pts_ms={(long)endPts.TotalMilliseconds} duration_s={(endPts - startPts).TotalSeconds:F1}");
-
-        return new FinalizeResult
+        finally
         {
-            Succeeded = true,
-            OutputPath = _recordingOutputPath ?? string.Empty,
-            StatusMessage = "Flashback recording ready (single .ts file)",
-            PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()
-        };
+            if (wasRecording)
+            {
+                var (startPts, _) = _bufferManager.ResumeEviction();
+                LastRecordingStartPts = startPts;
+                Logger.Log(
+                    $"FLASHBACK_RECORDING_READY output='{_recordingOutputPath}' " +
+                    $"start_pts_ms={(long)LastRecordingStartPts.TotalMilliseconds} " +
+                    $"end_pts_ms={(long)LastRecordingEndPts.TotalMilliseconds} " +
+                    $"duration_s={(LastRecordingEndPts - LastRecordingStartPts).TotalSeconds:F1}");
+            }
+        }
     }
 
     public void EnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
+        => TryEnqueueRawVideoFrame(data, expectedSize);
+
+    public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
     {
         var queue = _videoQueue;
         if (_disposed || !_started || queue == null || expectedSize <= 0 || data.IsEmpty || Volatile.Read(ref _forceRotateDraining))
         {
-            return;
+            return false;
         }
 
         if (data.Length < expectedSize)
         {
             Logger.Log($"FLASHBACK_SINK_VIDEO_FRAME_SHORT actual={data.Length} expected={expectedSize}");
-            return;
+            return false;
         }
 
         var buffer = GetBuffer(expectedSize);
         data[..expectedSize].CopyTo(buffer.AsSpan(0, expectedSize));
-        var packet = new VideoFramePacket(buffer, expectedSize);
-        Interlocked.Exchange(ref _lastVideoEnqueueTick, Environment.TickCount64);
+        var enqueueTick = Environment.TickCount64;
+        var p010FrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(_width, _height, isP010: true);
+        var isP010 = p010FrameSize > 0 && expectedSize == p010FrameSize;
+        var packet = VideoFramePacket.Frame(buffer, expectedSize, enqueueTick, isP010);
+        Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
 
-        if (TryEnqueueVideoPacket(queue, packet))
+        var enqueueResult = TryEnqueueVideoPacket(queue, packet);
+        if (enqueueResult != VideoEnqueueResult.Overloaded)
         {
-            return;
+            return enqueueResult == VideoEnqueueResult.Accepted;
         }
 
         var dropped = Interlocked.Increment(ref _videoDropsQueueSaturated);
         if (dropped == 1 || dropped % 30 == 0)
         {
             Logger.Log(
-                $"FLASHBACK_SINK_VIDEO_DROP saturated={dropped} evicted={Interlocked.Read(ref _videoDropsBacklogEviction)} total_dropped={DroppedVideoFrames}");
+                $"FLASHBACK_SINK_VIDEO_OVERLOAD saturated={dropped} evicted={Interlocked.Read(ref _videoDropsBacklogEviction)} total_dropped={DroppedVideoFrames}");
         }
+
+        return false;
+    }
+
+    public void EnqueueRawVideoFrame(PooledVideoFrameLease frame)
+        => ((IRawVideoFrameLeaseTryEncoder)this).TryEnqueueRawVideoFrame(frame);
+
+    bool IRawVideoFrameLeaseTryEncoder.TryEnqueueRawVideoFrame(PooledVideoFrameLease frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+
+        var queue = _videoQueue;
+        if (_disposed || !_started || queue == null || Volatile.Read(ref _forceRotateDraining))
+        {
+            frame.Dispose();
+            return false;
+        }
+
+        var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, frame.PixelFormat == PooledVideoPixelFormat.P010);
+        if (frame.Length < expectedSize)
+        {
+            Logger.Log($"FLASHBACK_SINK_VIDEO_FRAME_SHORT actual={frame.Length} expected={expectedSize}");
+            frame.Dispose();
+            return false;
+        }
+
+        if (frame.Width != _width || frame.Height != _height)
+        {
+            Logger.Log($"FLASHBACK_SINK_VIDEO_FRAME_SIZE_MISMATCH expected={_width}x{_height} actual={frame.Width}x{frame.Height}");
+            frame.Dispose();
+            return false;
+        }
+
+        var enqueueTick = Environment.TickCount64;
+        var packet = VideoFramePacket.Frame(frame, enqueueTick);
+        Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
+
+        var enqueueResult = TryEnqueueVideoPacket(queue, packet);
+        if (enqueueResult != VideoEnqueueResult.Overloaded)
+        {
+            return enqueueResult == VideoEnqueueResult.Accepted;
+        }
+
+        var dropped = Interlocked.Increment(ref _videoDropsQueueSaturated);
+        if (dropped == 1 || dropped % 30 == 0)
+        {
+            Logger.Log(
+                $"FLASHBACK_SINK_VIDEO_OVERLOAD saturated={dropped} evicted={Interlocked.Read(ref _videoDropsBacklogEviction)} total_dropped={DroppedVideoFrames}");
+        }
+
+        return false;
     }
 
     public void EnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
+        => TryEnqueueGpuVideoFrame(d3d11Texture2D, subresourceIndex);
+
+    public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
     {
         var queue = _gpuQueue;
         if (_disposed || !_started || queue == null || d3d11Texture2D == IntPtr.Zero || Volatile.Read(ref _forceRotateDraining))
         {
-            return;
+            return false;
         }
 
         Marshal.AddRef(d3d11Texture2D);
         var packet = new GpuFramePacket(d3d11Texture2D, subresourceIndex);
-        if (!queue.Writer.TryWrite(packet))
+        var enqueueResult = TryEnqueueGpuPacket(queue, packet);
+        if (enqueueResult != VideoEnqueueResult.Overloaded)
         {
-            Marshal.Release(d3d11Texture2D);
-            _encoder.SkipVideoFrame();  // Advance PTS even on dropped frames to prevent A/V drift
-            var dropped = Interlocked.Increment(ref _gpuFramesDropped);
-            if (dropped == 1 || dropped % 30 == 0)
-            {
-                Logger.Log($"FLASHBACK_SINK_GPU_DROP count={dropped} queue_depth={Volatile.Read(ref _gpuQueueDepth)}");
-            }
-
-            return;
+            return enqueueResult == VideoEnqueueResult.Accepted;
         }
 
-        Interlocked.Increment(ref _gpuQueueDepth);
-        Interlocked.Increment(ref _gpuFramesEnqueued);
-        SignalWork();
+        var dropped = Interlocked.Increment(ref _gpuFramesDropped);
+        if (dropped == 1 || dropped % 30 == 0)
+        {
+            Logger.Log($"FLASHBACK_SINK_GPU_OVERLOAD count={dropped} queue_depth={Volatile.Read(ref _gpuQueueDepth)}");
+        }
+
+        return false;
     }
 
     public void EnqueueAudioSamples(ReadOnlyMemory<byte> samples)
@@ -494,6 +681,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return StopCoreAsync(cancellationToken);
     }
 
+    // REVIEWED 2026-04-07: IDisposable fallback only — all callers use DisposeAsync.
+    // CaptureService.DisposeFlashbackPreviewBackendAsync awaits DisposeAsync directly.
     public void Dispose()
     {
         if (_disposed) return;
@@ -519,26 +708,66 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         CompleteWriter(_gpuQueue);
         _cts?.Cancel();
 
-        if (_encodingTask != null)
+        if (_encodingTask == null)
+        {
+            FinalizeDisposeCore();
+            return;
+        }
+
+        var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(DisposeTimeoutMs)).ConfigureAwait(false);
+        if (ReferenceEquals(completedTask, _encodingTask))
+        {
+            ObserveEncodingTaskCompletion(_encodingTask);
+            FinalizeDisposeCore();
+            return;
+        }
+
+        Logger.Log($"FLASHBACK_SINK_DISPOSE_DEFERRED timeout_ms={DisposeTimeoutMs}");
+        ScheduleDeferredDisposeCleanup(_encodingTask);
+    }
+
+    private void ScheduleDeferredDisposeCleanup(Task encodingTask)
+    {
+        if (Interlocked.CompareExchange(ref _deferredDisposeScheduled, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
         {
             try
             {
-                var completedTask = await Task.WhenAny(_encodingTask, Task.Delay(1000)).ConfigureAwait(false);
-                if (ReferenceEquals(completedTask, _encodingTask))
-                {
-                    await _encodingTask.ConfigureAwait(false);
-                }
-                else
-                {
-                    Logger.Log("FLASHBACK_SINK_DISPOSE_TIMEOUT task=encoding_loop");
-                    _cts?.Cancel();
-                    // Fall through to cleanup
-                }
+                await encodingTask.ConfigureAwait(false);
             }
-            catch
+            catch (Exception ex)
             {
-                // Best-effort cleanup path.
+                _encodingFailure ??= ex;
             }
+            finally
+            {
+                FinalizeDisposeCore();
+                Logger.Log("FLASHBACK_SINK_DISPOSE_DEFERRED_COMPLETE");
+            }
+        });
+    }
+
+    private void ObserveEncodingTaskCompletion(Task encodingTask)
+    {
+        try
+        {
+            encodingTask.GetAwaiter().GetResult();
+        }
+        catch (Exception ex)
+        {
+            _encodingFailure ??= ex;
+        }
+    }
+
+    private void FinalizeDisposeCore()
+    {
+        if (Interlocked.CompareExchange(ref _disposeFinalized, 1, 0) != 0)
+        {
+            return;
         }
 
         ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
@@ -630,6 +859,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Interlocked.Exchange(ref _droppedVideoFrames, 0);
         Interlocked.Exchange(ref _encodedVideoFrames, 0);
         Interlocked.Exchange(ref _videoFramesEnqueued, 0);
+        Interlocked.Exchange(ref _videoFramesSubmittedToEncoder, 0);
         Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
         Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
         Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
@@ -639,6 +869,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
         Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
         Interlocked.Exchange(ref _gpuFramesDropped, 0);
+        Interlocked.Exchange(ref _videoQueueMaxDepth, 0);
+        Interlocked.Exchange(ref _gpuQueueMaxDepth, 0);
         Interlocked.Exchange(ref _audioSamplesReceived, 0);
         Interlocked.Exchange(ref _videoQueueDepth, 0);
         Interlocked.Exchange(ref _audioQueueDepth, 0);
@@ -646,7 +878,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Interlocked.Exchange(ref _gpuQueueDepth, 0);
         Interlocked.Exchange(ref _lastVideoEnqueueTick, 0);
         Interlocked.Exchange(ref _lastVideoWriteTick, 0);
-        Interlocked.Exchange(ref _lastBurstEvictionTick, 0);
+        ResetVideoDiagnostics();
         Interlocked.Exchange(ref _segmentStartBytes, 0);
     }
 
@@ -696,7 +928,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     // Pause acceptance of new packets to ensure atomicity between drain and rotation.
                     // Producers calling Enqueue* will see this flag and drop packets rather than
                     // inserting them into the new segment that would be excluded from the export.
-                    Volatile.Write(ref _forceRotateDraining, true);
+                    lock (_videoQueueSync)
+                    {
+                        Volatile.Write(ref _forceRotateDraining, true);
+                    }
 
                     lock (_sync)
                     {
@@ -746,7 +981,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     }
                     finally
                     {
-                        Volatile.Write(ref _forceRotateDraining, false);
+                        lock (_videoQueueSync)
+                        {
+                            Volatile.Write(ref _forceRotateDraining, false);
+                        }
                     }
                     madeProgress = true;
                 }
@@ -864,29 +1102,45 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             return false;
         }
-        var expectedNv12Size = w * h * 3 / 2;
 
-        while (reader.TryRead(out var packet))
+        while (true)
         {
-            Interlocked.Decrement(ref _videoQueueDepth);
+            VideoFramePacket packet;
+            lock (_videoQueueSync)
+            {
+                if (!reader.TryRead(out packet))
+                {
+                    break;
+                }
+
+                RemoveQueuedVideoTick(packet.EnqueueTick);
+                Interlocked.Decrement(ref _videoQueueDepth);
+            }
+
+            RecordVideoPacketDequeued(packet);
             try
             {
+                var expectedFrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(w, h, packet.IsP010);
                 // Defense-in-depth: if a stale frame from a previous resolution
                 // leaks through during a reinit cycle, drop it rather than sending
                 // mismatched dimensions to the encoder (which could crash in native code).
-                if (expectedNv12Size > 0 && packet.Length != expectedNv12Size)
+                if (expectedFrameSize > 0 && packet.Length != expectedFrameSize)
                 {
                     Interlocked.Increment(ref _droppedVideoFrames);
-                    Logger.Log($"FLASHBACK_SINK_FRAME_SIZE_MISMATCH expected={expectedNv12Size} actual={packet.Length} w={w} h={h}");
+                    Logger.Log($"FLASHBACK_SINK_FRAME_SIZE_MISMATCH expected={expectedFrameSize} actual={packet.Length} w={w} h={h} p010={packet.IsP010}");
                     continue;
                 }
 
-                _encoder.SendVideoFrame(packet.Buffer.AsSpan(0, packet.Length), w, h);
+                var frameData = packet.Lease != null
+                    ? packet.Lease.Memory.Span
+                    : packet.Buffer!.AsSpan(0, packet.Length);
+                _encoder.SendVideoFrame(frameData, w, h);
+                Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
                 OnVideoFrameEncoded();
             }
             finally
             {
-                ReturnBuffer(packet.Buffer);
+                ReturnVideoPacket(packet);
             }
 
             drainedAny = true;
@@ -904,6 +1158,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             try
             {
                 _encoder.SendGpuVideoFrame(packet.Texture, packet.Subresource);
+                Interlocked.Increment(ref _videoFramesSubmittedToEncoder);
                 OnVideoFrameEncoded();
             }
             finally
@@ -1081,62 +1336,331 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         _workAvailable.Set();
     }
 
-    private bool TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
+    private static void UpdateMaxDepth(ref int target, int depth)
     {
-        if (_cts?.IsCancellationRequested == true)
+        while (true)
         {
-            ReturnBuffer(packet.Buffer);
-            return false;
+            var current = Volatile.Read(ref target);
+            if (depth <= current)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref target, depth, current) == current)
+            {
+                return;
+            }
+        }
+    }
+
+    private static void UpdateMaxValue(ref long target, long value)
+    {
+        while (true)
+        {
+            var current = Interlocked.Read(ref target);
+            if (value <= current)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref target, value, current) == current)
+            {
+                return;
+            }
+        }
+    }
+
+    private void ResetVideoDiagnostics()
+    {
+        Interlocked.Exchange(ref _lastVideoQueueLatencyMs, 0);
+        Interlocked.Exchange(ref _videoBackpressureWaitMs, 0);
+        Interlocked.Exchange(ref _videoBackpressureEvents, 0);
+        Interlocked.Exchange(ref _lastVideoBackpressureWaitMs, 0);
+        Interlocked.Exchange(ref _maxVideoBackpressureWaitMs, 0);
+        Interlocked.Exchange(ref _videoSequenceGaps, 0);
+        Interlocked.Exchange(ref _lastVideoSequenceNumber, -1);
+        lock (_videoQueueSync)
+        {
+            _videoQueueEnqueueTicks.Clear();
         }
 
-        if (queue.Writer.TryWrite(packet))
+        lock (_videoQueueLatencySync)
         {
-            Interlocked.Increment(ref _videoQueueDepth);
-            Interlocked.Increment(ref _videoFramesEnqueued);
+            Array.Clear(_videoQueueLatencySamples, 0, _videoQueueLatencySamples.Length);
+            _videoQueueLatencySampleCount = 0;
+            _videoQueueLatencySampleIndex = 0;
+        }
+    }
+
+    private long GetVideoQueueOldestFrameAgeMs()
+    {
+        lock (_videoQueueSync)
+        {
+            while (_videoQueueEnqueueTicks.Count > Volatile.Read(ref _videoQueueDepth))
+            {
+                _videoQueueEnqueueTicks.Dequeue();
+            }
+
+            return _videoQueueEnqueueTicks.Count == 0
+                ? 0
+                : Math.Max(0, Environment.TickCount64 - _videoQueueEnqueueTicks.Peek());
+        }
+    }
+
+    private void TrackQueuedVideoTick(long enqueueTick)
+    {
+        _videoQueueEnqueueTicks.Enqueue(enqueueTick);
+    }
+
+    private void RemoveQueuedVideoTick(long expectedEnqueueTick)
+    {
+        if (_videoQueueEnqueueTicks.Count == 0)
+        {
+            return;
+        }
+
+        var queuedTick = _videoQueueEnqueueTicks.Dequeue();
+        if (queuedTick != expectedEnqueueTick)
+        {
+            Logger.Log($"FLASHBACK_SINK_QUEUE_TICK_MISMATCH expected={expectedEnqueueTick} actual={queuedTick}");
+        }
+    }
+
+    private void RecordVideoBackpressure(long startTick, long endTick)
+    {
+        if (startTick <= 0)
+        {
+            return;
+        }
+
+        var elapsedMs = Math.Max(0, endTick - startTick);
+        if (elapsedMs <= 0)
+        {
+            return;
+        }
+
+        Interlocked.Increment(ref _videoBackpressureEvents);
+        Interlocked.Add(ref _videoBackpressureWaitMs, elapsedMs);
+        Interlocked.Exchange(ref _lastVideoBackpressureWaitMs, elapsedMs);
+        UpdateMaxValue(ref _maxVideoBackpressureWaitMs, elapsedMs);
+    }
+
+    private void RecordVideoPacketDequeued(VideoFramePacket packet)
+    {
+        var latencyMs = Math.Max(0, Environment.TickCount64 - packet.EnqueueTick);
+        Interlocked.Exchange(ref _lastVideoQueueLatencyMs, latencyMs);
+        lock (_videoQueueLatencySync)
+        {
+            _videoQueueLatencySamples[_videoQueueLatencySampleIndex] = latencyMs;
+            _videoQueueLatencySampleIndex = (_videoQueueLatencySampleIndex + 1) % _videoQueueLatencySamples.Length;
+            if (_videoQueueLatencySampleCount < _videoQueueLatencySamples.Length)
+            {
+                _videoQueueLatencySampleCount++;
+            }
+        }
+
+        if (packet.SequenceNumber.HasValue)
+        {
+            lock (_videoSequenceSync)
+            {
+                var last = Interlocked.Read(ref _lastVideoSequenceNumber);
+                var current = packet.SequenceNumber.Value;
+                if (last >= 0 && current > last + 1)
+                {
+                    Interlocked.Add(ref _videoSequenceGaps, current - last - 1);
+                }
+
+                if (current > last)
+                {
+                    Interlocked.Exchange(ref _lastVideoSequenceNumber, current);
+                }
+            }
+        }
+    }
+
+    private (int SampleCount, double AverageMs, double P95Ms, double MaxMs) GetVideoQueueLatencyMetrics()
+    {
+        double[] copy;
+        int count;
+        lock (_videoQueueLatencySync)
+        {
+            count = _videoQueueLatencySampleCount;
+            if (count <= 0)
+            {
+                return (0, 0, 0, 0);
+            }
+
+            copy = new double[count];
+            Array.Copy(_videoQueueLatencySamples, copy, count);
+        }
+
+        Array.Sort(copy);
+        var total = 0.0;
+        for (var i = 0; i < copy.Length; i++)
+        {
+            total += copy[i];
+        }
+
+        var p95Index = Math.Clamp((int)Math.Ceiling(copy.Length * 0.95) - 1, 0, copy.Length - 1);
+        return (copy.Length, total / copy.Length, copy[p95Index], copy[^1]);
+    }
+
+    private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
+    {
+        var deadlineTick = Environment.TickCount64 + QueueBackpressureTimeoutMs;
+        long backpressureStartTick = 0;
+        while (true)
+        {
+            Exception? overloadFailure = null;
+            lock (_videoQueueSync)
+            {
+                if (!_started ||
+                    _cts?.IsCancellationRequested == true ||
+                    Volatile.Read(ref _forceRotateDraining) ||
+                    Volatile.Read(ref _encodingFailure) != null)
+                {
+                    ReturnVideoPacket(packet);
+                    return VideoEnqueueResult.Rejected;
+                }
+
+                if (queue.Writer.TryWrite(packet))
+                {
+                    RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
+                    TrackQueuedVideoTick(packet.EnqueueTick);
+                    UpdateMaxDepth(ref _videoQueueMaxDepth, Interlocked.Increment(ref _videoQueueDepth));
+                    Interlocked.Increment(ref _videoFramesEnqueued);
+                    SignalWork();
+                    return VideoEnqueueResult.Accepted;
+                }
+
+                if (!_started ||
+                    _cts?.IsCancellationRequested == true ||
+                    Volatile.Read(ref _forceRotateDraining) ||
+                    Volatile.Read(ref _encodingFailure) != null)
+                {
+                    ReturnVideoPacket(packet);
+                    return VideoEnqueueResult.Rejected;
+                }
+
+                if (Environment.TickCount64 < deadlineTick)
+                {
+                    backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
+                    overloadFailure = null;
+                }
+                else
+                {
+                    RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
+                    Interlocked.Increment(ref _droppedVideoFrames);
+                    overloadFailure = new InvalidOperationException(
+                        $"Flashback recording video queue overloaded after {QueueBackpressureTimeoutMs}ms backpressure: capacity={VideoQueueCapacity} depth={Volatile.Read(ref _videoQueueDepth)}");
+                    ReturnVideoPacket(packet);
+                }
+            }
+
+            if (overloadFailure != null)
+            {
+                FailEncoding(overloadFailure);
+                return VideoEnqueueResult.Overloaded;
+            }
+
             SignalWork();
-            return true;
+            Thread.Sleep(1);
         }
+    }
 
-        if (queue.Reader.TryRead(out var evictedPacket))
+    private VideoEnqueueResult TryEnqueueGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
+    {
+        var deadlineTick = Environment.TickCount64 + QueueBackpressureTimeoutMs;
+        long backpressureStartTick = 0;
+        while (true)
         {
-            Interlocked.Decrement(ref _videoQueueDepth);
-            _encoder.SkipVideoFrame();
-            ReturnBuffer(evictedPacket.Buffer);
-            var evictedCount = 1;
-
-            var now = Environment.TickCount64;
-            if (now - Interlocked.Read(ref _lastBurstEvictionTick) >= 1000)
+            Exception? overloadFailure = null;
+            lock (_videoQueueSync)
             {
-                Interlocked.Exchange(ref _lastBurstEvictionTick, now);
-                var burstSize = Math.Clamp(Volatile.Read(ref _videoQueueDepth) / 10, 1, 30);
-                for (var index = 1; index < burstSize && queue.Reader.TryRead(out var extra); index++)
+                if (!_started ||
+                    _cts?.IsCancellationRequested == true ||
+                    Volatile.Read(ref _forceRotateDraining) ||
+                    Volatile.Read(ref _encodingFailure) != null)
                 {
-                    Interlocked.Decrement(ref _videoQueueDepth);
-                    _encoder.SkipVideoFrame();
-                    ReturnBuffer(extra.Buffer);
-                    evictedCount++;
+                    Marshal.Release(packet.Texture);
+                    return VideoEnqueueResult.Rejected;
                 }
 
-                if (evictedCount > 1)
+                if (queue.Writer.TryWrite(packet))
                 {
-                    Logger.Log($"FLASHBACK_SINK_BURST_EVICT count={evictedCount} queue_depth={Volatile.Read(ref _videoQueueDepth)}");
+                    RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
+                    UpdateMaxDepth(ref _gpuQueueMaxDepth, Interlocked.Increment(ref _gpuQueueDepth));
+                    Interlocked.Increment(ref _gpuFramesEnqueued);
+                    SignalWork();
+                    return VideoEnqueueResult.Accepted;
+                }
+
+                if (!_started ||
+                    _cts?.IsCancellationRequested == true ||
+                    Volatile.Read(ref _forceRotateDraining) ||
+                    Volatile.Read(ref _encodingFailure) != null)
+                {
+                    Marshal.Release(packet.Texture);
+                    return VideoEnqueueResult.Rejected;
+                }
+
+                if (Environment.TickCount64 < deadlineTick)
+                {
+                    backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
+                    overloadFailure = null;
+                }
+                else
+                {
+                    RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
+                    Marshal.Release(packet.Texture);
+                    overloadFailure = new InvalidOperationException(
+                        $"Flashback GPU recording queue overloaded after {QueueBackpressureTimeoutMs}ms backpressure: capacity={GpuQueueCapacity} depth={Volatile.Read(ref _gpuQueueDepth)}");
                 }
             }
 
-            Interlocked.Add(ref _videoDropsBacklogEviction, evictedCount);
-            if (queue.Writer.TryWrite(packet))
+            if (overloadFailure != null)
             {
-                Interlocked.Increment(ref _videoQueueDepth);
-                Interlocked.Increment(ref _videoFramesEnqueued);
-                SignalWork();
-                return true;
+                FailEncoding(overloadFailure);
+                return VideoEnqueueResult.Overloaded;
+            }
+
+            SignalWork();
+            Thread.Sleep(1);
+        }
+    }
+
+    private void FailEncoding(Exception ex)
+    {
+        var shouldNotify = false;
+        lock (_sync)
+        {
+            if (_encodingFailure == null)
+            {
+                _encodingFailure = ex;
+                _started = false;
+                shouldNotify = true;
             }
         }
 
-        Interlocked.Increment(ref _droppedVideoFrames);
-        _encoder.SkipVideoFrame();
-        ReturnBuffer(packet.Buffer);
-        return false;
+        if (!shouldNotify)
+        {
+            return;
+        }
+
+        Logger.Log($"FLASHBACK_SINK_FATAL type={ex.GetType().Name} msg={ex.Message}");
+        CompleteWriter(_videoQueue);
+        CompleteWriter(_audioQueue);
+        CompleteWriter(_microphoneQueue);
+        CompleteWriter(_gpuQueue);
+
+        try
+        {
+            _onFatalError?.Invoke(ex);
+        }
+        catch (Exception callbackEx)
+        {
+            Logger.Log($"FLASHBACK_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
+        }
     }
 
     private bool TryEnqueueAudioPacket(
@@ -1145,7 +1669,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         ref int queueDepth,
         ref long backlogEvictions)
     {
-        if (_cts?.IsCancellationRequested == true)
+        lock (_videoQueueSync)
+        {
+        if (!_started ||
+            _cts?.IsCancellationRequested == true ||
+            Volatile.Read(ref _forceRotateDraining) ||
+            Volatile.Read(ref _encodingFailure) != null)
         {
             ReturnBuffer(packet.Buffer);
             return false;
@@ -1185,9 +1714,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Interlocked.Add(ref _droppedAudioSamplesCount, saturatedSamples);
         ReturnBuffer(packet.Buffer);
         return false;
+        }
     }
 
-    private static void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)
+    private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)
     {
         if (queue == null)
         {
@@ -1196,7 +1726,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         while (queue.Reader.TryRead(out var packet))
         {
-            ReturnBuffer(packet.Buffer);
+            ReturnVideoPacket(packet);
+        }
+
+        lock (_videoQueueSync)
+        {
+            _videoQueueEnqueueTicks.Clear();
         }
 
         Interlocked.Exchange(ref queueDepth, 0);
@@ -1365,7 +1900,27 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         ArrayPool<byte>.Shared.Return(buffer);
     }
 
-    private readonly record struct VideoFramePacket(byte[] Buffer, int Length);
+    private static void ReturnVideoPacket(VideoFramePacket packet)
+    {
+        if (packet.Buffer != null)
+        {
+            ReturnBuffer(packet.Buffer);
+        }
+
+        packet.Lease?.Dispose();
+    }
+
+    private readonly record struct VideoFramePacket(byte[]? Buffer, PooledVideoFrameLease? Lease, int Length, long EnqueueTick, long? SequenceNumber, bool IsP010)
+    {
+        public static VideoFramePacket Frame(byte[] buffer, int length, long enqueueTick, bool isP010) => new(buffer, null, length, enqueueTick, null, isP010);
+        public static VideoFramePacket Frame(PooledVideoFrameLease lease, long enqueueTick) => new(null, lease, lease.Length, enqueueTick, lease.SequenceNumber, lease.PixelFormat == PooledVideoPixelFormat.P010);
+    }
+    private enum VideoEnqueueResult
+    {
+        Accepted,
+        Rejected,
+        Overloaded
+    }
     private readonly record struct AudioSamplePacket(byte[] Buffer, int Length);
     private readonly record struct GpuFramePacket(IntPtr Texture, int Subresource);
 }

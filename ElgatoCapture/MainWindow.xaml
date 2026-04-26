@@ -128,6 +128,64 @@
                             BorderBrush="#50FF1414"
                             Opacity="0"
                             IsHitTestVisible="False"/>
+
+                    <Border x:Name="FrameTimeOverlay"
+                            Visibility="Collapsed"
+                            IsHitTestVisible="False"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Top"
+                            Margin="14,14,14,0"
+                            MaxWidth="520"
+                            Padding="10"
+                            CornerRadius="6"
+                            Background="#CC080808"
+                            BorderBrush="#44FFFFFF"
+                            BorderThickness="1">
+                        <Grid RowSpacing="6">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="92" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="FrameTime_SourceValue" Text="Source —" Foreground="#DDEDEDED" FontFamily="Consolas" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="FrameTime_VisualValue" Grid.Column="1" Text="Visual —" Foreground="#DDEDEDED" FontFamily="Consolas" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="FrameTime_PreviewValue" Grid.Column="2" Text="Preview —" Foreground="#DDEDEDED" FontFamily="Consolas" FontSize="11" TextTrimming="CharacterEllipsis" />
+                                <TextBlock x:Name="FrameTime_LatencyValue" Grid.Column="3" Text="Latency —" Foreground="#DDEDEDED" FontFamily="Consolas" FontSize="11" TextTrimming="CharacterEllipsis" />
+                            </Grid>
+                            <Canvas x:Name="FrameTime_Canvas"
+                                    Grid.Row="1"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Stretch">
+                                <Polyline x:Name="FrameTime_VisualLine"
+                                          Stroke="#55D6FF"
+                                          StrokeThickness="2" />
+                                <Polyline x:Name="FrameTime_PreviewLine"
+                                          Stroke="#70F08B"
+                                          StrokeThickness="2" />
+                                <Line x:Name="FrameTime_ExpectedLine"
+                                      X1="0"
+                                      Y1="46"
+                                      X2="500"
+                                      Y2="46"
+                                      Stroke="#33FFFFFF"
+                                      StrokeThickness="1" />
+                            </Canvas>
+                            <TextBlock x:Name="FrameTime_StatusValue"
+                                       Grid.Row="2"
+                                       Text="Blue=visual changes  Green=preview presents"
+                                       Foreground="#99FFFFFF"
+                                       FontFamily="Consolas"
+                                       FontSize="11"
+                                       TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                    </Border>
                     </Grid>
                     </Border>
 
@@ -178,7 +236,7 @@
                 Grid.RowSpan="4"
                 Visibility="Collapsed"
                 Width="0"
-                MaxWidth="300"
+                MaxWidth="360"
                 Margin="0,8,12,16"
                     Padding="12"
                     BorderThickness="0"
@@ -226,6 +284,60 @@
                         <TextBlock x:Name="Stats_SessionStateValue"
                                    Text="Idle"
                                    Style="{StaticResource DockStatsLabelStyle}" />
+
+                        <StackPanel Spacing="2">
+                            <TextBlock Text="Live Summary" Style="{StaticResource DockStatsSectionHeaderStyle}" Margin="0,0,0,4" />
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Capture" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SummaryCaptureValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Preview" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SummaryPreviewValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Renderer FPS" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SummaryRendererFpsValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Sampled Crop FPS" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SummaryVisualFpsValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource DockStatsRowAltStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Latency" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock x:Name="Stats_SummaryLatencyValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
 
                         <StackPanel Spacing="2">
                             <Grid x:Name="SourceSignal_Header" Margin="0,0,0,4" Background="Transparent" Tapped="StatsSectionHeader_Tapped" Tag="SourceSignal_Content">
@@ -373,7 +485,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Source Cadence" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Capture Timing" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="SourceCadence_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -447,7 +559,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Decode" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="MJPEG Decode" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="Decode_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" />
@@ -461,7 +573,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Preview Cadence" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Preview &amp; Visual" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="PreviewCadence_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -507,6 +619,19 @@
                                     <TextBlock x:Name="Stats_PreviewSlowValue" Grid.Column="1" Text="0 frames (0.0%)" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
+                            <Border Style="{StaticResource DockStatsRowStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Sampled Crop" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+                                        <TextBlock x:Name="Stats_VisualFpsValue" Text="0.00 fps" Style="{StaticResource DockStatsValueStyle}" />
+                                        <TextBlock x:Name="Stats_VisualMotionValue" Text="NoSamples" Style="{StaticResource DockStatsValueStyle}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
                             </StackPanel>
                         </StackPanel>
 
@@ -516,7 +641,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Pipeline" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Latency" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="Pipeline_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -546,7 +671,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Frames" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Frame Counters" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="Frames_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -593,7 +718,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Performance" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="System" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="Performance_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -610,7 +735,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Score" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Legacy Score" Style="{StaticResource DockStatsLabelStyle}" />
                                     <TextBlock x:Name="Stats_PerfScoreValue" Grid.Column="1" Text="0.0 / 100" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
@@ -1214,6 +1339,7 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <!-- Row 0: Stats + live signal + audio meter -->
@@ -1487,8 +1613,18 @@
                                VerticalAlignment="Center"/>
                 </StackPanel>
 
-                <!-- Row 1: Controls -->
-                <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock x:Name="StatusTextBlock"
+                           Grid.Row="1"
+                           AutomationProperties.AutomationId="StatusTextBlock"
+                           Text="Ready"
+                           TextTrimming="CharacterEllipsis"
+                           MaxLines="1"
+                           FontSize="12"
+                           Opacity="0.78"
+                           VerticalAlignment="Center"/>
+
+                <!-- Row 2: Controls -->
+                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <StackPanel.Resources>
                         <!-- Floating Cinema: accent-driven, borderless, ghost buttons -->
                         <CornerRadius x:Key="ControlCornerRadius">8</CornerRadius>
@@ -1704,6 +1840,20 @@
                                        Visibility="Collapsed"/>
                         </StackPanel>
                     </ToggleButton>
+                    <ToggleButton x:Name="FrameTimeOverlayToggle"
+                                  AutomationProperties.AutomationId="FrameTimeOverlayToggle"
+                                  Height="32"
+                                  Padding="8,0"
+                                  ToolTipService.ToolTip="Frame-time overlay">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE9D2;" FontSize="14"/>
+                            <TextBlock x:Name="FrameTimeOverlayToggleLabel"
+                                       Text="Frame Time"
+                                       FontSize="12"
+                                       VerticalAlignment="Center"
+                                       Visibility="Collapsed"/>
+                        </StackPanel>
+                    </ToggleButton>
                     <Border Width="1" Height="20" Background="{ThemeResource ToolbarSeparatorBrush}" Opacity="0.4" Margin="4,0"/>
                     <ToggleButton x:Name="FlashbackToggle"
                                   AutomationProperties.AutomationId="FlashbackToggle"
@@ -1732,11 +1882,6 @@
                     </Button>
                 </StackPanel>
 
-                <!-- StatusTextBlock: hidden but kept for code-behind compatibility -->
-                <TextBlock x:Name="StatusTextBlock"
-                           AutomationProperties.AutomationId="StatusTextBlock"
-                           Text="Ready"
-                           Visibility="Collapsed"/>
             </Grid>
         </Border>
 

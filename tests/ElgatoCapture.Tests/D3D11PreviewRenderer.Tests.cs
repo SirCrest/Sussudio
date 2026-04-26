@@ -149,4 +149,55 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming()
+    {
+        var rendererType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer");
+        AssertNotNull(rendererType.GetProperty("SwapChainAddress", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.SwapChainAddress");
+        AssertNotNull(rendererType.GetMethod("GetRenderCpuTimingMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetRenderCpuTimingMetrics");
+
+        var stageTimingType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+CpuStageTimingMetrics");
+        foreach (var prop in new[] { "SampleCount", "AverageMs", "P95Ms", "MaxMs" })
+        {
+            AssertNotNull(stageTimingType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"CpuStageTimingMetrics.{prop}");
+        }
+
+        var renderTimingType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+RenderCpuTimingMetrics");
+        foreach (var prop in new[] { "InputUpload", "RenderSubmit", "PresentCall", "TotalFrame" })
+        {
+            AssertNotNull(renderTimingType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"RenderCpuTimingMetrics.{prop}");
+        }
+
+        var previewSnapshotType = RequireType("ElgatoCapture.Models.PreviewRuntimeSnapshot");
+        foreach (var prop in new[]
+                 {
+                     "D3DSwapChainAddress",
+                     "D3DPendingFrameCount",
+                     "D3DCpuTimingSampleCount",
+                     "D3DInputUploadCpuP95Ms",
+                     "D3DRenderSubmitCpuP95Ms",
+                     "D3DPresentCallP95Ms",
+                     "D3DTotalFrameCpuP95Ms"
+                 })
+        {
+            AssertNotNull(previewSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PreviewRuntimeSnapshot.{prop}");
+        }
+
+        var automationSnapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
+        foreach (var prop in new[]
+                 {
+                     "PreviewD3DSwapChainAddress",
+                     "PreviewD3DPendingFrameCount",
+                     "PreviewD3DCpuTimingSampleCount",
+                     "PreviewD3DInputUploadCpuP95Ms",
+                     "PreviewD3DRenderSubmitCpuP95Ms",
+                     "PreviewD3DPresentCallP95Ms",
+                     "PreviewD3DTotalFrameCpuP95Ms"
+                 })
+        {
+            AssertNotNull(automationSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"AutomationSnapshot.{prop}");
+        }
+
+        return Task.CompletedTask;
+    }
 }

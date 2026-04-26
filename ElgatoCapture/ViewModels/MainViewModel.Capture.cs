@@ -3,8 +3,17 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
 using Windows.Storage.Pickers;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture.ViewModels;
 
@@ -14,30 +23,33 @@ namespace ElgatoCapture.ViewModels;
 /// </summary>
 public partial class MainViewModel
 {
-    private async Task InitializeDeviceAsync()
+    private async Task InitializeDeviceAsync(CancellationToken cancellationToken = default)
     {
-        Logger.Log("=== InitializeDeviceAsync BEGIN ===");
-
         if (SelectedDevice == null)
         {
             Logger.Log("ERROR: SelectedDevice is NULL");
             return;
         }
 
-        Logger.Log($"Device: {SelectedDevice.Name} (ID: {SelectedDevice.Id})");
-
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             StatusText = "Initializing device...";
             var settings = BuildCaptureSettings();
-            Logger.Log($"Settings: {settings.Width}x{settings.Height} @ {settings.FrameRate}fps");
-            Logger.Log($"Format: {settings.Format}, HDR: {settings.HdrEnabled}, Audio: {settings.AudioEnabled}");
+            Logger.Log(
+                $"CAPTURE_INIT device='{SelectedDevice.Name}' id='{SelectedDevice.Id}' format={settings.Format} {settings.Width}x{settings.Height}@{settings.FrameRate} hdr={settings.HdrEnabled} audio={settings.AudioEnabled}");
 
-            await _sessionCoordinator.InitializeAsync(SelectedDevice, settings);
-            Logger.Log("CaptureService initialized");
+            await _sessionCoordinator.InitializeAsync(SelectedDevice, settings, cancellationToken);
 
             IsInitialized = true;
             StatusText = "Device ready";
+            Logger.Log("CAPTURE_INIT_READY");
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            StatusText = "Device initialization canceled";
+            IsInitialized = false;
+            throw;
         }
         catch (Exception ex)
         {
@@ -45,69 +57,86 @@ public partial class MainViewModel
             StatusText = $"Failed to initialize: {ex.Message}";
             IsInitialized = false;
         }
-
-        Logger.Log("=== InitializeDeviceAsync END ===");
     }
 
-    public async Task StartPreviewAsync(bool userInitiated = true)
+    public async Task StartPreviewAsync(bool userInitiated = true, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (userInitiated)
         {
             _cancelPreviewRestartAfterReinitialize = false;
         }
 
         PreviewStartRequested?.Invoke(this, EventArgs.Empty);
-        Logger.Log($"StartPreviewAsync BEGIN IsInitialized={IsInitialized}");
+        Logger.Log($"PREVIEW_START requested initialized={IsInitialized} audio={IsAudioPreviewEnabled && IsAudioEnabled}");
 
         if (!IsInitialized)
         {
-            Logger.Log("Device not initialized, initializing now...");
-            await InitializeDeviceAsync();
+            await InitializeDeviceAsync(cancellationToken);
         }
-
-        Logger.Log($"After initialization - IsInitialized: {IsInitialized}");
 
         if (IsInitialized)
         {
             var settings = BuildCaptureSettings();
-            await _sessionCoordinator.StartVideoPreviewAsync(settings).ConfigureAwait(true);
+            await _sessionCoordinator.StartVideoPreviewAsync(settings, cancellationToken).ConfigureAwait(true);
 
-            Logger.Log("Setting IsPreviewing = true");
             IsPreviewing = true;
             StatusText = "Preview starting...";
 
             if (IsAudioPreviewEnabled && IsAudioEnabled)
             {
-                Logger.Log("Starting audio preview...");
-                await _sessionCoordinator.StartAudioPreviewAsync();
+                await _sessionCoordinator.StartAudioPreviewAsync(cancellationToken);
             }
 
             ApplySourceTelemetrySnapshot(_captureService.GetLatestSourceTelemetrySnapshot(), allowAutoRetarget: true);
+            Logger.Log($"PREVIEW_START_READY audio={IsAudioPreviewEnabled && IsAudioEnabled}");
         }
         else
         {
             Logger.Log("Cannot start preview - device not initialized");
             StatusText = "Cannot start preview - device not initialized";
         }
-
-        Logger.Log("StartPreviewAsync END");
     }
 
-    public async Task StopPreviewAsync(bool userInitiated = true)
+    public Task StopPreviewAsync()
+        => StopPreviewAsync(userInitiated: true, teardownPipeline: false, CancellationToken.None);
+
+    public Task StopPreviewAsync(bool userInitiated)
+        => StopPreviewAsync(userInitiated, teardownPipeline: false, CancellationToken.None);
+
+    public Task StopPreviewAsync(bool userInitiated, bool teardownPipeline)
+        => StopPreviewAsync(userInitiated, teardownPipeline, CancellationToken.None);
+
+    public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (userInitiated && IsPreviewReinitializing)
         {
             _cancelPreviewRestartAfterReinitialize = true;
         }
 
         PreviewStopRequested?.Invoke(this, EventArgs.Empty);
-        await _sessionCoordinator.StopVideoPreviewAsync();
+        if (teardownPipeline)
+        {
+            await _sessionCoordinator.StopVideoPreviewWithTeardownAsync(cancellationToken);
+        }
+        else
+        {
+            await _sessionCoordinator.StopVideoPreviewAsync(cancellationToken);
+        }
         IsPreviewing = false;
 
         // Stop audio preview
         if (_captureService.IsAudioPreviewActive)
         {
-            await _sessionCoordinator.StopAudioPreviewAsync();
+            if (teardownPipeline)
+            {
+                await _sessionCoordinator.StopAudioPreviewWithTeardownAsync(cancellationToken);
+            }
+            else
+            {
+                await _sessionCoordinator.StopAudioPreviewAsync(cancellationToken);
+            }
         }
 
         if (!IsPreviewReinitializing)
@@ -116,27 +145,57 @@ public partial class MainViewModel
         }
     }
 
-    public async Task ToggleRecordingAsync()
+    public Task ToggleRecordingAsync()
+        => SetRecordingDesiredStateAsync(!IsRecording);
+
+    private Task BeginRecordingTransitionAsync(bool enabled, CancellationToken cancellationToken = default)
     {
-        if (Interlocked.CompareExchange(ref _recordingToggleInProgress, 1, 0) != 0)
+        if (enabled == IsRecording)
         {
-            Logger.Log("Recording toggle rejected: operation already in progress.");
-            return;
+            return Task.CompletedTask;
         }
 
+        if (Interlocked.CompareExchange(ref _recordingToggleInProgress, 1, 0) != 0)
+        {
+            Logger.Log("Recording transition rejected: operation already in progress.");
+            throw new InvalidOperationException("Recording transition already in progress.");
+        }
+
+        var task = RecordingTransitionInnerAsync(enabled, cancellationToken);
+        Volatile.Write(ref _activeRecordingTransitionTarget, enabled ? 1 : 0);
+        _activeRecordingToggleTask = task;
+        _ = task.ContinueWith(completed =>
+        {
+            if (ReferenceEquals(_activeRecordingToggleTask, completed))
+            {
+                _activeRecordingToggleTask = null;
+                Volatile.Write(ref _activeRecordingTransitionTarget, -1);
+            }
+        }, TaskScheduler.Default);
+
+        return task;
+    }
+
+    private async Task RecordingTransitionInnerAsync(bool enabled, CancellationToken cancellationToken)
+    {
         try
         {
             IsRecordingTransitioning = true;
+            StatusText = enabled ? "Starting recording..." : "Stopping recording...";
 
-            if (IsRecording)
+            if (enabled)
             {
-                StatusText = "Stopping recording...";
-                await StopRecordingAsync();
+                await StartRecordingAsync(cancellationToken);
             }
             else
             {
-                StatusText = "Starting recording...";
-                await StartRecordingAsync();
+                await StopRecordingAsync(cancellationToken);
+            }
+
+            if (IsRecording != enabled)
+            {
+                throw new InvalidOperationException(
+                    $"Recording transition did not reach requested state: requested={enabled}, actual={IsRecording}.");
             }
         }
         finally
@@ -146,23 +205,92 @@ public partial class MainViewModel
         }
     }
 
-    private async Task StartRecordingAsync()
+    internal Task SetRecordingDesiredStateAsync(bool enabled, CancellationToken cancellationToken = default)
+        => InvokeOnUiThreadAsync(() => SetRecordingDesiredStateOnUiThreadAsync(enabled, cancellationToken), cancellationToken);
+
+    /// <summary>
+    /// Graceful-stop entry point for callers that must NOT short-circuit on the
+    /// toggle CAS gate (e.g. the window-close handler). If a toggle is in flight,
+    /// await it; afterwards, if still recording, initiate a fresh stop.
+    /// </summary>
+    public Task StopRecordingAndWaitAsync(CancellationToken cancellationToken = default)
+        => InvokeOnUiThreadAsync(() => StopRecordingAndWaitOnUiThreadAsync(cancellationToken), cancellationToken);
+
+    internal Task StopRecordingForEmergencyAsync(CancellationToken cancellationToken = default)
+        => _sessionCoordinator.StopRecordingAsync(cancellationToken);
+
+    private Task StopRecordingAndWaitOnUiThreadAsync(CancellationToken cancellationToken)
+        => SetRecordingDesiredStateOnUiThreadAsync(enabled: false, cancellationToken);
+
+    private async Task SetRecordingDesiredStateOnUiThreadAsync(bool enabled, CancellationToken cancellationToken)
+    {
+        var inFlight = _activeRecordingToggleTask;
+        if (inFlight != null && !inFlight.IsCompleted)
+        {
+            var inFlightTarget = Volatile.Read(ref _activeRecordingTransitionTarget);
+            Exception? transitionError = null;
+            try
+            {
+                await inFlight;
+            }
+            catch (Exception ex)
+            {
+                transitionError = ex;
+                Logger.Log($"Recording transition wait faulted: {ex.Message}");
+            }
+
+            cancellationToken.ThrowIfCancellationRequested();
+
+            if (transitionError != null && inFlightTarget == (enabled ? 1 : 0))
+            {
+                throw new InvalidOperationException("Recording transition failed.", transitionError);
+            }
+
+            if (IsRecording == enabled)
+            {
+                return;
+            }
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (IsRecording == enabled)
+        {
+            return;
+        }
+
+        await BeginRecordingTransitionAsync(enabled, cancellationToken);
+        if (IsRecording != enabled)
+        {
+            throw new InvalidOperationException(
+                $"Recording transition did not reach requested state: requested={enabled}, actual={IsRecording}.");
+        }
+    }
+
+    private async Task StartRecordingAsync(CancellationToken cancellationToken = default)
     {
         if (SelectedDevice == null)
         {
             StatusText = "No device selected";
-            return;
+            throw new InvalidOperationException(StatusText);
         }
 
         if (!IsInitialized)
         {
-            await InitializeDeviceAsync();
+            await InitializeDeviceAsync(cancellationToken);
+            if (!IsInitialized)
+            {
+                throw new InvalidOperationException(
+                    string.IsNullOrWhiteSpace(StatusText)
+                        ? "Device failed to initialize."
+                        : StatusText);
+            }
         }
 
         try
         {
             var settings = BuildCaptureSettings();
-            await _sessionCoordinator.StartRecordingAsync(settings);
+            await _sessionCoordinator.StartRecordingAsync(settings, cancellationToken);
 
             IsRecording = true;
             _recordingStopwatch.Restart();
@@ -173,11 +301,14 @@ public partial class MainViewModel
         }
         catch (Exception ex)
         {
+            Logger.LogException(ex);
+            IsRecording = _sessionCoordinator.Snapshot.IsRecording;
             StatusText = $"Recording failed: {ex.Message}";
+            throw;
         }
     }
 
-    private async Task StopRecordingAsync()
+    private async Task StopRecordingAsync(CancellationToken cancellationToken = default)
     {
         // UX: Freeze the timer immediately when the user requests stop (finalization can take seconds).
         // Keep IsRecording true until the stop transition completes so the button remains in "Stop" state.
@@ -185,15 +316,16 @@ public partial class MainViewModel
 
         try
         {
-            await _sessionCoordinator.StopRecordingAsync();
+            await _sessionCoordinator.StopRecordingAsync(cancellationToken);
             IsRecording = false;
             StatusText = $"Recording saved ({RecordingTime})";
         }
         catch (Exception ex)
         {
-            // Even if finalization fails, unblock the UI and allow subsequent attempts.
-            IsRecording = false;
+            Logger.LogException(ex);
+            IsRecording = _sessionCoordinator.Snapshot.IsRecording;
             StatusText = $"Stop recording failed: {ex.Message}";
+            throw;
         }
     }
 
@@ -263,7 +395,9 @@ public partial class MainViewModel
 
             if (IsPreviewing)
             {
-                await StopPreviewAsync(userInitiated: false);
+                // Reinit applies new device/format/codec settings — the existing flashback
+                // backend is keyed to the OLD settings, so force a full teardown.
+                await StopPreviewAsync(userInitiated: false, teardownPipeline: true);
             }
 
             // Reinitialize the device with new settings

@@ -1,6 +1,7 @@
 using System;
+using ElgatoCapture.Services.Capture;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Preview;
 
 internal interface IPreviewFrameSink
 {
@@ -9,6 +10,11 @@ internal interface IPreviewFrameSink
     /// caller retains ownership and may free the buffer after return.
     /// </summary>
     void SubmitRawFrame(IntPtr data, int dataLength, int width, int height, bool isHdr, long arrivalTick = 0);
+
+    /// <summary>
+    /// Submit a leased CPU-resident frame. Callee owns and disposes the lease.
+    /// </summary>
+    void SubmitRawFrameLease(PooledVideoFrameLease frame, bool isHdr);
 
     /// <summary>
     /// Submit a D3D11 texture. Callee calls AddRef on the COM pointer;

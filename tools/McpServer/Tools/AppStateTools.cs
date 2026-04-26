@@ -17,7 +17,7 @@ public static class AppStateTools
             return GetMessage(response);
         }
 
-        return AutomationSnapshotFormatter.FormatSnapshot(response);
+        return AutomationSnapshotFormatter.FormatSnapshot(response, includeFlashback: true);
     }
 
     [McpServerTool(UseStructuredContent = true), Description("Get the raw structured application state snapshot for agent consumption.")]

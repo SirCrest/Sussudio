@@ -4,8 +4,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Devices;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Audio;
 
 internal sealed class WasapiAudioCapture : IAsyncDisposable
 {

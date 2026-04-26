@@ -6,7 +6,7 @@ using ModelContextProtocol.Server;
 namespace McpServer.Tools;
 
 [McpServerToolType]
-public static class WindowScreenshotTool
+public static class WindowScreenshotTools
 {
     [McpServerTool, Description("Capture the entire application window (including UI chrome, margins, letterbox areas, and video preview) as a PNG screenshot. Use .bmp extension for uncompressed BMP.")]
     public static async Task<string> capture_window_screenshot(

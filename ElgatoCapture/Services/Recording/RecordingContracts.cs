@@ -6,7 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using FFmpeg.AutoGen;
-namespace ElgatoCapture.Services;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Runtime;
+
+namespace ElgatoCapture.Services.Recording;
 
 public readonly record struct GpuPipelineHandles(
     IntPtr D3D11DevicePtr,
@@ -125,6 +129,21 @@ public interface IRawVideoFrameEncoder
     void EnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize);
 }
 
+public interface IRawVideoFrameTryEncoder
+{
+    bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize);
+}
+
+internal interface IRawVideoFrameLeaseEncoder
+{
+    void EnqueueRawVideoFrame(PooledVideoFrameLease frame);
+}
+
+internal interface IRawVideoFrameLeaseTryEncoder
+{
+    bool TryEnqueueRawVideoFrame(PooledVideoFrameLease frame);
+}
+
 /// <summary>
 /// Accepts D3D11 texture references for GPU-resident NVENC encoding.
 /// Callee does AddRef on the texture; caller may release after return.
@@ -132,6 +151,11 @@ public interface IRawVideoFrameEncoder
 public interface IGpuVideoFrameEncoder
 {
     void EnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);
+}
+
+public interface IGpuVideoFrameTryEncoder
+{
+    bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex);
 }
 
 /// <summary>

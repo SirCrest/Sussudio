@@ -7,12 +7,6 @@ static partial class Program
     private static Task EcctlFormatters_EmitCoreSnapshotSections()
     {
         var assemblyPath = Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll");
-        var fullPath = Path.Combine(GetRepoRoot(), assemblyPath);
-        if (!File.Exists(fullPath))
-        {
-            return Task.CompletedTask;
-        }
-
         var ecctlAssembly = LoadToolAssembly(assemblyPath);
         var formatterType = ecctlAssembly.GetType("EcCtl.Formatters")
             ?? throw new InvalidOperationException("EcCtl.Formatters type not found.");
@@ -34,6 +28,15 @@ static partial class Program
         AssertContains(output, "== Preview ==");
         AssertContains(output, "== Source ==");
         AssertContains(output, "A/V Drift: -1.5ms");
+
+        const string failedFlashbackJson = """
+                                          {"Snapshot":{"SessionState":"Error","StatusText":"Flashback failed","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":false,"IsRecording":false,"FlashbackActive":false,"FlashbackEncodingFailed":true,"FlashbackEncodingFailureType":"InvalidOperationException","FlashbackEncodingFailureMessage":"Flashback queue overloaded"}}
+                                          """;
+        using var failedFlashbackDocument = JsonDocument.Parse(failedFlashbackJson);
+        var failedFlashbackOutput = formatSnapshot.Invoke(null, new object[] { failedFlashbackDocument.RootElement })?.ToString()
+            ?? throw new InvalidOperationException("EcCtl.Formatters.FormatSnapshot returned null for failed flashback snapshot.");
+        AssertContains(failedFlashbackOutput, "== Flashback ==");
+        AssertContains(failedFlashbackOutput, "Flashback Failure: active=true type=InvalidOperationException msg=Flashback queue overloaded");
 
         return Task.CompletedTask;
     }

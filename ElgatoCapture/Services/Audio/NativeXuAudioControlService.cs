@@ -6,15 +6,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using Microsoft.Win32.SafeHandles;
+using ElgatoCapture.Services.Devices;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Audio;
 
 internal sealed class NativeXuAudioControlService
 {
     private static readonly Guid XuGuid = new("961073C7-49F7-44F2-AB42-E940405940C2");
     // Control byte indexes: stable bytes that differ between HDMI and Analog modes.
     // Captured from PID 0x009B firmware via Elgato Studio toggling.
-    // Dynamic bytes (counters/timers) are excluded: HDMI=[92,93,94,95,96,104,111,112,114,128,144] Analog=[145,146]
+    // Dynamic bytes (counters/timers) are excluded by the diagnostic snapshot below.
     private static readonly int[] InputByteIndexes =
     {
         0, 1, 2, 4, 5, 7, 8, 12, 13, 15, 16, 19, 20, 21, 22, 23, 24, 26, 27,
@@ -25,6 +27,10 @@ internal sealed class NativeXuAudioControlService
         110, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127,
         129, 130, 131, 132, 133, 134, 135, 136, 138, 139, 140, 142, 143, 147,
         148, 149
+    };
+    private static readonly int[] DynamicByteIndexes =
+    {
+        92, 93, 94, 95, 96, 104, 111, 112, 114, 128, 144, 145, 146
     };
     private static readonly int[] GainByteIndexes = Array.Empty<int>();
     // PID 0x009B HDMI reference — first ~87 bytes are zero, data starts at the end.
@@ -48,6 +54,7 @@ internal sealed class NativeXuAudioControlService
     private const int TransportGateAttempts = 6;
     private const int TransportGateRetryDelayMs = 250;
     private const string PreferredInterfaceFragment = "{65e8773d-8f56-11d0-a3b9-00a0c9223196}";
+    private static bool SupportsAnalogGainReadback => GainByteIndexes.Length > 0;
 
     public IReadOnlyList<string> GetSupportedModes() => SupportedModes;
 
@@ -63,14 +70,57 @@ internal sealed class NativeXuAudioControlService
 
         var snapshot = payload.Value;
         var input = DecodeInput(snapshot.NormalizedPayload);
-        var gain = DecodeGain(snapshot.NormalizedPayload);
-        Logger.Log($"NATIVEXU_AUDIO_STATE input={input.Label}({input.Confidence:0.00}) gain={gain.Label}({gain.Confidence:0.00}) len={snapshot.NormalizedPayload.Length} hex={Convert.ToHexString(snapshot.NormalizedPayload)}");
+        var gain = SupportsAnalogGainReadback ? DecodeGain(snapshot.NormalizedPayload) : default(AnalogGainDecision?);
+        var gainDescription = gain.HasValue
+            ? $"{gain.Value.Label}({gain.Value.Confidence:0.00})"
+            : "unavailable(no_gain_indexes)";
+        Logger.Log($"NATIVEXU_AUDIO_STATE input={input.Label}({input.Confidence:0.00}) gain={gainDescription} len={snapshot.NormalizedPayload.Length}");
         return new DeviceAudioControlState(
             IsSupported: true,
             InterfacePath: snapshot.InterfacePath,
             Mode: input.Label,
-            AnalogGainPercent: gain.Percent,
-            RawGainValue: gain.Percent);
+            AnalogGainPercent: gain?.Percent,
+            RawGainValue: gain?.Percent);
+    }
+
+    internal async Task<NativeXuAudioPayloadSnapshot?> ReadPayloadSnapshotAsync(
+        CaptureDevice? device,
+        CancellationToken cancellationToken = default)
+    {
+        ushort? vendorId = null;
+        ushort? productId = null;
+        if (NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out var parsedVendorId, out var parsedProductId))
+        {
+            vendorId = parsedVendorId;
+            productId = parsedProductId;
+        }
+
+        var snapshot = await ReadPreferredPayloadAsync(device, cancellationToken).ConfigureAwait(false);
+        if (snapshot == null)
+        {
+            return null;
+        }
+
+        var payload = snapshot.Value;
+        var controlByteIndexes = InputByteIndexes
+            .Concat(GainByteIndexes)
+            .Distinct()
+            .OrderBy(index => index)
+            .ToArray();
+
+        return new NativeXuAudioPayloadSnapshot(
+            DeviceId: device?.Id,
+            DeviceName: device?.Name,
+            VendorId: vendorId,
+            ProductId: productId,
+            InterfacePath: payload.InterfacePath,
+            NodeId: payload.NodeId,
+            SelectorId: SelectorId,
+            TimestampUtc: DateTimeOffset.UtcNow,
+            RawPayload: payload.RawPayload.ToArray(),
+            NormalizedPayload: payload.NormalizedPayload.ToArray(),
+            ControlByteIndexes: controlByteIndexes,
+            VolatileByteIndexes: DynamicByteIndexes.ToArray());
     }
 
     public async Task<bool> SetAudioModeAsync(
@@ -113,6 +163,12 @@ internal sealed class NativeXuAudioControlService
         double percent,
         CancellationToken cancellationToken = default)
     {
+        if (!SupportsAnalogGainReadback)
+        {
+            Logger.Log("NATIVEXU_ANALOG_GAIN_SET_SKIPPED unsupported=no_gain_indexes");
+            return false;
+        }
+
         var profile = ResolveGainProfile(percent);
         var updated = await UpdatePayloadAsync(
             device,
@@ -250,6 +306,12 @@ internal sealed class NativeXuAudioControlService
             return false;
         }
 
+        if (string.IsNullOrWhiteSpace(device?.NativeXuInterfacePath))
+        {
+            Logger.Log("NATIVEXU_AUDIO_PAYLOAD missing-selected-interface");
+            return false;
+        }
+
         var gateAcquired = false;
         try
         {
@@ -261,7 +323,7 @@ internal sealed class NativeXuAudioControlService
             }
 
             var candidateCount = 0;
-            foreach (var candidate in EnumerateCandidates(vendorId, productId))
+            foreach (var candidate in EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath))
             {
                 candidateCount++;
                 cancellationToken.ThrowIfCancellationRequested();
@@ -366,6 +428,12 @@ internal sealed class NativeXuAudioControlService
             return null;
         }
 
+        if (string.IsNullOrWhiteSpace(device?.NativeXuInterfacePath))
+        {
+            Logger.Log("NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");
+            return null;
+        }
+
         var gateAcquired = false;
         try
         {
@@ -375,7 +443,7 @@ internal sealed class NativeXuAudioControlService
                 return null;
             }
 
-            foreach (var candidate in EnumerateCandidates(vendorId, productId))
+            foreach (var candidate in EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (!TryReadRawPayload(candidate, out var rawPayload))
@@ -389,7 +457,7 @@ internal sealed class NativeXuAudioControlService
                     continue;
                 }
 
-                return new RawPayloadSnapshot(candidate.InterfacePath, rawPayload, normalizedPayload);
+                return new RawPayloadSnapshot(candidate.InterfacePath, candidate.NodeId, rawPayload, normalizedPayload);
             }
 
             return null;
@@ -407,13 +475,17 @@ internal sealed class NativeXuAudioControlService
         }
     }
 
-    private static IEnumerable<RawControlCandidate> EnumerateCandidates(ushort vendorId, ushort productId)
+    private static IEnumerable<RawControlCandidate> EnumerateCandidates(
+        ushort vendorId,
+        ushort productId,
+        string? selectedInterfacePath)
     {
-        var orderedInterfaces = KsExtensionUnitNative
-            .EnumerateKsInterfaces(vendorId, productId)
-            .OrderByDescending(path =>
-                path.Path.IndexOf(PreferredInterfaceFragment, StringComparison.OrdinalIgnoreCase) >= 0)
-            .ThenBy(path => path.Path, StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrWhiteSpace(selectedInterfacePath))
+        {
+            yield break;
+        }
+
+        var orderedInterfaces = new[] { new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty) };
 
         foreach (var ksInterface in orderedInterfaces)
         {
@@ -538,5 +610,19 @@ internal sealed class NativeXuAudioControlService
     private readonly record struct AudioDecodeDecision(string Label, double Confidence);
     private readonly record struct AnalogGainDecision(string Label, double Confidence, int Percent);
     private readonly record struct RawControlCandidate(string InterfacePath, int NodeId);
-    private readonly record struct RawPayloadSnapshot(string InterfacePath, byte[] RawPayload, byte[] NormalizedPayload);
+    private readonly record struct RawPayloadSnapshot(string InterfacePath, int NodeId, byte[] RawPayload, byte[] NormalizedPayload);
 }
+
+internal sealed record NativeXuAudioPayloadSnapshot(
+    string? DeviceId,
+    string? DeviceName,
+    ushort? VendorId,
+    ushort? ProductId,
+    string InterfacePath,
+    int NodeId,
+    int SelectorId,
+    DateTimeOffset TimestampUtc,
+    byte[] RawPayload,
+    byte[] NormalizedPayload,
+    IReadOnlyList<int> ControlByteIndexes,
+    IReadOnlyList<int> VolatileByteIndexes);

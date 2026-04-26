@@ -8,6 +8,16 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinRT.Interop;
 using Windows.Graphics;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture;
 
@@ -297,6 +307,25 @@ public sealed record StatsSnapshot(
     double PreviewP95IntervalMs,
     long PreviewSlowFrames,
     double PreviewSlowPct,
+    int MjpegPacketHashSamples,
+    double MjpegPacketHashInputFps,
+    double MjpegPacketHashUniqueFps,
+    double MjpegPacketHashDuplicatePercent,
+    long MjpegPacketHashLongestDuplicateRun,
+    string MjpegPacketHashPattern,
+    bool MjpegPacketHashLastFrameDuplicate,
+    int VisualCadenceSamples,
+    double VisualCadenceOutputFps,
+    double VisualCadenceChangeFps,
+    double VisualCadenceRepeatPercent,
+    double VisualCadenceMotionScore,
+    string VisualCadenceMotionConfidence,
+    int VisualCenterCadenceSamples,
+    double VisualCenterCadenceOutputFps,
+    double VisualCenterCadenceChangeFps,
+    double VisualCenterCadenceRepeatPercent,
+    double VisualCenterCadenceMotionScore,
+    string VisualCenterCadenceMotionConfidence,
     double PipelineLatencyMs,
     long SourceFramesDelivered,
     long SourceFramesDropped,
@@ -306,6 +335,8 @@ public sealed record StatsSnapshot(
     double PerformanceScore,
     bool Previewing,
     bool Recording,
+    int PreviewNaturalWidth = 0,
+    int PreviewNaturalHeight = 0,
     int? SourceWidth = null,
     int? SourceHeight = null,
     double? SourceFrameRateExact = null,
@@ -326,4 +357,9 @@ public sealed record StatsSnapshot(
     int EncoderWidth = 0,
     int EncoderHeight = 0,
     double EncoderFrameRate = 0,
-    uint EncoderTargetBitRate = 0);
+    uint EncoderTargetBitRate = 0,
+    IReadOnlyList<double>? MjpegPacketHashRecentUniqueIntervalsMs = null,
+    IReadOnlyList<double>? VisualCadenceRecentChangeIntervalsMs = null,
+    IReadOnlyList<double>? VisualCenterCadenceRecentChangeIntervalsMs = null,
+    IReadOnlyList<double>? PreviewRecentPresentIntervalsMs = null,
+    IReadOnlyList<double>? PreviewRecentLatencyMs = null);

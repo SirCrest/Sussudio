@@ -92,9 +92,11 @@ internal static class CommandHandlers
         var processName = ParseOptionalStringFlag(context.Rest, "--process") ?? "ElgatoCapture";
         var presentMonPath = ParseOptionalStringFlag(context.Rest, "--presentmon");
         var outputPath = ParseOptionalStringFlag(context.Rest, "--output");
+        var swapChainAddress = ParseOptionalStringFlag(context.Rest, "--swapchain");
         var keepCsv = ConsumeFlag(context.Rest, "--keep-csv");
         var noGpuVideo = ConsumeFlag(context.Rest, "--no-gpu-video");
-        EnsureNoArgs(context.Rest, "presentmon [--seconds N] [--pid PID|--process NAME] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
+        EnsureNoArgs(context.Rest, "presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
+        swapChainAddress ??= await TryResolvePreviewSwapChainAddressAsync(context).ConfigureAwait(false);
 
         var result = await PresentMonProbe.RunAsync(new PresentMonProbeOptions
         {
@@ -103,12 +105,33 @@ internal static class CommandHandlers
             DurationSeconds = seconds,
             PresentMonPath = presentMonPath,
             OutputFile = outputPath,
+            ExpectedSwapChainAddress = swapChainAddress,
             KeepCsv = keepCsv,
             TrackGpuVideo = !noGpuVideo
         }).ConfigureAwait(false);
 
         Console.WriteLine(json ? PrettyJson(result) : PresentMonProbe.Format(result));
         return result.Success ? 0 : 3;
+    }
+
+    private static async Task<string?> TryResolvePreviewSwapChainAddressAsync(CommandContext context)
+    {
+        try
+        {
+            var response = await context.Transport.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
+            if (!AutomationSnapshotFormatter.IsSuccess(response) ||
+                !response.TryGetProperty("Snapshot", out var snapshot))
+            {
+                return null;
+            }
+
+            var address = AutomationSnapshotFormatter.Get(snapshot, "PreviewD3DSwapChainAddress", string.Empty);
+            return string.IsNullOrWhiteSpace(address) ? null : address;
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     private static Task<int> HandlePreviewAsync(CommandContext context)
@@ -389,9 +412,19 @@ internal static class CommandHandlers
 
     private static Task<int> HandleFlashbackAsync(CommandContext context)
     {
-        var subcommand = RequireWord(context.Rest, 0, "flashback play|pause|go-live|seek|export|segments|apply").ToLowerInvariant();
+        var subcommand = RequireWord(context.Rest, 0, "flashback on|off|play|pause|go-live|seek|export|segments|apply").ToLowerInvariant();
         switch (subcommand)
         {
+            case "on":
+            case "enable":
+                EnsureArgCount(context.Rest, 1, "flashback on|off");
+                return HandleSimpleCommandAsync(context, "SetFlashbackEnabled",
+                    new Dictionary<string, object?> { ["enabled"] = true }, includeData: false);
+            case "off":
+            case "disable":
+                EnsureArgCount(context.Rest, 1, "flashback on|off");
+                return HandleSimpleCommandAsync(context, "SetFlashbackEnabled",
+                    new Dictionary<string, object?> { ["enabled"] = false }, includeData: false);
             case "apply":
             case "restart":
                 return HandleSimpleCommandAsync(context, "RestartFlashback", includeData: false);
@@ -434,7 +467,7 @@ internal static class CommandHandlers
             case "segments":
                 return HandleSimpleCommandAsync(context, "FlashbackGetSegments", includeData: true);
             default:
-                throw new UsageException($"Unknown flashback command '{subcommand}'. Expected play, pause, go-live, seek, export, or segments.");
+                throw new UsageException($"Unknown flashback command '{subcommand}'. Expected on, off, play, pause, go-live, seek, export, or segments.");
         }
     }
 

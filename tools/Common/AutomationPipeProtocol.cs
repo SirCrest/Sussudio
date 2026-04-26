@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System;
 using System.Linq;
+using ElgatoCapture.Models;
 
 namespace ElgatoCapture.Tools;
 
@@ -12,60 +13,22 @@ internal static class AutomationPipeProtocol
     internal const int DefaultConnectTimeoutMs = 5000;
     internal const int DefaultResponseTimeoutMs = 15000;
     internal const int ExtendedResponseTimeoutMs = 60000;
+    internal const int RecordingResponseTimeoutMs = 150000;
+    internal const int FlashbackMutationResponseTimeoutMs = 305000;
     internal const int DefaultNotReadyRetries = 15;
     internal const int DefaultNotReadyDelayMs = 1000;
 
     internal static IReadOnlyDictionary<string, int> CommandMap { get; } =
-        new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["Authenticate"] = 0,
-            ["GetSnapshot"] = 1,
-            ["GetDiagnostics"] = 2,
-            ["RefreshDevices"] = 3,
-            ["SelectDevice"] = 4,
-            ["SelectAudioInputDevice"] = 5,
-            ["SetCustomAudioInput"] = 6,
-            ["SetResolution"] = 7,
-            ["SetFrameRate"] = 8,
-            ["SetRecordingFormat"] = 9,
-            ["SetQuality"] = 10,
-            ["SetCustomBitrate"] = 11,
-            ["SetHdrEnabled"] = 12,
-            ["SetAudioEnabled"] = 13,
-            ["SetAudioPreviewEnabled"] = 14,
-            ["SetOutputPath"] = 15,
-            ["SetPreviewEnabled"] = 16,
-            ["SetRecordingEnabled"] = 17,
-            ["ArmClose"] = 18,
-            ["WindowAction"] = 19,
-            ["WaitForCondition"] = 20,
-            ["VerifyLastRecording"] = 21,
-            ["AssertSnapshot"] = 22,
-            ["SetTrueHdrPreviewEnabled"] = 23,
-            ["ProbeVideoSource"] = 24,
-            ["ProbePreviewColor"] = 25,
-            ["CapturePreviewFrame"] = 26,
-            ["CaptureWindowScreenshot"] = 27,
-            ["SetVideoFormat"] = 28,
-            ["GetCaptureOptions"] = 29,
-            ["SetPreset"] = 30,
-            ["SetSplitEncodeMode"] = 31,
-            ["SetMjpegDecoderCount"] = 32,
-            ["SetShowAllCaptureOptions"] = 33,
-            ["SetPreviewVolume"] = 34,
-            ["SetStatsVisible"] = 35,
-            ["SetDeviceAudioMode"] = 36,
-            ["GetPerformanceTimeline"] = 37,
-            ["SetStatsSectionVisible"] = 38,
-            ["SetAnalogAudioGain"] = 39,
-            ["SetSettingsVisible"] = 40,
-            ["FlashbackAction"] = 41,
-            ["FlashbackExport"] = 42,
-            ["FlashbackGetSegments"] = 43,
-            ["VerifyFile"] = 44,
-            ["RestartFlashback"] = 45,
-            ["SetMicrophoneEnabled"] = 46
-        };
+        Enum.GetValues<AutomationCommandKind>()
+            .ToDictionary(
+                command => command.ToString(),
+                command => (int)command,
+                StringComparer.OrdinalIgnoreCase);
+
+    private static IReadOnlyDictionary<int, string> CommandNamesByValue { get; } =
+        CommandMap.ToDictionary(
+            entry => entry.Value,
+            entry => entry.Key);
 
     internal static string? GetConfiguredAuthToken(string? explicitAuthToken = null)
     {
@@ -80,21 +43,63 @@ internal static class AutomationPipeProtocol
 
     internal static int GetDefaultResponseTimeout(string commandName)
     {
-        return commandName switch
+        commandName = ResolveCanonicalCommandName(commandName);
+
+        var commandTimeoutMs = commandName switch
         {
+            "SetRecordingEnabled" => RecordingResponseTimeoutMs,
+            "RestartFlashback" or "SetFlashbackEnabled" => FlashbackMutationResponseTimeoutMs,
             "WaitForCondition" or "VerifyLastRecording" or "CapturePreviewFrame" or
-            "CaptureWindowScreenshot" or "FlashbackExport" or "VerifyFile" or
-            "RestartFlashback" => ExtendedResponseTimeoutMs,
+            "CaptureWindowScreenshot" or "FlashbackExport" or "VerifyFile" => ExtendedResponseTimeoutMs,
             _ => DefaultResponseTimeoutMs
         };
+        return commandTimeoutMs;
+    }
+
+    private static string ResolveCanonicalCommandName(string commandName)
+    {
+        if (int.TryParse(commandName, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numericCommand) &&
+            TryGetCommandName(numericCommand, out var numericCommandName))
+        {
+            return numericCommandName;
+        }
+
+        if (CommandMap.TryGetValue(commandName, out var directCommand) &&
+            TryGetCommandName(directCommand, out var directCommandName))
+        {
+            return directCommandName;
+        }
+
+        var normalized = Normalize(commandName);
+        foreach (var entry in CommandMap)
+        {
+            if (Normalize(entry.Key).Equals(normalized, StringComparison.OrdinalIgnoreCase))
+            {
+                return entry.Key;
+            }
+        }
+
+        return commandName;
     }
 
     internal static bool TryGetCommandValue(string commandName, out int commandValue)
         => CommandMap.TryGetValue(commandName, out commandValue);
 
+    internal static bool TryGetCommandName(int commandValue, out string commandName)
+    {
+        if (CommandNamesByValue.TryGetValue(commandValue, out var resolvedName))
+        {
+            commandName = resolvedName;
+            return true;
+        }
+
+        commandName = string.Empty;
+        return false;
+    }
+
     internal static Dictionary<string, object?> CreateRequestEnvelope(
         int commandValue,
-        Dictionary<string, object?>? payload = null,
+        object? payload = null,
         string? authToken = null)
     {
         return new Dictionary<string, object?>

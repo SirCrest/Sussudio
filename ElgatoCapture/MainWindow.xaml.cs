@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
 using ElgatoCapture.Tools;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
@@ -22,6 +21,16 @@ using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
 using WinRT.Interop;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture;
 
@@ -69,6 +78,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _previewLastPresentedTick;
     private int _windowCloseRequested;
     private int _windowCloseCleanupStarted;
+    private int _windowCloseRecordingStopInProgress;
+    private int _windowCloseAllowedAfterRecordingStop;
     private long _previewMinPresentationIntervalMs;
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
@@ -313,7 +324,10 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             _automationDiagnosticsHub,
             this,
             automationToken);
-        _automationPipeServer = new NamedPipeAutomationServer(automationDispatcher, _automationPipeName);
+        _automationPipeServer = new NamedPipeAutomationServer(
+            automationDispatcher,
+            _automationPipeName,
+            _automationTokenRequired);
         _previewMinPresentationIntervalMs = ResolvePreviewExpectedIntervalMs();
 
         // Set window handle for folder picker
@@ -334,6 +348,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         // Set initial window size and constraints
         var appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(
             Microsoft.UI.Win32Interop.GetWindowIdFromWindow(_hwnd));
+        appWindow.Closing += MainWindow_Closing;
 
         // Ensure window is not maximized
         if (appWindow.Presenter is Microsoft.UI.Windowing.OverlappedPresenter presenter)

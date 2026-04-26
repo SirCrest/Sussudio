@@ -19,7 +19,11 @@ public static class WindowTools
     {
         var results = new List<string>();
 
-        if (armClose)
+        // Normalize snake_case to PascalCase for enum parsing (e.g. snap_left -> SnapLeft)
+        var normalizedAction = string.Join("", action.Trim().Split('_').Select(p =>
+            p.Length > 0 ? char.ToUpperInvariant(p[0]) + p.Substring(1).ToLowerInvariant() : p));
+
+        if (armClose && string.Equals(normalizedAction, "Close", StringComparison.Ordinal))
         {
             var armPayload = new Dictionary<string, object?>
             {
@@ -27,10 +31,6 @@ public static class WindowTools
             };
             results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "ArmClose", "ArmClose", armPayload).ConfigureAwait(false));
         }
-
-        // Normalize snake_case to PascalCase for enum parsing (e.g. snap_left -> SnapLeft)
-        var normalizedAction = string.Join("", action.Split('_').Select(p =>
-            p.Length > 0 ? char.ToUpperInvariant(p[0]) + p.Substring(1).ToLowerInvariant() : p));
 
         var actionPayload = new Dictionary<string, object?>
         {

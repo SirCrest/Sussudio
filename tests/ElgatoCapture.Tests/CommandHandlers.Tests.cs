@@ -7,12 +7,6 @@ static partial class Program
     private static async Task EcctlCommandHandlers_RouteCoreCommandGroups()
     {
         var assemblyPath = Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll");
-        var fullPath = Path.Combine(GetRepoRoot(), assemblyPath);
-        if (!File.Exists(fullPath))
-        {
-            return;
-        }
-
         var ecctlAssembly = LoadToolAssembly(assemblyPath);
         var transportType = ecctlAssembly.GetType("EcCtl.PipeTransport")
             ?? throw new InvalidOperationException("EcCtl.PipeTransport type not found.");
@@ -57,5 +51,23 @@ static partial class Program
         AssertEqual(0, previewExitCode, "preview start exit code");
         AssertEqual(16, previewRequest.GetProperty("command").GetInt32(), "preview start command id");
         AssertEqual(true, previewRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(), "preview start payload enabled");
+
+        var flashbackPipeName = $"ecctl-flashback-{Guid.NewGuid():N}";
+        var flashbackTransport = Activator.CreateInstance(transportType, flashbackPipeName, (int?)null)
+            ?? throw new InvalidOperationException("Failed to create PipeTransport for flashback command test.");
+        var flashbackArguments = new List<string> { "flashback", "off" };
+        var flashbackExitCode = -1;
+        JsonElement flashbackRequest = await CapturePipeRequestAsync(
+            flashbackPipeName,
+            async () =>
+            {
+                var task = executeAsync.Invoke(null, new object?[] { flashbackTransport, flashbackArguments, false }) as Task<int>
+                    ?? throw new InvalidOperationException("CommandHandlers.ExecuteAsync did not return Task<int>.");
+                flashbackExitCode = await task.ConfigureAwait(false);
+            }).ConfigureAwait(false);
+
+        AssertEqual(0, flashbackExitCode, "flashback off exit code");
+        AssertEqual(47, flashbackRequest.GetProperty("command").GetInt32(), "flashback off command id");
+        AssertEqual(false, flashbackRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(), "flashback off payload enabled");
     }
 }

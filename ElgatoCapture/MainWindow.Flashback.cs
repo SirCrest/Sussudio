@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -21,6 +20,16 @@ using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
 using WinRT.Interop;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture;
 
@@ -138,19 +147,34 @@ public sealed partial class MainWindow
     }
     private void FlashbackStatusTimer_Tick(DispatcherQueueTimer sender, object args)
     {
-        if (_isWindowClosing) return;
-        ViewModel.UpdateFlashbackBufferStatus();
+        try
+        {
+            if (_isWindowClosing) return;
+            ViewModel.UpdateFlashbackBufferStatus();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_STATUS_TIMER_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
     }
     private void FlashbackPlaybackTimer_Tick(DispatcherQueueTimer sender, object args)
     {
-        if (_isWindowClosing) return;
-        var controller = ViewModel.FlashbackPlaybackController;
-        if (controller == null || controller.State != FlashbackPlaybackState.Playing)
+        try
         {
-            StopFlashbackPlaybackPolling();
-            return;
+            if (_isWindowClosing) return;
+            var playback = ViewModel.GetFlashbackPlaybackSnapshot();
+            if (!playback.IsActive || playback.State != FlashbackPlaybackState.Playing)
+            {
+                StopFlashbackPlaybackPolling();
+                return;
+            }
+            ViewModel.FlashbackPlaybackPosition = playback.PlaybackPosition;
         }
-        ViewModel.FlashbackPlaybackPosition = controller.PlaybackPosition;
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_TIMER_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            StopFlashbackPlaybackPolling();
+        }
     }
     private void FlashbackTrack_SizeChanged(object sender, SizeChangedEventArgs e)
     {
@@ -259,7 +283,9 @@ public sealed partial class MainWindow
     private void FlashbackEnabledToggle_Toggled(object sender, RoutedEventArgs e)
     {
         ViewModel.IsFlashbackEnabled = FlashbackEnabledToggle.IsOn;
-        ViewModel.SetFlashbackEnabled(FlashbackEnabledToggle.IsOn);
+        _ = RunUiEventHandlerAsync(
+            () => ViewModel.SetFlashbackEnabledAsync(FlashbackEnabledToggle.IsOn),
+            nameof(FlashbackEnabledToggle_Toggled));
     }
     private void FlashbackBufferDurationCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

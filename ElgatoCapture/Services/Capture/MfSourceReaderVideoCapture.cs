@@ -7,8 +7,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ElgatoCapture.Services.Audio;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Capture;
 
 public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 {
@@ -759,7 +760,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             return;
         }
 
-        // Lock-free ring buffer write — single writer (MF read thread), reader snapshots under lock.
+        // REVIEWED 2026-04-07: lock-free write (single MF read thread) + locked reader
+        // (GetSourceCadenceMetrics). Mixed sync is intentional — worst case is a slightly
+        // stale FPS reading in the stats overlay, not a crash or corruption.
         // Capture array ref locally in case SetExpectedFrameRate replaces it.
         var window = Volatile.Read(ref _sourceIntervalWindowMs);
         var idx = Volatile.Read(ref _sourceIntervalIndex);

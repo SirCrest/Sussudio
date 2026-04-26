@@ -1,13 +1,10 @@
 using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using ElgatoCapture.Tools;
 
 internal static class Program
 {
-    private const int DefaultConnectTimeoutMs = 5000;
-    private const int DefaultNotReadyRetries = 15;
-    private const int DefaultNotReadyDelayMs = 1000;
-
     public static async Task<int> Main(string[] args)
     {
         try
@@ -28,39 +25,21 @@ internal static class Program
 
             var commandValue = AutomationPipeProtocol.ResolveCommand(options.Command);
             var payload = BuildPayload(options);
+            var timeoutCommandName = AutomationPipeProtocol.TryGetCommandName(commandValue, out var canonicalCommandName)
+                ? canonicalCommandName
+                : options.Command;
+            var responseTimeoutMs = options.ResponseTimeoutMs ??
+                AutomationPipeProtocol.GetDefaultResponseTimeout(timeoutCommandName);
 
-            string responseLine;
-            for (var attempt = 0; ; attempt++)
-            {
-                var request = AutomationPipeProtocol.CreateRequestEnvelope(commandValue, authToken: options.AuthToken);
-                request["payload"] = payload;
-
-                var requestJson = JsonSerializer.Serialize(request);
-                responseLine = await SendAsync(
-                    requestJson,
+            var result = await AutomationPipeClient.SendCommandWithResultAsync(
                     options.PipeName,
+                    options.Command,
+                    payload,
                     options.ConnectTimeoutMs,
-                    options.ResponseTimeoutMs).ConfigureAwait(false);
-
-                if (!TryReadResponseState(responseLine, out var success, out var status, out var retryAfterMs))
-                {
-                    break;
-                }
-
-                if (success)
-                {
-                    break;
-                }
-
-                if (!string.Equals(status, "not_ready", StringComparison.OrdinalIgnoreCase) ||
-                    attempt >= DefaultNotReadyRetries)
-                {
-                    break;
-                }
-
-                var delayMs = Math.Clamp(retryAfterMs ?? DefaultNotReadyDelayMs, 100, 30000);
-                await Task.Delay(delayMs).ConfigureAwait(false);
-            }
+                    responseTimeoutMs,
+                    options.AuthToken)
+                .ConfigureAwait(false);
+            var responseLine = result.ResponseJson;
 
             if (options.Pretty)
             {
@@ -78,7 +57,7 @@ internal static class Program
 
             try
             {
-                if (TryReadResponseState(responseLine, out var success, out _, out _) && success)
+                if (result.StateRead && result.Success)
                 {
                     return 0;
                 }
@@ -97,43 +76,22 @@ internal static class Program
         }
     }
 
-    private static bool TryReadResponseState(
-        string responseJson,
-        out bool success,
-        out string? status,
-        out int? retryAfterMs)
-    {
-        success = false;
-        status = null;
-        retryAfterMs = null;
-
-        try
-        {
-            using var responseDocument = JsonDocument.Parse(responseJson);
-            return AutomationResponseState.TryRead(
-                responseDocument.RootElement, out success, out status, out retryAfterMs);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    private static async Task<string> SendAsync(
-        string requestJson,
-        string pipeName,
-        int connectTimeoutMs,
-        int responseTimeoutMs)
-    {
-        return await AutomationPipeClient.SendRequestAsync(
-            pipeName,
-            requestJson,
-            connectTimeoutMs,
-            responseTimeoutMs).ConfigureAwait(false);
-    }
-
     private static object BuildPayload(Options options)
     {
+        if (!string.IsNullOrWhiteSpace(options.PayloadBase64))
+        {
+            if (options.PayloadKv.Count > 0 ||
+                !string.Equals(options.PayloadJson, "{}", StringComparison.Ordinal))
+            {
+                throw new ArgumentException("Use only one of --payload, --payload-base64, or --payload-kv.");
+            }
+
+            var payloadBytes = Convert.FromBase64String(options.PayloadBase64);
+            var payloadJson = Encoding.UTF8.GetString(payloadBytes);
+            using var decodedPayloadDocument = JsonDocument.Parse(string.IsNullOrWhiteSpace(payloadJson) ? "{}" : payloadJson);
+            return decodedPayloadDocument.RootElement.Clone();
+        }
+
         if (options.PayloadKv.Count > 0)
         {
             if (!string.Equals(options.PayloadJson, "{}", StringComparison.Ordinal))
@@ -233,6 +191,9 @@ internal static class Program
                 case "--payload":
                     options.PayloadJson = NextValue(args, ref i, arg);
                     break;
+                case "--payload-base64":
+                    options.PayloadBase64 = NextValue(args, ref i, arg);
+                    break;
                 case "--payload-kv":
                     options.PayloadKv.Add(NextValue(args, ref i, arg));
                     break;
@@ -285,9 +246,10 @@ internal static class Program
         Console.WriteLine("  --pipe, -p                Pipe name (default: ElgatoCaptureAutomation)");
         Console.WriteLine("  --token, -t               Auth token when server token is configured");
         Console.WriteLine("  --payload                 JSON object payload (default: {})");
+        Console.WriteLine("  --payload-base64          UTF-8 JSON object payload encoded as base64");
         Console.WriteLine("  --payload-kv              Payload entry key=value (repeatable, quote-safe)");
         Console.WriteLine("  --connect-timeout-ms      Pipe connect timeout (default: 5000)");
-        Console.WriteLine("  --response-timeout-ms     Response read timeout (default: 15000)");
+        Console.WriteLine("  --response-timeout-ms     Response read timeout (default: command-specific)");
         Console.WriteLine("  --pretty                  Pretty-print JSON response");
         Console.WriteLine("  --help, -h, /?            Show help");
     }
@@ -298,9 +260,10 @@ internal static class Program
         public string PipeName { get; set; } = AutomationPipeProtocol.DefaultPipeName;
         public string? AuthToken { get; set; }
         public string PayloadJson { get; set; } = "{}";
+        public string PayloadBase64 { get; set; } = string.Empty;
         public List<string> PayloadKv { get; } = [];
-        public int ConnectTimeoutMs { get; set; } = DefaultConnectTimeoutMs;
-        public int ResponseTimeoutMs { get; set; } = AutomationPipeProtocol.DefaultResponseTimeoutMs;
+        public int ConnectTimeoutMs { get; set; } = AutomationPipeProtocol.DefaultConnectTimeoutMs;
+        public int? ResponseTimeoutMs { get; set; }
         public bool Pretty { get; set; }
         public bool ShowHelp { get; set; }
     }

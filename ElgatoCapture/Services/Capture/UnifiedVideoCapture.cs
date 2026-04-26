@@ -2,8 +2,15 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Capture;
 
 internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 {
@@ -17,8 +24,18 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private IGpuVideoFrameEncoder? _gpuRecordingEncoder;
     private FlashbackEncoderSink? _flashbackSink;
     private ParallelMjpegDecodePipeline? _mjpegPipeline;
+    private MjpegPreviewJitterBuffer? _mjpegPreviewJitterBuffer;
+    private readonly VisualCadenceTracker _visualCadenceTracker = new(cropLeft: 0.25, cropTop: 0.25, cropWidth: 0.5, cropHeight: 0.5);
+    private readonly VisualCadenceTracker _visualCenterCadenceTracker = new(
+        sampleColumns: 320,
+        sampleRows: 180,
+        cropLeft: 0.375,
+        cropTop: 0.375,
+        cropWidth: 0.25,
+        cropHeight: 0.25);
     private bool _started;
     private bool _recordingActive;
+    private bool _flashbackRecordingAccountingActive;
     private bool _disposed;
     private int _disposeStarted;
     private bool _isP010;
@@ -26,6 +43,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     private bool _strictPreviewTextureRequired;
     private int _fatalErrorSignaled;
     private int _consecutiveTextureFailures;
+    private int _visualCadenceCpuDataUnavailable;
     private const int MaxConsecutiveTextureFailures = 5;
     private int _width;
     private int _height;
@@ -116,6 +134,27 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         return Volatile.Read(ref _mjpegPipeline)?.GetTimingMetrics();
     }
 
+    public MjpegPreviewJitterBuffer.Metrics GetMjpegPreviewJitterMetrics()
+    {
+        return Volatile.Read(ref _mjpegPreviewJitterBuffer)?.GetMetrics() ?? default;
+    }
+
+    public VisualCadenceTracker.Metrics GetPreviewVisualCadenceMetrics()
+    {
+        return _visualCadenceTracker.GetMetrics();
+    }
+
+    public VisualCadenceTracker.Metrics GetPreviewVisualCenterCadenceMetrics()
+    {
+        return _visualCenterCadenceTracker.GetMetrics();
+    }
+
+    public FrameFingerprintCadenceTracker.Metrics GetMjpegPacketHashMetrics()
+    {
+        return Volatile.Read(ref _mjpegPipeline)?.GetPacketHashMetrics()
+            ?? FrameFingerprintCadenceTracker.Empty;
+    }
+
     public async Task InitializeAsync(
         string deviceSymbolicLink,
         int width,
@@ -153,7 +192,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                     width,
                     height,
                     OnMjpegPipelineFrameEmitted,
-                    OnMjpegPipelineFatalError);
+                    OnMjpegPipelineFatalError,
+                    OnMjpegPipelinePreviewFrameDecoded);
             }
             catch (Exception ex)
             {
@@ -185,6 +225,19 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             throw;
         }
 
+        if (mjpegPipeline != null)
+        {
+            var previewJitterFps = fps > 0 ? fps : capture.Fps;
+            Volatile.Write(
+                ref _mjpegPreviewJitterBuffer,
+                new MjpegPreviewJitterBuffer(
+                    previewJitterFps,
+                    () => Volatile.Read(ref _previewSink),
+                    () => _previewSuppressed,
+                    previewFrameProbe: null,
+                    targetDepth: 3));
+        }
+
         if (!capture.IsD3DOutputEnabled)
         {
             Logger.Log("UNIFIED_VIDEO_D3D_MANAGER_INACTIVE reason=source_reader_cpu_only");
@@ -206,6 +259,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             _fps = capture.Fps;
             _nativeInputFormat = capture.NativeInputFormat;
             _negotiatedFormat = capture.NegotiatedFormat;
+            _visualCadenceTracker.Reset();
+            _visualCenterCadenceTracker.Reset();
             Interlocked.Exchange(ref _videoFramesArrived, 0);
             Interlocked.Exchange(ref _videoFramesDropped, 0);
             Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
@@ -213,6 +268,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             Interlocked.Exchange(ref _lastVideoFrameArrivedTick, 0);
             Interlocked.Exchange(ref _fatalErrorSignaled, 0);
             Interlocked.Exchange(ref _consecutiveTextureFailures, 0);
+            Interlocked.Exchange(ref _visualCadenceCpuDataUnavailable, 0);
             Interlocked.Exchange(ref _pixelFormatObserverFired, 0);
         }
 
@@ -311,11 +367,24 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         return Task.CompletedTask;
     }
 
+    public void BeginFlashbackRecordingAccounting()
+    {
+        Interlocked.Exchange(ref _videoFramesWrittenToSink, 0);
+        Interlocked.Exchange(ref _recordingFramesDelivered, 0);
+        Volatile.Write(ref _flashbackRecordingAccountingActive, true);
+    }
+
+    public void EndFlashbackRecordingAccounting()
+    {
+        Volatile.Write(ref _flashbackRecordingAccountingActive, false);
+    }
+
     public Task StopRecordingAsync()
     {
         lock (_sync)
         {
             Volatile.Write(ref _recordingActive, false);
+            Volatile.Write(ref _flashbackRecordingAccountingActive, false);
             _recordingSink = null;
             Volatile.Write(ref _recordingEncoder, null);
             Volatile.Write(ref _gpuRecordingEncoder, null);
@@ -343,6 +412,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         {
             _started = false;
             _recordingActive = false;
+            _flashbackRecordingAccountingActive = false;
             _recordingSink = null;
             _recordingEncoder = null;
             _gpuRecordingEncoder = null;
@@ -380,6 +450,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
             if (mjpegPipelineToStop != null)
             {
+                var jitterBuffer = Interlocked.Exchange(ref _mjpegPreviewJitterBuffer, null);
+                jitterBuffer?.Dispose();
+
                 if (!mjpegPipelineToStop.TryStop(TimeSpan.FromSeconds(5), out var failureReason))
                 {
                     var stopException = new InvalidOperationException(
@@ -427,6 +500,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         MfSourceReaderVideoCapture? capture;
         SharedD3DDeviceManager? d3dManager;
         ParallelMjpegDecodePipeline? mjpegPipeline;
+        MjpegPreviewJitterBuffer? jitterBuffer;
         lock (_sync)
         {
             capture = _capture;
@@ -435,6 +509,8 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             _d3dManager = null;
             mjpegPipeline = _mjpegPipeline;
             _mjpegPipeline = null;
+            jitterBuffer = _mjpegPreviewJitterBuffer;
+            _mjpegPreviewJitterBuffer = null;
             _isHighFrameRateMjpegMode = false;
             _strictPreviewTextureRequired = false;
             _previewSink = null;
@@ -450,6 +526,7 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         }
 
         mjpegPipeline?.Dispose();
+        jitterBuffer?.Dispose();
         d3dManager?.Dispose();
 
         if (stopException != null)
@@ -483,18 +560,50 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         }
     }
 
-    private void OnMjpegPipelineFrameEmitted(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)
+    private void OnMjpegPipelineFrameEmitted(PooledVideoFrame frame)
     {
-        const bool isP010 = false;
         FirePixelFormatObserverOnce("NV12");
 
-        EnqueueRecordingFrame(nv12Data, width, height, isP010);
-        EnqueueFlashbackFrame(nv12Data, width, height, isP010);
+        EnqueueRecordingFrame(frame);
+        EnqueueFlashbackFrame(frame);
+    }
+
+    private void OnMjpegPipelinePreviewFrameDecoded(PooledVideoFrameLease frame)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        FirePixelFormatObserverOnce("NV12");
+        TrackPreviewVisualFrame(
+            frame.Memory.Span,
+            frame.Width,
+            frame.Height,
+            frame.PixelFormat,
+            frame.ArrivalTick,
+            frame.SequenceNumber);
 
         var previewSink = Volatile.Read(ref _previewSink);
-        if (!_previewSuppressed && previewSink != null)
+        var jitterBuffer = Volatile.Read(ref _mjpegPreviewJitterBuffer);
+        if (_previewSuppressed || previewSink == null)
         {
-            SubmitPreviewRawFrame(previewSink, nv12Data, width, height, isP010, arrivalTick);
+            jitterBuffer?.Clear();
+            frame.Dispose();
+            return;
+        }
+
+        if (jitterBuffer != null)
+        {
+            jitterBuffer.Enqueue(frame);
+            return;
+        }
+
+        PooledVideoFrameLease? ownedFrame = frame;
+        try
+        {
+            previewSink.SubmitRawFrameLease(ownedFrame, isHdr: false);
+            ownedFrame = null;
+        }
+        finally
+        {
+            ownedFrame?.Dispose();
         }
     }
 
@@ -542,6 +651,20 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                     previewSink.SubmitTexture(gpuTexture, gpuSubresource, width, height, isP010, arrivalTick);
                     textureSubmitted = true;
                     Interlocked.Exchange(ref _consecutiveTextureFailures, 0);
+                    if (!frameData.IsEmpty)
+                    {
+                        TrackPreviewVisualFrame(
+                            frameData,
+                            width,
+                            height,
+                            isP010 ? PooledVideoPixelFormat.P010 : PooledVideoPixelFormat.Nv12,
+                            arrivalTick,
+                            sequenceNumber: -1);
+                    }
+                    else
+                    {
+                        MarkPreviewVisualCadenceUnavailable("d3d_texture_only");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -588,10 +711,57 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(width, height, isP010);
             if (frameData.Length < expectedSize)
             {
+                RecordFlashbackRecordingAccounting(sink, accepted: false);
                 return;
             }
 
-            sink.EnqueueRawVideoFrame(frameData, expectedSize);
+            var accepted = sink.TryEnqueueRawVideoFrame(frameData, expectedSize);
+            RecordFlashbackRecordingAccounting(sink, accepted);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"UNIFIED_VIDEO_FLASHBACK_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void EnqueueFlashbackFrame(PooledVideoFrame frame)
+    {
+        var sink = Volatile.Read(ref _flashbackSink);
+        if (sink == null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (sink is IRawVideoFrameLeaseEncoder leaseEncoder &&
+                frame.TryAddLease(out var lease))
+            {
+                try
+                {
+                    var accepted = leaseEncoder is IRawVideoFrameLeaseTryEncoder leaseTryEncoder
+                        ? leaseTryEncoder.TryEnqueueRawVideoFrame(lease!)
+                        : TryLegacyLeaseVideoEnqueue(leaseEncoder, lease!);
+                    lease = null;
+                    RecordFlashbackRecordingAccounting(sink, accepted);
+                }
+                finally
+                {
+                    lease?.Dispose();
+                }
+
+                return;
+            }
+
+            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, isP010: false);
+            if (frame.Length < expectedSize)
+            {
+                RecordFlashbackRecordingAccounting(sink, accepted: false);
+                return;
+            }
+
+            var rawAccepted = sink.TryEnqueueRawVideoFrame(frame.Memory.Span, expectedSize);
+            RecordFlashbackRecordingAccounting(sink, rawAccepted);
         }
         catch (Exception ex)
         {
@@ -609,11 +779,27 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 
         try
         {
-            sink.EnqueueGpuVideoFrame(texture, subresource);
+            var accepted = sink.TryEnqueueGpuVideoFrame(texture, subresource);
+            RecordFlashbackRecordingAccounting(sink, accepted);
         }
         catch (Exception ex)
         {
             Logger.Log($"UNIFIED_VIDEO_FLASHBACK_GPU_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void RecordFlashbackRecordingAccounting(FlashbackEncoderSink sink, bool accepted)
+    {
+        if (!Volatile.Read(ref _flashbackRecordingAccountingActive) ||
+            !sink.IsRecordingActive)
+        {
+            return;
+        }
+
+        Interlocked.Increment(ref _recordingFramesDelivered);
+        if (accepted)
+        {
+            Interlocked.Increment(ref _videoFramesWrittenToSink);
         }
     }
 
@@ -627,6 +813,13 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     {
         try
         {
+            TrackPreviewVisualFrame(
+                frameData,
+                width,
+                height,
+                isP010 ? PooledVideoPixelFormat.P010 : PooledVideoPixelFormat.Nv12,
+                arrivalTick,
+                sequenceNumber: -1);
             fixed (byte* pointer = frameData)
             {
                 previewSink.SubmitRawFrame((IntPtr)pointer, frameData.Length, width, height, isP010, arrivalTick);
@@ -637,6 +830,50 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             Interlocked.Increment(ref _videoFramesDropped);
             Logger.Log($"UNIFIED_VIDEO_PREVIEW_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
+    }
+
+    private void TrackPreviewVisualFrame(
+        ReadOnlySpan<byte> frameData,
+        int width,
+        int height,
+        PooledVideoPixelFormat pixelFormat,
+        long arrivalTick,
+        long sequenceNumber)
+    {
+        try
+        {
+            Interlocked.Exchange(ref _visualCadenceCpuDataUnavailable, 0);
+            _visualCadenceTracker.RecordFrame(
+                frameData,
+                width,
+                height,
+                pixelFormat,
+                timestampTick: arrivalTick);
+            _visualCenterCadenceTracker.RecordFrame(
+                frameData,
+                width,
+                height,
+                pixelFormat,
+                timestampTick: arrivalTick);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log(
+                $"UNIFIED_VIDEO_VISUAL_CADENCE_FAIL type={ex.GetType().Name} " +
+                $"msg={ex.Message} width={width} height={height} fmt={pixelFormat} seq={sequenceNumber}");
+        }
+    }
+
+    private void MarkPreviewVisualCadenceUnavailable(string reason)
+    {
+        if (Interlocked.CompareExchange(ref _visualCadenceCpuDataUnavailable, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _visualCadenceTracker.Reset();
+        _visualCenterCadenceTracker.Reset();
+        Logger.Log($"UNIFIED_VIDEO_VISUAL_CADENCE_UNAVAILABLE reason={reason}");
     }
 
     private void EnqueueRecordingFrame(ReadOnlySpan<byte> frameData, int width, int height, bool isP010)
@@ -666,8 +903,77 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
                 return;
             }
 
-            encoder.EnqueueRawVideoFrame(frameData, expectedSize);
-            Interlocked.Increment(ref _videoFramesWrittenToSink);
+            var accepted = encoder is IRawVideoFrameTryEncoder tryEncoder
+                ? tryEncoder.TryEnqueueRawVideoFrame(frameData, expectedSize)
+                : TryLegacyRawVideoEnqueue(encoder, frameData, expectedSize);
+            if (accepted)
+            {
+                Interlocked.Increment(ref _videoFramesWrittenToSink);
+            }
+        }
+        catch (Exception ex)
+        {
+            Interlocked.Increment(ref _videoFramesDropped);
+            Logger.Log($"UNIFIED_VIDEO_RECORDING_FRAME_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void EnqueueRecordingFrame(PooledVideoFrame frame)
+    {
+        if (!Volatile.Read(ref _recordingActive))
+        {
+            return;
+        }
+
+        var encoder = Volatile.Read(ref _recordingEncoder);
+        if (encoder == null)
+        {
+            return;
+        }
+
+        Interlocked.Increment(ref _recordingFramesDelivered);
+
+        try
+        {
+            var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, isP010: false);
+            if (frame.Length < expectedSize)
+            {
+                Interlocked.Increment(ref _videoFramesDropped);
+                Logger.Log(
+                    "UNIFIED_VIDEO_FRAME_SIZE_MISMATCH " +
+                    $"expected={expectedSize} actual={frame.Length} width={frame.Width} height={frame.Height} isP010=false");
+                return;
+            }
+
+            if (encoder is IRawVideoFrameLeaseEncoder leaseEncoder &&
+                frame.TryAddLease(out var lease))
+            {
+                try
+                {
+                    var accepted = leaseEncoder is IRawVideoFrameLeaseTryEncoder leaseTryEncoder
+                        ? leaseTryEncoder.TryEnqueueRawVideoFrame(lease!)
+                        : TryLegacyLeaseVideoEnqueue(leaseEncoder, lease!);
+                    lease = null;
+                    if (accepted)
+                    {
+                        Interlocked.Increment(ref _videoFramesWrittenToSink);
+                    }
+                }
+                finally
+                {
+                    lease?.Dispose();
+                }
+            }
+            else
+            {
+                var accepted = encoder is IRawVideoFrameTryEncoder tryEncoder
+                    ? tryEncoder.TryEnqueueRawVideoFrame(frame.Memory.Span, expectedSize)
+                    : TryLegacyRawVideoEnqueue(encoder, frame.Memory.Span, expectedSize);
+                if (accepted)
+                {
+                    Interlocked.Increment(ref _videoFramesWrittenToSink);
+                }
+            }
         }
         catch (Exception ex)
         {
@@ -681,14 +987,37 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         Interlocked.Increment(ref _recordingFramesDelivered);
         try
         {
-            encoder.EnqueueGpuVideoFrame(texture, subresource);
-            Interlocked.Increment(ref _videoFramesWrittenToSink);
+            var accepted = encoder is IGpuVideoFrameTryEncoder tryEncoder
+                ? tryEncoder.TryEnqueueGpuVideoFrame(texture, subresource)
+                : TryLegacyGpuVideoEnqueue(encoder, texture, subresource);
+            if (accepted)
+            {
+                Interlocked.Increment(ref _videoFramesWrittenToSink);
+            }
         }
         catch (Exception ex)
         {
             Interlocked.Increment(ref _videoFramesDropped);
             Logger.Log($"UNIFIED_VIDEO_GPU_RECORDING_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
+    }
+
+    private static bool TryLegacyRawVideoEnqueue(IRawVideoFrameEncoder encoder, ReadOnlySpan<byte> frameData, int expectedSize)
+    {
+        encoder.EnqueueRawVideoFrame(frameData, expectedSize);
+        return true;
+    }
+
+    private static bool TryLegacyLeaseVideoEnqueue(IRawVideoFrameLeaseEncoder encoder, PooledVideoFrameLease frame)
+    {
+        encoder.EnqueueRawVideoFrame(frame);
+        return true;
+    }
+
+    private static bool TryLegacyGpuVideoEnqueue(IGpuVideoFrameEncoder encoder, IntPtr texture, int subresource)
+    {
+        encoder.EnqueueGpuVideoFrame(texture, subresource);
+        return true;
     }
 
     private void ThrowIfDisposed()

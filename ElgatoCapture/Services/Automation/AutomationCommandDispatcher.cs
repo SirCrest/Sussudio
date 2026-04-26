@@ -9,8 +9,12 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Automation;
 
 public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 {
@@ -89,7 +93,10 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             switch (request.Command)
             {
                 case AutomationCommandKind.GetSnapshot:
-                    return CreateResponse(correlationId, "Snapshot retrieved.");
+                {
+                    var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
+                    return CreateResponse(correlationId, "Snapshot retrieved.", snapshot: snapshot);
+                }
 
                 case AutomationCommandKind.GetDiagnostics:
                 {
@@ -211,14 +218,14 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 {
                     var mode = RequireString(payload, "mode");
                     await _viewModel.SetDeviceAudioModeAsync(mode, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Device audio mode change requested: {mode}.");
+                    return CreateResponse(correlationId, $"Device audio mode changed: {mode}.");
                 }
 
                 case AutomationCommandKind.SetAnalogAudioGain:
                 {
                     var gain = RequireDouble(payload, "gain");
                     await _viewModel.SetAnalogAudioGainAsync(gain, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Analog audio gain set to {gain:0.###}%.");
+                    return CreateResponse(correlationId, $"Analog audio gain set to {gain:0.###}%.");
                 }
 
                 case AutomationCommandKind.SetSettingsVisible:
@@ -231,36 +238,32 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 case AutomationCommandKind.FlashbackAction:
                 {
                     var action = ParseFlashbackAction(payload);
+                    var positionMs = action switch
+                    {
+                        AutomationFlashbackAction.Play => GetDouble(payload, "positionMs"),
+                        AutomationFlashbackAction.Seek => GetDouble(payload, "positionMs") ?? 0,
+                        _ => null
+                    };
+                    var position = positionMs.HasValue
+                        ? TimeSpan.FromMilliseconds(positionMs.Value)
+                        : (TimeSpan?)null;
+                    if (!await _viewModel.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false))
+                    {
+                        throw new InvalidOperationException("Flashback is not active.");
+                    }
+
                     switch (action)
                     {
                         case AutomationFlashbackAction.Play:
-                            if (!_viewModel.FlashbackPlay())
-                                throw new InvalidOperationException("Flashback is not active.");
-                            var playPositionMs = GetDouble(payload, "positionMs");
-                            if (playPositionMs.HasValue)
-                            {
-                                var playPosition = TimeSpan.FromMilliseconds(playPositionMs.Value);
-                                _viewModel.FlashbackBeginScrub(playPosition);
-                                _viewModel.FlashbackEndScrub();
-                            }
                             return CreateAcknowledgedResponse(correlationId,
-                                playPositionMs.HasValue
-                                    ? $"Flashback play at {playPositionMs.Value:0}ms requested."
+                                positionMs.HasValue
+                                    ? $"Flashback play at {positionMs.Value:0}ms requested."
                                     : "Flashback play requested.");
                         case AutomationFlashbackAction.Pause:
-                            if (!_viewModel.FlashbackPause())
-                                throw new InvalidOperationException("Flashback is not active.");
                             return CreateAcknowledgedResponse(correlationId, "Flashback pause requested.");
                         case AutomationFlashbackAction.GoLive:
-                            if (!_viewModel.FlashbackGoLive())
-                                throw new InvalidOperationException("Flashback is not active.");
                             return CreateAcknowledgedResponse(correlationId, "Flashback go-live requested.");
                         case AutomationFlashbackAction.Seek:
-                            var positionMs = GetDouble(payload, "positionMs") ?? 0;
-                            var position = TimeSpan.FromMilliseconds(positionMs);
-                            if (!_viewModel.FlashbackBeginScrub(position))
-                                throw new InvalidOperationException("Flashback is not active.");
-                            _viewModel.FlashbackEndScrub();
                             return CreateAcknowledgedResponse(correlationId, $"Flashback seek to {positionMs:0}ms requested.");
                         default:
                             throw new InvalidOperationException($"Unsupported flashback action '{action}'.");
@@ -289,7 +292,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                 case AutomationCommandKind.FlashbackGetSegments:
                 {
-                    var segments = _viewModel.GetFlashbackSegments();
+                    var segments = await _viewModel.GetFlashbackSegmentsAsync(cancellationToken).ConfigureAwait(false);
                     return CreateResponse(
                         correlationId,
                         $"Found {segments.Count} segment(s).",
@@ -383,7 +386,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 {
                     var enabled = RequireBool(payload, "enabled");
                     await _viewModel.SetRecordingEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    return CreateAcknowledgedResponse(correlationId, $"Recording {(enabled ? "start" : "stop")} requested.");
+                    var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(CancellationToken.None).ConfigureAwait(false);
+                    return CreateResponse(correlationId, $"Recording {(enabled ? "started" : "stopped")}.", snapshot: snapshot);
                 }
 
                 case AutomationCommandKind.ArmClose:
@@ -447,7 +451,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var condition = ParseWaitCondition(payload);
                     var timeoutMs = Math.Clamp(GetInt(payload, "timeoutMs") ?? DefaultWaitTimeoutMs, 250, 300_000);
                     var pollMs = Math.Clamp(GetInt(payload, "pollMs") ?? DefaultWaitPollMs, 50, 5_000);
-                    var met = await WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken).ConfigureAwait(false);
+                    var (met, snapshot) = await WaitForConditionAsync(condition, timeoutMs, pollMs, cancellationToken).ConfigureAwait(false);
 
                     return CreateResponse(
                         correlationId,
@@ -463,7 +467,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: met ? null : "timeout",
                         success: met,
-                        status: met ? "ok" : "error");
+                        status: met ? "ok" : "error",
+                        snapshot: snapshot);
                 }
 
                 case AutomationCommandKind.VerifyLastRecording:
@@ -487,7 +492,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                 case AutomationCommandKind.AssertSnapshot:
                 {
-                    var snapshot = _diagnosticsHub.GetLatestSnapshot();
+                    var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
                     var assertions = ParseAssertions(payload);
                     var failures = new List<string>();
                     foreach (var assertion in assertions)
@@ -512,18 +517,19 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         },
                         errorCode: passed ? null : "assertion-failed",
                         success: passed,
-                        status: passed ? "ok" : "error");
+                        status: passed ? "ok" : "error",
+                        snapshot: snapshot);
                 }
 
                 case AutomationCommandKind.ProbeVideoSource:
                 {
-                    var result = _viewModel.ProbeVideoSource();
+                    var result = await _viewModel.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false);
                     return CreateResponse(correlationId, "Video source probe completed.", data: result);
                 }
 
                 case AutomationCommandKind.ProbePreviewColor:
                 {
-                    var result = _viewModel.ProbePreviewColor();
+                    var result = await _viewModel.ProbePreviewColorAsync(cancellationToken).ConfigureAwait(false);
                     return CreateResponse(correlationId, "Preview color probe completed.", data: result);
                 }
 
@@ -564,14 +570,21 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 
                 case AutomationCommandKind.RestartFlashback:
                 {
-                    await _viewModel.RestartFlashbackAsync().ConfigureAwait(false);
+                    await _viewModel.RestartFlashbackAsync(cancellationToken).ConfigureAwait(false);
                     return CreateResponse(correlationId, "Flashback restarted.");
+                }
+
+                case AutomationCommandKind.SetFlashbackEnabled:
+                {
+                    var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
+                    await _viewModel.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
+                    return CreateResponse(correlationId, $"Flashback {(enabled ? "enabled" : "disabled")}.");
                 }
 
                 case AutomationCommandKind.SetMicrophoneEnabled:
                 {
                     var enabled = GetBool(payload, "enabled") ?? throw new InvalidOperationException("Missing 'enabled' parameter.");
-                    _viewModel.IsMicrophoneEnabled = enabled;
+                    await _viewModel.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
                     return CreateResponse(correlationId, $"Microphone {(enabled ? "enabled" : "disabled")}.");
                 }
 
@@ -624,7 +637,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         string status = "ok",
         string? commandLifecycle = null,
         int? retryAfterMs = null,
-        long? elapsedMs = null)
+        long? elapsedMs = null,
+        AutomationSnapshot? snapshot = null)
     {
         var lifecycle = commandLifecycle ?? (success ? "completed" : "failed");
         return new AutomationCommandResponse
@@ -638,7 +652,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             Message = message,
             ErrorCode = errorCode,
             Data = data,
-            Snapshot = includeSnapshot ? _diagnosticsHub.GetLatestSnapshot() : null
+            Snapshot = includeSnapshot ? snapshot ?? _diagnosticsHub.GetLatestSnapshot() : null
         };
     }
 
@@ -776,26 +790,27 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         }
     }
 
-    private async Task<bool> WaitForConditionAsync(
+    private async Task<(bool Met, AutomationSnapshot Snapshot)> WaitForConditionAsync(
         AutomationWaitCondition condition,
         int timeoutMs,
         int pollMs,
         CancellationToken cancellationToken)
     {
         var started = Stopwatch.GetTimestamp();
+        var snapshot = _diagnosticsHub.GetLatestSnapshot();
         while (Stopwatch.GetElapsedTime(started).TotalMilliseconds < timeoutMs)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var snapshot = _diagnosticsHub.GetLatestSnapshot();
+            snapshot = _diagnosticsHub.GetLatestSnapshot();
             if (ConditionSatisfied(condition, snapshot))
             {
-                return true;
+                return (true, snapshot);
             }
 
             await Task.Delay(pollMs, cancellationToken).ConfigureAwait(false);
         }
 
-        return false;
+        return (false, _diagnosticsHub.GetLatestSnapshot());
     }
 
     private static bool ConditionSatisfied(AutomationWaitCondition condition, AutomationSnapshot snapshot)

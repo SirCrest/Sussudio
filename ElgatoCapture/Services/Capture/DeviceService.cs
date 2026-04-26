@@ -11,8 +11,11 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Devices;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Capture;
 
 internal sealed class CachedMediaFormat
 {
@@ -76,6 +79,7 @@ public class DeviceService
     };
 
     private static readonly Regex TokenizeRegex = new("[A-Za-z0-9\\+]+", RegexOptions.Compiled);
+    private const string PreferredNativeXuInterfaceFragment = "{65e8773d-8f56-11d0-a3b9-00a0c9223196}";
 
     public string LastDiscoverySummary { get; private set; } = "No discovery run yet";
     public event EventHandler<DeviceFormatProbeCompletedEventArgs>? FormatProbeCompleted;
@@ -113,7 +117,8 @@ public class DeviceService
             var captureDevice = new CaptureDevice
             {
                 Id = videoDevice.SymbolicLink,
-                Name = videoDevice.Name
+                Name = videoDevice.Name,
+                NativeXuInterfacePath = ResolveNativeXuInterfacePath(videoDevice.SymbolicLink)
             };
 
             var hasEnumeratedFormats = false;
@@ -186,7 +191,8 @@ public class DeviceService
             var probeDevice = new CaptureDevice
             {
                 Id = deviceId,
-                Name = deviceName
+                Name = deviceName,
+                NativeXuInterfacePath = ResolveNativeXuInterfacePath(deviceId)
             };
 
             var hasEnumeratedFormats = await QuerySupportedFormatsAsync(probeDevice).ConfigureAwait(false);
@@ -471,6 +477,57 @@ public class DeviceService
         }
 
         return tokens;
+    }
+
+    private static string? ResolveNativeXuInterfacePath(string deviceId)
+    {
+        var probeDevice = new CaptureDevice { Id = deviceId };
+        if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(probeDevice, out var vendorId, out var productId))
+        {
+            return null;
+        }
+
+        try
+        {
+            var interfaces = KsExtensionUnitNative.EnumerateKsInterfaces(vendorId, productId);
+            if (interfaces.Count == 0)
+            {
+                return null;
+            }
+
+            var deviceInstanceKey = GetDeviceInstanceKey(deviceId);
+            var sameDeviceInterfaces = interfaces
+                .Where(ksInterface => string.Equals(
+                    GetDeviceInstanceKey(ksInterface.Path),
+                    deviceInstanceKey,
+                    StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+            if (sameDeviceInterfaces.Length == 0)
+            {
+                Logger.Log($"Native XU interface resolution found no matching interface for device '{deviceId}'");
+                return null;
+            }
+
+            return sameDeviceInterfaces
+                .Select(ksInterface => ksInterface.Path)
+                .OrderByDescending(path =>
+                    path.IndexOf(PreferredNativeXuInterfaceFragment, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ThenBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .FirstOrDefault();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"Native XU interface resolution failed for device '{deviceId}': {ex.GetType().Name}: {ex.Message}");
+            return null;
+        }
+    }
+
+    private static string GetDeviceInstanceKey(string interfacePath)
+    {
+        var categoryStart = interfacePath.LastIndexOf("#{", StringComparison.Ordinal);
+        return categoryStart > 0
+            ? interfacePath[..categoryStart]
+            : interfacePath;
     }
 
     private async Task<bool> QuerySupportedFormatsAsync(CaptureDevice device)

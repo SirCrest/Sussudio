@@ -11,6 +11,7 @@ public sealed class PresentMonProbeOptions
     public int DurationSeconds { get; init; } = 10;
     public string? PresentMonPath { get; init; }
     public string? OutputFile { get; init; }
+    public string? ExpectedSwapChainAddress { get; init; }
     public bool KeepCsv { get; init; }
     public bool TrackGpuVideo { get; init; } = true;
 }
@@ -36,7 +37,9 @@ public sealed class PresentMonCaptureSummary
     public int SampleCount { get; init; }
     public int RawSampleCount { get; init; }
     public int ExcludedSampleCount { get; init; }
+    public string? ExpectedSwapChainAddress { get; init; }
     public string? SelectedSwapChainAddress { get; init; }
+    public bool ExpectedSwapChainMatched { get; init; }
     public PresentMonMetricSummary BetweenPresentsMs { get; init; } = new();
     public PresentMonMetricSummary BetweenDisplayChangeMs { get; init; } = new();
     public PresentMonMetricSummary DisplayedTimeMs { get; init; } = new();
@@ -134,7 +137,7 @@ public static class PresentMonProbe
         {
             try
             {
-                summary = ParseCsv(outputPath);
+                summary = ParseCsv(outputPath, options.ExpectedSwapChainAddress);
             }
             catch (Exception ex)
             {
@@ -148,9 +151,7 @@ public static class PresentMonProbe
         }
 
         var success = run.ExitCode == 0 && summary is { SampleCount: > 0 };
-        var message = success
-            ? $"Captured {summary!.RawSampleCount} PresentMon frame rows for {targetProcess.ProcessName} ({targetProcess.Id}); selected {summary.SampleCount} rows from swap chain {summary.SelectedSwapChainAddress ?? "(none)"}."
-            : $"PresentMon capture did not produce frame rows. exitCode={run.ExitCode?.ToString(CultureInfo.InvariantCulture) ?? "(none)"} timedOut={run.TimedOut}.{parseMessage}";
+        var message = BuildResultMessage(run, summary, targetProcess, parseMessage, success);
 
         return new PresentMonProbeResult
         {
@@ -169,11 +170,39 @@ public static class PresentMonProbe
         };
     }
 
+    private static string BuildResultMessage(
+        ProcessRun run,
+        PresentMonCaptureSummary? summary,
+        Process targetProcess,
+        string parseMessage,
+        bool success)
+    {
+        if (success && summary != null)
+        {
+            return $"Captured {summary.RawSampleCount} PresentMon frame rows for {targetProcess.ProcessName} ({targetProcess.Id}); selected {summary.SampleCount} rows from swap chain {summary.SelectedSwapChainAddress ?? "(none)"}.";
+        }
+
+        if (run.ExitCode == 0 &&
+            summary != null &&
+            !string.IsNullOrWhiteSpace(summary.ExpectedSwapChainAddress) &&
+            !summary.ExpectedSwapChainMatched)
+        {
+            return $"PresentMon captured {summary.RawSampleCount} frame rows for {targetProcess.ProcessName} ({targetProcess.Id}), but expected swap chain {summary.ExpectedSwapChainAddress} was not present.";
+        }
+
+        return $"PresentMon capture did not produce frame rows. exitCode={run.ExitCode?.ToString(CultureInfo.InvariantCulture) ?? "(none)"} timedOut={run.TimedOut}.{parseMessage}";
+    }
+
     public static string Format(PresentMonProbeResult result)
     {
         if (!result.Success || result.Summary == null)
         {
             var detail = new StringBuilder(result.Message);
+            if (result.Summary != null)
+            {
+                AppendSummaryContext(detail, result.Summary);
+            }
+
             if (!string.IsNullOrWhiteSpace(result.StdErr))
             {
                 detail.AppendLine();
@@ -192,6 +221,11 @@ public static class PresentMonProbe
         {
             builder.AppendLine(
                 $"Selected Swap Chain: {summary.SelectedSwapChainAddress} ({summary.SampleCount}/{summary.RawSampleCount} rows, excluded={summary.ExcludedSampleCount})");
+        }
+        if (!string.IsNullOrWhiteSpace(summary.ExpectedSwapChainAddress))
+        {
+            builder.AppendLine(
+                $"Expected Swap Chain: {summary.ExpectedSwapChainAddress} matched={summary.ExpectedSwapChainMatched}");
         }
 
         if (!string.IsNullOrWhiteSpace(result.CsvPath))
@@ -229,6 +263,25 @@ public static class PresentMonProbe
         AppendCounts(builder, "Allows Tearing", summary.AllowsTearing);
         AppendSwapChains(builder, summary.SwapChains);
         return builder.ToString().TrimEnd();
+    }
+
+    private static void AppendSummaryContext(StringBuilder builder, PresentMonCaptureSummary summary)
+    {
+        if (!string.IsNullOrWhiteSpace(summary.ExpectedSwapChainAddress))
+        {
+            builder.AppendLine();
+            builder.AppendLine($"Expected Swap Chain: {summary.ExpectedSwapChainAddress} matched={summary.ExpectedSwapChainMatched}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(summary.SelectedSwapChainAddress))
+        {
+            builder.AppendLine($"Selected Swap Chain: {summary.SelectedSwapChainAddress} ({summary.SampleCount}/{summary.RawSampleCount} rows, excluded={summary.ExcludedSampleCount})");
+        }
+
+        foreach (var warning in summary.Warnings)
+        {
+            builder.AppendLine($"Warning: {warning}");
+        }
     }
 
     private static void AppendMetric(StringBuilder builder, string label, PresentMonMetricSummary metric)
@@ -468,6 +521,9 @@ public static class PresentMonProbe
     }
 
     private static PresentMonCaptureSummary ParseCsv(string path)
+        => ParseCsv(path, expectedSwapChainAddress: null);
+
+    private static PresentMonCaptureSummary ParseCsv(string path, string? expectedSwapChainAddress)
     {
         using var reader = new StreamReader(path);
         var headerLine = reader.ReadLine();
@@ -496,7 +552,7 @@ public static class PresentMonProbe
 
             var fields = SplitCsvLine(line);
             rows.Add(new PresentMonRow(
-                SwapChainAddress: ReadField(fields, index, "SwapChainAddress"),
+                SwapChainAddress: NormalizeSwapChainAddress(ReadField(fields, index, "SwapChainAddress")) ?? string.Empty,
                 PresentMode: ReadField(fields, index, "PresentMode"),
                 PresentRuntime: ReadField(fields, index, "PresentRuntime"),
                 SyncInterval: ReadField(fields, index, "SyncInterval"),
@@ -512,7 +568,10 @@ public static class PresentMonProbe
                 DisplayLatencyMs: ReadMetric(fields, index, "DisplayLatency")));
         }
 
-        var selectedSwapChain = SelectPrimarySwapChain(rows);
+        var normalizedExpectedSwapChain = NormalizeSwapChainAddress(expectedSwapChainAddress);
+        var selectedSwapChain = SelectPrimarySwapChain(rows, normalizedExpectedSwapChain);
+        var expectedSwapChainMatched = !string.IsNullOrWhiteSpace(normalizedExpectedSwapChain) &&
+                                       string.Equals(selectedSwapChain, normalizedExpectedSwapChain, StringComparison.OrdinalIgnoreCase);
         var selectedRows = selectedSwapChain == null
             ? new List<PresentMonRow>()
             : rows.Where(row => string.Equals(row.SwapChainAddress, selectedSwapChain, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -523,14 +582,23 @@ public static class PresentMonProbe
         var displayChangeUnavailable = displayChangeColumnPresent
             ? selectedRows.Count(row => !row.BetweenDisplayChangeMs.HasValue)
             : 0;
-        var warnings = BuildWarnings(rows, selectedRows, swapChains, displayedTimeColumnPresent, displayChangeColumnPresent);
+        var warnings = BuildWarnings(
+            rows,
+            selectedRows,
+            swapChains,
+            displayedTimeColumnPresent,
+            displayChangeColumnPresent,
+            normalizedExpectedSwapChain,
+            expectedSwapChainMatched);
 
         return new PresentMonCaptureSummary
         {
             SampleCount = selectedRows.Count,
             RawSampleCount = rows.Count,
             ExcludedSampleCount = Math.Max(0, rows.Count - selectedRows.Count),
+            ExpectedSwapChainAddress = normalizedExpectedSwapChain,
             SelectedSwapChainAddress = selectedSwapChain,
+            ExpectedSwapChainMatched = expectedSwapChainMatched,
             BetweenPresentsMs = Summarize(selectedRows.Select(row => row.BetweenPresentsMs)),
             BetweenDisplayChangeMs = Summarize(selectedRows.Select(row => row.BetweenDisplayChangeMs)),
             DisplayedTimeMs = Summarize(selectedRows.Select(row => row.DisplayedTimeMs)),
@@ -610,8 +678,15 @@ public static class PresentMonProbe
         return fields[fieldIndex].Trim();
     }
 
-    private static string? SelectPrimarySwapChain(IReadOnlyList<PresentMonRow> rows)
+    private static string? SelectPrimarySwapChain(IReadOnlyList<PresentMonRow> rows, string? expectedSwapChainAddress)
     {
+        if (!string.IsNullOrWhiteSpace(expectedSwapChainAddress))
+        {
+            return rows.Any(row => string.Equals(row.SwapChainAddress, expectedSwapChainAddress, StringComparison.OrdinalIgnoreCase))
+                ? expectedSwapChainAddress
+                : null;
+        }
+
         var selected = rows
             .Where(row => !IsArtifactSwapChain(row.SwapChainAddress))
             .GroupBy(row => row.SwapChainAddress, StringComparer.OrdinalIgnoreCase)
@@ -650,12 +725,38 @@ public static class PresentMonProbe
         => string.IsNullOrWhiteSpace(swapChainAddress) ||
            string.Equals(swapChainAddress.Trim(), "0x0", StringComparison.OrdinalIgnoreCase);
 
+    private static string? NormalizeSwapChainAddress(string? swapChainAddress)
+    {
+        if (string.IsNullOrWhiteSpace(swapChainAddress))
+        {
+            return null;
+        }
+
+        var value = swapChainAddress.Trim();
+        if (value.Equals("0x0", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var digits = value.StartsWith("0x", StringComparison.OrdinalIgnoreCase)
+            ? value[2..]
+            : value;
+        if (ulong.TryParse(digits, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var numeric))
+        {
+            return numeric == 0 ? null : $"0x{numeric:X}";
+        }
+
+        return value.ToUpperInvariant();
+    }
+
     private static IReadOnlyList<string> BuildWarnings(
         IReadOnlyList<PresentMonRow> rawRows,
         IReadOnlyList<PresentMonRow> selectedRows,
         IReadOnlyList<PresentMonSwapChainSummary> swapChains,
         bool displayedTimeColumnPresent,
-        bool displayChangeColumnPresent)
+        bool displayChangeColumnPresent,
+        string? expectedSwapChainAddress,
+        bool expectedSwapChainMatched)
     {
         var warnings = new List<string>();
         var excludedRows = rawRows.Count - selectedRows.Count;
@@ -664,7 +765,11 @@ public static class PresentMonProbe
             warnings.Add($"Excluded {excludedRows} non-selected PresentMon row(s), usually secondary or artifact swap-chain events.");
         }
 
-        if (selectedRows.Count == 0)
+        if (!string.IsNullOrWhiteSpace(expectedSwapChainAddress) && !expectedSwapChainMatched)
+        {
+            warnings.Add($"Expected swap chain {expectedSwapChainAddress} was not present; no fallback swap chain was selected.");
+        }
+        else if (selectedRows.Count == 0)
         {
             warnings.Add("No non-artifact swap-chain rows were found; preview pacing metrics are unavailable.");
         }
@@ -679,7 +784,7 @@ public static class PresentMonProbe
             warnings.Add("MsBetweenDisplayChange column is absent; display-change pacing is unavailable.");
         }
 
-        if (swapChains.Count > 1)
+        if (swapChains.Count > 1 && string.IsNullOrWhiteSpace(expectedSwapChainAddress))
         {
             warnings.Add("Multiple swap-chain addresses were present; summary uses the dominant nonzero swap chain.");
         }

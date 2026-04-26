@@ -2,8 +2,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using FFmpeg.AutoGen;
+using ElgatoCapture.Services.Recording;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Gpu;
 
 /// <summary>
 /// FFmpeg mjpeg_cuvid decoder using NVIDIA's NVDEC hardware JPEG decode engine.

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using ElgatoCapture.Models;
 
 /// <summary>
 /// Direct P/Invoke probe for RTK_IO_x64.dll's rtk_sendI2CATCommand.
@@ -79,11 +80,25 @@ static class RtkI2cProbe
     [DllImport(RtkIoDll, CallingConvention = CallingConvention.Cdecl)]
     private static extern IntPtr rtk_getCurrentDeviceName();
 
-    public static int Run(string[] args)
+    public static int Run(string[] args, CaptureDevice device)
     {
         var subCmd = args.Length > 0 ? args[0] : "init";
+        if (string.IsNullOrWhiteSpace(device.NativeXuInterfacePath))
+        {
+            Console.Error.WriteLine("RTK I2C probe requires a selected native XU interface path.");
+            return 1;
+        }
+
+        if (string.Equals(subCmd, "switch", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.Error.WriteLine("RTK I2C switch is disabled: RTK_IO selects devices by name and cannot guarantee the selected native XU path.");
+            Console.Error.WriteLine("Use the native XU service/probe path for write-capable audio switching.");
+            return 1;
+        }
 
         Console.WriteLine("=== RTK_IO Direct P/Invoke Probe ===");
+        Console.WriteLine($"Selected device: {device.Name}");
+        Console.WriteLine($"Selected XU path: {device.NativeXuInterfacePath}");
 
         try
         {
@@ -100,10 +115,11 @@ static class RtkI2cProbe
 
             // Step 3: setCurrentDevice (from shim: "A7SNB346101346")
             // We need the actual serial. Let's try without it first.
-            // Actually, let's find the device serial from our DeviceService
+            // Actually, let's find the device serial from the selected capture device.
             Console.WriteLine("\n--- rtk_setCurrentDevice ---");
-            // Try with a generic name first
-            var setDevResult = rtk_setCurrentDevice("Elgato 4K X", IntPtr.Zero);
+            var rtkDeviceName = GetRtkDeviceName(device);
+            Console.WriteLine($"  RTK device name: {rtkDeviceName}");
+            var setDevResult = rtk_setCurrentDevice(rtkDeviceName, IntPtr.Zero);
             Console.WriteLine($"  Result: {setDevResult}");
 
             // Check current device name
@@ -218,5 +234,16 @@ static class RtkI2cProbe
         }
 
         return 0;
+    }
+
+    private static string GetRtkDeviceName(CaptureDevice device)
+    {
+        var name = string.IsNullOrWhiteSpace(device.Name)
+            ? "Elgato 4K X"
+            : device.Name;
+        var pidSuffix = name.IndexOf(" (PID ", StringComparison.OrdinalIgnoreCase);
+        return pidSuffix > 0
+            ? name[..pidSuffix]
+            : name;
     }
 }

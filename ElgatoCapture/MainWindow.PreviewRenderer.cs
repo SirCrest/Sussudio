@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -21,6 +20,16 @@ using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
 using WinRT.Interop;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture;
 
@@ -169,6 +178,7 @@ public sealed partial class MainWindow
         var d3dFramesSubmitted = d3d?.FramesSubmitted ?? 0;
         var d3dFramesRendered = d3d?.FramesRendered ?? 0;
         var d3dFramesDropped = d3d?.FramesDropped ?? 0;
+        var d3dRenderCpuTiming = d3d?.GetRenderCpuTimingMetrics();
         if (gpuActive)
         {
             framesArrived = d3dFramesSubmitted;
@@ -252,11 +262,26 @@ public sealed partial class MainWindow
             BlankSuspected = blankSuspected,
             StallSuspected = stallSuspected,
             RendererMode = rendererMode,
+            D3DSwapChainAddress = d3d?.SwapChainAddress ?? string.Empty,
             D3DFramesSubmitted = d3dFramesSubmitted,
             D3DFramesRendered = d3dFramesRendered,
             D3DFramesDropped = d3dFramesDropped,
+            D3DPendingFrameCount = d3d?.PendingFrameCount ?? 0,
             D3DInputColorSpace = _d3dRenderer?.InputColorSpaceLabel ?? "None",
             D3DOutputColorSpace = _d3dRenderer?.OutputColorSpaceLabel ?? "None",
+            D3DCpuTimingSampleCount = d3dRenderCpuTiming?.TotalFrame.SampleCount ?? 0,
+            D3DInputUploadCpuAvgMs = d3dRenderCpuTiming?.InputUpload.AverageMs ?? 0,
+            D3DInputUploadCpuP95Ms = d3dRenderCpuTiming?.InputUpload.P95Ms ?? 0,
+            D3DInputUploadCpuMaxMs = d3dRenderCpuTiming?.InputUpload.MaxMs ?? 0,
+            D3DRenderSubmitCpuAvgMs = d3dRenderCpuTiming?.RenderSubmit.AverageMs ?? 0,
+            D3DRenderSubmitCpuP95Ms = d3dRenderCpuTiming?.RenderSubmit.P95Ms ?? 0,
+            D3DRenderSubmitCpuMaxMs = d3dRenderCpuTiming?.RenderSubmit.MaxMs ?? 0,
+            D3DPresentCallAvgMs = d3dRenderCpuTiming?.PresentCall.AverageMs ?? 0,
+            D3DPresentCallP95Ms = d3dRenderCpuTiming?.PresentCall.P95Ms ?? 0,
+            D3DPresentCallMaxMs = d3dRenderCpuTiming?.PresentCall.MaxMs ?? 0,
+            D3DTotalFrameCpuAvgMs = d3dRenderCpuTiming?.TotalFrame.AverageMs ?? 0,
+            D3DTotalFrameCpuP95Ms = d3dRenderCpuTiming?.TotalFrame.P95Ms ?? 0,
+            D3DTotalFrameCpuMaxMs = d3dRenderCpuTiming?.TotalFrame.MaxMs ?? 0,
             EstimatedPipelineLatencyMs = d3d?.GetEstimatedPipelineLatencyMs() ?? 0,
             GpuPlaybackState = gpuPlaybackState,
             GpuNaturalVideoWidth = gpuNaturalVideoWidth,

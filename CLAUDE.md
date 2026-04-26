@@ -1,121 +1,101 @@
-# Claude Code Instructions
+﻿# Claude Code Instructions
 
-Read `docs/project-plan.md` before proposing changes. It defines the project
-scope, HDR pipeline contract, and preview model. Do not introduce features or
-patterns that conflict with those goals.
+Read `docs/project-plan.md` and `docs/constraints.md` before proposing changes.
+They define the HDR pipeline contract and preview model — do not introduce
+patterns that conflict.
 
-## Shell
+## Critical Rails
 
-- The working directory is already the repo root. Do not `cd` into the repo
-  before running commands — it triggers unnecessary permission prompts.
+Rules whose violation costs real work. Apply exactly.
 
-## Debugging Rules
+- **HDR pipeline must never silently degrade.** If P010 negotiation fails, the
+  operation fails. No 8-bit fallback. See `docs/constraints.md`.
+- **Preserve every `AutomationProperties.AutomationId`.** The IPC layer and MCP
+  tools index on these strings — renaming one breaks tests and external control.
+- **Never stash, reset, clean, or checkout-discard as a debugging step.** Those
+  are irreversible; the working tree may hold the user's in-progress work. Read
+  diffs and reason first.
+- **Never edit a file a background Codex task is touching.** Race condition.
+  Flag the conflict to the user and work elsewhere until Codex finishes.
+- **`AccessViolationException` cannot be caught in .NET 8+** (it's a
+  corrupted-state exception). Do not propose try/catch around it.
+- **Check MCP app-state before `dotnet build`.** If the app is previewing, close
+  it via `window_action(close, armClose=true)` and wait a few seconds. Avoids
+  file-lock errors that waste a build cycle.
 
-- When debugging A/V, playback, or encoding issues: instrument and measure
-  before theorizing. Add diagnostic logging/metrics first, verify the actual
-  runtime state, then propose fixes based on evidence. Never claim a fix is
-  working without verifiable proof.
-- When multiple incremental fix attempts fail (3+ cycles), stop and propose a
-  full rewrite or architectural change instead of continuing to tweak. Ask the
-  user before continuing down a failing path.
+## Debugging
 
-## Pre-Flight Checks
+A/V, encoder, and playback bugs lie — symptoms rarely point at root cause. These
+rules exist because past fixes on surface symptoms papered over deeper issues.
 
-- Before building or deploying, always verify the target app/process is closed.
-- Before editing files, confirm you are on the correct git worktree with
-  `git rev-parse --show-toplevel`.
+- **Instrument before theorizing.** Add logging/metrics, verify runtime state,
+  *then* propose a fix. Never claim a fix works without log evidence.
+- **Trace the full data path end-to-end** before proposing a fix:
+  capture → buffer → encoder → sink → muxer. No "one-line fix" claims — verify
+  the whole flow.
+- **Build a diagnostic probe if you'd need 2+ rebuild cycles to narrow
+  something down.** One MCP probe beats N edit-build-log loops.
+- **Generate competing hypotheses before any multi-file fix.** Spawn 2–3
+  analysis agents (yours + Codex) instructed to find *alternative* explanations.
+  Proceed only when they converge or a probe rules one in. Cost of validating is
+  small compared to reverting a wrong refactor.
+- **Stop after 3 failed incremental attempts.** Propose a rewrite or
+  architectural change and ask the user before continuing.
+- **Do not speculate about sub-agent, Codex, or MCP results.** If you don't
+  have the output in hand, say so and do the work yourself.
 
-## Communication Rules
-
-- Do NOT speculate about results from sub-agents, Codex, or external tools. If
-  you don't have concrete output, say so and do the actual work. Never "dream"
-  about what a tool might have returned.
-
-## Language-Specific Notes
-
-### C#
-
-- `AccessViolationException` cannot be caught in .NET 8+ (it's a corrupted
-  state exception). Always check runtime-specific behaviors before proposing
-  exception handling patterns.
-
-## Workflow
-
-- **Always prefer MCP tools over PowerShell pipe scripts.** At the start of
-  every conversation, check if MCP tools are available (e.g. try
-  `get_app_state`). If they respond, use MCP for all app interaction:
-  `get_app_state`, `capture_window_screenshot`, `window_action`,
-  `control_preview`, `control_recording`, `get_diagnostics`, etc. Only fall
-  back to PowerShell pipe scripts when MCP is unavailable or for operations
-  MCP doesn't cover. Never manually construct pipe JSON or count enum values
-  when an MCP tool exists for the same action.
-- **Always read `temp/logs/ElgatoCapture_Debug.log` after build/test.** Don't
-  wait for the user to paste logs.
-- **Trace the full data path end-to-end** before proposing any fix — not just
-  the surface layer.
-- **Launch perf-review agent** after writing any non-trivial change, before
-  declaring done.
-- **Never say "one-line fix" or "that's it."** Always verify the full flow.
-- **Before iterative debugging, check your instrumentation.** If you'd need 2+
-  rebuild cycles to narrow something down, build an MCP diagnostic probe first.
-  A one-time investment in a probe beats N iterations of edit-build-log.
-- **Before building, check MCP state and close the app if idle.** Don't build
-  first and discover the lock error after. If the app is previewing (not
-  recording), close it via `window_action(close, armClose=true)` and wait a
-  few seconds before running `dotnet build`.
-- **Never edit files a background Codex task is touching.** Check if a running
-  Codex task has the file in scope. If so, wait for Codex to finish or work on
-  a different file. Flag the conflict to the user rather than silently creating
-  a race condition.
-- **When uncertain about environmental state, ask the user.** If you can't
-  detect a process, can't tell if the app launched, or hit an ambiguous state —
-  stop and ask. A 10-second question beats 20 minutes of spiraling.
-- **Never escalate destructively when uncertain.** Do not stash, reset, or
-  clean the working tree as a debugging strategy. Read diffs and reason about
-  them first. Those operations are irreversible and can destroy in-progress work.
-- **Use subagents aggressively for review and verification.**
-- **Never commit to the first root-cause hypothesis.** When you analyze a bug
-  and arrive at a plausible explanation, treat it as *one candidate*, not the
-  answer. Before writing any fix, spawn 2-3 competing analysis agents (Both Codex and your own) with the same evidence but an explicit instruction to find
-  *alternative* explanations. Only proceed when hypotheses converge, or when a
-  diagnostic probe confirms one and rules out others. This applies especially
-  when the fix would touch multiple files or change architecture — the cost of
-  validating is small compared to the cost of reverting a wrong refactor.
-
-## Conventions
+## Project Invariants
 
 - WinUI 3 / .NET 8. Manual code-behind binding (PropertyChanged switch +
-  SetupBindings). No x:Bind.
-- Preserve all `AutomationProperties.AutomationId` values — the IPC layer
-  depends on them.
-- HDR pipeline must never silently degrade. If P010 negotiation fails, the
-  operation fails. See `docs/constraints.md`.
-- Append to `docs/experiment_log.md` when making investigative changes.
+  `SetupBindings`). No x:Bind.
+- Append to `docs/experiment_log.md` when making investigative changes so
+  future sessions see what was tried and why.
+- Working directory is already the repo root. Do not `cd` into it — triggers
+  unnecessary permission prompts.
+- Before editing, confirm worktree with `git rev-parse --show-toplevel`. This
+  is the **Flashback** worktree; the codebase is complex and worktree-specific
+  state matters.
 
-## Architect-Team Workflow
+## Tools
 
-When the user says **"architect-team"**, read `.claude/workflows/architect-team.md`
-and execute the workflow **as team lead yourself**. Do NOT delegate to a sub-agent.
-You create the team (TeamCreate), spawn teammates (Agent with `team_name`),
-coordinate phases via SendMessage and tasks, run builds, and shut down the team.
-
-This is the primary workflow for large implementation, refactoring, and
-diagnostic/bug-fix tasks on this codebase.
-
-## Agent Teams (general)
-
-- This flashback worktree is very complicated.
-- Use Claude Agent Teams for large refactors using Opus 4.6 1M on Max Effort.
-- During exploration and research, feel free to have agents do overlapping
-  theorizing/reading.
-- Ensure agents aren't idle during work.
-- Ensure agents aren't working on the same files as another agent.
+- **Prefer MCP tools over PowerShell pipe scripts.** At session start, try
+  `get_app_state` to confirm availability. Use `get_app_state`,
+  `capture_window_screenshot`, `window_action`, `control_preview`,
+  `control_recording`, `get_diagnostics` for app interaction. Never hand-build
+  pipe JSON when an MCP tool exists — enum ordinals drift.
+- **Read `temp/logs/ElgatoCapture_Debug.log` after every build/test.** Some
+  local worktrees may have an ignored Claude hook that auto-tails the log after
+  `dotnet build` / `dotnet run`, but clean checkouts should not assume it is
+  present. Read or tail the log explicitly when the hook output is absent.
+- **After a backgrounded app launch, watch the log for ≤60 seconds.** The
+  auto-tail hook only captures the instant the Bash call returns; GUI launches
+  return immediately and real stability issues take seconds to appear. Tail
+  the log with `tail -f temp/logs/ElgatoCapture_Debug.log` as a background
+  Bash, Monitor it with a 60-second cap, kill the tail at cap or on exit.
+  - New lines arrive → act on them (errors → investigate before continuing).
+  - Nothing new in 60s → the app is stable on this path. Resume work, prompt
+    the user to begin manual testing, or kick off the CLI/MCP automated test
+    routine — don't sit idle waiting longer.
+- **When environmental state is ambiguous, ask.** Process detection flakes,
+  app-launch checks fail — a 10-second question beats 20 minutes of spiraling.
 
 ## Build & Test
 
-Verify if the app is running before running the following build commands.
+App must be closed first (see MCP app-state rule above).
 
 ```bash
 dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true
 dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"
 ```
+
+Logs: `temp/logs/ElgatoCapture_Debug.log`
+
+## Workflows
+
+- **"architect-team"** -> act as team lead yourself. Do NOT delegate the lead
+  role to a sub-agent. You create the team,
+  spawn teammates, coordinate phases, run builds, shut down the team. Primary
+  workflow for large implementation, refactor, and diagnostic tasks.
+- **Agent teams (general)** — use the latest Opus 1M on Max Effort for large
+  refactors. During research, overlapping agents are fine. During
+  implementation, ensure agents don't share files.

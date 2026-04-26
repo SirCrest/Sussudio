@@ -5,9 +5,18 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
 using Microsoft.UI.Dispatching;
 using Windows.Storage.Pickers;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture.ViewModels;
 
@@ -26,85 +35,124 @@ public partial class MainViewModel
     internal ParallelMjpegDecodePipeline.PipelineTimingMetrics? GetMjpegPipelineTimingDetails()
         => _captureService.GetMjpegPipelineTimingDetails();
     public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
-        => InvokeOnUiThreadAsync(() => _captureService.GetRuntimeSnapshot(), cancellationToken);
+        => FromSynchronousSnapshot(_captureService.GetRuntimeSnapshot, cancellationToken);
     public Task<CaptureHealthSnapshot> GetCaptureHealthSnapshotAsync(CancellationToken cancellationToken = default)
-        => InvokeOnUiThreadAsync(() => _captureService.GetHealthSnapshot(), cancellationToken);
+        => FromSynchronousSnapshot(_captureService.GetHealthSnapshot, cancellationToken);
     public Task<RecordingStats> GetRecordingStatsSnapshotAsync(CancellationToken cancellationToken = default)
-        => InvokeOnUiThreadAsync(() => _captureService.GetRecordingStats(), cancellationToken);
+        => FromSynchronousSnapshot(_captureService.GetRecordingStats, cancellationToken);
     public VideoSourceProbeResult ProbeVideoSource() => _captureService.ProbeVideoSource();
     public PreviewColorProbeResult ProbePreviewColor() => _captureService.ProbePreviewColor();
+
+    private static Task<T> FromSynchronousSnapshot<T>(Func<T> snapshotFactory, CancellationToken cancellationToken)
+    {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled<T>(cancellationToken);
+        }
+
+        return Task.FromResult(snapshotFactory());
+    }
+
+    public Task<VideoSourceProbeResult> ProbeVideoSourceAsync(CancellationToken cancellationToken = default)
+        => FromSynchronousSnapshot(ProbeVideoSource, cancellationToken);
+
+    public Task<PreviewColorProbeResult> ProbePreviewColorAsync(CancellationToken cancellationToken = default)
+        => FromSynchronousSnapshot(ProbePreviewColor, cancellationToken);
+
     public Task<PreviewFrameCaptureResult> CapturePreviewFrameAsync(string outputPath, CancellationToken cancellationToken = default) => _captureService.CapturePreviewFrameAsync(outputPath, cancellationToken);
     public CaptureSettings BuildCurrentSettings() => BuildCaptureSettings();
 
     // ── Flashback playback commands ──────────────────────────────────────
 
-    internal FlashbackPlaybackController? FlashbackPlaybackController
-        => _captureService.FlashbackPlaybackController;
+    internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()
+        => _sessionCoordinator.GetFlashbackPlaybackSnapshot();
 
     /// <summary>
     /// Returns the active flashback playback controller if it exists and is not disabled.
     /// </summary>
-    private bool TryGetActiveFlashback([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out FlashbackPlaybackController? controller)
-    {
-        controller = _captureService.FlashbackPlaybackController;
-        return controller is { State: not FlashbackPlaybackState.Disabled };
-    }
-
     public bool FlashbackBeginScrub(TimeSpan position)
     {
-        if (!TryGetActiveFlashback(out var c)) return false;
-        c.BeginScrub(position);
-        return true;
+        return _sessionCoordinator.FlashbackBeginScrub(position);
     }
 
     public void FlashbackUpdateScrub(TimeSpan position)
     {
-        if (TryGetActiveFlashback(out var c)) c.UpdateScrub(position);
+        _sessionCoordinator.FlashbackUpdateScrub(position);
     }
 
     public bool FlashbackEndScrub()
     {
-        if (!TryGetActiveFlashback(out var c)) return false;
-        c.EndScrub();
-        return true;
+        return _sessionCoordinator.FlashbackEndScrub();
     }
 
     public bool FlashbackPlay()
     {
-        if (!TryGetActiveFlashback(out var c)) return false;
-        c.Play();
-        return true;
+        return _sessionCoordinator.FlashbackPlay();
     }
 
     public bool FlashbackPause()
     {
-        if (!TryGetActiveFlashback(out var c)) return false;
-        c.Pause();
-        return true;
+        return _sessionCoordinator.FlashbackPause();
     }
 
     public bool FlashbackGoLive()
     {
-        if (!TryGetActiveFlashback(out var c)) return false;
-        c.GoLive();
-        return true;
+        return _sessionCoordinator.FlashbackGoLive();
     }
 
     public bool FlashbackNudge(TimeSpan delta)
     {
-        if (!TryGetActiveFlashback(out var c)) return false;
-        c.NudgePosition(delta);
-        return true;
+        return _sessionCoordinator.FlashbackNudge(delta);
+    }
+
+    public Task<bool> ExecuteFlashbackActionAsync(
+        AutomationFlashbackAction action,
+        TimeSpan? position = null,
+        CancellationToken cancellationToken = default)
+        => InvokeOnUiThreadAsync(() => ExecuteFlashbackAction(action, position), cancellationToken);
+
+    private bool ExecuteFlashbackAction(AutomationFlashbackAction action, TimeSpan? position)
+    {
+        switch (action)
+        {
+            case AutomationFlashbackAction.Play:
+                if (!FlashbackPlay())
+                {
+                    return false;
+                }
+
+                if (position.HasValue)
+                {
+                    FlashbackBeginScrub(position.Value);
+                    FlashbackEndScrub();
+                }
+
+                return true;
+            case AutomationFlashbackAction.Pause:
+                return FlashbackPause();
+            case AutomationFlashbackAction.GoLive:
+                return FlashbackGoLive();
+            case AutomationFlashbackAction.Seek:
+                if (!FlashbackBeginScrub(position ?? TimeSpan.Zero))
+                {
+                    return false;
+                }
+
+                FlashbackEndScrub();
+                return true;
+            default:
+                throw new InvalidOperationException($"Unsupported flashback action '{action}'.");
+        }
     }
 
     public TimeSpan? FlashbackSetInPoint()
-        => _captureService.FlashbackPlaybackController?.SetInPoint();
+        => _sessionCoordinator.FlashbackSetInPoint();
 
     public TimeSpan? FlashbackSetOutPoint()
-        => _captureService.FlashbackPlaybackController?.SetOutPoint();
+        => _sessionCoordinator.FlashbackSetOutPoint();
 
     public void FlashbackClearInOutPoints()
-        => _captureService.FlashbackPlaybackController?.ClearInOutPoints();
+        => _sessionCoordinator.FlashbackClearInOutPoints();
 
     /// <summary>
     /// Updates flashback buffer status properties from the buffer manager.
@@ -112,8 +160,8 @@ public partial class MainViewModel
     /// </summary>
     public void UpdateFlashbackBufferStatus()
     {
-        var bufferManager = _captureService.FlashbackBufferManager;
-        if (bufferManager == null || !_captureService.IsFlashbackActive)
+        var bufferStatus = _sessionCoordinator.GetFlashbackBufferStatus();
+        if (!bufferStatus.IsActive)
         {
             if (FlashbackState != FlashbackPlaybackState.Disabled)
                 FlashbackState = FlashbackPlaybackState.Disabled;
@@ -126,28 +174,26 @@ public partial class MainViewModel
             return;
         }
 
-        var bufferDuration = bufferManager.Options.BufferDuration;
-        var filledDuration = bufferManager.BufferedDuration;
-        FlashbackBufferFilledDuration = filledDuration;
-        FlashbackBufferDiskBytes = _captureService.FlashbackDiskBytes;
-        FlashbackBufferFillPercent = bufferDuration.TotalSeconds > 0
-            ? Math.Clamp(filledDuration.TotalSeconds / bufferDuration.TotalSeconds * 100, 0, 100)
+        FlashbackBufferFilledDuration = bufferStatus.FilledDuration;
+        FlashbackBufferDiskBytes = bufferStatus.DiskBytes;
+        FlashbackBufferFillPercent = bufferStatus.BufferDuration.TotalSeconds > 0
+            ? Math.Clamp(bufferStatus.FilledDuration.TotalSeconds / bufferStatus.BufferDuration.TotalSeconds * 100, 0, 100)
             : 0;
 
-        IsDiskWarningActive = bufferManager.IsDiskWarningActive;
+        IsDiskWarningActive = bufferStatus.IsDiskWarningActive;
 
         // Sample flashback output bytes for bitrate computation
         UpdateFlashbackBitrate();
 
         // Sync state from controller
-        var controller = _captureService.FlashbackPlaybackController;
-        if (controller != null)
+        var playback = _sessionCoordinator.GetFlashbackPlaybackSnapshot();
+        if (playback.IsActive)
         {
-            FlashbackState = controller.State;
+            FlashbackState = playback.State;
             // Don't overwrite UI-driven position during scrub
-            if (controller.State != FlashbackPlaybackState.Scrubbing)
-                FlashbackPlaybackPosition = controller.PlaybackPosition;
-            FlashbackGapFromLive = controller.GapFromLive;
+            if (playback.State != FlashbackPlaybackState.Scrubbing)
+                FlashbackPlaybackPosition = playback.PlaybackPosition;
+            FlashbackGapFromLive = playback.GapFromLive;
         }
         else if (FlashbackState == FlashbackPlaybackState.Disabled)
         {
@@ -158,7 +204,7 @@ public partial class MainViewModel
 
     private void UpdateFlashbackBitrate()
     {
-        var diskBytes = _captureService.FlashbackTotalBytesWritten;
+        var diskBytes = _sessionCoordinator.FlashbackTotalBytesWritten;
         var now = Environment.TickCount64;
         _flashbackBitrateSamples.Enqueue((now, diskBytes));
         while (_flashbackBitrateSamples.Count > 0 && now - _flashbackBitrateSamples.Peek().Tick > BitrateWindowMs)
@@ -183,18 +229,17 @@ public partial class MainViewModel
 
     public async Task ExportFlashbackAsync()
     {
-        var bufferManager = _captureService.FlashbackBufferManager;
-        if (bufferManager == null) return;
+        if (!_sessionCoordinator.IsFlashbackActive) return;
 
         var file = await PickFlashbackExportFileAsync($"Flashback_{DateTime.Now:yyyyMMdd_HHmmss}");
         if (file == null) return;
 
-        var controller = _captureService.FlashbackPlaybackController;
-        var inPoint = controller?.InPoint;
-        var outPoint = controller?.OutPoint;
+        var playback = _sessionCoordinator.GetFlashbackPlaybackSnapshot();
+        var inPoint = playback.InPoint;
+        var outPoint = playback.OutPoint;
 
         var (result, errorMessage) = await ExportFlashbackCoreAsync(async (progress, ct) =>
-            await _captureService.ExportFlashbackRangeAsync(inPoint, outPoint, file.Path, progress, ct));
+            await _sessionCoordinator.ExportFlashbackRangeAsync(inPoint, outPoint, file.Path, progress, ct));
 
         if (errorMessage != null)
         {
@@ -210,14 +255,13 @@ public partial class MainViewModel
 
     public async Task SaveFlashbackLast5mAsync()
     {
-        var bufferManager = _captureService.FlashbackBufferManager;
-        if (bufferManager == null) return;
+        if (!_sessionCoordinator.IsFlashbackActive) return;
 
         var file = await PickFlashbackExportFileAsync($"Flashback_Last5m_{DateTime.Now:yyyyMMdd_HHmmss}");
         if (file == null) return;
 
         var (result, errorMessage) = await ExportFlashbackCoreAsync(async (progress, ct) =>
-            await _captureService.ExportFlashbackLastNSecondsAsync(300, file.Path, progress, ct));
+            await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(300, file.Path, progress, ct));
 
         if (errorMessage != null)
         {
@@ -244,6 +288,8 @@ public partial class MainViewModel
     private async Task<(FinalizeResult? Result, string? ErrorMessage)> ExportFlashbackCoreAsync(
         Func<IProgress<ExportProgress>, CancellationToken, Task<FinalizeResult>> exportAction)
     {
+        // Export snapshots the flashback backend under CaptureService locks, then runs
+        // outside the transition lock so long FFmpeg work does not block lifecycle commands.
         IsFlashbackExporting = true;
         FlashbackExportProgress = 0;
         try
@@ -288,7 +334,7 @@ public partial class MainViewModel
             {
                 _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
             });
-            return await _captureService.ExportFlashbackLastNSecondsAsync(
+            return await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(
                 seconds, outputPath, progress, ct);
         }
         finally
@@ -302,15 +348,25 @@ public partial class MainViewModel
     }
 
     public IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
-        => _captureService.GetFlashbackSegments();
+        => _sessionCoordinator.GetFlashbackSegments();
 
-    public void SetFlashbackEnabled(bool enabled) => _captureService.SetFlashbackEnabled(enabled);
+    public Task<IReadOnlyList<FlashbackSegmentInfo>> GetFlashbackSegmentsAsync(CancellationToken cancellationToken = default)
+        => FromSynchronousSnapshot(GetFlashbackSegments, cancellationToken);
 
-    public async Task RestartFlashbackAsync()
+    public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+        => _sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken);
+
+    public async Task RestartFlashbackAsync(CancellationToken cancellationToken = default)
     {
-        _captureService.UpdateEncodingSettings(BuildCaptureSettings());
-        await _captureService.RestartFlashbackAsync().ConfigureAwait(false);
-        _flashbackBitrateSamples.Clear();
+        var settings = await InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken).ConfigureAwait(false);
+        await _sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken).ConfigureAwait(false);
+        await InvokeOnUiThreadAsync(
+            () =>
+            {
+                _flashbackBitrateSamples.Clear();
+                return true;
+            },
+            CancellationToken.None).ConfigureAwait(false);
     }
 
     // ── ViewModel runtime snapshot ───────────────────────────────────────
@@ -452,7 +508,7 @@ public partial class MainViewModel
     // ── Automation set methods (IAutomationViewModel) ────────────────────
 
     public Task RefreshDevicesForAutomationAsync(CancellationToken cancellationToken = default)
-        => InvokeOnUiThreadAsync(() => RefreshDevicesAsync(), cancellationToken);
+        => InvokeOnUiThreadAsync(() => RefreshDevicesAsync(cancellationToken), cancellationToken);
 
     public Task SelectDeviceAsync(string? deviceId, string? deviceName, CancellationToken cancellationToken = default)
     {
@@ -813,54 +869,96 @@ public partial class MainViewModel
 
             if (enabled)
             {
-                await StartPreviewAsync(userInitiated: true);
+                await StartPreviewAsync(userInitiated: true, cancellationToken);
             }
             else
             {
-                await StopPreviewAsync(userInitiated: true);
+                await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);
             }
         }, cancellationToken);
     }
 
     public Task SetRecordingEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(async () =>
-        {
-            if (enabled == IsRecording)
-            {
-                return;
-            }
-
-            if (enabled)
-            {
-                await StartRecordingAsync();
-            }
-            else
-            {
-                await StopRecordingAsync();
-            }
-        }, cancellationToken);
+        return SetRecordingDesiredStateAsync(enabled, cancellationToken);
     }
 
     public Task SetDeviceAudioModeAsync(string mode, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        return InvokeOnUiThreadAsync(async () =>
         {
-            SelectedDeviceAudioMode = mode;
-            return Task.CompletedTask;
+            var normalizedMode = NormalizeDeviceAudioMode(mode);
+            WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = normalizedMode);
+            var applied = await ApplyDeviceAudioModeAsync(
+                "automation device audio mode",
+                normalizedMode,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (!applied)
+            {
+                throw new InvalidOperationException($"Device audio mode change failed ({normalizedMode}).");
+            }
         }, cancellationToken);
     }
 
     public Task SetAnalogAudioGainAsync(double gainPercent, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        return InvokeOnUiThreadAsync(async () =>
         {
-            AnalogAudioGainPercent = Math.Clamp(gainPercent, 0.0, 100.0);
-            return Task.CompletedTask;
+            var clampedGain = Math.Clamp(gainPercent, 0.0, 100.0);
+            WithAudioControlRefreshSuppressed(() => AnalogAudioGainPercent = clampedGain);
+            var applied = await ApplyAnalogAudioGainAsync(
+                "automation analog audio gain",
+                clampedGain,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (!applied)
+            {
+                throw new InvalidOperationException($"Analog audio gain change failed ({clampedGain:0}%).");
+            }
         }, cancellationToken);
     }
 
     // ── Automation helpers ───────────────────────────────────────────────
+
+    public Task SetMicrophoneEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+    {
+        return SetMicrophoneEnabledAutomationAsync(enabled, cancellationToken);
+    }
+
+    private async Task SetMicrophoneEnabledAutomationAsync(bool enabled, CancellationToken cancellationToken)
+    {
+        var request = await InvokeOnUiThreadAsync(
+            () => (
+                IsRecording,
+                DeviceId: SelectedMicrophoneDevice?.Id,
+                DeviceName: SelectedMicrophoneDevice?.Name),
+            cancellationToken).ConfigureAwait(false);
+
+        if (!request.IsRecording)
+        {
+            await _sessionCoordinator.UpdateMicrophoneMonitorAsync(
+                enabled,
+                request.DeviceId,
+                request.DeviceName,
+                cancellationToken).ConfigureAwait(false);
+        }
+
+        await InvokeOnUiThreadAsync(
+            () =>
+            {
+                _suppressMicrophoneMonitorUpdate = true;
+                try
+                {
+                    IsMicrophoneEnabled = enabled;
+                }
+                finally
+                {
+                    _suppressMicrophoneMonitorUpdate = false;
+                }
+
+                return true;
+            },
+            CancellationToken.None).ConfigureAwait(false);
+    }
 
     private CaptureDevice? ResolveDevice(string? deviceId, string? deviceName)
     {

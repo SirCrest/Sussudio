@@ -4,7 +4,7 @@ using System.Threading;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Preview;
 
 internal sealed class SharedD3DDeviceManager : IDisposable
 {

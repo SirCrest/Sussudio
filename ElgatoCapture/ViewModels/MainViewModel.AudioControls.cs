@@ -2,7 +2,16 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture.ViewModels;
 
@@ -128,11 +137,20 @@ public partial class MainViewModel
         await _sessionCoordinator.UpdateAudioInputAsync(audioDeviceId, audioDeviceName);
     }
 
-    private async Task RefreshDeviceAudioControlsAsync(bool applySavedState)
+    private async Task RefreshDeviceAudioControlsAsync(
+        CaptureDevice? targetDevice,
+        bool applySavedState,
+        CancellationToken cancellationToken)
     {
-        var device = SelectedDevice;
+        var device = targetDevice;
         if (device == null)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (SelectedDevice != null)
+            {
+                return;
+            }
+
             WithAudioControlRefreshSuppressed(() =>
             {
                 IsDeviceAudioControlSupported = false;
@@ -143,12 +161,24 @@ public partial class MainViewModel
             return;
         }
 
+        if (!IsCurrentSelectedDevice(device))
+        {
+            return;
+        }
+
         if (NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out _, out _))
         {
             WithAudioControlRefreshSuppressed(() => IsDeviceAudioControlSupported = true);
         }
 
-        var state = await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
+        var state = await _deviceAudioControlService.ReadStateAsync(device, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!IsCurrentSelectedDevice(device))
+        {
+            Logger.Log("Device audio controls refresh ignored because selected device changed");
+            return;
+        }
+
         WithAudioControlRefreshSuppressed(() =>
         {
             IsDeviceAudioControlSupported = state.IsSupported;
@@ -174,12 +204,19 @@ public partial class MainViewModel
 
         var desiredMode = NormalizeDeviceAudioMode(_pendingSavedDeviceAudioMode ?? SelectedDeviceAudioMode);
         var desiredGain = Math.Clamp(_pendingSavedAnalogAudioGainPercent ?? AnalogAudioGainPercent, 0.0, 100.0);
-        _pendingSavedDeviceAudioMode = null;
-        _pendingSavedAnalogAudioGainPercent = null;
 
         Logger.Log($"NATIVEXU_AUDIO_RESTORE_READ_ONLY desired='{desiredMode}' device='{state.Mode}'");
 
-        var refreshedState = await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
+        var refreshedState = await _deviceAudioControlService.ReadStateAsync(device, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!IsCurrentSelectedDevice(device))
+        {
+            Logger.Log("Device audio controls restore ignored because selected device changed");
+            return;
+        }
+
+        _pendingSavedDeviceAudioMode = null;
+        _pendingSavedAnalogAudioGainPercent = null;
         WithAudioControlRefreshSuppressed(() =>
         {
             IsDeviceAudioControlSupported = refreshedState.IsSupported;
@@ -188,16 +225,24 @@ public partial class MainViewModel
         });
     }
 
-    private async Task ApplyDeviceAudioModeAsync(
+    private async Task<bool> ApplyDeviceAudioModeAsync(
         string reason,
         string? explicitMode = null,
         bool reapplyAnalogGain = true,
-        bool persistSettings = true)
+        bool persistSettings = true,
+        CaptureDevice? targetDevice = null,
+        CancellationToken cancellationToken = default)
     {
-        var device = SelectedDevice;
+        var device = targetDevice ?? SelectedDevice;
         if (device == null || !IsDeviceAudioControlSupported)
         {
-            return;
+            return false;
+        }
+
+        if (!IsCurrentSelectedDevice(device))
+        {
+            Logger.Log($"Device audio mode skipped because selected device changed ({reason})");
+            return false;
         }
 
         var mode = NormalizeDeviceAudioMode(explicitMode ?? SelectedDeviceAudioMode);
@@ -206,24 +251,59 @@ public partial class MainViewModel
 
         var isAnalog = string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase);
         var gainByte = MapPercentToGainByte(AnalogAudioGainPercent);
-        var applied = await NativeXuAtCommandProvider.SwitchAudioInputAsync(device, isAnalog, gainByte).ConfigureAwait(false);
+        var applied = await NativeXuAtCommandProvider.SwitchAudioInputAsync(device, isAnalog, gainByte, cancellationToken).ConfigureAwait(false);
 
         if (!applied)
         {
-            await _deviceAudioControlService.ReadStateAsync(device).ConfigureAwait(false);
-            var revertMode = string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase)
-                ? DeviceAudioMode.Hdmi
-                : DeviceAudioMode.Analog;
-            WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = revertMode);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!IsCurrentSelectedDevice(device))
+            {
+                Logger.Log($"Device audio mode failure ignored because selected device changed ({reason})");
+                return false;
+            }
+
+            var failureState = await _deviceAudioControlService.ReadStateAsync(device, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            if (!IsCurrentSelectedDevice(device))
+            {
+                Logger.Log($"Device audio mode failure readback ignored because selected device changed ({reason})");
+                return false;
+            }
+
+            WithAudioControlRefreshSuppressed(() =>
+            {
+                IsDeviceAudioControlSupported = failureState.IsSupported;
+                SelectedDeviceAudioMode = NormalizeDeviceAudioMode(failureState.Mode ?? SelectedDeviceAudioMode);
+                if (failureState.AnalogGainPercent.HasValue)
+                {
+                    AnalogAudioGainPercent = Math.Clamp(failureState.AnalogGainPercent.Value, 0.0, 100.0);
+                }
+            });
 
             StatusText = $"Device audio mode change failed ({mode})";
-            return;
+            return false;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!IsCurrentSelectedDevice(device))
+        {
+            Logger.Log($"Device audio mode result ignored because selected device changed ({reason})");
+            return false;
         }
 
         StatusText = $"Device audio mode set to {mode}";
         if (reapplyAnalogGain && string.Equals(mode, DeviceAudioMode.Analog, StringComparison.OrdinalIgnoreCase))
         {
-            await ApplyAnalogAudioGainAsync("analog gain after mode switch", AnalogAudioGainPercent, persistSettings: false).ConfigureAwait(false);
+            var gainApplied = await ApplyAnalogAudioGainAsync(
+                "analog gain after mode switch",
+                AnalogAudioGainPercent,
+                persistSettings: false,
+                targetDevice: device,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (!gainApplied)
+            {
+                return false;
+            }
         }
 
         WithAudioControlRefreshSuppressed(() => SelectedDeviceAudioMode = mode);
@@ -232,17 +312,27 @@ public partial class MainViewModel
         {
             SaveSettings();
         }
+
+        return true;
     }
 
-    private async Task ApplyAnalogAudioGainAsync(
+    private async Task<bool> ApplyAnalogAudioGainAsync(
         string reason,
         double? explicitPercent = null,
-        bool persistSettings = true)
+        bool persistSettings = true,
+        CaptureDevice? targetDevice = null,
+        CancellationToken cancellationToken = default)
     {
-        var device = SelectedDevice;
+        var device = targetDevice ?? SelectedDevice;
         if (device == null || !IsDeviceAudioControlSupported)
         {
-            return;
+            return false;
+        }
+
+        if (!IsCurrentSelectedDevice(device))
+        {
+            Logger.Log($"Analog audio gain skipped because selected device changed ({reason})");
+            return false;
         }
 
         var gainPercent = Math.Clamp(explicitPercent ?? AnalogAudioGainPercent, 0.0, 100.0);
@@ -250,12 +340,19 @@ public partial class MainViewModel
         Logger.Log($"=== Updating analog audio gain ({reason}) ===");
         Logger.Log($"  GainPercent: {gainPercent:0} GainByte: 0x{gainByte:X2}");
 
-        var applied = await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false).ConfigureAwait(false);
+        var applied = await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: false, cancellationToken).ConfigureAwait(false);
 
         if (!applied)
         {
             StatusText = $"Analog audio gain change failed ({gainPercent:0}%)";
-            return;
+            return false;
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        if (!IsCurrentSelectedDevice(device))
+        {
+            Logger.Log($"Analog audio gain result ignored because selected device changed ({reason})");
+            return false;
         }
 
         StatusText = $"Analog audio gain set to {gainPercent:0}%";
@@ -263,29 +360,52 @@ public partial class MainViewModel
 
         var oldCts = _gainFlashDebounceCts;
         oldCts?.Cancel();
-        oldCts?.Dispose();
         var cts = new CancellationTokenSource();
+        var token = cts.Token;
         _gainFlashDebounceCts = cts;
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(300, cts.Token).ConfigureAwait(false);
-                if (!cts.Token.IsCancellationRequested)
+                await Task.Delay(300, token).ConfigureAwait(false);
+                if (!token.IsCancellationRequested && IsCurrentSelectedDevice(device))
                 {
-                    await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, cts.Token).ConfigureAwait(false);
+                    await NativeXuAtCommandProvider.SetAnalogGainAsync(device, gainByte, persistFlash: true, token).ConfigureAwait(false);
                 }
             }
             catch (OperationCanceledException)
             {
                 /* Superseded by a newer gain change - expected */
             }
-        }, cts.Token);
+            finally
+            {
+                if (ReferenceEquals(_gainFlashDebounceCts, cts))
+                {
+                    _gainFlashDebounceCts = null;
+                }
+
+                cts.Dispose();
+            }
+        });
 
         if (persistSettings)
         {
             SaveSettings();
         }
+
+        return true;
+    }
+
+    private bool IsCurrentSelectedDevice(CaptureDevice device)
+    {
+        var selected = SelectedDevice;
+        if (selected == null)
+        {
+            return false;
+        }
+
+        return string.Equals(selected.Id, device.Id, StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(selected.NativeXuInterfacePath, device.NativeXuInterfacePath, StringComparison.OrdinalIgnoreCase);
     }
 
     private void WithAudioControlRefreshSuppressed(Action action)
@@ -324,7 +444,10 @@ public partial class MainViewModel
             Logger.Log($"NATIVEXU_AUDIO_MODE_AT_STOP_PREVIEW mode='{mode}'");
             try
             {
-                await StopPreviewAsync(userInitiated: false).ConfigureAwait(false);
+                // Native XU audio-mode change requires a full pipeline rebuild to pick
+                // up the new input source — force teardown rather than the normal
+                // preview-only detach.
+                await StopPreviewAsync(userInitiated: false, teardownPipeline: true).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

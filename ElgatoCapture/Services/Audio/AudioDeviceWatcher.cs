@@ -1,7 +1,10 @@
 using System;
 using System.Threading;
+using ElgatoCapture.Services.Devices;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Audio;
 
 internal sealed class AudioDeviceWatcher : IMMNotificationClient, IDisposable
 {

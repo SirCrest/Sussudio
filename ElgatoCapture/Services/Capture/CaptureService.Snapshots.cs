@@ -3,14 +3,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Capture;
 
 public partial class CaptureService
 {
     private string ResolveRecordingBackendName()
     {
-        if (IsFlashbackRecordingBackendActive())
+        if (IsFlashbackRecordingBackendOwnedByRecording())
             return "Flashback";
         return _isRecording && _libavSink != null ? "LibAv" : "None";
     }
@@ -643,8 +650,84 @@ public partial class CaptureService
             ?? _lastMjpegPipelineTimingMetrics;
         var mjpegFullTiming = unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics()
             ?? _lastFullMjpegPipelineTimingMetrics;
+        var mjpegPreviewJitter = unifiedVideoCapture?.GetMjpegPreviewJitterMetrics()
+            ?? default(MjpegPreviewJitterBuffer.Metrics);
+        var visualCadence = unifiedVideoCapture?.GetPreviewVisualCadenceMetrics()
+            ?? VisualCadenceTracker.Empty;
+        var visualCenterCadence = unifiedVideoCapture?.GetPreviewVisualCenterCadenceMetrics()
+            ?? VisualCadenceTracker.Empty;
+        var mjpegPacketHash = unifiedVideoCapture?.GetMjpegPacketHashMetrics()
+            ?? FrameFingerprintCadenceTracker.Empty;
         var (avSyncDriftMs, avSyncDriftRate) = ComputeAvSyncDrift();
         var (avSyncEncoderDriftMs, avSyncEncoderCorrectionSamples) = GetEncoderAvSyncDrift();
+        var flashbackIsRecordingBackend = IsFlashbackRecordingBackendOwnedByRecording();
+        var lastFailure = GetLastFailureTelemetry();
+        var liveRecordingFailed = sink?.EncodingFailed == true ||
+                                  (flashbackIsRecordingBackend && fbSink?.EncodingFailed == true);
+        var activeRecordingEncodingFailed = liveRecordingFailed || lastFailure.RecordingFailed;
+        var activeRecordingFailureType = sink?.EncodingFailureType ??
+                                         (flashbackIsRecordingBackend ? fbSink?.EncodingFailureType : null) ??
+                                         lastFailure.RecordingFailureType;
+        var activeRecordingFailureMessage = sink?.EncodingFailureMessage ??
+                                            (flashbackIsRecordingBackend ? fbSink?.EncodingFailureMessage : null) ??
+                                            lastFailure.RecordingFailureMessage;
+        var flashbackEncodingFailed = fbSink?.EncodingFailed == true || lastFailure.FlashbackFailed;
+        var flashbackFailureType = fbSink?.EncodingFailureType ?? lastFailure.FlashbackFailureType;
+        var flashbackFailureMessage = fbSink?.EncodingFailureMessage ?? lastFailure.FlashbackFailureMessage;
+        var activeRecordingVideoQueueDepth = sink?.VideoQueueCount ??
+                                             (flashbackIsRecordingBackend ? fbSink?.VideoQueueCount ?? 0 : 0);
+        var activeRecordingVideoQueueCapacity = sink?.VideoQueueCapacityFrames ??
+                                                (flashbackIsRecordingBackend ? fbSink?.VideoQueueCapacityFrames ?? 0 : 0);
+        var activeRecordingVideoQueueMaxDepth = sink?.VideoQueueMaxDepth ??
+                                                (flashbackIsRecordingBackend ? fbSink?.VideoQueueMaxDepth ?? 0 : 0);
+        var activeRecordingVideoFramesEnqueued = sink?.VideoFramesEnqueuedCount ??
+                                                 (flashbackIsRecordingBackend ? fbSink?.VideoFramesEnqueuedCount ?? 0 : 0);
+        var activeRecordingVideoFramesSubmitted = sink?.VideoFramesSubmittedToEncoder ??
+                                                  (flashbackIsRecordingBackend ? fbSink?.VideoFramesSubmittedToEncoder ?? 0 : 0);
+        var activeRecordingVideoEncoderPts = sink?.VideoEncoderPts ??
+                                             (flashbackIsRecordingBackend ? fbSink?.VideoEncoderPts ?? 0 : 0);
+        var activeRecordingVideoEncoderPacketsWritten = sink?.VideoEncoderPacketsWritten ??
+                                                        (flashbackIsRecordingBackend ? fbSink?.VideoEncoderPacketsWritten ?? 0 : 0);
+        var activeRecordingVideoEncoderDroppedFrames = sink?.VideoEncoderDroppedFrames ??
+                                                       (flashbackIsRecordingBackend ? fbSink?.VideoEncoderDroppedFrames ?? 0 : 0);
+        var activeRecordingVideoSequenceGaps = sink?.VideoSequenceGaps ??
+                                               (flashbackIsRecordingBackend ? fbSink?.VideoSequenceGaps ?? 0 : 0);
+        var activeRecordingVideoQueueOldestFrameAgeMs = sink?.VideoQueueOldestFrameAgeMs ??
+                                                        (flashbackIsRecordingBackend ? fbSink?.VideoQueueOldestFrameAgeMs ?? 0 : 0);
+        var activeRecordingVideoQueueLastLatencyMs = sink?.LastVideoQueueLatencyMs ??
+                                                     (flashbackIsRecordingBackend ? fbSink?.LastVideoQueueLatencyMs ?? 0 : 0);
+        var activeRecordingVideoQueueLatencySampleCount = sink?.VideoQueueLatencySampleCount ??
+                                                          (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencySampleCount ?? 0 : 0);
+        var activeRecordingVideoQueueLatencyAvgMs = sink?.VideoQueueLatencyAvgMs ??
+                                                    (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyAvgMs ?? 0 : 0);
+        var activeRecordingVideoQueueLatencyP95Ms = sink?.VideoQueueLatencyP95Ms ??
+                                                    (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyP95Ms ?? 0 : 0);
+        var activeRecordingVideoQueueLatencyMaxMs = sink?.VideoQueueLatencyMaxMs ??
+                                                    (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyMaxMs ?? 0 : 0);
+        var activeRecordingVideoBackpressureWaitMs = sink?.VideoBackpressureWaitMs ??
+                                                     (flashbackIsRecordingBackend ? fbSink?.VideoBackpressureWaitMs ?? 0 : 0);
+        var activeRecordingVideoBackpressureEvents = sink?.VideoBackpressureEvents ??
+                                                     (flashbackIsRecordingBackend ? fbSink?.VideoBackpressureEvents ?? 0 : 0);
+        var activeRecordingVideoBackpressureLastWaitMs = sink?.LastVideoBackpressureWaitMs ??
+                                                         (flashbackIsRecordingBackend ? fbSink?.LastVideoBackpressureWaitMs ?? 0 : 0);
+        var activeRecordingVideoBackpressureMaxWaitMs = sink?.MaxVideoBackpressureWaitMs ??
+                                                        (flashbackIsRecordingBackend ? fbSink?.MaxVideoBackpressureWaitMs ?? 0 : 0);
+        var activeRecordingDroppedFrames = sink?.DroppedVideoFrames ??
+                                           (flashbackIsRecordingBackend ? fbSink?.DroppedVideoFrames ?? 0 : Interlocked.Read(ref _videoFramesDropped));
+        var activeRecordingVideoDropsQueueSaturated = sink?.VideoDropsQueueSaturated ??
+                                                      (flashbackIsRecordingBackend ? fbSink?.VideoDropsQueueSaturated ?? 0 : 0);
+        var activeRecordingVideoDropsBacklogEviction = sink?.VideoDropsBacklogEviction ??
+                                                       (flashbackIsRecordingBackend ? fbSink?.VideoDropsBacklogEviction ?? 0 : 0);
+        var activeRecordingAudioQueueDepth = sink?.AudioQueueCount ??
+                                             (flashbackIsRecordingBackend ? fbSink?.AudioQueueCount ?? 0 : 0);
+        var activeRecordingAudioDropsQueueSaturated = sink?.AudioDropsQueueSaturated ??
+                                                      (flashbackIsRecordingBackend ? fbSink?.AudioDropsQueueSaturated ?? 0 : 0);
+        var activeRecordingAudioDropsBacklogEviction = sink?.AudioDropsBacklogEviction ??
+                                                       (flashbackIsRecordingBackend ? fbSink?.AudioDropsBacklogEviction ?? 0 : 0);
+        var activeRecordingLastVideoEnqueueTick = sink?.LastVideoEnqueueTick ??
+                                                  (flashbackIsRecordingBackend ? fbSink?.LastVideoEnqueueTick ?? 0 : 0);
+        var activeRecordingLastVideoWriteTick = sink?.LastVideoWriteTick ??
+                                                (flashbackIsRecordingBackend ? fbSink?.LastVideoWriteTick ?? 0 : 0);
 
         return new CaptureHealthSnapshot
         {
@@ -732,21 +815,76 @@ public partial class CaptureService
                 sourceTelemetrySuppressed),
             LastFrameArrivalMs = ComputeTickAge(unifiedVideoCapture?.LastVideoFrameArrivedTick ?? 0),
             VideoFramesArrived = unifiedVideoCapture?.VideoFramesArrived ?? 0,
-            VideoFramesQueued = sink?.VideoQueueCount ?? 0,
-            VideoFramesDropped = videoFramesDropped,
-            VideoFramesDroppedBacklog = sink?.VideoDropsBacklogEviction ?? 0,
-            VideoFramesConverted = sink?.EncodedVideoFrames ?? 0,
-            VideoDropsQueueSaturated = sink?.VideoDropsQueueSaturated ?? 0,
-            VideoDropsBacklogEviction = sink?.VideoDropsBacklogEviction ?? 0,
-            AudioDropsQueueSaturated = sink?.AudioDropsQueueSaturated ?? 0,
-            AudioDropsBacklogEviction = sink?.AudioDropsBacklogEviction ?? 0,
-            AudioChunksDropped = (sink?.AudioDropsQueueSaturated ?? 0) + (sink?.AudioDropsBacklogEviction ?? 0),
+            VideoFramesQueued = activeRecordingVideoQueueDepth,
+            VideoFramesDropped = activeRecordingDroppedFrames,
+            VideoFramesDroppedBacklog = activeRecordingVideoDropsBacklogEviction,
+            VideoFramesConverted = sink?.EncodedVideoFrames ?? (flashbackIsRecordingBackend ? fbSink?.EncodedVideoFrames ?? 0 : 0),
+            VideoDropsQueueSaturated = activeRecordingVideoDropsQueueSaturated,
+            VideoDropsBacklogEviction = activeRecordingVideoDropsBacklogEviction,
+            RecordingEncodingFailed = activeRecordingEncodingFailed,
+            RecordingEncodingFailureType = activeRecordingFailureType,
+            RecordingEncodingFailureMessage = activeRecordingFailureMessage,
+            RecordingVideoQueueCapacity = activeRecordingVideoQueueCapacity,
+            RecordingVideoQueueMaxDepth = activeRecordingVideoQueueMaxDepth,
+            RecordingVideoFramesSubmittedToEncoder = activeRecordingVideoFramesSubmitted,
+            RecordingVideoEncoderPts = activeRecordingVideoEncoderPts,
+            RecordingVideoEncoderPacketsWritten = activeRecordingVideoEncoderPacketsWritten,
+            RecordingVideoEncoderDroppedFrames = activeRecordingVideoEncoderDroppedFrames,
+            RecordingVideoSequenceGaps = activeRecordingVideoSequenceGaps,
+            RecordingVideoQueueOldestFrameAgeMs = activeRecordingVideoQueueOldestFrameAgeMs,
+            RecordingVideoQueueLastLatencyMs = activeRecordingVideoQueueLastLatencyMs,
+            RecordingVideoQueueLatencySampleCount = activeRecordingVideoQueueLatencySampleCount,
+            RecordingVideoQueueLatencyAvgMs = activeRecordingVideoQueueLatencyAvgMs,
+            RecordingVideoQueueLatencyP95Ms = activeRecordingVideoQueueLatencyP95Ms,
+            RecordingVideoQueueLatencyMaxMs = activeRecordingVideoQueueLatencyMaxMs,
+            RecordingVideoBackpressureWaitMs = activeRecordingVideoBackpressureWaitMs,
+            RecordingVideoBackpressureEvents = activeRecordingVideoBackpressureEvents,
+            RecordingVideoBackpressureLastWaitMs = activeRecordingVideoBackpressureLastWaitMs,
+            RecordingVideoBackpressureMaxWaitMs = activeRecordingVideoBackpressureMaxWaitMs,
+            RecordingGpuQueueDepth = sink?.GpuQueueCount ?? (flashbackIsRecordingBackend ? fbSink?.GpuQueueCount ?? 0 : 0),
+            RecordingGpuQueueCapacity = sink?.GpuQueueCapacityFrames ?? (flashbackIsRecordingBackend ? fbSink?.GpuQueueCapacityFrames ?? 0 : 0),
+            RecordingGpuQueueMaxDepth = sink?.GpuQueueMaxDepth ?? (flashbackIsRecordingBackend ? fbSink?.GpuQueueMaxDepth ?? 0 : 0),
+            RecordingGpuFramesEnqueued = sink?.GpuFramesEnqueued ?? (flashbackIsRecordingBackend ? fbSink?.GpuFramesEnqueued ?? 0 : 0),
+            RecordingGpuFramesDropped = sink?.GpuFramesDropped ?? (flashbackIsRecordingBackend ? fbSink?.GpuFramesDropped ?? 0 : 0),
+            RecordingCudaQueueDepth = sink?.CudaQueueCount ?? 0,
+            RecordingCudaQueueCapacity = sink?.CudaQueueCapacityFrames ?? 0,
+            RecordingCudaQueueMaxDepth = sink?.CudaQueueMaxDepth ?? 0,
+            RecordingCudaFramesEnqueued = sink?.CudaFramesEnqueued ?? 0,
+            RecordingCudaFramesDropped = sink?.CudaFramesDropped ?? 0,
+            FlashbackEncodingFailed = flashbackEncodingFailed,
+            FlashbackEncodingFailureType = flashbackFailureType,
+            FlashbackEncodingFailureMessage = flashbackFailureMessage,
+            FlashbackVideoQueueCapacity = fbSink?.VideoQueueCapacityFrames ?? 0,
+            FlashbackVideoQueueMaxDepth = fbSink?.VideoQueueMaxDepth ?? 0,
+            FlashbackVideoFramesSubmittedToEncoder = fbSink?.VideoFramesSubmittedToEncoder ?? 0,
+            FlashbackVideoEncoderPts = fbSink?.VideoEncoderPts ?? 0,
+            FlashbackVideoEncoderPacketsWritten = fbSink?.VideoEncoderPacketsWritten ?? 0,
+            FlashbackVideoEncoderDroppedFrames = fbSink?.VideoEncoderDroppedFrames ?? 0,
+            FlashbackVideoSequenceGaps = fbSink?.VideoSequenceGaps ?? 0,
+            FlashbackVideoQueueOldestFrameAgeMs = fbSink?.VideoQueueOldestFrameAgeMs ?? 0,
+            FlashbackVideoQueueLastLatencyMs = fbSink?.LastVideoQueueLatencyMs ?? 0,
+            FlashbackVideoQueueLatencySampleCount = fbSink?.VideoQueueLatencySampleCount ?? 0,
+            FlashbackVideoQueueLatencyAvgMs = fbSink?.VideoQueueLatencyAvgMs ?? 0,
+            FlashbackVideoQueueLatencyP95Ms = fbSink?.VideoQueueLatencyP95Ms ?? 0,
+            FlashbackVideoQueueLatencyMaxMs = fbSink?.VideoQueueLatencyMaxMs ?? 0,
+            FlashbackVideoBackpressureWaitMs = fbSink?.VideoBackpressureWaitMs ?? 0,
+            FlashbackVideoBackpressureEvents = fbSink?.VideoBackpressureEvents ?? 0,
+            FlashbackVideoBackpressureLastWaitMs = fbSink?.LastVideoBackpressureWaitMs ?? 0,
+            FlashbackVideoBackpressureMaxWaitMs = fbSink?.MaxVideoBackpressureWaitMs ?? 0,
+            FlashbackGpuQueueDepth = fbSink?.GpuQueueCount ?? 0,
+            FlashbackGpuQueueCapacity = fbSink?.GpuQueueCapacityFrames ?? 0,
+            FlashbackGpuQueueMaxDepth = fbSink?.GpuQueueMaxDepth ?? 0,
+            FlashbackGpuFramesEnqueued = fbSink?.GpuFramesEnqueued ?? 0,
+            FlashbackGpuFramesDropped = fbSink?.GpuFramesDropped ?? 0,
+            AudioDropsQueueSaturated = activeRecordingAudioDropsQueueSaturated,
+            AudioDropsBacklogEviction = activeRecordingAudioDropsBacklogEviction,
+            AudioChunksDropped = activeRecordingAudioDropsQueueSaturated + activeRecordingAudioDropsBacklogEviction,
             ConversionQueueDepth = 0,
-            FfmpegVideoQueueDepth = sink?.VideoQueueCount ?? 0,
-            FfmpegAudioQueueDepth = sink?.AudioQueueCount ?? 0,
-            VideoFramesEnqueued = sink?.VideoFramesEnqueuedCount ?? 0,
-            LastVideoEnqueueAgeMs = ComputeTickAge(sink?.LastVideoEnqueueTick ?? 0),
-            LastVideoWriteAgeMs = ComputeTickAge(sink?.LastVideoWriteTick ?? 0),
+            FfmpegVideoQueueDepth = activeRecordingVideoQueueDepth,
+            FfmpegAudioQueueDepth = activeRecordingAudioQueueDepth,
+            VideoFramesEnqueued = activeRecordingVideoFramesEnqueued,
+            LastVideoEnqueueAgeMs = ComputeTickAge(activeRecordingLastVideoEnqueueTick),
+            LastVideoWriteAgeMs = ComputeTickAge(activeRecordingLastVideoWriteTick),
             CaptureCadenceSampleCount = sourceCadence.SampleCount,
             CaptureCadenceObservedFps = sourceCadence.ObservedFps,
             CaptureCadenceExpectedIntervalMs = sourceCadence.ExpectedIntervalMs,
@@ -781,8 +919,83 @@ public partial class CaptureService
             MjpegTotalDecoded = mjpegFullTiming?.TotalDecoded ?? 0,
             MjpegTotalEmitted = mjpegFullTiming?.TotalEmitted ?? 0,
             MjpegTotalDropped = mjpegFullTiming?.TotalDropped ?? 0,
+            MjpegCompressedFramesQueued = mjpegFullTiming?.CompressedFramesQueued ?? 0,
+            MjpegCompressedFramesDequeued = mjpegFullTiming?.CompressedFramesDequeued ?? 0,
+            MjpegCompressedDropsQueueFull = mjpegFullTiming?.CompressedDropsQueueFull ?? 0,
+            MjpegCompressedDropsByteBudget = mjpegFullTiming?.CompressedDropsByteBudget ?? 0,
+            MjpegCompressedDropsDisposed = mjpegFullTiming?.CompressedDropsDisposed ?? 0,
+            MjpegDecodeFailures = mjpegFullTiming?.DecodeFailures ?? 0,
+            MjpegReorderCollisions = mjpegFullTiming?.ReorderCollisions ?? 0,
+            MjpegEmitFailures = mjpegFullTiming?.EmitFailures ?? 0,
+            MjpegCompressedQueueDepth = mjpegFullTiming?.CompressedQueueDepth ?? 0,
+            MjpegCompressedQueueBytes = mjpegFullTiming?.CompressedQueueBytes ?? 0,
+            MjpegCompressedQueueByteBudget = mjpegFullTiming?.CompressedQueueByteBudget ?? 0,
             MjpegReorderSkips = mjpegFullTiming?.ReorderSkips ?? 0,
             MjpegReorderBufferDepth = mjpegFullTiming?.ReorderBufferDepth ?? 0,
+            MjpegPreviewJitterEnabled = mjpegPreviewJitter.Enabled,
+            MjpegPreviewJitterTargetDepth = mjpegPreviewJitter.TargetDepth,
+            MjpegPreviewJitterMaxDepth = mjpegPreviewJitter.MaxDepth,
+            MjpegPreviewJitterQueueDepth = mjpegPreviewJitter.QueueDepth,
+            MjpegPreviewJitterTotalQueued = mjpegPreviewJitter.TotalQueued,
+            MjpegPreviewJitterTotalSubmitted = mjpegPreviewJitter.TotalSubmitted,
+            MjpegPreviewJitterTotalDropped = mjpegPreviewJitter.TotalDropped,
+            MjpegPreviewJitterUnderflowCount = mjpegPreviewJitter.UnderflowCount,
+            MjpegPreviewJitterInputSampleCount = mjpegPreviewJitter.InputIntervalSampleCount,
+            MjpegPreviewJitterInputAvgMs = mjpegPreviewJitter.InputIntervalAvgMs,
+            MjpegPreviewJitterInputP95Ms = mjpegPreviewJitter.InputIntervalP95Ms,
+            MjpegPreviewJitterInputMaxMs = mjpegPreviewJitter.InputIntervalMaxMs,
+            MjpegPreviewJitterOutputSampleCount = mjpegPreviewJitter.OutputIntervalSampleCount,
+            MjpegPreviewJitterOutputAvgMs = mjpegPreviewJitter.OutputIntervalAvgMs,
+            MjpegPreviewJitterOutputP95Ms = mjpegPreviewJitter.OutputIntervalP95Ms,
+            MjpegPreviewJitterOutputMaxMs = mjpegPreviewJitter.OutputIntervalMaxMs,
+            MjpegPreviewJitterLatencySampleCount = mjpegPreviewJitter.QueueLatencySampleCount,
+            MjpegPreviewJitterLatencyAvgMs = mjpegPreviewJitter.QueueLatencyAvgMs,
+            MjpegPreviewJitterLatencyP95Ms = mjpegPreviewJitter.QueueLatencyP95Ms,
+            MjpegPreviewJitterLatencyMaxMs = mjpegPreviewJitter.QueueLatencyMaxMs,
+            MjpegPreviewJitterDeadlineDropCount = mjpegPreviewJitter.DeadlineDropCount,
+            MjpegPreviewJitterTargetIncreaseCount = mjpegPreviewJitter.TargetIncreaseCount,
+            MjpegPreviewJitterTargetDecreaseCount = mjpegPreviewJitter.TargetDecreaseCount,
+            MjpegPacketHashSampleCount = mjpegPacketHash.SampleCount,
+            MjpegPacketHashUniqueFrameCount = mjpegPacketHash.UniqueFrameCount,
+            MjpegPacketHashDuplicateFrameCount = mjpegPacketHash.DuplicateFrameCount,
+            MjpegPacketHashLongestDuplicateRun = mjpegPacketHash.LongestDuplicateRun,
+            MjpegPacketHashInputObservedFps = mjpegPacketHash.InputObservedFps,
+            MjpegPacketHashUniqueObservedFps = mjpegPacketHash.UniqueObservedFps,
+            MjpegPacketHashDuplicateFramePercent = mjpegPacketHash.DuplicateFramePercent,
+            MjpegPacketHashLastHash = mjpegPacketHash.LastHash,
+            MjpegPacketHashLastFrameDuplicate = mjpegPacketHash.LastFrameDuplicate,
+            MjpegPacketHashPattern = mjpegPacketHash.Pattern,
+            MjpegPacketHashRecentInputIntervalsMs = mjpegPacketHash.RecentInputIntervalsMs,
+            MjpegPacketHashRecentUniqueIntervalsMs = mjpegPacketHash.RecentUniqueIntervalsMs,
+            MjpegPacketHashRecentDuplicateFlags = mjpegPacketHash.RecentDuplicateFlags,
+            VisualCadenceSampleCount = visualCadence.SampleCount,
+            VisualCadenceChangedFrameCount = visualCadence.ChangedFrameCount,
+            VisualCadenceRepeatFrameCount = visualCadence.RepeatFrameCount,
+            VisualCadenceLongestRepeatRun = visualCadence.LongestRepeatRun,
+            VisualCadenceOutputObservedFps = visualCadence.OutputObservedFps,
+            VisualCadenceChangeObservedFps = visualCadence.ChangeObservedFps,
+            VisualCadenceRepeatFramePercent = visualCadence.RepeatFramePercent,
+            VisualCadenceLastDelta = visualCadence.LastDelta,
+            VisualCadenceAverageDelta = visualCadence.AverageDelta,
+            VisualCadenceP95Delta = visualCadence.P95Delta,
+            VisualCadenceMotionScore = visualCadence.MotionScore,
+            VisualCadenceMotionConfidence = visualCadence.MotionConfidence,
+            VisualCadenceRecentOutputIntervalsMs = visualCadence.RecentOutputIntervalsMs,
+            VisualCadenceRecentChangeIntervalsMs = visualCadence.RecentChangeIntervalsMs,
+            VisualCenterCadenceSampleCount = visualCenterCadence.SampleCount,
+            VisualCenterCadenceChangedFrameCount = visualCenterCadence.ChangedFrameCount,
+            VisualCenterCadenceRepeatFrameCount = visualCenterCadence.RepeatFrameCount,
+            VisualCenterCadenceLongestRepeatRun = visualCenterCadence.LongestRepeatRun,
+            VisualCenterCadenceOutputObservedFps = visualCenterCadence.OutputObservedFps,
+            VisualCenterCadenceChangeObservedFps = visualCenterCadence.ChangeObservedFps,
+            VisualCenterCadenceRepeatFramePercent = visualCenterCadence.RepeatFramePercent,
+            VisualCenterCadenceLastDelta = visualCenterCadence.LastDelta,
+            VisualCenterCadenceAverageDelta = visualCenterCadence.AverageDelta,
+            VisualCenterCadenceP95Delta = visualCenterCadence.P95Delta,
+            VisualCenterCadenceMotionScore = visualCenterCadence.MotionScore,
+            VisualCenterCadenceMotionConfidence = visualCenterCadence.MotionConfidence,
+            VisualCenterCadenceRecentOutputIntervalsMs = visualCenterCadence.RecentOutputIntervalsMs,
+            VisualCenterCadenceRecentChangeIntervalsMs = visualCenterCadence.RecentChangeIntervalsMs,
             MjpegPerDecoder = mjpegFullTiming?.PerDecoder is { Length: > 0 } perDecoder
                 ? Array.ConvertAll(
                     perDecoder,

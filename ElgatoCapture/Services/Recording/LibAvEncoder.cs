@@ -5,8 +5,10 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using FFmpeg.AutoGen;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Runtime;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Recording;
 
 /// <summary>
 /// In-process libav encoder for MP4 recording.
@@ -74,6 +76,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
     private long _nextMicPts;
     private long _encodedFrameCount;
     private long _droppedFrameCount;
+    private long _videoPacketsWritten;
     private long _audioSamplesReceived;
     private long _micSamplesReceived;
     private long _lastSyncLogVideoFrame;
@@ -115,6 +118,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
     public long EncodedFrameCount => _encodedFrameCount;
     public long DroppedFrameCount => _droppedFrameCount;
+    public long VideoPacketsWritten => Interlocked.Read(ref _videoPacketsWritten);
     public long AudioSamplesReceived => _audioSamplesReceived;
     public long MicrophoneSamplesReceived => _micSamplesReceived;
     public long TotalBytesWritten => _totalBytesWritten;
@@ -366,6 +370,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
             _nextMicPts = 0;
             _encodedFrameCount = 0;
             _droppedFrameCount = 0;
+            _videoPacketsWritten = 0;
             _audioSamplesReceived = 0;
             _micSamplesReceived = 0;
             _lastSyncLogVideoFrame = 0;
@@ -1776,6 +1781,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         packet->stream_index = _videoStream->index;
         var packetSize = packet->size;
         ThrowIfError(ffmpeg.av_interleaved_write_frame(_formatCtx, packet), "av_interleaved_write_frame");
+        Interlocked.Increment(ref _videoPacketsWritten);
         _totalBytesWritten += packetSize;
     }
 

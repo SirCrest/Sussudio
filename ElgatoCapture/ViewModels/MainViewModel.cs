@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
@@ -8,8 +8,17 @@ using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
 using Microsoft.UI.Dispatching;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture.ViewModels;
 
@@ -128,6 +137,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _suppressFormatChangeReinitialize;
     private bool _isRevertingHdrToggle;
     private int _recordingToggleInProgress;
+    // Holds the in-flight ToggleRecordingAsync task so the window-close path can
+    // observe (and await) an already-running stop instead of short-circuiting on
+    // the CAS gate above. Cleared in the toggle's finally block.
+    private volatile Task? _activeRecordingToggleTask;
+    private int _activeRecordingTransitionTarget = -1;
     private bool _isLoadingSettings;
     private string? _pendingSavedDeviceId;
     private string? _pendingSavedAudioDeviceId;
@@ -139,7 +153,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private bool _isRefreshingDeviceAudioControls;
     private CancellationTokenSource? _gainFlashDebounceCts;
     private CancellationTokenSource? _gainXuDebounceCts;
+    private CancellationTokenSource? _deviceAudioModeCts;
+    private CancellationTokenSource? _deviceAudioRefreshCts;
     private CancellationTokenSource? _exportCts;
+    private bool _suppressMicrophoneMonitorUpdate;
     [ObservableProperty]
     public partial bool IsRecordingTransitioning { get; set; }
 
@@ -187,7 +204,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public partial string SelectedVideoFormat { get; set; } = "Auto";
 
     [ObservableProperty]
-    public partial int MjpegDecoderCount { get; set; } = 4;
+    public partial int MjpegDecoderCount { get; set; } = 6;
 
     [ObservableProperty]
     public partial double CustomBitrateMbps { get; set; } = 50;
@@ -472,13 +489,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         SetupTimer();
         UpdateDiskSpace();
     }
-
-    private void EnqueueUiOperation(Func<Task> operation, string operationName)
+    private bool EnqueueUiOperation(Func<Task> operation, string operationName, bool allowDuringDispose = false)
     {
-        if (Volatile.Read(ref _disposeState) != 0) return;
-        _dispatcherQueue.TryEnqueue(() =>
+        if (!allowDuringDispose && Volatile.Read(ref _disposeState) != 0) return false;
+        return _dispatcherQueue.TryEnqueue(() =>
         {
-            if (Volatile.Read(ref _disposeState) != 0) return;
+            if (!allowDuringDispose && Volatile.Read(ref _disposeState) != 0) return;
             _ = ExecuteUiOperationAsync(operation, operationName);
         });
     }
@@ -555,6 +571,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             try
             {
+                registration.Dispose();
+                registration = default;
+
                 if (cancellationToken.IsCancellationRequested)
                 {
                     completion.TrySetCanceled(cancellationToken);
@@ -614,6 +633,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             try
             {
+                registration.Dispose();
+                registration = default;
+
                 if (cancellationToken.IsCancellationRequested)
                 {
                     completion.TrySetCanceled(cancellationToken);
@@ -836,6 +858,11 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     partial void OnIsMicrophoneEnabledChanged(bool value)
     {
         SaveSettings();
+        if (_suppressMicrophoneMonitorUpdate)
+        {
+            return;
+        }
+
         if (!IsRecording)
         {
             var device = SelectedMicrophoneDevice;
@@ -951,8 +978,44 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             Logger.Log("Device audio mode change ignored while recording");
             return;
         }
+        var oldCts = _deviceAudioModeCts;
+        oldCts?.Cancel();
+        var cts = new CancellationTokenSource();
+        var token = cts.Token;
+        var targetDevice = SelectedDevice;
+        _deviceAudioModeCts = cts;
+        var enqueued = EnqueueUiOperation(async () =>
+        {
+            try
+            {
+                if (Volatile.Read(ref _disposeState) == 0)
+                {
+                    await ApplyDeviceAudioModeAsync("device audio mode change", targetDevice: targetDevice, cancellationToken: token).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                Logger.Log("Device audio mode change canceled because selected device changed");
+            }
+            finally
+            {
+                if (ReferenceEquals(_deviceAudioModeCts, cts))
+                {
+                    _deviceAudioModeCts = null;
+                }
 
-        EnqueueUiOperation(() => ApplyDeviceAudioModeAsync("device audio mode change"), "device audio mode change");
+                cts.Dispose();
+            }
+        }, "device audio mode change", allowDuringDispose: true);
+        if (!enqueued)
+        {
+            if (ReferenceEquals(_deviceAudioModeCts, cts))
+            {
+                _deviceAudioModeCts = null;
+            }
+
+            cts.Dispose();
+        }
         SaveSettings();
     }
 
@@ -977,22 +1040,64 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
         // Debounce the XU write to avoid flooding the hardware with commands
         // while the user drags the slider (same hazard class as AT SET bricking).
+        var targetDevice = SelectedDevice;
+        if (targetDevice == null)
+        {
+            SaveSettings();
+            return;
+        }
         var oldCts = _gainXuDebounceCts;
         oldCts?.Cancel();
-        oldCts?.Dispose();
         var cts = new CancellationTokenSource();
+        var token = cts.Token;
         _gainXuDebounceCts = cts;
         _ = Task.Run(async () =>
         {
             try
             {
-                await Task.Delay(200, cts.Token).ConfigureAwait(false);
+                await Task.Delay(200, token).ConfigureAwait(false);
+                var enqueued = EnqueueUiOperation(async () =>
+                {
+                    try
+                    {
+                        if (Volatile.Read(ref _disposeState) == 0)
+                        {
+                            await ApplyAnalogAudioGainAsync("analog audio gain change", targetDevice: targetDevice, cancellationToken: token).ConfigureAwait(false);
+                        }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        Logger.Log("Analog audio gain change canceled because selected device changed");
+                    }
+                    finally
+                    {
+                        if (ReferenceEquals(_gainXuDebounceCts, cts))
+                        {
+                            _gainXuDebounceCts = null;
+                        }
+
+                        cts.Dispose();
+                    }
+                }, "analog audio gain change", allowDuringDispose: true);
+                if (!enqueued)
+                {
+                    if (ReferenceEquals(_gainXuDebounceCts, cts))
+                    {
+                        _gainXuDebounceCts = null;
+                    }
+
+                    cts.Dispose();
+                }
             }
             catch (OperationCanceledException)
             {
-                return;
+                if (ReferenceEquals(_gainXuDebounceCts, cts))
+                {
+                    _gainXuDebounceCts = null;
+                }
+
+                cts.Dispose();
             }
-            EnqueueUiOperation(() => ApplyAnalogAudioGainAsync("analog audio gain change"), "analog audio gain change");
         });
         SaveSettings();
     }
@@ -1011,9 +1116,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
                 {
                     await _sessionCoordinator.StartAudioPreviewAsync();
                     // Cycle the flashback encoder so it reconnects its audio feed.
-                    // Without this, the first recording after audio off→on produces
+                    // Without this, the first recording after audio off->on produces
                     // an empty file because the flashback sink's audio path is stale.
-                    await _captureService.RestartFlashbackAsync();
+                    await _sessionCoordinator.RestartFlashbackAsync(BuildCaptureSettings());
                 }, "audio preview restart + flashback cycle");
             }
         }
@@ -1028,7 +1133,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             EnqueueUiOperation(async () =>
             {
                 await Task.Delay(350);
-                await _sessionCoordinator.StopAudioPreviewAsync(teardownCapture: true);
+                await _sessionCoordinator.StopAudioPreviewWithTeardownAsync();
             }, "audio capture teardown");
 
             ResetAudioMeter();
@@ -1174,8 +1279,8 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         return $"{Math.Round(bitsPerSecond):0} {units[unit]}";
     }
 
-    // ── Capture lifecycle methods are in MainViewModel.Capture.cs ─────
-    // ── Automation methods are in MainViewModel.Automation.cs ─────────
+    // -- Capture lifecycle methods are in MainViewModel.Capture.cs -----
+    // -- Automation methods are in MainViewModel.Automation.cs ---------
 
     // -- Partial class references ----
     // Capture lifecycle: MainViewModel.Capture.cs
@@ -1191,13 +1296,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             return;
         }
-
         _exportCts?.Cancel();
         _exportCts?.Dispose();
         _gainFlashDebounceCts?.Cancel();
-        _gainFlashDebounceCts?.Dispose();
         _gainXuDebounceCts?.Cancel();
-        _gainXuDebounceCts?.Dispose();
+        _deviceAudioModeCts?.Cancel();
+        _deviceAudioRefreshCts?.Cancel();
         _timer?.Stop();
         _deviceService.FormatProbeCompleted -= OnDeviceFormatProbeCompleted;
         _captureService.StatusChanged -= OnCaptureStatusChanged;
@@ -1247,6 +1351,9 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         }
     }
 
+    // REVIEWED 2026-04-07: IDisposable fallback — MainWindow.Closed calls
+    // await ViewModel.DisposeAsync(). This sync path exists for GC finalizer safety
+    // and uses Task.Run to avoid deadlocking if called from a UI context.
     public void Dispose()
     {
         var disposeTimeoutMs = EnvironmentHelpers.GetIntFromEnv(

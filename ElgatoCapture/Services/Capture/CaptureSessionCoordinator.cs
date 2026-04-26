@@ -1,11 +1,19 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Capture;
 
 public enum CaptureCommandKind
 {
@@ -19,7 +27,12 @@ public enum CaptureCommandKind
     UpdateAudioMonitoring,
     UpdateAudioInput,
     UpdateMicrophoneMonitor,
-    Cleanup
+    SetFlashbackEnabled,
+    UpdateFlashbackSettings,
+    Cleanup,
+    RestartFlashback,
+    UpdateFlashbackRecordingFormat,
+    CycleFlashbackEncoderSettings
 }
 
 public readonly record struct CaptureCommand(
@@ -41,6 +54,38 @@ public sealed class CaptureSessionSnapshot
     public bool IsAudioPreviewActive { get; init; }
 }
 
+internal readonly record struct FlashbackPlaybackSnapshot(
+    bool IsActive,
+    FlashbackPlaybackState State,
+    TimeSpan PlaybackPosition,
+    TimeSpan GapFromLive,
+    TimeSpan? InPoint,
+    TimeSpan? OutPoint)
+{
+    public static FlashbackPlaybackSnapshot Disabled { get; } = new(
+        false,
+        FlashbackPlaybackState.Disabled,
+        TimeSpan.Zero,
+        TimeSpan.Zero,
+        null,
+        null);
+}
+
+internal readonly record struct FlashbackBufferStatus(
+    bool IsActive,
+    TimeSpan BufferDuration,
+    TimeSpan FilledDuration,
+    long DiskBytes,
+    bool IsDiskWarningActive)
+{
+    public static FlashbackBufferStatus Inactive { get; } = new(
+        false,
+        TimeSpan.Zero,
+        TimeSpan.Zero,
+        0,
+        false);
+}
+
 public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 {
     private readonly CaptureService _captureService;
@@ -51,6 +96,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     private readonly object _disposeLock = new();
     private bool _isDisposed;
     private int _pendingCommands;
+    private int _latestFlashbackEncoderCycleGeneration;
     private DateTimeOffset _lastTransitionUtc = DateTimeOffset.UtcNow;
     private CaptureCommandKind? _lastCommand;
     private string? _lastCorrelationId;
@@ -63,6 +109,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         public required Func<CancellationToken, Task> Operation { get; init; }
         public required CancellationToken CancellationToken { get; init; }
         public required TaskCompletionSource<object?> Completion { get; init; }
+        public required CancellationTokenRegistration CancellationRegistration { get; init; }
+        public bool PropagateCancellationToOperation { get; init; }
+        public int? CoalescingGeneration { get; init; }
     }
 
     public CaptureSessionCoordinator(CaptureService captureService)
@@ -109,6 +158,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)
         => EnqueueAsync(CaptureCommandKind.StopVideoPreview, ct => _captureService.StopVideoPreviewAsync(ct), cancellationToken);
 
+    public Task StopVideoPreviewWithTeardownAsync(CancellationToken cancellationToken = default)
+        => EnqueueAsync(CaptureCommandKind.StopVideoPreview, ct => _captureService.StopVideoPreviewWithTeardownAsync(ct), cancellationToken);
+
     public Task StartRecordingAsync(CaptureSettings settings, CancellationToken cancellationToken = default)
         => EnqueueAsync(CaptureCommandKind.StartRecording, ct => _captureService.StartRecordingAsync(settings, ct), cancellationToken);
 
@@ -118,8 +170,11 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     public Task StartAudioPreviewAsync(CancellationToken cancellationToken = default)
         => EnqueueAsync(CaptureCommandKind.StartAudioPreview, ct => _captureService.StartAudioPreviewAsync(ct), cancellationToken);
 
-    public Task StopAudioPreviewAsync(bool teardownCapture = false, CancellationToken cancellationToken = default)
-        => EnqueueAsync(CaptureCommandKind.StopAudioPreview, ct => _captureService.StopAudioPreviewAsync(teardownCapture, ct), cancellationToken);
+    public Task StopAudioPreviewAsync(CancellationToken cancellationToken = default)
+        => EnqueueAsync(CaptureCommandKind.StopAudioPreview, ct => _captureService.StopAudioPreviewAsync(ct), cancellationToken);
+
+    public Task StopAudioPreviewWithTeardownAsync(CancellationToken cancellationToken = default)
+        => EnqueueAsync(CaptureCommandKind.StopAudioPreview, ct => _captureService.StopAudioPreviewWithTeardownAsync(ct), cancellationToken);
 
     public Task UpdateAudioMonitoringAsync(bool enabled, CancellationToken cancellationToken = default)
         => EnqueueAsync(
@@ -134,7 +189,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                 else
                 {
                     _captureService.SetMonitoringMuted(true);
-                    await _captureService.StopAudioPreviewAsync(teardownCapture: false, ct).ConfigureAwait(false);
+                    await _captureService.StopAudioPreviewAsync(ct).ConfigureAwait(false);
                 }
             },
             cancellationToken);
@@ -157,30 +212,241 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
             ct => _captureService.UpdateMicrophoneMonitorAsync(enabled, micDeviceId, micDeviceName, ct),
             cancellationToken);
 
+    public Task RestartFlashbackAsync(CancellationToken cancellationToken = default)
+        => EnqueueAsync(
+            CaptureCommandKind.RestartFlashback,
+            ct => _captureService.RestartFlashbackAsync(ct),
+            cancellationToken,
+            propagateCancellationToOperation: true);
+
+    public Task RestartFlashbackAsync(CaptureSettings settings, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+        return EnqueueAsync(
+            CaptureCommandKind.RestartFlashback,
+            ct => _captureService.RestartFlashbackAsync(settings, ct),
+            cancellationToken,
+            propagateCancellationToOperation: true);
+    }
+
+    public Task UpdateRecordingFormatAsync(RecordingFormat format, CancellationToken cancellationToken = default)
+        => EnqueueAsync(
+            CaptureCommandKind.UpdateFlashbackRecordingFormat,
+            ct => _captureService.UpdateRecordingFormatAsync(format, ct),
+            cancellationToken);
+
+    public Task CycleFlashbackEncoderSettingsAsync(
+        VideoQuality? quality = null,
+        double? customBitrateMbps = null,
+        string? nvencPreset = null,
+        CancellationToken cancellationToken = default)
+        => EnqueueAsync(
+            CaptureCommandKind.CycleFlashbackEncoderSettings,
+            ct => _captureService.CycleFlashbackEncoderSettingsAsync(quality, customBitrateMbps, nvencPreset, ct),
+            cancellationToken,
+            coalesceLatest: true);
+
+    public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
+        => EnqueueAsync(
+            CaptureCommandKind.SetFlashbackEnabled,
+            ct => _captureService.SetFlashbackEnabledAsync(enabled, ct),
+            cancellationToken,
+            propagateCancellationToOperation: true);
+
+    public Task UpdateFlashbackSettingsAsync(int bufferMinutes, bool gpuDecode, CancellationToken cancellationToken = default)
+        => EnqueueAsync(
+            CaptureCommandKind.UpdateFlashbackSettings,
+            ct => _captureService.UpdateFlashbackSettingsAsync(bufferMinutes, gpuDecode, ct),
+            cancellationToken);
+
+    internal bool IsFlashbackActive => _captureService.IsFlashbackActive;
+
+    internal long FlashbackTotalBytesWritten => _captureService.FlashbackTotalBytesWritten;
+
+    internal FlashbackBufferStatus GetFlashbackBufferStatus()
+    {
+        ThrowIfDisposed();
+        var bufferManager = _captureService.FlashbackBufferManager;
+        if (bufferManager == null || !_captureService.IsFlashbackActive)
+        {
+            return FlashbackBufferStatus.Inactive;
+        }
+
+        return new FlashbackBufferStatus(
+            true,
+            bufferManager.Options.BufferDuration,
+            bufferManager.BufferedDuration,
+            _captureService.FlashbackDiskBytes,
+            bufferManager.IsDiskWarningActive);
+    }
+
+    internal FlashbackPlaybackSnapshot GetFlashbackPlaybackSnapshot()
+    {
+        ThrowIfDisposed();
+        var controller = _captureService.FlashbackPlaybackController;
+        return controller == null
+            ? FlashbackPlaybackSnapshot.Disabled
+            : new FlashbackPlaybackSnapshot(
+                true,
+                controller.State,
+                controller.PlaybackPosition,
+                controller.GapFromLive,
+                controller.InPoint,
+                controller.OutPoint);
+    }
+
+    internal bool FlashbackBeginScrub(TimeSpan position)
+    {
+        if (!TryGetActiveFlashback(out var controller)) return false;
+        controller.BeginScrub(position);
+        return true;
+    }
+
+    internal void FlashbackUpdateScrub(TimeSpan position)
+    {
+        if (TryGetActiveFlashback(out var controller))
+        {
+            controller.UpdateScrub(position);
+        }
+    }
+
+    internal bool FlashbackEndScrub()
+    {
+        if (!TryGetActiveFlashback(out var controller)) return false;
+        controller.EndScrub();
+        return true;
+    }
+
+    internal bool FlashbackPlay()
+    {
+        if (!TryGetActiveFlashback(out var controller)) return false;
+        controller.Play();
+        return true;
+    }
+
+    internal bool FlashbackPause()
+    {
+        if (!TryGetActiveFlashback(out var controller)) return false;
+        controller.Pause();
+        return true;
+    }
+
+    internal bool FlashbackGoLive()
+    {
+        if (!TryGetActiveFlashback(out var controller)) return false;
+        controller.GoLive();
+        return true;
+    }
+
+    internal bool FlashbackNudge(TimeSpan delta)
+    {
+        if (!TryGetActiveFlashback(out var controller)) return false;
+        controller.NudgePosition(delta);
+        return true;
+    }
+
+    internal TimeSpan? FlashbackSetInPoint()
+    {
+        return TryGetActiveFlashback(out var controller)
+            ? controller.SetInPoint()
+            : null;
+    }
+
+    internal TimeSpan? FlashbackSetOutPoint()
+    {
+        return TryGetActiveFlashback(out var controller)
+            ? controller.SetOutPoint()
+            : null;
+    }
+
+    internal void FlashbackClearInOutPoints()
+    {
+        if (TryGetActiveFlashback(out var controller))
+        {
+            controller.ClearInOutPoints();
+        }
+    }
+
+    internal Task<FinalizeResult> ExportFlashbackRangeAsync(
+        TimeSpan? inPoint,
+        TimeSpan? outPoint,
+        string outputPath,
+        IProgress<ExportProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        return _captureService.ExportFlashbackRangeAsync(inPoint, outPoint, outputPath, progress, cancellationToken);
+    }
+
+    internal Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(
+        double seconds,
+        string outputPath,
+        IProgress<ExportProgress>? progress,
+        CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        return _captureService.ExportFlashbackLastNSecondsAsync(seconds, outputPath, progress, cancellationToken);
+    }
+
+    internal IReadOnlyList<FlashbackSegmentInfo> GetFlashbackSegments()
+    {
+        ThrowIfDisposed();
+        return _captureService.GetFlashbackSegments();
+    }
+
     public Task CleanupAsync(CancellationToken cancellationToken = default)
         => EnqueueAsync(CaptureCommandKind.Cleanup, ct => _captureService.CleanupAsync(ct), cancellationToken);
+
+    private bool TryGetActiveFlashback([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out FlashbackPlaybackController? controller)
+    {
+        ThrowIfDisposed();
+        controller = _captureService.FlashbackPlaybackController;
+        return controller is { State: not FlashbackPlaybackState.Disabled };
+    }
 
     private Task EnqueueAsync(
         CaptureCommandKind kind,
         Func<CancellationToken, Task> operation,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        bool coalesceLatest = false,
+        bool propagateCancellationToOperation = false)
     {
         ThrowIfDisposed();
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromCanceled(cancellationToken);
+        }
 
+        var coalescingGeneration = coalesceLatest
+            ? Interlocked.Increment(ref _latestFlashbackEncoderCycleGeneration)
+            : (int?)null;
         var correlationId = $"{kind}-{Guid.NewGuid():N}";
         var command = new CaptureCommand(kind, correlationId, DateTimeOffset.UtcNow);
         var completion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        CancellationTokenRegistration cancellationRegistration = default;
+        if (cancellationToken.CanBeCanceled)
+        {
+            cancellationRegistration = cancellationToken.Register(() =>
+            {
+                completion.TrySetCanceled(cancellationToken);
+            });
+        }
+
         var workItem = new CoordinatorWorkItem
         {
             Command = command,
             Operation = operation,
             CancellationToken = cancellationToken,
-            Completion = completion
+            Completion = completion,
+            CancellationRegistration = cancellationRegistration,
+            PropagateCancellationToOperation = propagateCancellationToOperation,
+            CoalescingGeneration = coalescingGeneration
         };
 
         Interlocked.Increment(ref _pendingCommands);
         if (!_queue.Writer.TryWrite(workItem))
         {
+            cancellationRegistration.Dispose();
             Interlocked.Decrement(ref _pendingCommands);
             throw new InvalidOperationException("Failed to enqueue capture command.");
         }
@@ -199,9 +465,29 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 
                 try
                 {
-                    using var linkedCancellation = CancellationTokenSource.CreateLinkedTokenSource(
-                        workItem.CancellationToken,
-                        _workerCancellation.Token);
+                    workItem.CancellationRegistration.Dispose();
+
+                    if (workItem.CoalescingGeneration is int generation &&
+                        generation != Volatile.Read(ref _latestFlashbackEncoderCycleGeneration))
+                    {
+                        workItem.Completion.TrySetResult(null);
+                        UpdateSnapshot(workItem.Command, "Skipped stale coalesced command");
+                        Logger.LogEvent("CAP-COORD-SKIP", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} stale_generation={generation}");
+                        continue;
+                    }
+
+                    if (workItem.CancellationToken.IsCancellationRequested)
+                    {
+                        workItem.Completion.TrySetCanceled(workItem.CancellationToken);
+                        UpdateSnapshot(workItem.Command, "Canceled before execution");
+                        continue;
+                    }
+
+                    using var linkedCancellation = workItem.PropagateCancellationToOperation
+                        ? CancellationTokenSource.CreateLinkedTokenSource(
+                            workItem.CancellationToken,
+                            _workerCancellation.Token)
+                        : CancellationTokenSource.CreateLinkedTokenSource(_workerCancellation.Token);
                     var operationToken = linkedCancellation.Token;
 
                     if (operationToken.IsCancellationRequested)
@@ -216,9 +502,11 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                     UpdateSnapshot(workItem.Command, null);
                     Logger.LogEvent("CAP-COORD-DONE", $"{workItem.Command.Kind} corr={workItem.Command.CorrelationId} in {sw.ElapsedMilliseconds} ms");
                 }
-                catch (OperationCanceledException oce) when (workItem.CancellationToken.IsCancellationRequested || _workerCancellation.IsCancellationRequested)
+                catch (OperationCanceledException oce) when (
+                    _workerCancellation.IsCancellationRequested ||
+                    (workItem.PropagateCancellationToOperation && workItem.CancellationToken.IsCancellationRequested))
                 {
-                    var cancelToken = workItem.CancellationToken.IsCancellationRequested
+                    var cancelToken = workItem.PropagateCancellationToOperation && workItem.CancellationToken.IsCancellationRequested
                         ? workItem.CancellationToken
                         : _workerCancellation.Token;
                     workItem.Completion.TrySetCanceled(cancelToken);
@@ -279,11 +567,14 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     {
         while (_queue.Reader.TryRead(out var pending))
         {
+            pending.CancellationRegistration.Dispose();
             pending.Completion.TrySetException(ex);
             Interlocked.Decrement(ref _pendingCommands);
         }
     }
 
+    // REVIEWED 2026-04-07: IDisposable fallback only — MainViewModel.DisposeAsync
+    // calls DisposeAsync directly. This sync path is never hit in production.
     public void Dispose()
     {
         if (!TryBeginDispose()) return;

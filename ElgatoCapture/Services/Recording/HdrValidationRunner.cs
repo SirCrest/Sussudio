@@ -1,15 +1,18 @@
 using System;
-using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Runtime;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Recording;
 
 internal static class HdrValidationRunner
 {
+    private const int ValidationTimeoutMs = 30_000;
+
     public static async Task<(bool Success, string Detail)> RunAsync(
         RecordingContext? context,
         string? outputPath,
@@ -62,27 +65,25 @@ internal static class HdrValidationRunner
             arguments += $"-ExpectedFps {context.EffectiveFrameRate.ToString("0.###", CultureInfo.InvariantCulture)} ";
         }
 
-        var startInfo = new ProcessStartInfo
+        var result = await new ProcessSupervisor().RunAsync(new ProcessSpec
         {
             FileName = "powershell",
             Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            TimeoutMs = ValidationTimeoutMs
+        }, cancellationToken).ConfigureAwait(false);
 
-        using var process = Process.Start(startInfo);
-        if (process == null)
+        if (!result.Started)
         {
             return (false, "validator-process-start-failed");
         }
 
-        var stdOutTask = process.StandardOutput.ReadToEndAsync();
-        var stdErrTask = process.StandardError.ReadToEndAsync();
-        await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-        var stdOut = await stdOutTask.ConfigureAwait(false);
-        var stdErr = await stdErrTask.ConfigureAwait(false);
+        if (result.TimedOut)
+        {
+            return (false, "validator-timeout");
+        }
+
+        var stdOut = result.StdOut;
+        var stdErr = result.StdErr;
 
         if (!string.IsNullOrWhiteSpace(stdOut))
         {
@@ -94,12 +95,12 @@ internal static class HdrValidationRunner
             Logger.Log($"HDR validator stderr: {stdErr.Trim()}");
         }
 
-        if (process.ExitCode != 0)
+        if (result.ExitCode != 0)
         {
             var detail = !string.IsNullOrWhiteSpace(stdErr) ? stdErr.Trim() : stdOut.Trim();
             if (string.IsNullOrWhiteSpace(detail))
             {
-                detail = $"validator-exit-code-{process.ExitCode}";
+                detail = $"validator-exit-code-{result.ExitCode ?? -1}";
             }
 
             return (false, detail);

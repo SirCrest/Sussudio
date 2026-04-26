@@ -6,8 +6,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using FFmpeg.AutoGen;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
 
-namespace ElgatoCapture.Services;
+namespace ElgatoCapture.Services.Flashback;
 
 /// <summary>
 /// Exports a time range from a single .ts flashback file by remuxing to .mp4.
@@ -411,7 +414,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
             var outputBytes = new FileInfo(outputPath).Length;
             Logger.Log(
-                $"FLASHBACK_EXPORT_DONE output='{outputPath}' packets={totalPackets} bytes={outputBytes}");
+                $"FLASHBACK_EXPORT_OK output='{outputPath}' packets={totalPackets} bytes={outputBytes}");
             progress?.Report(new ExportProgress(1, 1, 100.0));
             return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from .ts");
         }
@@ -821,7 +824,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     progress?.Report(new ExportProgress(segIdx + 1, segmentPaths.Count,
                         totalEstimatedBytes > 0 ? 100.0 * bytesProcessed / totalEstimatedBytes : 100.0 * (segIdx + 1) / segmentPaths.Count));
 
-                    Logger.Log($"FLASHBACK_EXPORT_SEGMENT_DONE seg={segIdx}/{segmentPaths.Count} path='{Path.GetFileName(segPath)}' packets={totalPackets} seg_max_pts_us={segMaxPtsUs} seg_abs_max_pts_us={segAbsMaxPtsUs} bases_discovered={segAllBasesDiscovered}");
+                    Logger.Log($"FLASHBACK_EXPORT_SEGMENT_OK seg={segIdx}/{segmentPaths.Count} path='{Path.GetFileName(segPath)}' packets={totalPackets} seg_max_pts_us={segMaxPtsUs} seg_abs_max_pts_us={segAbsMaxPtsUs} bases_discovered={segAllBasesDiscovered}");
 
                     // If outPoint was hit, stop processing more segments
                     // Use absolute PTS (not rebased) since outPtsLimitUs is in absolute encoder time
@@ -849,7 +852,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             _activeTempPath = null;
 
             var outputBytes = new FileInfo(outputPath).Length;
-            Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_DONE output='{outputPath}' segments={segmentPaths.Count} packets={totalPackets} bytes={outputBytes}");
+            Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_OK output='{outputPath}' segments={segmentPaths.Count} packets={totalPackets} bytes={outputBytes}");
             progress?.Report(new ExportProgress(segmentPaths.Count, segmentPaths.Count, 100.0));
             return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from {segmentPaths.Count} segments");
         }

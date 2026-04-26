@@ -1,6 +1,8 @@
 using System.Globalization;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Devices;
+using ElgatoCapture.Services.Telemetry;
 
 const int CmdAudioFormat = 0x04;
 const int CmdAudioSamplingRate = 0x06;
@@ -38,7 +40,23 @@ const int CmdSetAuxOutVolume = 0x82;
 var deviceNameFilter = args.Length > 0 ? args[0] : "4K X";
 if (args.Length > 0 && string.Equals(args[0], "rtk-i2c", StringComparison.OrdinalIgnoreCase))
 {
-    return RtkI2cProbe.Run(args.Skip(1).ToArray());
+    var rtkArgs = args.Skip(1).ToArray();
+    if (rtkArgs.Any(arg =>
+        arg.StartsWith("--device=", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(arg, "--device", StringComparison.OrdinalIgnoreCase)))
+    {
+        Console.Error.WriteLine("rtk-i2c cannot accept a device filter because RTK_IO selects by name, not by native XU path.");
+        Console.Error.WriteLine("Disconnect other supported devices so the locator can prove the selection is unambiguous.");
+        return 1;
+    }
+
+    var dev = NativeXuProbeDeviceLocator.Find(null);
+    if (dev == null)
+    {
+        return 1;
+    }
+
+    return RtkI2cProbe.Run(rtkArgs, dev);
 }
 if (args.Length > 0 && string.Equals(args[0], "service", StringComparison.OrdinalIgnoreCase))
 {
@@ -48,43 +66,19 @@ if (args.Length > 0 && string.Equals(args[0], "dump-s3", StringComparison.Ordina
 {
     // Dump XU selector 3 raw bytes to hex file for diffing
     var outPath = args.Length > 1 ? args[1] : "s3-dump.hex";
-    var ds = new DeviceService();
-    var devs = await ds.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
-    var dev = devs.FirstOrDefault(d => d.Name.Contains("4K X", StringComparison.OrdinalIgnoreCase)) ?? devs.FirstOrDefault();
+    var dev = NativeXuProbeDeviceLocator.Find("4K X");
     if (dev == null) { Console.Error.WriteLine("No device"); return 1; }
     Console.WriteLine($"Device: {dev.Name}");
 
-    // Use reflection to call the private TryReadRawPayload
-    var serviceType = typeof(NativeXuAtCommandProvider).Assembly
-        .GetType("ElgatoCapture.Services.NativeXuAudioControlService", throwOnError: true)!;
-    var service = Activator.CreateInstance(serviceType, nonPublic: true)!;
-
-    // ReadPreferredPayloadAsync is private, use reflection
-    var readMethod = serviceType.GetMethod("ReadPreferredPayloadAsync",
-        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
-    if (readMethod == null)
-    {
-        Console.Error.WriteLine("ReadPreferredPayloadAsync not found");
-        return 1;
-    }
-    var task = (Task)readMethod.Invoke(service, new object?[] { dev, CancellationToken.None })!;
-    await task;
-    // Get result via reflection (it's Task<T?> where T is a nested private struct)
-    var resultProp = task.GetType().GetProperty("Result");
-    var result = resultProp?.GetValue(task);
-    if (result == null)
+    var service = new NativeXuAudioControlService();
+    var snapshot = await service.ReadPayloadSnapshotAsync(dev, CancellationToken.None).ConfigureAwait(false);
+    if (snapshot == null)
     {
         Console.Error.WriteLine("Failed to read selector 3");
         return 1;
     }
-    // Get the Raw property
-    var rawProp = result.GetType().GetProperty("RawPayload");
-    if (rawProp == null)
-    {
-        Console.Error.WriteLine("Raw property not found");
-        return 1;
-    }
-    var raw = (byte[])rawProp.GetValue(result)!;
+
+    var raw = snapshot.RawPayload;
     Console.WriteLine($"Selector 3: {raw.Length} bytes");
     var hex = BitConverter.ToString(raw).Replace("-", "");
     File.WriteAllText(outPath, hex);
@@ -102,9 +96,7 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-probe", StringComparison.Ordi
     // Probe I2C AT commands through XU selectors
     // Tests whether rtk_sendI2CATCommand uses the same XU path with different framing
     // Shim captured I2C AT format: [00 4A type(01=SET|02=GET) 00 opcode value_bytes...]
-    var ds = new DeviceService();
-    var devs = await ds.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
-    var dev = devs.FirstOrDefault(d => d.Name.Contains("4K X", StringComparison.OrdinalIgnoreCase)) ?? devs.FirstOrDefault();
+    var dev = NativeXuProbeDeviceLocator.Find("4K X");
     if (dev == null) { Console.Error.WriteLine("No device"); return 1; }
     Console.WriteLine($"Device: {dev.Name} Id: {dev.Id}");
 
@@ -116,7 +108,7 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-probe", StringComparison.Ordi
     }
 
     var xuGuid = new Guid("961073c7-49f7-44f2-ab42-e940405940c2");
-    var interfaces = KsExtensionUnitNative.EnumerateKsInterfaces(vid, pid);
+    var interfaces = GetSelectedKsInterfaces(dev);
     Console.WriteLine($"Found {interfaces.Count} KS interfaces");
 
     foreach (var ksIf in interfaces)
@@ -295,7 +287,7 @@ static async Task<byte[]?> SendI2cViaAtAsync(CaptureDevice device, int atOpcode,
     if (!NativeXuAtCommandProvider.TryGetSupported4kXIds(device, out var vid, out var pid))
         return null;
 
-    var interfaces = KsExtensionUnitNative.EnumerateKsInterfaces(vid, pid);
+    var interfaces = GetSelectedKsInterfaces(device);
     var xuGuid = new Guid("961073c7-49f7-44f2-ab42-e940405940c2");
 
     foreach (var ksIf in interfaces)
@@ -355,6 +347,17 @@ static async Task<byte[]?> SendI2cViaAtAsync(CaptureDevice device, int atOpcode,
     return null;
 }
 
+static IReadOnlyList<KsExtensionUnitNative.KsInterfacePath> GetSelectedKsInterfaces(CaptureDevice device)
+{
+    if (string.IsNullOrWhiteSpace(device.NativeXuInterfacePath))
+    {
+        Console.Error.WriteLine("Selected device has no native XU interface path.");
+        return Array.Empty<KsExtensionUnitNative.KsInterfacePath>();
+    }
+
+    return new[] { new KsExtensionUnitNative.KsInterfacePath(device.NativeXuInterfacePath, Guid.Empty) };
+}
+
 static byte[] BuildAtFrameWithPayload(int cmdCode, byte[] payload)
 {
     // AT frame format: [0xA1, totalLen, 0x00, 0x00, cmd(4B LE), payload..., LRC]
@@ -383,9 +386,7 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-cmd", StringComparison.Ordina
     //        i2c-cmd set <i2c_opcode_hex> <value_byte_hex>
     //        i2c-cmd scan  (scan I2C opcodes 0x00-0x20)
     if (args.Length < 2) { Console.Error.WriteLine("Usage: i2c-cmd get|set|scan ..."); return 1; }
-    var ds = new DeviceService();
-    var devs = await ds.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
-    var dev = devs.FirstOrDefault(d => d.Name.Contains("4K X", StringComparison.OrdinalIgnoreCase)) ?? devs.FirstOrDefault();
+    var dev = NativeXuProbeDeviceLocator.Find("4K X");
     if (dev == null) { Console.Error.WriteLine("No device"); return 1; }
     Console.WriteLine($"Device: {dev.Name}");
 
@@ -447,7 +448,7 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-cmd", StringComparison.Ordina
             return 1;
         }
         var xuGuid2 = new Guid("961073c7-49f7-44f2-ab42-e940405940c2");
-        var ifaces = KsExtensionUnitNative.EnumerateKsInterfaces(vid2, pid2);
+        var ifaces = GetSelectedKsInterfaces(dev);
         var ksIf2 = ifaces.FirstOrDefault();
         if (ksIf2.Path == null) { Console.Error.WriteLine("No KS interface"); return 1; }
         using var h = KsExtensionUnitNative.TryOpen(ksIf2.Path, out _);
@@ -678,7 +679,7 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-cmd", StringComparison.Ordina
             return 1;
         }
         var xuGuid3 = new Guid("961073c7-49f7-44f2-ab42-e940405940c2");
-        var ifaces3 = KsExtensionUnitNative.EnumerateKsInterfaces(vid3, pid3);
+        var ifaces3 = GetSelectedKsInterfaces(dev);
         var ksIf3 = ifaces3.FirstOrDefault();
         using var h3 = KsExtensionUnitNative.TryOpen(ksIf3.Path, out _);
         if (h3 == null) { Console.Error.WriteLine("Cannot open"); return 1; }
@@ -757,7 +758,7 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-cmd", StringComparison.Ordina
             return 1;
         }
         var xuGuidH = new Guid("961073c7-49f7-44f2-ab42-e940405940c2");
-        var ifacesH = KsExtensionUnitNative.EnumerateKsInterfaces(vidH, pidH);
+        var ifacesH = GetSelectedKsInterfaces(dev);
         var ksIfH = ifacesH.FirstOrDefault();
         using var hH = KsExtensionUnitNative.TryOpen(ksIfH.Path, out _);
         if (hH == null) { Console.Error.WriteLine("Cannot open"); return 1; }
@@ -862,7 +863,7 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-cmd", StringComparison.Ordina
             Console.Error.WriteLine("Cannot parse device IDs");
             return 1;
         }
-        var ifacesT = KsExtensionUnitNative.EnumerateKsInterfaces(vidT, pidT);
+        var ifacesT = GetSelectedKsInterfaces(dev);
         foreach (var ksIfT in ifacesT)
         {
             Console.WriteLine($"\n=== Interface: {ksIfT.Path} ===");
@@ -930,9 +931,7 @@ if (args.Length > 0 && string.Equals(args[0], "i2c-switch", StringComparison.Ord
     // Replay the complete audio switching sequence captured from the shim
     // Usage: i2c-switch <hdmi|analog>
     var target = args.Length > 1 ? args[1].ToLowerInvariant() : "analog";
-    var ds = new DeviceService();
-    var devs = await ds.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
-    var dev = devs.FirstOrDefault(d => d.Name.Contains("4K X", StringComparison.OrdinalIgnoreCase)) ?? devs.FirstOrDefault();
+    var dev = NativeXuProbeDeviceLocator.Find("4K X");
     if (dev == null) { Console.Error.WriteLine("No device"); return 1; }
     Console.WriteLine($"Device: {dev.Name}");
     Console.WriteLine($"Target: {target}");
@@ -1040,9 +1039,7 @@ if (args.Length > 0 && string.Equals(args[0], "at-read", StringComparison.Ordina
 {
     // Read a single AT opcode and print raw response bytes
     // Usage: at-read <opcode_hex> [opcode2_hex ...]
-    var ds = new DeviceService();
-    var devs = await ds.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
-    var dev = devs.FirstOrDefault(d => d.Name.Contains("4K X", StringComparison.OrdinalIgnoreCase)) ?? devs.FirstOrDefault();
+    var dev = NativeXuProbeDeviceLocator.Find("4K X");
     if (dev == null) { Console.Error.WriteLine("No device"); return 1; }
     Console.WriteLine($"Device: {dev.Name}");
 
@@ -1067,9 +1064,7 @@ if (args.Length > 0 && string.Equals(args[0], "at-write", StringComparison.Ordin
 {
     // Write a value to an AT opcode: at-write <opcode_hex> <value_int>
     // Then read back using the next opcode (opcode+1) as the GET pair
-    var ds = new DeviceService();
-    var devs = await ds.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
-    var dev = devs.FirstOrDefault(d => d.Name.Contains("4K X", StringComparison.OrdinalIgnoreCase)) ?? devs.FirstOrDefault();
+    var dev = NativeXuProbeDeviceLocator.Find("4K X");
     if (dev == null) { Console.Error.WriteLine("No device"); return 1; }
     Console.WriteLine($"Device: {dev.Name}");
 
@@ -1105,9 +1100,7 @@ if (args.Length > 0 && string.Equals(args[0], "at-set-input", StringComparison.O
     // Pure AT-only SetInputSource: at-set-input <0=HDMI|1=Analog> [--no-restore]
     var atVal = args.Length > 1 ? int.Parse(args[1]) : 0;
     var noRestore = args.Any(a => a == "--no-restore");
-    var ds = new DeviceService();
-    var devs = await ds.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
-    var dev = devs.FirstOrDefault(d => d.Name.Contains("4K X", StringComparison.OrdinalIgnoreCase)) ?? devs.FirstOrDefault();
+    var dev = NativeXuProbeDeviceLocator.Find("4K X");
     if (dev == null) { Console.Error.WriteLine("No device"); return 1; }
     Console.WriteLine($"Device: {dev.Name}");
     var beforeInput = await NativeXuAtCommandProvider.ReadAtCommandAsync(dev, CmdInputSource, "InputSource");
@@ -1129,11 +1122,7 @@ if (args.Length > 0 && string.Equals(args[0], "at-set-input", StringComparison.O
     return ok ? 0 : 1;
 }
 
-var deviceService = new DeviceService();
-var devices = await deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
-var device = devices.FirstOrDefault(d => d.Name.Contains(deviceNameFilter, StringComparison.OrdinalIgnoreCase))
-             ?? devices.FirstOrDefault(d => d.Name.Contains("Elgato", StringComparison.OrdinalIgnoreCase))
-             ?? devices.FirstOrDefault();
+var device = NativeXuProbeDeviceLocator.Find(deviceNameFilter);
 
 if (device == null)
 {
@@ -1418,11 +1407,7 @@ static async Task<int> RunServiceControlProbeAsync(string[] args)
         }
     }
 
-    var deviceService = new DeviceService();
-    var devices = await deviceService.EnumerateVideoCaptureDevicesAsync(waitForFormatProbes: false);
-    var device = devices.FirstOrDefault(d => d.Name.Contains(deviceNameFilter, StringComparison.OrdinalIgnoreCase))
-                 ?? devices.FirstOrDefault(d => d.Name.Contains("Elgato", StringComparison.OrdinalIgnoreCase))
-                 ?? devices.FirstOrDefault();
+    var device = NativeXuProbeDeviceLocator.Find(deviceNameFilter);
 
     if (device == null)
     {
@@ -1430,20 +1415,17 @@ static async Task<int> RunServiceControlProbeAsync(string[] args)
         return 1;
     }
 
-    var assembly = typeof(DeviceService).Assembly;
-    var serviceType = assembly.GetType("ElgatoCapture.Services.NativeXuAudioControlService", throwOnError: true)!;
-    var service = Activator.CreateInstance(serviceType, nonPublic: true)
-                  ?? throw new InvalidOperationException("Failed to create NativeXuAudioControlService.");
+    var service = new NativeXuAudioControlService();
 
     if (dumpPayload)
     {
-        await PrintServicePayloadSnapshotAsync(serviceType, service, device).ConfigureAwait(false);
+        await PrintServicePayloadSnapshotAsync(service, device).ConfigureAwait(false);
     }
 
-    var initial = await ReadServiceStateAsync(serviceType, service, device).ConfigureAwait(false);
-    PrintServiceStateReflection("Initial", initial);
+    var initial = await ReadServiceStateAsync(service, device).ConfigureAwait(false);
+    PrintServiceState("Initial", initial);
 
-    if (!(bool)(initial.GetType().GetProperty("IsSupported")?.GetValue(initial) ?? false))
+    if (!initial.IsSupported)
     {
         Console.Error.WriteLine("Service reports device audio control unsupported.");
         return 2;
@@ -1451,22 +1433,18 @@ static async Task<int> RunServiceControlProbeAsync(string[] args)
 
     if (!string.IsNullOrWhiteSpace(targetMode))
     {
-        var setAudioMode = serviceType.GetMethod("SetAudioModeAsync")
-                          ?? throw new MissingMethodException(serviceType.FullName, "SetAudioModeAsync");
-        var applied = await (Task<bool>)setAudioMode.Invoke(service, new object?[] { device, targetMode, CancellationToken.None })!;
+        var applied = await service.SetAudioModeAsync(device, targetMode, CancellationToken.None).ConfigureAwait(false);
         Console.WriteLine($"Set mode '{targetMode}': {(applied ? "ok" : "failed")}");
     }
 
     if (targetGain.HasValue)
     {
-        var setAnalogGain = serviceType.GetMethod("SetAnalogGainPercentAsync")
-                            ?? throw new MissingMethodException(serviceType.FullName, "SetAnalogGainPercentAsync");
-        var applied = await (Task<bool>)setAnalogGain.Invoke(service, new object?[] { device, targetGain.Value, CancellationToken.None })!;
+        var applied = await service.SetAnalogGainPercentAsync(device, targetGain.Value, CancellationToken.None).ConfigureAwait(false);
         Console.WriteLine($"Set gain '{targetGain.Value:0}': {(applied ? "ok" : "failed")}");
     }
 
-    var final = await ReadServiceStateAsync(serviceType, service, device).ConfigureAwait(false);
-    PrintServiceStateReflection("Final", final);
+    var final = await ReadServiceStateAsync(service, device).ConfigureAwait(false);
+    PrintServiceState("Final", final);
     return 0;
 }
 
@@ -1575,88 +1553,73 @@ static void PrintSnapshot(string title, SourceSignalTelemetrySnapshot snapshot)
 
 static async Task<int> RunServiceSmokeAsync(CaptureDevice device)
 {
-    var assembly = typeof(DeviceService).Assembly;
-    var serviceType = assembly.GetType("ElgatoCapture.Services.NativeXuAudioControlService", throwOnError: true)!;
-    var service = Activator.CreateInstance(serviceType, nonPublic: true)
-                  ?? throw new InvalidOperationException("Failed to create NativeXuAudioControlService.");
+    var service = new NativeXuAudioControlService();
 
-    await PrintServiceStateAsync(serviceType, service, device, "Before");
+    await PrintServiceStateAsync(service, device, "Before");
 
-    var setAudioMode = serviceType.GetMethod("SetAudioModeAsync")
-                      ?? throw new MissingMethodException(serviceType.FullName, "SetAudioModeAsync");
-    var setModeTask = (Task<bool>)setAudioMode.Invoke(service, new object?[] { device, "Analog", CancellationToken.None })!;
-    var setModeResult = await setModeTask.ConfigureAwait(false);
+    var setModeResult = await service.SetAudioModeAsync(device, "Analog", CancellationToken.None).ConfigureAwait(false);
     Console.WriteLine($"SetAudioModeAsync('Analog') => {setModeResult}");
 
-    await PrintServiceStateAsync(serviceType, service, device, "After mode");
+    await PrintServiceStateAsync(service, device, "After mode");
 
-    var setAnalogGain = serviceType.GetMethod("SetAnalogGainPercentAsync")
-                        ?? throw new MissingMethodException(serviceType.FullName, "SetAnalogGainPercentAsync");
-    var setGainTask = (Task<bool>)setAnalogGain.Invoke(service, new object?[] { device, 50d, CancellationToken.None })!;
-    var setGainResult = await setGainTask.ConfigureAwait(false);
+    var setGainResult = await service.SetAnalogGainPercentAsync(device, 50d, CancellationToken.None).ConfigureAwait(false);
     Console.WriteLine($"SetAnalogGainPercentAsync(50) => {setGainResult}");
 
-    await PrintServiceStateAsync(serviceType, service, device, "After gain");
+    await PrintServiceStateAsync(service, device, "After gain");
     return 0;
 }
 
-static async Task<object> ReadServiceStateAsync(Type serviceType, object service, CaptureDevice device)
-{
-    var readState = serviceType.GetMethod("ReadStateAsync")
-                   ?? throw new MissingMethodException(serviceType.FullName, "ReadStateAsync");
-    var readTask = readState.Invoke(service, new object?[] { device, CancellationToken.None })
-                  ?? throw new InvalidOperationException("ReadStateAsync returned null.");
-    await ((Task)readTask).ConfigureAwait(false);
+static Task<NativeXuAudioControlService.DeviceAudioControlState> ReadServiceStateAsync(
+    NativeXuAudioControlService service,
+    CaptureDevice device)
+    => service.ReadStateAsync(device, CancellationToken.None);
 
-    return readTask.GetType().GetProperty("Result")?.GetValue(readTask)
-           ?? throw new InvalidOperationException("Unable to read DeviceAudioControlState result.");
-}
-
-static void PrintServiceStateReflection(string title, object state)
+static void PrintServiceState(string title, NativeXuAudioControlService.DeviceAudioControlState state)
 {
-    var stateType = state.GetType();
     Console.WriteLine();
     Console.WriteLine($"== {title} service state ==");
-    foreach (var propertyName in new[] { "IsSupported", "InterfacePath", "Mode", "AnalogGainPercent", "RawGainValue" })
-    {
-        var property = stateType.GetProperty(propertyName);
-        Console.WriteLine($"{propertyName}: {property?.GetValue(state) ?? "(null)"}");
-    }
+    Console.WriteLine($"IsSupported: {state.IsSupported}");
+    Console.WriteLine($"InterfacePath: {state.InterfacePath ?? "(null)"}");
+    Console.WriteLine($"Mode: {state.Mode ?? "(null)"}");
+    Console.WriteLine($"AnalogGainPercent: {state.AnalogGainPercent?.ToString(CultureInfo.InvariantCulture) ?? "(null)"}");
+    Console.WriteLine($"RawGainValue: {state.RawGainValue?.ToString(CultureInfo.InvariantCulture) ?? "(null)"}");
 }
 
-static async Task PrintServicePayloadSnapshotAsync(Type serviceType, object service, CaptureDevice device)
+static async Task PrintServicePayloadSnapshotAsync(NativeXuAudioControlService service, CaptureDevice device)
 {
-    var readPayload = serviceType.GetMethod("ReadPreferredPayloadAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
-                     ?? throw new MissingMethodException(serviceType.FullName, "ReadPreferredPayloadAsync");
-    var payloadTask = readPayload.Invoke(service, new object?[] { device, CancellationToken.None })
-                      ?? throw new InvalidOperationException("ReadPreferredPayloadAsync returned null.");
-    await ((Task)payloadTask).ConfigureAwait(false);
-
-    var snapshot = payloadTask.GetType().GetProperty("Result")?.GetValue(payloadTask);
+    var snapshot = await service.ReadPayloadSnapshotAsync(device, CancellationToken.None).ConfigureAwait(false);
     if (snapshot == null)
     {
         Console.WriteLine("Service payload snapshot: null");
         return;
     }
 
-    var snapshotType = snapshot.GetType();
-    var interfacePath = snapshotType.GetProperty("InterfacePath")?.GetValue(snapshot);
-    var rawPayload = (byte[]?)snapshotType.GetProperty("RawPayload")?.GetValue(snapshot) ?? Array.Empty<byte>();
-    var normalizedPayload = (byte[]?)snapshotType.GetProperty("NormalizedPayload")?.GetValue(snapshot) ?? Array.Empty<byte>();
-
     Console.WriteLine("== Service payload snapshot ==");
-    Console.WriteLine($"InterfacePath: {interfacePath}");
-    Console.WriteLine($"RawLength: {rawPayload.Length}");
-    Console.WriteLine($"RawHex: {BitConverter.ToString(rawPayload).Replace("-", string.Empty)}");
-    Console.WriteLine($"NormalizedLength: {normalizedPayload.Length}");
-    Console.WriteLine($"NormalizedHex: {BitConverter.ToString(normalizedPayload).Replace("-", string.Empty)}");
+    Console.WriteLine($"DeviceId: {snapshot.DeviceId ?? "(null)"}");
+    Console.WriteLine($"DeviceName: {snapshot.DeviceName ?? "(null)"}");
+    Console.WriteLine($"VendorProduct: {FormatVendorProduct(snapshot.VendorId, snapshot.ProductId)}");
+    Console.WriteLine($"InterfacePath: {snapshot.InterfacePath}");
+    Console.WriteLine($"NodeId: {snapshot.NodeId}");
+    Console.WriteLine($"SelectorId: {snapshot.SelectorId}");
+    Console.WriteLine($"TimestampUtc: {snapshot.TimestampUtc:O}");
+    Console.WriteLine($"ControlByteIndexes: {string.Join(",", snapshot.ControlByteIndexes)}");
+    Console.WriteLine($"VolatileByteIndexes: {string.Join(",", snapshot.VolatileByteIndexes)}");
+    Console.WriteLine($"RawLength: {snapshot.RawPayload.Length}");
+    Console.WriteLine($"RawHex: {BitConverter.ToString(snapshot.RawPayload).Replace("-", string.Empty)}");
+    Console.WriteLine($"NormalizedLength: {snapshot.NormalizedPayload.Length}");
+    Console.WriteLine($"NormalizedHex: {BitConverter.ToString(snapshot.NormalizedPayload).Replace("-", string.Empty)}");
 }
 
-static async Task PrintServiceStateAsync(Type serviceType, object service, CaptureDevice device, string label)
+static async Task PrintServiceStateAsync(NativeXuAudioControlService service, CaptureDevice device, string label)
 {
-    var result = await ReadServiceStateAsync(serviceType, service, device).ConfigureAwait(false);
-    PrintServiceStateReflection(label, result);
+    var result = await ReadServiceStateAsync(service, device).ConfigureAwait(false);
+    PrintServiceState(label, result);
 }
+
+static string FormatVendorProduct(ushort? vendorId, ushort? productId)
+    => vendorId.HasValue && productId.HasValue
+        ? $"VID_0x{vendorId.Value:X4} PID_0x{productId.Value:X4}"
+        : "(unknown)";
 
 enum ValueKind
 {

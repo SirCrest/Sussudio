@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -37,7 +36,8 @@ public sealed partial class MainWindow
         AudioRecordToggle,
         TrueHdrPreviewToggle,
         AudioPreviewToggle,
-        StatsToggle
+        StatsToggle,
+        FrameTimeOverlayToggle
     };
     private void SetupButtonHoverAnimations()
     {

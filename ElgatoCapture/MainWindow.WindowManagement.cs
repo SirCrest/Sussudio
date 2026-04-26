@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
-using ElgatoCapture.Services;
 using ElgatoCapture.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -21,6 +20,16 @@ using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
 using WinRT.Interop;
+using ElgatoCapture.Services.Audio;
+using ElgatoCapture.Services.Automation;
+using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Configuration;
+using ElgatoCapture.Services.Flashback;
+using ElgatoCapture.Services.Gpu;
+using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Recording;
+using ElgatoCapture.Services.Runtime;
+using ElgatoCapture.Services.Telemetry;
 
 namespace ElgatoCapture;
 
@@ -71,10 +80,17 @@ public sealed partial class MainWindow
             return;
         }
 
-        _automationDiagnosticsHub.Start();
-        _automationPipeServer.Start();
-        Logger.Log(
-            $"Automation control ready on pipe '{_automationPipeName}' (token required={_automationTokenRequired}).");
+        if (_automationPipeServer.Start())
+        {
+            _automationDiagnosticsHub.Start();
+            Logger.Log(
+                $"Automation control ready on pipe '{_automationPipeName}' (token required={_automationTokenRequired}).");
+        }
+        else
+        {
+            Logger.Log(
+                $"Automation control disabled on pipe '{_automationPipeName}' (token required={_automationTokenRequired}).");
+        }
     }
     private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
     {
@@ -97,6 +113,96 @@ public sealed partial class MainWindow
             Logger.Log("Preview resize active. Updating compositor transform without resizing swap-chain buffers.");
         }
     }
+    private async void MainWindow_Closing(
+        Microsoft.UI.Windowing.AppWindow sender,
+        Microsoft.UI.Windowing.AppWindowClosingEventArgs args)
+    {
+        if (Volatile.Read(ref _windowCloseCleanupStarted) != 0 ||
+            Volatile.Read(ref _windowCloseAllowedAfterRecordingStop) != 0)
+        {
+            return;
+        }
+
+        if (!ViewModel.IsRecording && !ViewModel.IsRecordingTransitioning)
+        {
+            return;
+        }
+
+        args.Cancel = true;
+        Interlocked.Exchange(ref _windowCloseRequested, 0);
+
+        if (Interlocked.Exchange(ref _windowCloseRecordingStopInProgress, 1) != 0)
+        {
+            Logger.Log("WINDOW_CLOSE_RECORDING_STOP: close already waiting for recording stop.");
+            return;
+        }
+
+        try
+        {
+            var stopped = await TryStopRecordingBeforeCloseAsync();
+            if (!stopped)
+            {
+                return;
+            }
+
+            Interlocked.Exchange(ref _windowCloseAllowedAfterRecordingStop, 1);
+            Interlocked.Exchange(ref _windowCloseRequested, 0);
+            RequestWindowClose();
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _windowCloseRecordingStopInProgress, 0);
+        }
+    }
+
+    private async Task<bool> TryStopRecordingBeforeCloseAsync()
+    {
+        const int StopBudgetMs = 120_000;
+        Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording active, awaiting graceful stop...");
+        ViewModel.StatusText = "Stopping recording - please wait...";
+
+        FrameworkElement? shutdownContent = null;
+        if (this.Content is FrameworkElement content)
+        {
+            shutdownContent = content;
+            shutdownContent.IsHitTestVisible = false;
+            shutdownContent.Opacity = 0.5;
+        }
+
+        try
+        {
+            var stopTask = ViewModel.StopRecordingAndWaitAsync();
+            var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));
+            if (completed == stopTask)
+            {
+                await stopTask;
+                Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording stopped cleanly.");
+                return true;
+            }
+
+            Logger.LogFatalBreadcrumb("RECORDING_FINALIZE_TIMEOUT "
+                + $"budget_ms={StopBudgetMs}; close cancelled to protect recording.");
+            ViewModel.StatusText = "Still saving recording. Close cancelled.";
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogException(ex);
+            Logger.Log($"WINDOW_CLOSE_RECORDING_STOP: stop failed: {ex.Message}");
+            ViewModel.StatusText = $"Close cancelled: recording stop failed ({ex.Message})";
+            return false;
+        }
+        finally
+        {
+            if (shutdownContent != null &&
+                Volatile.Read(ref _windowCloseAllowedAfterRecordingStop) == 0)
+            {
+                shutdownContent.IsHitTestVisible = true;
+                shutdownContent.Opacity = 1;
+            }
+        }
+    }
+
     private async void MainWindow_Closed(object sender, WindowEventArgs args)
     {
         if (Interlocked.Exchange(ref _windowCloseCleanupStarted, 1) != 0)
@@ -143,14 +249,25 @@ public sealed partial class MainWindow
             Logger.Log($"Preview shutdown cleanup failed: {ex.Message}");
         }
 
-        // Graceful recording stop: if recording is active, attempt a clean stop with timeout
+        // Graceful recording stop: the mux finalize (esp. 4K HDR with large buffered
+        // NVENC frames) routinely exceeds the prior 5s timeout, producing a truncated
+        // MP4 with no moov atom. Block the close on the real stop up to a generous
+        // cap; surface "Stopping recording…" and disable input so the user sees the
+        // app is working rather than appearing frozen.
         if (ViewModel.IsRecording)
         {
-            Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording active, attempting graceful stop...");
+            const int StopBudgetMs = 120_000;
+            Logger.Log("WINDOW_CLOSE_RECORDING_STOP: recording active, awaiting graceful stop...");
+            ViewModel.StatusText = "Stopping recording — please wait…";
+            if (this.Content is FrameworkElement shutdownContent)
+            {
+                shutdownContent.IsHitTestVisible = false;
+                shutdownContent.Opacity = 0.5;
+            }
             try
             {
-                var stopTask = ViewModel.ToggleRecordingAsync();
-                var completed = await Task.WhenAny(stopTask, Task.Delay(5000));
+                var stopTask = ViewModel.StopRecordingAndWaitAsync();
+                var completed = await Task.WhenAny(stopTask, Task.Delay(StopBudgetMs));
                 if (completed == stopTask)
                 {
                     await stopTask; // propagate any exception
@@ -158,12 +275,15 @@ public sealed partial class MainWindow
                 }
                 else
                 {
-                    Logger.Log("WINDOW_CLOSE_RECORDING_STOP: timed out after 5s, proceeding with dispose.");
+                    Logger.LogFatalBreadcrumb("RECORDING_FINALIZE_TIMEOUT "
+                        + $"budget_ms={StopBudgetMs}; window already closed; continuing shutdown cleanup.");
                 }
             }
             catch (Exception ex)
             {
                 Logger.Log($"WINDOW_CLOSE_RECORDING_STOP: stop failed: {ex.Message}");
+                Logger.LogFatalBreadcrumb("RECORDING_FINALIZE_FAILED_AFTER_CLOSE "
+                    + $"window already closed; continuing shutdown cleanup. error='{ex.Message}'");
             }
         }
 

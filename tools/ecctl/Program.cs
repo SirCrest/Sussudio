@@ -52,7 +52,7 @@ internal static class Program
         Console.WriteLine("  options [--json]");
         Console.WriteLine("  timeline [--max N] [--json]");
         Console.WriteLine("  memory [--json]");
-        Console.WriteLine("  presentmon [--seconds N] [--pid PID|--process NAME] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
+        Console.WriteLine("  presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
         Console.WriteLine();
         Console.WriteLine("Control:");
         Console.WriteLine("  preview start|stop");
@@ -88,6 +88,7 @@ internal static class Program
         Console.WriteLine("  device custom-audio on|off");
         Console.WriteLine();
         Console.WriteLine("Flashback:");
+        Console.WriteLine("  flashback on|off");
         Console.WriteLine("  flashback play [<ms>]");
         Console.WriteLine("  flashback pause");
         Console.WriteLine("  flashback go-live");
