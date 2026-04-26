@@ -42,6 +42,25 @@ say which exact stage owned a stutter.
 - Delete weak fallback paths, zombie metrics, and duplicated timing calculations when the new
   engine supersedes them.
 
+## Engineering Posture
+
+"Carmack mode" is a useful shorthand for the taste profile of this rewrite, not a license for
+theater or premature micro-optimization.
+
+It means:
+
+- Work from first principles.
+- Measure before guessing.
+- Keep hot paths simple and legible.
+- Treat latency, memory bandwidth, queueing, and clock domains as real design constraints.
+- Prefer hard evidence over vibes.
+- Delete weak abstractions instead of decorating them.
+- Make correctness observable before chasing cleverness.
+- Optimize the system as a whole, not just isolated functions.
+
+The goal is not heroic complexity. The goal is the simplest engine that can be measured, understood,
+and pushed hard at real 4K120 workloads.
+
 ## Non-Goals
 
 - Backward compatibility with old internal service shapes.
