@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using ElgatoCapture.Services.Capture;
+using ElgatoCapture.Services.Runtime;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml.Controls;
 using Vortice.Direct3D;
@@ -19,7 +20,7 @@ using Vortice.Mathematics;
 
 namespace ElgatoCapture.Services.Preview;
 
-internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposable
+internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreviewDisplayClock, IDisposable
 {
     private const int FrameCaptureTimeoutMs = 5000;
     private const string RendererModeNone = "None";
@@ -61,6 +62,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         uint flags2,
         out IntPtr code,
         out IntPtr errorMsgs);
+
+    [DllImport("dwmapi.dll", ExactSpelling = true)]
+    private static extern int DwmFlush();
 
     private const string FullscreenVertexShaderSource = """
         struct VSOutput {
@@ -213,6 +217,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             int height,
             bool isHdr,
             long arrivalTick,
+            long sourceSequenceNumber = -1,
+            long previewPresentId = 0,
+            long schedulerSubmitTick = 0,
             PooledVideoFrameLease? frameLease = null,
             IntPtr d3dTextureY = default,
             IntPtr d3dTextureUV = default,
@@ -227,6 +234,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             Height = height;
             IsHdr = isHdr;
             ArrivalTick = arrivalTick;
+            SourceSequenceNumber = sourceSequenceNumber;
+            PreviewPresentId = previewPresentId;
+            SchedulerSubmitTick = schedulerSubmitTick;
             FrameLease = frameLease;
             D3DTextureY = d3dTextureY;
             D3DTextureUV = d3dTextureUV;
@@ -247,6 +257,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         public int Height { get; }
         public bool IsHdr { get; }
         public long ArrivalTick { get; }
+        public long SourceSequenceNumber { get; }
+        public long PreviewPresentId { get; }
+        public long SchedulerSubmitTick { get; }
 
         public void Dispose()
         {
@@ -294,6 +307,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         double ExpectedIntervalMs,
         double AverageIntervalMs,
         double P95IntervalMs,
+        double P99IntervalMs,
         double MaxIntervalMs,
         double JitterStdDevMs,
         long SlowFrameCount,
@@ -303,6 +317,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         int SampleCount,
         double AverageMs,
         double P95Ms,
+        double P99Ms,
         double MaxMs);
 
     public readonly record struct RenderCpuTimingMetrics(
@@ -311,14 +326,53 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         CpuStageTimingMetrics PresentCall,
         CpuStageTimingMetrics TotalFrame);
 
+    public readonly record struct FrameOwnershipMetrics(
+        long LastSubmittedPreviewPresentId,
+        long LastSubmittedSourceSequenceNumber,
+        long LastSubmittedQpc,
+        long LastSubmittedUtcUnixMs,
+        long LastRenderedPreviewPresentId,
+        long LastRenderedSourceSequenceNumber,
+        long LastRenderedQpc,
+        long LastRenderedUtcUnixMs,
+        double LastRenderedSchedulerToPresentMs,
+        long LastDroppedPreviewPresentId,
+        long LastDroppedSourceSequenceNumber,
+        long LastDroppedQpc,
+        long LastDroppedUtcUnixMs,
+        string LastDropReason);
+
+    public readonly record struct DxgiFrameStatisticsMetrics(
+        long SampleCount,
+        long SuccessCount,
+        long FailureCount,
+        string LastError,
+        long PresentCount,
+        long PresentRefreshCount,
+        long SyncRefreshCount,
+        long SyncQpcTime,
+        long LastPresentDelta,
+        long LastPresentRefreshDelta,
+        long LastSyncRefreshDelta,
+        long MissedRefreshCount);
+
     private readonly SwapChainPanel _panel;
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly ManualResetEventSlim _frameReadyEvent = new(false);
     private readonly object _lifecycleLock = new();
+    private readonly int _presentSyncInterval = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_PRESENT_SYNC_INTERVAL", 1, 0, 1);
+    private readonly int _dxgiMaxFrameLatency = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_MAX_FRAME_LATENCY", 2, 1, 3);
+    private readonly int _swapChainBufferCount = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_SWAPCHAIN_BUFFER_COUNT", 3, 2, 4);
+    private readonly int _maxPendingFrames = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RENDER_QUEUE_DEPTH", 4, 1, 8);
+    private readonly bool _waitableSwapChainEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_WAITABLE_SWAPCHAIN", 0, 0, 1) != 0;
+    private readonly bool _dxgiFrameStatisticsEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS", 1, 0, 1) != 0;
+    private readonly bool _dxgiFrameStatisticsDwmFlushEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH", 0, 0, 1) != 0;
+    private readonly bool _mediaPresentDurationEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_MEDIA_PRESENT_DURATION", 0, 0, 1) != 0;
+    private readonly string _renderMmcssTask = Environment.GetEnvironmentVariable("ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_TASK") ?? string.Empty;
+    private readonly int _renderMmcssPriority = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_PRIORITY", 1, -2, 2);
 
     private Thread? _renderThread;
     private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();
-    private const int MaxPendingFrames = 3;
     private int _swapChainBound; // 0=unbound, 1=bound; use Interlocked.CompareExchange to claim unbind
 
     private int _disposed;
@@ -361,6 +415,34 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     private double[] _renderTotalCpuTimingWindowMs = new double[1200];
     private int _renderCpuTimingCount;
     private int _renderCpuTimingIndex;
+    private readonly object _dxgiFrameStatisticsLock = new();
+    private long _dxgiFrameStatisticsSampleCount;
+    private long _dxgiFrameStatisticsSuccessCount;
+    private long _dxgiFrameStatisticsFailureCount;
+    private string _dxgiFrameStatisticsLastError = string.Empty;
+    private long _dxgiFrameStatisticsPresentCount = -1;
+    private long _dxgiFrameStatisticsPresentRefreshCount = -1;
+    private long _dxgiFrameStatisticsSyncRefreshCount = -1;
+    private long _dxgiFrameStatisticsSyncQpcTime;
+    private long _dxgiFrameStatisticsLastPresentDelta;
+    private long _dxgiFrameStatisticsLastPresentRefreshDelta;
+    private long _dxgiFrameStatisticsLastSyncRefreshDelta;
+    private long _dxgiFrameStatisticsMissedRefreshCount;
+    private bool _dxgiFrameStatisticsHasBaseline;
+    private long _lastSubmittedPreviewPresentId;
+    private long _lastSubmittedSourceSequenceNumber = -1;
+    private long _lastSubmittedQpc;
+    private long _lastSubmittedUtcUnixMs;
+    private long _lastRenderedPreviewPresentId;
+    private long _lastRenderedSourceSequenceNumber = -1;
+    private long _lastRenderedQpc;
+    private long _lastRenderedUtcUnixMs;
+    private long _lastRenderedSchedulerToPresentTicks;
+    private long _lastDroppedPreviewPresentId;
+    private long _lastDroppedSourceSequenceNumber = -1;
+    private long _lastDroppedQpc;
+    private long _lastDroppedUtcUnixMs;
+    private string _lastDropReason = string.Empty;
 
     private TaskCompletionSource<PreviewFrameCaptureResult>? _frameCaptureRequest;
     private int _frameCaptureEncodeInProgress;
@@ -379,7 +461,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     private ID3D11VideoContext1? _videoContext1;
     private IDXGIFactory2? _factory;
     private IDXGISwapChain1? _swapChain;
+    private IDXGISwapChain2? _swapChain2;
     private IDXGISwapChain3? _swapChain3;
+    private IntPtr _frameLatencyWaitHandle;
     private long _swapChainAddress;
     private ID3D11Texture2D? _swapChainBackBuffer;
     private ID3D11RenderTargetView? _swapChainRTV;
@@ -436,6 +520,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     private int _sharedDeviceResetPending;
     private int _sharedDeviceActive;
     private bool _loggedNv12ShaderMissing;
+    private bool _loggedDirectUploadFallback;
 
     public D3D11PreviewRenderer(SwapChainPanel panel, DispatcherQueue dispatcherQueue)
     {
@@ -456,6 +541,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     public string RendererMode => Volatile.Read(ref _rendererMode);
     public string InputColorSpaceLabel => _inputColorSpaceLabel;
     public string OutputColorSpaceLabel => _outputColorSpaceLabel;
+    public int PresentSyncInterval => _presentSyncInterval;
+    public int DxgiMaxFrameLatency => _dxgiMaxFrameLatency;
+    public int SwapChainBufferCount => _swapChainBufferCount;
+    public bool WaitableSwapChainEnabled => _waitableSwapChainEnabled;
     public int NaturalWidth => Volatile.Read(ref _naturalWidth);
     public int NaturalHeight => Volatile.Read(ref _naturalHeight);
     public string SwapChainAddress
@@ -646,6 +735,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
 
         while (_pendingFrames.TryDequeue(out var stale))
         {
+            TrackFrameDropped(stale, "renderer-stop");
             stale.Dispose();
         }
 
@@ -734,6 +824,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
 
         while (_pendingFrames.TryDequeue(out var stale))
         {
+            TrackFrameDropped(stale, "renderer-stop");
             stale.Dispose();
         }
 
@@ -770,7 +861,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         set => Volatile.Write(ref _fullRangeInput, value);
     }
 
-    public void SubmitRawFrame(IntPtr data, int dataLength, int width, int height, bool isHdr, long arrivalTick = 0)
+    public void SubmitRawFrame(
+        IntPtr data,
+        int dataLength,
+        int width,
+        int height,
+        bool isHdr,
+        long arrivalTick = 0,
+        long sourceSequenceNumber = -1,
+        long previewPresentId = 0,
+        long schedulerSubmitTick = 0)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -793,11 +893,26 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             throw;
         }
 
-        var frame = new PendingFrame(null, 0, copied, dataLength, width, height, isHdr, arrivalTick);
+        var frame = new PendingFrame(
+            null,
+            0,
+            copied,
+            dataLength,
+            width,
+            height,
+            isHdr,
+            arrivalTick,
+            sourceSequenceNumber,
+            previewPresentId,
+            schedulerSubmitTick);
         EnqueuePendingFrame(frame);
     }
 
-    public void SubmitRawFrameLease(PooledVideoFrameLease frame, bool isHdr)
+    public void SubmitRawFrameLease(
+        PooledVideoFrameLease frame,
+        bool isHdr,
+        long previewPresentId = 0,
+        long schedulerSubmitTick = 0)
     {
         ArgumentNullException.ThrowIfNull(frame);
 
@@ -822,6 +937,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             frame.Height,
             isHdr,
             frame.ArrivalTick,
+            frame.SequenceNumber,
+            previewPresentId,
+            schedulerSubmitTick,
             frameLease: frame));
     }
 
@@ -959,21 +1077,24 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
                 Volatile.Read(ref _stopRequested) != 0 ||
                 _renderThread == null)
             {
+                TrackFrameDropped(frame, "renderer-stopped");
                 frame.Dispose();
                 Interlocked.Increment(ref _framesDropped);
                 return;
             }
 
             _pendingFrames.Enqueue(frame);
+            TrackFrameSubmitted(frame);
 
             // Trim oldest frames if the queue exceeds the elastic limit.
             // Under normal operation the render thread keeps up and the queue
             // stays at 0-1 (no added latency). The extra slots only absorb
             // brief render hiccups instead of dropping frames.
-            while (_pendingFrames.Count > MaxPendingFrames)
+            while (_pendingFrames.Count > _maxPendingFrames)
             {
                 if (_pendingFrames.TryDequeue(out var oldest))
                 {
+                    TrackFrameDropped(oldest, "renderer-backlog");
                     oldest.Dispose();
                     Interlocked.Increment(ref _framesDropped);
                 }
@@ -1009,6 +1130,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
                     ExpectedIntervalMs: expectedIntervalMs,
                     AverageIntervalMs: 0,
                     P95IntervalMs: 0,
+                    P99IntervalMs: 0,
                     MaxIntervalMs: 0,
                     JitterStdDevMs: 0,
                     SlowFrameCount: 0,
@@ -1058,6 +1180,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         Array.Sort(sorted);
         var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
         var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
+        var p99Index = (int)Math.Ceiling((sorted.Length - 1) * 0.99);
+        var p99IntervalMs = sorted[Math.Clamp(p99Index, 0, sorted.Length - 1)];
         var slowPercent = slowFrameCount <= 0
             ? 0
             : (double)slowFrameCount / Math.Max(1, sampleCount) * 100.0;
@@ -1068,6 +1192,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             ExpectedIntervalMs: targetIntervalMs,
             AverageIntervalMs: average,
             P95IntervalMs: p95IntervalMs,
+            P99IntervalMs: p99IntervalMs,
             MaxIntervalMs: max,
             JitterStdDevMs: jitterStdDevMs,
             SlowFrameCount: slowFrameCount,
@@ -1132,6 +1257,75 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             SummarizeCpuStageTiming(totalSamples));
     }
 
+    public FrameOwnershipMetrics GetFrameOwnershipMetrics()
+    {
+        var schedulerToPresentTicks = Interlocked.Read(ref _lastRenderedSchedulerToPresentTicks);
+        return new FrameOwnershipMetrics(
+            LastSubmittedPreviewPresentId: Interlocked.Read(ref _lastSubmittedPreviewPresentId),
+            LastSubmittedSourceSequenceNumber: Interlocked.Read(ref _lastSubmittedSourceSequenceNumber),
+            LastSubmittedQpc: Interlocked.Read(ref _lastSubmittedQpc),
+            LastSubmittedUtcUnixMs: Interlocked.Read(ref _lastSubmittedUtcUnixMs),
+            LastRenderedPreviewPresentId: Interlocked.Read(ref _lastRenderedPreviewPresentId),
+            LastRenderedSourceSequenceNumber: Interlocked.Read(ref _lastRenderedSourceSequenceNumber),
+            LastRenderedQpc: Interlocked.Read(ref _lastRenderedQpc),
+            LastRenderedUtcUnixMs: Interlocked.Read(ref _lastRenderedUtcUnixMs),
+            LastRenderedSchedulerToPresentMs: schedulerToPresentTicks > 0 ? TicksToMs(schedulerToPresentTicks) : 0,
+            LastDroppedPreviewPresentId: Interlocked.Read(ref _lastDroppedPreviewPresentId),
+            LastDroppedSourceSequenceNumber: Interlocked.Read(ref _lastDroppedSourceSequenceNumber),
+            LastDroppedQpc: Interlocked.Read(ref _lastDroppedQpc),
+            LastDroppedUtcUnixMs: Interlocked.Read(ref _lastDroppedUtcUnixMs),
+            LastDropReason: Volatile.Read(ref _lastDropReason));
+    }
+
+    public DxgiFrameStatisticsMetrics GetDxgiFrameStatisticsMetrics()
+    {
+        lock (_dxgiFrameStatisticsLock)
+        {
+            return new DxgiFrameStatisticsMetrics(
+                SampleCount: _dxgiFrameStatisticsSampleCount,
+                SuccessCount: _dxgiFrameStatisticsSuccessCount,
+                FailureCount: _dxgiFrameStatisticsFailureCount,
+                LastError: _dxgiFrameStatisticsLastError,
+                PresentCount: _dxgiFrameStatisticsPresentCount,
+                PresentRefreshCount: _dxgiFrameStatisticsPresentRefreshCount,
+                SyncRefreshCount: _dxgiFrameStatisticsSyncRefreshCount,
+                SyncQpcTime: _dxgiFrameStatisticsSyncQpcTime,
+                LastPresentDelta: _dxgiFrameStatisticsLastPresentDelta,
+                LastPresentRefreshDelta: _dxgiFrameStatisticsLastPresentRefreshDelta,
+                LastSyncRefreshDelta: _dxgiFrameStatisticsLastSyncRefreshDelta,
+                MissedRefreshCount: _dxgiFrameStatisticsMissedRefreshCount);
+        }
+    }
+
+    private void TrackFrameSubmitted(PendingFrame frame)
+    {
+        Interlocked.Exchange(ref _lastSubmittedPreviewPresentId, frame.PreviewPresentId);
+        Interlocked.Exchange(ref _lastSubmittedSourceSequenceNumber, frame.SourceSequenceNumber);
+        Interlocked.Exchange(ref _lastSubmittedQpc, Stopwatch.GetTimestamp());
+        Interlocked.Exchange(ref _lastSubmittedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+    }
+
+    private void TrackFramePresented(PendingFrame frame, long presentReturnTick)
+    {
+        Interlocked.Exchange(ref _lastRenderedPreviewPresentId, frame.PreviewPresentId);
+        Interlocked.Exchange(ref _lastRenderedSourceSequenceNumber, frame.SourceSequenceNumber);
+        Interlocked.Exchange(ref _lastRenderedQpc, presentReturnTick);
+        Interlocked.Exchange(ref _lastRenderedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        var schedulerToPresentTicks = frame.SchedulerSubmitTick > 0 && presentReturnTick > frame.SchedulerSubmitTick
+            ? presentReturnTick - frame.SchedulerSubmitTick
+            : 0;
+        Interlocked.Exchange(ref _lastRenderedSchedulerToPresentTicks, schedulerToPresentTicks);
+    }
+
+    private void TrackFrameDropped(PendingFrame frame, string reason)
+    {
+        Interlocked.Exchange(ref _lastDroppedPreviewPresentId, frame.PreviewPresentId);
+        Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, frame.SourceSequenceNumber);
+        Interlocked.Exchange(ref _lastDroppedQpc, Stopwatch.GetTimestamp());
+        Interlocked.Exchange(ref _lastDroppedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        Volatile.Write(ref _lastDropReason, reason);
+    }
+
     private static double[] CopyRecentRing(double[] window, int count, int index, int maxSamples)
     {
         var take = Math.Min(Math.Max(0, maxSamples), count);
@@ -1172,6 +1366,92 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
             if (_presentIntervalCount < _presentIntervalWindowMs.Length)
             {
                 _presentIntervalCount++;
+            }
+        }
+    }
+
+    private void TrackDxgiFrameStatistics()
+    {
+        if (!_dxgiFrameStatisticsEnabled || _swapChain == null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_dxgiFrameStatisticsDwmFlushEnabled)
+            {
+                _ = DwmFlush();
+            }
+
+            var result = _swapChain.GetFrameStatistics(out var stats);
+            lock (_dxgiFrameStatisticsLock)
+            {
+                _dxgiFrameStatisticsSampleCount++;
+                if (result.Failure)
+                {
+                    _dxgiFrameStatisticsFailureCount++;
+                    _dxgiFrameStatisticsLastError = $"0x{result.Code:X8}";
+                    return;
+                }
+
+                _dxgiFrameStatisticsSuccessCount++;
+                _dxgiFrameStatisticsLastError = string.Empty;
+
+                var presentCount = (long)stats.PresentCount;
+                var presentRefreshCount = (long)stats.PresentRefreshCount;
+                var syncRefreshCount = (long)stats.SyncRefreshCount;
+                _dxgiFrameStatisticsSyncQpcTime = stats.SyncQPCTime;
+
+                if (_dxgiFrameStatisticsHasBaseline &&
+                    _dxgiFrameStatisticsPresentCount > 0 &&
+                    _dxgiFrameStatisticsPresentRefreshCount > 0 &&
+                    _dxgiFrameStatisticsSyncRefreshCount > 0)
+                {
+                    _dxgiFrameStatisticsLastPresentDelta = presentCount - _dxgiFrameStatisticsPresentCount;
+                    _dxgiFrameStatisticsLastPresentRefreshDelta = presentRefreshCount - _dxgiFrameStatisticsPresentRefreshCount;
+                    _dxgiFrameStatisticsLastSyncRefreshDelta = syncRefreshCount - _dxgiFrameStatisticsSyncRefreshCount;
+                    if (_dxgiFrameStatisticsLastPresentDelta < 0 ||
+                        _dxgiFrameStatisticsLastPresentRefreshDelta < 0 ||
+                        _dxgiFrameStatisticsLastSyncRefreshDelta < 0 ||
+                        _dxgiFrameStatisticsLastPresentDelta > 100 ||
+                        _dxgiFrameStatisticsLastPresentRefreshDelta > 100 ||
+                        _dxgiFrameStatisticsLastSyncRefreshDelta > 100)
+                    {
+                        _dxgiFrameStatisticsLastPresentDelta = 0;
+                        _dxgiFrameStatisticsLastPresentRefreshDelta = 0;
+                        _dxgiFrameStatisticsLastSyncRefreshDelta = 0;
+                    }
+                    else if (_dxgiFrameStatisticsLastPresentDelta > 0 &&
+                             _dxgiFrameStatisticsLastPresentRefreshDelta > _dxgiFrameStatisticsLastPresentDelta)
+                    {
+                        _dxgiFrameStatisticsMissedRefreshCount +=
+                            _dxgiFrameStatisticsLastPresentRefreshDelta - _dxgiFrameStatisticsLastPresentDelta;
+                    }
+                }
+                else
+                {
+                    _dxgiFrameStatisticsLastPresentDelta = 0;
+                    _dxgiFrameStatisticsLastPresentRefreshDelta = 0;
+                    _dxgiFrameStatisticsLastSyncRefreshDelta = 0;
+                }
+
+                _dxgiFrameStatisticsPresentCount = presentCount;
+                _dxgiFrameStatisticsPresentRefreshCount = presentRefreshCount;
+                _dxgiFrameStatisticsSyncRefreshCount = syncRefreshCount;
+                _dxgiFrameStatisticsHasBaseline =
+                    presentCount > 0 &&
+                    presentRefreshCount > 0 &&
+                    syncRefreshCount > 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            lock (_dxgiFrameStatisticsLock)
+            {
+                _dxgiFrameStatisticsSampleCount++;
+                _dxgiFrameStatisticsFailureCount++;
+                _dxgiFrameStatisticsLastError = $"{ex.GetType().Name}:0x{ex.HResult:X8}";
             }
         }
     }
@@ -1239,6 +1519,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     public void SetExpectedFrameRate(double fps)
     {
         if (fps <= 0) return;
+        _startupFps = fps;
         var targetSize = Math.Max(600, (int)Math.Ceiling(fps * CadenceWindowSeconds));
         lock (_presentCadenceLock)
         {
@@ -1274,6 +1555,30 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         }
     }
 
+    public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)
+    {
+        var fps = Math.Max(1.0, _startupFps);
+        var intervalTicks = Math.Max(1, (long)Math.Round(Stopwatch.Frequency / fps));
+        long lastPresentTick;
+        int sampleCount;
+        lock (_dxgiFrameStatisticsLock)
+        {
+            lastPresentTick = _dxgiFrameStatisticsSyncQpcTime > 0
+                ? _dxgiFrameStatisticsSyncQpcTime
+                : Interlocked.Read(ref _lastPresentTick);
+            sampleCount = _dxgiFrameStatisticsSuccessCount > 0
+                ? (int)Math.Min(int.MaxValue, _dxgiFrameStatisticsSuccessCount)
+                : Volatile.Read(ref _presentIntervalCount);
+        }
+
+        snapshot = new PreviewDisplayClockSnapshot(
+            LastPresentTick: lastPresentTick,
+            FrameIntervalTicks: intervalTicks,
+            ExpectedFrameIntervalMs: 1000.0 / fps,
+            SampleCount: sampleCount);
+        return lastPresentTick > 0;
+    }
+
     private void ResetPresentCadence()
     {
         Interlocked.Exchange(ref _lastPresentTick, 0);
@@ -1306,7 +1611,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
     {
         if (samples.Length == 0)
         {
-            return new CpuStageTimingMetrics(0, 0, 0, 0);
+            return new CpuStageTimingMetrics(0, 0, 0, 0, 0);
         }
 
         var sorted = (double[])samples.Clone();
@@ -1323,10 +1628,12 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IDisposa
         }
 
         var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
+        var p99Index = (int)Math.Ceiling((sorted.Length - 1) * 0.99);
         return new CpuStageTimingMetrics(
             sorted.Length,
             sum / sorted.Length,
             sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)],
+            sorted[Math.Clamp(p99Index, 0, sorted.Length - 1)],
             max);
     }
 

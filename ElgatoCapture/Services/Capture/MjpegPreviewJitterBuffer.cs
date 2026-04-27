@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using ElgatoCapture.Services.Preview;
+using ElgatoCapture.Services.Runtime;
 
 namespace ElgatoCapture.Services.Capture;
 
@@ -96,7 +97,14 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         double QueueLatencyMaxMs,
         long DeadlineDropCount,
         long TargetIncreaseCount,
-        long TargetDecreaseCount);
+        long TargetDecreaseCount,
+        long LastSelectedPreviewPresentId,
+        long LastSelectedSourceSequenceNumber,
+        long LastSelectedQpc,
+        double LastSelectedSourceLatencyMs,
+        long LastDroppedSourceSequenceNumber,
+        long LastDropQpc,
+        string LastDropReason);
 
     private readonly object _sync = new();
     private readonly List<BufferedFrame> _frames = new();
@@ -112,6 +120,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private const int HardDeadlineExtraFrames = 4;
     private const int FastCatchUpSurplusFrames = 2;
     private const int AggressiveCatchUpSurplusFrames = 4;
+    private const double LateScheduleResetFrames = 0.5;
     private int _targetDepth;
     private readonly int _maxDepth;
     private readonly bool _timerResolutionRaised;
@@ -137,7 +146,21 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private long _targetDecreaseCount;
     private long _lastAdaptiveIssueTick;
     private long _lastTargetDecreaseTick;
+    private long _nextPreviewPresentId;
+    private long _lastSelectedPreviewPresentId;
+    private long _lastSelectedSourceSequenceNumber = -1;
+    private long _lastSelectedQpc;
+    private long _lastSelectedSourceLatencyTicks;
+    private long _lastDroppedSourceSequenceNumber = -1;
+    private long _lastDropQpc;
+    private long _lastDisplayClockPacedPresentTick;
+    private string _lastDropReason = string.Empty;
     private int _disposed;
+    private readonly string _mmcssTask = Environment.GetEnvironmentVariable("ELGATOCAPTURE_PREVIEW_JITTER_MMCSS_TASK") ?? string.Empty;
+    private readonly int _mmcssPriority = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_JITTER_MMCSS_PRIORITY", 1, -2, 2);
+    private readonly bool _displayClockPacingEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_PACING", 0, 0, 1) != 0;
+    private readonly double _displayClockSubmitDelayMs = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_SUBMIT_DELAY_MS", 0.25, 0.0, 4.0);
+    private readonly double _displayClockMinLeadMs = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_MIN_LEAD_MS", 2.0, 0.25, 6.0);
 
     public MjpegPreviewJitterBuffer(
         double fps,
@@ -170,7 +193,8 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         _thread.Start();
         Logger.Log(
             $"MJPEG_PREVIEW_JITTER_INIT fps={fps:0.###} target={_targetDepth} max={_maxDepth} " +
-            $"timerResolutionRaised={_timerResolutionRaised}");
+            $"timerResolutionRaised={_timerResolutionRaised} displayClockPacing={_displayClockPacingEnabled} " +
+            $"displayClockDelayMs={_displayClockSubmitDelayMs:0.###} displayClockMinLeadMs={_displayClockMinLeadMs:0.###}");
     }
 
     public void Enqueue(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)
@@ -219,6 +243,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             while (_frames.Count >= _maxDepth)
             {
                 var dropped = RemoveOldestFrame();
+                RecordDroppedFrame(dropped.SequenceNumber, "queue-full");
                 dropped.Dispose();
                 Interlocked.Increment(ref _totalDropped);
             }
@@ -281,7 +306,14 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             QueueLatencyMaxMs: latencyMetrics.MaxMs,
             DeadlineDropCount: Interlocked.Read(ref _deadlineDropCount),
             TargetIncreaseCount: Interlocked.Read(ref _targetIncreaseCount),
-            TargetDecreaseCount: Interlocked.Read(ref _targetDecreaseCount));
+            TargetDecreaseCount: Interlocked.Read(ref _targetDecreaseCount),
+            LastSelectedPreviewPresentId: Interlocked.Read(ref _lastSelectedPreviewPresentId),
+            LastSelectedSourceSequenceNumber: Interlocked.Read(ref _lastSelectedSourceSequenceNumber),
+            LastSelectedQpc: Interlocked.Read(ref _lastSelectedQpc),
+            LastSelectedSourceLatencyMs: TicksToMs(Interlocked.Read(ref _lastSelectedSourceLatencyTicks)),
+            LastDroppedSourceSequenceNumber: Interlocked.Read(ref _lastDroppedSourceSequenceNumber),
+            LastDropQpc: Interlocked.Read(ref _lastDropQpc),
+            LastDropReason: Volatile.Read(ref _lastDropReason));
     }
 
     public void Dispose()
@@ -325,6 +357,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
     private void EmitLoop()
     {
+        using var mmcss = MmcssThreadRegistration.TryRegister(_mmcssTask, _mmcssPriority, message => Logger.Log(message));
         var primed = false;
         var nextDueTick = 0L;
 
@@ -344,6 +377,8 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             }
 
             var now = Stopwatch.GetTimestamp();
+            var clockSink = _displayClockPacingEnabled ? _getPreviewSink() : null;
+            nextDueTick = AlignDueTickToDisplayClock(clockSink, nextDueTick, now);
             var remainingTicks = nextDueTick - now;
             if (remainingTicks > 0)
             {
@@ -351,7 +386,8 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 continue;
             }
 
-            var sink = _getPreviewSink();
+            var scheduleLateTicks = Math.Max(0, now - nextDueTick);
+            var sink = clockSink ?? _getPreviewSink();
             if (sink == null || _isPreviewSuppressed())
             {
                 ClearQueue();
@@ -377,17 +413,74 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 SubmitFrame(sink, frame);
             }
 
-            nextDueTick += GetAdjustedOutputIntervalTicks();
-            var lateTicks = Stopwatch.GetTimestamp() - nextDueTick;
-            if (lateTicks > _frameIntervalTicks * 2)
+            var outputIntervalTicks = GetAdjustedOutputIntervalTicks();
+            var submittedTick = Stopwatch.GetTimestamp();
+            if (_displayClockPacingEnabled)
             {
-                nextDueTick = Stopwatch.GetTimestamp() + _frameIntervalTicks;
+                nextDueTick = AlignDueTickToDisplayClock(sink, submittedTick + outputIntervalTicks, submittedTick);
+            }
+            else if (scheduleLateTicks > _frameIntervalTicks * LateScheduleResetFrames)
+            {
+                nextDueTick = submittedTick + outputIntervalTicks;
+            }
+            else
+            {
+                nextDueTick += outputIntervalTicks;
             }
         }
     }
 
+    private long AlignDueTickToDisplayClock(IPreviewFrameSink? sink, long currentDueTick, long nowTick)
+    {
+        if (!_displayClockPacingEnabled ||
+            sink is not IPreviewDisplayClock displayClock ||
+            !displayClock.TryGetDisplayClock(out var clock) ||
+            clock.LastPresentTick <= 0)
+        {
+            return currentDueTick;
+        }
+
+        if (clock.LastPresentTick <= Interlocked.Read(ref _lastDisplayClockPacedPresentTick))
+        {
+            return currentDueTick;
+        }
+
+        var intervalTicks = clock.FrameIntervalTicks > 0 ? clock.FrameIntervalTicks : _frameIntervalTicks;
+        var submitDelayTicks = MsToTicks(_displayClockSubmitDelayMs);
+        var minLeadTicks = MsToTicks(_displayClockMinLeadMs);
+        var nextPresentTick = clock.LastPresentTick + intervalTicks;
+        while (nextPresentTick <= nowTick)
+        {
+            nextPresentTick += intervalTicks;
+        }
+
+        var preferredDueTick = clock.LastPresentTick + submitDelayTicks;
+        while (preferredDueTick <= nowTick)
+        {
+            preferredDueTick += intervalTicks;
+        }
+
+        var latestSafeSubmitTick = nextPresentTick - minLeadTicks;
+        if (nowTick <= latestSafeSubmitTick && preferredDueTick > latestSafeSubmitTick)
+        {
+            Interlocked.Exchange(ref _lastDisplayClockPacedPresentTick, clock.LastPresentTick);
+            return nowTick;
+        }
+
+        if (preferredDueTick <= latestSafeSubmitTick)
+        {
+            Interlocked.Exchange(ref _lastDisplayClockPacedPresentTick, clock.LastPresentTick);
+            return preferredDueTick;
+        }
+
+        Interlocked.Exchange(ref _lastDisplayClockPacedPresentTick, clock.LastPresentTick);
+        return nextPresentTick + submitDelayTicks;
+    }
+
     private void SubmitFrame(IPreviewFrameSink sink, BufferedFrame frame)
     {
+        var submitTick = Stopwatch.GetTimestamp();
+        var previewPresentId = Interlocked.Increment(ref _nextPreviewPresentId);
         try
         {
             if (frame.Lease != null)
@@ -403,7 +496,11 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                         lease.PixelFormat,
                         frame.ArrivalTick,
                         frame.SequenceNumber);
-                    sink.SubmitRawFrameLease(lease, isHdr: false);
+                    sink.SubmitRawFrameLease(
+                        lease,
+                        isHdr: false,
+                        previewPresentId: previewPresentId,
+                        schedulerSubmitTick: submitTick);
                     lease = null;
                 }
                 finally
@@ -424,18 +521,29 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 {
                     fixed (byte* pointer = frame.Buffer)
                     {
-                        sink.SubmitRawFrame((IntPtr)pointer, frame.Length, frame.Width, frame.Height, false, frame.ArrivalTick);
+                        sink.SubmitRawFrame(
+                            (IntPtr)pointer,
+                            frame.Length,
+                            frame.Width,
+                            frame.Height,
+                            false,
+                            frame.ArrivalTick,
+                            sourceSequenceNumber: frame.SequenceNumber,
+                            previewPresentId: previewPresentId,
+                            schedulerSubmitTick: submitTick);
                     }
                 }
             }
 
             var now = Stopwatch.GetTimestamp();
+            RecordSelectedFrame(frame, previewPresentId, submitTick);
             RecordOutputInterval(now);
             RecordQueueLatency(frame.EnqueueTick, now);
             Interlocked.Increment(ref _totalSubmitted);
         }
         catch (Exception ex)
         {
+            RecordDroppedFrame(frame.SequenceNumber, "submit-failed");
             Interlocked.Increment(ref _totalDropped);
             Logger.Log($"MJPEG_PREVIEW_JITTER_SUBMIT_FAIL type={ex.GetType().Name} msg={ex.Message}");
         }
@@ -485,6 +593,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
         if (frame.SequenceNumber < _nextPreviewSequence)
         {
+            RecordDroppedFrame(frame.SequenceNumber, "late-sequence");
             frame.Dispose();
             Interlocked.Increment(ref _totalDropped);
             Interlocked.Increment(ref _deadlineDropCount);
@@ -560,6 +669,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         if (nextOrdered >= 0)
         {
             var skipped = Math.Max(1, _frames[nextOrdered].SequenceNumber - _nextPreviewSequence);
+            RecordDroppedFrame(_nextPreviewSequence, "missing-sequence");
             _nextPreviewSequence = _frames[nextOrdered].SequenceNumber;
             Interlocked.Add(ref _deadlineDropCount, skipped);
             Interlocked.Add(ref _totalDropped, skipped);
@@ -590,6 +700,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         {
             foreach (var frame in _frames)
             {
+                RecordDroppedFrame(frame.SequenceNumber, "cleared");
                 frame.Dispose();
                 Interlocked.Increment(ref _totalDropped);
             }
@@ -619,6 +730,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                     _nextPreviewSequence = frame.SequenceNumber + 1;
                 }
 
+                RecordDroppedFrame(frame.SequenceNumber, "hard-deadline");
                 frame.Dispose();
                 Interlocked.Increment(ref _totalDropped);
                 Interlocked.Increment(ref _deadlineDropCount);
@@ -652,6 +764,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                     _nextPreviewSequence = frame.SequenceNumber + 1;
                 }
 
+                RecordDroppedFrame(frame.SequenceNumber, "soft-deadline");
                 frame.Dispose();
                 Interlocked.Increment(ref _totalDropped);
                 Interlocked.Increment(ref _deadlineDropCount);
@@ -816,6 +929,24 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private void RecordQueueLatency(long startTick, long endTick)
         => RecordTimingSample(_queueLatencyMs, ref _queueLatencyCount, ref _queueLatencyIndex, ElapsedMs(startTick, endTick));
 
+    private void RecordSelectedFrame(BufferedFrame frame, long previewPresentId, long submitTick)
+    {
+        Interlocked.Exchange(ref _lastSelectedPreviewPresentId, previewPresentId);
+        Interlocked.Exchange(ref _lastSelectedSourceSequenceNumber, frame.SequenceNumber);
+        Interlocked.Exchange(ref _lastSelectedQpc, submitTick);
+        var latencyTicks = frame.ArrivalTick > 0 && submitTick > frame.ArrivalTick
+            ? submitTick - frame.ArrivalTick
+            : 0;
+        Interlocked.Exchange(ref _lastSelectedSourceLatencyTicks, latencyTicks);
+    }
+
+    private void RecordDroppedFrame(long sourceSequenceNumber, string reason)
+    {
+        Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, sourceSequenceNumber);
+        Interlocked.Exchange(ref _lastDropQpc, Stopwatch.GetTimestamp());
+        Volatile.Write(ref _lastDropReason, reason);
+    }
+
     private void RecordTimingSample(double[] window, ref int count, ref int index, double valueMs)
     {
         if (valueMs <= 0 || valueMs > 5000)
@@ -872,6 +1003,12 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
     private static double ElapsedMs(long startTick, long endTick)
         => (endTick - startTick) * 1000.0 / Stopwatch.Frequency;
+
+    private static double TicksToMs(long ticks)
+        => ticks <= 0 ? 0 : ticks * 1000.0 / Stopwatch.Frequency;
+
+    private static long MsToTicks(double ms)
+        => Math.Max(0, (long)Math.Round(ms * Stopwatch.Frequency / 1000.0));
 
     [DllImport("winmm.dll")]
     private static extern uint timeBeginPeriod(uint uPeriod);

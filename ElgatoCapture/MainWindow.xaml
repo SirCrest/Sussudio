@@ -313,7 +313,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Renderer FPS" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Preview P95" Style="{StaticResource DockStatsLabelStyle}" />
                                     <TextBlock x:Name="Stats_SummaryRendererFpsValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
@@ -323,7 +323,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Sampled Crop FPS" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Visual Repeat" Style="{StaticResource DockStatsLabelStyle}" />
                                     <TextBlock x:Name="Stats_SummaryVisualFpsValue" Grid.Column="1" Text="—" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
@@ -485,7 +485,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Capture Timing" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Capture Frame Time" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="SourceCadence_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -502,7 +502,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="FPS" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Average Rate" Style="{StaticResource DockStatsLabelStyle}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Right">
                                         <TextBlock x:Name="Stats_SourceFpsValue" Text="0.00" Style="{StaticResource DockStatsValueStyle}" />
                                         <TextBlock Text="/" Style="{StaticResource DockStatsLabelStyle}" />
@@ -518,7 +518,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Interval" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Frame Time" Style="{StaticResource DockStatsLabelStyle}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                                         <TextBlock x:Name="Stats_SourceAvgValue" Text="0.00ms avg" Style="{StaticResource DockStatsValueStyle}" />
                                         <TextBlock x:Name="Stats_SourceP95Value" Text="0.00ms P95" Style="{StaticResource DockStatsValueStyle}" />
@@ -573,7 +573,7 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Text="Preview &amp; Visual" Style="{StaticResource DockStatsSectionHeaderStyle}" />
+                                <TextBlock Text="Preview Frame Time" Style="{StaticResource DockStatsSectionHeaderStyle}" />
                                 <FontIcon x:Name="PreviewCadence_Chevron" Grid.Column="1" Glyph="&#xE70D;"
                                           FontSize="10" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                           VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -590,7 +590,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="FPS" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Average Rate" Style="{StaticResource DockStatsLabelStyle}" />
                                     <TextBlock x:Name="Stats_PreviewFpsValue" Grid.Column="1" Text="0.00" Style="{StaticResource DockStatsValueStyle}" HorizontalAlignment="Right" />
                                 </Grid>
                             </Border>
@@ -601,7 +601,7 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition Width="*" />
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Interval" Style="{StaticResource DockStatsLabelStyle}" />
+                                    <TextBlock Text="Frame Time" Style="{StaticResource DockStatsLabelStyle}" />
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
                                         <TextBlock x:Name="Stats_PreviewAvgValue" Text="0.00ms avg" Style="{StaticResource DockStatsValueStyle}" />
                                         <TextBlock x:Name="Stats_PreviewP95Value" Text="0.00ms P95" Style="{StaticResource DockStatsValueStyle}" />

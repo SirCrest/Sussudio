@@ -12,6 +12,10 @@ public sealed class PresentMonProbeOptions
     public string? PresentMonPath { get; init; }
     public string? OutputFile { get; init; }
     public string? ExpectedSwapChainAddress { get; init; }
+    public long? AppPresentId { get; init; }
+    public long? AppSourceSequenceNumber { get; init; }
+    public long? AppPresentUtcUnixMs { get; init; }
+    public long? CaptureStartUtcUnixMs { get; init; }
     public bool KeepCsv { get; init; }
     public bool TrackGpuVideo { get; init; } = true;
 }
@@ -56,10 +60,28 @@ public sealed class PresentMonCaptureSummary
     public IReadOnlyDictionary<string, int> SyncIntervals { get; init; } = new Dictionary<string, int>();
     public IReadOnlyDictionary<string, int> AllowsTearing { get; init; } = new Dictionary<string, int>();
     public IReadOnlyList<PresentMonSwapChainSummary> SwapChains { get; init; } = Array.Empty<PresentMonSwapChainSummary>();
+    public PresentMonAppCorrelation AppCorrelation { get; init; } = new();
     public bool DisplayedTimeColumnPresent { get; init; }
     public int DisplayChangeUnavailableCount { get; init; }
     public double DisplayChangeUnavailablePercent { get; init; }
     public IReadOnlyList<string> Warnings { get; init; } = Array.Empty<string>();
+}
+
+public sealed class PresentMonAppCorrelation
+{
+    public bool Available { get; init; }
+    public string Reason { get; init; } = "No app present timestamp was supplied.";
+    public long AppPresentId { get; init; }
+    public long AppSourceSequenceNumber { get; init; }
+    public long AppPresentUtcUnixMs { get; init; }
+    public double AppPresentOffsetMs { get; init; }
+    public int PresentMonRowIndex { get; init; } = -1;
+    public double PresentMonCpuStartTimeMs { get; init; }
+    public double DeltaMs { get; init; }
+    public string Outcome { get; init; } = "Unknown";
+    public string PresentMode { get; init; } = string.Empty;
+    public double? UntilDisplayedMs { get; init; }
+    public double? DisplayLatencyMs { get; init; }
 }
 
 public sealed class PresentMonSwapChainSummary
@@ -124,6 +146,7 @@ public static class PresentMonProbe
         Directory.CreateDirectory(Path.GetDirectoryName(outputPath) ?? ".");
 
         var arguments = BuildArguments(targetProcess.Id, durationSeconds, outputPath, options.TrackGpuVideo);
+        var captureStartUtcUnixMs = options.CaptureStartUtcUnixMs ?? DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var run = await RunProcessAsync(
                 presentMonPath,
                 arguments,
@@ -137,7 +160,7 @@ public static class PresentMonProbe
         {
             try
             {
-                summary = ParseCsv(outputPath, options.ExpectedSwapChainAddress);
+                summary = ParseCsv(outputPath, options.ExpectedSwapChainAddress, options, captureStartUtcUnixMs);
             }
             catch (Exception ex)
             {
@@ -257,6 +280,7 @@ public static class PresentMonProbe
             builder.AppendLine($"Display Change Unavailable: {summary.DisplayChangeUnavailableCount}/{summary.SampleCount} ({summary.DisplayChangeUnavailablePercent:0.##}%)");
         }
 
+        AppendAppCorrelation(builder, summary.AppCorrelation);
         AppendCounts(builder, "Present Modes", summary.PresentModes);
         AppendCounts(builder, "Present Runtimes", summary.PresentRuntimes);
         AppendCounts(builder, "Sync Intervals", summary.SyncIntervals);
@@ -294,6 +318,22 @@ public static class PresentMonProbe
         builder.AppendLine(
             $"{label}: avg={metric.Average:0.###}ms p50={metric.P50:0.###}ms p95={metric.P95:0.###}ms p99={metric.P99:0.###}ms max={metric.Max:0.###}ms n={metric.SampleCount}");
     }
+
+    private static void AppendAppCorrelation(StringBuilder builder, PresentMonAppCorrelation correlation)
+    {
+        if (!correlation.Available)
+        {
+            return;
+        }
+
+        builder.AppendLine(
+            $"App Correlation: appPresent={correlation.AppPresentId} sourceSeq={correlation.AppSourceSequenceNumber} " +
+            $"row={correlation.PresentMonRowIndex} delta={correlation.DeltaMs:0.###}ms outcome={correlation.Outcome} " +
+            $"mode={correlation.PresentMode} untilDisplayed={FormatOptionalMs(correlation.UntilDisplayedMs)} displayLatency={FormatOptionalMs(correlation.DisplayLatencyMs)}");
+    }
+
+    private static string FormatOptionalMs(double? value)
+        => value.HasValue ? $"{value.Value:0.###}ms" : "N/A";
 
     private static void AppendCounts(StringBuilder builder, string label, IReadOnlyDictionary<string, int> counts)
     {
@@ -524,6 +564,13 @@ public static class PresentMonProbe
         => ParseCsv(path, expectedSwapChainAddress: null);
 
     private static PresentMonCaptureSummary ParseCsv(string path, string? expectedSwapChainAddress)
+        => ParseCsv(path, expectedSwapChainAddress, options: null, captureStartUtcUnixMs: null);
+
+    private static PresentMonCaptureSummary ParseCsv(
+        string path,
+        string? expectedSwapChainAddress,
+        PresentMonProbeOptions? options,
+        long? captureStartUtcUnixMs)
     {
         using var reader = new StreamReader(path);
         var headerLine = reader.ReadLine();
@@ -543,6 +590,7 @@ public static class PresentMonProbe
         var rows = new List<PresentMonRow>();
 
         string? line;
+        var rowIndex = 0;
         while ((line = reader.ReadLine()) != null)
         {
             if (string.IsNullOrWhiteSpace(line))
@@ -552,11 +600,13 @@ public static class PresentMonProbe
 
             var fields = SplitCsvLine(line);
             rows.Add(new PresentMonRow(
+                RowIndex: rowIndex++,
                 SwapChainAddress: NormalizeSwapChainAddress(ReadField(fields, index, "SwapChainAddress")) ?? string.Empty,
                 PresentMode: ReadField(fields, index, "PresentMode"),
                 PresentRuntime: ReadField(fields, index, "PresentRuntime"),
                 SyncInterval: ReadField(fields, index, "SyncInterval"),
                 AllowsTearing: ReadField(fields, index, "AllowsTearing"),
+                CpuStartTimeMs: ReadMetric(fields, index, "CPUStartTime"),
                 BetweenPresentsMs: ReadMetric(fields, index, "MsBetweenPresents", "FrameTime"),
                 BetweenDisplayChangeMs: ReadMetric(fields, index, "MsBetweenDisplayChange"),
                 DisplayedTimeMs: ReadMetric(fields, index, "DisplayedTime"),
@@ -590,6 +640,7 @@ public static class PresentMonProbe
             displayChangeColumnPresent,
             normalizedExpectedSwapChain,
             expectedSwapChainMatched);
+        var appCorrelation = BuildAppCorrelation(selectedRows, options, captureStartUtcUnixMs);
 
         return new PresentMonCaptureSummary
         {
@@ -618,8 +669,107 @@ public static class PresentMonProbe
             SyncIntervals = CountValues(selectedRows.Select(row => row.SyncInterval)),
             AllowsTearing = CountValues(selectedRows.Select(row => row.AllowsTearing)),
             SwapChains = swapChains,
+            AppCorrelation = appCorrelation,
             Warnings = warnings
         };
+    }
+
+    private static PresentMonAppCorrelation BuildAppCorrelation(
+        IReadOnlyList<PresentMonRow> selectedRows,
+        PresentMonProbeOptions? options,
+        long? captureStartUtcUnixMs)
+    {
+        if (options?.AppPresentUtcUnixMs is not long appPresentUtcUnixMs || appPresentUtcUnixMs <= 0)
+        {
+            return new PresentMonAppCorrelation();
+        }
+
+        var startUtcUnixMs = options.CaptureStartUtcUnixMs ?? captureStartUtcUnixMs;
+        if (!startUtcUnixMs.HasValue || startUtcUnixMs.Value <= 0)
+        {
+            return new PresentMonAppCorrelation
+            {
+                Reason = "Capture start timestamp was unavailable.",
+                AppPresentId = options.AppPresentId ?? 0,
+                AppSourceSequenceNumber = options.AppSourceSequenceNumber ?? -1,
+                AppPresentUtcUnixMs = appPresentUtcUnixMs
+            };
+        }
+
+        var appOffsetMs = appPresentUtcUnixMs - startUtcUnixMs.Value;
+        var candidates = selectedRows
+            .Where(row => row.CpuStartTimeMs.HasValue)
+            .Select(row => new
+            {
+                Row = row,
+                DeltaMs = Math.Abs(row.CpuStartTimeMs!.Value - appOffsetMs)
+            })
+            .OrderBy(candidate => candidate.DeltaMs)
+            .ToList();
+
+        if (candidates.Count == 0)
+        {
+            return new PresentMonAppCorrelation
+            {
+                Reason = "No selected PresentMon rows exposed CPUStartTime.",
+                AppPresentId = options.AppPresentId ?? 0,
+                AppSourceSequenceNumber = options.AppSourceSequenceNumber ?? -1,
+                AppPresentUtcUnixMs = appPresentUtcUnixMs,
+                AppPresentOffsetMs = appOffsetMs
+            };
+        }
+
+        var best = candidates[0];
+        if (best.DeltaMs > 50.0)
+        {
+            return new PresentMonAppCorrelation
+            {
+                Reason = "Nearest PresentMon row was outside the 50ms app-present correlation window.",
+                AppPresentId = options.AppPresentId ?? 0,
+                AppSourceSequenceNumber = options.AppSourceSequenceNumber ?? -1,
+                AppPresentUtcUnixMs = appPresentUtcUnixMs,
+                AppPresentOffsetMs = appOffsetMs,
+                PresentMonRowIndex = best.Row.RowIndex,
+                PresentMonCpuStartTimeMs = best.Row.CpuStartTimeMs.GetValueOrDefault(),
+                DeltaMs = best.DeltaMs,
+                Outcome = ClassifyPresentOutcome(best.Row),
+                PresentMode = best.Row.PresentMode,
+                UntilDisplayedMs = best.Row.UntilDisplayedMs,
+                DisplayLatencyMs = best.Row.DisplayLatencyMs
+            };
+        }
+
+        return new PresentMonAppCorrelation
+        {
+            Available = true,
+            Reason = "Nearest selected PresentMon row by app UTC present timestamp.",
+            AppPresentId = options.AppPresentId ?? 0,
+            AppSourceSequenceNumber = options.AppSourceSequenceNumber ?? -1,
+            AppPresentUtcUnixMs = appPresentUtcUnixMs,
+            AppPresentOffsetMs = appOffsetMs,
+            PresentMonRowIndex = best.Row.RowIndex,
+            PresentMonCpuStartTimeMs = best.Row.CpuStartTimeMs.GetValueOrDefault(),
+            DeltaMs = best.DeltaMs,
+            Outcome = ClassifyPresentOutcome(best.Row),
+            PresentMode = best.Row.PresentMode,
+            UntilDisplayedMs = best.Row.UntilDisplayedMs,
+            DisplayLatencyMs = best.Row.DisplayLatencyMs
+        };
+    }
+
+    private static string ClassifyPresentOutcome(PresentMonRow row)
+    {
+        if (!row.DisplayedTimeMs.HasValue)
+        {
+            return "SupersededOrNotDisplayed";
+        }
+
+        if (row.UntilDisplayedMs.GetValueOrDefault() >= 16.0)
+        {
+            return "DisplayedLate";
+        }
+
+        return "Displayed";
     }
 
     private static string NormalizeHeader(string value)
@@ -828,11 +978,13 @@ public static class PresentMonProbe
     }
 
     private sealed record PresentMonRow(
+        int RowIndex,
         string SwapChainAddress,
         string PresentMode,
         string PresentRuntime,
         string SyncInterval,
         string AllowsTearing,
+        double? CpuStartTimeMs,
         double? BetweenPresentsMs,
         double? BetweenDisplayChangeMs,
         double? DisplayedTimeMs,

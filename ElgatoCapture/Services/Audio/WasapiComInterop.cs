@@ -13,7 +13,9 @@ internal static class WasapiComInterop
     internal const int AUDCLNT_SHAREMODE_EXCLUSIVE = 1;
     internal const uint AUDCLNT_STREAMFLAGS_EVENTCALLBACK = 0x00040000;
     internal const uint AUDCLNT_STREAMFLAGS_LOOPBACK = 0x00020000;
+    internal const uint AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY = 0x00000001;
     internal const uint AUDCLNT_BUFFERFLAGS_SILENT = 0x00000002;
+    internal const uint AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR = 0x00000004;
 
     internal const int WAVE_FORMAT_PCM = 0x0001;
     internal const int WAVE_FORMAT_IEEE_FLOAT = 0x0003;

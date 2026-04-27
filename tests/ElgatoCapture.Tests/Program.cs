@@ -66,6 +66,27 @@ static partial class Program
                 "Automation snapshot contract exposes full CPU MJPEG metrics",
                 AutomationSnapshot_ExposesFullCpuMjpegMetrics),
             await RunCheckAsync(
+                "Frame ledger retains bounded recent events",
+                FrameLedger_RetainsBoundedRecentEvents),
+            await RunCheckAsync(
+                "Frame ledger snapshot contract exposes recent events",
+                FrameLedger_SnapshotContractExposesRecentEvents),
+            await RunCheckAsync(
+                "Recording integrity summary defaults explicitly",
+                RecordingIntegritySummary_DefaultsAreExplicit),
+            await RunCheckAsync(
+                "Recording integrity snapshot contract exposes automation fields",
+                RecordingIntegritySnapshotContract_ExposesAutomationFields),
+            await RunCheckAsync(
+                "Recording integrity flags audio discontinuity and drift",
+                RecordingIntegritySummary_FlagsAudioDiscontinuityAndDrift),
+            await RunCheckAsync(
+                "Flashback integrity uses recording-scoped sequence gaps",
+                FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps),
+            await RunCheckAsync(
+                "Shared formatter renders recording integrity",
+                SharedFormatter_RendersRecordingIntegrity),
+            await RunCheckAsync(
                 "Automation options contract exposes advanced MCP control state",
                 AutomationOptionsSnapshot_ExposesAdvancedControlState),
             await RunCheckAsync(
@@ -219,7 +240,7 @@ static partial class Program
                 "Stats panels use source telemetry for HDMI input format and HDR",
                 StatsPanels_UseSourceTelemetry_ForHdmiInput),
             await RunCheckAsync(
-                "Frame-time overlay uses detected-FPS bounded range",
+                "Frame-time overlay uses detected-FPS bounded millisecond range",
                 FrameTimeOverlay_UsesDetectedFpsBoundedRange),
             await RunCheckAsync(
                 "D3D preview diagnostics expose swap-chain and render timing contract",
@@ -254,6 +275,9 @@ static partial class Program
             await RunCheckAsync(
                 "MCP verification tools format verification responses",
                 McpVerificationTools_FormatVerificationResponses),
+            await RunCheckAsync(
+                "MCP diagnostic session tool records snapshot artifacts",
+                McpDiagnosticSessionTool_RecordsSnapshotArtifacts),
             await RunCheckAsync(
                 "MCP wait tool routes condition waits",
                 McpWaitTools_RouteConditionWaits),
@@ -1099,6 +1123,22 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("MjpegCompressedQueueByteBudget"), "AutomationSnapshot.MjpegCompressedQueueByteBudget");
         AssertNotNull(snapshotType.GetProperty("MjpegReorderSkips"), "AutomationSnapshot.MjpegReorderSkips");
         AssertNotNull(snapshotType.GetProperty("MjpegReorderBufferDepth"), "AutomationSnapshot.MjpegReorderBufferDepth");
+        AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedPreviewPresentId"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedPreviewPresentId");
+        AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedSourceSequenceNumber"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedSourceSequenceNumber");
+        AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedSourceLatencyMs"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedSourceLatencyMs");
+        AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastDroppedSourceSequenceNumber"), "AutomationSnapshot.MjpegPreviewJitterLastDroppedSourceSequenceNumber");
+        AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastDropReason"), "AutomationSnapshot.MjpegPreviewJitterLastDropReason");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticHealthStatus"), "AutomationSnapshot.DiagnosticHealthStatus");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticLikelyStage"), "AutomationSnapshot.DiagnosticLikelyStage");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticSummary"), "AutomationSnapshot.DiagnosticSummary");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticEvidence"), "AutomationSnapshot.DiagnosticEvidence");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticSourceLane"), "AutomationSnapshot.DiagnosticSourceLane");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticDecodeLane"), "AutomationSnapshot.DiagnosticDecodeLane");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticPreviewLane"), "AutomationSnapshot.DiagnosticPreviewLane");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticRenderLane"), "AutomationSnapshot.DiagnosticRenderLane");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticPresentLane"), "AutomationSnapshot.DiagnosticPresentLane");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticRecordingLane"), "AutomationSnapshot.DiagnosticRecordingLane");
+        AssertNotNull(snapshotType.GetProperty("DiagnosticAudioLane"), "AutomationSnapshot.DiagnosticAudioLane");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoFramesSubmittedToEncoder"), "AutomationSnapshot.RecordingVideoFramesSubmittedToEncoder");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoEncoderPts"), "AutomationSnapshot.RecordingVideoEncoderPts");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoEncoderPacketsWritten"), "AutomationSnapshot.RecordingVideoEncoderPacketsWritten");
@@ -1260,6 +1300,10 @@ static partial class Program
         AssertContains(output, "Decoders: 2 | Decoded=301 Emitted=300 Dropped=1");
         AssertContains(output, "Reorder: avg=0.4ms");
         AssertContains(output, "Pipeline: avg=5.1ms");
+        AssertContains(output, "== Diagnostics ==");
+        AssertContains(output, "Legacy Score:");
+        AssertContains(output, "Frame Time:");
+        AssertContains(output, "Average Rate:");
         AssertContains(output, "Decoder[0]: avg=2.0ms");
         AssertContains(output, "Decoder[1]: avg=2.2ms");
         return Task.CompletedTask;
@@ -1543,7 +1587,10 @@ static partial class Program
         AssertContains(statsOverlayText, "ResolveFrameTimeRange(snapshot.SourceExpectedFps)");
         AssertContains(statsOverlayText, "fps * 0.75");
         AssertContains(statsOverlayText, "fps * 1.25");
-        AssertContains(statsOverlayText, "RoundToNearestFive");
+        AssertContains(statsOverlayText, "Target {FormatMs(frameTimeRange.ExpectedMs)}");
+        AssertContains(statsOverlayText, "range {FormatMs(frameTimeRange.MinMs)}-{FormatMs(frameTimeRange.MaxMs)}");
+        AssertDoesNotContain(statsOverlayText, "LowerFpsLabel");
+        AssertDoesNotContain(statsOverlayText, "UpperFpsLabel");
         AssertContains(statsOverlayText, "(samples[i] - range.MinMs) / range.SpanMs");
         AssertContains(statsOverlayText, "UpdateFrameTimeExpectedLine");
         AssertContains(mainWindowXaml, "x:Name=\"FrameTime_ExpectedLine\"");
@@ -1557,8 +1604,6 @@ static partial class Program
         AssertNearlyEqual(1000.0 / 150.0, GetDoubleProperty(range120, "MinMs"), 0.0001, "120fps MinMs");
         AssertNearlyEqual(1000.0 / 90.0, GetDoubleProperty(range120, "MaxMs"), 0.0001, "120fps MaxMs");
         AssertNearlyEqual(1000.0 / 120.0, GetDoubleProperty(range120, "ExpectedMs"), 0.0001, "120fps ExpectedMs");
-        AssertEqual(90.0, GetDoubleProperty(range120, "LowerFpsLabel"), "120fps lower label");
-        AssertEqual(150.0, GetDoubleProperty(range120, "UpperFpsLabel"), "120fps upper label");
 
         var normalizedExpected = (GetDoubleProperty(range120, "ExpectedMs") - GetDoubleProperty(range120, "MinMs")) /
                                  GetDoubleProperty(range120, "SpanMs");
@@ -2936,6 +2981,15 @@ static partial class Program
                 types: new[] { typeof(string), typeof(string) },
                 modifiers: null)
             ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv(string,string) not found.");
+        var optionsType = toolAssembly.GetType("ElgatoCapture.Tools.PresentMonProbeOptions")
+            ?? throw new InvalidOperationException("PresentMonProbeOptions type not found.");
+        var parseCsvWithCorrelation = probeType.GetMethod(
+                "ParseCsv",
+                BindingFlags.Static | BindingFlags.NonPublic,
+                binder: null,
+                types: new[] { typeof(string), typeof(string), optionsType, typeof(long?) },
+                modifiers: null)
+            ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv correlation overload not found.");
 
         var csvPath = Path.Combine(Path.GetTempPath(), $"presentmon_parser_{Guid.NewGuid():N}.csv");
         File.WriteAllText(
@@ -2981,6 +3035,30 @@ static partial class Program
             var expectedBetweenPresents = GetPropertyValue(expectedSwapChainSummary, "BetweenPresentsMs")
                 ?? throw new InvalidOperationException("expected BetweenPresentsMs was null.");
             AssertNearlyEqual(8.3333, GetDoubleProperty(expectedBetweenPresents, "Average"), 0.0001, "expected swap-chain PresentMon average");
+
+            File.WriteAllText(
+                csvPath,
+                """
+                Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,PresentFlags,AllowsTearing,PresentMode,CPUStartTime,FrameTime,CPUBusy,GPUTime,DisplayedTime,MsUntilDisplayed,DisplayLatency
+                ElgatoCapture.exe,1234,0xBBB,DXGI,0,0,0,Composed: Flip,90.0000,8.3333,8.2000,6.0000,8.3333,6.0000,12.0000
+                ElgatoCapture.exe,1234,0xBBB,DXGI,0,0,0,Composed: Flip,104.0000,8.3333,8.2000,6.0000,NA,20.0000,18.0000
+                """);
+            var options = Activator.CreateInstance(optionsType)
+                ?? throw new InvalidOperationException("Failed to create PresentMonProbeOptions.");
+            SetPropertyOrBackingField(options, "AppPresentId", 42L);
+            SetPropertyOrBackingField(options, "AppSourceSequenceNumber", 1001L);
+            SetPropertyOrBackingField(options, "AppPresentUtcUnixMs", 1105L);
+            SetPropertyOrBackingField(options, "CaptureStartUtcUnixMs", 1000L);
+            var correlatedSummary = parseCsvWithCorrelation.Invoke(null, new object?[] { csvPath, "0xBBB", options, 1000L })
+                ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv returned null for correlated CSV.");
+            var appCorrelation = GetPropertyValue(correlatedSummary, "AppCorrelation")
+                ?? throw new InvalidOperationException("AppCorrelation was null.");
+            AssertEqual(true, GetBoolProperty(appCorrelation, "Available"), "PresentMon app correlation available");
+            AssertEqual(42L, GetLongProperty(appCorrelation, "AppPresentId"), "PresentMon app present id");
+            AssertEqual(1001L, GetLongProperty(appCorrelation, "AppSourceSequenceNumber"), "PresentMon app source sequence");
+            AssertEqual(1, GetIntProperty(appCorrelation, "PresentMonRowIndex"), "PresentMon correlated row index");
+            AssertNearlyEqual(1.0, GetDoubleProperty(appCorrelation, "DeltaMs"), 0.0001, "PresentMon app correlation delta");
+            AssertEqual("SupersededOrNotDisplayed", GetStringProperty(appCorrelation, "Outcome"), "PresentMon app correlation outcome");
 
             var missingExpectedSwapChainSummary = parseCsvWithExpectedSwapChain.Invoke(null, new object[] { csvPath, "0xCCC" })
                 ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv returned null for missing expected swap-chain CSV.");

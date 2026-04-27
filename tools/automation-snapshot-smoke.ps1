@@ -30,7 +30,7 @@ function Invoke-Automation {
         -PipeName $PipeName `
         -AuthToken $AuthToken `
         -PayloadJson $payloadJson
-    $response = $raw | ConvertFrom-Json -Depth 50
+    $response = $raw | ConvertFrom-Json
 
     if (-not $AllowFailure -and -not $response.Success) {
         throw "Automation command '$Command' failed: $($response.Message) [ErrorCode=$($response.ErrorCode)]"

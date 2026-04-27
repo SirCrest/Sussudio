@@ -179,6 +179,8 @@ public sealed partial class MainWindow
         var d3dFramesRendered = d3d?.FramesRendered ?? 0;
         var d3dFramesDropped = d3d?.FramesDropped ?? 0;
         var d3dRenderCpuTiming = d3d?.GetRenderCpuTimingMetrics();
+        var d3dFrameOwnership = d3d?.GetFrameOwnershipMetrics();
+        var d3dFrameStats = d3d?.GetDxgiFrameStatisticsMetrics();
         if (gpuActive)
         {
             framesArrived = d3dFramesSubmitted;
@@ -255,6 +257,7 @@ public sealed partial class MainWindow
             DisplayCadenceExpectedIntervalMs = rendererCadence?.ExpectedIntervalMs ?? 0,
             DisplayCadenceAverageIntervalMs = rendererCadence?.AverageIntervalMs ?? 0,
             DisplayCadenceP95IntervalMs = rendererCadence?.P95IntervalMs ?? 0,
+            DisplayCadenceP99IntervalMs = rendererCadence?.P99IntervalMs ?? 0,
             DisplayCadenceMaxIntervalMs = rendererCadence?.MaxIntervalMs ?? 0,
             DisplayCadenceJitterStdDevMs = rendererCadence?.JitterStdDevMs ?? 0,
             DisplayCadenceSlowFrameCount = rendererCadence?.SlowFrameCount ?? 0,
@@ -262,6 +265,9 @@ public sealed partial class MainWindow
             BlankSuspected = blankSuspected,
             StallSuspected = stallSuspected,
             RendererMode = rendererMode,
+            D3DPresentSyncInterval = d3d?.PresentSyncInterval ?? 0,
+            D3DMaxFrameLatency = d3d?.DxgiMaxFrameLatency ?? 0,
+            D3DSwapChainBufferCount = d3d?.SwapChainBufferCount ?? 0,
             D3DSwapChainAddress = d3d?.SwapChainAddress ?? string.Empty,
             D3DFramesSubmitted = d3dFramesSubmitted,
             D3DFramesRendered = d3dFramesRendered,
@@ -272,16 +278,46 @@ public sealed partial class MainWindow
             D3DCpuTimingSampleCount = d3dRenderCpuTiming?.TotalFrame.SampleCount ?? 0,
             D3DInputUploadCpuAvgMs = d3dRenderCpuTiming?.InputUpload.AverageMs ?? 0,
             D3DInputUploadCpuP95Ms = d3dRenderCpuTiming?.InputUpload.P95Ms ?? 0,
+            D3DInputUploadCpuP99Ms = d3dRenderCpuTiming?.InputUpload.P99Ms ?? 0,
             D3DInputUploadCpuMaxMs = d3dRenderCpuTiming?.InputUpload.MaxMs ?? 0,
             D3DRenderSubmitCpuAvgMs = d3dRenderCpuTiming?.RenderSubmit.AverageMs ?? 0,
             D3DRenderSubmitCpuP95Ms = d3dRenderCpuTiming?.RenderSubmit.P95Ms ?? 0,
+            D3DRenderSubmitCpuP99Ms = d3dRenderCpuTiming?.RenderSubmit.P99Ms ?? 0,
             D3DRenderSubmitCpuMaxMs = d3dRenderCpuTiming?.RenderSubmit.MaxMs ?? 0,
             D3DPresentCallAvgMs = d3dRenderCpuTiming?.PresentCall.AverageMs ?? 0,
             D3DPresentCallP95Ms = d3dRenderCpuTiming?.PresentCall.P95Ms ?? 0,
+            D3DPresentCallP99Ms = d3dRenderCpuTiming?.PresentCall.P99Ms ?? 0,
             D3DPresentCallMaxMs = d3dRenderCpuTiming?.PresentCall.MaxMs ?? 0,
             D3DTotalFrameCpuAvgMs = d3dRenderCpuTiming?.TotalFrame.AverageMs ?? 0,
             D3DTotalFrameCpuP95Ms = d3dRenderCpuTiming?.TotalFrame.P95Ms ?? 0,
+            D3DTotalFrameCpuP99Ms = d3dRenderCpuTiming?.TotalFrame.P99Ms ?? 0,
             D3DTotalFrameCpuMaxMs = d3dRenderCpuTiming?.TotalFrame.MaxMs ?? 0,
+            D3DFrameStatsSampleCount = d3dFrameStats?.SampleCount ?? 0,
+            D3DFrameStatsSuccessCount = d3dFrameStats?.SuccessCount ?? 0,
+            D3DFrameStatsFailureCount = d3dFrameStats?.FailureCount ?? 0,
+            D3DFrameStatsLastError = d3dFrameStats?.LastError ?? string.Empty,
+            D3DFrameStatsPresentCount = d3dFrameStats?.PresentCount ?? -1,
+            D3DFrameStatsPresentRefreshCount = d3dFrameStats?.PresentRefreshCount ?? -1,
+            D3DFrameStatsSyncRefreshCount = d3dFrameStats?.SyncRefreshCount ?? -1,
+            D3DFrameStatsSyncQpcTime = d3dFrameStats?.SyncQpcTime ?? 0,
+            D3DFrameStatsLastPresentDelta = d3dFrameStats?.LastPresentDelta ?? 0,
+            D3DFrameStatsLastPresentRefreshDelta = d3dFrameStats?.LastPresentRefreshDelta ?? 0,
+            D3DFrameStatsLastSyncRefreshDelta = d3dFrameStats?.LastSyncRefreshDelta ?? 0,
+            D3DFrameStatsMissedRefreshCount = d3dFrameStats?.MissedRefreshCount ?? 0,
+            D3DLastSubmittedPreviewPresentId = d3dFrameOwnership?.LastSubmittedPreviewPresentId ?? 0,
+            D3DLastSubmittedSourceSequenceNumber = d3dFrameOwnership?.LastSubmittedSourceSequenceNumber ?? -1,
+            D3DLastSubmittedQpc = d3dFrameOwnership?.LastSubmittedQpc ?? 0,
+            D3DLastSubmittedUtcUnixMs = d3dFrameOwnership?.LastSubmittedUtcUnixMs ?? 0,
+            D3DLastRenderedPreviewPresentId = d3dFrameOwnership?.LastRenderedPreviewPresentId ?? 0,
+            D3DLastRenderedSourceSequenceNumber = d3dFrameOwnership?.LastRenderedSourceSequenceNumber ?? -1,
+            D3DLastRenderedQpc = d3dFrameOwnership?.LastRenderedQpc ?? 0,
+            D3DLastRenderedUtcUnixMs = d3dFrameOwnership?.LastRenderedUtcUnixMs ?? 0,
+            D3DLastRenderedSchedulerToPresentMs = d3dFrameOwnership?.LastRenderedSchedulerToPresentMs ?? 0,
+            D3DLastDroppedPreviewPresentId = d3dFrameOwnership?.LastDroppedPreviewPresentId ?? 0,
+            D3DLastDroppedSourceSequenceNumber = d3dFrameOwnership?.LastDroppedSourceSequenceNumber ?? -1,
+            D3DLastDroppedQpc = d3dFrameOwnership?.LastDroppedQpc ?? 0,
+            D3DLastDroppedUtcUnixMs = d3dFrameOwnership?.LastDroppedUtcUnixMs ?? 0,
+            D3DLastDropReason = d3dFrameOwnership?.LastDropReason ?? string.Empty,
             EstimatedPipelineLatencyMs = d3d?.GetEstimatedPipelineLatencyMs() ?? 0,
             GpuPlaybackState = gpuPlaybackState,
             GpuNaturalVideoWidth = gpuNaturalVideoWidth,
@@ -347,7 +383,7 @@ public sealed partial class MainWindow
             var rendererWidth = negotiatedWidth > 0 ? negotiatedWidth : width;
             var rendererHeight = negotiatedHeight > 0 ? negotiatedHeight : height;
             var rendererFps = negotiatedFps > 0 ? negotiatedFps : fps;
-            _previewMinPresentationIntervalMs = Math.Max(1L, (long)Math.Round(1000.0 / rendererFps));
+            _previewMinPresentationIntervalMs = Math.Max(1.0, 1000.0 / rendererFps);
 
             // Reuse the existing renderer during reinit to avoid recreating the
             // ISwapChainPanelNative COM wrapper. WinUI 3 corrupts the panel's
@@ -424,7 +460,7 @@ public sealed partial class MainWindow
             PreviewImage.Source = _previewSource;
             PreviewImage.Visibility = Visibility.Visible;
             SetGpuPreviewVisibility(Visibility.Collapsed);
-            Logger.Log($"Preview renderer started (mode=CpuSoftwareBitmap, expectedIntervalMs={_previewMinPresentationIntervalMs}).");
+            Logger.Log($"Preview renderer started (mode=CpuSoftwareBitmap, expectedIntervalMs={_previewMinPresentationIntervalMs:0.###}).");
             Logger.Log($"PREVIEW_RENDERER_ATTACHED mode=CpuSoftwareBitmap attempt={_previewStartupAttemptId ?? "none"}");
         }
 
@@ -434,7 +470,7 @@ public sealed partial class MainWindow
     {
         CleanupPreviewResources();
         _previewLastPresentedTick = 0;
-        _previewMinPresentationIntervalMs = Math.Max(1L, (long)Math.Round(1000.0 / 60.0));
+        _previewMinPresentationIntervalMs = 1000.0 / 60.0;
         Logger.Log("Preview renderer stopped.");
         return Task.CompletedTask;
     }

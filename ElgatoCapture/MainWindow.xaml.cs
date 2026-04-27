@@ -80,7 +80,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private int _windowCloseCleanupStarted;
     private int _windowCloseRecordingStopInProgress;
     private int _windowCloseAllowedAfterRecordingStop;
-    private long _previewMinPresentationIntervalMs;
+    private double _previewMinPresentationIntervalMs;
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;
     private readonly bool _automationTokenRequired;
@@ -252,7 +252,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
 
 
-    private long ResolvePreviewExpectedIntervalMs()
+    private double ResolvePreviewExpectedIntervalMs()
     {
         var sourceFps = ViewModel.SelectedFormat?.FrameRateExact ?? 0;
         if (sourceFps <= 0)
@@ -260,7 +260,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
             sourceFps = 60;
         }
 
-        return Math.Max(1L, (long)Math.Round(1000.0 / sourceFps));
+        return Math.Max(1.0, 1000.0 / sourceFps);
     }
 
     private static bool IsHdrSubtype(string? subtype)

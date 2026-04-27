@@ -116,7 +116,7 @@ static partial class Program
         var expectedProps = new[]
         {
             "SampleCount", "ObservedFps", "ExpectedIntervalMs", "AverageIntervalMs",
-            "P95IntervalMs", "MaxIntervalMs", "JitterStdDevMs", "SlowFrameCount", "SlowFramePercent"
+            "P95IntervalMs", "P99IntervalMs", "MaxIntervalMs", "JitterStdDevMs", "SlowFrameCount", "SlowFramePercent"
         };
 
         foreach (var prop in expectedProps)
@@ -155,9 +155,18 @@ static partial class Program
         var rendererType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer");
         AssertNotNull(rendererType.GetProperty("SwapChainAddress", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.SwapChainAddress");
         AssertNotNull(rendererType.GetMethod("GetRenderCpuTimingMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetRenderCpuTimingMetrics");
+        AssertNotNull(rendererType.GetMethod("GetFrameOwnershipMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetFrameOwnershipMetrics");
+        AssertNotNull(rendererType.GetMethod("GetDxgiFrameStatisticsMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetDxgiFrameStatisticsMetrics");
+        AssertNotNull(rendererType.GetMethod("TryGetDisplayClock", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.TryGetDisplayClock");
+
+        var displayClockSnapshotType = RequireType("ElgatoCapture.Services.Preview.PreviewDisplayClockSnapshot");
+        foreach (var prop in new[] { "LastPresentTick", "FrameIntervalTicks", "ExpectedFrameIntervalMs", "SampleCount" })
+        {
+            AssertNotNull(displayClockSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PreviewDisplayClockSnapshot.{prop}");
+        }
 
         var stageTimingType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+CpuStageTimingMetrics");
-        foreach (var prop in new[] { "SampleCount", "AverageMs", "P95Ms", "MaxMs" })
+        foreach (var prop in new[] { "SampleCount", "AverageMs", "P95Ms", "P99Ms", "MaxMs" })
         {
             AssertNotNull(stageTimingType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"CpuStageTimingMetrics.{prop}");
         }
@@ -168,16 +177,86 @@ static partial class Program
             AssertNotNull(renderTimingType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"RenderCpuTimingMetrics.{prop}");
         }
 
+        var ownershipMetricsType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+FrameOwnershipMetrics");
+        foreach (var prop in new[]
+                 {
+                     "LastSubmittedPreviewPresentId",
+                     "LastSubmittedSourceSequenceNumber",
+                     "LastSubmittedUtcUnixMs",
+                     "LastRenderedPreviewPresentId",
+                     "LastRenderedSourceSequenceNumber",
+                     "LastRenderedUtcUnixMs",
+                     "LastRenderedSchedulerToPresentMs",
+                     "LastDroppedPreviewPresentId",
+                     "LastDroppedSourceSequenceNumber",
+                     "LastDroppedUtcUnixMs",
+                     "LastDropReason"
+                 })
+        {
+            AssertNotNull(ownershipMetricsType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"FrameOwnershipMetrics.{prop}");
+        }
+
+        var dxgiFrameStatsType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+DxgiFrameStatisticsMetrics");
+        foreach (var prop in new[]
+                 {
+                     "SampleCount",
+                     "SuccessCount",
+                     "FailureCount",
+                     "LastError",
+                     "PresentCount",
+                     "PresentRefreshCount",
+                     "SyncRefreshCount",
+                     "SyncQpcTime",
+                     "LastPresentDelta",
+                     "LastPresentRefreshDelta",
+                     "LastSyncRefreshDelta",
+                     "MissedRefreshCount"
+                 })
+        {
+            AssertNotNull(dxgiFrameStatsType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"DxgiFrameStatisticsMetrics.{prop}");
+        }
+
         var previewSnapshotType = RequireType("ElgatoCapture.Models.PreviewRuntimeSnapshot");
         foreach (var prop in new[]
                  {
                      "D3DSwapChainAddress",
+                     "D3DPresentSyncInterval",
+                     "D3DMaxFrameLatency",
+                     "D3DSwapChainBufferCount",
                      "D3DPendingFrameCount",
+                     "DisplayCadenceP99IntervalMs",
                      "D3DCpuTimingSampleCount",
                      "D3DInputUploadCpuP95Ms",
+                     "D3DInputUploadCpuP99Ms",
                      "D3DRenderSubmitCpuP95Ms",
+                     "D3DRenderSubmitCpuP99Ms",
                      "D3DPresentCallP95Ms",
-                     "D3DTotalFrameCpuP95Ms"
+                     "D3DPresentCallP99Ms",
+                     "D3DTotalFrameCpuP95Ms",
+                     "D3DTotalFrameCpuP99Ms",
+                     "D3DFrameStatsSampleCount",
+                     "D3DFrameStatsSuccessCount",
+                     "D3DFrameStatsFailureCount",
+                     "D3DFrameStatsLastError",
+                     "D3DFrameStatsPresentCount",
+                     "D3DFrameStatsPresentRefreshCount",
+                     "D3DFrameStatsSyncRefreshCount",
+                     "D3DFrameStatsSyncQpcTime",
+                     "D3DFrameStatsLastPresentDelta",
+                     "D3DFrameStatsLastPresentRefreshDelta",
+                     "D3DFrameStatsLastSyncRefreshDelta",
+                     "D3DFrameStatsMissedRefreshCount",
+                     "D3DLastSubmittedPreviewPresentId",
+                     "D3DLastSubmittedSourceSequenceNumber",
+                     "D3DLastSubmittedUtcUnixMs",
+                     "D3DLastRenderedPreviewPresentId",
+                     "D3DLastRenderedSourceSequenceNumber",
+                     "D3DLastRenderedUtcUnixMs",
+                     "D3DLastRenderedSchedulerToPresentMs",
+                     "D3DLastDroppedPreviewPresentId",
+                     "D3DLastDroppedSourceSequenceNumber",
+                     "D3DLastDroppedUtcUnixMs",
+                     "D3DLastDropReason"
                  })
         {
             AssertNotNull(previewSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PreviewRuntimeSnapshot.{prop}");
@@ -187,12 +266,43 @@ static partial class Program
         foreach (var prop in new[]
                  {
                      "PreviewD3DSwapChainAddress",
+                     "PreviewD3DPresentSyncInterval",
+                     "PreviewD3DMaxFrameLatency",
+                     "PreviewD3DSwapChainBufferCount",
                      "PreviewD3DPendingFrameCount",
+                     "PreviewCadenceP99IntervalMs",
                      "PreviewD3DCpuTimingSampleCount",
                      "PreviewD3DInputUploadCpuP95Ms",
+                     "PreviewD3DInputUploadCpuP99Ms",
                      "PreviewD3DRenderSubmitCpuP95Ms",
+                     "PreviewD3DRenderSubmitCpuP99Ms",
                      "PreviewD3DPresentCallP95Ms",
-                     "PreviewD3DTotalFrameCpuP95Ms"
+                     "PreviewD3DPresentCallP99Ms",
+                     "PreviewD3DTotalFrameCpuP95Ms",
+                     "PreviewD3DTotalFrameCpuP99Ms",
+                     "PreviewD3DFrameStatsSampleCount",
+                     "PreviewD3DFrameStatsSuccessCount",
+                     "PreviewD3DFrameStatsFailureCount",
+                     "PreviewD3DFrameStatsLastError",
+                     "PreviewD3DFrameStatsPresentCount",
+                     "PreviewD3DFrameStatsPresentRefreshCount",
+                     "PreviewD3DFrameStatsSyncRefreshCount",
+                     "PreviewD3DFrameStatsSyncQpcTime",
+                     "PreviewD3DFrameStatsLastPresentDelta",
+                     "PreviewD3DFrameStatsLastPresentRefreshDelta",
+                     "PreviewD3DFrameStatsLastSyncRefreshDelta",
+                     "PreviewD3DFrameStatsMissedRefreshCount",
+                     "PreviewD3DLastSubmittedPreviewPresentId",
+                     "PreviewD3DLastSubmittedSourceSequenceNumber",
+                     "PreviewD3DLastSubmittedUtcUnixMs",
+                     "PreviewD3DLastRenderedPreviewPresentId",
+                     "PreviewD3DLastRenderedSourceSequenceNumber",
+                     "PreviewD3DLastRenderedUtcUnixMs",
+                     "PreviewD3DLastRenderedSchedulerToPresentMs",
+                     "PreviewD3DLastDroppedPreviewPresentId",
+                     "PreviewD3DLastDroppedSourceSequenceNumber",
+                     "PreviewD3DLastDroppedUtcUnixMs",
+                     "PreviewD3DLastDropReason"
                  })
         {
             AssertNotNull(automationSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"AutomationSnapshot.{prop}");

@@ -16,18 +16,28 @@ public static class PresentMonTools
         [Description("Optional target process id. Defaults to the newest ElgatoCapture process.")] int? processId = null,
         [Description("Optional process name when processId is not provided. Defaults to ElgatoCapture.")] string processName = "ElgatoCapture",
         [Description("Optional expected DXGI swap-chain address, usually PreviewD3DSwapChainAddress from get_app_state_raw.")] string? swapChainAddress = null,
+        [Description("Optional app-side D3D preview present id to correlate with PresentMon.")] long? appPresentId = null,
+        [Description("Optional app-side decoded source sequence number for the correlated present.")] long? appSourceSequenceNumber = null,
+        [Description("Optional UTC Unix milliseconds for the app-side Present return.")] long? appPresentUtcUnixMs = null,
         [Description("Optional path to PresentMon.exe / PresentMon-*-x64.exe. Env vars ELGATOCAPTURE_PRESENTMON_PATH or PRESENTMON_PATH also work.")] string? presentMonPath = null,
         [Description("Optional CSV output path. The CSV is deleted unless keepCsv is true.")] string? outputPath = null,
         [Description("Keep the raw PresentMon CSV and return its path.")] bool keepCsv = false,
         [Description("Ask PresentMon to track GPU video engine metrics when supported.")] bool trackGpuVideo = true)
     {
-        swapChainAddress ??= await TryResolvePreviewSwapChainAddressAsync(pipeClient).ConfigureAwait(false);
+        var resolved = await TryResolvePreviewPresentCorrelationAsync(pipeClient).ConfigureAwait(false);
+        swapChainAddress ??= resolved.SwapChainAddress;
+        appPresentId ??= resolved.PresentId;
+        appSourceSequenceNumber ??= resolved.SourceSequenceNumber;
+        appPresentUtcUnixMs ??= resolved.PresentUtcUnixMs;
         var result = await PresentMonProbe.RunAsync(new PresentMonProbeOptions
         {
             DurationSeconds = seconds,
             ProcessId = processId,
             ProcessName = processName,
             ExpectedSwapChainAddress = swapChainAddress,
+            AppPresentId = appPresentId,
+            AppSourceSequenceNumber = appSourceSequenceNumber,
+            AppPresentUtcUnixMs = appPresentUtcUnixMs,
             PresentMonPath = presentMonPath,
             OutputFile = outputPath,
             KeepCsv = keepCsv,
@@ -44,18 +54,28 @@ public static class PresentMonTools
         [Description("Optional target process id. Defaults to the newest ElgatoCapture process.")] int? processId = null,
         [Description("Optional process name when processId is not provided. Defaults to ElgatoCapture.")] string processName = "ElgatoCapture",
         [Description("Optional expected DXGI swap-chain address, usually PreviewD3DSwapChainAddress from get_app_state_raw.")] string? swapChainAddress = null,
+        [Description("Optional app-side D3D preview present id to correlate with PresentMon.")] long? appPresentId = null,
+        [Description("Optional app-side decoded source sequence number for the correlated present.")] long? appSourceSequenceNumber = null,
+        [Description("Optional UTC Unix milliseconds for the app-side Present return.")] long? appPresentUtcUnixMs = null,
         [Description("Optional path to PresentMon.exe / PresentMon-*-x64.exe. Env vars ELGATOCAPTURE_PRESENTMON_PATH or PRESENTMON_PATH also work.")] string? presentMonPath = null,
         [Description("Optional CSV output path. The CSV is deleted unless keepCsv is true.")] string? outputPath = null,
         [Description("Keep the raw PresentMon CSV and return its path.")] bool keepCsv = false,
         [Description("Ask PresentMon to track GPU video engine metrics when supported.")] bool trackGpuVideo = true)
     {
-        swapChainAddress ??= await TryResolvePreviewSwapChainAddressAsync(pipeClient).ConfigureAwait(false);
+        var resolved = await TryResolvePreviewPresentCorrelationAsync(pipeClient).ConfigureAwait(false);
+        swapChainAddress ??= resolved.SwapChainAddress;
+        appPresentId ??= resolved.PresentId;
+        appSourceSequenceNumber ??= resolved.SourceSequenceNumber;
+        appPresentUtcUnixMs ??= resolved.PresentUtcUnixMs;
         return await PresentMonProbe.RunAsync(new PresentMonProbeOptions
         {
             DurationSeconds = seconds,
             ProcessId = processId,
             ProcessName = processName,
             ExpectedSwapChainAddress = swapChainAddress,
+            AppPresentId = appPresentId,
+            AppSourceSequenceNumber = appSourceSequenceNumber,
+            AppPresentUtcUnixMs = appPresentUtcUnixMs,
             PresentMonPath = presentMonPath,
             OutputFile = outputPath,
             KeepCsv = keepCsv,
@@ -63,7 +83,7 @@ public static class PresentMonTools
         }).ConfigureAwait(false);
     }
 
-    private static async Task<string?> TryResolvePreviewSwapChainAddressAsync(PipeClient pipeClient)
+    private static async Task<(string? SwapChainAddress, long? PresentId, long? SourceSequenceNumber, long? PresentUtcUnixMs)> TryResolvePreviewPresentCorrelationAsync(PipeClient pipeClient)
     {
         try
         {
@@ -71,19 +91,35 @@ public static class PresentMonTools
             if (!AutomationSnapshotFormatter.IsSuccess(response) ||
                 !response.TryGetProperty("Snapshot", out var snapshot))
             {
-                return null;
+                return default;
             }
 
             var address = AutomationSnapshotFormatter.Get(snapshot, "PreviewD3DSwapChainAddress", string.Empty);
-            return string.IsNullOrWhiteSpace(address) ? null : address;
+            return (
+                string.IsNullOrWhiteSpace(address) ? null : address,
+                GetPositiveLong(snapshot, "PreviewD3DLastRenderedPreviewPresentId"),
+                GetNonNegativeLong(snapshot, "PreviewD3DLastRenderedSourceSequenceNumber"),
+                GetPositiveLong(snapshot, "PreviewD3DLastRenderedUtcUnixMs"));
         }
         catch (JsonException)
         {
-            return null;
+            return default;
         }
         catch (IOException)
         {
-            return null;
+            return default;
         }
+    }
+
+    private static long? GetPositiveLong(JsonElement snapshot, string name)
+    {
+        var value = AutomationSnapshotFormatter.GetLong(snapshot, name, 0);
+        return value > 0 ? value : null;
+    }
+
+    private static long? GetNonNegativeLong(JsonElement snapshot, string name)
+    {
+        var value = AutomationSnapshotFormatter.GetLong(snapshot, name, -1);
+        return value >= 0 ? value : null;
     }
 }

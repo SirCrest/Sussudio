@@ -44,10 +44,7 @@ internal static class Program
             if (options.Pretty)
             {
                 using var responseDocument = JsonDocument.Parse(responseLine);
-                var pretty = JsonSerializer.Serialize(responseDocument.RootElement, new JsonSerializerOptions
-                {
-                    WriteIndented = true
-                });
+                var pretty = JsonSerializer.Serialize(responseDocument.RootElement, JsonOptions.Pretty);
                 Console.WriteLine(pretty);
             }
             else

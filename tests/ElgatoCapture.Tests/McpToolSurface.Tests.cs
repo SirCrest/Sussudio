@@ -558,6 +558,111 @@ static partial class Program
         AssertEqual("file not found", missingFileResult, "verify_file missing verification fallback");
     }
 
+    private static async Task McpDiagnosticSessionTool_RecordsSnapshotArtifacts()
+    {
+        var diagnosticSessionTools = RequireMcpType("McpServer.Tools.DiagnosticSessionTools");
+        var pipeName = NewMcpToolPipeName("diag-session");
+        var pipeClient = CreateMcpPipeClient(pipeName);
+        var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"diagnostic-session-test-{Guid.NewGuid():N}");
+        var result = string.Empty;
+
+        try
+        {
+            var requests = await CapturePipeRequestsAsync(
+                    pipeName,
+                    expectedCount: 3,
+                    async () =>
+                    {
+                        result = await InvokeMcpToolStringAsync(
+                                diagnosticSessionTools,
+                                "run_diagnostic_session",
+                                pipeClient,
+                                "observe",
+                                0,
+                                100,
+                                outputDirectory,
+                                false,
+                                null,
+                                false,
+                                false)
+                            .ConfigureAwait(false);
+                    },
+                    i => i switch
+                    {
+                        0 => """
+                             {
+                               "Success": true,
+                               "Snapshot": {
+                                 "IsPreviewing": false,
+                                 "IsRecording": false,
+                                 "FlashbackActive": false,
+                                 "DiagnosticHealthStatus": "Idle",
+                                 "DiagnosticLikelyStage": "diagnostic_unavailable",
+                                 "DiagnosticSummary": "Preview and recording are idle.",
+                                 "DiagnosticEvidence": "Start preview or recording to collect live frame-lane diagnostics.",
+                                 "FrameLedgerRecentEvents": []
+                               }
+                             }
+                             """,
+                        1 => """
+                             {
+                               "Success": true,
+                               "Snapshot": {
+                                 "DiagnosticHealthStatus": "Healthy",
+                                 "DiagnosticLikelyStage": "none",
+                                 "DiagnosticSummary": "No degraded frame lane detected.",
+                                 "DiagnosticEvidence": "All monitored frame lanes are within current thresholds.",
+                                 "FrameLedgerRecentEvents": [
+                                   {
+                                     "SourceSequence": 7,
+                                     "Stage": "CaptureArrived",
+                                     "QpcTimestamp": 123456,
+                                     "Accepted": true
+                                   }
+                                 ]
+                               }
+                             }
+                             """,
+                        _ => """
+                             {
+                               "Success": true,
+                               "Data": [
+                                 {
+                                   "TimestampUtc": "2026-04-26T00:00:00Z",
+                                   "PerformanceScore": 100
+                                 }
+                               ]
+                             }
+                             """
+                    })
+                .ConfigureAwait(false);
+
+            AssertCommandRequest(requests[0], "GetSnapshot");
+            AssertCommandRequest(requests[1], "GetSnapshot");
+            AssertCommandRequest(requests[2], "GetPerformanceTimeline", ("maxEntries", 240));
+            AssertContains(result, "== Diagnostic Session: PASS ==");
+            AssertContains(result, "Health: Healthy | Stage: none");
+            AssertContains(result, "Frame Ledger:");
+
+            var summaryPath = Path.Combine(outputDirectory, "summary.json");
+            var samplesPath = Path.Combine(outputDirectory, "samples.json");
+            var frameLedgerPath = Path.Combine(outputDirectory, "frame-ledger.json");
+            AssertEqual(true, File.Exists(summaryPath), "diagnostic session summary artifact");
+            AssertEqual(true, File.Exists(samplesPath), "diagnostic session samples artifact");
+            AssertEqual(true, File.Exists(frameLedgerPath), "diagnostic session frame ledger artifact");
+
+            using var frameLedgerDocument = JsonDocument.Parse(File.ReadAllText(frameLedgerPath));
+            AssertEqual(1, frameLedgerDocument.RootElement.GetProperty("EventCount").GetInt32(), "diagnostic session frame ledger event count");
+        }
+        finally
+        {
+            if (Directory.Exists(outputDirectory))
+            {
+                Directory.Delete(outputDirectory, recursive: true);
+            }
+        }
+    }
+
     private static async Task McpWaitTools_RouteConditionWaits()
     {
         var pipeName = NewMcpToolPipeName("wait");

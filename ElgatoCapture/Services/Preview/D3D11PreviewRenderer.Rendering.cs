@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
+using ElgatoCapture.Services.Runtime;
 using Microsoft.UI.Dispatching;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
@@ -18,9 +19,13 @@ namespace ElgatoCapture.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {
+    private const uint WaitObject0 = 0;
+    private const uint WaitTimeout = 258;
+
     private void RenderThreadMain()
     {
         Interlocked.Exchange(ref _isRendering, 1);
+        using var mmcss = MmcssThreadRegistration.TryRegister(_renderMmcssTask, _renderMmcssPriority, message => Logger.Log(message));
         try
         {
             InitializeD3D();
@@ -33,6 +38,7 @@ internal sealed partial class D3D11PreviewRenderer
                 {
                     while (_pendingFrames.TryDequeue(out var stale))
                     {
+                        TrackFrameDropped(stale, "shared-device-reset");
                         stale.Dispose();
                     }
 
@@ -88,12 +94,14 @@ internal sealed partial class D3D11PreviewRenderer
 
                 if (Volatile.Read(ref _stopRequested) != 0)
                 {
+                    TrackFrameDropped(frame, "renderer-stopped");
                     frame.Dispose();
                     break;
                 }
 
                 try
                 {
+                    WaitForFrameLatencySignal();
                     RenderFrame(frame);
 
                     // Keep the event set while more frames are queued so the
@@ -113,6 +121,8 @@ internal sealed partial class D3D11PreviewRenderer
                     {
                         Logger.Log($"D3D11 preview render failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
                     }
+
+                    TrackFrameDropped(frame, "render-failed");
                 }
                 finally
                 {
@@ -135,6 +145,7 @@ internal sealed partial class D3D11PreviewRenderer
         {
             while (_pendingFrames.TryDequeue(out var stale))
             {
+                TrackFrameDropped(stale, "renderer-exit");
                 stale.Dispose();
             }
 
@@ -256,8 +267,9 @@ internal sealed partial class D3D11PreviewRenderer
 
                 TryCaptureFrameBeforePresent("VideoProcessor");
                 var presentStart = Stopwatch.GetTimestamp();
-                var presentResult = _swapChain.Present(0, PresentFlags.None);
-                presentTicks += Stopwatch.GetTimestamp() - presentStart;
+                var presentResult = _swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);
+                var presentEnd = Stopwatch.GetTimestamp();
+                presentTicks += presentEnd - presentStart;
                 if (presentResult.Failure)
                 {
                     throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
@@ -270,7 +282,9 @@ internal sealed partial class D3D11PreviewRenderer
                 }
 
                 Interlocked.Increment(ref _framesRendered);
+                TrackFramePresented(frame, presentEnd);
                 TrackPresentCadence();
+                TrackDxgiFrameStatistics();
                 TrackPipelineLatency(frame.ArrivalTick);
                 TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
             }
@@ -361,8 +375,9 @@ internal sealed partial class D3D11PreviewRenderer
 
             TryCaptureFrameBeforePresent(RendererModeNv12Shader);
             var presentStart = Stopwatch.GetTimestamp();
-            var presentResult = _swapChain.Present(0, PresentFlags.None);
-            presentTicks += Stopwatch.GetTimestamp() - presentStart;
+            var presentResult = _swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);
+            var presentEnd = Stopwatch.GetTimestamp();
+            presentTicks += presentEnd - presentStart;
             if (presentResult.Failure)
             {
                 throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
@@ -375,7 +390,9 @@ internal sealed partial class D3D11PreviewRenderer
             }
 
             Interlocked.Increment(ref _framesRendered);
+            TrackFramePresented(frame, presentEnd);
             TrackPresentCadence();
+            TrackDxgiFrameStatistics();
             TrackPipelineLatency(frame.ArrivalTick);
             TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
         }
@@ -498,8 +515,9 @@ internal sealed partial class D3D11PreviewRenderer
                 : RendererModeHdrShader;
             TryCaptureFrameBeforePresent(rendererMode);
             var presentStart = Stopwatch.GetTimestamp();
-            var presentResult = _swapChain.Present(0, PresentFlags.None);
-            presentTicks += Stopwatch.GetTimestamp() - presentStart;
+            var presentResult = _swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);
+            var presentEnd = Stopwatch.GetTimestamp();
+            presentTicks += presentEnd - presentStart;
             if (presentResult.Failure)
             {
                 throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
@@ -514,7 +532,9 @@ internal sealed partial class D3D11PreviewRenderer
             }
 
             Interlocked.Increment(ref _framesRendered);
+            TrackFramePresented(frame, presentEnd);
             TrackPresentCadence();
+            TrackDxgiFrameStatistics();
             TrackPipelineLatency(frame.ArrivalTick);
             TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
         }
@@ -1421,6 +1441,66 @@ internal sealed partial class D3D11PreviewRenderer
             return false;
         }
 
+        if (TryUpdateRawFrameTexture(data, inputTexture, rowBytes, expectedBytes))
+        {
+            return true;
+        }
+
+        return UploadRawFrameViaStaging(data, width, height, rowBytes, uvRows, stagingTexture, inputTexture);
+    }
+
+    private unsafe bool TryUpdateRawFrameTexture(
+        ReadOnlySpan<byte> data,
+        ID3D11Texture2D inputTexture,
+        int rowBytes,
+        int expectedBytes)
+    {
+        if (_deviceContext == null)
+        {
+            return false;
+        }
+
+        try
+        {
+            fixed (byte* srcStart = data)
+            {
+                _deviceContext.UpdateSubresource(
+                    inputTexture,
+                    0,
+                    null,
+                    (IntPtr)srcStart,
+                    (uint)rowBytes,
+                    (uint)expectedBytes);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            if (!_loggedDirectUploadFallback)
+            {
+                _loggedDirectUploadFallback = true;
+                Logger.Log($"D3D11 preview direct texture update failed; falling back to staging upload. type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+            }
+
+            return false;
+        }
+    }
+
+    private unsafe bool UploadRawFrameViaStaging(
+        ReadOnlySpan<byte> data,
+        int width,
+        int height,
+        int rowBytes,
+        int uvRows,
+        ID3D11Texture2D stagingTexture,
+        ID3D11Texture2D inputTexture)
+    {
+        if (_deviceContext == null)
+        {
+            return false;
+        }
+
         fixed (byte* srcStart = data)
         {
             var srcY = srcStart;
@@ -1484,10 +1564,10 @@ internal sealed partial class D3D11PreviewRenderer
         _multithread = device.QueryInterfaceOrNull<ID3D11Multithread>();
         _multithread?.SetMultithreadProtected(true);
 
-        // Reduce DXGI frame queue from default 3 to 2 — lowers preview latency
-        // by one frame interval without risking GPU starvation on trivial renders.
+        // Keep the compositor queue shallow. This defaults to 2 for latency,
+        // but is env-tunable while we measure DWM pacing behavior.
         using var dxgiDevice1 = device.QueryInterfaceOrNull<IDXGIDevice1>();
-        dxgiDevice1?.SetMaximumFrameLatency(2);
+        dxgiDevice1?.SetMaximumFrameLatency((uint)_dxgiMaxFrameLatency);
 
         _videoDevice = device.QueryInterfaceOrNull<ID3D11VideoDevice>();
         _videoContext = deviceContext.QueryInterfaceOrNull<ID3D11VideoContext>();
@@ -1516,19 +1596,24 @@ internal sealed partial class D3D11PreviewRenderer
             swapChainFormat = Format.R10G10B10A2_UNorm;
         }
 
+        var swapChainFlags = _waitableSwapChainEnabled
+            ? SwapChainFlags.FrameLatencyWaitableObject
+            : SwapChainFlags.None;
+
         var swapChainDescription = new SwapChainDescription1(
             (uint)pixelWidth,
             (uint)pixelHeight,
             swapChainFormat,
             false,
             Usage.RenderTargetOutput,
-            2,
+            (uint)_swapChainBufferCount,
             Scaling.Stretch,
             SwapEffect.FlipSequential,
             AlphaMode.Ignore,
-            SwapChainFlags.None);
+            swapChainFlags);
 
         _swapChain = _factory.CreateSwapChainForComposition(device, swapChainDescription, null);
+        ConfigureFrameLatencyWaitableObject();
         if (_configuredHdr)
         {
             _swapChain3 = _swapChain.QueryInterfaceOrNull<IDXGISwapChain3>();
@@ -1557,6 +1642,9 @@ internal sealed partial class D3D11PreviewRenderer
                     Logger.Log($"D3D11 preview HDR color space check: srgb={srgbOk}({srgbSupport}) hdr10={hdr10Ok}({hdr10Support}). Falling back to B8G8R8A8.");
                     _swapChain3.Dispose();
                     _swapChain3 = null;
+                    _swapChain2?.Dispose();
+                    _swapChain2 = null;
+                    _frameLatencyWaitHandle = IntPtr.Zero;
                     _swapChain.Dispose();
                     swapChainDescription = new SwapChainDescription1(
                         (uint)pixelWidth,
@@ -1564,17 +1652,21 @@ internal sealed partial class D3D11PreviewRenderer
                         Format.B8G8R8A8_UNorm,
                         false,
                         Usage.RenderTargetOutput,
-                        2,
+                        (uint)_swapChainBufferCount,
                         Scaling.Stretch,
                         SwapEffect.FlipSequential,
                         AlphaMode.Ignore,
-                        SwapChainFlags.None);
+                        swapChainFlags);
                     _swapChain = _factory.CreateSwapChainForComposition(device, swapChainDescription, null);
+                    ConfigureFrameLatencyWaitableObject();
                 }
             }
             else
             {
-                Logger.Log("D3D11 preview IDXGISwapChain3 unavailable — HDR passthrough not supported.");
+                Logger.Log("D3D11 preview IDXGISwapChain3 unavailable - HDR passthrough not supported.");
+                _swapChain2?.Dispose();
+                _swapChain2 = null;
+                _frameLatencyWaitHandle = IntPtr.Zero;
                 _swapChain.Dispose();
                 swapChainDescription = new SwapChainDescription1(
                     (uint)pixelWidth,
@@ -1582,23 +1674,97 @@ internal sealed partial class D3D11PreviewRenderer
                     Format.B8G8R8A8_UNorm,
                     false,
                     Usage.RenderTargetOutput,
-                    2,
+                    (uint)_swapChainBufferCount,
                     Scaling.Stretch,
                     SwapEffect.FlipSequential,
                     AlphaMode.Ignore,
-                    SwapChainFlags.None);
+                    swapChainFlags);
                 _swapChain = _factory.CreateSwapChainForComposition(device, swapChainDescription, null);
+                ConfigureFrameLatencyWaitableObject();
             }
         }
 
         _configuredOutputWidth = pixelWidth;
         _configuredOutputHeight = pixelHeight;
+        ConfigureMediaPresentDuration();
         ApplyCompositionScaleTransform(_swapChain);
         BindSwapChainToPanel(_swapChain);
         CompileTonemapShaders();
 
         Logger.Log($"D3D11 preview device created featureLevel={featureLevel} shared={sharedDeviceActive}.");
-        Logger.Log($"D3D11 preview swap chain created width={pixelWidth} height={pixelHeight}.");
+        Logger.Log($"D3D11 preview swap chain created width={pixelWidth} height={pixelHeight} buffers={_swapChainBufferCount} renderQueue={_maxPendingFrames} sync={_presentSyncInterval} latency={_dxgiMaxFrameLatency} waitable={_waitableSwapChainEnabled}.");
+    }
+
+    private void ConfigureMediaPresentDuration()
+    {
+        if (!_mediaPresentDurationEnabled || _swapChain == null)
+        {
+            return;
+        }
+
+        using var mediaSwapChain = _swapChain.QueryInterfaceOrNull<IDXGISwapChainMedia>();
+        if (mediaSwapChain == null)
+        {
+            Logger.Log("D3D11 preview media present duration unavailable: IDXGISwapChainMedia not supported.");
+            return;
+        }
+
+        var fps = Math.Max(1.0, _startupFps);
+        var desiredDuration = (uint)Math.Max(1, (int)Math.Round(10_000_000.0 / fps));
+        try
+        {
+            mediaSwapChain.CheckPresentDurationSupport(
+                desiredDuration,
+                out var closestSmaller,
+                out var closestLarger);
+            Logger.Log(
+                $"D3D11 preview media present duration support desired={desiredDuration} " +
+                $"smaller={closestSmaller} larger={closestLarger}");
+
+            mediaSwapChain.SetPresentDuration(desiredDuration);
+            Logger.Log($"D3D11 preview media present duration set desired={desiredDuration} fps={fps:0.###}");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"D3D11 preview media present duration failed: {ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+        }
+    }
+
+    private void ConfigureFrameLatencyWaitableObject()
+    {
+        _frameLatencyWaitHandle = IntPtr.Zero;
+        _swapChain2?.Dispose();
+        _swapChain2 = null;
+
+        if (!_waitableSwapChainEnabled || _swapChain == null)
+        {
+            return;
+        }
+
+        _swapChain2 = _swapChain.QueryInterfaceOrNull<IDXGISwapChain2>();
+        if (_swapChain2 == null)
+        {
+            Logger.Log("D3D11 preview waitable swap chain unavailable: IDXGISwapChain2 not supported.");
+            return;
+        }
+
+        _swapChain2.MaximumFrameLatency = (uint)_dxgiMaxFrameLatency;
+        _frameLatencyWaitHandle = _swapChain2.FrameLatencyWaitableObject;
+        Logger.Log($"D3D11 preview waitable swap chain configured handle=0x{_frameLatencyWaitHandle.ToInt64():X} latency={_dxgiMaxFrameLatency}.");
+    }
+
+    private void WaitForFrameLatencySignal()
+    {
+        if (!_waitableSwapChainEnabled || _frameLatencyWaitHandle == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var result = WaitForSingleObject(_frameLatencyWaitHandle, 8);
+        if (result != WaitObject0 && result != WaitTimeout)
+        {
+            Logger.Log($"D3D11 preview waitable swap chain wait returned {result}.");
+        }
     }
 
     private bool TryInitializeWithSharedDevice(out FeatureLevel featureLevel)
@@ -2315,6 +2481,7 @@ internal sealed partial class D3D11PreviewRenderer
         CleanupD3DResources();
         while (_pendingFrames.TryDequeue(out var stalePending))
         {
+            TrackFrameDropped(stalePending, "device-lost");
             stalePending.Dispose();
         }
 
@@ -2392,6 +2559,9 @@ internal sealed partial class D3D11PreviewRenderer
         {
             _swapChain3?.Dispose();
             _swapChain3 = null;
+            _swapChain2?.Dispose();
+            _swapChain2 = null;
+            _frameLatencyWaitHandle = IntPtr.Zero;
             _swapChain?.Dispose();
             _swapChain = null;
         }
@@ -2400,6 +2570,8 @@ internal sealed partial class D3D11PreviewRenderer
             // Detach references without disposing — let the COM ref from the
             // panel prevent the chain from being freed prematurely.
             _swapChain3 = null;
+            _swapChain2 = null;
+            _frameLatencyWaitHandle = IntPtr.Zero;
             _swapChain = null;
         }
         _factory?.Dispose();
@@ -2493,4 +2665,7 @@ internal sealed partial class D3D11PreviewRenderer
             throw new ObjectDisposedException(nameof(D3D11PreviewRenderer));
         }
     }
+
+    [DllImport("kernel32.dll", ExactSpelling = true, SetLastError = true)]
+    private static extern uint WaitForSingleObject(IntPtr handle, uint milliseconds);
 }

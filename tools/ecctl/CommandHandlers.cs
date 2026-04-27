@@ -17,6 +17,7 @@ internal static class CommandHandlers
             "timeline" => HandleTimelineAsync(context),
             "memory" => HandleMemoryAsync(context),
             "presentmon" => HandlePresentMonAsync(context),
+            "diagnostic-session" or "session" => HandleDiagnosticSessionAsync(context),
             "preview" => HandlePreviewAsync(context),
             "record" => HandleRecordAsync(context),
             "screenshot" => HandleCaptureAsync(context, "CaptureWindowScreenshot", "temp/window_screenshot.png"),
@@ -93,9 +94,13 @@ internal static class CommandHandlers
         var presentMonPath = ParseOptionalStringFlag(context.Rest, "--presentmon");
         var outputPath = ParseOptionalStringFlag(context.Rest, "--output");
         var swapChainAddress = ParseOptionalStringFlag(context.Rest, "--swapchain");
+        var appPresentId = ParseOptionalLongFlag(context.Rest, "--app-present-id");
+        var appSourceSequenceNumber = ParseOptionalLongFlag(context.Rest, "--app-source-seq");
+        var appPresentUtcUnixMs = ParseOptionalLongFlag(context.Rest, "--app-present-utc-ms");
+        var captureStartUtcUnixMs = ParseOptionalLongFlag(context.Rest, "--capture-start-utc-ms");
         var keepCsv = ConsumeFlag(context.Rest, "--keep-csv");
         var noGpuVideo = ConsumeFlag(context.Rest, "--no-gpu-video");
-        EnsureNoArgs(context.Rest, "presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
+        EnsureNoArgs(context.Rest, "presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--app-present-id N] [--app-source-seq N] [--app-present-utc-ms N] [--capture-start-utc-ms N] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
         swapChainAddress ??= await TryResolvePreviewSwapChainAddressAsync(context).ConfigureAwait(false);
 
         var result = await PresentMonProbe.RunAsync(new PresentMonProbeOptions
@@ -106,11 +111,47 @@ internal static class CommandHandlers
             PresentMonPath = presentMonPath,
             OutputFile = outputPath,
             ExpectedSwapChainAddress = swapChainAddress,
+            AppPresentId = appPresentId,
+            AppSourceSequenceNumber = appSourceSequenceNumber,
+            AppPresentUtcUnixMs = appPresentUtcUnixMs,
+            CaptureStartUtcUnixMs = captureStartUtcUnixMs,
             KeepCsv = keepCsv,
             TrackGpuVideo = !noGpuVideo
         }).ConfigureAwait(false);
 
         Console.WriteLine(json ? PrettyJson(result) : PresentMonProbe.Format(result));
+        return result.Success ? 0 : 3;
+    }
+
+    private static async Task<int> HandleDiagnosticSessionAsync(CommandContext context)
+    {
+        var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
+        var scenario = ParseOptionalStringFlag(context.Rest, "--scenario") ?? "observe";
+        var seconds = ParseOptionalIntFlag(context.Rest, "--seconds") ?? 10;
+        var sampleIntervalMs = ParseOptionalIntFlag(context.Rest, "--sample-ms") ?? 1000;
+        var outputDirectory = ParseOptionalStringFlag(context.Rest, "--output");
+        var presentMonPath = ParseOptionalStringFlag(context.Rest, "--presentmon-path");
+        var includePresentMon = ConsumeFlag(context.Rest, "--presentmon");
+        var verify = ConsumeFlag(context.Rest, "--verify");
+        var leaveRunning = ConsumeFlag(context.Rest, "--leave-running");
+        EnsureNoArgs(context.Rest, "diagnostic-session [--scenario observe|preview-only|recording-only|flashback|combined] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
+
+        var result = await DiagnosticSessionRunner.RunAsync(
+                new DiagnosticSessionOptions
+                {
+                    Scenario = scenario,
+                    DurationSeconds = seconds,
+                    SampleIntervalMs = sampleIntervalMs,
+                    OutputDirectory = outputDirectory,
+                    IncludePresentMon = includePresentMon,
+                    PresentMonPath = presentMonPath,
+                    VerifyRecording = verify,
+                    LeaveRunning = leaveRunning
+                },
+                (command, payload, responseTimeoutMs) => context.Transport.SendCommandAsync(command, payload, responseTimeoutMs))
+            .ConfigureAwait(false);
+
+        Console.WriteLine(json ? PrettyJson(result) : DiagnosticSessionRunner.Format(result));
         return result.Success ? 0 : 3;
     }
 
@@ -577,8 +618,27 @@ internal static class CommandHandlers
         return value;
     }
 
+    private static long? ParseOptionalLongFlag(List<string> args, string flag)
+    {
+        var index = args.FindIndex(arg => string.Equals(arg, flag, StringComparison.OrdinalIgnoreCase));
+        if (index < 0)
+        {
+            return null;
+        }
+
+        if (index + 1 >= args.Count)
+        {
+            throw new UsageException($"Missing value for {flag}.");
+        }
+
+        var value = ParseLong(args[index + 1]);
+        args.RemoveAt(index + 1);
+        args.RemoveAt(index);
+        return value;
+    }
+
     private static string PrettyJson<T>(T value)
-        => JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true });
+        => JsonSerializer.Serialize(value, JsonOptions.Pretty);
 
     private static string RequireWord(IReadOnlyList<string> args, int index, string usage)
     {
@@ -609,6 +669,16 @@ internal static class CommandHandlers
     private static int ParseInt(string value)
     {
         if (!int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
+        {
+            throw new UsageException($"Invalid integer value '{value}'.");
+        }
+
+        return parsed;
+    }
+
+    private static long ParseLong(string value)
+    {
+        if (!long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed))
         {
             throw new UsageException($"Invalid integer value '{value}'.");
         }

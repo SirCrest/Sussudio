@@ -138,9 +138,9 @@ static partial class Program
             "SubmitRawFrameLease",
             BindingFlags.Public | BindingFlags.Instance,
             binder: null,
-            types: new[] { leaseType, typeof(bool) },
+            types: new[] { leaseType, typeof(bool), typeof(long), typeof(long) },
             modifiers: null);
-        AssertNotNull(rendererLeaseSubmit, "IPreviewFrameSink.SubmitRawFrameLease(PooledVideoFrameLease, bool)");
+        AssertNotNull(rendererLeaseSubmit, "IPreviewFrameSink.SubmitRawFrameLease(PooledVideoFrameLease, bool, long, long)");
         AssertEqual(true, previewSinkType.IsAssignableFrom(rendererType), "D3D11PreviewRenderer implements preview lease sink");
         AssertEqual(true, leaseEncoderType.IsAssignableFrom(libAvSinkType), "LibAvRecordingSink implements lease encoder");
         AssertEqual(true, leaseEncoderType.IsAssignableFrom(flashbackSinkType), "FlashbackEncoderSink implements lease encoder");
@@ -164,6 +164,10 @@ static partial class Program
         AssertContains(source, "DeadlineDropCount");
         AssertContains(source, "TargetIncreaseCount");
         AssertContains(source, "TargetDecreaseCount");
+        AssertContains(source, "LastSelectedPreviewPresentId");
+        AssertContains(source, "LastSelectedSourceSequenceNumber");
+        AssertContains(source, "RecordSelectedFrame");
+        AssertContains(source, "RecordDroppedFrame");
         AssertContains(pipelineSource, "PreviewFrameCallback");
         AssertContains(pipelineSource, "NotifyPreviewFrameDecoded");
         AssertContains(captureSource, "OnMjpegPipelinePreviewFrameDecoded");

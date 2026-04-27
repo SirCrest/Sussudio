@@ -155,6 +155,15 @@ public sealed partial class StatsWindow : Window
             : snapshot.Previewing
                 ? "Previewing"
                 : "Idle";
+        DiagnosticStatusValue.Text = string.IsNullOrWhiteSpace(snapshot.DiagnosticHealthStatus)
+            ? "Unknown"
+            : snapshot.DiagnosticHealthStatus;
+        DiagnosticStageValue.Text = string.IsNullOrWhiteSpace(snapshot.DiagnosticLikelyStage)
+            ? "diagnostic_unavailable"
+            : snapshot.DiagnosticLikelyStage;
+        DiagnosticEvidenceValue.Text = string.IsNullOrWhiteSpace(snapshot.DiagnosticEvidence)
+            ? snapshot.DiagnosticSummary ?? "Diagnostics are not available yet."
+            : snapshot.DiagnosticEvidence;
 
         SourceResolutionValue.Text = snapshot.SourceWidth.HasValue && snapshot.SourceHeight.HasValue
             ? $"{snapshot.SourceWidth} x {snapshot.SourceHeight}"
@@ -305,6 +314,7 @@ public sealed record StatsSnapshot(
     double PreviewObservedFps,
     double PreviewAvgIntervalMs,
     double PreviewP95IntervalMs,
+    double PreviewP99IntervalMs,
     long PreviewSlowFrames,
     double PreviewSlowPct,
     int MjpegPacketHashSamples,
@@ -318,6 +328,8 @@ public sealed record StatsSnapshot(
     double VisualCadenceOutputFps,
     double VisualCadenceChangeFps,
     double VisualCadenceRepeatPercent,
+    long VisualCadenceRepeatFrames,
+    long VisualCadenceLongestRepeatRun,
     double VisualCadenceMotionScore,
     string VisualCadenceMotionConfidence,
     int VisualCenterCadenceSamples,
@@ -349,6 +361,9 @@ public sealed record StatsSnapshot(
     string? TelemetryConfidence = null,
     IReadOnlyList<SourceTelemetryDetailEntry>? SourceTelemetryDetails = null,
     string? DiagnosticSummary = null,
+    string? DiagnosticHealthStatus = null,
+    string? DiagnosticLikelyStage = null,
+    string? DiagnosticEvidence = null,
     double? AvSyncCaptureDriftMs = null,
     double? AvSyncCaptureDriftRateMsPerSec = null,
     double? AvSyncEncoderDriftMs = null,

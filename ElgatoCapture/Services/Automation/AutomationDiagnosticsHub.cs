@@ -432,6 +432,13 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             captureCadenceP95IntervalMs: health.CaptureCadenceP95IntervalMs,
             captureCadenceDropPercent: health.CaptureCadenceEstimatedDropPercent,
             lastVerification: lastVerification);
+        var diagnostic = BuildDiagnosticEvaluation(
+            health,
+            captureRuntime,
+            previewRuntime,
+            viewModelSnapshot.IsPreviewing,
+            viewModelSnapshot.IsRecording,
+            performance);
         var hdrTruthVerdict = BuildHdrTruthVerdict(captureRuntime, viewModelSnapshot.IsHdrEnabled, lastVerification);
         var previewHdrInputDetected =
             IsHdrSubtype(captureRuntime.NegotiatedPixelFormat) ||
@@ -491,6 +498,17 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PerformanceScore = performance.Score,
             PerformancePerfectionMet = performance.PerfectionMet,
             PerformanceSummary = performance.Summary,
+            DiagnosticHealthStatus = diagnostic.HealthStatus,
+            DiagnosticLikelyStage = diagnostic.LikelyStage,
+            DiagnosticSummary = diagnostic.Summary,
+            DiagnosticEvidence = diagnostic.Evidence,
+            DiagnosticSourceLane = diagnostic.SourceLane,
+            DiagnosticDecodeLane = diagnostic.DecodeLane,
+            DiagnosticPreviewLane = diagnostic.PreviewLane,
+            DiagnosticRenderLane = diagnostic.RenderLane,
+            DiagnosticPresentLane = diagnostic.PresentLane,
+            DiagnosticRecordingLane = diagnostic.RecordingLane,
+            DiagnosticAudioLane = diagnostic.AudioLane,
             PerformanceThresholdCaptureDropPercent = _perfectionCaptureDropPercentThreshold,
             PerformanceThresholdCaptureP95Multiplier = _perfectionCaptureP95MultiplierThreshold,
             PerformanceThresholdPreviewSlowPercent = _perfectionPreviewSlowPercentThreshold,
@@ -611,6 +629,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             WasapiCaptureCallbackCount = captureRuntime.WasapiCaptureCallbackCount,
             WasapiCaptureCallbackAvgIntervalMs = captureRuntime.WasapiCaptureCallbackAvgIntervalMs,
             WasapiCaptureCallbackMaxIntervalMs = captureRuntime.WasapiCaptureCallbackMaxIntervalMs,
+            WasapiCaptureCallbackSevereGapCount = captureRuntime.WasapiCaptureCallbackSevereGapCount,
+            WasapiCaptureAudioDiscontinuityCount = captureRuntime.WasapiCaptureAudioDiscontinuityCount,
+            WasapiCaptureAudioTimestampErrorCount = captureRuntime.WasapiCaptureAudioTimestampErrorCount,
+            WasapiCaptureAudioGlitchCount = captureRuntime.WasapiCaptureAudioGlitchCount,
             WasapiCaptureCallbackSilenceCount = captureRuntime.WasapiCaptureCallbackSilenceCount,
             WasapiCaptureLastCallbackTickMs = captureRuntime.WasapiCaptureLastCallbackTickMs,
             WasapiCaptureAudioLevelEventsFired = captureRuntime.WasapiCaptureAudioLevelEventsFired,
@@ -623,6 +645,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             MemoryPreference = captureRuntime.MemoryPreference,
             VideoRequestedSubtype = captureRuntime.VideoRequestedSubtype,
             VideoNegotiatedSubtype = captureRuntime.VideoNegotiatedSubtype,
+            FrameLedgerCapacity = captureRuntime.FrameLedgerCapacity,
+            FrameLedgerEventCount = captureRuntime.FrameLedgerEventCount,
+            FrameLedgerDroppedEventCount = captureRuntime.FrameLedgerDroppedEventCount,
+            FrameLedgerRecentEvents = captureRuntime.FrameLedgerRecentEvents,
             PreviewAdapterColorMetadata = captureRuntime.PreviewColorMetadata,
             EncoderVideoFramesEnqueued = health.VideoFramesEnqueued,
             EncoderVideoFramesEncoded = health.VideoFramesConverted,
@@ -633,6 +659,39 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             MuxResult = captureRuntime.MuxSucceeded.HasValue
                 ? (captureRuntime.MuxSucceeded.Value ? "Succeeded" : "Failed")
                 : "NotAttempted",
+            RecordingIntegrityStatus = captureRuntime.RecordingIntegrityStatus,
+            RecordingIntegrityComplete = captureRuntime.RecordingIntegrityComplete,
+            RecordingIntegrityBackend = captureRuntime.RecordingIntegrityBackend,
+            RecordingIntegrityCompletedUtc = captureRuntime.RecordingIntegrityCompletedUtc,
+            RecordingIntegritySourceFrames = captureRuntime.RecordingIntegritySourceFrames,
+            RecordingIntegrityAcceptedFrames = captureRuntime.RecordingIntegrityAcceptedFrames,
+            RecordingIntegrityPipelineDroppedFrames = captureRuntime.RecordingIntegrityPipelineDroppedFrames,
+            RecordingIntegrityQueueDroppedFrames = captureRuntime.RecordingIntegrityQueueDroppedFrames,
+            RecordingIntegritySubmittedFrames = captureRuntime.RecordingIntegritySubmittedFrames,
+            RecordingIntegrityEncodedFrames = captureRuntime.RecordingIntegrityEncodedFrames,
+            RecordingIntegrityPacketsWritten = captureRuntime.RecordingIntegrityPacketsWritten,
+            RecordingIntegrityEncoderDroppedFrames = captureRuntime.RecordingIntegrityEncoderDroppedFrames,
+            RecordingIntegritySequenceGaps = captureRuntime.RecordingIntegritySequenceGaps,
+            RecordingIntegrityQueueMaxDepth = captureRuntime.RecordingIntegrityQueueMaxDepth,
+            RecordingIntegrityQueueOldestFrameAgeMs = captureRuntime.RecordingIntegrityQueueOldestFrameAgeMs,
+            RecordingIntegrityBackpressureWaitMs = captureRuntime.RecordingIntegrityBackpressureWaitMs,
+            RecordingIntegrityBackpressureEvents = captureRuntime.RecordingIntegrityBackpressureEvents,
+            RecordingIntegrityBackpressureMaxWaitMs = captureRuntime.RecordingIntegrityBackpressureMaxWaitMs,
+            RecordingIntegrityAudioStatus = captureRuntime.RecordingIntegrityAudioStatus,
+            RecordingIntegrityAudioEnabled = captureRuntime.RecordingIntegrityAudioEnabled,
+            RecordingIntegrityAudioCaptureActive = captureRuntime.RecordingIntegrityAudioCaptureActive,
+            RecordingIntegrityAudioFramesArrived = captureRuntime.RecordingIntegrityAudioFramesArrived,
+            RecordingIntegrityAudioFramesWrittenToSink = captureRuntime.RecordingIntegrityAudioFramesWrittenToSink,
+            RecordingIntegrityAudioSamplesEncoded = captureRuntime.RecordingIntegrityAudioSamplesEncoded,
+            RecordingIntegrityAudioDropEvents = captureRuntime.RecordingIntegrityAudioDropEvents,
+            RecordingIntegrityAudioDiscontinuities = captureRuntime.RecordingIntegrityAudioDiscontinuities,
+            RecordingIntegrityAudioTimestampErrors = captureRuntime.RecordingIntegrityAudioTimestampErrors,
+            RecordingIntegrityAudioCallbackGaps = captureRuntime.RecordingIntegrityAudioCallbackGaps,
+            RecordingIntegrityAvSyncDriftMs = captureRuntime.RecordingIntegrityAvSyncDriftMs,
+            RecordingIntegrityAvSyncDriftRateMsPerSec = captureRuntime.RecordingIntegrityAvSyncDriftRateMsPerSec,
+            RecordingIntegrityEncoderAvSyncDriftMs = captureRuntime.RecordingIntegrityEncoderAvSyncDriftMs,
+            RecordingIntegrityEncoderAvSyncCorrectionSamples = captureRuntime.RecordingIntegrityEncoderAvSyncCorrectionSamples,
+            RecordingIntegrityReason = captureRuntime.RecordingIntegrityReason,
             RequestedWidth = captureRuntime.RequestedWidth,
             RequestedHeight = captureRuntime.RequestedHeight,
             RequestedFrameRate = captureRuntime.RequestedFrameRate,
@@ -687,6 +746,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PreviewCadenceExpectedIntervalMs = previewRuntime.DisplayCadenceExpectedIntervalMs,
             PreviewCadenceAverageIntervalMs = previewRuntime.DisplayCadenceAverageIntervalMs,
             PreviewCadenceP95IntervalMs = previewRuntime.DisplayCadenceP95IntervalMs,
+            PreviewCadenceP99IntervalMs = previewRuntime.DisplayCadenceP99IntervalMs,
             PreviewCadenceMaxIntervalMs = previewRuntime.DisplayCadenceMaxIntervalMs,
             PreviewCadenceJitterStdDevMs = previewRuntime.DisplayCadenceJitterStdDevMs,
             PreviewCadenceSlowFrameCount = previewRuntime.DisplayCadenceSlowFrameCount,
@@ -713,6 +773,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PreviewBlankSuspected = previewRuntime.BlankSuspected,
             PreviewStalled = previewRuntime.StallSuspected,
             PreviewRendererMode = previewRuntime.RendererMode,
+            PreviewD3DPresentSyncInterval = previewRuntime.D3DPresentSyncInterval,
+            PreviewD3DMaxFrameLatency = previewRuntime.D3DMaxFrameLatency,
+            PreviewD3DSwapChainBufferCount = previewRuntime.D3DSwapChainBufferCount,
             PreviewD3DSwapChainAddress = previewRuntime.D3DSwapChainAddress,
             PreviewD3DFramesSubmitted = previewRuntime.D3DFramesSubmitted,
             PreviewD3DFramesRendered = previewRuntime.D3DFramesRendered,
@@ -723,16 +786,46 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PreviewD3DCpuTimingSampleCount = previewRuntime.D3DCpuTimingSampleCount,
             PreviewD3DInputUploadCpuAvgMs = previewRuntime.D3DInputUploadCpuAvgMs,
             PreviewD3DInputUploadCpuP95Ms = previewRuntime.D3DInputUploadCpuP95Ms,
+            PreviewD3DInputUploadCpuP99Ms = previewRuntime.D3DInputUploadCpuP99Ms,
             PreviewD3DInputUploadCpuMaxMs = previewRuntime.D3DInputUploadCpuMaxMs,
             PreviewD3DRenderSubmitCpuAvgMs = previewRuntime.D3DRenderSubmitCpuAvgMs,
             PreviewD3DRenderSubmitCpuP95Ms = previewRuntime.D3DRenderSubmitCpuP95Ms,
+            PreviewD3DRenderSubmitCpuP99Ms = previewRuntime.D3DRenderSubmitCpuP99Ms,
             PreviewD3DRenderSubmitCpuMaxMs = previewRuntime.D3DRenderSubmitCpuMaxMs,
             PreviewD3DPresentCallAvgMs = previewRuntime.D3DPresentCallAvgMs,
             PreviewD3DPresentCallP95Ms = previewRuntime.D3DPresentCallP95Ms,
+            PreviewD3DPresentCallP99Ms = previewRuntime.D3DPresentCallP99Ms,
             PreviewD3DPresentCallMaxMs = previewRuntime.D3DPresentCallMaxMs,
             PreviewD3DTotalFrameCpuAvgMs = previewRuntime.D3DTotalFrameCpuAvgMs,
             PreviewD3DTotalFrameCpuP95Ms = previewRuntime.D3DTotalFrameCpuP95Ms,
+            PreviewD3DTotalFrameCpuP99Ms = previewRuntime.D3DTotalFrameCpuP99Ms,
             PreviewD3DTotalFrameCpuMaxMs = previewRuntime.D3DTotalFrameCpuMaxMs,
+            PreviewD3DFrameStatsSampleCount = previewRuntime.D3DFrameStatsSampleCount,
+            PreviewD3DFrameStatsSuccessCount = previewRuntime.D3DFrameStatsSuccessCount,
+            PreviewD3DFrameStatsFailureCount = previewRuntime.D3DFrameStatsFailureCount,
+            PreviewD3DFrameStatsLastError = previewRuntime.D3DFrameStatsLastError,
+            PreviewD3DFrameStatsPresentCount = previewRuntime.D3DFrameStatsPresentCount,
+            PreviewD3DFrameStatsPresentRefreshCount = previewRuntime.D3DFrameStatsPresentRefreshCount,
+            PreviewD3DFrameStatsSyncRefreshCount = previewRuntime.D3DFrameStatsSyncRefreshCount,
+            PreviewD3DFrameStatsSyncQpcTime = previewRuntime.D3DFrameStatsSyncQpcTime,
+            PreviewD3DFrameStatsLastPresentDelta = previewRuntime.D3DFrameStatsLastPresentDelta,
+            PreviewD3DFrameStatsLastPresentRefreshDelta = previewRuntime.D3DFrameStatsLastPresentRefreshDelta,
+            PreviewD3DFrameStatsLastSyncRefreshDelta = previewRuntime.D3DFrameStatsLastSyncRefreshDelta,
+            PreviewD3DFrameStatsMissedRefreshCount = previewRuntime.D3DFrameStatsMissedRefreshCount,
+            PreviewD3DLastSubmittedPreviewPresentId = previewRuntime.D3DLastSubmittedPreviewPresentId,
+            PreviewD3DLastSubmittedSourceSequenceNumber = previewRuntime.D3DLastSubmittedSourceSequenceNumber,
+            PreviewD3DLastSubmittedQpc = previewRuntime.D3DLastSubmittedQpc,
+            PreviewD3DLastSubmittedUtcUnixMs = previewRuntime.D3DLastSubmittedUtcUnixMs,
+            PreviewD3DLastRenderedPreviewPresentId = previewRuntime.D3DLastRenderedPreviewPresentId,
+            PreviewD3DLastRenderedSourceSequenceNumber = previewRuntime.D3DLastRenderedSourceSequenceNumber,
+            PreviewD3DLastRenderedQpc = previewRuntime.D3DLastRenderedQpc,
+            PreviewD3DLastRenderedUtcUnixMs = previewRuntime.D3DLastRenderedUtcUnixMs,
+            PreviewD3DLastRenderedSchedulerToPresentMs = previewRuntime.D3DLastRenderedSchedulerToPresentMs,
+            PreviewD3DLastDroppedPreviewPresentId = previewRuntime.D3DLastDroppedPreviewPresentId,
+            PreviewD3DLastDroppedSourceSequenceNumber = previewRuntime.D3DLastDroppedSourceSequenceNumber,
+            PreviewD3DLastDroppedQpc = previewRuntime.D3DLastDroppedQpc,
+            PreviewD3DLastDroppedUtcUnixMs = previewRuntime.D3DLastDroppedUtcUnixMs,
+            PreviewD3DLastDropReason = previewRuntime.D3DLastDropReason,
             PreviewGpuPlaybackState = previewRuntime.GpuPlaybackState,
             PreviewGpuNaturalVideoWidth = previewRuntime.GpuNaturalVideoWidth,
             PreviewGpuNaturalVideoHeight = previewRuntime.GpuNaturalVideoHeight,
@@ -884,6 +977,13 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             MjpegPreviewJitterDeadlineDropCount = health.MjpegPreviewJitterDeadlineDropCount,
             MjpegPreviewJitterTargetIncreaseCount = health.MjpegPreviewJitterTargetIncreaseCount,
             MjpegPreviewJitterTargetDecreaseCount = health.MjpegPreviewJitterTargetDecreaseCount,
+            MjpegPreviewJitterLastSelectedPreviewPresentId = health.MjpegPreviewJitterLastSelectedPreviewPresentId,
+            MjpegPreviewJitterLastSelectedSourceSequenceNumber = health.MjpegPreviewJitterLastSelectedSourceSequenceNumber,
+            MjpegPreviewJitterLastSelectedQpc = health.MjpegPreviewJitterLastSelectedQpc,
+            MjpegPreviewJitterLastSelectedSourceLatencyMs = health.MjpegPreviewJitterLastSelectedSourceLatencyMs,
+            MjpegPreviewJitterLastDroppedSourceSequenceNumber = health.MjpegPreviewJitterLastDroppedSourceSequenceNumber,
+            MjpegPreviewJitterLastDropQpc = health.MjpegPreviewJitterLastDropQpc,
+            MjpegPreviewJitterLastDropReason = health.MjpegPreviewJitterLastDropReason,
             MjpegPacketHashSampleCount = health.MjpegPacketHashSampleCount,
             MjpegPacketHashUniqueFrameCount = health.MjpegPacketHashUniqueFrameCount,
             MjpegPacketHashDuplicateFrameCount = health.MjpegPacketHashDuplicateFrameCount,
@@ -1012,7 +1112,13 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 PreviewFps = snapshot.PreviewCadenceObservedFps,
                 VideoQueueDepth = snapshot.FfmpegVideoQueueDepth,
                 VideoDrops = snapshot.VideoDropsQueueSaturated,
+                CaptureCadenceAverageMs = snapshot.CaptureCadenceAverageIntervalMs,
                 CaptureCadenceP95Ms = snapshot.CaptureCadenceP95IntervalMs,
+                CaptureCadenceMaxMs = snapshot.CaptureCadenceMaxIntervalMs,
+                PreviewCadenceAverageMs = snapshot.PreviewCadenceAverageIntervalMs,
+                PreviewCadenceP95Ms = snapshot.PreviewCadenceP95IntervalMs,
+                PreviewCadenceP99Ms = snapshot.PreviewCadenceP99IntervalMs,
+                PreviewCadenceMaxMs = snapshot.PreviewCadenceMaxIntervalMs,
                 PipelineLatencyMs = snapshot.EstimatedPipelineLatencyMs,
                 MemoryWorkingSetMb = snapshot.MemoryWorkingSetMb,
                 MemoryManagedHeapMb = snapshot.MemoryManagedHeapMb,
@@ -1187,7 +1293,232 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             throttleMs: 5000);
     }
 
+    private readonly record struct DiagnosticEvaluation(
+        string HealthStatus,
+        string LikelyStage,
+        string Summary,
+        string Evidence,
+        string SourceLane,
+        string DecodeLane,
+        string PreviewLane,
+        string RenderLane,
+        string PresentLane,
+        string RecordingLane,
+        string AudioLane);
+
     private readonly record struct PerformanceEvaluation(double Score, bool PerfectionMet, string Summary);
+
+    private static DiagnosticEvaluation BuildDiagnosticEvaluation(
+        CaptureHealthSnapshot health,
+        CaptureRuntimeSnapshot captureRuntime,
+        PreviewRuntimeSnapshot previewRuntime,
+        bool isPreviewing,
+        bool isRecording,
+        PerformanceEvaluation performance)
+    {
+        var sourceTarget = health.ExpectedFrameRate > 0
+            ? $"{1000.0 / health.ExpectedFrameRate:0.##}ms"
+            : "n/a";
+        var sourceLane =
+            $"source target={sourceTarget} avg={health.CaptureCadenceAverageIntervalMs:0.##}ms p95={health.CaptureCadenceP95IntervalMs:0.##}ms max={health.CaptureCadenceMaxIntervalMs:0.##}ms rate={health.CaptureCadenceObservedFps:0.##}/{health.ExpectedFrameRate:0.##}fps gaps={health.CaptureCadenceSevereGapCount} drops={health.CaptureCadenceEstimatedDroppedFrames} ({health.CaptureCadenceEstimatedDropPercent:0.###}%)";
+        var decodeLane =
+            $"decode p95={health.MjpegDecodeP95Ms:0.##}ms callbackP95={health.MjpegCallbackP95Ms:0.##}ms dropped={health.MjpegTotalDropped} failures={health.MjpegDecodeFailures + health.MjpegEmitFailures}";
+        var previewLane =
+            $"preview scheduler target={health.MjpegPreviewJitterTargetDepth} depth={health.MjpegPreviewJitterQueueDepth}/{health.MjpegPreviewJitterMaxDepth} deadlineDrops={health.MjpegPreviewJitterDeadlineDropCount} underflows={health.MjpegPreviewJitterUnderflowCount}";
+        var rendererSubmitted = Math.Max(
+            previewRuntime.D3DFramesSubmitted,
+            previewRuntime.D3DFramesRendered + previewRuntime.D3DFramesDropped);
+        var rendererDropPercent = DiagnosticThresholds.CalculatePercent(previewRuntime.D3DFramesDropped, rendererSubmitted);
+        var renderLane =
+            $"render submitted={previewRuntime.D3DFramesSubmitted} rendered={previewRuntime.D3DFramesRendered} dropped={previewRuntime.D3DFramesDropped} ({rendererDropPercent:0.###}%) cpuP95={previewRuntime.D3DTotalFrameCpuP95Ms:0.##}ms cpuP99={previewRuntime.D3DTotalFrameCpuP99Ms:0.##}ms";
+        var presentTarget = previewRuntime.DisplayCadenceExpectedIntervalMs > 0
+            ? $"{previewRuntime.DisplayCadenceExpectedIntervalMs:0.##}ms"
+            : "n/a";
+        var dxgiStats = previewRuntime.D3DFrameStatsSuccessCount > 0
+            ? $" dxgiStats ok={previewRuntime.D3DFrameStatsSuccessCount}/{previewRuntime.D3DFrameStatsSampleCount} pc={previewRuntime.D3DFrameStatsPresentCount} prc={previewRuntime.D3DFrameStatsPresentRefreshCount} prDelta={previewRuntime.D3DFrameStatsLastPresentRefreshDelta} missed={previewRuntime.D3DFrameStatsMissedRefreshCount}"
+            : previewRuntime.D3DFrameStatsSampleCount > 0
+                ? $" dxgiStats err={previewRuntime.D3DFrameStatsLastError} fail={previewRuntime.D3DFrameStatsFailureCount}/{previewRuntime.D3DFrameStatsSampleCount}"
+                : string.Empty;
+        var presentLane =
+            $"present target={presentTarget} avg={previewRuntime.DisplayCadenceAverageIntervalMs:0.##}ms p95={previewRuntime.DisplayCadenceP95IntervalMs:0.##}ms p99={previewRuntime.DisplayCadenceP99IntervalMs:0.##}ms max={previewRuntime.DisplayCadenceMaxIntervalMs:0.##}ms slow={previewRuntime.DisplayCadenceSlowFramePercent:0.##}% rate={previewRuntime.DisplayCadenceObservedFps:0.##}fps sync={previewRuntime.D3DPresentSyncInterval} latency={previewRuntime.D3DMaxFrameLatency} buffers={previewRuntime.D3DSwapChainBufferCount} swap={previewRuntime.D3DSwapChainAddress}{dxgiStats}";
+        var recordingLane =
+            $"recording integrity={captureRuntime.RecordingIntegrityStatus} complete={captureRuntime.RecordingIntegrityComplete} seqGaps={captureRuntime.RecordingIntegritySequenceGaps} queueDrops={captureRuntime.RecordingIntegrityQueueDroppedFrames}";
+        var audioLane =
+            $"audio integrity={captureRuntime.RecordingIntegrityAudioStatus} drops={captureRuntime.RecordingIntegrityAudioDropEvents} disc={captureRuntime.RecordingIntegrityAudioDiscontinuities} gaps={captureRuntime.RecordingIntegrityAudioCallbackGaps}";
+
+        if (!isPreviewing && !isRecording)
+        {
+            return new DiagnosticEvaluation(
+                "Idle",
+                "diagnostic_unavailable",
+                "Preview and recording are idle.",
+                "Start preview or recording to collect live frame-lane diagnostics.",
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (health.CaptureCadenceSampleCount < 30)
+        {
+            return new DiagnosticEvaluation(
+                "WarmingUp",
+                "diagnostic_unavailable",
+                "Waiting for enough capture cadence samples.",
+                sourceLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (health.RecordingEncodingFailed ||
+            string.Equals(captureRuntime.RecordingIntegrityStatus, "Incomplete", StringComparison.OrdinalIgnoreCase))
+        {
+            return new DiagnosticEvaluation(
+                "Critical",
+                "recording",
+                "Recording integrity is the likely failure point.",
+                recordingLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (!string.Equals(captureRuntime.RecordingIntegrityAudioStatus, "Clean", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(captureRuntime.RecordingIntegrityAudioStatus, "Disabled", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(captureRuntime.RecordingIntegrityAudioStatus, "NotStarted", StringComparison.OrdinalIgnoreCase))
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "audio",
+                "Audio integrity is degraded.",
+                audioLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (health.CaptureCadenceEstimatedDroppedFrames > 0 ||
+            health.CaptureCadenceSevereGapCount > 0 ||
+            health.CaptureCadenceEstimatedDropPercent > 0.1)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "source_capture",
+                "Source/capture cadence is the likely stutter stage.",
+                sourceLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (health.MjpegDecodeFailures > 0 ||
+            health.MjpegEmitFailures > 0 ||
+            health.MjpegCompressedDropsQueueFull > 0 ||
+            health.MjpegTotalDropped > 0)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "mjpeg_decode",
+                "MJPEG decode/reorder is dropping or failing frames.",
+                decodeLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (health.MjpegPreviewJitterDeadlineDropCount > 0 ||
+            health.MjpegPreviewJitterUnderflowCount > 3)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "preview_scheduler",
+                "Preview scheduler is skipping stale or missing frames.",
+                previewLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if ((rendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&
+             rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||
+            previewRuntime.DisplayCadenceSlowFramePercent > 1.0)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "renderer",
+                "Renderer pacing is the likely preview bottleneck.",
+                renderLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (previewRuntime.D3DPresentCallP95Ms > 4.0 ||
+            (previewRuntime.DisplayCadenceExpectedIntervalMs > 0 &&
+             previewRuntime.DisplayCadenceP95IntervalMs > previewRuntime.DisplayCadenceExpectedIntervalMs * 1.5))
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "present_display",
+                "Present/display cadence is the likely preview bottleneck.",
+                presentLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        var summary = performance.PerfectionMet
+            ? "No degraded frame lane detected."
+            : performance.Summary;
+        return new DiagnosticEvaluation(
+            performance.PerfectionMet ? "Healthy" : "Warning",
+            performance.PerfectionMet ? "none" : "mixed",
+            summary,
+            performance.PerfectionMet ? "All monitored frame lanes are within current thresholds." : performance.Summary,
+            sourceLane,
+            decodeLane,
+            previewLane,
+            renderLane,
+            presentLane,
+            recordingLane,
+            audioLane);
+    }
 
     private PerformanceEvaluation EvaluatePerformance(
         bool isPreviewing,

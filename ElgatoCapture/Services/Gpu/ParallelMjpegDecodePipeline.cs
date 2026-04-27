@@ -201,11 +201,11 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         }
     }
 
-    public void EnqueueFrame(ReadOnlySpan<byte> jpegData, int width, int height, long arrivalTick)
+    public bool EnqueueFrame(ReadOnlySpan<byte> jpegData, int width, int height, long arrivalTick)
     {
         if (_stopped || jpegData.IsEmpty)
         {
-            return;
+            return false;
         }
 
         var seq = Interlocked.Increment(ref _nextDispatchSeq) - 1;
@@ -228,7 +228,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                     $"budget={_compressedQueueByteBudget}");
             }
 
-            return;
+            return false;
         }
 
         Interlocked.Increment(ref _compressedFramesQueued);
@@ -251,11 +251,12 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                     $"drops={fullDrops} totalDropped={dropped} depth={Volatile.Read(ref _compressedQueueDepth)}");
             }
 
-            return;
+            return false;
         }
 
         var packetHash = FrameFingerprintCadenceTracker.ComputeHash(jpegData);
         _packetHashTracker.RecordFrame(packetHash, arrivalTick);
+        return true;
     }
 
     public PipelineTimingMetrics GetTimingMetrics()

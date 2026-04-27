@@ -34,11 +34,11 @@ public static class Logger
 #else
         VerboseEnabled = false;
 #endif
-        // Clear log on startup
         try
         {
-            File.WriteAllText(LogFilePath, $"=== ElgatoCapture Debug Log ===\n");
-            File.AppendAllText(LogFilePath, $"Started: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n\n");
+            RotatePriorLog();
+            var header = $"=== ElgatoCapture Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
+            File.WriteAllText(LogFilePath, header);
         }
         catch { /* Best-effort: Logger init must not throw — if the log file is locked we proceed without it */ }
 
@@ -163,16 +163,42 @@ public static class Logger
 
     private static void WriteDirect(string entry)
     {
-        try
+        lock (LockObject)
         {
-            lock (LockObject)
+            try
             {
                 File.AppendAllText(LogFilePath, entry);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.WriteDirect: {ex.Message}");
+            }
+        }
+    }
+
+    private static void RotatePriorLog()
+    {
+        if (!File.Exists(LogFilePath))
+        {
+            return;
+        }
+
+        var mtime = File.GetLastWriteTime(LogFilePath);
+        var rotated = RuntimePaths.GetRepoLogFile($"ElgatoCapture_Debug_{mtime:yyyyMMdd_HHmmss}.log");
+        try
+        {
+            if (File.Exists(rotated))
+            {
+                File.Delete(LogFilePath);
+            }
+            else
+            {
+                File.Move(LogFilePath, rotated);
             }
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.WriteDirect: {ex.Message}");
+            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in Logger.RotatePriorLog: {ex.Message}");
         }
     }
 

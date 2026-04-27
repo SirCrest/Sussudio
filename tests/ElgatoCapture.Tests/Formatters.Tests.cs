@@ -24,6 +24,10 @@ static partial class Program
         AssertContains(output, "== Capture Settings ==");
         AssertContains(output, "== Audio ==");
         AssertContains(output, "== Flashback ==");
+        AssertContains(output, "== Diagnostics ==");
+        AssertContains(output, "Legacy Score:");
+        AssertContains(output, "Frame Time:");
+        AssertContains(output, "Average Rate:");
         AssertContains(output, "== MJPEG Pipeline Timing ==");
         AssertContains(output, "== Preview ==");
         AssertContains(output, "== Source ==");

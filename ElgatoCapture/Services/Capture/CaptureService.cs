@@ -81,6 +81,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private string _lastFinalizeStatus = "None";
     private DateTimeOffset? _lastFinalizeUtc;
     private IReadOnlyList<string> _lastPreservedArtifacts = Array.Empty<string>();
+    private RecordingIntegritySummary _lastRecordingIntegrity = RecordingIntegritySummary.NotStarted;
+    private RecordingIntegrityCounterSnapshot? _recordingIntegrityCounterBaseline;
+    private RecordingAudioIntegrityCounterSnapshot? _recordingIntegrityAudioBaseline;
     private bool _lastUsePostMuxAudio;
     private FinalizeResult? _lastExportResult;
     private string? _audioDeviceId;
@@ -2688,6 +2691,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                         }
 
                         flashbackRecordingStartedSink = activeFlashbackSink;
+                        _recordingIntegrityCounterBaseline = CaptureRecordingIntegrityCounters(activeFlashbackSink);
+                        _recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(
+                            _wasapiAudioCapture,
+                            activeFlashbackSink,
+                            settings);
                         activeFlashbackSink.BeginRecording(fbRecordingContext.FinalOutputPath);
                         if (activeFlashbackSink.EncodingFailed)
                         {
@@ -2905,6 +2913,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                         ? activeLibAvSink
                         : null;
 
+                _recordingIntegrityCounterBaseline = CaptureRecordingIntegrityCounters(activeLibAvSink);
+                _recordingIntegrityAudioBaseline = CaptureRecordingAudioCounters(
+                    _wasapiAudioCapture,
+                    activeLibAvSink,
+                    settings);
                 await unifiedVideoCapture.StartRecordingAsync(recordingSink, activeLibAvSink, gpuEncoder).ConfigureAwait(false);
                 if (gpuEncoder != null)
                 {
@@ -3002,6 +3015,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
                 _recordingContext = null;
                 _activeRecordingSettings = null;
+                _recordingIntegrityCounterBaseline = null;
+                _recordingIntegrityAudioBaseline = null;
                 _isRecording = false;
                 _recordingStopwatch.Reset();
                 _mfConvertersDisabled = false;
@@ -3321,20 +3336,37 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
 
             var flashbackVideoCapture = _unifiedVideoCapture;
+            var recordingFramesDelivered = 0L;
+            var recordingFramesEnqueued = 0L;
             if (flashbackVideoCapture != null)
             {
                 flashbackVideoCapture.EndFlashbackRecordingAccounting();
                 _lastMfSourceReaderFramesDelivered = flashbackVideoCapture.VideoFramesArrived;
                 _lastMfSourceReaderFramesDropped = flashbackVideoCapture.VideoFramesDropped;
                 _lastMfSourceReaderNegotiatedFormat = flashbackVideoCapture.NegotiatedFormat;
-                var recordingFramesDelivered = flashbackVideoCapture.RecordingFramesDelivered;
-                var recordingFramesEnqueued = flashbackVideoCapture.VideoFramesWrittenToSink;
+                recordingFramesDelivered = flashbackVideoCapture.RecordingFramesDelivered;
+                recordingFramesEnqueued = flashbackVideoCapture.VideoFramesWrittenToSink;
                 Logger.Log(
                     "VIDEO_DIAG flashback_recording_pipeline " +
                     $"source_frames_during_recording={recordingFramesDelivered} " +
                     $"frames_accepted_by_flashback={recordingFramesEnqueued} " +
                     $"pipeline_drops={recordingFramesDelivered - recordingFramesEnqueued}");
             }
+
+            _lastRecordingIntegrity = BuildRecordingIntegritySummary(
+                backend: "Flashback",
+                recordingActive: false,
+                finalizeSucceeded: fbResult.Succeeded,
+                finalizeStatus: fbResult.StatusMessage,
+                completedUtc: DateTimeOffset.UtcNow,
+                sourceFrames: recordingFramesDelivered,
+                acceptedFrames: recordingFramesEnqueued,
+                counters: CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, flashbackVideoCapture),
+                audioCounters: GetRecordingAudioCountersSinceBaseline(
+                    CaptureRecordingAudioCounters(_wasapiAudioCapture, flashbackSink, _activeRecordingSettings)));
+            _recordingIntegrityCounterBaseline = null;
+            _recordingIntegrityAudioBaseline = null;
+            LogRecordingIntegritySummary(_lastRecordingIntegrity);
 
             // If settings changed during recording (format, buffer duration, etc.),
             // do a full restart to apply them. Otherwise just cycle the sink to
@@ -3429,6 +3461,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         OperationCanceledException? cancellationException = null;
 
         var unifiedVideoCapture = _unifiedVideoCapture;
+        var recordingFramesDeliveredToBoundary = 0L;
+        var recordingFramesAcceptedByBoundary = 0L;
         if (unifiedVideoCapture != null)
         {
             try
@@ -3456,8 +3490,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _lastMfSourceReaderFramesDelivered = unifiedVideoCapture.VideoFramesArrived;
             _lastMfSourceReaderFramesDropped = unifiedVideoCapture.VideoFramesDropped;
             _lastMfSourceReaderNegotiatedFormat = unifiedVideoCapture.NegotiatedFormat;
-            var recordingFramesDelivered = unifiedVideoCapture.RecordingFramesDelivered;
-            var recordingFramesEnqueued = unifiedVideoCapture.VideoFramesWrittenToSink;
+            recordingFramesDeliveredToBoundary = unifiedVideoCapture.RecordingFramesDelivered;
+            recordingFramesAcceptedByBoundary = unifiedVideoCapture.VideoFramesWrittenToSink;
             Logger.Log(
                 "VIDEO_DIAG mf_source_reader " +
                 $"frames_delivered={_lastMfSourceReaderFramesDelivered} " +
@@ -3465,9 +3499,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 $"negotiated_format='{_lastMfSourceReaderNegotiatedFormat ?? "unknown"}'");
             Logger.Log(
                 "VIDEO_DIAG recording_pipeline " +
-                $"source_frames_during_recording={recordingFramesDelivered} " +
-                $"frames_enqueued_to_encoder={recordingFramesEnqueued} " +
-                $"pipeline_drops={recordingFramesDelivered - recordingFramesEnqueued}");
+                $"source_frames_during_recording={recordingFramesDeliveredToBoundary} " +
+                $"frames_enqueued_to_encoder={recordingFramesAcceptedByBoundary} " +
+                $"pipeline_drops={recordingFramesDeliveredToBoundary - recordingFramesAcceptedByBoundary}");
         }
 
         if (_wasapiAudioCapture != null)
@@ -3531,6 +3565,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
 
         }
+
+        var libAvFinalAudioCounters = libAvSink != null
+            ? GetRecordingAudioCountersSinceBaseline(
+                CaptureRecordingAudioCounters(_wasapiAudioCapture, libAvSink, _activeRecordingSettings))
+            : RecordingAudioIntegrityCounterSnapshot.Disabled;
 
         if (!_isVideoPreviewActive)
         {
@@ -3600,6 +3639,19 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         if (libAvSink != null)
         {
             CaptureEncoderRuntimeTelemetry(libAvSink);
+            _lastRecordingIntegrity = BuildRecordingIntegritySummary(
+                backend: "LibAv",
+                recordingActive: false,
+                finalizeSucceeded: result.Succeeded,
+                finalizeStatus: result.StatusMessage,
+                completedUtc: DateTimeOffset.UtcNow,
+                sourceFrames: recordingFramesDeliveredToBoundary,
+                acceptedFrames: recordingFramesAcceptedByBoundary,
+                counters: GetRecordingIntegrityCountersSinceBaseline(CaptureRecordingIntegrityCounters(libAvSink)),
+                audioCounters: libAvFinalAudioCounters);
+            _recordingIntegrityCounterBaseline = null;
+            _recordingIntegrityAudioBaseline = null;
+            LogRecordingIntegritySummary(_lastRecordingIntegrity);
         }
 
         _recordingStopwatch.Stop();

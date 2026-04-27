@@ -17,6 +17,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private const int BytesPerFloatSample = 4;
     private const int OutputBlockAlign = OutputChannels * BytesPerFloatSample;
     private const int AudioLevelFireIntervalMs = 66;
+    private const double SevereCallbackGapMultiplier = 4.0;
     private const uint WaitTimeoutMs = 100;
 
     private IMMDeviceEnumerator? _deviceEnumerator;
@@ -39,6 +40,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     private long _resampleRemainderNumerator;
     private long _captureCallbackCount;
     private long _lastCaptureCallbackTickMs;
+    private long _captureCallbackSevereGapCount;
+    private long _audioDataDiscontinuityCount;
+    private long _audioTimestampErrorCount;
     private int _captureCallbackSilenceCount;
     private readonly object _captureCallbackIntervalLock = new();
     private readonly double[] _captureCallbackIntervalWindowMs = new double[100];
@@ -64,6 +68,17 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
     public double CaptureCallbackAvgIntervalMs => GetCaptureCallbackIntervalMetrics().AverageIntervalMs;
 
     public double CaptureCallbackMaxIntervalMs => GetCaptureCallbackIntervalMetrics().MaxIntervalMs;
+
+    public long CaptureCallbackSevereGapCount => Interlocked.Read(ref _captureCallbackSevereGapCount);
+
+    public long AudioDataDiscontinuityCount => Interlocked.Read(ref _audioDataDiscontinuityCount);
+
+    public long AudioTimestampErrorCount => Interlocked.Read(ref _audioTimestampErrorCount);
+
+    public long AudioGlitchCount =>
+        Interlocked.Read(ref _audioDataDiscontinuityCount) +
+        Interlocked.Read(ref _audioTimestampErrorCount) +
+        Interlocked.Read(ref _captureCallbackSevereGapCount);
 
     public int CaptureCallbackSilenceCount => Volatile.Read(ref _captureCallbackSilenceCount);
 
@@ -168,6 +183,9 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
             Interlocked.Exchange(ref _audioLevelEventsLastFireTickMs, 0);
             Interlocked.Exchange(ref _captureCallbackCount, 0);
             Interlocked.Exchange(ref _lastCaptureCallbackTickMs, 0);
+            Interlocked.Exchange(ref _captureCallbackSevereGapCount, 0);
+            Interlocked.Exchange(ref _audioDataDiscontinuityCount, 0);
+            Interlocked.Exchange(ref _audioTimestampErrorCount, 0);
             Volatile.Write(ref _captureCallbackSilenceCount, 0);
             lock (_captureCallbackIntervalLock)
             {
@@ -416,6 +434,7 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
                     continue;
                 }
 
+                TrackCapturePacketFlags(flags);
                 converted = ConvertToOutputFormat(
                     data,
                     (int)availableFrames,
@@ -623,6 +642,14 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         }
 
         var intervalMs = callbackTickMs - previousTickMs;
+        var expectedIntervalMs = _captureFormat.SampleRate > 0
+            ? Math.Max(1.0, (double)OutputSampleRate / _captureFormat.SampleRate)
+            : 1.0;
+        if (intervalMs > Math.Max(WaitTimeoutMs, expectedIntervalMs * SevereCallbackGapMultiplier))
+        {
+            Interlocked.Increment(ref _captureCallbackSevereGapCount);
+        }
+
         lock (_captureCallbackIntervalLock)
         {
             _captureCallbackIntervalWindowMs[_captureCallbackIntervalIndex] = intervalMs;
@@ -665,6 +692,19 @@ internal sealed class WasapiAudioCapture : IAsyncDisposable
         }
 
         return new CallbackIntervalMetrics(intervals.Length, sum / intervals.Length, max);
+    }
+
+    private void TrackCapturePacketFlags(uint flags)
+    {
+        if ((flags & WasapiComInterop.AUDCLNT_BUFFERFLAGS_DATA_DISCONTINUITY) != 0)
+        {
+            Interlocked.Increment(ref _audioDataDiscontinuityCount);
+        }
+
+        if ((flags & WasapiComInterop.AUDCLNT_BUFFERFLAGS_TIMESTAMP_ERROR) != 0)
+        {
+            Interlocked.Increment(ref _audioTimestampErrorCount);
+        }
     }
 
     private int ComputeResampledFrameCount(int inputFrames)
