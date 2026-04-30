@@ -185,6 +185,8 @@ static partial class Program
     private static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
     {
         var source = ReadRepoFile("ElgatoCapture/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
+        AssertContains(source, "HasJpegStartOfImage");
         AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
         AssertContains(source, "SortedDictionary<long, DecodedFrame>");
         AssertContains(source, "DefaultDecodedReorderByteBudget");
@@ -200,6 +202,21 @@ static partial class Program
         AssertEqual(false, source.Contains("NotifySkippedFrame", StringComparison.Ordinal), "strict MJPEG path must not synthesize skip callbacks");
         AssertEqual(false, source.Contains("reorder_missing", StringComparison.Ordinal), "shared reorder skip reason removed");
         AssertEqual(false, source.Contains("skippedSeq = _nextEmitSeq++", StringComparison.Ordinal), "shared reorder must not synthesize timeout skips");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task ParallelMjpegDecodePipeline_DropsStartupNonJpegBeforeSequencing()
+    {
+        var source = ReadRepoFile("ElgatoCapture/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        var guardIndex = source.IndexOf("!HasJpegStartOfImage(jpegData)", StringComparison.Ordinal);
+        var sequenceIndex = source.IndexOf("Interlocked.Increment(ref _nextDispatchSeq)", StringComparison.Ordinal);
+
+        AssertEqual(true, guardIndex >= 0, "startup non-JPEG guard exists");
+        AssertEqual(true, sequenceIndex >= 0, "MJPEG sequence assignment exists");
+        AssertEqual(true, guardIndex < sequenceIndex, "startup non-JPEG guard must run before sequence assignment");
+        AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
+        AssertContains(source, "return false;");
 
         return Task.CompletedTask;
     }

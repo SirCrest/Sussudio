@@ -110,6 +110,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     private long _compressedDropsQueueFull;
     private long _compressedDropsByteBudget;
     private long _compressedDropsDisposed;
+    private long _startupInvalidCompressedDrops;
     private long _decodeFailures;
     private long _reorderCollisions;
     private long _emitFailures;
@@ -208,6 +209,23 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             return false;
         }
 
+        if (Volatile.Read(ref _compressedFramesQueued) == 0 &&
+            Volatile.Read(ref _compressedFramesDequeued) == 0 &&
+            !HasJpegStartOfImage(jpegData))
+        {
+            var dropped = Interlocked.Increment(ref _totalFramesDropped);
+            var startupDrops = Interlocked.Increment(ref _startupInvalidCompressedDrops);
+            Interlocked.Increment(ref _compressedDropsDisposed);
+            if (startupDrops <= 8 || startupDrops % 30 == 0)
+            {
+                Logger.Log(
+                    $"MJPEG_PIPELINE_STARTUP_DROP reason=missing_soi drops={startupDrops} " +
+                    $"totalDropped={dropped} bytes={jpegData.Length}");
+            }
+
+            return false;
+        }
+
         var seq = Interlocked.Increment(ref _nextDispatchSeq) - 1;
         var buffer = ArrayPool<byte>.Shared.Rent(jpegData.Length);
         jpegData.CopyTo(buffer);
@@ -258,6 +276,9 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
         _packetHashTracker.RecordFrame(packetHash, arrivalTick);
         return true;
     }
+
+    private static bool HasJpegStartOfImage(ReadOnlySpan<byte> data)
+        => data.Length >= 2 && data[0] == 0xFF && data[1] == 0xD8;
 
     public PipelineTimingMetrics GetTimingMetrics()
     {

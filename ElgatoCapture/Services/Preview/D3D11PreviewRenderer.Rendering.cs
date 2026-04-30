@@ -265,28 +265,14 @@ internal sealed partial class D3D11PreviewRenderer
                     throw new InvalidOperationException($"VideoProcessorBlt failed: 0x{bltResult.Code:X8}.");
                 }
 
-                TryCaptureFrameBeforePresent("VideoProcessor");
-                var presentStart = Stopwatch.GetTimestamp();
-                var presentResult = _swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);
-                var presentEnd = Stopwatch.GetTimestamp();
-                presentTicks += presentEnd - presentStart;
-                if (presentResult.Failure)
-                {
-                    throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
-                }
-
-                if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
-                {
-                    Logger.Log("D3D11 preview first frame rendered.");
-                    _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
-                }
-
-                Interlocked.Increment(ref _framesRendered);
-                TrackFramePresented(frame, presentEnd);
-                TrackPresentCadence();
-                TrackDxgiFrameStatistics();
-                TrackPipelineLatency(frame.ArrivalTick);
-                TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
+                PresentAndTrackFrame(
+                    frame,
+                    "VideoProcessor",
+                    "D3D11 preview first frame rendered.",
+                    totalStart,
+                    inputUploadTicks,
+                    renderTicks,
+                    ref presentTicks);
             }
             finally
             {
@@ -373,28 +359,14 @@ internal sealed partial class D3D11PreviewRenderer
             _srvNullArray2[1] = null;
             _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
-            TryCaptureFrameBeforePresent(RendererModeNv12Shader);
-            var presentStart = Stopwatch.GetTimestamp();
-            var presentResult = _swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);
-            var presentEnd = Stopwatch.GetTimestamp();
-            presentTicks += presentEnd - presentStart;
-            if (presentResult.Failure)
-            {
-                throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
-            }
-
-            if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
-            {
-                Logger.Log("D3D11 preview first SDR frame rendered via NV12 shader.");
-                _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
-            }
-
-            Interlocked.Increment(ref _framesRendered);
-            TrackFramePresented(frame, presentEnd);
-            TrackPresentCadence();
-            TrackDxgiFrameStatistics();
-            TrackPipelineLatency(frame.ArrivalTick);
-            TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
+            PresentAndTrackFrame(
+                frame,
+                RendererModeNv12Shader,
+                "D3D11 preview first SDR frame rendered via NV12 shader.",
+                totalStart,
+                inputUploadTicks,
+                renderTicks,
+                ref presentTicks);
         }
         finally
         {
@@ -513,35 +485,56 @@ internal sealed partial class D3D11PreviewRenderer
             var rendererMode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
                 ? RendererModeHdrPassthrough
                 : RendererModeHdrShader;
-            TryCaptureFrameBeforePresent(rendererMode);
-            var presentStart = Stopwatch.GetTimestamp();
-            var presentResult = _swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);
-            var presentEnd = Stopwatch.GetTimestamp();
-            presentTicks += presentEnd - presentStart;
-            if (presentResult.Failure)
-            {
-                throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
-            }
-
-            if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
-            {
-                var mode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
-                    ? "passthrough" : "tonemapping";
-                Logger.Log($"D3D11 preview first HDR frame rendered via {mode} shader.");
-                _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
-            }
-
-            Interlocked.Increment(ref _framesRendered);
-            TrackFramePresented(frame, presentEnd);
-            TrackPresentCadence();
-            TrackDxgiFrameStatistics();
-            TrackPipelineLatency(frame.ArrivalTick);
-            TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
+            var mode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
+                ? "passthrough" : "tonemapping";
+            PresentAndTrackFrame(
+                frame,
+                rendererMode,
+                $"D3D11 preview first HDR frame rendered via {mode} shader.",
+                totalStart,
+                inputUploadTicks,
+                renderTicks,
+                ref presentTicks);
         }
         finally
         {
             Interlocked.Exchange(ref _inNativeCall, 0);
         }
+    }
+
+    private void PresentAndTrackFrame(
+        PendingFrame frame,
+        string rendererMode,
+        string firstFrameMessage,
+        long totalStart,
+        long inputUploadTicks,
+        long renderTicks,
+        ref long presentTicks)
+    {
+        var swapChain = _swapChain ?? throw new InvalidOperationException("Swap chain is not initialized.");
+
+        TryCaptureFrameBeforePresent(rendererMode);
+        var presentStart = Stopwatch.GetTimestamp();
+        var presentResult = swapChain.Present((uint)_presentSyncInterval, PresentFlags.None);
+        var presentEnd = Stopwatch.GetTimestamp();
+        presentTicks += presentEnd - presentStart;
+        if (presentResult.Failure)
+        {
+            throw new InvalidOperationException($"SwapChain.Present failed: 0x{presentResult.Code:X8}.");
+        }
+
+        if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
+        {
+            Logger.Log(firstFrameMessage);
+            _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
+        }
+
+        Interlocked.Increment(ref _framesRendered);
+        TrackFramePresented(frame, presentEnd);
+        TrackPresentCadence();
+        TrackDxgiFrameStatistics();
+        TrackPipelineLatency(frame.ArrivalTick);
+        TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
     }
 
     private bool TryEnsureNv12ShaderResources(PendingFrame frame)

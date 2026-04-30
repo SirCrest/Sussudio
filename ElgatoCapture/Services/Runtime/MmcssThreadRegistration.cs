@@ -75,7 +75,7 @@ internal sealed class MmcssThreadRegistration : IDisposable
         Critical = 2
     }
 
-    [DllImport("avrt.dll", ExactSpelling = true, SetLastError = true, CharSet = CharSet.Unicode)]
+    [DllImport("avrt.dll", EntryPoint = "AvSetMmThreadCharacteristicsW", ExactSpelling = true, SetLastError = true, CharSet = CharSet.Unicode)]
     private static extern IntPtr AvSetMmThreadCharacteristics(string taskName, out int taskIndex);
 
     [DllImport("avrt.dll", ExactSpelling = true, SetLastError = true)]

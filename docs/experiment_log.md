@@ -2880,3 +2880,88 @@ I2C_WR 0x4A reg=0x0200 val=[07 00]   (finalize)
 ### Smoke Test Results (30-minute monitoring in progress)
 - T+0: Score=100, Buffer=68.9s, Working Set=337MB, 0 drops, 0 gaps
 - Monitoring at 5, 10, 15, 20, 25, 30 minute intervals
+
+## 2026-04-27 — Preview present sync interval default flip (sync=1 → sync=0)
+
+**Problem:** User reported preview 1% lows at ~83fps (target: 115-116fps) at 4K@120 MJPG SDR with VideoProcessor render path.
+
+**Method:** Live A/B test via `ELGATOCAPTURE_PREVIEW_PRESENT_SYNC_INTERVAL` env override on the running Debug build (Elgato 4K X, 3840×2160@120, MJPG, no recording). Captured `ecctl state --json` after ~30s steady-state for each setting.
+
+**Measurements:**
+
+| Metric | sync=1 | sync=0 | Δ |
+|---|---|---|---|
+| Present cadence avg | 8.34ms | 8.33ms | unchanged |
+| Present p95 (5% low) | 8.77ms (114fps) | 8.87ms (113fps) | within noise |
+| Present p99 (1% low) | 11.99ms (83fps) | 9.36ms (107fps) | **-2.6ms** |
+| Present max | 88.6ms | 11.05ms | **-87%** |
+| Slow-frame % | 0.5% | 0% | **gone** |
+| Render CPU p95 | 8.65ms | 1.32ms | -85% |
+| Render CPU p99 | 10.38ms | 2.04ms | -80% |
+| InputUpload p99 | 2.99ms | 1.64ms | -45% |
+| PresentCall p99 | 19.65ms | 0.30ms | -98% |
+| Frame drops % | 0.306% | 0.021% | -93% |
+| Diagnostic health | Warning | Healthy | ✓ |
+
+**Why sync=0 is correct here:** SwapChainPanel composition runs through DWM, so DWM enforces refresh-rate pacing on the final pixel delivery (no tearing). With sync=1, the render thread was paying a redundant per-frame vsync wait inside `IDXGISwapChain::Present` on top of the source-rate pacing already provided by the 120fps capture stream. With sync=0, Present queues and returns; the render loop now naturally tracks the 8.33ms source cadence with ~1ms tail.
+
+**Change:** Default for `_presentSyncInterval` flipped from 1 → 0 in `ElgatoCapture/Services/Preview/D3D11PreviewRenderer.cs:363`. Env override `ELGATOCAPTURE_PREVIEW_PRESENT_SYNC_INTERVAL=1` still available to restore old behavior.
+
+## 2026-04-30 — MJPEG preview scheduler/render MMCSS validation
+
+**Problem:** 4K120 MJPEG preview still showed visible stutter, with reported 1% lows varying around 105-113fps.
+
+**Change:** Defaulted the MJPEG preview jitter thread and D3D11 render thread to MMCSS `Playback`, and fixed the AVRT P/Invoke to call `AvSetMmThreadCharacteristicsW` so registration actually succeeds. Kept display-clock pacing and waitable swap chain as opt-in knobs after live A/B showed they did not improve this setup.
+
+**Default live run:** Elgato 4K X, MJPG 3840x2160@120, SDR preview, no recording, automation snapshot after ~25s steady-state.
+
+| Metric | Result |
+|---|---|
+| Diagnostic health | Healthy |
+| Source cadence | avg 8.33ms, p95 8.47ms, max 8.77ms |
+| MJPEG decode | p95 24.45ms, dropped 0, failures 0 |
+| Preview scheduler | target 2, depth 3/12, deadline drops 0, underflows 0 |
+| Render CPU | p95 1.03ms, p99 1.24ms |
+| Present cadence | avg 8.33ms, p95 8.66ms, p99 8.98ms, max 9.56ms |
+| Slow-frame percent | 0% |
+| Visual repeat percent | 0.104% |
+| Swap chain | sync=0, latency=2, buffers=3, waitable=False |
+
+**A/B notes:** `ELGATOCAPTURE_PREVIEW_WAITABLE_SWAPCHAIN=1` worsened max present interval (11.33ms). `ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_PACING=1` kept p99 similar but introduced startup preview scheduler deadline drops on this machine, so it remains an experimental override.
+
+## 2026-04-30 — Deep MJPEG preview buffering experiment
+
+**Question:** Can significantly more preview buffering move 4K120 MJPEG 1% lows toward 118fps?
+
+**Change for experiment:** Added environment controls for MJPEG preview jitter buffer depth:
+
+- `ELGATOCAPTURE_PREVIEW_JITTER_TARGET_DEPTH`
+- `ELGATOCAPTURE_PREVIEW_JITTER_MIN_TARGET_DEPTH`
+- `ELGATOCAPTURE_PREVIEW_JITTER_MAX_TARGET_DEPTH`
+- `ELGATOCAPTURE_PREVIEW_JITTER_MAX_DEPTH`
+
+**Method:** Ran the same Elgato 4K X MJPG 3840x2160@120 SDR preview path with forced fixed-depth preview buffers.
+
+| Mode | Target / max depth | Queue latency avg | Queue latency p95 | Present p95 | Present p99 | Present max | Drops / underflows |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Default reference | adaptive 2-8 / 12 | low adaptive | low adaptive | 8.66ms | 8.98ms | 9.56ms | 0 / 0 |
+| Deep-12 | 12 / 24 | 105.2ms | 107.6ms | 8.53ms | 8.93ms | 9.60ms | 0 / 0 |
+| Deep-24 | 24 / 36 | 203.9ms | 205.7ms | 8.68ms | 8.93ms | 9.56ms | 0 / 0 |
+
+**Conclusion:** Extra buffering beyond the existing adaptive jitter buffer does not materially move p99 toward the 8.47ms target needed for 118fps 1% lows. It reduces render CPU variance slightly but mostly buys latency. The remaining tail appears more likely to be final present/compositor/display cadence than MJPEG decode burst absorption.
+
+## 2026-04-30 — Preview present/compositor cadence retest
+
+**Question:** If buffering is not the answer, can the SwapChainPanel/DWM present policy tighten 4K120 1% lows?
+
+**Method:** Live A/B on the current x64 Debug build, Elgato 4K X, MJPG 3840x2160@120, no recording.
+
+| Mode | Present p95 | Present p99 | Present max | Notes |
+| --- | ---: | ---: | ---: | --- |
+| sync=0, latency=2, buffers=3 | 8.78ms | 9.02ms | 9.27ms | Low render CPU, but misses 118fps 1% target |
+| sync=1, latency=2, buffers=3 | 8.52ms | 8.68ms | 9.56ms | Better cadence, more render-thread blocking |
+| sync=1, latency=1, buffers=2 | 8.44ms | 8.49ms | 12.33ms | Closest to 118fps 1% target, no drops |
+
+**Change:** Default preview cadence policy now uses `ELGATOCAPTURE_PREVIEW_PRESENT_SYNC_INTERVAL=1`, `ELGATOCAPTURE_PREVIEW_DXGI_MAX_FRAME_LATENCY=1`, and `ELGATOCAPTURE_PREVIEW_SWAPCHAIN_BUFFER_COUNT=2` equivalents in `D3D11PreviewRenderer`. Env overrides remain available.
+
+**Conclusion:** The best current lever is the compositor/present queue, not additional MJPEG preview buffering. The new default sits just above the 8.47ms p99 target in the short run and should get longer preview-only and preview+record validation.

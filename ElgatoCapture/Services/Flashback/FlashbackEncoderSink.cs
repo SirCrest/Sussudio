@@ -770,10 +770,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             return;
         }
 
-        ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
-        ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
-        ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
-        ReturnRemainingGpuBuffers(_gpuQueue);
+        ReturnAllRemainingQueuedBuffers();
 
         _cts?.Dispose();
         _cts = null;
@@ -1044,10 +1041,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             Logger.Log("FLASHBACK_SINK_ENCODING_LOOP_CANCELLED");
             _forceRotateTcs?.TrySetResult(Array.Empty<string>());
-            ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
-            ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
-            ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
-            ReturnRemainingGpuBuffers(_gpuQueue);
+            ReturnAllRemainingQueuedBuffers();
         }
         catch (Exception ex)
         {
@@ -1078,10 +1072,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 catch { /* Best effort — don't mask the original fatal error */ }
             }
 
-            ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
-            ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
-            ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
-            ReturnRemainingGpuBuffers(_gpuQueue);
+            ReturnAllRemainingQueuedBuffers();
             try
             {
                 _encoder.Dispose();
@@ -1715,6 +1706,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         ReturnBuffer(packet.Buffer);
         return false;
         }
+    }
+
+    private void ReturnAllRemainingQueuedBuffers()
+    {
+        ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
+        ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
+        ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
+        ReturnRemainingGpuBuffers(_gpuQueue);
     }
 
     private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)

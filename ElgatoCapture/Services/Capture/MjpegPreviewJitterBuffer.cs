@@ -114,13 +114,16 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private readonly PreviewFrameProbe? _previewFrameProbe;
     private readonly double _fps;
     private readonly long _frameIntervalTicks;
-    private const int MinAdaptiveTargetDepth = 2;
-    private const int MaxAdaptiveTargetDepth = 8;
+    private const int DefaultMinAdaptiveTargetDepth = 2;
+    private const int DefaultMaxAdaptiveTargetDepth = 8;
+    private const int DefaultExtraQueueDepth = 4;
     private const int SoftDeadlineExtraFrames = 2;
     private const int HardDeadlineExtraFrames = 4;
     private const int FastCatchUpSurplusFrames = 2;
     private const int AggressiveCatchUpSurplusFrames = 4;
     private const double LateScheduleResetFrames = 0.5;
+    private int _minAdaptiveTargetDepth;
+    private int _maxAdaptiveTargetDepth;
     private int _targetDepth;
     private readonly int _maxDepth;
     private readonly bool _timerResolutionRaised;
@@ -156,7 +159,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private long _lastDisplayClockPacedPresentTick;
     private string _lastDropReason = string.Empty;
     private int _disposed;
-    private readonly string _mmcssTask = Environment.GetEnvironmentVariable("ELGATOCAPTURE_PREVIEW_JITTER_MMCSS_TASK") ?? string.Empty;
+    private readonly string _mmcssTask = Environment.GetEnvironmentVariable("ELGATOCAPTURE_PREVIEW_JITTER_MMCSS_TASK") ?? "Playback";
     private readonly int _mmcssPriority = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_JITTER_MMCSS_PRIORITY", 1, -2, 2);
     private readonly bool _displayClockPacingEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_PACING", 0, 0, 1) != 0;
     private readonly double _displayClockSubmitDelayMs = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_SUBMIT_DELAY_MS", 0.25, 0.0, 4.0);
@@ -176,8 +179,31 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
         _fps = fps;
         _frameIntervalTicks = Math.Max(1, (long)Math.Round(Stopwatch.Frequency / fps));
-        _targetDepth = Math.Clamp(targetDepth, MinAdaptiveTargetDepth, MaxAdaptiveTargetDepth);
-        _maxDepth = MaxAdaptiveTargetDepth + 4;
+        _minAdaptiveTargetDepth = EnvironmentHelpers.GetIntFromEnv(
+            "ELGATOCAPTURE_PREVIEW_JITTER_MIN_TARGET_DEPTH",
+            DefaultMinAdaptiveTargetDepth,
+            1,
+            60);
+        _maxAdaptiveTargetDepth = Math.Max(
+            _minAdaptiveTargetDepth,
+            EnvironmentHelpers.GetIntFromEnv(
+                "ELGATOCAPTURE_PREVIEW_JITTER_MAX_TARGET_DEPTH",
+                DefaultMaxAdaptiveTargetDepth,
+                1,
+                60));
+        var requestedTargetDepth = EnvironmentHelpers.GetIntFromEnv(
+            "ELGATOCAPTURE_PREVIEW_JITTER_TARGET_DEPTH",
+            targetDepth,
+            1,
+            60);
+        _targetDepth = Math.Clamp(requestedTargetDepth, _minAdaptiveTargetDepth, _maxAdaptiveTargetDepth);
+        _maxDepth = Math.Max(
+            _targetDepth + 1,
+            EnvironmentHelpers.GetIntFromEnv(
+                "ELGATOCAPTURE_PREVIEW_JITTER_MAX_DEPTH",
+                _maxAdaptiveTargetDepth + DefaultExtraQueueDepth,
+                _targetDepth + 1,
+                90));
         _lastAdaptiveIssueTick = Stopwatch.GetTimestamp();
         _lastTargetDecreaseTick = _lastAdaptiveIssueTick;
         _getPreviewSink = getPreviewSink ?? throw new ArgumentNullException(nameof(getPreviewSink));
@@ -192,7 +218,8 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         };
         _thread.Start();
         Logger.Log(
-            $"MJPEG_PREVIEW_JITTER_INIT fps={fps:0.###} target={_targetDepth} max={_maxDepth} " +
+            $"MJPEG_PREVIEW_JITTER_INIT fps={fps:0.###} target={_targetDepth} " +
+            $"targetRange={_minAdaptiveTargetDepth}-{_maxAdaptiveTargetDepth} max={_maxDepth} " +
             $"timerResolutionRaised={_timerResolutionRaised} displayClockPacing={_displayClockPacingEnabled} " +
             $"displayClockDelayMs={_displayClockSubmitDelayMs:0.###} displayClockMinLeadMs={_displayClockMinLeadMs:0.###}");
     }
@@ -808,7 +835,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         while (true)
         {
             var current = Volatile.Read(ref _targetDepth);
-            if (current >= MaxAdaptiveTargetDepth)
+            if (current >= _maxAdaptiveTargetDepth)
             {
                 Interlocked.Exchange(ref _lastAdaptiveIssueTick, nowTick);
                 return;
@@ -845,7 +872,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         while (true)
         {
             var current = Volatile.Read(ref _targetDepth);
-            if (current <= MinAdaptiveTargetDepth)
+            if (current <= _minAdaptiveTargetDepth)
             {
                 Interlocked.Exchange(ref _lastTargetDecreaseTick, nowTick);
                 return;

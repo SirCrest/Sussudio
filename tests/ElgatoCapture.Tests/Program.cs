@@ -318,6 +318,9 @@ static partial class Program
                 "MJPEG shared reorder does not synthesize recording skips",
                 ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips),
             await RunCheckAsync(
+                "MJPEG startup non-JPEG samples drop before sequencing",
+                ParallelMjpegDecodePipeline_DropsStartupNonJpegBeforeSequencing),
+            await RunCheckAsync(
                 "MJPEG known losses signal fatal instead of strict skips",
                 ParallelMjpegDecodePipeline_KnownLossSignalsFatalInsteadOfSkipping),
             await RunCheckAsync(
@@ -483,6 +486,9 @@ static partial class Program
             await RunCheckAsync(
                 "RuntimePaths paths contain expected directory names",
                 RuntimePaths_PathsContainExpectedDirectoryNames),
+            await RunCheckAsync(
+                "MMCSS registration uses Unicode AVRT entry point",
+                MmcssThreadRegistration_UsesUnicodeAvrtEntryPoint),
 
             // --- SourceSignalTelemetrySnapshot ---
             await RunCheckAsync(
@@ -2554,6 +2560,15 @@ static partial class Program
             throw new InvalidOperationException("RuntimePaths.GetRepoTempRoot not found.");
         var tempRoot = (string)getRepoTempRoot.Invoke(null, null)!;
         AssertContains(tempRoot, "temp");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task MmcssThreadRegistration_UsesUnicodeAvrtEntryPoint()
+    {
+        var source = ReadRepoFile("ElgatoCapture/Services/Runtime/MmcssThreadRegistration.cs");
+        AssertContains(source, "EntryPoint = \"AvSetMmThreadCharacteristicsW\"");
+        AssertContains(source, "MMCSS registered task=");
 
         return Task.CompletedTask;
     }

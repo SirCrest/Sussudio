@@ -360,16 +360,21 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private readonly DispatcherQueue _dispatcherQueue;
     private readonly ManualResetEventSlim _frameReadyEvent = new(false);
     private readonly object _lifecycleLock = new();
+    // Best measured 4K120 MJPG cadence on the SwapChainPanel path uses DWM-paced
+    // Present(1) with a shallow compositor queue. The env overrides remain for A/B
+    // runs on other machines or display modes.
     private readonly int _presentSyncInterval = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_PRESENT_SYNC_INTERVAL", 1, 0, 1);
-    private readonly int _dxgiMaxFrameLatency = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_MAX_FRAME_LATENCY", 2, 1, 3);
-    private readonly int _swapChainBufferCount = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_SWAPCHAIN_BUFFER_COUNT", 3, 2, 4);
+    private readonly int _dxgiMaxFrameLatency = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_MAX_FRAME_LATENCY", 1, 1, 3);
+    private readonly int _swapChainBufferCount = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_SWAPCHAIN_BUFFER_COUNT", 2, 2, 4);
     private readonly int _maxPendingFrames = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RENDER_QUEUE_DEPTH", 4, 1, 8);
     private readonly bool _waitableSwapChainEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_WAITABLE_SWAPCHAIN", 0, 0, 1) != 0;
     private readonly bool _dxgiFrameStatisticsEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS", 1, 0, 1) != 0;
     private readonly bool _dxgiFrameStatisticsDwmFlushEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH", 0, 0, 1) != 0;
     private readonly bool _mediaPresentDurationEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_MEDIA_PRESENT_DURATION", 0, 0, 1) != 0;
-    private readonly string _renderMmcssTask = Environment.GetEnvironmentVariable("ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_TASK") ?? string.Empty;
+    private readonly string _renderMmcssTask = Environment.GetEnvironmentVariable("ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_TASK") ?? "Playback";
     private readonly int _renderMmcssPriority = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_PRIORITY", 1, -2, 2);
+    private readonly int _nativeStopFenceTimeoutMs = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_NATIVE_STOP_FENCE_TIMEOUT_MS", 1000, 100, 10000);
+    private readonly int _renderThreadStopTimeoutMs = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RENDER_THREAD_STOP_TIMEOUT_MS", 3000, 500, 30000);
 
     private Thread? _renderThread;
     private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();
@@ -697,7 +702,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         lock (_lifecycleLock)
         {
             renderThread = _renderThread;
-            _renderThread = null;
             if (renderThread == null)
             {
                 FailPendingFrameCapture("Preview renderer is not running.");
@@ -708,14 +712,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             Interlocked.Exchange(ref _stopRequested, 1);
         }
 
-        // Wait for any in-flight native render call to complete.
-        {
-            var sw = new SpinWait();
-            while (Volatile.Read(ref _inNativeCall) != 0)
-            {
-                sw.SpinOnce();
-            }
-        }
+        WaitForNativeCallToDrainOrThrow("render-thread-only stop");
 
         // Do NOT unbind or dispose the swap chain — the new renderer will
         // overwrite the panel binding with its own chain. Disposing the old
@@ -726,10 +723,18 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         _frameReadyEvent.Set();
         if (Thread.CurrentThread != renderThread)
         {
-            if (!renderThread.Join(TimeSpan.FromSeconds(3)))
+            if (!renderThread.Join(TimeSpan.FromMilliseconds(_renderThreadStopTimeoutMs)))
             {
-                Logger.Log("D3D11 preview renderer stop (render-thread-only) wait exceeded 3s; waiting until render thread exits.");
-                renderThread.Join();
+                Logger.Log($"D3D11 preview renderer stop (render-thread-only) timed out after {_renderThreadStopTimeoutMs}ms; aborting reinit to keep UI responsive.");
+                throw new TimeoutException("D3D11 preview render thread did not stop before timeout.");
+            }
+        }
+
+        lock (_lifecycleLock)
+        {
+            if (ReferenceEquals(_renderThread, renderThread))
+            {
+                _renderThread = null;
             }
         }
 
@@ -751,7 +756,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         lock (_lifecycleLock)
         {
             renderThread = _renderThread;
-            _renderThread = null;
             if (renderThread == null)
             {
                 FailPendingFrameCapture("Preview renderer is not running.");
@@ -768,13 +772,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         // Without this gate, the CAS unbind below can yank the swap chain while
         // the render thread is inside a native D3D call, causing an unrecoverable
         // AccessViolationException (.NET 8 cannot catch corrupted-state exceptions).
-        {
-            var sw = new SpinWait();
-            while (Volatile.Read(ref _inNativeCall) != 0)
-            {
-                sw.SpinOnce();
-            }
-        }
+        WaitForNativeCallToDrainOrThrow("stop");
 
         // Unbind swap chain from panel BEFORE joining the render thread.
         // The render thread releases the swap chain and D3D device during cleanup.
@@ -815,10 +813,18 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         _frameReadyEvent.Set();
         if (Thread.CurrentThread != renderThread)
         {
-            if (!renderThread.Join(TimeSpan.FromSeconds(3)))
+            if (!renderThread.Join(TimeSpan.FromMilliseconds(_renderThreadStopTimeoutMs)))
             {
-                Logger.Log("D3D11 preview renderer stop wait exceeded 3s; waiting until render thread exits.");
-                renderThread.Join();
+                Logger.Log($"D3D11 preview renderer stop timed out after {_renderThreadStopTimeoutMs}ms; leaving renderer owned by the stop path to avoid blocking UI indefinitely.");
+                throw new TimeoutException("D3D11 preview render thread did not stop before timeout.");
+            }
+        }
+
+        lock (_lifecycleLock)
+        {
+            if (ReferenceEquals(_renderThread, renderThread))
+            {
+                _renderThread = null;
             }
         }
 
@@ -832,6 +838,31 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Volatile.Write(ref _rendererMode, RendererModeNone);
         ResetPresentCadence();
         Logger.Log("D3D11 preview renderer stop completed.");
+    }
+
+    private void WaitForNativeCallToDrainOrThrow(string operation)
+    {
+        if (Volatile.Read(ref _inNativeCall) == 0)
+        {
+            return;
+        }
+
+        var stopwatch = Stopwatch.StartNew();
+        var spinner = new SpinWait();
+        while (Volatile.Read(ref _inNativeCall) != 0)
+        {
+            if (stopwatch.ElapsedMilliseconds >= _nativeStopFenceTimeoutMs)
+            {
+                Logger.Log($"D3D11 preview renderer {operation} timed out waiting for native render call to return after {_nativeStopFenceTimeoutMs}ms.");
+                throw new TimeoutException("D3D11 preview native render call did not return before timeout.");
+            }
+
+            spinner.SpinOnce();
+            if (spinner.NextSpinWillYield)
+            {
+                Thread.Sleep(1);
+            }
+        }
     }
 
     public void OnPanelSizeChanged(double logicalWidth, double logicalHeight, double rasterizationScale)

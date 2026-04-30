@@ -168,6 +168,12 @@ static partial class Program
         AssertContains(source, "LastSelectedSourceSequenceNumber");
         AssertContains(source, "RecordSelectedFrame");
         AssertContains(source, "RecordDroppedFrame");
+        AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_TARGET_DEPTH");
+        AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_MIN_TARGET_DEPTH");
+        AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_MAX_TARGET_DEPTH");
+        AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_MAX_DEPTH");
+        AssertContains(source, "ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_PACING\", 0");
+        AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_MMCSS_TASK\") ?? \"Playback\"");
         AssertContains(pipelineSource, "PreviewFrameCallback");
         AssertContains(pipelineSource, "NotifyPreviewFrameDecoded");
         AssertContains(captureSource, "OnMjpegPipelinePreviewFrameDecoded");
@@ -390,6 +396,8 @@ static partial class Program
         SetPrivateField(jitter, "_sync", new object());
         SetPrivateField(jitter, "_frames", Activator.CreateInstance(listType));
         SetPrivateField(jitter, "_frameIntervalTicks", Math.Max(1L, Stopwatch.Frequency / 120L));
+        SetPrivateField(jitter, "_minAdaptiveTargetDepth", 2);
+        SetPrivateField(jitter, "_maxAdaptiveTargetDepth", 8);
         SetPrivateField(jitter, "_targetDepth", targetDepth);
         SetPrivateField(jitter, "_maxDepth", 12);
         SetPrivateField(jitter, "_nextPreviewSequence", -1L);
