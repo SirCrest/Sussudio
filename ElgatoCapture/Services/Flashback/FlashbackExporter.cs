@@ -40,6 +40,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
+        if (request == null)
+        {
+            return Task.FromResult(FinalizeResult.Failure(
+                string.Empty,
+                "Flashback export failed: request is required."));
+        }
+
         lock (_lifetimeSync)
         {
             if (_disposed)

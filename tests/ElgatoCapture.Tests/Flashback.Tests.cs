@@ -404,6 +404,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static async Task FlashbackExporter_RejectsNullRequests()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var requestType = RequireType("ElgatoCapture.Models.FlashbackExportRequest");
+        var exporter = Activator.CreateInstance(exporterType)!;
+        var exportMethod = exporterType.GetMethod("ExportAsync", new[] { requestType, typeof(IProgress<>).MakeGenericType(RequireType("ElgatoCapture.Models.ExportProgress")), typeof(CancellationToken) })
+            ?? throw new InvalidOperationException("FlashbackExporter.ExportAsync(request) not found.");
+
+        var task = exportMethod.Invoke(exporter, new object?[]
+        {
+            null,
+            null,
+            CancellationToken.None
+        }) as Task ?? throw new InvalidOperationException("ExportAsync did not return Task.");
+
+        await task.ConfigureAwait(false);
+        var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
+        AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Null export request reports failure");
+        AssertContains(GetStringProperty(result, "StatusMessage"), "request is required");
+    }
+
     private static Task FlashbackExporter_OutputPathValidation_ReturnsFailure()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")

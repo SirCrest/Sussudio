@@ -667,6 +667,9 @@ static partial class Program
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
             await RunCheckAsync(
+                "Flashback exporter rejects null requests",
+                FlashbackExporter_RejectsNullRequests),
+            await RunCheckAsync(
                 "Flashback exporter output path validation returns failure",
                 FlashbackExporter_OutputPathValidation_ReturnsFailure),
             await RunCheckAsync(
