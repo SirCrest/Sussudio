@@ -106,6 +106,8 @@ static partial class Program
         AssertContains(mainViewModelText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing");
         AssertContains(mainViewModelText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing_after_enqueue");
         AssertContains(mainViewModelText, "UI_OPERATION_ENQUEUE_FAILED op='{operationName}'");
+        AssertContains(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
+        AssertContains(mainViewModelText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
         var deviceManagementText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.DeviceManagement.cs"));
         AssertContains(deviceManagementText, "CancelPendingAudioControlWork");
         AssertContains(deviceManagementText, "_deviceAudioModeCts");

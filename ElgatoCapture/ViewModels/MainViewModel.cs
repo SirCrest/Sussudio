@@ -797,18 +797,21 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
     private void OnCaptureStatusChanged(object? sender, string status)
     {
-        _dispatcherQueue.TryEnqueue(() =>
+        if (!_dispatcherQueue.TryEnqueue(() =>
         {
             var runtimeSnapshot = _captureService.GetRuntimeSnapshot();
             StatusText = status;
             UpdateLiveCaptureInfo(runtimeSnapshot);
             UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
-        });
+        }))
+        {
+            Logger.Log($"CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
+        }
     }
 
     private void OnCaptureError(object? sender, Exception ex)
     {
-        _dispatcherQueue.TryEnqueue(() =>
+        if (!_dispatcherQueue.TryEnqueue(() =>
         {
             var runtimeSnapshot = _captureService.GetRuntimeSnapshot();
             StatusText = $"Error: {ex.Message}";
@@ -822,7 +825,10 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
 
             UpdateLiveCaptureInfo(runtimeSnapshot);
             UpdateHdrRuntimeStatusFromCapture(runtimeSnapshot);
-        });
+        }))
+        {
+            Logger.Log($"CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 
     private void OnCapturePreCleanupRequested()
