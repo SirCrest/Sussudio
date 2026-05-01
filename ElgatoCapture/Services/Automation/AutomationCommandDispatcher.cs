@@ -287,6 +287,13 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 case AutomationCommandKind.FlashbackExport:
                 {
                     var seconds = GetDouble(payload, "seconds") ?? 300;
+                    if (!double.IsFinite(seconds) ||
+                        seconds <= 0 ||
+                        seconds > TimeSpan.MaxValue.TotalSeconds)
+                    {
+                        throw new InvalidOperationException("Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
+                    }
+
                     var outputPath = RequireString(payload, "outputPath");
                     var useSelectionRange = GetBool(payload, "useSelectionRange") ?? false;
                     var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken).ConfigureAwait(false);
