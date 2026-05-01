@@ -521,7 +521,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             if (sessionLockHeld)
             {
-                _sessionTransitionLock.Release();
+                ReleaseSemaphoreBestEffort(_sessionTransitionLock, "flashback_export_snapshot_session");
             }
         }
 
@@ -602,7 +602,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             if (sessionLockHeld)
             {
-                _sessionTransitionLock.Release();
+                ReleaseSemaphoreBestEffort(_sessionTransitionLock, "flashback_export_last_n_snapshot_session");
             }
         }
 
@@ -628,7 +628,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
 
         backendLeaseHeld = false;
-        _flashbackBackendLeaseLock.Release();
+        ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_backend_lease");
     }
 
     private FinalizeResult FailFlashbackExport(string outputPath, string statusMessage)
@@ -779,7 +779,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             if (exportOperationLockHeld)
             {
-                _flashbackExportOperationLock.Release();
+                ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, "flashback_export_operation");
             }
         }
     }
@@ -1594,7 +1594,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         finally
         {
-            _flashbackBackendLeaseLock.Release();
+            ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_preview_backend_dispose");
         }
     }
 
@@ -1910,7 +1910,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         finally
         {
-            _flashbackBackendLeaseLock.Release();
+            ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_buffer_cycle");
         }
     }
 
@@ -2156,7 +2156,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 }
                 finally
                 {
-                    _sessionTransitionLock.Release();
+                    ReleaseSemaphoreBestEffort(_sessionTransitionLock, "fatal_capture_cleanup");
                 }
             }
             catch (Exception cleanupEx)
@@ -2203,7 +2203,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 }
                 finally
                 {
-                    _sessionTransitionLock.Release();
+                    ReleaseSemaphoreBestEffort(_sessionTransitionLock, "flashback_backend_cleanup");
                 }
             }
             catch (Exception cleanupEx)
@@ -3119,7 +3119,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                         if (flashbackRecordingBackendLeaseHeld)
                         {
                             flashbackRecordingBackendLeaseHeld = false;
-                            _flashbackBackendLeaseLock.Release();
+                            ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_recording_start");
                         }
                     }
                 }
@@ -3370,7 +3370,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 if (flashbackRecordingBackendLeaseHeld)
                 {
                     flashbackRecordingBackendLeaseHeld = false;
-                    _flashbackBackendLeaseLock.Release();
+                    ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_recording_start_fail");
                 }
 
                 if (sinkAttachedForAudioOnly && _wasapiAudioCapture != null)
@@ -4268,7 +4268,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         finally
         {
-            _sessionTransitionLock.Release();
+            ReleaseSemaphoreBestEffort(_sessionTransitionLock, "session_transition");
         }
     }
 
@@ -4594,7 +4594,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         finally
         {
-            _sessionTransitionLock.Release();
+            ReleaseSemaphoreBestEffort(_sessionTransitionLock, "dispose_cleanup");
         }
     }
 
@@ -4646,6 +4646,18 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             Logger.Log($"CAPTURE_SERVICE_SEMAPHORE_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private static void ReleaseSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)
+    {
+        try
+        {
+            semaphore.Release();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 }

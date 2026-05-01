@@ -301,7 +301,7 @@ static partial class Program
         AssertContains(captureServiceText, "catch (OperationCanceledException) when (ct.IsCancellationRequested)");
         AssertContains(captureServiceText, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
         AssertContains(captureServiceText, "private void ReleaseFlashbackBackendLeaseIfHeld(ref bool backendLeaseHeld)");
-        AssertContains(captureServiceText, "backendLeaseHeld = false;\n        _flashbackBackendLeaseLock.Release();");
+        AssertContains(captureServiceText, "backendLeaseHeld = false;\n        ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_backend_lease\");");
         AssertContains(captureServiceText, "outerPauseApplied = bufferManager != null;");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\");");
         AssertContains(captureServiceText, "var exportId = 0L;");
@@ -332,12 +332,18 @@ static partial class Program
         AssertContains(captureServiceText, "? \"Cancelled\"");
         AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
         AssertContains(captureServiceText, "if (exportOperationLockHeld)");
-        AssertContains(captureServiceText, "_flashbackExportOperationLock.Release();");
+        AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, \"flashback_export_operation\");");
         AssertContains(captureServiceText, "DisposeCoordinationLocksBestEffort();");
         AssertContains(captureServiceText, "DisposeSemaphoreBestEffort(_sessionTransitionLock, \"session_transition\");");
         AssertContains(captureServiceText, "DisposeSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_backend_lease\");");
         AssertContains(captureServiceText, "DisposeSemaphoreBestEffort(_flashbackExportOperationLock, \"flashback_export_operation\");");
         AssertContains(captureServiceText, "CAPTURE_SERVICE_SEMAPHORE_DISPOSE_WARN");
+        AssertContains(captureServiceText, "private static void ReleaseSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
+        AssertContains(captureServiceText, "CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN");
+        AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_sessionTransitionLock, \"flashback_export_snapshot_session\");");
+        AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_preview_backend_dispose\");");
+        AssertDoesNotContain(captureServiceText, "_flashbackBackendLeaseLock.Release();");
+        AssertDoesNotContain(captureServiceText, "_flashbackExportOperationLock.Release();");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_ACTIVE_FILE_FALLBACK");
         AssertContains(captureServiceText, "Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths)");
         AssertContains(captureServiceText, "StartPts = TimeSpan.FromMilliseconds(info.StartPtsMs)");
