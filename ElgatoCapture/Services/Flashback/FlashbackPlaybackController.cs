@@ -2014,6 +2014,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     /// </summary>
     private static void SubmitFrame(IPreviewFrameSink previewSink, DecodedVideoFrame frame)
     {
+        var submitTick = Stopwatch.GetTimestamp();
         if (frame.IsD3D11Texture)
         {
             if (frame.TexturePtr == IntPtr.Zero)
@@ -2023,13 +2024,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
             }
             previewSink.SubmitTexture(
                 frame.TexturePtr, frame.SubresourceIndex,
-                frame.Width, frame.Height, frame.IsHdr, arrivalTick: 0);
+                frame.Width, frame.Height, frame.IsHdr, arrivalTick: submitTick, schedulerSubmitTick: submitTick);
         }
         else
         {
             previewSink.SubmitRawFrame(
                 frame.Data, frame.DataLength,
-                frame.Width, frame.Height, frame.IsHdr, arrivalTick: 0);
+                frame.Width, frame.Height, frame.IsHdr, arrivalTick: submitTick, schedulerSubmitTick: submitTick);
         }
     }
 

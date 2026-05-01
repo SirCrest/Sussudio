@@ -1985,6 +1985,9 @@ static partial class Program
         AssertContains(sourceText, "TrySubmitAndHoldFrame(nudgeFrame, \"nudge\")");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(frame, \"seek\")");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(videoFrame, \"playback\")");
+        AssertContains(sourceText, "var submitTick = Stopwatch.GetTimestamp();");
+        AssertContains(sourceText, "arrivalTick: submitTick, schedulerSubmitTick: submitTick");
+        AssertDoesNotContain(sourceText, "frame.Width, frame.Height, frame.IsHdr, arrivalTick: 0");
         AssertContains(sourceText, "if (!TrySubmitAndHoldFrame(videoFrame, \"playback\"))\n            {\n                SetState(FlashbackPlaybackState.Paused);\n                Logger.Log($\"FLASHBACK_PLAYBACK_SUBMIT_STOP pos_ms={(long)PlaybackPosition.TotalMilliseconds}\");\n                return false;\n            }");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n        try\n        {\n            SubmitFrame(frame);");
         AssertContains(sourceText, "SubmitFrame(previewSink, frame);\n            ReleasePreviousHeldFrame();");

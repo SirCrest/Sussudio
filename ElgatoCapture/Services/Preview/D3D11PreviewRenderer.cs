@@ -1047,7 +1047,14 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             frameLease: frame));
     }
 
-    public void SubmitTexture(IntPtr d3dTexture, int subresourceIndex, int width, int height, bool isHdr, long arrivalTick = 0)
+    public void SubmitTexture(
+        IntPtr d3dTexture,
+        int subresourceIndex,
+        int width,
+        int height,
+        bool isHdr,
+        long arrivalTick = 0,
+        long schedulerSubmitTick = 0)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1083,7 +1090,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             throw;
         }
 
-        var frame = new PendingFrame(texture, subresourceIndex, null, 0, width, height, isHdr, arrivalTick);
+        var frame = new PendingFrame(
+            texture,
+            subresourceIndex,
+            null,
+            0,
+            width,
+            height,
+            isHdr,
+            arrivalTick,
+            schedulerSubmitTick: schedulerSubmitTick);
         EnqueuePendingFrame(frame);
     }
 

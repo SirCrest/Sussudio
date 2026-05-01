@@ -44,7 +44,14 @@ internal interface IPreviewFrameSink
     /// Submit a D3D11 texture. Callee calls AddRef on the COM pointer;
     /// caller may Release after return.
     /// </summary>
-    void SubmitTexture(IntPtr d3dTexture, int subresourceIndex, int width, int height, bool isHdr, long arrivalTick = 0);
+    void SubmitTexture(
+        IntPtr d3dTexture,
+        int subresourceIndex,
+        int width,
+        int height,
+        bool isHdr,
+        long arrivalTick = 0,
+        long schedulerSubmitTick = 0);
 
     /// <summary>
     /// Submit split NV12 plane textures (Y + UV). Callee calls AddRef on
