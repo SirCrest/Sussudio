@@ -409,6 +409,9 @@ static partial class Program
         AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposed, this);");
         AssertContains(sourceText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
         AssertContains(sourceText, "const string message = \"Flashback exporter is disposed.\";");
+        AssertContains(sourceText, "private const int ExportLockWaitTimeoutSeconds = 30;");
+        AssertContains(sourceText, "_exportLock.Wait(TimeSpan.FromSeconds(ExportLockWaitTimeoutSeconds), ct)");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT");
         AssertContains(sourceText, "finally\n            {\n                DisposeLinkedCtsBestEffort(linkedCts, \"single_export\");\n            }\n        });");
         AssertContains(sourceText, "finally\n            {\n                DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\");\n            }\n        });");
         AssertContains(sourceText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");

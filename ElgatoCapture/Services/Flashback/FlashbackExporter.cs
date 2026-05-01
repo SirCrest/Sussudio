@@ -22,6 +22,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 {
     private const int MaxSupportedInputStreams = 64;
     private const int ProgressHeartbeatIntervalMs = 1_000;
+    private const int ExportLockWaitTimeoutSeconds = 30;
 
     private readonly SemaphoreSlim _exportLock = new(1, 1);
     private readonly object _lifetimeSync = new();
@@ -1549,7 +1550,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     {
         try
         {
-            _exportLock.Wait(ct);
+            if (!_exportLock.Wait(TimeSpan.FromSeconds(ExportLockWaitTimeoutSeconds), ct))
+            {
+                var message = $"Flashback export lock timed out after {ExportLockWaitTimeoutSeconds}s.";
+                Logger.Log($"FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT timeout_s={ExportLockWaitTimeoutSeconds}");
+                cancellationResult = FinalizeResult.Failure(outputPath, message);
+                return false;
+            }
+
             cancellationResult = null!;
             return true;
         }
