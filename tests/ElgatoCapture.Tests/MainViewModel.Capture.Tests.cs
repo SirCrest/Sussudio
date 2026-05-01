@@ -72,6 +72,8 @@ static partial class Program
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelText = string.Join("\n", viewModelFiles.Values);
         var automationText = viewModelFiles["MainViewModel.Automation.cs"];
+        var rawViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs")
+            .Replace("\r\n", "\n");
         var rawAutomationText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Automation.cs")
             .Replace("\r\n", "\n");
         var rawCaptureText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Capture.cs")
@@ -122,6 +124,10 @@ static partial class Program
         AssertMemberContains(automationText, "ExportFlashbackAsync", "if (!isCurrent) return;");
         AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "if (!isCurrent) return;");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _flashbackExportOperationId;");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "Interlocked.Increment(ref _flashbackExportOperationId);");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "var exportCts = Interlocked.Exchange(ref _exportCts, null);");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "CancelFlashbackExportCts(exportCts);");
+        AssertContains(rawViewModelText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
         AssertContains(rawCaptureText, "await AwaitWithTimeoutAsync(\n                    pendingCycle,\n                    FlashbackCycleBeforeReinitializeTimeoutMs,\n                    \"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
         AssertContains(rawCaptureText, "catch (TimeoutException ex)\n            {\n                Logger.Log($\"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}\");");

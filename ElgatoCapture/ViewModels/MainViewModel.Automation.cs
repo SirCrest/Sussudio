@@ -432,6 +432,11 @@ public partial class MainViewModel
         }))
         {
             Logger.Log("FLASHBACK_EXPORT_START_UI_ENQUEUE_FAILED source=automation");
+            if (IsCurrentFlashbackExport(exportId, exportCts))
+            {
+                IsFlashbackExporting = true;
+                FlashbackExportProgress = 0;
+            }
         }
         try
         {

@@ -1324,8 +1324,13 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         {
             return;
         }
-        _exportCts?.Cancel();
-        _exportCts?.Dispose();
+        Interlocked.Increment(ref _flashbackExportOperationId);
+        var exportCts = Interlocked.Exchange(ref _exportCts, null);
+        CancelFlashbackExportCts(exportCts);
+        if (exportCts != null)
+        {
+            DisposeFlashbackExportCtsBestEffort(exportCts, "viewmodel_dispose");
+        }
         _gainFlashDebounceCts?.Cancel();
         _gainXuDebounceCts?.Cancel();
         _deviceAudioModeCts?.Cancel();
