@@ -271,6 +271,7 @@ public sealed partial class MainWindow
         if (pos.HasValue)
         {
             ViewModel.FlashbackInPoint = pos.Value;
+            Logger.Log($"FLASHBACK_UI_SET_IN pos_ms={(long)pos.Value.TotalMilliseconds}");
         }
         else
         {
@@ -283,6 +284,7 @@ public sealed partial class MainWindow
         if (pos.HasValue)
         {
             ViewModel.FlashbackOutPoint = pos.Value;
+            Logger.Log($"FLASHBACK_UI_SET_OUT pos_ms={(long)pos.Value.TotalMilliseconds}");
         }
         else
         {
@@ -298,6 +300,7 @@ public sealed partial class MainWindow
         }
         ViewModel.FlashbackInPoint = null;
         ViewModel.FlashbackOutPoint = null;
+        Logger.Log("FLASHBACK_UI_CLEAR_INOUT");
     }
     private void FlashbackPlayPauseButton_Click(object sender, RoutedEventArgs e)
     {
@@ -308,12 +311,20 @@ public sealed partial class MainWindow
             {
                 Logger.Log("FLASHBACK_UI_PAUSE_REJECTED");
             }
+            else
+            {
+                Logger.Log("FLASHBACK_UI_PAUSE");
+            }
         }
         else if (state == FlashbackPlaybackState.Paused || state == FlashbackPlaybackState.Scrubbing)
         {
             if (!ViewModel.FlashbackPlay())
             {
                 Logger.Log("FLASHBACK_UI_PLAY_REJECTED");
+            }
+            else
+            {
+                Logger.Log("FLASHBACK_UI_PLAY");
             }
         }
     }
@@ -322,6 +333,10 @@ public sealed partial class MainWindow
         if (!ViewModel.FlashbackGoLive())
         {
             Logger.Log("FLASHBACK_UI_GOLIVE_REJECTED");
+        }
+        else
+        {
+            Logger.Log("FLASHBACK_UI_GOLIVE");
         }
     }
     private void FlashbackExportButton_Click(object sender, RoutedEventArgs e)

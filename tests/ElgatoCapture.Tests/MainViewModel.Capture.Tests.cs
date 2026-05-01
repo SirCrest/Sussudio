@@ -225,9 +225,15 @@ static partial class Program
         AssertContains(flashbackWindowText, "if (!ViewModel.FlashbackUpdateScrub(targetPosition))\n        {\n            Logger.Log(\"FLASHBACK_UI_SCRUB_UPDATE_REJECTED\");\n            EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, \"update_rejected\");\n            return;\n        }");
         AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_SET_IN_REJECTED\");");
         AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_SET_OUT_REJECTED\");");
+        AssertContains(flashbackWindowText, "Logger.Log($\"FLASHBACK_UI_SET_IN pos_ms={(long)pos.Value.TotalMilliseconds}\");");
+        AssertContains(flashbackWindowText, "Logger.Log($\"FLASHBACK_UI_SET_OUT pos_ms={(long)pos.Value.TotalMilliseconds}\");");
+        AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_CLEAR_INOUT\");");
         AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_PAUSE_REJECTED\");");
         AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_PLAY_REJECTED\");");
         AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_GOLIVE_REJECTED\");");
+        AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_PAUSE\");");
+        AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_PLAY\");");
+        AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_GOLIVE\");");
         AssertContains(flashbackWindowText, "_isFlashbackScrubbing = true;\n        (sender as UIElement)?.CapturePointer(e.Pointer);");
         AssertContains(flashbackWindowText, "if (!ViewModel.FlashbackEndScrub())\n        {\n            Logger.Log($\"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}\");\n        }");
         AssertContains(flashbackWindowText, "FLASHBACK_UI_SCRUB_END");
