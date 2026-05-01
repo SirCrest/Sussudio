@@ -983,7 +983,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (abandoned > 0)
         {
             Interlocked.Add(ref _commandsDropped, abandoned);
-            _lastCommandFailure = $"abandoned_on_exit:{abandoned}";
+            if (string.IsNullOrEmpty(_lastCommandFailure))
+            {
+                _lastCommandFailure = $"abandoned_on_exit:{abandoned}";
+            }
             Logger.Log($"FLASHBACK_PLAYBACK_CMD_ABANDONED count={abandoned}");
         }
 

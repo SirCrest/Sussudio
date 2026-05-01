@@ -1371,7 +1371,7 @@ static partial class Program
         AssertContains(sourceText, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
         AssertContains(sourceText, "DrainAbandonedCommandsOnThreadExit();");
         AssertContains(sourceText, "Interlocked.Add(ref _commandsDropped, abandoned);");
-        AssertContains(sourceText, "_lastCommandFailure = $\"abandoned_on_exit:{abandoned}\";");
+        AssertContains(sourceText, "if (string.IsNullOrEmpty(_lastCommandFailure))\n            {\n                _lastCommandFailure = $\"abandoned_on_exit:{abandoned}\";\n            }");
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);");
         AssertContains(sourceText, "ReferenceEquals(Thread.CurrentThread, _playbackThread)");
         AssertContains(sourceText, "_playbackThread = null;");
