@@ -390,6 +390,9 @@ static partial class Program
         AssertContains(setFlashbackEnabled, "_pendingFlashbackEnableAfterRecording = false;");
         AssertContains(
             setFlashbackEnabled,
+            "if (_flashbackEnabled == enabled &&\n                (!enabled || _flashbackSink != null || _isRecording))");
+        AssertContains(
+            setFlashbackEnabled,
             "if (!_isVideoPreviewActive && !_isAudioPreviewActive && !_isRecording)\n                {\n                    await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);");
         AssertContains(setFlashbackEnabled, "if (_isRecording)\n            {\n                _pendingFlashbackEnableAfterRecording = true;");
         AssertContains(setFlashbackEnabled, "FLASHBACK_ENABLE_DEFERRED");

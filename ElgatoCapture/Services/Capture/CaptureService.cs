@@ -182,7 +182,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 throw new InvalidOperationException("Cannot disable Flashback while Flashback recording is active.");
             }
 
-            if (_flashbackEnabled == enabled)
+            if (_flashbackEnabled == enabled &&
+                (!enabled || _flashbackSink != null || _isRecording))
             {
                 return;
             }
