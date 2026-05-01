@@ -199,6 +199,64 @@ static partial class Program
 
     }
 
+    private static async Task AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics()
+    {
+        var viewModelType = RequireType("ElgatoCapture.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("ElgatoCapture.Services.Automation.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("ElgatoCapture.Services.Automation.IAutomationWindowControl");
+        var snapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
+        var actionType = RequireType("ElgatoCapture.Models.AutomationFlashbackAction");
+
+        var snapshot = Activator.CreateInstance(snapshotType)
+                       ?? throw new InvalidOperationException("Failed to create AutomationSnapshot.");
+        SetPropertyBackingField(snapshot, "FlashbackPlaybackState", "Paused");
+        SetPropertyBackingField(snapshot, "FlashbackPlaybackThreadAlive", false);
+        SetPropertyBackingField(snapshot, "FlashbackPlaybackPendingCommands", 2);
+        SetPropertyBackingField(snapshot, "FlashbackPlaybackLastCommandFailure", "thread_not_running:Pause");
+        SetPropertyBackingField(snapshot, "FlashbackPlaybackLastCommandFailureUtcUnixMs", 123456789L);
+
+        var viewModel = CreateConfiguredProxy(viewModelType, (method, args) =>
+        {
+            if (method?.Name == "ExecuteFlashbackActionAsync")
+            {
+                AssertEqual(Enum.Parse(actionType, "Pause"), args![0], "dispatcher forwards pause action");
+                return Task.FromResult(false);
+            }
+
+            return GetDefaultReturnValue(method);
+        });
+        var diagnostics = CreateConfiguredProxy(diagnosticsType, (method, _) =>
+            method?.Name == "GetLatestSnapshot"
+                ? snapshot
+                : GetDefaultReturnValue(method));
+        var dispatcher = CreateAutomationCommandDispatcher(
+            viewModel,
+            diagnostics,
+            CreateThrowingProxy(windowControlType),
+            authToken: null);
+        var response = await ExecuteAutomationCommandAsync(
+            dispatcher,
+            CreateAutomationCommandRequest("FlashbackAction", authToken: null, payloadJson: "{\"action\":\"pause\"}"))
+            .ConfigureAwait(false);
+
+        AssertAutomationResponse(response, success: false, errorCode: "flashback-action-failed", status: "error", "failed flashback action includes structured error");
+        var message = (string)GetPublicProperty(response, "Message")!;
+        AssertContains(message, "Flashback action 'Pause' was rejected");
+        AssertContains(message, "state=Paused");
+        AssertContains(message, "threadAlive=False");
+        AssertContains(message, "lastFailure=thread_not_running:Pause");
+
+        var data = GetPublicProperty(response, "Data")
+                   ?? throw new InvalidOperationException("Flashback failure response data was missing.");
+        AssertEqual("Pause", (string)GetPublicProperty(data, "Action")!, "flashback failure data action");
+        AssertEqual("Paused", (string)GetPublicProperty(data, "PlaybackState")!, "flashback failure data playback state");
+        AssertEqual(false, (bool)GetPublicProperty(data, "PlaybackThreadAlive")!, "flashback failure data thread alive");
+        AssertEqual(2, (int)GetPublicProperty(data, "PendingCommands")!, "flashback failure data pending commands");
+        AssertEqual("thread_not_running:Pause", (string)GetPublicProperty(data, "LastCommandFailure")!, "flashback failure data last command failure");
+        AssertEqual(123456789L, (long)GetPublicProperty(data, "LastCommandFailureUtcUnixMs")!, "flashback failure data failure utc");
+        AssertEqual(snapshot, GetPublicProperty(response, "Snapshot"), "flashback failure response reuses diagnostic snapshot");
+    }
+
     private static object CreateAutomationCommandDispatcher(string? authToken)
     {
         var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
@@ -215,6 +273,65 @@ static partial class Program
             CreateThrowingProxy(windowControlType),
             authToken
         });
+    }
+
+    private static object CreateAutomationCommandDispatcher(
+        object viewModel,
+        object diagnosticsHub,
+        object windowControl,
+        string? authToken)
+    {
+        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
+        var constructor = dispatcherType.GetConstructors()
+            .Single(ctor => ctor.GetParameters().Length == 4);
+
+        return constructor.Invoke(new[]
+        {
+            viewModel,
+            diagnosticsHub,
+            windowControl,
+            authToken
+        });
+    }
+
+    private static object CreateConfiguredProxy(Type interfaceType, Func<MethodInfo?, object?[]?, object?> handler)
+    {
+        var createMethod = typeof(DispatchProxy)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .First(method =>
+                method.Name == "Create" &&
+                method.IsGenericMethodDefinition &&
+                method.GetGenericArguments().Length == 2)
+            .MakeGenericMethod(interfaceType, typeof(ConfiguredAutomationProxy));
+        var proxy = createMethod.Invoke(null, null)
+                    ?? throw new InvalidOperationException($"Failed to create proxy for {interfaceType.FullName}.");
+        ((ConfiguredAutomationProxy)proxy).Handler = handler;
+        return proxy;
+    }
+
+    private static object? GetDefaultReturnValue(MethodInfo? method)
+    {
+        var returnType = method?.ReturnType ?? typeof(void);
+        if (returnType == typeof(void))
+        {
+            return null;
+        }
+
+        if (returnType == typeof(Task))
+        {
+            return Task.CompletedTask;
+        }
+
+        if (returnType.IsGenericType && returnType.GetGenericTypeDefinition() == typeof(Task<>))
+        {
+            var resultType = returnType.GetGenericArguments()[0];
+            var result = resultType.IsValueType ? Activator.CreateInstance(resultType) : null;
+            var fromResult = typeof(Task).GetMethod(nameof(Task.FromResult), BindingFlags.Public | BindingFlags.Static)!
+                .MakeGenericMethod(resultType);
+            return fromResult.Invoke(null, new[] { result });
+        }
+
+        return returnType.IsValueType ? Activator.CreateInstance(returnType) : null;
     }
 
     private static object CreateAutomationCommandRequest(
@@ -261,6 +378,15 @@ static partial class Program
         var property = instance.GetType().GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public)
                        ?? throw new InvalidOperationException($"{instance.GetType().Name}.{propertyName} was not found.");
         return property.GetValue(instance);
+    }
+
+    public class ConfiguredAutomationProxy : DispatchProxy
+    {
+        public Func<MethodInfo?, object?[]?, object?> Handler { get; set; } =
+            (_, _) => throw new NotSupportedException("No handler configured.");
+
+        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
+            => Handler(targetMethod, args);
     }
 
 }

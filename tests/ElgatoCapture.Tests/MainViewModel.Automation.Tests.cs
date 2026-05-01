@@ -113,6 +113,9 @@ static partial class Program
         AssertDoesNotContain(interfaceText, "VideoSourceProbeResult ProbeVideoSource();");
         AssertDoesNotContain(interfaceText, "PreviewColorProbeResult ProbePreviewColor();");
         AssertContains(dispatcherText, "await _viewModel.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false)");
+        AssertContains(dispatcherText, "return CreateFlashbackActionRejectedResponse(");
+        AssertContains(dispatcherText, "errorCode: \"flashback-action-failed\"");
+        AssertContains(dispatcherText, "LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
         AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
         AssertContains(dispatcherText, "CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage)");

@@ -123,6 +123,9 @@ static partial class Program
                 "Automation dispatcher authorization contract is token-gated",
                 AutomationCommandDispatcher_AuthorizesConfiguredTokens),
             await RunCheckAsync(
+                "Automation dispatcher flashback failures return playback diagnostics",
+                AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics),
+            await RunCheckAsync(
                 "Automation pipe server gates default security fallback on auth token",
                 NamedPipeAutomationServer_GatesDefaultSecurityFallbackOnAuthToken),
             await RunCheckAsync(

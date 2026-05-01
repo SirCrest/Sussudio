@@ -257,7 +257,10 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         : (TimeSpan?)null;
                     if (!await _viewModel.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false))
                     {
-                        throw new InvalidOperationException("Flashback is not active.");
+                        return CreateFlashbackActionRejectedResponse(
+                            correlationId,
+                            action,
+                            _diagnosticsHub.GetLatestSnapshot());
                     }
 
                     switch (action)
@@ -695,6 +698,32 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
             includeSnapshot: includeSnapshot,
             status: "ok",
             commandLifecycle: "acknowledged");
+    }
+
+    private AutomationCommandResponse CreateFlashbackActionRejectedResponse(
+        string correlationId,
+        AutomationFlashbackAction action,
+        AutomationSnapshot snapshot)
+    {
+        var lastFailure = string.IsNullOrWhiteSpace(snapshot.FlashbackPlaybackLastCommandFailure)
+            ? "none"
+            : snapshot.FlashbackPlaybackLastCommandFailure;
+        return CreateResponse(
+            correlationId,
+            $"Flashback action '{action}' was rejected (state={snapshot.FlashbackPlaybackState}, threadAlive={snapshot.FlashbackPlaybackThreadAlive}, pending={snapshot.FlashbackPlaybackPendingCommands}, lastFailure={lastFailure}, failureUtc={snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs}).",
+            data: new
+            {
+                Action = action.ToString(),
+                PlaybackState = snapshot.FlashbackPlaybackState,
+                PlaybackThreadAlive = snapshot.FlashbackPlaybackThreadAlive,
+                PendingCommands = snapshot.FlashbackPlaybackPendingCommands,
+                LastCommandFailure = lastFailure,
+                LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs
+            },
+            errorCode: "flashback-action-failed",
+            success: false,
+            status: "error",
+            snapshot: snapshot);
     }
 
     private bool IsAutomationReady()
