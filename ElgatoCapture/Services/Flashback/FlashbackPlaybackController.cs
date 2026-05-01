@@ -403,8 +403,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
             QueuedTimestamp = Stopwatch.GetTimestamp()
         };
 
+        var pending = Interlocked.Increment(ref _pendingCommands);
         if (!_commandChannel.Writer.TryWrite(queuedCommand))
         {
+            DecrementPendingCommands();
             Interlocked.Increment(ref _commandsDropped);
             _lastCommandFailure = $"write_failed:{command.Kind}";
             Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP kind={command.Kind}");
@@ -412,7 +414,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         Interlocked.Increment(ref _commandsEnqueued);
-        UpdateMaxPendingCommands(Interlocked.Increment(ref _pendingCommands));
+        UpdateMaxPendingCommands(pending);
         Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         _lastCommandQueued = command.Kind.ToString();
         _lastCommandFailure = string.Empty;

@@ -1158,6 +1158,13 @@ static partial class Program
         AssertNotNull(clearMethod, "FlashbackPlaybackController.ClearInOutPoints");
         clearMethod!.Invoke(controller, null);
 
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(
+            sourceText,
+            "var pending = Interlocked.Increment(ref _pendingCommands);\n        if (!_commandChannel.Writer.TryWrite(queuedCommand))\n        {\n            DecrementPendingCommands();");
+        AssertContains(sourceText, "UpdateMaxPendingCommands(pending);");
+
         return Task.CompletedTask;
     }
 
