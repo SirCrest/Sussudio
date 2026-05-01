@@ -670,6 +670,9 @@ static partial class Program
                 "Flashback exporter rejects directory output paths",
                 FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathIsDirectory),
             await RunCheckAsync(
+                "Flashback exporter rejects invalid export ranges",
+                FlashbackExporter_RejectsInvalidExportRanges),
+            await RunCheckAsync(
                 "Flashback exporter rejects empty segment paths",
                 FlashbackExporter_RejectsEmptySegmentPaths),
             await RunCheckAsync(

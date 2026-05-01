@@ -211,6 +211,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
+        if (!TryValidateExportRange(inPoint, outPoint, out var rangeFailure))
+        {
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{rangeFailure}'");
+            return FinalizeResult.Failure(outputPath, rangeFailure);
+        }
+
         if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'");
@@ -531,6 +537,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             const string message = "Flashback export failed: no segment paths provided.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
             return FinalizeResult.Failure(outputPath, message);
+        }
+
+        if (!TryValidateExportRange(inPoint, outPoint, out var rangeFailure))
+        {
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{rangeFailure}'");
+            return FinalizeResult.Failure(outputPath, rangeFailure);
         }
 
         var invalidSegmentIndex = FindInvalidSegmentPathIndex(segments);
@@ -1614,6 +1626,24 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         return -1;
+    }
+
+    private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)
+    {
+        if (inPoint < TimeSpan.Zero)
+        {
+            failureMessage = "Flashback export failed: in point must not be negative.";
+            return false;
+        }
+
+        if (outPoint != TimeSpan.MaxValue && outPoint <= inPoint)
+        {
+            failureMessage = "Flashback export failed: export range is empty or invalid.";
+            return false;
+        }
+
+        failureMessage = string.Empty;
+        return true;
     }
 
     private static bool TryValidateOutputDirectory(string outputPath, out string failureMessage)

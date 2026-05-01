@@ -406,6 +406,10 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FinalizeResult.Failure(outputPath, outputPathFailure);\n        }");
+        AssertContains(sourceText, "if (!TryValidateExportRange(inPoint, outPoint, out var rangeFailure))");
+        AssertContains(sourceText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
+        AssertContains(sourceText, "failureMessage = \"Flashback export failed: in point must not be negative.\";");
+        AssertContains(sourceText, "failureMessage = \"Flashback export failed: export range is empty or invalid.\";");
         AssertContains(sourceText, "var invalidSegmentIndex = FindInvalidSegmentPathIndex(segments);");
         AssertContains(sourceText, "Flashback export failed: segment path at index {invalidSegmentIndex} is empty.");
         AssertContains(sourceText, "private static int FindInvalidSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
@@ -417,6 +421,78 @@ static partial class Program
         AssertContains(sourceText, "if (Directory.Exists(fullOutputPath))\n        {\n            failureMessage = $\"Flashback export failed: output path is a directory '{outputPath}'.\";\n            return false;\n        }");
         AssertContains(sourceText, "FLASHBACK_EXPORT_PATH_COMPARE_WARN");
         AssertContains(sourceText, "FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackExporter_RejectsInvalidExportRanges()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_invalid_range_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var inputPath = Path.Combine(tempDir, "input.ts");
+        File.WriteAllBytes(inputPath, new byte[] { 0x47 });
+
+        try
+        {
+            var exporter = Activator.CreateInstance(exporterType)!;
+            try
+            {
+                var exportCore = exporterType.GetMethod("ExportCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FlashbackExporter.ExportCore not found.");
+                var singleOutputPath = Path.Combine(tempDir, "single-invalid.mp4");
+                var singleResult = exportCore.Invoke(exporter, new object?[]
+                {
+                    inputPath,
+                    TimeSpan.FromSeconds(5),
+                    TimeSpan.FromSeconds(5),
+                    singleOutputPath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(singleResult, "Succeeded"), "Empty single-file export range reports failure");
+                AssertContains(GetStringProperty(singleResult, "StatusMessage"), "export range is empty or invalid");
+                AssertEqual(false, File.Exists(singleOutputPath), "Invalid single-file range does not create output");
+                AssertEqual(false, File.Exists(singleOutputPath + ".tmp"), "Invalid single-file range does not leave temp output");
+
+                var segment = Activator.CreateInstance(segmentType)!;
+                SetPropertyBackingField(segment, "Path", inputPath);
+                var segments = Array.CreateInstance(segmentType, 1);
+                segments.SetValue(segment, 0);
+                var exportSegmentsCore = exporterType.GetMethod("ExportSegmentsCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FlashbackExporter.ExportSegmentsCore not found.");
+                var segmentOutputPath = Path.Combine(tempDir, "segment-invalid.mp4");
+                var segmentResult = exportSegmentsCore.Invoke(exporter, new object?[]
+                {
+                    segments,
+                    TimeSpan.FromSeconds(-1),
+                    TimeSpan.FromSeconds(1),
+                    segmentOutputPath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(segmentResult, "Succeeded"), "Negative segment export in point reports failure");
+                AssertContains(GetStringProperty(segmentResult, "StatusMessage"), "in point must not be negative");
+                AssertEqual(false, File.Exists(segmentOutputPath), "Invalid segment range does not create output");
+                AssertEqual(false, File.Exists(segmentOutputPath + ".tmp"), "Invalid segment range does not leave temp output");
+            }
+            finally
+            {
+                if (exporter is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
 
         return Task.CompletedTask;
     }
