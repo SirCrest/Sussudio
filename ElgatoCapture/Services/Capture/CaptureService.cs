@@ -551,9 +551,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             return FailFlashbackExport(outputPath, "Flashback export cancelled.");
         }
 
-        if (!double.IsFinite(seconds) || seconds <= 0)
+        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)
         {
-            return FailFlashbackExport(outputPath, "Flashback export duration must be greater than zero.");
+            return FailFlashbackExport(outputPath, "Flashback export duration must be finite, greater than zero, and within TimeSpan range.");
         }
 
         // Same pattern: snapshot under lock, export outside it.
