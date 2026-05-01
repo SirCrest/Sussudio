@@ -49,6 +49,7 @@ public static class PerformanceTimelineTools
                 CaptureOnePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceOnePercentLowFps"),
                 PreviewAvgMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceAverageMs"),
                 PreviewP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceP95Ms"),
+                PreviewP99Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceP99Ms"),
                 PreviewMaxMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceMaxMs"),
                 PreviewOnePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceOnePercentLowFps"),
                 PreviewSlowPct = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceSlowFramePercent"),
@@ -211,6 +212,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Capture Max:    {first.CaptureMaxMs:F1}ms -> {last.CaptureMaxMs:F1}ms (delta: {last.CaptureMaxMs - first.CaptureMaxMs:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview Avg:    {first.PreviewAvgMs:F1}ms -> {last.PreviewAvgMs:F1}ms (delta: {last.PreviewAvgMs - first.PreviewAvgMs:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview P95:    {first.PreviewP95Ms:F1}ms -> {last.PreviewP95Ms:F1}ms (delta: {last.PreviewP95Ms - first.PreviewP95Ms:+0.0;-0.0;0.0}ms)");
+            builder.AppendLine($"Preview P99:    {first.PreviewP99Ms:F1}ms -> {last.PreviewP99Ms:F1}ms (delta: {last.PreviewP99Ms - first.PreviewP99Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview Max:    {first.PreviewMaxMs:F1}ms -> {last.PreviewMaxMs:F1}ms (delta: {last.PreviewMaxMs - first.PreviewMaxMs:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview 1% Low: {first.PreviewOnePercentLowFps:F1}fps -> {last.PreviewOnePercentLowFps:F1}fps");
             builder.AppendLine($"Preview Slow%:  {first.PreviewSlowPct:F1}% -> {last.PreviewSlowPct:F1}% (delta: {last.PreviewSlowPct - first.PreviewSlowPct:+0.0;-0.0;0.0}%)");
@@ -357,8 +359,8 @@ public static class PerformanceTimelineTools
             "Preview",
             entries,
             static row => row.PreviewOnePercentLowFps,
+            static row => row.PreviewP99Ms,
             static row => row.PreviewP95Ms,
-            static row => row.PreviewMaxMs,
             static row => FormatD3DP99Bottleneck(row),
             targetOnePercentLowFps,
             targetFrameBudgetMs);
@@ -434,6 +436,7 @@ public static class PerformanceTimelineTools
         public double CaptureOnePercentLowFps { get; init; }
         public double PreviewAvgMs { get; init; }
         public double PreviewP95Ms { get; init; }
+        public double PreviewP99Ms { get; init; }
         public double PreviewMaxMs { get; init; }
         public double PreviewOnePercentLowFps { get; init; }
         public double PreviewSlowPct { get; init; }

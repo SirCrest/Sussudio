@@ -687,6 +687,8 @@ static partial class Program
         AssertContains(source, "== 1% Low Target Summary");
         AssertContains(source, "AppendOnePercentLowTargetSummary");
         AssertContains(source, "misses={belowTarget}/{valid.Length}");
+        AssertContains(source, "PreviewP99Ms = AutomationSnapshotFormatter.GetDouble(item, \"PreviewCadenceP99Ms\")");
+        AssertContains(source, "Preview P99:");
         AssertContains(source, "PreviewD3DRenderSubmitCpuP99Ms");
         AssertContains(source, "PreviewD3DPresentCallP99Ms");
         AssertContains(source, "PreviewD3DTotalFrameCpuP99Ms");
