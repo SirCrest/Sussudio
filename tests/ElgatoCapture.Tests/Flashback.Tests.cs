@@ -378,4 +378,25 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        var pauseFromLiveBlock = ExtractTextBetween(
+            sourceText,
+            "else if (State == FlashbackPlaybackState.Live)",
+            "                        break;\n\n                    case CommandKind.GoLive:");
+
+        AssertContains(pauseFromLiveBlock, "_videoCapture?.SuppressPreviewSubmission();");
+        AssertContains(pauseFromLiveBlock, "PlaybackPosition = pausePos;");
+        AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused);");
+        AssertContains(pauseFromLiveBlock, "frozen_preview=true");
+        AssertDoesNotContain(pauseFromLiveBlock, "EnsureFileOpen");
+        AssertDoesNotContain(pauseFromLiveBlock, "SeekAndDisplayExactFrame");
+        AssertDoesNotContain(sourceText, "private void SeekAndDisplayExactFrame");
+
+        return Task.CompletedTask;
+    }
 }

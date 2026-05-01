@@ -597,22 +597,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             var pausePos = _bufferManager.BufferedDuration;
                             PlaybackPosition = pausePos;
 
-                            decoder ??= CreateDecoder();
-                            EnsureFileOpen(decoder, ref fileOpen, pausePos + frozenValidStart);
-                            if (!decoder.IsOpen)
-                            {
-                                Logger.Log("FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_NO_FILE — restoring live");
-                                RestoreLiveAudio();
-                                _videoCapture?.ResumePreviewSubmission();
-                                break;  // remain in Live state — don't set Paused
-                            }
-                            // Frame-accurate seek: decode forward from nearest keyframe to exact
-                            // target frame. SeekAndDisplayKeyframe only lands on keyframes which
-                            // can be up to 2 seconds away with default GOP size.
-                            SeekAndDisplayExactFrame(decoder, pausePos, frozenValidStart);
-
                             SetState(FlashbackPlaybackState.Paused);
-                            Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)pausePos.TotalMilliseconds}");
+                            Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)pausePos.TotalMilliseconds} frozen_preview=true");
                         }
                         break;
 
@@ -854,83 +840,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
             // On error, use requested position as fallback
             PlaybackPosition = bufferPosition;
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_ERROR error='{ex.Message}'");
-        }
-    }
-
-    /// <summary>
-    /// Seeks to the exact frame at bufferPosition by decoding forward from the nearest
-    /// keyframe. Unlike SeekAndDisplayKeyframe (which shows the keyframe itself), this
-    /// method uses decoder.SeekTo() to advance to the precise target PTS.
-    /// Used for pause-from-Live where frame accuracy is important.
-    /// </summary>
-    private void SeekAndDisplayExactFrame(FlashbackDecoder decoder, TimeSpan bufferPosition, TimeSpan validStartPts)
-    {
-        // Suppress audio delivery — prevents audio accumulation in the WASAPI queue.
-        decoder.AudioChunkCallback = null;
-        _audioPlayback?.Flush();
-
-        bufferPosition = ClampPosition(bufferPosition);
-
-        if (!decoder.IsOpen)
-        {
-            PlaybackPosition = bufferPosition;
-            Logger.Log($"FLASHBACK_PLAYBACK_EXACT_SEEK_NO_FILE pos_ms={(long)bufferPosition.TotalMilliseconds}");
-            return;
-        }
-
-        try
-        {
-            var filePts = bufferPosition + validStartPts;
-
-            // Clamp to current valid range (eviction may have advanced past frozenValidStart)
-            var currentValidStart = _bufferManager.ValidStartPts;
-            if (filePts < currentValidStart)
-            {
-                filePts = currentValidStart;
-                bufferPosition = filePts - validStartPts;
-                if (bufferPosition < TimeSpan.Zero) bufferPosition = TimeSpan.Zero;
-            }
-
-            // Frame-accurate seek: seeks to nearest keyframe then decodes forward
-            // to the exact target PTS. The resulting frame is stashed internally
-            // as a pending frame, retrieved by TryDecodeNextVideoFrame.
-            if (!decoder.SeekTo(filePts))
-            {
-                // Exact seek failed — reopen the file to reset decoder state
-                // (fMP4 fragments can leave D3D11VA hw_frames_ctx in a bad state
-                // after a failed seek), then fall back to keyframe seek.
-                Logger.Log($"FLASHBACK_PLAYBACK_EXACT_SEEK_FALLBACK offset_ms={(long)filePts.TotalMilliseconds}");
-                decoder.CloseFile();
-                decoder.OpenFile(_currentOpenFilePath!);
-                SeekAndDisplayKeyframe(decoder, bufferPosition, validStartPts);
-                return;
-            }
-
-            // SeekTo stashes the target frame; retrieve it
-            var gotFrame = decoder.TryDecodeNextVideoFrame(out var frame);
-            if (gotFrame)
-            {
-                ReleasePreviousHeldFrame();
-                SubmitFrame(frame);
-                _previousHeldFrame = frame;
-                _hasPreviousHeldFrame = true;
-                Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
-
-                var actualPosition = frame.Pts - validStartPts;
-                if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
-                PlaybackPosition = actualPosition;
-            }
-            else
-            {
-                PlaybackPosition = bufferPosition;
-            }
-
-            Logger.Log($"FLASHBACK_PLAYBACK_EXACT_SEEK_OK pos_ms={(long)PlaybackPosition.TotalMilliseconds} file_pts_ms={(long)filePts.TotalMilliseconds} got_frame={gotFrame}");
-        }
-        catch (Exception ex)
-        {
-            PlaybackPosition = bufferPosition;
-            Logger.Log($"FLASHBACK_PLAYBACK_EXACT_SEEK_ERROR error='{ex.Message}'");
         }
     }
 

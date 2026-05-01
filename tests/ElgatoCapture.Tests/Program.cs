@@ -529,6 +529,9 @@ static partial class Program
                 "Flashback playback worker exit rearms future commands",
                 FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart),
             await RunCheckAsync(
+                "Flashback pause from live does not block on exact seek",
+                FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek),
+            await RunCheckAsync(
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
 
