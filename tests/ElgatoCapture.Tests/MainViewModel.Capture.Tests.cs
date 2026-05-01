@@ -377,6 +377,18 @@ static partial class Program
             retainedPreviewFastPath,
             "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,",
             "_isVideoPreviewActive = true;");
+        var startVideoPreviewRaw = ExtractTextBetween(
+            captureServiceRawText,
+            "public Task StartVideoPreviewAsync",
+            "private bool CanReuseVideoCaptureForPreview");
+        var previewMicMonitorStart = ExtractTextBetween(
+            startVideoPreviewRaw,
+            "// Start mic monitoring if enabled",
+            "// Start flashback AFTER");
+        AssertContains(previewMicMonitorStart, "WasapiAudioCapture? micCapture = null;");
+        AssertContains(previewMicMonitorStart, "catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)");
+        AssertContains(previewMicMonitorStart, "MIC_MONITOR_PREVIEW_START_DISPOSE_WARN");
+        AssertContains(previewMicMonitorStart, "_microphoneCapture = micCapture;\n                        micCapture = null;");
 
         AssertContains(ensureFlashbackAudio, "if (settings.AudioEnabled && _wasapiAudioCapture == null)");
         AssertContains(ensureFlashbackAudio, "AttachFlashbackAudioIfSupported(_wasapiAudioCapture, reason)");
