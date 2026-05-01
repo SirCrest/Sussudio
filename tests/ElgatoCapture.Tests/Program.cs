@@ -562,6 +562,9 @@ static partial class Program
                 "Flashback exporter returns cancellation result while waiting for export lock",
                 FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled),
             await RunCheckAsync(
+                "Flashback exporter cancellation wins before validation",
+                FlashbackExporter_CancellationWinsBeforeValidation),
+            await RunCheckAsync(
                 "Flashback exporter fails fast when segment files are gone",
                 FlashbackExporter_ReturnsFailure_WhenSegmentFilesAreGone),
             await RunCheckAsync(

@@ -167,6 +167,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
+        if (ct.IsCancellationRequested)
+        {
+            return CreateCancelledExportResult(outputPath);
+        }
+
         if (string.IsNullOrWhiteSpace(inputTsPath) || !File.Exists(inputTsPath))
         {
             var message = $"Flashback export failed: input file not found '{inputTsPath}'.";
@@ -483,6 +488,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
+        if (ct.IsCancellationRequested)
+        {
+            return CreateCancelledExportResult(outputPath);
+        }
+
         if (segments == null || segments.Count == 0)
         {
             const string message = "Flashback export failed: no segment paths provided.";
@@ -508,13 +518,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         if (segments.Any(segment => IsSamePath(segment.Path, outputPath)))
         {
             var message = $"Flashback export failed: output path must not overwrite source segment '{outputPath}'.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
-        }
-
-        if (ct.IsCancellationRequested)
-        {
-            const string message = "Flashback export cancelled.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
             return FinalizeResult.Failure(outputPath, message);
         }
@@ -1357,6 +1360,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             cancellationResult = FinalizeResult.Failure(outputPath, message);
             return false;
         }
+    }
+
+    private static FinalizeResult CreateCancelledExportResult(string outputPath)
+    {
+        const string message = "Flashback export cancelled.";
+        Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+        return FinalizeResult.Failure(outputPath, message);
     }
 
     private static bool IsSamePath(string? left, string? right)

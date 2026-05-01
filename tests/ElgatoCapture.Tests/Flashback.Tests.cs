@@ -391,6 +391,64 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_CancellationWinsBeforeValidation()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        var exporter = Activator.CreateInstance(exporterType)!;
+        try
+        {
+            var exportCore = exporterType.GetMethod("ExportCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FlashbackExporter.ExportCore not found.");
+            var singleOutputPath = Path.Combine(Path.GetTempPath(), $"fb_cancel_single_{Guid.NewGuid():N}.mp4");
+            var singleResult = exportCore.Invoke(exporter, new object?[]
+            {
+                Path.Combine(Path.GetTempPath(), $"fb_missing_{Guid.NewGuid():N}.ts"),
+                TimeSpan.Zero,
+                TimeSpan.FromSeconds(1),
+                singleOutputPath,
+                true,
+                null,
+                cts.Token
+            }) ?? throw new InvalidOperationException("ExportCore returned null.");
+
+            AssertEqual(false, GetBoolProperty(singleResult, "Succeeded"), "Cancelled single-file export reports failure");
+            AssertContains(GetStringProperty(singleResult, "StatusMessage"), "cancelled");
+            AssertDoesNotContain(GetStringProperty(singleResult, "StatusMessage"), "not found");
+
+            var exportSegmentsCore = exporterType.GetMethod("ExportSegmentsCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FlashbackExporter.ExportSegmentsCore not found.");
+            var emptySegments = Array.CreateInstance(segmentType, 0);
+            var segmentOutputPath = Path.Combine(Path.GetTempPath(), $"fb_cancel_segments_{Guid.NewGuid():N}.mp4");
+            var segmentResult = exportSegmentsCore.Invoke(exporter, new object?[]
+            {
+                emptySegments,
+                TimeSpan.Zero,
+                TimeSpan.FromSeconds(1),
+                segmentOutputPath,
+                true,
+                null,
+                cts.Token
+            }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
+
+            AssertEqual(false, GetBoolProperty(segmentResult, "Succeeded"), "Cancelled segment export reports failure");
+            AssertContains(GetStringProperty(segmentResult, "StatusMessage"), "cancelled");
+            AssertDoesNotContain(GetStringProperty(segmentResult, "StatusMessage"), "no segment paths");
+        }
+        finally
+        {
+            if (exporter is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_ReturnsFailure_WhenSegmentFilesAreGone()
     {
         var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
