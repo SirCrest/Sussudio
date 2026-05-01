@@ -1241,10 +1241,9 @@ public partial class CaptureService
         var sourceTelemetrySuppressed = !string.IsNullOrWhiteSpace(sourceTelemetrySuppressedReason);
         var sourceCadence = unifiedVideoCapture?.GetSourceCadenceMetrics()
             ?? default(MfSourceReaderVideoCapture.SourceCadenceMetrics);
-        var mjpegTiming = unifiedVideoCapture?.GetMjpegPipelineTimingMetrics()
-            ?? _lastMjpegPipelineTimingMetrics;
-        var mjpegFullTiming = unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics()
-            ?? _lastFullMjpegPipelineTimingMetrics;
+        var mjpegTimingSnapshot = unifiedVideoCapture?.GetMjpegPipelineTimingSnapshot();
+        var mjpegTiming = mjpegTimingSnapshot?.Summary ?? _lastMjpegPipelineTimingMetrics;
+        var mjpegFullTiming = mjpegTimingSnapshot?.Details ?? _lastFullMjpegPipelineTimingMetrics;
         var mjpegPreviewJitter = unifiedVideoCapture?.GetMjpegPreviewJitterMetrics()
             ?? default(MjpegPreviewJitterBuffer.Metrics);
         var visualCadence = unifiedVideoCapture?.GetPreviewVisualCadenceMetrics()

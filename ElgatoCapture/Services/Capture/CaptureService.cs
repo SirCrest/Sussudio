@@ -1408,8 +1408,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             return;
         }
 
-        _lastMjpegPipelineTimingMetrics = unifiedVideoCapture.GetMjpegPipelineTimingMetrics();
-        _lastFullMjpegPipelineTimingMetrics = unifiedVideoCapture.GetFullMjpegPipelineTimingMetrics();
+        var timingSnapshot = unifiedVideoCapture.GetMjpegPipelineTimingSnapshot();
+        _lastMjpegPipelineTimingMetrics = timingSnapshot.Summary;
+        _lastFullMjpegPipelineTimingMetrics = timingSnapshot.Details;
     }
 
     private void ResetCachedMjpegTimingMetrics()

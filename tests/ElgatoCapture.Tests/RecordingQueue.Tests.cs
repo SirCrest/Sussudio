@@ -446,12 +446,18 @@ static partial class Program
         AssertContains(unifiedVideoCaptureSource, "RecordFlashbackRecordingAccounting");
         AssertContains(unifiedVideoCaptureSource, "sink.IsRecordingActive");
         AssertContains(unifiedVideoCaptureSource, "if (accepted)");
+        AssertContains(unifiedVideoCaptureSource, "public MjpegPipelineTimingSnapshot GetMjpegPipelineTimingSnapshot()");
+        AssertContains(unifiedVideoCaptureSource, "private static MjpegPipelineTimingMetrics CreateMjpegPipelineTimingSummary");
+        AssertContains(captureServiceSource, "var timingSnapshot = unifiedVideoCapture.GetMjpegPipelineTimingSnapshot();");
         AssertContains(captureServiceSource, "RecordLastRecordingFailure");
         AssertContains(captureServiceSource, "RecordLastFlashbackFailure");
         AssertContains(captureServiceSource, "ClearLastRecordingFailure");
         AssertContains(captureServiceSource, "ClearLastFlashbackFailure");
         AssertContains(captureSnapshotsSource, "GetLastFailureTelemetry");
         AssertContains(captureSnapshotsSource, "IsFlashbackRecordingBackendOwnedByRecording()");
+        AssertContains(captureSnapshotsSource, "var mjpegTimingSnapshot = unifiedVideoCapture?.GetMjpegPipelineTimingSnapshot();");
+        AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetMjpegPipelineTimingMetrics()");
+        AssertDoesNotContain(captureSnapshotsSource, "unifiedVideoCapture?.GetFullMjpegPipelineTimingMetrics()");
         AssertContains(captureSnapshotsSource, "var flashbackVideoQueueLatencyMetrics = fbSink?.VideoQueueLatencyMetrics");
         AssertContains(captureSnapshotsSource, "var activeRecordingVideoQueueLatencyMetrics = sink?.VideoQueueLatencyMetrics");
         AssertDoesNotContain(captureSnapshotsSource, "var flashbackIsRecordingBackend = _isRecording && IsFlashbackRecordingBackendActive()");

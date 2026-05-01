@@ -77,6 +77,10 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         double CallbackP95Ms,
         double CallbackMaxMs);
 
+    public readonly record struct MjpegPipelineTimingSnapshot(
+        MjpegPipelineTimingMetrics Summary,
+        ParallelMjpegDecodePipeline.PipelineTimingMetrics? Details);
+
     public bool IsP010 => Volatile.Read(ref _isP010);
     public int Width => Volatile.Read(ref _width);
     public int Height => Volatile.Read(ref _height);
@@ -111,6 +115,9 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
     }
 
     public MjpegPipelineTimingMetrics GetMjpegPipelineTimingMetrics()
+        => GetMjpegPipelineTimingSnapshot().Summary;
+
+    public MjpegPipelineTimingSnapshot GetMjpegPipelineTimingSnapshot()
     {
         var pipeline = Volatile.Read(ref _mjpegPipeline);
         if (pipeline == null)
@@ -119,6 +126,18 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         }
 
         var metrics = pipeline.GetTimingMetrics();
+        return new MjpegPipelineTimingSnapshot(
+            Summary: CreateMjpegPipelineTimingSummary(metrics),
+            Details: metrics);
+    }
+
+    public ParallelMjpegDecodePipeline.PipelineTimingMetrics? GetFullMjpegPipelineTimingMetrics()
+    {
+        return Volatile.Read(ref _mjpegPipeline)?.GetTimingMetrics();
+    }
+
+    private static MjpegPipelineTimingMetrics CreateMjpegPipelineTimingSummary(ParallelMjpegDecodePipeline.PipelineTimingMetrics metrics)
+    {
         return new MjpegPipelineTimingMetrics(
             DecodeSampleCount: metrics.DecodeSampleCount,
             DecodeAvgMs: metrics.DecodeAvgMs,
@@ -132,11 +151,6 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
             CallbackAvgMs: metrics.PipelineAvgMs,
             CallbackP95Ms: metrics.PipelineP95Ms,
             CallbackMaxMs: metrics.PipelineMaxMs);
-    }
-
-    public ParallelMjpegDecodePipeline.PipelineTimingMetrics? GetFullMjpegPipelineTimingMetrics()
-    {
-        return Volatile.Read(ref _mjpegPipeline)?.GetTimingMetrics();
     }
 
     public MjpegPreviewJitterBuffer.Metrics GetMjpegPreviewJitterMetrics()
