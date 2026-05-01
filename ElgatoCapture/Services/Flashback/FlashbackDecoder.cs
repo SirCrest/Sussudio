@@ -935,6 +935,13 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 return default;
             }
 
+            if (!TryValidateD3D11VideoFrame(clonedFrame, _videoWidth, _videoHeight, out var d3dFrameFailure))
+            {
+                Logger.Log($"FLASHBACK_DECODER_VIDEO_WARN reason=invalid_d3d11_frame detail='{d3dFrameFailure}' w={_videoWidth} h={_videoHeight}");
+                ffmpeg.av_frame_free(&clonedFrame);
+                return default;
+            }
+
             var texturePtr = (IntPtr)clonedFrame->data[0];
             var subresource = (int)(long)clonedFrame->data[1];
 
@@ -1115,6 +1122,43 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
 
         failure = string.Empty;
+        return true;
+    }
+
+    private static bool TryValidateD3D11VideoFrame(AVFrame* frame, int width, int height, out string failure)
+    {
+        failure = string.Empty;
+        if (frame == null)
+        {
+            failure = "frame_null";
+            return false;
+        }
+
+        if (frame->width > 0 && frame->width != width)
+        {
+            failure = $"width_mismatch frame={frame->width} expected={width}";
+            return false;
+        }
+
+        if (frame->height > 0 && frame->height != height)
+        {
+            failure = $"height_mismatch frame={frame->height} expected={height}";
+            return false;
+        }
+
+        if (frame->data[0] == null)
+        {
+            failure = "texture_null";
+            return false;
+        }
+
+        var subresource = (long)frame->data[1];
+        if (subresource < 0 || subresource > int.MaxValue)
+        {
+            failure = $"subresource_out_of_range:{subresource}";
+            return false;
+        }
+
         return true;
     }
 

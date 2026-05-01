@@ -907,6 +907,9 @@ static partial class Program
                 "Flashback decoder software frame planes are validated",
                 FlashbackDecoder_SoftwareFramePlanesAreValidated),
             await RunCheckAsync(
+                "Flashback decoder D3D11 frames are validated",
+                FlashbackDecoder_D3D11FramesAreValidated),
+            await RunCheckAsync(
                 "Flashback decoder held-frame cleanup is best effort",
                 FlashbackDecoder_HeldFrameCleanupIsBestEffort),
             await RunCheckAsync(
