@@ -40,6 +40,17 @@ public sealed class DiagnosticSessionResult
     public int FlashbackPlaybackMaxCommandQueueLatencyMsObserved { get; init; }
     public long FlashbackPlaybackCommandsDroppedAtEnd { get; init; }
     public long FlashbackPlaybackCommandsSkippedNotReadyAtEnd { get; init; }
+    public double FlashbackPlaybackObservedFpsAtEnd { get; init; }
+    public double FlashbackPlaybackAvgFrameMsAtEnd { get; init; }
+    public long FlashbackPlaybackFrameCountAtEnd { get; init; }
+    public long FlashbackPlaybackLateFramesAtEnd { get; init; }
+    public long FlashbackPlaybackDroppedFramesAtEnd { get; init; }
+    public long FlashbackPlaybackSegmentSwitchesAtEnd { get; init; }
+    public long FlashbackPlaybackFmp4ReopensAtEnd { get; init; }
+    public long FlashbackPlaybackWriteHeadWaitsAtEnd { get; init; }
+    public long FlashbackPlaybackNearLiveSnapsAtEnd { get; init; }
+    public long FlashbackPlaybackDecodeErrorSnapsAtEnd { get; init; }
+    public long FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd { get; init; }
     public bool FlashbackRecordingBackendObserved { get; init; }
     public bool FlashbackRecordingFileGrowthObserved { get; init; }
     public long FlashbackRecordingVideoFramesSubmittedDelta { get; init; }
@@ -525,6 +536,17 @@ public static class DiagnosticSessionRunner
         var playbackMaxLatencyObserved = GetMaxSnapshotInt(samples, lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
         var playbackDroppedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsDropped") ?? 0;
         var playbackSkippedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0;
+        var playbackObservedFpsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackObservedFps");
+        var playbackAvgFrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackAvgFrameMs");
+        var playbackFrameCountAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
+        var playbackLateFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLateFrames") ?? 0;
+        var playbackDroppedFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackDroppedFrames") ?? 0;
+        var playbackSegmentSwitchesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSegmentSwitches") ?? 0;
+        var playbackFmp4ReopensAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackFmp4Reopens") ?? 0;
+        var playbackWriteHeadWaitsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackWriteHeadWaits") ?? 0;
+        var playbackNearLiveSnapsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackNearLiveSnaps") ?? 0;
+        var playbackDecodeErrorSnapsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackDecodeErrorSnaps") ?? 0;
+        var playbackLastWriteHeadWaitGapMsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs") ?? 0;
         var recordingMetrics = BuildFlashbackRecordingMetrics(samples);
 
         var samplesPath = Path.Combine(outputDirectory, "samples.json");
@@ -564,6 +586,17 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackMaxCommandQueueLatencyMsObserved = playbackMaxLatencyObserved,
             FlashbackPlaybackCommandsDroppedAtEnd = playbackDroppedAtEnd,
             FlashbackPlaybackCommandsSkippedNotReadyAtEnd = playbackSkippedAtEnd,
+            FlashbackPlaybackObservedFpsAtEnd = playbackObservedFpsAtEnd,
+            FlashbackPlaybackAvgFrameMsAtEnd = playbackAvgFrameMsAtEnd,
+            FlashbackPlaybackFrameCountAtEnd = playbackFrameCountAtEnd,
+            FlashbackPlaybackLateFramesAtEnd = playbackLateFramesAtEnd,
+            FlashbackPlaybackDroppedFramesAtEnd = playbackDroppedFramesAtEnd,
+            FlashbackPlaybackSegmentSwitchesAtEnd = playbackSegmentSwitchesAtEnd,
+            FlashbackPlaybackFmp4ReopensAtEnd = playbackFmp4ReopensAtEnd,
+            FlashbackPlaybackWriteHeadWaitsAtEnd = playbackWriteHeadWaitsAtEnd,
+            FlashbackPlaybackNearLiveSnapsAtEnd = playbackNearLiveSnapsAtEnd,
+            FlashbackPlaybackDecodeErrorSnapsAtEnd = playbackDecodeErrorSnapsAtEnd,
+            FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd = playbackLastWriteHeadWaitGapMsAtEnd,
             FlashbackRecordingBackendObserved = recordingMetrics.BackendObserved,
             FlashbackRecordingFileGrowthObserved = recordingMetrics.FileGrowthObserved,
             FlashbackRecordingVideoFramesSubmittedDelta = recordingMetrics.VideoFramesSubmittedDelta,
@@ -660,6 +693,21 @@ public static class DiagnosticSessionRunner
             $"maxLatencyMs={result.FlashbackPlaybackMaxCommandQueueLatencyMsObserved} " +
             $"droppedEnd={result.FlashbackPlaybackCommandsDroppedAtEnd} " +
             $"skippedEnd={result.FlashbackPlaybackCommandsSkippedNotReadyAtEnd}");
+        builder.AppendLine(
+            "Flashback Playback Perf: " +
+            $"fpsEnd={result.FlashbackPlaybackObservedFpsAtEnd:0.##} " +
+            $"avgFrameMsEnd={result.FlashbackPlaybackAvgFrameMsAtEnd:0.##} " +
+            $"framesEnd={result.FlashbackPlaybackFrameCountAtEnd} " +
+            $"lateEnd={result.FlashbackPlaybackLateFramesAtEnd} " +
+            $"droppedFramesEnd={result.FlashbackPlaybackDroppedFramesAtEnd}");
+        builder.AppendLine(
+            "Flashback Playback Stages: " +
+            $"switchesEnd={result.FlashbackPlaybackSegmentSwitchesAtEnd} " +
+            $"fmp4ReopensEnd={result.FlashbackPlaybackFmp4ReopensAtEnd} " +
+            $"writeHeadWaitsEnd={result.FlashbackPlaybackWriteHeadWaitsAtEnd} " +
+            $"nearLiveSnapsEnd={result.FlashbackPlaybackNearLiveSnapsAtEnd} " +
+            $"decodeErrorSnapsEnd={result.FlashbackPlaybackDecodeErrorSnapsAtEnd} " +
+            $"lastWriteHeadGapMsEnd={result.FlashbackPlaybackLastWriteHeadWaitGapMsAtEnd}");
         builder.AppendLine(
             "Flashback Recording: " +
             $"backendObserved={result.FlashbackRecordingBackendObserved} " +
