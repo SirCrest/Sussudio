@@ -126,6 +126,36 @@ static partial class Program
                 "Recording verification result exposes expected properties",
                 RecordingVerificationResult_HasExpectedProperties),
             await RunCheckAsync(
+                "Recording verifier fails when ffprobe is unavailable",
+                RecordingVerifier_ReturnsFailure_WhenFfprobeUnavailable),
+            await RunCheckAsync(
+                "Recording verifier passes HEVC when all fields match",
+                RecordingVerifier_PassesVerification_WhenAllFieldsMatch_Hevc),
+            await RunCheckAsync(
+                "Recording verifier detects H264 codec when HEVC is expected",
+                RecordingVerifier_DetectsCodecMismatch_WhenH264InsteadOfHevc),
+            await RunCheckAsync(
+                "Recording verifier detects resolution mismatch",
+                RecordingVerifier_DetectsResolutionMismatch),
+            await RunCheckAsync(
+                "Recording verifier detects frame-rate mismatch",
+                RecordingVerifier_DetectsFrameRateMismatch),
+            await RunCheckAsync(
+                "Recording verifier passes HDR validation when metadata is present",
+                RecordingVerifier_PassesHdrValidation_WhenAllHdrFieldsPresent),
+            await RunCheckAsync(
+                "Recording verifier detects HDR colorimetry mismatch",
+                RecordingVerifier_DetectsHdrColorimetryMismatch),
+            await RunCheckAsync(
+                "Recording verifier passes H264 format",
+                RecordingVerifier_PassesVerification_ForH264Format),
+            await RunCheckAsync(
+                "Recording verifier tolerates NTSC frame-rate drift",
+                RecordingVerifier_PassesNtscFrameRateWithinTolerance),
+            await RunCheckAsync(
+                "Recording verifier fails when ffprobe exits nonzero",
+                RecordingVerifier_ReturnsFailure_WhenFfprobeExitsNonZero),
+            await RunCheckAsync(
                 "LibAv encoder HDR bitstream filters map codecs",
                 LibAvEncoder_GetHdrBitstreamFilterName_MapsCodecs),
             await RunCheckAsync(
