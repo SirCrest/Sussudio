@@ -35,6 +35,11 @@ internal sealed class FlashbackBufferManager : IDisposable
     private long _validStartPtsTicks;
     private long _totalDiskBytes;
     private long _totalBytesWritten;
+    private long _startupCacheBudgetBytes;
+    private long _startupCacheBytes;
+    private long _startupCacheFreedBytes;
+    private int _startupCacheSessionCount;
+    private int _startupCacheDeletedSessionCount;
     private bool _disposed;
     private int _evictionPauseCount;
     private TimeSpan _recordingStartPts;
@@ -46,6 +51,12 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     private record CompletedSegment(string Path, int SequenceNumber, TimeSpan StartPts, TimeSpan EndPts, long SizeBytes);
     private record StartupCacheCandidate(string Path, DateTime LastActivityUtc, long SizeBytes);
+    private record StartupCacheCleanupResult(
+        long BudgetBytes,
+        long RemainingBytes,
+        int SessionCount,
+        int DeletedSessionCount,
+        long FreedBytes);
 
     public FlashbackBufferManager(FlashbackBufferOptions? options = null)
     {
@@ -98,6 +109,21 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     /// <summary>Monotonic counter of all bytes written (never decreases on eviction).</summary>
     public long TotalBytesWritten => Volatile.Read(ref _totalBytesWritten);
+    public long StartupCacheBudgetBytes => Volatile.Read(ref _startupCacheBudgetBytes);
+    public long StartupCacheBytes => Volatile.Read(ref _startupCacheBytes);
+    public int StartupCacheSessionCount => Volatile.Read(ref _startupCacheSessionCount);
+    public int StartupCacheDeletedSessionCount => Volatile.Read(ref _startupCacheDeletedSessionCount);
+    public long StartupCacheFreedBytes => Volatile.Read(ref _startupCacheFreedBytes);
+    public bool StartupCacheOverBudget
+    {
+        get
+        {
+            var budgetBytes = StartupCacheBudgetBytes;
+            return budgetBytes > 0 && StartupCacheBytes > budgetBytes;
+        }
+    }
+
+    public long TempDriveAvailableFreeBytes => TryGetTempDriveAvailableFreeBytes(_options.TempDirectory);
 
     public TimeSpan LatestPts
     {
@@ -319,7 +345,10 @@ internal sealed class FlashbackBufferManager : IDisposable
             FlashbackExporter.CleanupOrphanedTempFiles(_options.TempDirectory);
             CleanupStaleRootSegmentFiles(_options.TempDirectory);
             CleanupStaleSessionDirectories(_options.TempDirectory, sessionDirectory);
-            CleanupSessionCacheBudget(_options.TempDirectory, sessionDirectory, CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));
+            var cacheCleanup = CleanupSessionCacheBudget(
+                _options.TempDirectory,
+                sessionDirectory,
+                CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));
 
             _activeSegmentPath = null;
             _completedSegments.Clear();
@@ -329,6 +358,11 @@ internal sealed class FlashbackBufferManager : IDisposable
             Interlocked.Exchange(ref _validStartPtsTicks, 0);
             _totalDiskBytes = 0;
             _totalBytesWritten = 0;
+            Interlocked.Exchange(ref _startupCacheBudgetBytes, cacheCleanup.BudgetBytes);
+            Interlocked.Exchange(ref _startupCacheBytes, cacheCleanup.RemainingBytes);
+            Interlocked.Exchange(ref _startupCacheSessionCount, cacheCleanup.SessionCount);
+            Interlocked.Exchange(ref _startupCacheDeletedSessionCount, cacheCleanup.DeletedSessionCount);
+            Interlocked.Exchange(ref _startupCacheFreedBytes, cacheCleanup.FreedBytes);
             _previousActiveSegmentBytes = 0;
             Interlocked.Exchange(ref _evictionPauseCount, 0);
             _sessionId = sessionId;
@@ -475,11 +509,11 @@ internal sealed class FlashbackBufferManager : IDisposable
             : sessionMaxDiskBytes * StartupCacheBudgetMultiplier;
     }
 
-    private static void CleanupSessionCacheBudget(string tempDirectory, string currentSessionDirectory, long maxCacheBytes)
+    private static StartupCacheCleanupResult CleanupSessionCacheBudget(string tempDirectory, string currentSessionDirectory, long maxCacheBytes)
     {
         if (maxCacheBytes <= 0)
         {
-            return;
+            return new StartupCacheCleanupResult(0, 0, 0, 0, 0);
         }
 
         try
@@ -488,6 +522,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             var candidates = new List<StartupCacheCandidate>();
             var scannedCount = 0;
             var deletedCount = 0;
+            var sessionCount = 0;
             long freedBytes = 0;
             long totalCacheBytes = TryGetFlashbackSessionDirectoryStats(
                 currentFullPath,
@@ -496,6 +531,10 @@ internal sealed class FlashbackBufferManager : IDisposable
                 out _)
                 ? currentBytes
                 : 0;
+            if (currentBytes > 0)
+            {
+                sessionCount++;
+            }
 
             foreach (var directory in Directory.EnumerateDirectories(tempDirectory))
             {
@@ -529,12 +568,13 @@ internal sealed class FlashbackBufferManager : IDisposable
                 }
 
                 totalCacheBytes += directoryBytes;
+                sessionCount++;
                 candidates.Add(new StartupCacheCandidate(fullPath, latestActivityUtc, directoryBytes));
             }
 
             if (totalCacheBytes <= maxCacheBytes)
             {
-                return;
+                return new StartupCacheCleanupResult(maxCacheBytes, totalCacheBytes, sessionCount, 0, 0);
             }
 
             foreach (var candidate in candidates.OrderBy(candidate => candidate.LastActivityUtc))
@@ -550,6 +590,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                     deletedCount++;
                     freedBytes += candidate.SizeBytes;
                     totalCacheBytes -= candidate.SizeBytes;
+                    sessionCount = Math.Max(0, sessionCount - 1);
                 }
                 catch (Exception ex)
                 {
@@ -561,10 +602,32 @@ internal sealed class FlashbackBufferManager : IDisposable
             {
                 Logger.Log($"FLASHBACK_CACHE_BUDGET_CLEANUP deleted={deletedCount} freed_bytes={freedBytes} remaining_bytes={totalCacheBytes} budget_bytes={maxCacheBytes}");
             }
+
+            return new StartupCacheCleanupResult(maxCacheBytes, totalCacheBytes, sessionCount, deletedCount, freedBytes);
         }
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_CACHE_BUDGET_CLEANUP_WARN type={ex.GetType().Name} msg={ex.Message}");
+            return new StartupCacheCleanupResult(maxCacheBytes, 0, 0, 0, 0);
+        }
+    }
+
+    private static long TryGetTempDriveAvailableFreeBytes(string tempDirectory)
+    {
+        try
+        {
+            var root = Path.GetPathRoot(Path.GetFullPath(tempDirectory));
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                return -1;
+            }
+
+            return new DriveInfo(root).AvailableFreeSpace;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_TEMP_DRIVE_FREE_SPACE_WARN dir='{tempDirectory}' type={ex.GetType().Name} msg={ex.Message}");
+            return -1;
         }
     }
 

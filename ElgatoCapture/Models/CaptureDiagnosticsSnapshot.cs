@@ -20,6 +20,13 @@ public class CaptureDiagnosticsSnapshot
     public long FlashbackBufferedDurationMs { get; init; }
     public int FlashbackSegmentCount { get; init; }
     public long FlashbackDiskBytes { get; init; }
+    public long FlashbackTempDriveFreeBytes { get; init; }
+    public long FlashbackStartupCacheBudgetBytes { get; init; }
+    public long FlashbackStartupCacheBytes { get; init; }
+    public int FlashbackStartupCacheSessionCount { get; init; }
+    public int FlashbackStartupCacheDeletedSessionCount { get; init; }
+    public long FlashbackStartupCacheFreedBytes { get; init; }
+    public bool FlashbackStartupCacheOverBudget { get; init; }
 
     public long RecordingElapsedMs { get; init; }
     public long LastFrameArrivalMs { get; init; }

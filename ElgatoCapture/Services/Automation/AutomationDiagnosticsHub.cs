@@ -57,6 +57,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const int FlashbackPlaybackCommandStallThresholdMs = 1000;
     private const double FlashbackPlaybackSlowFpsRatio = 0.75;
     private const int FlashbackPlaybackMinFramesForPerfAlert = 60;
+    private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;
 
     private readonly double _perfectionCaptureDropPercentThreshold;
     private readonly double _perfectionCaptureP95MultiplierThreshold;
@@ -888,6 +889,13 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackEncodingFailed = health.FlashbackEncodingFailed,
             FlashbackEncodingFailureType = health.FlashbackEncodingFailureType,
             FlashbackEncodingFailureMessage = health.FlashbackEncodingFailureMessage,
+            FlashbackTempDriveFreeBytes = health.FlashbackTempDriveFreeBytes,
+            FlashbackStartupCacheBudgetBytes = health.FlashbackStartupCacheBudgetBytes,
+            FlashbackStartupCacheBytes = health.FlashbackStartupCacheBytes,
+            FlashbackStartupCacheSessionCount = health.FlashbackStartupCacheSessionCount,
+            FlashbackStartupCacheDeletedSessionCount = health.FlashbackStartupCacheDeletedSessionCount,
+            FlashbackStartupCacheFreedBytes = health.FlashbackStartupCacheFreedBytes,
+            FlashbackStartupCacheOverBudget = health.FlashbackStartupCacheOverBudget,
             FlashbackVideoQueueCapacity = health.FlashbackVideoQueueCapacity,
             FlashbackVideoQueueMaxDepth = health.FlashbackVideoQueueMaxDepth,
             FlashbackVideoFramesSubmittedToEncoder = health.FlashbackVideoFramesSubmittedToEncoder,
@@ -1354,6 +1362,20 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             throttleMs: 10000);
 
         SetAlertState(
+            "flashback-temp-cache-pressure",
+            snapshot.FlashbackActive &&
+            (snapshot.FlashbackStartupCacheOverBudget ||
+             (snapshot.FlashbackTempDriveFreeBytes >= 0 && snapshot.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes)),
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback temp storage is under pressure: freeBytes={snapshot.FlashbackTempDriveFreeBytes} " +
+            $"cacheBytes={snapshot.FlashbackStartupCacheBytes} budgetBytes={snapshot.FlashbackStartupCacheBudgetBytes} " +
+            $"sessions={snapshot.FlashbackStartupCacheSessionCount} deleted={snapshot.FlashbackStartupCacheDeletedSessionCount} " +
+            $"freedBytes={snapshot.FlashbackStartupCacheFreedBytes} overBudget={snapshot.FlashbackStartupCacheOverBudget}.",
+            "Flashback temp storage returned to healthy range.",
+            throttleMs: 10000);
+
+        SetAlertState(
             "flashback-playback-command-stalled",
             playbackCommandQueueAgeMs >= FlashbackPlaybackCommandStallThresholdMs,
             DiagnosticsSeverity.Warning,
@@ -1469,6 +1491,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"audio integrity={captureRuntime.RecordingIntegrityAudioStatus} drops={captureRuntime.RecordingIntegrityAudioDropEvents} disc={captureRuntime.RecordingIntegrityAudioDiscontinuities} gaps={captureRuntime.RecordingIntegrityAudioCallbackGaps}";
         var exportLane =
             $"export active={health.FlashbackExportActive} status={health.FlashbackExportStatus} id={health.FlashbackExportId} progress={health.FlashbackExportPercent:0.##}% segments={health.FlashbackExportSegmentsProcessed}/{health.FlashbackExportTotalSegments} lastProgressUtc={health.FlashbackExportLastProgressUtcUnixMs} completedUtc={health.FlashbackExportCompletedUtcUnixMs}";
+        var tempCacheLane =
+            $"flashback temp freeBytes={health.FlashbackTempDriveFreeBytes} cacheBytes={health.FlashbackStartupCacheBytes} budgetBytes={health.FlashbackStartupCacheBudgetBytes} sessions={health.FlashbackStartupCacheSessionCount} deleted={health.FlashbackStartupCacheDeletedSessionCount} freedBytes={health.FlashbackStartupCacheFreedBytes} overBudget={health.FlashbackStartupCacheOverBudget}";
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         var playbackCommandQueueAgeMs =
             health.FlashbackPlaybackPendingCommands > 0 &&
@@ -1486,6 +1510,26 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             health.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
             health.FlashbackPlaybackObservedFps > 0 &&
             health.FlashbackPlaybackObservedFps < health.ExpectedFrameRate * FlashbackPlaybackSlowFpsRatio;
+        var flashbackTempPressure =
+            health.FlashbackActive &&
+            (health.FlashbackStartupCacheOverBudget ||
+             (health.FlashbackTempDriveFreeBytes >= 0 && health.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes));
+
+        if (flashbackTempPressure)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "flashback_storage",
+                "Flashback temp storage is under pressure.",
+                tempCacheLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
 
         if (health.FlashbackExportActive)
         {

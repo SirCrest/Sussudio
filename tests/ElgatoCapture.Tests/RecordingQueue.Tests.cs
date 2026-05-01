@@ -258,11 +258,15 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "FlashbackVideoQueueOldestFrameAgeMs = fbSink?.VideoQueueOldestFrameAgeMs");
         AssertContains(captureSnapshotsSource, "FlashbackVideoBackpressureWaitMs = fbSink?.VideoBackpressureWaitMs");
         AssertContains(captureSnapshotsSource, "FlashbackEncodingFailureMessage");
+        AssertContains(captureSnapshotsSource, "FlashbackStartupCacheBytes = bufMgr?.StartupCacheBytes");
+        AssertContains(captureSnapshotsSource, "FlashbackTempDriveFreeBytes = bufMgr?.TempDriveAvailableFreeBytes");
         var sharedFormatterSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
         var ecctlFormatterSource = ReadRepoFile("tools/ecctl/Formatters.cs");
         var mcpAppStateSource = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
         AssertContains(sharedFormatterSource, "FlashbackEncodingFailed");
+        AssertContains(sharedFormatterSource, "FlashbackStartupCacheBytes");
         AssertContains(ecctlFormatterSource, "FlashbackEncodingFailed");
+        AssertContains(ecctlFormatterSource, "FlashbackStartupCacheBytes");
         AssertContains(mcpAppStateSource, "FormatSnapshot(response, includeFlashback: true)");
         AssertOccursBefore(
             sharedFormatterSource,

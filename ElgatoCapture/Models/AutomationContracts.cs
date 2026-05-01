@@ -769,6 +769,13 @@ public sealed class AutomationSnapshot
     public bool FlashbackActive { get; init; }
     public long FlashbackBufferedDurationMs { get; init; }
     public long FlashbackDiskBytes { get; init; }
+    public long FlashbackTempDriveFreeBytes { get; init; }
+    public long FlashbackStartupCacheBudgetBytes { get; init; }
+    public long FlashbackStartupCacheBytes { get; init; }
+    public int FlashbackStartupCacheSessionCount { get; init; }
+    public int FlashbackStartupCacheDeletedSessionCount { get; init; }
+    public long FlashbackStartupCacheFreedBytes { get; init; }
+    public bool FlashbackStartupCacheOverBudget { get; init; }
     public long FlashbackOutputBytes { get; init; }
     public string? FlashbackFilePath { get; init; }
     public long FlashbackEncodedFrames { get; init; }

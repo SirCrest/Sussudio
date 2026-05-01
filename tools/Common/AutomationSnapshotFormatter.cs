@@ -220,6 +220,31 @@ internal static class AutomationSnapshotFormatter
         return intervalMs > 0 ? $"{intervalMs:0.##}ms" : fallback;
     }
 
+    internal static string FormatBytes(long bytes)
+    {
+        if (bytes < 0)
+        {
+            return "N/A";
+        }
+
+        if (bytes >= 1024L * 1024L * 1024L)
+        {
+            return $"{bytes / (1024.0 * 1024.0 * 1024.0):0.##} GB";
+        }
+
+        if (bytes >= 1024L * 1024L)
+        {
+            return $"{bytes / (1024.0 * 1024.0):0.##} MB";
+        }
+
+        if (bytes >= 1024L)
+        {
+            return $"{bytes / 1024.0:0.##} KB";
+        }
+
+        return $"{bytes} B";
+    }
+
     internal static long GetLong(JsonElement element, string propertyName, long fallback = 0)
     {
         return element.ValueKind == JsonValueKind.Object &&
@@ -318,6 +343,7 @@ internal static class AutomationSnapshotFormatter
             : 0;
         var diskMb = diskBytes / (1024.0 * 1024.0);
         builder.AppendLine($"Buffer: {bufferedDurationMs / 1000.0:F1}s | Disk: {diskMb:F1} MB | GPU Encode: {Get(snapshot, "FlashbackGpuEncoding")}");
+        builder.AppendLine($"Temp Cache: cache={FormatBytes(GetLong(snapshot, "FlashbackStartupCacheBytes"))} budget={FormatBytes(GetLong(snapshot, "FlashbackStartupCacheBudgetBytes"))} free={FormatBytes(GetLong(snapshot, "FlashbackTempDriveFreeBytes"))} sessions={Get(snapshot, "FlashbackStartupCacheSessionCount")} deleted={Get(snapshot, "FlashbackStartupCacheDeletedSessionCount")} freed={FormatBytes(GetLong(snapshot, "FlashbackStartupCacheFreedBytes"))} overBudget={Get(snapshot, "FlashbackStartupCacheOverBudget")}");
         builder.AppendLine($"Encoded: {Get(snapshot, "FlashbackEncodedFrames")} frames | Dropped: {Get(snapshot, "FlashbackDroppedFrames")} | VQ: {Get(snapshot, "FlashbackVideoQueueDepth")}/{Get(snapshot, "FlashbackVideoQueueCapacity")} max={Get(snapshot, "FlashbackVideoQueueMaxDepth")} AQ: {Get(snapshot, "FlashbackAudioQueueDepth")}");
         builder.AppendLine($"Flashback Detail: submitted={Get(snapshot, "FlashbackVideoFramesSubmittedToEncoder")} packets={Get(snapshot, "FlashbackVideoEncoderPacketsWritten")} pts={Get(snapshot, "FlashbackVideoEncoderPts")} encoderDrops={Get(snapshot, "FlashbackVideoEncoderDroppedFrames")} seqGaps={Get(snapshot, "FlashbackVideoSequenceGaps")}");
         builder.AppendLine($"Flashback Queue Latency: oldest={Get(snapshot, "FlashbackVideoQueueOldestFrameAgeMs")}ms last={Get(snapshot, "FlashbackVideoQueueLastLatencyMs")}ms avg={Get(snapshot, "FlashbackVideoQueueLatencyAvgMs")}ms P95={Get(snapshot, "FlashbackVideoQueueLatencyP95Ms")}ms max={Get(snapshot, "FlashbackVideoQueueLatencyMaxMs")}ms samples={Get(snapshot, "FlashbackVideoQueueLatencySampleCount")}");

@@ -67,6 +67,7 @@ static partial class Program
             SetPropertyOrBackingField(diagnostics, "VideoDropsQueueSaturated", 2L);
             SetPropertyOrBackingField(diagnostics, "RecordingEncodingFailed", true);
             SetPropertyOrBackingField(diagnostics, "RecordingEncodingFailureType", "InvalidOperationException");
+            SetPropertyOrBackingField(diagnostics, "FlashbackStartupCacheBytes", 120_000L);
             SetPropertyOrBackingField(diagnostics, "FlashbackGpuFramesDropped", 3L);
 
             var diagnosticsJson = SerializeWithLoggingJsonContext(
@@ -81,6 +82,7 @@ static partial class Program
                 AssertJsonInt64(root, "VideoDropsQueueSaturated", 2L, "CaptureDiagnosticsSnapshot source-gen JSON VideoDropsQueueSaturated");
                 AssertJsonBool(root, "RecordingEncodingFailed", true, "CaptureDiagnosticsSnapshot source-gen JSON RecordingEncodingFailed");
                 AssertJsonString(root, "RecordingEncodingFailureType", "InvalidOperationException", "CaptureDiagnosticsSnapshot source-gen JSON RecordingEncodingFailureType");
+                AssertJsonInt64(root, "FlashbackStartupCacheBytes", 120_000L, "CaptureDiagnosticsSnapshot source-gen JSON FlashbackStartupCacheBytes");
                 AssertJsonInt64(root, "FlashbackGpuFramesDropped", 3L, "CaptureDiagnosticsSnapshot source-gen JSON FlashbackGpuFramesDropped");
                 var decoderJson = AssertSingleJsonArrayItem(root, "MjpegPerDecoder");
                 AssertJsonInt32(decoderJson, "WorkerIndex", 7, "MjpegDecoderHealthSnapshot source-gen JSON WorkerIndex");

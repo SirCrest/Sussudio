@@ -1169,6 +1169,13 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("RecordingVideoQueueLatencyP95Ms"), "AutomationSnapshot.RecordingVideoQueueLatencyP95Ms");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoBackpressureWaitMs"), "AutomationSnapshot.RecordingVideoBackpressureWaitMs");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoBackpressureEvents"), "AutomationSnapshot.RecordingVideoBackpressureEvents");
+        AssertNotNull(snapshotType.GetProperty("FlashbackTempDriveFreeBytes"), "AutomationSnapshot.FlashbackTempDriveFreeBytes");
+        AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheBudgetBytes"), "AutomationSnapshot.FlashbackStartupCacheBudgetBytes");
+        AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheBytes"), "AutomationSnapshot.FlashbackStartupCacheBytes");
+        AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheSessionCount"), "AutomationSnapshot.FlashbackStartupCacheSessionCount");
+        AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheDeletedSessionCount"), "AutomationSnapshot.FlashbackStartupCacheDeletedSessionCount");
+        AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheFreedBytes"), "AutomationSnapshot.FlashbackStartupCacheFreedBytes");
+        AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheOverBudget"), "AutomationSnapshot.FlashbackStartupCacheOverBudget");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoFramesSubmittedToEncoder"), "AutomationSnapshot.FlashbackVideoFramesSubmittedToEncoder");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoEncoderPacketsWritten"), "AutomationSnapshot.FlashbackVideoEncoderPacketsWritten");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoSequenceGaps"), "AutomationSnapshot.FlashbackVideoSequenceGaps");

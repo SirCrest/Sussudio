@@ -231,6 +231,12 @@ static partial class Program
         AssertContains(diagnosticsText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackCommandStallThresholdMs = 1000;");
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackSlowFpsRatio = 0.75;");
+        AssertContains(diagnosticsText, "private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;");
+        AssertContains(diagnosticsText, "\"flashback-temp-cache-pressure\"");
+        AssertContains(diagnosticsText, "snapshot.FlashbackStartupCacheOverBudget");
+        AssertContains(diagnosticsText, "snapshot.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes");
+        AssertContains(diagnosticsText, "\"flashback_storage\"");
+        AssertContains(diagnosticsText, "\"Flashback temp storage is under pressure.\"");
         AssertContains(diagnosticsText, "\"flashback-playback-slow\"");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackPendingCommands > 0");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackObservedFps < snapshot.SelectedFrameRate * FlashbackPlaybackSlowFpsRatio");
@@ -668,7 +674,9 @@ static partial class Program
         AssertContains(bufferText, "private const int MaxStaleRootSegmentFileScansPerInit = 512;");
         AssertContains(bufferText, "CleanupStaleRootSegmentFiles(_options.TempDirectory);");
         AssertContains(bufferText, "CleanupStaleSessionDirectories(_options.TempDirectory, sessionDirectory);");
-        AssertContains(bufferText, "CleanupSessionCacheBudget(_options.TempDirectory, sessionDirectory, CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));");
+        AssertContains(bufferText, "var cacheCleanup = CleanupSessionCacheBudget(");
+        AssertContains(bufferText, "CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));");
+        AssertContains(bufferText, "public long TempDriveAvailableFreeBytes => TryGetTempDriveAvailableFreeBytes(_options.TempDirectory);");
         AssertContains(bufferText, "if (string.Equals(fullPath, currentFullPath, StringComparison.OrdinalIgnoreCase))");
         AssertContains(bufferText, "FLASHBACK_CACHE_BUDGET_PRESERVE_SKIP");
         AssertContains(bufferText, "FLASHBACK_CACHE_BUDGET_CLEANUP");
