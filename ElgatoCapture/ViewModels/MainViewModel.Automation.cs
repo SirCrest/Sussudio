@@ -300,7 +300,7 @@ public partial class MainViewModel
         // outside the transition lock so long FFmpeg work does not block lifecycle commands.
         var exportId = Interlocked.Increment(ref _flashbackExportOperationId);
         var oldExportCts = _exportCts;
-        oldExportCts?.Cancel();
+        CancelFlashbackExportCts(oldExportCts);
         _exportCts = new CancellationTokenSource();
         var exportCts = _exportCts;
         var ct = exportCts.Token;
@@ -347,12 +347,30 @@ public partial class MainViewModel
     private bool IsCurrentFlashbackExport(int exportId, CancellationTokenSource exportCts)
         => Volatile.Read(ref _flashbackExportOperationId) == exportId && ReferenceEquals(_exportCts, exportCts);
 
+    private static void CancelFlashbackExportCts(CancellationTokenSource? cts)
+    {
+        if (cts == null)
+        {
+            return;
+        }
+
+        try
+        {
+            cts.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // A previous automation export may have completed on a background
+            // thread while its UI cleanup was still queued.
+        }
+    }
+
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
         double seconds, string outputPath, bool useSelectionRange, CancellationToken ct)
     {
         var exportId = Interlocked.Increment(ref _flashbackExportOperationId);
         var oldExportCts = _exportCts;
-        oldExportCts?.Cancel();
+        CancelFlashbackExportCts(oldExportCts);
         _exportCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var exportCts = _exportCts;
 
@@ -389,16 +407,29 @@ public partial class MainViewModel
         }
         finally
         {
-            _dispatcherQueue.TryEnqueue(() =>
+            if (!_dispatcherQueue.TryEnqueue(() =>
+            {
+                try
+                {
+                    if (IsCurrentFlashbackExport(exportId, exportCts))
+                    {
+                        IsFlashbackExporting = false;
+                        FlashbackExportProgress = 0;
+                        _exportCts = null;
+                    }
+                }
+                finally
+                {
+                    exportCts.Dispose();
+                }
+            }))
             {
                 if (IsCurrentFlashbackExport(exportId, exportCts))
                 {
-                    IsFlashbackExporting = false;
-                    FlashbackExportProgress = 0;
                     _exportCts = null;
                 }
-            });
-            exportCts.Dispose();
+                exportCts.Dispose();
+            }
         }
     }
 
