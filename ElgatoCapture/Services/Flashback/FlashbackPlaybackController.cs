@@ -590,7 +590,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             break;
                         }
 
-                        SeekAndDisplayKeyframe(decoder, cmd.Position, frozenValidStart);
+                        SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart);
                         isPlaying = _wasPlayingBeforeScrub;
                         if (isPlaying)
                         {
@@ -634,7 +634,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             SetState(FlashbackPlaybackState.Live);
                             break;
                         }
-                        SeekAndDisplayKeyframe(decoder, cmd.Position, frozenValidStart);
+                        SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart);
                         break;
 
                     case CommandKind.UpdateScrub:
@@ -669,7 +669,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             Logger.Log($"FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE pos_ms={(long)cmd.Position.TotalMilliseconds}");
                             break;
                         }
-                        SeekAndDisplayKeyframe(decoder, cmd.Position, frozenValidStart);
+                        SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart);
                         break;
 
                     case CommandKind.EndScrub:
@@ -845,7 +845,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             }
                             // Forward decode failed (EOF) — fall through to full seek
                         }
-                        SeekAndDisplayKeyframe(decoder, nudgedPos, frozenValidStart);
+                        SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart);
                         break;
                 }
             }
@@ -1065,6 +1065,40 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
+    private bool TryReopenCurrentFileAndSeekKeyframe(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)
+    {
+        var currentPath = _currentOpenFilePath;
+        if (string.IsNullOrWhiteSpace(currentPath))
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SKIP reason={reason} detail=no_current_file");
+            return false;
+        }
+
+        try
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME reason={reason} offset_ms={(long)seekTarget.TotalMilliseconds}");
+            if (decoder.IsOpen)
+            {
+                decoder.CloseFile();
+            }
+
+            fileOpen = false;
+            decoder.OpenFile(currentPath);
+            fileOpen = true;
+            _currentOpenFilePath = currentPath;
+            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+            return decoder.SeekToKeyframe(seekTarget);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            _decoderHwAccel = "N/A";
+            fileOpen = false;
+            _currentOpenFilePath = null;
+            return false;
+        }
+    }
+
     private void ReleasePreviousHeldFrame()
     {
         if (_hasPreviousHeldFrame)
@@ -1148,7 +1182,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private void SeekAndDisplayKeyframe(FlashbackDecoder decoder, TimeSpan bufferPosition, TimeSpan validStartPts)
+    private void SeekAndDisplayKeyframe(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan bufferPosition, TimeSpan validStartPts)
     {
         // Suppress audio delivery during scrub — prevents audio accumulation
         // in the WASAPI queue. Audio callback is re-enabled on Play/EndScrub.
@@ -1188,9 +1222,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 if (IsActiveFmp4Segment(_currentOpenFilePath) && _currentOpenFilePath != null)
                 {
                     Logger.Log($"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds}");
-                    decoder.CloseFile();
-                    decoder.OpenFile(_currentOpenFilePath);
-                    if (decoder.SeekToKeyframe(filePts))
+                    if (TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, "seek_keyframe"))
                         goto seekSuccess;
                 }
 

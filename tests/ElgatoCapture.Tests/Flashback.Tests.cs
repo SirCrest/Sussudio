@@ -1121,7 +1121,7 @@ static partial class Program
         AssertContains(nudgeBlock, "RestoreLiveAudio();");
         AssertContains(nudgeBlock, "SafeResumePreviewSubmission(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "SetState(FlashbackPlaybackState.Live);");
-        AssertContains(nudgeBlock, "SeekAndDisplayKeyframe(decoder, nudgedPos, frozenValidStart);");
+        AssertContains(nudgeBlock, "SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart);");
         AssertDoesNotContain(nudgeBlock, "if (decoder != null)");
 
         return Task.CompletedTask;
@@ -1162,14 +1162,20 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeek(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)");
+        AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeekKeyframe(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_ERROR");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_ERROR");
         AssertContains(sourceText, "fileOpen = false;\n            _currentOpenFilePath = null;\n            return false;");
         AssertContains(sourceText, "_currentOpenFilePath = currentPath;\n            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";\n            return decoder.SeekTo(seekTarget);");
+        AssertContains(sourceText, "_currentOpenFilePath = currentPath;\n            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";\n            return decoder.SeekToKeyframe(seekTarget);");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_REOPEN_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            _decoderHwAccel = \"N/A\";\n            fileOpen = false;");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            _decoderHwAccel = \"N/A\";\n            fileOpen = false;");
         AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, coalescedSeekTarget, \"seek\")");
         AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, endScrubTarget, \"end_scrub\")");
         AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, \"play\")");
+        AssertContains(sourceText, "TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, \"seek_keyframe\")");
         AssertDoesNotContain(sourceText, "decoder.OpenFile(_currentOpenFilePath!)");
+        AssertDoesNotContain(sourceText, "decoder.OpenFile(_currentOpenFilePath);");
 
         return Task.CompletedTask;
     }
