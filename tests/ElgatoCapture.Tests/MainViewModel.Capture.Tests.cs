@@ -610,6 +610,10 @@ static partial class Program
         AssertContains(
             stopAndDisposeRecordingBackend,
             "FLASHBACK_ENABLE_AFTER_RECORDING_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(
+            stopAndDisposeRecordingBackend,
+            "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n                {\n                    cancellationException ??= new OperationCanceledException(cancellationToken);");
+        AssertContains(stopAndDisposeRecordingBackend, "FLASHBACK_ENABLE_AFTER_RECORDING_CANCELLED");
         var deferredEnableFailureBranch = ExtractTextBetween(
             stopAndDisposeRecordingBackend,
             "catch (Exception ex)\n                {",
