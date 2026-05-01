@@ -1597,7 +1597,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             // frames to catch up rather than falling further behind. This handles codecs
             // whose decode time exceeds the frame interval (e.g. AV1 at 4K@120fps where
             // each decode takes ~25ms but frame interval is 8.33ms).
-            const double FrameSkipThresholdMs = 200.0;
+            const double FrameSkipThresholdMs = 500.0;
             const int MaxSkipFrames = 30; // cap to prevent infinite skip loops
             var audioClockPts = Volatile.Read(ref _audioClockPtsTicks);
             if (audioClockPts > 0)
@@ -1976,8 +1976,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
             var diffMs = diffTicks / (double)TimeSpan.TicksPerMillisecond;
             var nominalDelayMs = frameDuration.TotalMilliseconds;
 
-            // ffplay: sync_threshold = clamp(frame_duration, 40ms, 100ms)
-            var syncThresholdMs = Math.Clamp(nominalDelayMs, 40.0, 100.0);
+            // At HFR, per-frame corrections are very visible. Short fMP4
+            // fragments keep audio close, so tolerate sub-100ms drift and only
+            // correct when sync moves outside that band.
+            const double syncThresholdMs = 100.0;
             const double MaxAudioMasterCorrectionMs = 250.0;
 
             if (Math.Abs(diffMs) > MaxAudioMasterCorrectionMs)
@@ -1992,15 +1994,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
             double adjustedDelayMs;
             if (diffMs > syncThresholdMs)
             {
-                // Video ahead — double delay to let audio catch up
+                // Video ahead: add a tiny correction without tanking HFR cadence.
                 Interlocked.Increment(ref _playbackAudioMasterDelayDoubles);
-                adjustedDelayMs = nominalDelayMs * 2;
+                var correctionMs = Math.Min(diffMs - syncThresholdMs, Math.Min(1.0, nominalDelayMs * 0.1));
+                adjustedDelayMs = nominalDelayMs + Math.Max(0, correctionMs);
             }
             else if (diffMs < -syncThresholdMs)
             {
-                // Video behind — shrink delay to catch up
+                // Video behind: shave a tiny correction without creating bursts.
                 Interlocked.Increment(ref _playbackAudioMasterDelayShrinks);
-                adjustedDelayMs = Math.Max(0, nominalDelayMs + diffMs);
+                var correctionMs = Math.Min(-diffMs - syncThresholdMs, Math.Min(1.0, nominalDelayMs * 0.1));
+                adjustedDelayMs = Math.Max(0, nominalDelayMs - Math.Max(0, correctionMs));
                 if (adjustedDelayMs <= 0)
                     Interlocked.Increment(ref _playbackLateFrames);
             }

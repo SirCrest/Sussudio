@@ -618,6 +618,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback playback: audio buffered duration exceeded budget");
         AssertContains(diagnosticSessionText, "flashback playback: absolute A/V drift exceeded budget");
         AssertContains(diagnosticSessionText, "BuildFlashbackPlaybackSessionMetrics(samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "const long MinimumPlaybackFramesForLowPercentile = 240;");
+        AssertContains(diagnosticSessionText, "onePercentLow > 0 && frameCount >= MinimumPlaybackFramesForLowPercentile");
         AssertContains(diagnosticSessionText, "fpsMin={result.FlashbackPlaybackMinObservedFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "onePercentLowFpsMin={result.FlashbackPlaybackMinOnePercentLowFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "p99FrameMsMax={result.FlashbackPlaybackMaxP99FrameMsObserved:0.##}");

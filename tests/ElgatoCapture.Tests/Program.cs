@@ -195,6 +195,9 @@ static partial class Program
                 "LibAv encoder rejects mismatched frame-rate parts",
                 LibAvEncoder_ValidateOptions_RejectsMismatchedFrameRateParts),
             await RunCheckAsync(
+                "LibAv encoder fragments MP4 tightly for flashback playback",
+                LibAvEncoder_FragmentedMp4UsesShortFragmentsForPlayback),
+            await RunCheckAsync(
                 "Flashback integrity uses recording-scoped sequence gaps",
                 FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps),
             await RunCheckAsync(

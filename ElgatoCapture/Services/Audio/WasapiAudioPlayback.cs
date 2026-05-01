@@ -16,6 +16,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private const int BytesPerSample = 4;
     private const int OutputBlockAlign = OutputChannels * BytesPerSample;
     private const int OutputSampleRate = 48000;
+    private const uint MaxRenderWriteFrames = OutputSampleRate / 50; // 20ms
     private const uint WaitTimeoutMs = 100;
 
     private readonly object _chunkLock = new();
@@ -273,7 +274,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
         if (Volatile.Read(ref _started) == 0) return;
         if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) return;
 
-        _pauseRequested = false;
         _resumeRequested = true;
         _renderEvent?.Set();
     }
@@ -431,7 +431,10 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 Flush();
                 Interlocked.Exchange(ref _renderingPaused, 1);
                 Logger.Log("WASAPI_PLAYBACK_RENDER_PAUSED");
-                continue;
+                if (!_resumeRequested)
+                {
+                    continue;
+                }
             }
 
             // Handle resume request on the render thread to avoid cross-thread WASAPI calls
@@ -483,7 +486,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             return;
         }
 
-        var framesToWrite = _bufferFrameCount - paddingFrames;
+        var framesToWrite = Math.Min(_bufferFrameCount - paddingFrames, MaxRenderWriteFrames);
         if (framesToWrite == 0)
         {
             return;

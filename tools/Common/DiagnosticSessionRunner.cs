@@ -3235,6 +3235,8 @@ public static class DiagnosticSessionRunner
 
     private static void ObservePlaybackSnapshot(FlashbackPlaybackSessionMetrics metrics, JsonElement snapshot)
     {
+        const long MinimumPlaybackFramesForLowPercentile = 240;
+
         var observedFps = GetDouble(snapshot, "FlashbackPlaybackObservedFps");
         if (observedFps > 0)
         {
@@ -3242,7 +3244,8 @@ public static class DiagnosticSessionRunner
         }
 
         var onePercentLow = GetDouble(snapshot, "FlashbackPlaybackOnePercentLowFps");
-        if (onePercentLow > 0)
+        var frameCount = GetNullableLong(snapshot, "FlashbackPlaybackFrameCount") ?? 0;
+        if (onePercentLow > 0 && frameCount >= MinimumPlaybackFramesForLowPercentile)
         {
             metrics.MinOnePercentLowFpsObserved = Math.Min(metrics.MinOnePercentLowFpsObserved, onePercentLow);
         }
