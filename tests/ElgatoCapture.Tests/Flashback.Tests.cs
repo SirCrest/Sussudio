@@ -1160,6 +1160,8 @@ static partial class Program
         AssertContains(openFileBlock, "FLASHBACK_DECODER_OPEN_WARN");
         AssertContains(openFileBlock, "CloseFileCore();\n            throw;");
         AssertDoesNotContain(openFileBlock, "System.Diagnostics.Trace.TraceWarning");
+        AssertContains(decoderText, "FLASHBACK_DECODER_INIT d3d11va=false reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
+        AssertContains(decoderText, "FLASHBACK_DECODER_D3D11VA_SKIP reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
 
         var fileSizeBlock = ExtractTextBetween(
             sinkText,

@@ -158,7 +158,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log($"FLASHBACK_DECODER_INIT d3d11va=false reason=exception msg='{ex.Message}'");
+                Logger.Log($"FLASHBACK_DECODER_INIT d3d11va=false reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
             }
         }
         else
@@ -649,7 +649,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_DECODER_D3D11VA_SKIP reason=exception msg='{ex.Message}'");
+            Logger.Log($"FLASHBACK_DECODER_D3D11VA_SKIP reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
         }
 
     cleanup:
