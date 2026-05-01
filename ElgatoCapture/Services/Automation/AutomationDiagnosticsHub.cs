@@ -1495,6 +1495,16 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             throttleMs: 5000);
 
         SetAlertState(
+            "flashback-playback-submit-failures",
+            snapshot.FlashbackPlaybackSubmitFailures > 0,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback playback frame submission failed: submitFailures={snapshot.FlashbackPlaybackSubmitFailures} state={snapshot.FlashbackPlaybackState} " +
+            $"frames={snapshot.FlashbackPlaybackFrameCount} threadAlive={snapshot.FlashbackPlaybackThreadAlive}.",
+            "Flashback playback frame submission recovered.",
+            throttleMs: 5000);
+
+        SetAlertState(
             "hdr-parity-mismatch",
             snapshot.LastVerification?.HdrParity is { Requested: true, Verified: false },
             DiagnosticsSeverity.Warning,
@@ -1697,6 +1707,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 "Warning",
                 "flashback_playback",
                 "Flashback playback is below target rate.",
+                playbackPerfLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (health.FlashbackPlaybackSubmitFailures > 0)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "flashback_playback",
+                "Flashback playback frame submission failed.",
                 playbackPerfLane,
                 sourceLane,
                 decodeLane,
