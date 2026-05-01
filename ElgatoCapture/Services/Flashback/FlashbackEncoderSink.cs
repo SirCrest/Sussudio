@@ -554,8 +554,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public bool TryEnqueueRawVideoFrame(ReadOnlySpan<byte> data, int expectedSize)
     {
         var queue = _videoQueue;
-        if (_disposed || !_started || queue == null || expectedSize <= 0 || data.IsEmpty || Volatile.Read(ref _forceRotateDraining))
+        var rejectReason = GetVideoInputRejectReason(queue, expectedSize, data.IsEmpty);
+        if (rejectReason != null)
         {
+            TrackVideoQueueRejected(rejectReason);
             return false;
         }
 
@@ -584,7 +586,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var packet = VideoFramePacket.Frame(buffer, expectedSize, enqueueTick, isP010);
         Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
 
-        var enqueueResult = TryEnqueueVideoPacket(queue, packet);
+        var enqueueResult = TryEnqueueVideoPacket(queue!, packet);
         if (enqueueResult != VideoEnqueueResult.Overloaded)
         {
             return enqueueResult == VideoEnqueueResult.Accepted;
@@ -608,9 +610,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         ArgumentNullException.ThrowIfNull(frame);
 
         var queue = _videoQueue;
-        if (_disposed || !_started || queue == null || Volatile.Read(ref _forceRotateDraining))
+        var rejectReason = GetVideoInputRejectReason(queue, expectedSize: 1, dataIsEmpty: false);
+        if (rejectReason != null)
         {
             frame.Dispose();
+            TrackVideoQueueRejected(rejectReason);
             return false;
         }
 
@@ -640,7 +644,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var packet = VideoFramePacket.Frame(frame, enqueueTick);
         Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
 
-        var enqueueResult = TryEnqueueVideoPacket(queue, packet);
+        var enqueueResult = TryEnqueueVideoPacket(queue!, packet);
         if (enqueueResult != VideoEnqueueResult.Overloaded)
         {
             return enqueueResult == VideoEnqueueResult.Accepted;
@@ -662,20 +666,23 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public bool TryEnqueueGpuVideoFrame(IntPtr d3d11Texture2D, int subresourceIndex)
     {
         var queue = _gpuQueue;
-        if (_disposed || !_started || queue == null || d3d11Texture2D == IntPtr.Zero || Volatile.Read(ref _forceRotateDraining))
+        var rejectReason = GetGpuInputRejectReason(queue, d3d11Texture2D);
+        if (rejectReason != null)
         {
+            TrackGpuQueueRejected(rejectReason);
             return false;
         }
 
         if (subresourceIndex < 0)
         {
+            TrackGpuQueueRejected("invalid_subresource");
             Logger.Log($"FLASHBACK_SINK_GPU_FRAME_INVALID_SUBRESOURCE subresource={subresourceIndex}");
             return false;
         }
 
         Marshal.AddRef(d3d11Texture2D);
         var packet = new GpuFramePacket(d3d11Texture2D, subresourceIndex);
-        var enqueueResult = TryEnqueueGpuPacket(queue, packet);
+        var enqueueResult = TryEnqueueGpuPacket(queue!, packet);
         if (enqueueResult != VideoEnqueueResult.Overloaded)
         {
             return enqueueResult == VideoEnqueueResult.Accepted;
@@ -2030,6 +2037,43 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return failure != null
             ? $"encoding_failed:{failure.GetType().Name}"
             : null;
+    }
+
+    private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)
+    {
+        var lifecycleReason = GetVideoEnqueueRejectReason();
+        if (lifecycleReason != null)
+        {
+            return lifecycleReason;
+        }
+
+        if (queue == null)
+        {
+            return "queue_null";
+        }
+
+        if (expectedSize <= 0)
+        {
+            return "invalid_expected_size";
+        }
+
+        return dataIsEmpty ? "data_empty" : null;
+    }
+
+    private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)
+    {
+        var lifecycleReason = GetVideoEnqueueRejectReason();
+        if (lifecycleReason != null)
+        {
+            return lifecycleReason;
+        }
+
+        if (queue == null)
+        {
+            return "queue_null";
+        }
+
+        return texture == IntPtr.Zero ? "null_texture" : null;
     }
 
     private void TrackVideoQueueRejected(string reason)

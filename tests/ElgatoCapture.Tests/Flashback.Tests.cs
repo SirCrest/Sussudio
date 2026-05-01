@@ -1500,10 +1500,17 @@ static partial class Program
         AssertContains(sourceText, "public long GpuQueueRejectedFrames => Interlocked.Read(ref _gpuQueueRejectedFrames);");
         AssertContains(sourceText, "public string? LastGpuQueueRejectReason => Volatile.Read(ref _lastGpuQueueRejectReason);");
         AssertContains(sourceText, "private string? GetVideoEnqueueRejectReason()");
+        AssertContains(sourceText, "private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)");
+        AssertContains(sourceText, "private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)");
         AssertContains(sourceText, "return \"force_rotate_draining\";");
         AssertContains(sourceText, "return \"cancelled\";");
         AssertContains(sourceText, "return \"disposed\";");
         AssertContains(sourceText, "return \"not_started\";");
+        AssertContains(sourceText, "return \"queue_null\";");
+        AssertContains(sourceText, "return \"invalid_expected_size\";");
+        AssertContains(sourceText, "return dataIsEmpty ? \"data_empty\" : null;");
+        AssertContains(sourceText, "return texture == IntPtr.Zero ? \"null_texture\" : null;");
+        AssertContains(sourceText, "TrackGpuQueueRejected(\"invalid_subresource\");");
         AssertContains(sourceText, "? $\"encoding_failed:{failure.GetType().Name}\"");
         AssertContains(sourceText, "private void TrackVideoQueueRejected(string reason)");
         AssertContains(sourceText, "private void TrackGpuQueueRejected(string reason)");
