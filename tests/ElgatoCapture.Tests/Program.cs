@@ -469,6 +469,9 @@ static partial class Program
                 "FlashbackBufferManager GetValidSegmentPaths returns overlapping segments",
                 FlashbackBufferManager_GetValidSegmentPaths_ReturnsOverlapping),
             await RunCheckAsync(
+                "FlashbackBufferManager segment info skips missing files",
+                FlashbackBufferManager_GetSegmentInfoList_SkipsMissingFiles),
+            await RunCheckAsync(
                 "FlashbackBufferManager eviction pause and resume are balanced",
                 FlashbackBufferManager_EvictionPauseResume_Balanced),
             await RunCheckAsync(
@@ -2866,6 +2869,39 @@ static partial class Program
         File.Delete(s1);
         var missing = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5.5) })!;
         AssertEqual(0, GetCountProperty(missing), "Missing overlapping file should not be returned");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_GetSegmentInfoList_SkipsMissingFiles()
+    {
+        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(source, "if (!File.Exists(seg.Path))\n                {\n                    continue;\n                }");
+        AssertContains(source, "if (_activeSegmentPath != null && File.Exists(_activeSegmentPath))");
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var missingCompleted = Path.Combine(tempDir, "missing-completed.ts");
+        var existingCompleted = Path.Combine(tempDir, "existing-completed.ts");
+        var active = Path.Combine(tempDir, "fb_test_0003.ts");
+        File.WriteAllText(existingCompleted, "segment");
+        File.WriteAllText(active, "active");
+
+        AddCompletedSegment(manager, missingCompleted, TimeSpan.Zero, TimeSpan.FromSeconds(5), 500);
+        AddCompletedSegment(manager, existingCompleted, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+
+        var method = manager.GetType().GetMethod("GetSegmentInfoList")!;
+        var result = method.Invoke(manager, null)!;
+
+        AssertEqual(2, GetCountProperty(result), "Segment info should include existing completed plus active");
+
+        File.Delete(active);
+        var withoutActive = method.Invoke(manager, null)!;
+
+        AssertEqual(1, GetCountProperty(withoutActive), "Segment info should omit missing active file");
 
         return Task.CompletedTask;
     }

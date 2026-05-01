@@ -1112,6 +1112,11 @@ internal sealed class FlashbackBufferManager : IDisposable
             var result = new List<FlashbackSegmentInfo>(_completedSegments.Count + 1);
             foreach (var seg in _completedSegments)
             {
+                if (!File.Exists(seg.Path))
+                {
+                    continue;
+                }
+
                 result.Add(new FlashbackSegmentInfo
                 {
                     Path = seg.Path,
@@ -1122,7 +1127,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                     IsActive = false
                 });
             }
-            if (_activeSegmentPath != null)
+            if (_activeSegmentPath != null && File.Exists(_activeSegmentPath))
             {
                 var activeStartPts = _completedSegments.Count > 0
                     ? _completedSegments[^1].EndPts
