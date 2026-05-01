@@ -323,6 +323,7 @@ static partial class Program
         AssertContains(captureServiceText, "if (totalSegments > 0 && segmentsProcessed > totalSegments)");
         AssertContains(captureServiceText, "Math.Clamp(progress.Percent, 0.0, 100.0)");
         AssertContains(captureServiceText, ": 0.0;");
+        AssertContains(captureServiceText, "try\n            {\n                innerProgress?.Report(progress);\n            }\n            catch (Exception ex)\n            {\n                Logger.Log($\"FLASHBACK_EXPORT_PROGRESS_FORWARD_WARN id={exportId} type={ex.GetType().Name} msg='{ex.Message}'\");\n            }");
 
         var flashbackExporterText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");

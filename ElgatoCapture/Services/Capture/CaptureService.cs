@@ -887,7 +887,14 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         return new FlashbackExportProgressForwarder(progress =>
         {
             UpdateFlashbackExportProgress(exportId, progress);
-            innerProgress?.Report(progress);
+            try
+            {
+                innerProgress?.Report(progress);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_EXPORT_PROGRESS_FORWARD_WARN id={exportId} type={ex.GetType().Name} msg='{ex.Message}'");
+            }
         });
     }
 
