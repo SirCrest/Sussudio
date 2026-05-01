@@ -239,6 +239,11 @@ static partial class Program
             cycleNewSinkStart,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
             "FLASHBACK_CYCLE_NEW_SINK_FAIL");
+        AssertContains(cycleNewSinkStart, "newSink.FrameEncoded -= OnFlashbackFrameEncoded;");
+        AssertContains(cycleNewSinkStart, "unifiedVideoCapture.SetFlashbackSink(null);");
+        AssertContains(cycleNewSinkStart, "_wasapiAudioCapture?.DetachFlashbackSink();");
+        AssertContains(cycleNewSinkStart, "_microphoneCapture?.SetAudioWriter(null);");
+        AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_DETACH_WARN");
         AssertContains(captureServiceSource, "purgeSegments: purgeSegments");
         AssertContains(captureServiceSource, "purgeSegments: effectivePurgeSegments");
         AssertContains(captureServiceSource, "!activeFlashbackSink.CanBeginRecording");
