@@ -724,7 +724,7 @@ static partial class Program
         AssertContains(sourceText, "if (useSegmentTimeline && segmentOutDelta <= TimeSpan.Zero)");
         AssertContains(sourceText, "private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)");
         AssertContains(sourceText, "private static long AddNonNegativeSaturated(long left, long right)");
-        AssertContains(sourceText, "totalEstimatedBytes = AddNonNegativeSaturated(totalEstimatedBytes, new FileInfo(segment.Path).Length);");
+        AssertContains(sourceText, "var segmentLength = new FileInfo(segment.Path).Length;\n                    readableSegmentCount++;\n                    totalEstimatedBytes = AddNonNegativeSaturated(totalEstimatedBytes, segmentLength);");
         AssertContains(sourceText, "bytesProcessed = AddNonNegativeSaturated(bytesProcessed, new FileInfo(segPath).Length);");
         AssertDoesNotContain(sourceText, "inPoint - segment.StartPts!.Value");
         AssertDoesNotContain(sourceText, " - segment.StartPts!.Value\n                        : TimeSpan.Zero;");

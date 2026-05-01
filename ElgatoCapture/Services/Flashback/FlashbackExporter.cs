@@ -626,8 +626,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 if (!string.IsNullOrWhiteSpace(segment.Path) && File.Exists(segment.Path))
                 {
+                    var segmentLength = new FileInfo(segment.Path).Length;
                     readableSegmentCount++;
-                    totalEstimatedBytes = AddNonNegativeSaturated(totalEstimatedBytes, new FileInfo(segment.Path).Length);
+                    totalEstimatedBytes = AddNonNegativeSaturated(totalEstimatedBytes, segmentLength);
                 }
             }
             catch (Exception ex)
