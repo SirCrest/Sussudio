@@ -184,6 +184,8 @@ static partial class Program
         AssertMemberContains(settingsText, "RestartFlashbackAfterSettingsUpdateAsync", "IsPreviewing && !IsRecording && _isLoadingSettings is false");
         AssertMemberContains(settingsText, "RestartFlashbackAfterSettingsUpdateAsync", "shouldRestart is false");
         AssertMemberContains(settingsText, "RestartFlashbackAfterSettingsUpdateAsync", "await RestartFlashbackAsync().ConfigureAwait(false)");
+        AssertMemberContains(settingsText, "RestartFlashbackAfterSettingsUpdateAsync", "catch (OperationCanceledException ex)");
+        AssertContains(rawSettingsText, "RestartFlashbackAfterSettingsUpdate canceled");
         AssertMemberContains(settingsText, "OnSelectedQualityChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(settingsText, "OnSelectedPresetChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "quality: ParseVideoQuality(SelectedQuality)");

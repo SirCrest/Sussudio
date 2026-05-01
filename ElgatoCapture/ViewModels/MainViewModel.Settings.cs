@@ -386,6 +386,10 @@ public partial class MainViewModel
 
             await RestartFlashbackAsync().ConfigureAwait(false);
         }
+        catch (OperationCanceledException ex)
+        {
+            Logger.Log($"RestartFlashbackAfterSettingsUpdate canceled: {ex.Message}");
+        }
         catch (Exception ex)
         {
             Logger.Log($"RestartFlashbackAfterSettingsUpdate failed: {ex.Message}");
