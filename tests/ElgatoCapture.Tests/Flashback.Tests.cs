@@ -811,6 +811,7 @@ static partial class Program
         AssertContains(sourceText, "ReleaseGpuTextureBestEffort(packet.Texture);");
         AssertContains(sourceText, "FLASHBACK_SINK_RETURN_VIDEO_PACKET_WARN");
         AssertContains(sourceText, "FLASHBACK_SINK_RELEASE_GPU_PACKET_WARN");
+        AssertDoesNotContain(sourceText, "Marshal.Release(packet.Texture);");
 
         return Task.CompletedTask;
     }

@@ -1196,7 +1196,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
             finally
             {
-                Marshal.Release(packet.Texture);
+                ReleaseGpuTextureBestEffort(packet.Texture);
             }
 
             drainedAny = true;
@@ -1666,7 +1666,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     Volatile.Read(ref _forceRotateDraining) ||
                     Volatile.Read(ref _encodingFailure) != null)
                 {
-                    Marshal.Release(packet.Texture);
+                    ReleaseGpuTextureBestEffort(packet.Texture);
                     return VideoEnqueueResult.Rejected;
                 }
 
@@ -1684,7 +1684,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     Volatile.Read(ref _forceRotateDraining) ||
                     Volatile.Read(ref _encodingFailure) != null)
                 {
-                    Marshal.Release(packet.Texture);
+                    ReleaseGpuTextureBestEffort(packet.Texture);
                     return VideoEnqueueResult.Rejected;
                 }
 
@@ -1696,7 +1696,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 else
                 {
                     RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                    Marshal.Release(packet.Texture);
+                    ReleaseGpuTextureBestEffort(packet.Texture);
                     overloadFailure = new InvalidOperationException(
                         $"Flashback GPU recording queue overloaded after {QueueBackpressureTimeoutMs}ms backpressure: capacity={GpuQueueCapacity} depth={Volatile.Read(ref _gpuQueueDepth)}");
                 }
