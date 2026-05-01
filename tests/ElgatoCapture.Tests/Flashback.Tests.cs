@@ -1490,7 +1490,7 @@ static partial class Program
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(sourceText, "return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);");
+        AssertContains(sourceText, "return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);");
         AssertContains(sourceText, "TimeSpan frozenValidStart,\n        ref bool fileOpen,\n        CancellationToken cancellationToken)");
         AssertContains(sourceText, "if (cancellationToken.WaitHandle.WaitOne(50))\n        {\n            return false;\n        }");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_SEGMENT_SWITCH_ERROR path='{nextFile}' type={ex.GetType().Name} msg='{ex.Message}'\");\n                    SnapToLiveOnError(decoder, ex, ref fileOpen);\n                    return false;");
@@ -1571,7 +1571,10 @@ static partial class Program
         AssertContains(sourceText, "_playbackThread = null;\n            Interlocked.Exchange(ref _playbackThreadStarted, 0);");
         AssertContains(sourceText, "return RejectCommand(\n                commandKind,\n                $\"thread_start_failed:{ex.GetType().Name}:{ex.Message}\",\n                $\"thread_start_failed type={ex.GetType().Name}\",\n                false);");
         AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");\n                        return;");
-        AssertContains(sourceText, "var canRead = _commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();");
+        AssertContains(sourceText, "var commandChannel = _commandChannel;");
+        AssertContains(sourceText, "_playbackThread = new Thread(() => PlaybackThreadEntry(threadCts, commandChannel))");
+        AssertContains(sourceText, "private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)");
+        AssertContains(sourceText, "var canRead = commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();");
         AssertContains(sourceText, "if (!canRead)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed\");\n                            isScrubbing = false;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"channel_closed\");\n                            SetState(FlashbackPlaybackState.Live);\n                            return;\n                        }");
         AssertContains(sourceText, "if (_disposedFlag != 0)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT\");\n                            isScrubbing = false;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
@@ -1588,7 +1591,7 @@ static partial class Program
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);\n            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);\n            Volatile.Write(ref _playbackThreadStarted, 0);");
         AssertContains(sourceText, "if (cts.IsCancellationRequested)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");");
         AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");\n                            CleanupDecoder(ref decoder, ref fileOpen);\n                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
-        AssertContains(sourceText, "PaceAndDecodeFrame(decoder, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token)");
+        AssertContains(sourceText, "PaceAndDecodeFrame(decoder, commandChannel, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token)");
         AssertContains(sourceText, "CancellationToken cancellationToken)\n    {\n        try\n        {\n            cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n                    {\n                        cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(sourceText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            throw;\n        }\n        catch (Exception ex)\n        {\n            SnapToLiveOnError(decoder, ex, ref fileOpen);");
@@ -1599,7 +1602,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=close");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=dispose");
         AssertContains(sourceText, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
-        AssertContains(sourceText, "DrainAbandonedCommandsOnThreadExit();");
+        AssertContains(sourceText, "DrainAbandonedCommandsOnThreadExit(commandChannel);");
         AssertContains(sourceText, "Interlocked.Add(ref _commandsDropped, abandoned);");
         AssertContains(sourceText, "if (string.IsNullOrEmpty(Volatile.Read(ref _lastCommandFailure)))\n            {\n                SetLastCommandFailure($\"abandoned_on_exit:{abandoned}\");\n            }");
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);");
@@ -1956,7 +1959,7 @@ static partial class Program
             "case CommandKind.Seek:",
             "                    case CommandKind.BeginScrub:");
 
-        AssertContains(seekBlock, "_commandChannel.Reader.TryPeek(out var newerSeek) &&\n                               newerSeek.Kind == CommandKind.Seek");
+        AssertContains(seekBlock, "commandChannel.Reader.TryPeek(out var newerSeek) &&\n                               newerSeek.Kind == CommandKind.Seek");
         AssertContains(seekBlock, "TrackCommandDequeued(newerSeek);");
         AssertContains(seekBlock, "FLASHBACK_PLAYBACK_SEEK");
 
@@ -1970,7 +1973,7 @@ static partial class Program
             "    public bool EndScrub()");
         var drainAbandonedCommands = ExtractTextBetween(
             sourceText,
-            "private void DrainAbandonedCommandsOnThreadExit()",
+            "private void DrainAbandonedCommandsOnThreadExit(Channel<PlaybackCommand> commandChannel)",
             "    // --- Decode helpers ---");
 
         AssertContains(sourceText, "private long _latestScrubUpdateTicks;");
@@ -1985,8 +1988,8 @@ static partial class Program
         AssertContains(updateScrubMethod, "return false;");
         AssertContains(updateScrubBlock, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
         AssertContains(updateScrubBlock, "TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks))");
-        AssertContains(updateScrubBlock, "_commandChannel.Reader.TryPeek(out var newer) &&\n                               newer.Kind == CommandKind.UpdateScrub");
-        AssertContains(updateScrubBlock, "if (!_commandChannel.Reader.TryRead(out newer))");
+        AssertContains(updateScrubBlock, "commandChannel.Reader.TryPeek(out var newer) &&\n                               newer.Kind == CommandKind.UpdateScrub");
+        AssertContains(updateScrubBlock, "if (!commandChannel.Reader.TryRead(out newer))");
         AssertContains(updateScrubBlock, "TrackCommandDequeued(newer);");
         AssertContains(updateScrubBlock, "cmd = newer;");
         AssertContains(updateScrubBlock, "FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE");

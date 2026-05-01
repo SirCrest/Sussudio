@@ -461,9 +461,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
         // Recreate the command channel — the previous one was completed by StopPlaybackThread.
         // A completed channel silently drops all TryWrite calls.
         _commandChannel = CreateCommandChannel();
+        var commandChannel = _commandChannel;
         _playCts = new CancellationTokenSource();
         var threadCts = _playCts;
-        _playbackThread = new Thread(() => PlaybackThreadEntry(threadCts))
+        _playbackThread = new Thread(() => PlaybackThreadEntry(threadCts, commandChannel))
         {
             Name = "FlashbackPlayback",
             IsBackground = true,
@@ -543,7 +544,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- Playback thread ---
 
-    private void PlaybackThreadEntry(CancellationTokenSource cts)
+    private void PlaybackThreadEntry(CancellationTokenSource cts, Channel<PlaybackCommand> commandChannel)
     {
         FlashbackDecoder? decoder = null;
         var pacingStopwatch = new Stopwatch();
@@ -564,7 +565,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 PlaybackCommand cmd;
                 if (isPlaying)
                 {
-                    if (!_commandChannel.Reader.TryRead(out cmd))
+                    if (!commandChannel.Reader.TryRead(out cmd))
                     {
                         if (cts.IsCancellationRequested)
                         {
@@ -581,7 +582,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                         if (decoder is { IsOpen: true })
                         {
-                            if (!PaceAndDecodeFrame(decoder, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token))
+                            if (!PaceAndDecodeFrame(decoder, commandChannel, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token))
                             {
                                 isPlaying = false;
                             }
@@ -592,9 +593,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 }
                 else
                 {
-                    if (!_commandChannel.Reader.TryRead(out cmd))
+                    if (!commandChannel.Reader.TryRead(out cmd))
                     {
-                        var canRead = _commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();
+                        var canRead = commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();
                         if (!canRead)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed");
@@ -622,7 +623,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             SetState(FlashbackPlaybackState.Live);
                             return;
                         }
-                        if (!_commandChannel.Reader.TryRead(out cmd))
+                        if (!commandChannel.Reader.TryRead(out cmd))
                         {
                             continue;
                         }
@@ -646,10 +647,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         return;
 
                     case CommandKind.Seek:
-                        while (_commandChannel.Reader.TryPeek(out var newerSeek) &&
+                        while (commandChannel.Reader.TryPeek(out var newerSeek) &&
                                newerSeek.Kind == CommandKind.Seek)
                         {
-                            if (!_commandChannel.Reader.TryRead(out newerSeek))
+                            if (!commandChannel.Reader.TryRead(out newerSeek))
                             {
                                 break;
                             }
@@ -748,10 +749,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!isScrubbing) break;
                         // Drain stale UpdateScrub commands only. Leave control commands queued
                         // so their latency/accounting stays tied to the original command.
-                        while (_commandChannel.Reader.TryPeek(out var newer) &&
+                        while (commandChannel.Reader.TryPeek(out var newer) &&
                                newer.Kind == CommandKind.UpdateScrub)
                         {
-                            if (!_commandChannel.Reader.TryRead(out newer))
+                            if (!commandChannel.Reader.TryRead(out newer))
                             {
                                 break;
                             }
@@ -995,7 +996,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         finally
         {
             timeEndPeriod(1);
-            DrainAbandonedCommandsOnThreadExit();
+            DrainAbandonedCommandsOnThreadExit(commandChannel);
             if (ReferenceEquals(Thread.CurrentThread, _playbackThread))
             {
                 _playbackThread = null;
@@ -1025,10 +1026,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private void DrainAbandonedCommandsOnThreadExit()
+    private void DrainAbandonedCommandsOnThreadExit(Channel<PlaybackCommand> commandChannel)
     {
         var abandoned = 0;
-        while (_commandChannel.Reader.TryRead(out var command))
+        while (commandChannel.Reader.TryRead(out var command))
         {
             DecrementPendingCommands();
             if (command.Kind != CommandKind.Stop)
@@ -1484,6 +1485,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     /// </summary>
     private bool PaceAndDecodeFrame(
         FlashbackDecoder decoder,
+        Channel<PlaybackCommand> commandChannel,
         Stopwatch pacingStopwatch,
         ref TimeSpan frameDuration,
         ref bool fileOpen,
@@ -1495,7 +1497,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             if (!TryDecodeNextVideoFrameWithMetrics(decoder, out var videoFrame))
             {
-                return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
+                return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
             }
 
             // Frame skip: when video falls significantly behind audio, decode-and-discard
@@ -1525,7 +1527,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         skipped++;
 
                         if (!TryDecodeNextVideoFrameWithMetrics(decoder, out videoFrame))
-                            return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
+                            return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
 
                         // Recompute drift with the new frame's PTS
                         wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
@@ -1591,6 +1593,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private bool HandleEndOfSegment(
         FlashbackDecoder decoder,
+        Channel<PlaybackCommand> commandChannel,
         Stopwatch pacingStopwatch,
         TimeSpan frozenValidStart,
         ref bool fileOpen,
@@ -1698,7 +1701,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             }
         }
 
-        if (_commandChannel.Reader.TryPeek(out _) || _disposedFlag != 0)
+        if (commandChannel.Reader.TryPeek(out _) || _disposedFlag != 0)
         {
             pacingStopwatch.Restart();
             return true;
