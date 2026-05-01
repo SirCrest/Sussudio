@@ -1622,6 +1622,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return false;
         }
 
+        if (Directory.Exists(fullOutputPath))
+        {
+            failureMessage = $"Flashback export failed: output path is a directory '{outputPath}'.";
+            return false;
+        }
+
         failureMessage = string.Empty;
         return true;
     }
