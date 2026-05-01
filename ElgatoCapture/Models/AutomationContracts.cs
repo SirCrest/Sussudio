@@ -935,7 +935,12 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }
     public long FlashbackPlaybackSubmitFailures { get; init; }
     public long FlashbackPlaybackDroppedFrames { get; init; }
+    public long FlashbackPlaybackSegmentSwitches { get; init; }
+    public long FlashbackPlaybackFmp4Reopens { get; init; }
+    public long FlashbackPlaybackWriteHeadWaits { get; init; }
+    public long FlashbackPlaybackNearLiveSnaps { get; init; }
     public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
+    public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
     public long FlashbackPlaybackLastCommandFailureUtcUnixMs { get; init; }
     public bool FatalCleanupInProgress { get; init; }
     public bool FlashbackCleanupInProgress { get; init; }

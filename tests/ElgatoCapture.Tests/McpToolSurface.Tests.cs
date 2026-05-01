@@ -691,7 +691,12 @@ static partial class Program
         AssertContains(source, "FlashbackPlaybackDecodeP99Ms");
         AssertContains(source, "FlashbackPlaybackPendingCommands");
         AssertContains(source, "FlashbackPlaybackSubmitFailures");
+        AssertContains(source, "FlashbackPlaybackSegmentSwitches");
+        AssertContains(source, "FlashbackPlaybackFmp4Reopens");
+        AssertContains(source, "FlashbackPlaybackWriteHeadWaits");
+        AssertContains(source, "FlashbackPlaybackNearLiveSnaps");
         AssertContains(source, "FlashbackPlaybackLastCommandFailureUtcUnixMs");
+        AssertContains(source, "FlashbackPlaybackLastWriteHeadWaitGapMs");
         AssertContains(source, "FatalCleanupInProgress");
         AssertContains(source, "FlashbackCleanupInProgress");
         AssertContains(source, "FlashbackExportFailureKind");
@@ -704,7 +709,8 @@ static partial class Program
         AssertContains(source, "MjpegPreviewJitterDeadlineDropCount");
         AssertContains(source, "MjpegPreviewJitterLastDropReason");
         AssertContains(source, "JitD  | JitLat | JitDrop | JitUF | JitWhy");
-        AssertContains(source, "FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail");
+        AssertContains(source, "FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail | FbStage");
+        AssertContains(source, "FormatFlashbackStageCell");
         AssertContains(source, "Cln | ExStat");
         AssertContains(source, "ExStat  | ExKind | Ex%");
         AssertContains(source, "FormatJitterDepthCell");
@@ -719,6 +725,7 @@ static partial class Program
         AssertContains(source, "Flashback P99:");
         AssertContains(source, "Flashback Decode:");
         AssertContains(source, "Flashback Cmds:");
+        AssertContains(source, "Flashback Stages:");
         AssertContains(source, "failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
         AssertContains(source, "Cleanup State:");
         AssertContains(source, "kind={FormatOptional(last.FlashbackExportFailureKind)}");
