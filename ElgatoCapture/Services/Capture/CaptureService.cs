@@ -1861,14 +1861,15 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_FAIL error='{ex.Message}' — falling back to full teardown");
             try { newSink.FrameEncoded -= OnFlashbackFrameEncoded; }
-            catch { /* Best-effort: event detach must not mask the cycle failure */ }
+            catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}"); }
             try { unifiedVideoCapture.SetFlashbackSink(null); }
             catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}"); }
             try { _wasapiAudioCapture?.DetachFlashbackSink(); }
             catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_AUDIO_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}"); }
             try { _microphoneCapture?.SetAudioWriter(null); }
             catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_MIC_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}"); }
-            try { await newSink.DisposeAsync().ConfigureAwait(false); } catch { /* Best-effort: dispose during error recovery must not mask the cycle failure */ }
+            try { await newSink.DisposeAsync().ConfigureAwait(false); }
+            catch (Exception disposeEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
             _flashbackSink = null;
             _flashbackBackendSettings = null;
 

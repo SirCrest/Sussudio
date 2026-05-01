@@ -381,6 +381,8 @@ static partial class Program
             "FLASHBACK_EXPORT_OK",
             "FLASHBACK_EXPORT_SEGMENT_OK",
             "FLASHBACK_EXPORT_SEGMENTS_OK",
+            "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN",
+            "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN",
             "FLASHBACK_PLAYBACK_DISPOSE_REQUEST"
         })
         {
@@ -406,6 +408,13 @@ static partial class Program
         AssertContains(formatChange, "cycleFailed = true;");
         AssertContains(formatChange, "if (!cycleFailed)");
         AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format}");
+
+        var cycleBuffer = ExtractTextBetween(
+            captureServiceText,
+            "private async Task CycleFlashbackBufferAsync",
+            "    private void OnFlashbackFrameEncoded");
+        AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN");
+        AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN");
 
         return Task.CompletedTask;
     }
