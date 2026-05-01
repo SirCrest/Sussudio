@@ -1761,7 +1761,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         ReturnRemainingBuffers(_videoQueue, ref _videoQueueDepth);
         ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
         ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
-        ReturnRemainingGpuBuffers(_gpuQueue);
+        ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
     }
 
     private void ReturnRemainingBuffers(Channel<VideoFramePacket>? queue, ref int queueDepth)
@@ -1799,7 +1799,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Interlocked.Exchange(ref queueDepth, 0);
     }
 
-    private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue)
+    private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)
     {
         if (queue == null)
         {
@@ -1810,6 +1810,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             Marshal.Release(packet.Texture);
         }
+
+        Interlocked.Exchange(ref queueDepth, 0);
     }
 
     // ── Options / Helpers ───────────────────────────────────────────────────

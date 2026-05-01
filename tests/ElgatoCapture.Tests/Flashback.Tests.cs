@@ -685,6 +685,18 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackEncoderSink_DisposeResetsGpuQueueDepth()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);");
+        AssertContains(sourceText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
+        AssertContains(sourceText, "Interlocked.Exchange(ref queueDepth, 0);");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
