@@ -447,6 +447,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             }
 
             Logger.Log("FLASHBACK_PLAYBACK_THREAD_RECOVER reason=stale_stopped");
+            DrainAbandonedCommandsOnThreadExit(_commandChannel);
             DisposePlaybackCtsBestEffort(_playCts, "recover_stale_thread");
             _playCts = null;
             _playbackThread = null;
