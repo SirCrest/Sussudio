@@ -685,7 +685,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             isPlaying = false;
                             isScrubbing = false;
-                            RestoreLiveAfterSeekDisplayFailure("seek_display_failed");
+                            RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "seek_display_failed");
                             break;
                         }
                         isPlaying = _wasPlayingBeforeScrub;
@@ -736,7 +736,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub))
                         {
                             isScrubbing = false;
-                            RestoreLiveAfterSeekDisplayFailure("begin_scrub_display_failed");
+                            RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "begin_scrub_display_failed");
                         }
                         break;
 
@@ -777,7 +777,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub))
                         {
                             isScrubbing = false;
-                            RestoreLiveAfterSeekDisplayFailure("scrub_update_display_failed");
+                            RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "scrub_update_display_failed");
                         }
                         break;
 
@@ -963,7 +963,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             isPlaying = false;
                             isScrubbing = false;
-                            RestoreLiveAfterSeekDisplayFailure("nudge_display_failed");
+                            RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "nudge_display_failed");
                         }
                         break;
                 }
@@ -1249,8 +1249,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
         ReleasePreviousHeldFrame();
     }
 
-    private void RestoreLiveAfterSeekDisplayFailure(string operation)
+    private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)
     {
+        CloseDecoderFileBestEffort(decoder, operation);
+        fileOpen = false;
+        _currentOpenFilePath = null;
+        _decoderHwAccel = "N/A";
         ReleasePlaybackFrameForLive(operation);
         RestoreLiveAudio();
         SafeResumePreviewSubmission(operation);

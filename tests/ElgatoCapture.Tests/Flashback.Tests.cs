@@ -1816,7 +1816,7 @@ static partial class Program
         AssertContains(nudgeBlock, "SafeResumeRendering(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "SetState(FlashbackPlaybackState.Live);");
         AssertContains(nudgeBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge))");
-        AssertContains(nudgeBlock, "RestoreLiveAfterSeekDisplayFailure(\"nudge_display_failed\");");
+        AssertContains(nudgeBlock, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"nudge_display_failed\");");
         AssertDoesNotContain(nudgeBlock, "if (decoder != null)");
 
         return Task.CompletedTask;
@@ -1911,11 +1911,12 @@ static partial class Program
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, ex.GetType().Name, bufferPosition);");
         AssertContains(sourceText, "private bool SeekAndDisplayKeyframe(");
         AssertContains(sourceText, "return gotFrame;");
-        AssertContains(sourceText, "private void RestoreLiveAfterSeekDisplayFailure(string operation)");
+        AssertContains(sourceText, "private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
+        AssertContains(sourceText, "CloseDecoderFileBestEffort(decoder, operation);\n        fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";\n        ReleasePlaybackFrameForLive(operation);");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        SafeResumeRendering(operation);\n        SetState(FlashbackPlaybackState.Live);");
-        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(\"seek_display_failed\");");
-        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(\"begin_scrub_display_failed\");");
-        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(\"scrub_update_display_failed\");");
+        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"seek_display_failed\");");
+        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"begin_scrub_display_failed\");");
+        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"scrub_update_display_failed\");");
         AssertContains(sourceText, "private void SetSeekDisplayFailure(CommandKind kind, string detail, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"seek_display_failed:{kind}:{detail}{FormatCommandDetail(position: position)}\");");
         AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, coalescedSeekTarget, \"seek\")");
