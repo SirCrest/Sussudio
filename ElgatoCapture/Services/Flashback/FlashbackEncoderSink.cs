@@ -955,6 +955,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 CancelEncodingCts("stop_timeout");
+                CompletePendingForceRotateWithEmptyResult();
                 Logger.Log("FLASHBACK_SINK_STOP_DRAIN_TIMEOUT");
                 return FinalizeResult.Failure(outputPath, "Stopped (flashback encode drain timed out)");
             }
