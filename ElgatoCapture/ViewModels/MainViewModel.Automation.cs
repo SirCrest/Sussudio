@@ -121,18 +121,17 @@ public partial class MainViewModel
         switch (action)
         {
             case AutomationFlashbackAction.Play:
-                if (!FlashbackPlay())
-                {
-                    return false;
-                }
-
                 if (position.HasValue)
                 {
-                    FlashbackBeginScrub(position.Value);
-                    FlashbackEndScrub();
+                    if (!FlashbackSeek(position.Value))
+                    {
+                        return false;
+                    }
+
+                    return FlashbackPlay();
                 }
 
-                return true;
+                return FlashbackPlay();
             case AutomationFlashbackAction.Pause:
                 return FlashbackPause();
             case AutomationFlashbackAction.GoLive:

@@ -128,6 +128,15 @@ static partial class Program
         AssertContains(automationText, "case AutomationFlashbackAction.SetInPoint:");
         AssertContains(automationText, "case AutomationFlashbackAction.SetOutPoint:");
         AssertContains(automationText, "case AutomationFlashbackAction.ClearInOutPoints:");
+        var automationPlayBlock = ExtractTextBetween(
+            automationText,
+            "case AutomationFlashbackAction.Play:",
+            "            case AutomationFlashbackAction.Pause:");
+        AssertContains(automationPlayBlock, "if (position.HasValue)");
+        AssertContains(automationPlayBlock, "if (!FlashbackSeek(position.Value))");
+        AssertContains(automationPlayBlock, "return FlashbackPlay();");
+        AssertDoesNotContain(automationPlayBlock, "FlashbackBeginScrub(position.Value);");
+        AssertDoesNotContain(automationPlayBlock, "FlashbackEndScrub();");
         AssertContains(automationText, "if (useSelectionRange)");
         AssertContains(automationText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationText, "InvokeOnUiThreadAsync(() => ExecuteFlashbackAction(action, position), cancellationToken)");
