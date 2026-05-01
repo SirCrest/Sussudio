@@ -332,20 +332,15 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     private void EnqueueChunk(PlaybackChunk chunk)
     {
-        if (_sampleQueue.Writer.TryWrite(chunk))
-        {
-            Interlocked.Increment(ref _playbackQueueDepth);
-            return;
-        }
+        if (TryWriteChunk(chunk)) return;
 
         // Queue full — evict oldest chunk to make room for the new one.
         // The evicted chunk is the real drop; the new chunk replaces it.
         if (TryDequeueChunk(out var droppedChunk))
         {
             ReturnChunk(droppedChunk);
-            if (_sampleQueue.Writer.TryWrite(chunk))
+            if (TryWriteChunk(chunk))
             {
-                Interlocked.Increment(ref _playbackQueueDepth);
                 Interlocked.Increment(ref _playbackQueueDropCount);
                 return;
             }
@@ -354,6 +349,18 @@ internal sealed class WasapiAudioPlayback : IDisposable
         // Both eviction and re-enqueue failed — drop the new chunk
         Interlocked.Increment(ref _playbackQueueDropCount);
         ReturnChunk(chunk);
+    }
+
+    private bool TryWriteChunk(PlaybackChunk chunk)
+    {
+        Interlocked.Increment(ref _playbackQueueDepth);
+        if (_sampleQueue.Writer.TryWrite(chunk))
+        {
+            return true;
+        }
+
+        DecrementPlaybackQueueDepth();
+        return false;
     }
 
     private void RenderThreadMain()
