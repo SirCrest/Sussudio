@@ -360,18 +360,23 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         try { _playCts?.Cancel(); } catch { /* Best-effort: CTS cancel during stop must not prevent thread join */ }
 
+        var threadExited = true;
         if (thread is { IsAlive: true })
         {
             if (!thread.Join(TimeSpan.FromSeconds(3)))
             {
                 Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT");
+                threadExited = false;
             }
         }
 
-        _playCts?.Dispose();
-        _playCts = null;
-        _playbackThread = null;
-        Volatile.Write(ref _playbackThreadStarted, 0);
+        if (threadExited)
+        {
+            _playCts?.Dispose();
+            _playCts = null;
+            _playbackThread = null;
+            Volatile.Write(ref _playbackThreadStarted, 0);
+        }
     }
 
     // --- Playback thread ---
@@ -746,6 +751,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 _playbackThread = null;
             }
+            if (ReferenceEquals(cts, _playCts))
+            {
+                _playCts = null;
+            }
+            cts.Dispose();
             Volatile.Write(ref _playbackThreadStarted, 0);
         }
 

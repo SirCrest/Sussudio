@@ -495,12 +495,16 @@ static partial class Program
         AssertContains(sourceText, "if (!canRead)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed\");\n                            return;\n                        }");
         AssertContains(sourceText, "catch (OperationCanceledException)\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_CANCELLED\");");
         AssertContains(sourceText, "finally\n        {\n            timeEndPeriod(1);");
+        AssertContains(sourceText, "var threadExited = true;");
+        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT\");\n                threadExited = false;");
+        AssertContains(sourceText, "if (threadExited)\n        {\n            _playCts?.Dispose();");
         AssertContains(sourceText, "DrainAbandonedCommandsOnThreadExit();");
         AssertContains(sourceText, "Interlocked.Add(ref _commandsDropped, abandoned);");
         AssertContains(sourceText, "_lastCommandFailure = $\"abandoned_on_exit:{abandoned}\";");
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);");
         AssertContains(sourceText, "ReferenceEquals(Thread.CurrentThread, _playbackThread)");
         AssertContains(sourceText, "_playbackThread = null;");
+        AssertContains(sourceText, "if (ReferenceEquals(cts, _playCts))\n            {\n                _playCts = null;\n            }\n            cts.Dispose();");
         AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);");
 
         return Task.CompletedTask;
