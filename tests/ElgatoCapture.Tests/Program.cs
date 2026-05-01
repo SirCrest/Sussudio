@@ -631,6 +631,9 @@ static partial class Program
                 "Flashback exporter progress callbacks are best effort",
                 FlashbackExporter_ProgressCallbacksAreBestEffort),
             await RunCheckAsync(
+                "Flashback exporter timestamp conversions are saturating",
+                FlashbackExporter_TimestampConversionsAreSaturating),
+            await RunCheckAsync(
                 "Flashback exporter returns cancellation result while waiting for export lock",
                 FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled),
             await RunCheckAsync(

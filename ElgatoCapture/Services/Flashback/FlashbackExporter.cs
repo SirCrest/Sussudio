@@ -246,7 +246,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             // Seek to inPoint
             if (inPoint > TimeSpan.Zero)
             {
-                var seekTimestamp = (long)(inPoint.TotalSeconds * ffmpeg.AV_TIME_BASE);
+                var seekTimestamp = ToAvTimeBaseTimestamp(inPoint);
                 var seekResult = ffmpeg.av_seek_frame(_activeInputContext, -1, seekTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);
                 if (seekResult < 0)
                 {
@@ -266,7 +266,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             long? globalMinBaseUs = null; // global minimum base in microseconds
             var packetCounts = new long[streamCount];
             long totalPackets = 0;
-            var outPtsLimit = outPoint == TimeSpan.MaxValue ? long.MaxValue : (long)(outPoint.TotalSeconds * ffmpeg.AV_TIME_BASE);
+            var outPtsLimit = ToAvTimeBaseTimestampOrMax(outPoint);
             var usTimeBase = new AVRational { num = 1, den = 1_000_000 };
 
             // Read and remux packets — two-phase approach:
@@ -578,7 +578,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_START segments={segments.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
 
             var usTimeBase = new AVRational { num = 1, den = 1_000_000 };
-            var outPtsLimitUs = outPoint == TimeSpan.MaxValue ? long.MaxValue : (long)(outPoint.TotalSeconds * ffmpeg.AV_TIME_BASE);
+            var outPtsLimitUs = ToAvTimeBaseTimestampOrMax(outPoint);
 
             // Output state — initialized from first segment
             int streamCount = 0;
@@ -607,12 +607,15 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     var segPath = segment.Path;
                     var useSegmentTimeline = segment.StartPts.HasValue;
                     var segmentInOffsetUs = useSegmentTimeline
-                        ? Math.Max(0, (long)((inPoint - segment.StartPts!.Value).TotalMilliseconds * 1000))
+                        ? ToMicrosecondsSaturated(inPoint - segment.StartPts!.Value)
                         : 0;
+                    var segmentOutDelta = useSegmentTimeline
+                        ? ((segment.EndPts.HasValue && segment.EndPts.Value < outPoint) ? segment.EndPts.Value : outPoint) - segment.StartPts!.Value
+                        : TimeSpan.Zero;
                     var segmentOutOffsetUs = useSegmentTimeline
-                        ? (long)((((segment.EndPts.HasValue && segment.EndPts.Value < outPoint) ? segment.EndPts.Value : outPoint) - segment.StartPts!.Value).TotalMilliseconds * 1000)
+                        ? ToMicrosecondsSaturated(segmentOutDelta)
                         : outPtsLimitUs;
-                    if (useSegmentTimeline && segmentOutOffsetUs < 0)
+                    if (useSegmentTimeline && segmentOutDelta <= TimeSpan.Zero)
                     {
                         continue;
                     }
@@ -713,7 +716,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     // Seek to inPoint in first segment
                     if (isFirst && inPoint > TimeSpan.Zero && !useSegmentTimeline)
                     {
-                        var seekTimestamp = (long)(inPoint.TotalSeconds * ffmpeg.AV_TIME_BASE);
+                        var seekTimestamp = ToAvTimeBaseTimestamp(inPoint);
                         var seekResult = ffmpeg.av_seek_frame(_activeInputContext, -1, seekTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);
                         if (seekResult < 0)
                             Logger.Log($"FLASHBACK_EXPORT_SEEK_WARN code={seekResult} target_ms={(long)inPoint.TotalMilliseconds}");
@@ -1642,6 +1645,28 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         var buffer = stackalloc byte[ffmpeg.AV_ERROR_MAX_STRING_SIZE];
         ffmpeg.av_strerror(errorCode, buffer, (ulong)ffmpeg.AV_ERROR_MAX_STRING_SIZE);
         return Marshal.PtrToStringAnsi((IntPtr)buffer) ?? $"unknown error {errorCode}";
+    }
+
+    private static long ToAvTimeBaseTimestampOrMax(TimeSpan value)
+        => value == TimeSpan.MaxValue ? long.MaxValue : ToAvTimeBaseTimestamp(value);
+
+    private static long ToAvTimeBaseTimestamp(TimeSpan value)
+        => ToMicrosecondsSaturated(value);
+
+    private static long ToMicrosecondsSaturated(TimeSpan value)
+    {
+        if (value <= TimeSpan.Zero)
+        {
+            return 0;
+        }
+
+        var microseconds = value.TotalMilliseconds * 1000.0;
+        if (!double.IsFinite(microseconds) || microseconds >= long.MaxValue)
+        {
+            return long.MaxValue;
+        }
+
+        return (long)microseconds;
     }
 
     internal static void CleanupOrphanedTempFiles(string directory)

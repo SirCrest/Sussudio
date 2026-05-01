@@ -375,6 +375,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_TimestampConversionsAreSaturating()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+
+        AssertDoesNotContain(sourceText, "TotalSeconds * ffmpeg.AV_TIME_BASE");
+        AssertDoesNotContain(sourceText, "TotalMilliseconds * 1000)");
+        AssertContains(sourceText, "var seekTimestamp = ToAvTimeBaseTimestamp(inPoint);");
+        AssertContains(sourceText, "var outPtsLimit = ToAvTimeBaseTimestampOrMax(outPoint);");
+        AssertContains(sourceText, "var outPtsLimitUs = ToAvTimeBaseTimestampOrMax(outPoint);");
+        AssertContains(sourceText, "? ToMicrosecondsSaturated(inPoint - segment.StartPts!.Value)");
+        AssertContains(sourceText, "var segmentOutDelta = useSegmentTimeline");
+        AssertContains(sourceText, "? ToMicrosecondsSaturated(segmentOutDelta)");
+        AssertContains(sourceText, "if (useSegmentTimeline && segmentOutDelta <= TimeSpan.Zero)");
+        AssertContains(sourceText, "private static long ToAvTimeBaseTimestampOrMax(TimeSpan value)\n        => value == TimeSpan.MaxValue ? long.MaxValue : ToAvTimeBaseTimestamp(value);");
+        AssertContains(sourceText, "private static long ToMicrosecondsSaturated(TimeSpan value)");
+        AssertContains(sourceText, "if (!double.IsFinite(microseconds) || microseconds >= long.MaxValue)\n        {\n            return long.MaxValue;\n        }");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
