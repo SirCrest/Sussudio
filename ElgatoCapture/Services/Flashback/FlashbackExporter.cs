@@ -1690,7 +1690,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     {
         for (var i = 0; i < segments.Count; i++)
         {
-            if (string.IsNullOrWhiteSpace(segments[i].Path))
+            if (segments[i] == null || string.IsNullOrWhiteSpace(segments[i].Path))
             {
                 return i;
             }

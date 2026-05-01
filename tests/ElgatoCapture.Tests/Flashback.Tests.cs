@@ -568,6 +568,24 @@ static partial class Program
                 AssertContains(GetStringProperty(result, "StatusMessage"), "segment path at index 0 is empty");
                 AssertEqual(false, File.Exists(outputPath), "Empty segment path export does not create output");
                 AssertEqual(false, File.Exists(outputPath + ".tmp"), "Empty segment path export does not leave temp output");
+
+                var nullSegments = Array.CreateInstance(segmentType, 1);
+                var nullSegmentOutputPath = Path.Combine(tempDir, "null-segment-export.mp4");
+                var nullSegmentResult = exportSegmentsCore.Invoke(exporter, new object?[]
+                {
+                    nullSegments,
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    nullSegmentOutputPath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null for null segment.");
+
+                AssertEqual(false, GetBoolProperty(nullSegmentResult, "Succeeded"), "Null segment export reports failure");
+                AssertContains(GetStringProperty(nullSegmentResult, "StatusMessage"), "segment path at index 0 is empty");
+                AssertEqual(false, File.Exists(nullSegmentOutputPath), "Null segment export does not create output");
+                AssertEqual(false, File.Exists(nullSegmentOutputPath + ".tmp"), "Null segment export does not leave temp output");
             }
             finally
             {
