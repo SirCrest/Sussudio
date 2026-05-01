@@ -170,6 +170,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private const int CommandQueueCapacity = 256;
     private const double FallbackPlaybackFrameRate = 60.0;
     private const double MaxPlaybackFrameRate = 1000.0;
+    private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;
     private readonly object _playbackThreadSync = new();
     private Thread? _playbackThread;
     private int _playbackThreadStarted;
@@ -720,6 +721,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                                 RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "seek_resume_failed");
                                 break;
                             }
+                            if (TrySnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, "seek_resume"))
+                            {
+                                isPlaying = false;
+                                break;
+                            }
                             frameDuration = ResolveFrameDuration(decoder);
                             RestoreAudioCallback(decoder, coalescedSeekTarget.Ticks);
                             SafeFlushPlayback("seek_resume");
@@ -825,6 +831,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                                     RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "end_scrub_seek_failed");
                                     break;
                                 }
+                                if (TrySnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, "end_scrub"))
+                                {
+                                    isPlaying = false;
+                                    break;
+                                }
                                 frameDuration = ResolveFrameDuration(decoder);
                             }
                             if (decoder != null)
@@ -887,6 +898,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             {
                                 isPlaying = false;
                                 RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "play_seek_failed");
+                                break;
+                            }
+                            if (TrySnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, "play"))
+                            {
+                                isPlaying = false;
                                 break;
                             }
                         }
@@ -1566,6 +1582,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
             }
+            if (ShouldSnapLiveForSoftwarePlaybackBudget(decoder, out _, out _))
+            {
+                ReleaseHeldFrameBestEffort(videoFrame, "software_decode_over_budget");
+                SnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, "playback_decode");
+                return false;
+            }
 
             // Frame skip: when video falls significantly behind audio, decode-and-discard
             // frames to catch up rather than falling further behind. This handles codecs
@@ -1595,6 +1617,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                         if (!TryDecodeNextVideoFrameWithMetrics(decoder, out videoFrame))
                             return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
+                        if (ShouldSnapLiveForSoftwarePlaybackBudget(decoder, out _, out _))
+                        {
+                            ReleaseHeldFrameBestEffort(videoFrame, "software_decode_over_budget");
+                            SnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, "playback_skip");
+                            return false;
+                        }
 
                         // Recompute drift with the new frame's PTS
                         wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
@@ -1834,6 +1862,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         // The encode rate is authoritative when present. Decoder/container metadata
         // can be wrong, and invalid floating-point values must never tear down playback.
+        var fps = ResolvePlaybackFrameRate(decoder);
+        return TimeSpan.FromSeconds(1.0 / fps);
+    }
+
+    private double ResolvePlaybackFrameRate(FlashbackDecoder decoder)
+    {
         var fps = _bufferManager.EncodeFrameRate;
         if (!double.IsFinite(fps) || fps <= 0)
         {
@@ -1846,7 +1880,57 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         fps = Math.Min(fps, MaxPlaybackFrameRate);
-        return TimeSpan.FromSeconds(1.0 / fps);
+        return fps;
+    }
+
+    private bool TrySnapLiveForSoftwarePlaybackBudget(FlashbackDecoder decoder, ref bool fileOpen, string operation)
+    {
+        if (!ShouldSnapLiveForSoftwarePlaybackBudget(decoder, out _, out _))
+        {
+            UpdateDecoderHwAccel(decoder);
+            return false;
+        }
+
+        SnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, operation);
+        return true;
+    }
+
+    private bool ShouldSnapLiveForSoftwarePlaybackBudget(
+        FlashbackDecoder decoder,
+        out double fps,
+        out double pixelRate)
+    {
+        UpdateDecoderHwAccel(decoder);
+        fps = ResolvePlaybackFrameRate(decoder);
+        pixelRate = Math.Max(0, decoder.VideoWidth) * (double)Math.Max(0, decoder.VideoHeight) * fps;
+        return GpuDecodeEnabled &&
+               !decoder.IsD3D11HwAccelerated &&
+               pixelRate > MaxContinuousSoftwarePlaybackPixelRate;
+    }
+
+    private void SnapLiveForSoftwarePlaybackBudget(FlashbackDecoder decoder, ref bool fileOpen, string operation)
+    {
+        ShouldSnapLiveForSoftwarePlaybackBudget(decoder, out var fps, out var pixelRate);
+        Interlocked.Increment(ref _playbackDecodeErrorSnaps);
+        RecordPlaybackDroppedFrame("software_decode_over_budget");
+        var pos = PlaybackPosition;
+        SetLastCommandFailure($"software_decode_over_budget:{operation}{FormatCommandDetail(position: pos)}");
+        Logger.Log(
+            $"FLASHBACK_PLAYBACK_SOFTWARE_DECODE_SNAP_TO_LIVE op={operation} width={decoder.VideoWidth} height={decoder.VideoHeight} fps={fps:F2} pixel_rate={pixelRate:F0} max_pixel_rate={MaxContinuousSoftwarePlaybackPixelRate:F0}");
+        CloseDecoderFileBestEffort(decoder, operation);
+        fileOpen = false;
+        _currentOpenFilePath = null;
+        _decoderHwAccel = "N/A";
+        ReleasePlaybackFrameForLive(operation);
+        RestoreLiveAudio();
+        SafeResumePreviewSubmission(operation);
+        SafeResumeRendering(operation);
+        SetState(FlashbackPlaybackState.Live);
+    }
+
+    private void UpdateDecoderHwAccel(FlashbackDecoder decoder)
+    {
+        _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
     }
 
     /// <summary>
@@ -2549,7 +2633,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 var pb = _audioPlayback;
                 if (pb == null)
                 {
-                    if (chunk.Samples is { Length: > 0 }) ArrayPool<byte>.Shared.Return(chunk.Samples);
+                    ReturnPlaybackAudioChunkBestEffort(chunk, "playback_missing_audio_sink");
+                    return;
+                }
+
+                if (!TryValidatePlaybackAudioChunk(chunk, out var invalidReason))
+                {
+                    Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_DROP reason={invalidReason} pts_ms={(long)chunk.Pts.TotalMilliseconds} valid_bytes={chunk.ValidLength} buffer_bytes={chunk.Samples?.Length ?? 0}");
+                    ReturnPlaybackAudioChunkBestEffort(chunk, $"playback_audio_{invalidReason}");
                     return;
                 }
 
@@ -2557,7 +2648,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 var prevPts = Interlocked.Read(ref _lastAudioPtsTicks);
                 if (chunk.Pts.Ticks <= 0 || chunk.Pts.Ticks < prevPts)
                 {
-                    if (chunk.Samples is { Length: > 0 }) ArrayPool<byte>.Shared.Return(chunk.Samples);
+                    ReturnPlaybackAudioChunkBestEffort(chunk, "playback_audio_non_monotonic_pts");
                     return;
                 }
 
@@ -2565,13 +2656,59 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 // from the keyframe→target forward decode and would cause drift.
                 if (videoPtsGate > 0 && chunk.Pts.Ticks < videoPtsGate)
                 {
-                    if (chunk.Samples is { Length: > 0 }) ArrayPool<byte>.Shared.Return(chunk.Samples);
+                    ReturnPlaybackAudioChunkBestEffort(chunk, "playback_audio_before_gate");
                     return;
                 }
 
                 Interlocked.Exchange(ref _lastAudioPtsTicks, chunk.Pts.Ticks);
                 pb.EnqueuePooledSamples(chunk.Samples, chunk.ValidLength, chunk.Pts.Ticks);
             };
+        }
+    }
+
+    private static bool TryValidatePlaybackAudioChunk(DecodedAudioChunk chunk, out string reason)
+    {
+        if (chunk.Samples == null)
+        {
+            reason = "null_samples";
+            return false;
+        }
+
+        if (chunk.ValidLength <= 0)
+        {
+            reason = "invalid_length";
+            return false;
+        }
+
+        if (chunk.ValidLength > chunk.Samples.Length)
+        {
+            reason = "length_exceeds_buffer";
+            return false;
+        }
+
+        const int playbackAudioBlockAlign = 2 * sizeof(float);
+        if (chunk.ValidLength % playbackAudioBlockAlign != 0)
+        {
+            reason = "unaligned_length";
+            return false;
+        }
+
+        reason = string.Empty;
+        return true;
+    }
+
+    private static void ReturnPlaybackAudioChunkBestEffort(DecodedAudioChunk chunk, string operation)
+    {
+        try
+        {
+            if (chunk.Samples is { Length: > 0 })
+            {
+                ArrayPool<byte>.Shared.Return(chunk.Samples);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_RETURN_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 
