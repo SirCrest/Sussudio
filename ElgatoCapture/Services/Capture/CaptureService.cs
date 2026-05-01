@@ -514,8 +514,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
             return FailFlashbackExport(outputPath, "Flashback export cancelled.");
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Log($"FLASHBACK_EXPORT_SNAPSHOT_FAIL op=range type={ex.GetType().Name} msg='{ex.Message}'");
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
             throw;
         }
@@ -595,8 +596,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
             return FailFlashbackExport(outputPath, "Flashback export cancelled.");
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Log($"FLASHBACK_EXPORT_SNAPSHOT_FAIL op=last_n type={ex.GetType().Name} msg='{ex.Message}'");
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
             throw;
         }

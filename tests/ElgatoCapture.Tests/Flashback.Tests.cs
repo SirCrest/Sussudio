@@ -639,6 +639,8 @@ static partial class Program
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", fileInPoint, fileOutPoint);");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", fileInPoint, TimeSpan.MaxValue);");
         AssertContains(captureServiceText, "RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_SNAPSHOT_FAIL op=range type={ex.GetType().Name} msg='{ex.Message}'");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_SNAPSHOT_FAIL op=last_n type={ex.GetType().Name} msg='{ex.Message}'");
         AssertContains(captureServiceText, "_flashbackExportInPointMs = inPoint.HasValue ? (long)inPoint.Value.TotalMilliseconds : 0;");
         AssertContains(captureServiceText, "outPoint.Value == TimeSpan.MaxValue ? -1 : (long)outPoint.Value.TotalMilliseconds");
 
