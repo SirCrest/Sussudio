@@ -982,6 +982,8 @@ static partial class Program
         AssertContains(bufferText, "private static bool IsPathUnderDirectory(string fullPath, string fullDirectoryRoot)");
         AssertContains(bufferText, "private static bool IsReparsePoint(FileSystemInfo info)");
         AssertContains(bufferText, "FLASHBACK_STALE_SESSION_SKIP reason=reparse_point");
+        AssertContains(bufferText, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");
+        AssertContains(bufferText, "private static bool IsPlausibleFlashbackSessionDirectoryName(string name)");
         AssertContains(bufferText, "FLASHBACK_CACHE_BUDGET_SKIP reason=outside_temp");
         AssertContains(bufferText, "FLASHBACK_SESSION_STATS_SKIP reason=reparse_point");
         AssertContains(bufferText, "if (string.Equals(fullPath, currentFullPath, StringComparison.OrdinalIgnoreCase))");

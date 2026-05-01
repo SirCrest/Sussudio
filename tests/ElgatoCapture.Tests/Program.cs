@@ -673,6 +673,9 @@ static partial class Program
                 "FlashbackBufferManager removes stale legacy root segments",
                 FlashbackBufferManager_RemovesStaleLegacyRootSegments),
             await RunCheckAsync(
+                "FlashbackBufferManager preserves unrelated empty temp directories",
+                FlashbackBufferManager_PreservesUnrelatedEmptyTempDirectories),
+            await RunCheckAsync(
                 "FlashbackBufferManager trims startup session cache budget",
                 FlashbackBufferManager_TrimsStartupSessionCacheBudget),
             await RunCheckAsync(
@@ -3469,6 +3472,49 @@ static partial class Program
     }
 
     // ── GpuPipelineHandles / RecordingContextRequest tests ──
+
+    private static Task FlashbackBufferManager_PreservesUnrelatedEmptyTempDirectories()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_stale_empty_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var currentSession = Path.Combine(tempDir, Guid.NewGuid().ToString("N"));
+            var staleFlashbackSession = Path.Combine(tempDir, Guid.NewGuid().ToString("N"));
+            var unrelatedEmptyDirectory = Path.Combine(tempDir, "empty-but-not-flashback");
+
+            Directory.CreateDirectory(currentSession);
+            Directory.CreateDirectory(staleFlashbackSession);
+            Directory.CreateDirectory(unrelatedEmptyDirectory);
+
+            var staleTime = DateTime.UtcNow - TimeSpan.FromHours(13);
+            Directory.SetLastWriteTimeUtc(staleFlashbackSession, staleTime);
+            Directory.SetLastWriteTimeUtc(unrelatedEmptyDirectory, staleTime);
+
+            var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+            var cleanup = managerType.GetMethod("CleanupStaleSessionDirectories", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("CleanupStaleSessionDirectories not found.");
+
+            cleanup.Invoke(null, new object[] { tempDir, currentSession });
+
+            AssertEqual(true, Directory.Exists(currentSession), "Current empty session directory preserved");
+            AssertEqual(false, Directory.Exists(staleFlashbackSession), "Plausible stale empty flashback session removed");
+            AssertEqual(true, Directory.Exists(unrelatedEmptyDirectory), "Unrelated stale empty directory preserved");
+
+            var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "ElgatoCapture", "Services", "Flashback", "FlashbackBufferManager.cs"))
+                .Replace("\r\n", "\n");
+            AssertContains(source, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");
+            AssertContains(source, "private static bool IsPlausibleFlashbackSessionDirectoryName(string name)");
+            AssertContains(source, "private static bool IsLowerHexString(ReadOnlySpan<char> value)");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
 
     private static Task FlashbackBufferManager_TrimsStartupSessionCacheBudget()
     {

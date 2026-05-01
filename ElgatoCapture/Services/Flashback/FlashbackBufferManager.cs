@@ -567,9 +567,18 @@ internal sealed class FlashbackBufferManager : IDisposable
                     directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);
                 }
 
-                if (!looksLikeFlashbackSession && info.EnumerateFileSystemInfos().Any())
+                if (!looksLikeFlashbackSession)
                 {
-                    continue;
+                    if (info.EnumerateFileSystemInfos().Any())
+                    {
+                        continue;
+                    }
+
+                    if (!IsPlausibleFlashbackSessionDirectoryName(info.Name))
+                    {
+                        Logger.Log($"FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir dir='{fullPath}'");
+                        continue;
+                    }
                 }
 
                 if (nowUtc - latestActivityUtc < StaleSessionMinAge)
@@ -777,9 +786,14 @@ internal sealed class FlashbackBufferManager : IDisposable
                 directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);
             }
 
-            if (!looksLikeFlashbackSession && info.EnumerateFileSystemInfos().Any())
+            if (!looksLikeFlashbackSession)
             {
-                return false;
+                if (info.EnumerateFileSystemInfos().Any())
+                {
+                    return false;
+                }
+
+                return IsPlausibleFlashbackSessionDirectoryName(info.Name);
             }
 
             return true;
@@ -877,6 +891,42 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     private static string EnsureTrailingDirectorySeparator(string path)
         => Path.EndsInDirectorySeparator(path) ? path : path + Path.DirectorySeparatorChar;
+
+    private static bool IsPlausibleFlashbackSessionDirectoryName(string name)
+    {
+        if (name.Length == 32)
+        {
+            return IsLowerHexString(name);
+        }
+
+        var underscore = name.IndexOf('_');
+        return underscore > 0 &&
+               underscore < name.Length - 1 &&
+               IsLowerHexString(name.AsSpan(0, underscore)) &&
+               name.AsSpan(underscore + 1).Length == 32 &&
+               IsLowerHexString(name.AsSpan(underscore + 1));
+    }
+
+    private static bool IsLowerHexString(ReadOnlySpan<char> value)
+    {
+        if (value.IsEmpty)
+        {
+            return false;
+        }
+
+        foreach (var ch in value)
+        {
+            if (!IsLowerHexDigit(ch))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsLowerHexDigit(char value)
+        => value is >= '0' and <= '9' or >= 'a' and <= 'f';
 
     private static bool IsPathUnderDirectory(string fullPath, string fullDirectoryRoot)
         => fullPath.StartsWith(fullDirectoryRoot, StringComparison.OrdinalIgnoreCase);
