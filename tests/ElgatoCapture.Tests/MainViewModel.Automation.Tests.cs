@@ -444,6 +444,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "PreviewD3DFrameStatsFailureDelta");
         AssertContains(diagnosticSessionText, "PreviewD3DLatestSlowFrameReason");
         AssertContains(diagnosticSessionText, "Preview D3D Perf:");
+        AssertContains(diagnosticSessionText, "PreviewCadenceOnePercentLowFpsAtEnd");
+        AssertContains(diagnosticSessionText, "PreviewCadenceMinOnePercentLowFpsObserved");
+        AssertContains(diagnosticSessionText, "BuildPreviewCadenceSessionMetrics(samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "onePercentLowFpsMin={result.PreviewCadenceMinOnePercentLowFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "latestSlowReason={FormatOptional(result.PreviewD3DLatestSlowFrameReason)}");
         AssertContains(diagnosticsText, "PreviewCadenceSlowFramePercent = snapshot.PreviewCadenceSlowFramePercent");
         AssertContains(diagnosticsText, "PreviewCadenceOnePercentLowFps = snapshot.PreviewCadenceOnePercentLowFps");

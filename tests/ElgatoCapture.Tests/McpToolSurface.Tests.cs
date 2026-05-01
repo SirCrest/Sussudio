@@ -656,7 +656,7 @@ static partial class Program
             AssertCommandRequest(requests[2], "GetPerformanceTimeline", ("maxEntries", 240));
             AssertContains(result, "== Diagnostic Session: PASS ==");
             AssertContains(result, "Health: Healthy | Stage: none");
-            AssertContains(result, "Preview D3D Perf: missedRefreshDelta=3 statsFailureDelta=1 maxRecentSlowFrames=1 latestSlowReason=present_interval overBudgetMs=1.5 presentIntervalMs=9.8 totalFrameCpuMs=4.2 presentCallMs=0.7 pending=1");
+            AssertContains(result, "Preview D3D Perf: onePercentLowFpsEnd=0 onePercentLowFpsMin=0 missedRefreshDelta=3 statsFailureDelta=1 maxRecentSlowFrames=1 latestSlowReason=present_interval overBudgetMs=1.5 presentIntervalMs=9.8 totalFrameCpuMs=4.2 presentCallMs=0.7 pending=1");
             AssertContains(result, "Frame Ledger:");
 
             var summaryPath = Path.Combine(outputDirectory, "summary.json");

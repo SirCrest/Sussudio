@@ -80,6 +80,8 @@ public sealed class DiagnosticSessionResult
     public long FlashbackExportMaxLastProgressAgeMsObserved { get; init; }
     public long FlashbackExportMaxOutputBytesObserved { get; init; }
     public double FlashbackExportMaxThroughputBytesPerSecObserved { get; init; }
+    public double PreviewCadenceOnePercentLowFpsAtEnd { get; init; }
+    public double PreviewCadenceMinOnePercentLowFpsObserved { get; init; }
     public long PreviewD3DFrameStatsMissedRefreshDelta { get; init; }
     public long PreviewD3DFrameStatsFailureDelta { get; init; }
     public int PreviewD3DMaxRecentSlowFramesObserved { get; init; }
@@ -592,6 +594,7 @@ public static class DiagnosticSessionRunner
         var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(samples, lastSnapshot);
         var recordingMetrics = BuildFlashbackRecordingMetrics(samples);
         var exportMetrics = BuildFlashbackExportSessionMetrics(samples, lastSnapshot);
+        var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
 
         var samplesPath = Path.Combine(outputDirectory, "samples.json");
@@ -671,6 +674,8 @@ public static class DiagnosticSessionRunner
             FlashbackExportMaxLastProgressAgeMsObserved = exportMetrics.MaxLastProgressAgeMsObserved,
             FlashbackExportMaxOutputBytesObserved = exportMetrics.MaxOutputBytesObserved,
             FlashbackExportMaxThroughputBytesPerSecObserved = exportMetrics.MaxThroughputBytesPerSecObserved,
+            PreviewCadenceOnePercentLowFpsAtEnd = previewCadenceMetrics.OnePercentLowFpsAtEnd,
+            PreviewCadenceMinOnePercentLowFpsObserved = previewCadenceMetrics.MinOnePercentLowFpsObserved,
             PreviewD3DFrameStatsMissedRefreshDelta = previewD3DMetrics.MissedRefreshDelta,
             PreviewD3DFrameStatsFailureDelta = previewD3DMetrics.StatsFailureDelta,
             PreviewD3DMaxRecentSlowFramesObserved = previewD3DMetrics.MaxRecentSlowFramesObserved,
@@ -822,6 +827,8 @@ public static class DiagnosticSessionRunner
             $"maxThroughput={FormatBytes((long)result.FlashbackExportMaxThroughputBytesPerSecObserved)}/s");
         builder.AppendLine(
             "Preview D3D Perf: " +
+            $"onePercentLowFpsEnd={result.PreviewCadenceOnePercentLowFpsAtEnd:0.##} " +
+            $"onePercentLowFpsMin={result.PreviewCadenceMinOnePercentLowFpsObserved:0.##} " +
             $"missedRefreshDelta={result.PreviewD3DFrameStatsMissedRefreshDelta} " +
             $"statsFailureDelta={result.PreviewD3DFrameStatsFailureDelta} " +
             $"maxRecentSlowFrames={result.PreviewD3DMaxRecentSlowFramesObserved} " +
@@ -3027,6 +3034,43 @@ public static class DiagnosticSessionRunner
         public long MaxLastProgressAgeMsObserved { get; set; }
         public long MaxOutputBytesObserved { get; set; }
         public double MaxThroughputBytesPerSecObserved { get; set; }
+    }
+
+    private static PreviewCadenceSessionMetrics BuildPreviewCadenceSessionMetrics(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement lastSnapshot)
+    {
+        var metrics = new PreviewCadenceSessionMetrics
+        {
+            OnePercentLowFpsAtEnd = GetDouble(lastSnapshot, "PreviewCadenceOnePercentLowFps")
+        };
+        ObservePreviewCadenceSnapshot(metrics, lastSnapshot);
+        foreach (var sample in samples)
+        {
+            ObservePreviewCadenceSnapshot(metrics, sample.Snapshot);
+        }
+
+        if (double.IsPositiveInfinity(metrics.MinOnePercentLowFpsObserved))
+        {
+            metrics.MinOnePercentLowFpsObserved = 0;
+        }
+
+        return metrics;
+    }
+
+    private static void ObservePreviewCadenceSnapshot(PreviewCadenceSessionMetrics metrics, JsonElement snapshot)
+    {
+        var onePercentLow = GetDouble(snapshot, "PreviewCadenceOnePercentLowFps");
+        if (onePercentLow > 0)
+        {
+            metrics.MinOnePercentLowFpsObserved = Math.Min(metrics.MinOnePercentLowFpsObserved, onePercentLow);
+        }
+    }
+
+    private sealed class PreviewCadenceSessionMetrics
+    {
+        public double OnePercentLowFpsAtEnd { get; init; }
+        public double MinOnePercentLowFpsObserved { get; set; } = double.PositiveInfinity;
     }
 
     private static PreviewD3DMetrics BuildPreviewD3DMetrics(
