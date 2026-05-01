@@ -1960,6 +1960,22 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             return;
         }
 
+        // Close playback before cycling the sink so active decoders release segment files.
+        var oldPlaybackController = _flashbackPlaybackController;
+        _flashbackPlaybackController = null;
+        if (oldPlaybackController != null)
+        {
+            try
+            {
+                oldPlaybackController.GoLive();
+                oldPlaybackController.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_PLAYBACK_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+            }
+        }
+
         // Detach audio/video feeds from the old sink
         _microphoneCapture?.SetAudioWriter(null);
         _wasapiAudioCapture?.DetachFlashbackSink();
@@ -1994,20 +2010,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             Logger.Log("FLASHBACK_CYCLE_DISPOSE_DEFERRED - falling back to full teardown");
             var oldExporter = _flashbackExporter;
-            var oldPlaybackController = _flashbackPlaybackController;
-
-            if (oldPlaybackController != null)
-            {
-                try
-                {
-                    oldPlaybackController.GoLive();
-                    oldPlaybackController.Dispose();
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"FLASHBACK_PLAYBACK_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
-                }
-            }
 
             _flashbackSink = null;
             _flashbackBufferManager = null;
@@ -2078,6 +2080,14 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 _microphoneCapture.SetAudioWriter(samples => newSink.WriteMicrophoneAudioAsync(samples));
                 Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='buffer_cycle'");
             }
+
+            var playbackController = new FlashbackPlaybackController(bufferManager);
+            playbackController.GpuDecodeEnabled = _currentSettings.FlashbackGpuDecode;
+            if (_previewFrameSink != null)
+            {
+                playbackController.Initialize(_previewFrameSink, unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);
+            }
+            _flashbackPlaybackController = playbackController;
 
             Logger.Log($"FLASHBACK_BUFFER_CYCLE_OK mode=sink_only segments={bufferManager.SegmentCount} buffered={bufferManager.BufferedDuration.TotalSeconds:F1}s");
         }

@@ -292,6 +292,18 @@ static partial class Program
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
             "FLASHBACK_CYCLE_STOP_WARN");
         AssertContains(cycleFlashbackBuffer, "cancellationToken: cancellationToken");
+        AssertContains(cycleFlashbackBuffer, "var oldPlaybackController = _flashbackPlaybackController;");
+        AssertContains(cycleFlashbackBuffer, "_flashbackPlaybackController = null;");
+        AssertContains(cycleFlashbackBuffer, "oldPlaybackController.GoLive();");
+        AssertContains(cycleFlashbackBuffer, "oldPlaybackController.Dispose();");
+        AssertOccursBefore(
+            cycleFlashbackBuffer,
+            "oldPlaybackController.Dispose();",
+            "bufferManager.PurgeCompletedSegments();");
+        AssertOccursBefore(
+            cycleFlashbackBuffer,
+            "oldPlaybackController.Dispose();",
+            "unifiedVideoCapture.SetFlashbackSink(null);");
         var cycleNewSinkStart = ExtractSourceBlock(
             cycleFlashbackBuffer,
             "var newSink = new FlashbackEncoderSink(bufferManager);",
@@ -304,6 +316,10 @@ static partial class Program
         AssertContains(cycleNewSinkStart, "unifiedVideoCapture.SetFlashbackSink(null);");
         AssertContains(cycleNewSinkStart, "_wasapiAudioCapture?.DetachFlashbackSink();");
         AssertContains(cycleNewSinkStart, "_microphoneCapture?.SetAudioWriter(null);");
+        AssertContains(cycleNewSinkStart, "var playbackController = new FlashbackPlaybackController(bufferManager);");
+        AssertContains(cycleNewSinkStart, "playbackController.GpuDecodeEnabled = _currentSettings.FlashbackGpuDecode;");
+        AssertContains(cycleNewSinkStart, "playbackController.Initialize(_previewFrameSink, unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);");
+        AssertContains(cycleNewSinkStart, "_flashbackPlaybackController = playbackController;");
         AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_DETACH_WARN");
         AssertContains(captureServiceSource, "purgeSegments: purgeSegments");
