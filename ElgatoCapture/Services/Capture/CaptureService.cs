@@ -4149,25 +4149,41 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             // Restart mic monitoring if preview is still active
             if (_isVideoPreviewActive && _micMonitorEnabled && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))
             {
+                WasapiAudioCapture? micCapture = null;
                 try
                 {
                     if (_microphoneCapture == null)
                     {
-                        var micCapture = new WasapiAudioCapture();
+                        micCapture = new WasapiAudioCapture();
                         await micCapture.InitializeAsync(_micMonitorDeviceId, cancellationToken).ConfigureAwait(false);
                         micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
                         micCapture.CaptureFailed += OnWasapiCaptureFailed;
                         micCapture.Start();
-                        _microphoneCapture = micCapture;
                         if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
                         {
                             micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
                         }
+                        _microphoneCapture = micCapture;
+                        micCapture = null;
                     }
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
                 }
                 catch (Exception ex)
                 {
                     Logger.Log($"FLASHBACK_MIC_RESTART_WARN type={ex.GetType().Name} error='{ex.Message}'");
+                }
+                finally
+                {
+                    if (micCapture != null)
+                    {
+                        micCapture.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
+                        micCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        try { await micCapture.DisposeAsync().ConfigureAwait(false); }
+                        catch (Exception disposeEx) { Logger.Log($"FLASHBACK_MIC_RESTART_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
+                    }
                 }
             }
 
@@ -4426,24 +4442,40 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // Restart mic monitoring if preview is still active
         if (_isVideoPreviewActive && _micMonitorEnabled && !string.IsNullOrWhiteSpace(_micMonitorDeviceId))
         {
+            WasapiAudioCapture? micCapture = null;
             try
             {
-                var micCapture = new WasapiAudioCapture();
+                micCapture = new WasapiAudioCapture();
                 await micCapture.InitializeAsync(_micMonitorDeviceId, cancellationToken).ConfigureAwait(false);
                 micCapture.AudioLevelUpdated += OnMicrophoneAudioLevelUpdated;
                 micCapture.CaptureFailed += OnWasapiCaptureFailed;
                 micCapture.Start();
-                _microphoneCapture = micCapture;
                 if (_flashbackSink is { MicrophoneEnabled: true } fbSink)
                 {
                     micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));
                     Logger.Log("FLASHBACK_MIC_ATTACH_OK reason='mic_monitor_restart'");
                 }
+                _microphoneCapture = micCapture;
+                micCapture = null;
                 Logger.Log("MIC_MONITOR_RESTART device='" + (_micMonitorDeviceName ?? "?") + "'");
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                cancellationException ??= new OperationCanceledException(cancellationToken);
             }
             catch (Exception micEx)
             {
                 Logger.Log("Mic monitor restart failed (non-fatal): " + micEx.Message);
+            }
+            finally
+            {
+                if (micCapture != null)
+                {
+                    micCapture.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
+                    micCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                    try { await micCapture.DisposeAsync().ConfigureAwait(false); }
+                    catch (Exception disposeEx) { Logger.Log($"MIC_MONITOR_RESTART_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
+                }
             }
         }
 

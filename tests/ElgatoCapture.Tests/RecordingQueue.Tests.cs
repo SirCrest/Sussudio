@@ -295,6 +295,32 @@ static partial class Program
             postFinalizeCycle,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
             "FLASHBACK_BUFFER_CYCLE_FAIL");
+        var flashbackMicMonitorRestart = ExtractSourceBlock(
+            stopRecordingBackend,
+            "// Restart mic monitoring if preview is still active",
+            "if (fbResult.Succeeded)");
+        AssertContains(flashbackMicMonitorRestart, "WasapiAudioCapture? micCapture = null;");
+        AssertContains(flashbackMicMonitorRestart, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
+        AssertContains(flashbackMicMonitorRestart, "flashbackCancellationException ??= new OperationCanceledException(cancellationToken);");
+        AssertContains(flashbackMicMonitorRestart, "FLASHBACK_MIC_RESTART_DISPOSE_WARN");
+        AssertOccursBefore(
+            flashbackMicMonitorRestart,
+            "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));",
+            "_microphoneCapture = micCapture;");
+        AssertContains(flashbackMicMonitorRestart, "_microphoneCapture = micCapture;\n                        micCapture = null;");
+        var standardMicMonitorRestart = ExtractSourceBlock(
+            stopRecordingBackend,
+            "var wasapiAudioCaptureFaulted = Volatile.Read(ref _wasapiAudioCaptureFaulted);",
+            "_lastOutputPath = result.OutputPath;");
+        AssertContains(standardMicMonitorRestart, "WasapiAudioCapture? micCapture = null;");
+        AssertContains(standardMicMonitorRestart, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
+        AssertContains(standardMicMonitorRestart, "cancellationException ??= new OperationCanceledException(cancellationToken);");
+        AssertContains(standardMicMonitorRestart, "MIC_MONITOR_RESTART_DISPOSE_WARN");
+        AssertOccursBefore(
+            standardMicMonitorRestart,
+            "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));",
+            "_microphoneCapture = micCapture;");
+        AssertContains(standardMicMonitorRestart, "_microphoneCapture = micCapture;\n                micCapture = null;");
         var disposeFlashbackPreviewBackendCore = ExtractSourceBlock(
             captureServiceSource,
             "private async Task DisposeFlashbackPreviewBackendCoreAsync",
