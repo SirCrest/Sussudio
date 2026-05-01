@@ -72,6 +72,13 @@ public sealed class DiagnosticSessionResult
     public long FlashbackRecordingVideoEncoderPacketsWrittenDelta { get; init; }
     public long FlashbackRecordingIntegritySequenceGapsAtEnd { get; init; }
     public long FlashbackRecordingIntegrityQueueDroppedFramesAtEnd { get; init; }
+    public bool FlashbackExportObserved { get; init; }
+    public bool FlashbackExportActiveAtEnd { get; init; }
+    public string FlashbackExportStatusAtEnd { get; init; } = string.Empty;
+    public long FlashbackExportMaxElapsedMsObserved { get; init; }
+    public long FlashbackExportMaxLastProgressAgeMsObserved { get; init; }
+    public long FlashbackExportMaxOutputBytesObserved { get; init; }
+    public double FlashbackExportMaxThroughputBytesPerSecObserved { get; init; }
     public long PreviewD3DFrameStatsMissedRefreshDelta { get; init; }
     public long PreviewD3DFrameStatsFailureDelta { get; init; }
     public int PreviewD3DMaxRecentSlowFramesObserved { get; init; }
@@ -582,6 +589,7 @@ public static class DiagnosticSessionRunner
         var playbackLastWriteHeadWaitGapMsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs") ?? 0;
         var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(samples, lastSnapshot);
         var recordingMetrics = BuildFlashbackRecordingMetrics(samples);
+        var exportMetrics = BuildFlashbackExportSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
 
         var samplesPath = Path.Combine(outputDirectory, "samples.json");
@@ -653,6 +661,13 @@ public static class DiagnosticSessionRunner
             FlashbackRecordingVideoEncoderPacketsWrittenDelta = recordingMetrics.VideoEncoderPacketsWrittenDelta,
             FlashbackRecordingIntegritySequenceGapsAtEnd = recordingMetrics.IntegritySequenceGapsAtEnd,
             FlashbackRecordingIntegrityQueueDroppedFramesAtEnd = recordingMetrics.IntegrityQueueDroppedFramesAtEnd,
+            FlashbackExportObserved = exportMetrics.Observed,
+            FlashbackExportActiveAtEnd = exportMetrics.ActiveAtEnd,
+            FlashbackExportStatusAtEnd = exportMetrics.StatusAtEnd,
+            FlashbackExportMaxElapsedMsObserved = exportMetrics.MaxElapsedMsObserved,
+            FlashbackExportMaxLastProgressAgeMsObserved = exportMetrics.MaxLastProgressAgeMsObserved,
+            FlashbackExportMaxOutputBytesObserved = exportMetrics.MaxOutputBytesObserved,
+            FlashbackExportMaxThroughputBytesPerSecObserved = exportMetrics.MaxThroughputBytesPerSecObserved,
             PreviewD3DFrameStatsMissedRefreshDelta = previewD3DMetrics.MissedRefreshDelta,
             PreviewD3DFrameStatsFailureDelta = previewD3DMetrics.StatsFailureDelta,
             PreviewD3DMaxRecentSlowFramesObserved = previewD3DMetrics.MaxRecentSlowFramesObserved,
@@ -792,6 +807,15 @@ public static class DiagnosticSessionRunner
             $"packetsDelta={result.FlashbackRecordingVideoEncoderPacketsWrittenDelta} " +
             $"seqGapsEnd={result.FlashbackRecordingIntegritySequenceGapsAtEnd} " +
             $"queueDropsEnd={result.FlashbackRecordingIntegrityQueueDroppedFramesAtEnd}");
+        builder.AppendLine(
+            "Flashback Export: " +
+            $"observed={result.FlashbackExportObserved} " +
+            $"activeEnd={result.FlashbackExportActiveAtEnd} " +
+            $"statusEnd={FormatOptional(result.FlashbackExportStatusAtEnd)} " +
+            $"maxElapsedMs={result.FlashbackExportMaxElapsedMsObserved} " +
+            $"maxProgressAgeMs={result.FlashbackExportMaxLastProgressAgeMsObserved} " +
+            $"maxBytes={FormatBytes(result.FlashbackExportMaxOutputBytesObserved)} " +
+            $"maxThroughput={FormatBytes((long)result.FlashbackExportMaxThroughputBytesPerSecObserved)}/s");
         builder.AppendLine(
             "Preview D3D Perf: " +
             $"missedRefreshDelta={result.PreviewD3DFrameStatsMissedRefreshDelta} " +
@@ -2943,6 +2967,62 @@ public static class DiagnosticSessionRunner
         public double MaxSlowFramePercentObserved { get; set; }
         public double MaxDecodeP99MsObserved { get; set; }
         public double MaxDecodeMsObserved { get; set; }
+    }
+
+    private static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement lastSnapshot)
+    {
+        var metrics = new FlashbackExportSessionMetrics
+        {
+            ActiveAtEnd = GetBool(lastSnapshot, "FlashbackExportActive"),
+            StatusAtEnd = GetString(lastSnapshot, "FlashbackExportStatus") ?? string.Empty
+        };
+        ObserveExportSnapshot(metrics, lastSnapshot);
+        foreach (var sample in samples)
+        {
+            ObserveExportSnapshot(metrics, sample.Snapshot);
+        }
+
+        return metrics;
+    }
+
+    private static void ObserveExportSnapshot(FlashbackExportSessionMetrics metrics, JsonElement snapshot)
+    {
+        var exportId = GetNullableLong(snapshot, "FlashbackExportId") ?? 0;
+        var status = GetString(snapshot, "FlashbackExportStatus") ?? string.Empty;
+        var active = GetBool(snapshot, "FlashbackExportActive");
+        if (exportId > 0 ||
+            active ||
+            !string.IsNullOrWhiteSpace(status) &&
+            !string.Equals(status, "NotStarted", StringComparison.OrdinalIgnoreCase))
+        {
+            metrics.Observed = true;
+        }
+
+        metrics.MaxElapsedMsObserved = Math.Max(
+            metrics.MaxElapsedMsObserved,
+            GetNullableLong(snapshot, "FlashbackExportElapsedMs") ?? 0);
+        metrics.MaxLastProgressAgeMsObserved = Math.Max(
+            metrics.MaxLastProgressAgeMsObserved,
+            GetNullableLong(snapshot, "FlashbackExportLastProgressAgeMs") ?? 0);
+        metrics.MaxOutputBytesObserved = Math.Max(
+            metrics.MaxOutputBytesObserved,
+            GetNullableLong(snapshot, "FlashbackExportOutputBytes") ?? 0);
+        metrics.MaxThroughputBytesPerSecObserved = Math.Max(
+            metrics.MaxThroughputBytesPerSecObserved,
+            GetDouble(snapshot, "FlashbackExportThroughputBytesPerSec"));
+    }
+
+    private sealed class FlashbackExportSessionMetrics
+    {
+        public bool Observed { get; set; }
+        public bool ActiveAtEnd { get; init; }
+        public string StatusAtEnd { get; init; } = string.Empty;
+        public long MaxElapsedMsObserved { get; set; }
+        public long MaxLastProgressAgeMsObserved { get; set; }
+        public long MaxOutputBytesObserved { get; set; }
+        public double MaxThroughputBytesPerSecObserved { get; set; }
     }
 
     private static PreviewD3DMetrics BuildPreviewD3DMetrics(

@@ -437,6 +437,13 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackRecordingIntegritySequenceGapsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackRecordingIntegrityQueueDroppedFramesAtEnd");
         AssertContains(diagnosticSessionText, "Flashback Recording:");
+        AssertContains(diagnosticSessionText, "FlashbackExportMaxElapsedMsObserved");
+        AssertContains(diagnosticSessionText, "FlashbackExportMaxLastProgressAgeMsObserved");
+        AssertContains(diagnosticSessionText, "FlashbackExportMaxOutputBytesObserved");
+        AssertContains(diagnosticSessionText, "FlashbackExportMaxThroughputBytesPerSecObserved");
+        AssertContains(diagnosticSessionText, "BuildFlashbackExportSessionMetrics(samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "Flashback Export:");
+        AssertContains(diagnosticSessionText, "maxThroughput={FormatBytes((long)result.FlashbackExportMaxThroughputBytesPerSecObserved)}/s");
         AssertContains(diagnosticSessionText, "BuildFlashbackRecordingMetrics(samples)");
         AssertContains(diagnosticSessionText, "GetMaxSnapshotInt(samples, lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")");
         AssertContains(diagnosticSessionText, "GetMaxSnapshotInt(samples, lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")");
