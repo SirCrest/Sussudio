@@ -3309,12 +3309,23 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     var flashbackAudioTopologyChanged =
                         _flashbackSink.AudioEnabled != settings.AudioEnabled ||
                         _flashbackSink.MicrophoneEnabled != settings.MicrophoneEnabled;
-                    if (flashbackBackendSettingsChanged || flashbackAudioTopologyChanged)
+                    if (flashbackAudioTopologyChanged)
+                    {
+                        Logger.Log($"FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT " +
+                            $"audio={settings.AudioEnabled} (was {_flashbackSink.AudioEnabled}) " +
+                            $"mic={settings.MicrophoneEnabled} (was {_flashbackSink.MicrophoneEnabled})");
+                        EnsureFlashbackRecordingTopologyMatches(
+                            _flashbackSink,
+                            settings.AudioEnabled,
+                            settings.MicrophoneEnabled);
+                    }
+
+                    if (flashbackBackendSettingsChanged)
                     {
                         Logger.Log($"FLASHBACK_SETTINGS_MISMATCH_AUTO_RESTART " +
                             $"settings_changed={flashbackBackendSettingsChanged} " +
-                            $"audio={settings.AudioEnabled} (was {_flashbackSink.AudioEnabled}) " +
-                            $"mic={settings.MicrophoneEnabled} (was {_flashbackSink.MicrophoneEnabled})");
+                            $"audio={settings.AudioEnabled} " +
+                            $"mic={settings.MicrophoneEnabled}");
 
                         await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
 
@@ -3326,7 +3337,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
                         if (_flashbackSink == null)
                         {
-                            throw new InvalidOperationException("Failed to restart flashback backend for new audio topology.");
+                            throw new InvalidOperationException("Failed to restart flashback backend for updated recording settings.");
                         }
                     }
 

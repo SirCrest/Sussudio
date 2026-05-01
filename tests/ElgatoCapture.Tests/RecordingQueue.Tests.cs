@@ -214,6 +214,16 @@ static partial class Program
         AssertContains(captureServiceSource, "FLASHBACK_SEGMENT_PURGE_BLOCKED");
         AssertContains(captureServiceSource, "WaitForForceRotateIdle(TimeSpan.FromSeconds(10))");
         AssertContains(captureServiceSource, "Flashback backend export rotation did not quiesce before recording start.");
+        var flashbackRecordingStartMismatch = ExtractSourceBlock(
+            captureServiceSource,
+            "var flashbackBackendSettingsChanged = _flashbackBackendSettings == null",
+            "await EnsureFlashbackAudioInputsAsync(settings, transitionToken, \"recording_flashback_start\")");
+        AssertContains(flashbackRecordingStartMismatch, "FLASHBACK_RECORDING_TOPOLOGY_MISMATCH_REJECT");
+        AssertContains(flashbackRecordingStartMismatch, "EnsureFlashbackRecordingTopologyMatches(");
+        AssertOccursBefore(
+            flashbackRecordingStartMismatch,
+            "EnsureFlashbackRecordingTopologyMatches(",
+            "await DisposeFlashbackPreviewBackendAsync(transitionToken, purgeSegments: true)");
         AssertContains(captureServiceSource, "bool requireCompleteLiveEdge = false");
         AssertContains(captureServiceSource, "requireCompleteLiveEdge: true");
         AssertContains(captureServiceSource, "FLASHBACK_RECORDING_EXPORT_INCOMPLETE_FAIL");
