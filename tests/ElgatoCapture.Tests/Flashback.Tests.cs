@@ -379,6 +379,10 @@ static partial class Program
         AssertContains(sourceText, "if (!canRead)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed\");\n                            return;\n                        }");
         AssertContains(sourceText, "catch (OperationCanceledException)\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_CANCELLED\");");
         AssertContains(sourceText, "finally\n        {\n            timeEndPeriod(1);");
+        AssertContains(sourceText, "DrainAbandonedCommandsOnThreadExit();");
+        AssertContains(sourceText, "Interlocked.Add(ref _commandsDropped, abandoned);");
+        AssertContains(sourceText, "_lastCommandFailure = $\"abandoned_on_exit:{abandoned}\";");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);");
         AssertContains(sourceText, "ReferenceEquals(Thread.CurrentThread, _playbackThread)");
         AssertContains(sourceText, "_playbackThread = null;");
         AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);");

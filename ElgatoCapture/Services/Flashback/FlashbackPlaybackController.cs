@@ -663,6 +663,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         finally
         {
             timeEndPeriod(1);
+            DrainAbandonedCommandsOnThreadExit();
             if (ReferenceEquals(Thread.CurrentThread, _playbackThread))
             {
                 _playbackThread = null;
@@ -671,6 +672,31 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
+    }
+
+    private void DrainAbandonedCommandsOnThreadExit()
+    {
+        var abandoned = 0;
+        while (_commandChannel.Reader.TryRead(out var command))
+        {
+            DecrementPendingCommands();
+            if (command.Kind != CommandKind.Stop)
+            {
+                abandoned++;
+            }
+        }
+
+        if (abandoned > 0)
+        {
+            Interlocked.Add(ref _commandsDropped, abandoned);
+            _lastCommandFailure = $"abandoned_on_exit:{abandoned}";
+            Logger.Log($"FLASHBACK_PLAYBACK_CMD_ABANDONED count={abandoned}");
+        }
+
+        if (Volatile.Read(ref _pendingCommands) > 0)
+        {
+            Interlocked.Exchange(ref _pendingCommands, 0);
+        }
     }
 
     // --- Decode helpers ---
