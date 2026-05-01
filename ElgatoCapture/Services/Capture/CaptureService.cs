@@ -728,13 +728,16 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            var failure = FinalizeResult.Failure(outputPath, ex.Message);
+            var statusMessage = ex is OperationCanceledException && ct.IsCancellationRequested
+                ? "Flashback export cancelled."
+                : ex.Message;
+            var failure = FinalizeResult.Failure(outputPath, statusMessage);
             _lastExportResult = failure;
             if (exportId != 0)
             {
                 CompleteFlashbackExportDiagnostics(exportId, failure);
             }
-            throw;
+            return failure;
         }
         finally
         {
