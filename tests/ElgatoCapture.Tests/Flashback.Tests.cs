@@ -1716,7 +1716,7 @@ static partial class Program
         AssertContains(sourceText, "private int _scrubUpdateCommandQueued;");
         AssertContains(sourceText, "private long _scrubUpdatesCoalesced;");
         AssertContains(updateScrubMethod, "Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);");
-        AssertContains(updateScrubMethod, "if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, \"thread_not_running\", \"thread_not_running\", false);");
+        AssertContains(updateScrubMethod, "if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, \"thread_not_running\", \"thread_not_running\", false, position);");
         AssertContains(updateScrubMethod, "Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0");
         AssertContains(updateScrubMethod, "TrackCoalescedScrubUpdate();");
         AssertContains(updateScrubMethod, "return true;");
@@ -1733,7 +1733,12 @@ static partial class Program
         AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live)");
         AssertContains(drainAbandonedCommands, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, \"thread_not_running\", \"thread_not_running\", false);");
-        AssertContains(sourceText, "private bool RejectCommand(CommandKind kind, string failure, string reason, bool returnValue)\n    {\n        Interlocked.Increment(ref _commandsSkippedNotReady);\n        SetLastCommandFailure($\"{failure}:{kind}\");\n        Logger.Log($\"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}\");\n        return returnValue;\n    }");
+        AssertContains(sourceText, "private bool RejectCommand(\n        CommandKind kind,\n        string failure,\n        string reason,\n        bool returnValue,\n        TimeSpan? position = null)");
+        AssertContains(sourceText, "SetLastCommandFailure($\"{failure}:{kind}{detail}\");");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}{detail}\");");
+        AssertContains(sourceText, "private static string FormatCommandDetail(PlaybackCommand command)");
+        AssertContains(sourceText, "return $\" pos_ms={(long)position.Value.TotalMilliseconds}\";");
+        AssertContains(sourceText, "return $\" delta_ms={(long)delta.Value.TotalMilliseconds}\";");
         AssertContains(sourceText, "private void SetLastCommandFailure(string failure)\n    {\n        _lastCommandFailure = failure;\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());\n    }");
         AssertContains(sourceText, "private void ClearLastCommandFailure()\n    {\n        _lastCommandFailure = string.Empty;\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);\n    }");
         AssertContains(sourceText, "private void TrackCoalescedScrubUpdate()");

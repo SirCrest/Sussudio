@@ -248,22 +248,22 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     public bool BeginScrub(TimeSpan position)
     {
-        if (IsNotReady(CommandKind.BeginScrub)) return false;
+        if (IsNotReady(CommandKind.BeginScrub, position)) return false;
         if (!EnsurePlaybackThread(CommandKind.BeginScrub)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.BeginScrub, Position = position });
     }
 
     public bool Seek(TimeSpan position)
     {
-        if (IsNotReady(CommandKind.Seek)) return false;
+        if (IsNotReady(CommandKind.Seek, position)) return false;
         if (!EnsurePlaybackThread(CommandKind.Seek)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Seek, Position = position });
     }
 
     public bool UpdateScrub(TimeSpan position)
     {
-        if (IsNotReady(CommandKind.UpdateScrub)) return false;
-        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, "thread_not_running", "thread_not_running", false);
+        if (IsNotReady(CommandKind.UpdateScrub, position)) return false;
+        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, "thread_not_running", "thread_not_running", false, position);
         Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
         if (Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0)
         {
@@ -409,8 +409,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             DecrementPendingCommands();
             Interlocked.Increment(ref _commandsDropped);
-            SetLastCommandFailure($"write_failed:{command.Kind}");
-            Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP kind={command.Kind}");
+            var detail = FormatCommandDetail(command);
+            SetLastCommandFailure($"write_failed:{command.Kind}{detail}");
+            Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP kind={command.Kind}{detail}");
             return false;
         }
 
@@ -2036,22 +2037,47 @@ internal sealed class FlashbackPlaybackController : IDisposable
     /// <summary>
     /// Returns true (and logs a skip) when the controller is not ready to accept commands.
     /// </summary>
-    private bool IsNotReady(CommandKind kind)
+    private bool IsNotReady(CommandKind kind, TimeSpan? position = null)
     {
         if (IsReady) return false;
         return RejectCommand(
             kind,
             "not_ready",
             $"not_ready initialized={_initialized} disposed={_disposedFlag != 0}",
-            true);
+            true,
+            position);
     }
 
-    private bool RejectCommand(CommandKind kind, string failure, string reason, bool returnValue)
+    private bool RejectCommand(
+        CommandKind kind,
+        string failure,
+        string reason,
+        bool returnValue,
+        TimeSpan? position = null)
     {
         Interlocked.Increment(ref _commandsSkippedNotReady);
-        SetLastCommandFailure($"{failure}:{kind}");
-        Logger.Log($"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}");
+        var detail = FormatCommandDetail(position: position);
+        SetLastCommandFailure($"{failure}:{kind}{detail}");
+        Logger.Log($"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}{detail}");
         return returnValue;
+    }
+
+    private static string FormatCommandDetail(PlaybackCommand command)
+        => FormatCommandDetail(command.Position, command.Delta);
+
+    private static string FormatCommandDetail(TimeSpan? position = null, TimeSpan? delta = null)
+    {
+        if (position.HasValue)
+        {
+            return $" pos_ms={(long)position.Value.TotalMilliseconds}";
+        }
+
+        if (delta.HasValue)
+        {
+            return $" delta_ms={(long)delta.Value.TotalMilliseconds}";
+        }
+
+        return string.Empty;
     }
 
     private void SetLastCommandFailure(string failure)
