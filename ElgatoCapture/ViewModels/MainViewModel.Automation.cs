@@ -480,6 +480,7 @@ public partial class MainViewModel
 
     public Task<ViewModelRuntimeSnapshot> GetViewModelRuntimeSnapshotAsync(CancellationToken cancellationToken = default)
     {
+        var sessionSnapshot = _sessionCoordinator.Snapshot;
         return InvokeOnUiThreadAsync(() => new ViewModelRuntimeSnapshot
         {
             TimestampUtc = DateTimeOffset.UtcNow,
@@ -516,6 +517,17 @@ public partial class MainViewModel
             SourceTelemetryAgeSeconds = ComputeTelemetryAgeSeconds(SourceTelemetryTimestampUtc, DateTimeOffset.UtcNow),
             SourceTelemetrySummaryText = SourceTelemetrySummaryText,
             SourceTargetSummaryText = SourceTargetSummaryText,
+            CaptureCommandCommandsEnqueued = sessionSnapshot.CommandsEnqueued,
+            CaptureCommandCommandsCompleted = sessionSnapshot.CommandsCompleted,
+            CaptureCommandCommandsFailed = sessionSnapshot.CommandsFailed,
+            CaptureCommandCommandsCanceled = sessionSnapshot.CommandsCanceled,
+            CaptureCommandPendingCommands = sessionSnapshot.PendingCommands,
+            CaptureCommandMaxPendingCommands = sessionSnapshot.MaxPendingCommands,
+            CaptureCommandOldestPendingCommandAgeMs = sessionSnapshot.OldestPendingCommandAgeMs,
+            CaptureCommandLastQueueLatencyMs = sessionSnapshot.LastCommandQueueLatencyMs,
+            CaptureCommandMaxQueueLatencyMs = sessionSnapshot.MaxCommandQueueLatencyMs,
+            CaptureCommandLastCommand = sessionSnapshot.LastCommand?.ToString() ?? "None",
+            CaptureCommandLastError = sessionSnapshot.LastError ?? string.Empty,
             SelectedRecordingFormat = SelectedRecordingFormat,
             SelectedQuality = SelectedQuality,
             SelectedPreset = SelectedPreset,

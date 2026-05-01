@@ -83,7 +83,10 @@ static partial class Program
         var expectedProps = new[]
         {
             "LastTransitionUtc", "LastCommand", "LastCorrelationId",
-            "LastError", "PendingCommands", "SessionState",
+            "LastError", "CommandsEnqueued", "CommandsCompleted",
+            "CommandsFailed", "CommandsCanceled", "PendingCommands",
+            "MaxPendingCommands", "OldestPendingCommandAgeMs",
+            "LastCommandQueueLatencyMs", "MaxCommandQueueLatencyMs", "SessionState",
             "IsRecording", "IsInitialized", "IsVideoPreviewActive", "IsAudioPreviewActive"
         };
 
@@ -98,6 +101,9 @@ static partial class Program
         AssertEqual(false, GetBoolProperty(snapshot, "IsRecording"), "Default IsRecording");
         AssertEqual(false, GetBoolProperty(snapshot, "IsInitialized"), "Default IsInitialized");
         AssertEqual(0, Convert.ToInt32(GetPropertyValue(snapshot, "PendingCommands")), "Default PendingCommands");
+        AssertEqual(0, Convert.ToInt32(GetPropertyValue(snapshot, "MaxPendingCommands")), "Default MaxPendingCommands");
+        AssertEqual(0L, Convert.ToInt64(GetPropertyValue(snapshot, "OldestPendingCommandAgeMs")), "Default OldestPendingCommandAgeMs");
+        AssertEqual(0L, Convert.ToInt64(GetPropertyValue(snapshot, "MaxCommandQueueLatencyMs")), "Default MaxCommandQueueLatencyMs");
 
         return Task.CompletedTask;
     }

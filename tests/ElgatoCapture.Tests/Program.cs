@@ -1597,6 +1597,17 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("DiagnosticPresentLane"), "AutomationSnapshot.DiagnosticPresentLane");
         AssertNotNull(snapshotType.GetProperty("DiagnosticRecordingLane"), "AutomationSnapshot.DiagnosticRecordingLane");
         AssertNotNull(snapshotType.GetProperty("DiagnosticAudioLane"), "AutomationSnapshot.DiagnosticAudioLane");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsEnqueued"), "AutomationSnapshot.CaptureCommandCommandsEnqueued");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsCompleted"), "AutomationSnapshot.CaptureCommandCommandsCompleted");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsFailed"), "AutomationSnapshot.CaptureCommandCommandsFailed");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandCommandsCanceled"), "AutomationSnapshot.CaptureCommandCommandsCanceled");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandPendingCommands"), "AutomationSnapshot.CaptureCommandPendingCommands");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandMaxPendingCommands"), "AutomationSnapshot.CaptureCommandMaxPendingCommands");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandOldestPendingCommandAgeMs"), "AutomationSnapshot.CaptureCommandOldestPendingCommandAgeMs");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandLastQueueLatencyMs"), "AutomationSnapshot.CaptureCommandLastQueueLatencyMs");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandMaxQueueLatencyMs"), "AutomationSnapshot.CaptureCommandMaxQueueLatencyMs");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandLastCommand"), "AutomationSnapshot.CaptureCommandLastCommand");
+        AssertNotNull(snapshotType.GetProperty("CaptureCommandLastError"), "AutomationSnapshot.CaptureCommandLastError");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoFramesSubmittedToEncoder"), "AutomationSnapshot.RecordingVideoFramesSubmittedToEncoder");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoEncoderPts"), "AutomationSnapshot.RecordingVideoEncoderPts");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoEncoderPacketsWritten"), "AutomationSnapshot.RecordingVideoEncoderPacketsWritten");

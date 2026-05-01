@@ -21,6 +21,7 @@ static partial class Program
             ?? throw new InvalidOperationException("EcCtl.Formatters.FormatSnapshot returned null.");
 
         AssertContains(output, "== ElgatoCapture State ==");
+        AssertContains(output, "Capture Commands:");
         AssertContains(output, "== Capture Settings ==");
         AssertContains(output, "== Audio ==");
         AssertContains(output, "== Flashback ==");
@@ -36,10 +37,14 @@ static partial class Program
         AssertContains(output, "submitFailures=1");
         AssertContains(output, "A/V Drift: -1.5ms");
         var ecctlFormatterSource = ReadRepoFile("tools/ecctl/Formatters.cs");
+        AssertContains(ecctlFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
+        AssertContains(ecctlFormatterSource, "CaptureCommandMaxQueueLatencyMs");
         AssertContains(ecctlFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
         AssertContains(ecctlFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
         AssertContains(ecctlFormatterSource, "ProcessCpuPercent");
         var sharedFormatterSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
+        AssertContains(sharedFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
+        AssertContains(sharedFormatterSource, "CaptureCommandMaxQueueLatencyMs");
         AssertContains(sharedFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
         AssertContains(sharedFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
         AssertContains(sharedFormatterSource, "ProcessCpuPercent");

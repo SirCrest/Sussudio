@@ -219,6 +219,17 @@ public sealed class AutomationSnapshot
     public string DiagnosticPresentLane { get; init; } = string.Empty;
     public string DiagnosticRecordingLane { get; init; } = string.Empty;
     public string DiagnosticAudioLane { get; init; } = string.Empty;
+    public long CaptureCommandCommandsEnqueued { get; init; }
+    public long CaptureCommandCommandsCompleted { get; init; }
+    public long CaptureCommandCommandsFailed { get; init; }
+    public long CaptureCommandCommandsCanceled { get; init; }
+    public int CaptureCommandPendingCommands { get; init; }
+    public int CaptureCommandMaxPendingCommands { get; init; }
+    public long CaptureCommandOldestPendingCommandAgeMs { get; init; }
+    public long CaptureCommandLastQueueLatencyMs { get; init; }
+    public long CaptureCommandMaxQueueLatencyMs { get; init; }
+    public string CaptureCommandLastCommand { get; init; } = "None";
+    public string CaptureCommandLastError { get; init; } = string.Empty;
     public double PerformanceThresholdCaptureDropPercent { get; init; }
     public double PerformanceThresholdCaptureP95Multiplier { get; init; }
     public double PerformanceThresholdPreviewSlowPercent { get; init; }
@@ -1456,6 +1467,17 @@ public sealed class ViewModelRuntimeSnapshot
     public int? SourceTelemetryAgeSeconds { get; init; }
     public string SourceTelemetrySummaryText { get; init; } = string.Empty;
     public string SourceTargetSummaryText { get; init; } = string.Empty;
+    public long CaptureCommandCommandsEnqueued { get; init; }
+    public long CaptureCommandCommandsCompleted { get; init; }
+    public long CaptureCommandCommandsFailed { get; init; }
+    public long CaptureCommandCommandsCanceled { get; init; }
+    public int CaptureCommandPendingCommands { get; init; }
+    public int CaptureCommandMaxPendingCommands { get; init; }
+    public long CaptureCommandOldestPendingCommandAgeMs { get; init; }
+    public long CaptureCommandLastQueueLatencyMs { get; init; }
+    public long CaptureCommandMaxQueueLatencyMs { get; init; }
+    public string CaptureCommandLastCommand { get; init; } = "None";
+    public string CaptureCommandLastError { get; init; } = string.Empty;
     public string SelectedRecordingFormat { get; init; } = string.Empty;
     public string SelectedQuality { get; init; } = string.Empty;
     public string SelectedPreset { get; init; } = string.Empty;
