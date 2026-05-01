@@ -320,9 +320,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 $"audio={_audioEnabled} microphone={_microphoneEnabled} p010={sessionContext.IsP010}");
             return Task.CompletedTask;
         }
-        catch
+        catch (Exception ex)
         {
             /* Cleanup must not throw — tear down partially-initialized queues/state before re-throwing */
+            Logger.Log($"FLASHBACK_SINK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
             CompleteWriter(_videoQueue);
             CompleteWriter(_audioQueue);
             CompleteWriter(_microphoneQueue);
@@ -344,10 +345,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _height = 0;
             _audioEnabled = false;
             _microphoneEnabled = false;
-            lock (_sync)
-            {
-                _started = false;
-            }
 
             if (_ownsBufferManager)
             {

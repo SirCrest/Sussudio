@@ -130,7 +130,7 @@ static partial class Program
 
         var startCatchBlock = ExtractTextBetween(
             sourceText,
-            "catch\n        {\n            /* Cleanup must not throw",
+            "catch (Exception ex)\n        {\n            /* Cleanup must not throw",
             "            throw;\n        }");
 
         AssertContains(sourceText, "ValidateSessionContext(context);");
@@ -141,7 +141,9 @@ static partial class Program
         AssertContains(sourceText, "Flashback session width must be positive.");
         AssertContains(sourceText, "Flashback session height must be positive.");
         AssertContains(sourceText, "Flashback session codec name is required.");
+        AssertContains(startCatchBlock, "Logger.Log($\"FLASHBACK_SINK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(startCatchBlock, "lock (_sync)\n            {\n                _started = false;\n            }");
+        AssertEqual(1, startCatchBlock.Split("_started = false;", StringSplitOptions.None).Length - 1, "Start failure rollback clears started state once");
         AssertOccursBefore(startCatchBlock, "_started = false;", "throw;");
 
         return Task.CompletedTask;
