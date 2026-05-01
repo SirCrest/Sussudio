@@ -293,6 +293,10 @@ static partial class Program
         AssertContains(captureServiceText, "_flashbackExportOperationLock.Dispose();");
         AssertContains(captureServiceText, "Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths)");
         AssertContains(captureServiceText, "StartPts = TimeSpan.FromMilliseconds(info.StartPtsMs)");
+        AssertContains(captureServiceText, "var totalSegments = Math.Max(0, progress.TotalSegments);");
+        AssertContains(captureServiceText, "if (totalSegments > 0 && segmentsProcessed > totalSegments)");
+        AssertContains(captureServiceText, "Math.Clamp(progress.Percent, 0.0, 100.0)");
+        AssertContains(captureServiceText, ": 0.0;");
 
         var flashbackExporterText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");

@@ -848,9 +848,18 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 return;
             }
 
-            _flashbackExportSegmentsProcessed = progress.SegmentsProcessed;
-            _flashbackExportTotalSegments = progress.TotalSegments;
-            _flashbackExportPercent = progress.Percent;
+            var totalSegments = Math.Max(0, progress.TotalSegments);
+            var segmentsProcessed = Math.Max(0, progress.SegmentsProcessed);
+            if (totalSegments > 0 && segmentsProcessed > totalSegments)
+            {
+                segmentsProcessed = totalSegments;
+            }
+
+            _flashbackExportSegmentsProcessed = segmentsProcessed;
+            _flashbackExportTotalSegments = totalSegments;
+            _flashbackExportPercent = double.IsFinite(progress.Percent)
+                ? Math.Clamp(progress.Percent, 0.0, 100.0)
+                : 0.0;
             _flashbackExportLastProgressUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         }
     }
