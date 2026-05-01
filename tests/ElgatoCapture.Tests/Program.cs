@@ -427,6 +427,9 @@ static partial class Program
                 "FlashbackBufferManager segment lookup returns correct file for position",
                 FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment),
             await RunCheckAsync(
+                "FlashbackBufferManager valid segment lookup skips missing files",
+                FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles),
+            await RunCheckAsync(
                 "FlashbackBufferManager GetNextSegmentFile walks forward through segments",
                 FlashbackBufferManager_GetNextSegmentFile_WalksForward),
             await RunCheckAsync(
@@ -2278,6 +2281,31 @@ static partial class Program
         // Position 20s → not in any completed segment → falls back to active
         var result3 = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(20) }) as string;
         AssertContains(result3!, "fb_test_0003.ts");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var missingOldest = Path.Combine(tempDir, "missing-oldest.ts");
+        var existingFallback = Path.Combine(tempDir, "existing-fallback.ts");
+        File.WriteAllText(existingFallback, "segment");
+
+        AddCompletedSegment(manager, missingOldest, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 500);
+        AddCompletedSegment(manager, existingFallback, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+
+        var method = manager.GetType().GetMethod("GetValidSegmentFileForPosition")!;
+
+        var fallback = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(2) }) as string;
+        AssertEqual(existingFallback, fallback!, "Missing target should fall back to first existing completed segment");
+
+        File.Delete(existingFallback);
+        var missingAll = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(2) }) as string;
+        AssertEqual(null, missingAll, "Missing completed and active segments should return null");
 
         return Task.CompletedTask;
     }

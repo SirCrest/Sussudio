@@ -778,10 +778,18 @@ internal sealed class FlashbackBufferManager : IDisposable
             var path = GetSegmentFileForPositionCore(absolutePts);
             if (path != null && File.Exists(path))
                 return path;
-            // If the target segment was evicted, return the oldest valid segment
-            if (_completedSegments.Count > 0 && File.Exists(_completedSegments[0].Path))
-                return _completedSegments[0].Path;
-            return _activeSegmentPath;
+
+            // If the target segment was externally removed before the index caught up,
+            // return the oldest file that is still openable instead of a stale path.
+            foreach (var seg in _completedSegments)
+            {
+                if (File.Exists(seg.Path))
+                    return seg.Path;
+            }
+
+            return _activeSegmentPath != null && File.Exists(_activeSegmentPath)
+                ? _activeSegmentPath
+                : null;
         }
     }
 
