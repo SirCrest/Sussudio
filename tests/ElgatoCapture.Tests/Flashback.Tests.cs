@@ -440,7 +440,7 @@ static partial class Program
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(sourceText, "if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FinalizeResult.Failure(outputPath, outputPathFailure);\n        }");
+        AssertContains(sourceText, "if (!TryValidateOutputPath(outputPath, out var normalizedOutputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FinalizeResult.Failure(outputPath, outputPathFailure);\n        }\n        outputPath = normalizedOutputPath;");
         AssertContains(sourceText, "if (!TryValidateExportRange(inPoint, outPoint, out var rangeFailure))");
         AssertContains(sourceText, "private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)");
         AssertContains(sourceText, "failureMessage = \"Flashback export failed: in point must not be negative.\";");
@@ -448,7 +448,8 @@ static partial class Program
         AssertContains(sourceText, "var invalidSegmentIndex = FindInvalidSegmentPathIndex(segments);");
         AssertContains(sourceText, "Flashback export failed: segment path at index {invalidSegmentIndex} is empty.");
         AssertContains(sourceText, "private static int FindInvalidSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
-        AssertContains(sourceText, "private static bool TryValidateOutputDirectory(string outputPath, out string failureMessage)");
+        AssertContains(sourceText, "private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)");
+        AssertContains(sourceText, "fullOutputPath = Path.GetFullPath(outputPath);");
         AssertContains(sourceText, "failureMessage = \"Flashback export failed: output path is required.\";");
         AssertContains(sourceText, "catch (Exception ex)\n        {\n            failureMessage = $\"Flashback export failed: output path is invalid '{outputPath}'.\";\n            Logger.Log($\"FLASHBACK_EXPORT_PATH_VALIDATE_WARN path='{outputPath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            return false;\n        }");
         AssertContains(sourceText, "failureMessage = $\"Flashback export failed: output path is invalid '{outputPath}'.\";");
@@ -456,6 +457,18 @@ static partial class Program
         AssertContains(sourceText, "if (Directory.Exists(fullOutputPath))\n        {\n            failureMessage = $\"Flashback export failed: output path is a directory '{outputPath}'.\";\n            return false;\n        }");
         AssertContains(sourceText, "FLASHBACK_EXPORT_PATH_COMPARE_WARN");
         AssertContains(sourceText, "FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN");
+
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var validateOutputPath = exporterType.GetMethod("TryValidateOutputPath", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("TryValidateOutputPath not found.");
+        var args = new object?[] { ".\\flashback-relative-output.mp4", null, null };
+        var isValid = (bool)validateOutputPath.Invoke(null, args)!;
+        AssertEqual(true, isValid, "Relative output path validates when current directory exists");
+        AssertEqual(
+            Path.GetFullPath(".\\flashback-relative-output.mp4"),
+            (string)args[1]!,
+            "Relative output path is normalized to full path");
+        AssertEqual(string.Empty, (string)args[2]!, "Valid output path has no failure message");
 
         return Task.CompletedTask;
     }

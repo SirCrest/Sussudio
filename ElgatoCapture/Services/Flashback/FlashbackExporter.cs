@@ -246,11 +246,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, rangeFailure);
         }
 
-        if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))
+        if (!TryValidateOutputPath(outputPath, out var normalizedOutputPath, out var outputPathFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'");
             return FinalizeResult.Failure(outputPath, outputPathFailure);
         }
+        outputPath = normalizedOutputPath;
 
         if (IsSamePath(inputTsPath, outputPath))
         {
@@ -596,11 +597,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
-        if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))
+        if (!TryValidateOutputPath(outputPath, out var normalizedOutputPath, out var outputPathFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'");
             return FinalizeResult.Failure(outputPath, outputPathFailure);
         }
+        outputPath = normalizedOutputPath;
 
         if (segments.Any(segment => IsSamePath(segment.Path, outputPath)))
         {
@@ -1734,15 +1736,15 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         return true;
     }
 
-    private static bool TryValidateOutputDirectory(string outputPath, out string failureMessage)
+    private static bool TryValidateOutputPath(string outputPath, out string fullOutputPath, out string failureMessage)
     {
+        fullOutputPath = string.Empty;
         if (string.IsNullOrWhiteSpace(outputPath))
         {
             failureMessage = "Flashback export failed: output path is required.";
             return false;
         }
 
-        string fullOutputPath;
         try
         {
             fullOutputPath = Path.GetFullPath(outputPath);
