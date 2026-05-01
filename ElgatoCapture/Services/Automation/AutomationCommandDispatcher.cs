@@ -416,7 +416,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 {
                     var enabled = RequireBool(payload, "enabled");
                     await _viewModel.SetRecordingEnabledAsync(enabled, cancellationToken).ConfigureAwait(false);
-                    var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(CancellationToken.None).ConfigureAwait(false);
+                    var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);
                     return CreateResponse(correlationId, $"Recording {(enabled ? "started" : "stopped")}.", snapshot: snapshot);
                 }
 

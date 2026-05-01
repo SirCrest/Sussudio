@@ -57,7 +57,7 @@ static partial class Program
         AssertContains(captureText, "await _sessionCoordinator.StopRecordingAsync(cancellationToken);");
         AssertContains(automationText, "return SetRecordingDesiredStateAsync(enabled, cancellationToken);");
         AssertContains(dispatcherText, "return CreateResponse(correlationId, $\"Recording {(enabled ? \"started\" : \"stopped\")}.\"");
-        AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(CancellationToken.None).ConfigureAwait(false);");
+        AssertContains(dispatcherText, "var snapshot = await _diagnosticsHub.RefreshSnapshotNowAsync(cancellationToken).ConfigureAwait(false);");
         AssertContains(dispatcherText, "snapshot: snapshot");
 
         return Task.CompletedTask;
