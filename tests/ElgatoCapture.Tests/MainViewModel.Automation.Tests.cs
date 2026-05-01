@@ -344,10 +344,13 @@ static partial class Program
         AssertContains(captureServiceText, "private static TimeSpan ClampFlashbackBufferPosition(TimeSpan position, TimeSpan bufferedDuration)");
         AssertContains(captureServiceText, "private static TimeSpan AddFlashbackPtsOffsetOrMax(TimeSpan position, TimeSpan offset)");
         AssertContains(captureServiceText, "return position > TimeSpan.MaxValue - offset\n            ? TimeSpan.MaxValue\n            : position + offset;");
-        AssertContains(captureServiceText, "var totalSegments = Math.Max(0, progress.TotalSegments);");
+        AssertContains(captureServiceText, "var rawTotalSegments = progress.TotalSegments;");
+        AssertContains(captureServiceText, "var totalSegments = Math.Max(0, rawTotalSegments);");
         AssertContains(captureServiceText, "if (totalSegments > 0 && segmentsProcessed > totalSegments)");
-        AssertContains(captureServiceText, "Math.Clamp(progress.Percent, 0.0, 100.0)");
-        AssertContains(captureServiceText, ": 0.0;");
+        AssertContains(captureServiceText, "Math.Clamp(rawPercent, 0.0, 100.0)");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_PROGRESS_NORMALIZED");
+        AssertContains(captureServiceText, "raw_segments={rawSegmentsProcessed}/{rawTotalSegments}");
+        AssertContains(captureServiceText, "raw_percent={rawPercent:0.###} percent={percent:0.###}");
         AssertContains(captureServiceText, "try\n            {\n                innerProgress?.Report(progress);\n            }\n            catch (Exception ex)\n            {\n                Logger.Log($\"FLASHBACK_EXPORT_PROGRESS_FORWARD_WARN id={exportId} type={ex.GetType().Name} msg='{ex.Message}'\");\n            }");
 
         var flashbackExporterText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
