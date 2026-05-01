@@ -288,6 +288,9 @@ static partial class Program
                 "MCP diagnostic session tool records snapshot artifacts",
                 McpDiagnosticSessionTool_RecordsSnapshotArtifacts),
             await RunCheckAsync(
+                "MCP performance timeline exposes D3D P99 stage timing",
+                McpPerformanceTimelineTool_ExposesD3DP99StageTiming),
+            await RunCheckAsync(
                 "MCP wait tool routes condition waits",
                 McpWaitTools_RouteConditionWaits),
             await RunCheckAsync(

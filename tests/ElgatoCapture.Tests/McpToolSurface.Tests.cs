@@ -678,6 +678,23 @@ static partial class Program
         }
     }
 
+    private static Task McpPerformanceTimelineTool_ExposesD3DP99StageTiming()
+    {
+        var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
+
+        AssertContains(source, "PreviewD3DInputUploadCpuP99Ms");
+        AssertContains(source, "PreviewD3DRenderSubmitCpuP99Ms");
+        AssertContains(source, "PreviewD3DPresentCallP99Ms");
+        AssertContains(source, "PreviewD3DTotalFrameCpuP99Ms");
+        AssertContains(source, "InP99 | RsP99 | PrP99 | TotP99");
+        AssertContains(source, "D3D Input P99:");
+        AssertContains(source, "D3D Render P99:");
+        AssertContains(source, "D3D Present P99:");
+        AssertContains(source, "D3D Total P99:");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task McpWaitTools_RouteConditionWaits()
     {
         var pipeName = NewMcpToolPipeName("wait");
