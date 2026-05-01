@@ -1806,8 +1806,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         var flashbackBufferManager = _flashbackBufferManager;
         var flashbackExporter = _flashbackExporter;
         var flashbackPlaybackController = _flashbackPlaybackController;
+        _flashbackPlaybackController = null;
 
-        // Do NOT null the fields yet — the encoding loop may still be running
+        // Do NOT null the sink/buffer/exporter fields yet; the encoding loop may still be running
         // and code that checks _flashbackSink (e.g. IsFlashbackActive) must see
         // a consistent state until the sink is fully drained and stopped.
 

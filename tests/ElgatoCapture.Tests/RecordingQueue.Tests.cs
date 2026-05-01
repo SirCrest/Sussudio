@@ -279,6 +279,7 @@ static partial class Program
             "private async Task DisposeFlashbackPreviewBackendCoreAsync",
             "private async Task CycleFlashbackBufferAsync");
         AssertOccursBefore(disposeFlashbackPreviewBackendCore, "cancellationToken.ThrowIfCancellationRequested();", "flashbackBufferManager.PurgeAllSegments();");
+        AssertOccursBefore(disposeFlashbackPreviewBackendCore, "_flashbackPlaybackController = null;", "flashbackPlaybackController.GoLive();");
         AssertContains(disposeFlashbackPreviewBackendCore, "FLASHBACK_PREVIEW_DETACH_WARN target=microphone");
         AssertContains(disposeFlashbackPreviewBackendCore, "FLASHBACK_PREVIEW_DETACH_WARN target=audio");
         AssertContains(disposeFlashbackPreviewBackendCore, "FLASHBACK_PREVIEW_DETACH_WARN target=video");
