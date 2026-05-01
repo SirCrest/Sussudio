@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -2069,12 +2070,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (position.HasValue)
         {
-            return $" pos_ms={(long)position.Value.TotalMilliseconds}";
+            return $" pos_ms={position.Value.TotalMilliseconds.ToString("0.###", CultureInfo.InvariantCulture)}";
         }
 
         if (delta.HasValue)
         {
-            return $" delta_ms={(long)delta.Value.TotalMilliseconds}";
+            return $" delta_ms={delta.Value.TotalMilliseconds.ToString("0.###", CultureInfo.InvariantCulture)}";
         }
 
         return string.Empty;

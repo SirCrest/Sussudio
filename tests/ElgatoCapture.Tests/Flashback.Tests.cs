@@ -1737,8 +1737,8 @@ static partial class Program
         AssertContains(sourceText, "SetLastCommandFailure($\"{failure}:{kind}{detail}\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}{detail}\");");
         AssertContains(sourceText, "private static string FormatCommandDetail(PlaybackCommand command)");
-        AssertContains(sourceText, "return $\" pos_ms={(long)position.Value.TotalMilliseconds}\";");
-        AssertContains(sourceText, "return $\" delta_ms={(long)delta.Value.TotalMilliseconds}\";");
+        AssertContains(sourceText, "return $\" pos_ms={position.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
+        AssertContains(sourceText, "return $\" delta_ms={delta.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "private void SetLastCommandFailure(string failure)\n    {\n        _lastCommandFailure = failure;\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());\n    }");
         AssertContains(sourceText, "private void ClearLastCommandFailure()\n    {\n        _lastCommandFailure = string.Empty;\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);\n    }");
         AssertContains(sourceText, "private void TrackCoalescedScrubUpdate()");
