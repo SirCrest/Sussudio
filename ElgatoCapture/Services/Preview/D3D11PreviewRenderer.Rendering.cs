@@ -537,7 +537,7 @@ internal sealed partial class D3D11PreviewRenderer
         TrackFramePresented(frame, presentEnd);
         var presentIntervalMs = TrackPresentCadence();
         TrackDxgiFrameStatistics();
-        TrackPipelineLatency(frame.ArrivalTick);
+        TrackPipelineLatency(frame.ArrivalTick, presentEnd);
         var totalTicks = Stopwatch.GetTimestamp() - totalStart;
         TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, totalTicks);
         RecordSlowFrameDiagnostic(frame, presentIntervalMs, inputUploadTicks, renderTicks, presentTicks, totalTicks, presentEnd);

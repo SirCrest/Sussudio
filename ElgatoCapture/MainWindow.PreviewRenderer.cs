@@ -182,6 +182,7 @@ public sealed partial class MainWindow
         var d3dFrameOwnership = d3d?.GetFrameOwnershipMetrics();
         var d3dFrameStats = d3d?.GetDxgiFrameStatisticsMetrics();
         var d3dFrameLatencyWait = d3d?.GetFrameLatencyWaitMetrics();
+        var d3dPipelineLatency = d3d?.GetPipelineLatencyMetrics();
         var d3dSlowFrames = d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>();
         if (gpuActive)
         {
@@ -295,6 +296,11 @@ public sealed partial class MainWindow
             D3DTotalFrameCpuP95Ms = d3dRenderCpuTiming?.TotalFrame.P95Ms ?? 0,
             D3DTotalFrameCpuP99Ms = d3dRenderCpuTiming?.TotalFrame.P99Ms ?? 0,
             D3DTotalFrameCpuMaxMs = d3dRenderCpuTiming?.TotalFrame.MaxMs ?? 0,
+            D3DPipelineLatencySampleCount = d3dPipelineLatency?.SampleCount ?? 0,
+            D3DPipelineLatencyAvgMs = d3dPipelineLatency?.AverageMs ?? 0,
+            D3DPipelineLatencyP95Ms = d3dPipelineLatency?.P95Ms ?? 0,
+            D3DPipelineLatencyP99Ms = d3dPipelineLatency?.P99Ms ?? 0,
+            D3DPipelineLatencyMaxMs = d3dPipelineLatency?.MaxMs ?? 0,
             D3DFrameLatencyWaitEnabled = d3dFrameLatencyWait?.Enabled ?? false,
             D3DFrameLatencyWaitHandleActive = d3dFrameLatencyWait?.HandleActive ?? false,
             D3DFrameLatencyWaitCallCount = d3dFrameLatencyWait?.CallCount ?? 0,
@@ -329,13 +335,14 @@ public sealed partial class MainWindow
             D3DLastRenderedQpc = d3dFrameOwnership?.LastRenderedQpc ?? 0,
             D3DLastRenderedUtcUnixMs = d3dFrameOwnership?.LastRenderedUtcUnixMs ?? 0,
             D3DLastRenderedSchedulerToPresentMs = d3dFrameOwnership?.LastRenderedSchedulerToPresentMs ?? 0,
+            D3DLastRenderedPipelineLatencyMs = d3dFrameOwnership?.LastRenderedPipelineLatencyMs ?? 0,
             D3DLastDroppedPreviewPresentId = d3dFrameOwnership?.LastDroppedPreviewPresentId ?? 0,
             D3DLastDroppedSourceSequenceNumber = d3dFrameOwnership?.LastDroppedSourceSequenceNumber ?? -1,
             D3DLastDroppedQpc = d3dFrameOwnership?.LastDroppedQpc ?? 0,
             D3DLastDroppedUtcUnixMs = d3dFrameOwnership?.LastDroppedUtcUnixMs ?? 0,
             D3DLastDropReason = d3dFrameOwnership?.LastDropReason ?? string.Empty,
             D3DRecentSlowFrames = d3dSlowFrames,
-            EstimatedPipelineLatencyMs = d3d?.GetEstimatedPipelineLatencyMs() ?? 0,
+            EstimatedPipelineLatencyMs = d3dPipelineLatency?.AverageMs ?? 0,
             GpuPlaybackState = gpuPlaybackState,
             GpuNaturalVideoWidth = gpuNaturalVideoWidth,
             GpuNaturalVideoHeight = gpuNaturalVideoHeight,

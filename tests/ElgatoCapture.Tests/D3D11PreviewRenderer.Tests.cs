@@ -159,6 +159,7 @@ static partial class Program
         AssertContains(source, "ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL");
         AssertContains(source, "private long _dxgiFrameStatisticsFrameCounter;");
         AssertContains(source, "private long _dxgiFrameStatisticsLastSampleFrameCounter;");
+        AssertContains(source, "public PipelineLatencyMetrics GetPipelineLatencyMetrics()");
         AssertContains(source, "var frameCounter = Interlocked.Increment(ref _dxgiFrameStatisticsFrameCounter);");
         AssertContains(source, "frameCounter % _dxgiFrameStatisticsSampleIntervalFrames != 0");
         AssertContains(source, "_dxgiFrameStatisticsLastSampleFrameCounter = frameCounter;");
@@ -178,6 +179,7 @@ static partial class Program
         AssertContains(renderSource, "if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)\n                    {\n                        TrackFrameDropped(frame, \"render-skipped\");\n                    }");
         AssertNotNull(rendererType.GetProperty("SwapChainAddress", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.SwapChainAddress");
         AssertNotNull(rendererType.GetMethod("GetRenderCpuTimingMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetRenderCpuTimingMetrics");
+        AssertNotNull(rendererType.GetMethod("GetPipelineLatencyMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetPipelineLatencyMetrics");
         AssertNotNull(rendererType.GetMethod("GetFrameOwnershipMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetFrameOwnershipMetrics");
         AssertNotNull(rendererType.GetMethod("GetDxgiFrameStatisticsMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetDxgiFrameStatisticsMetrics");
         AssertNotNull(rendererType.GetMethod("TryGetDisplayClock", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.TryGetDisplayClock");
@@ -200,6 +202,12 @@ static partial class Program
             AssertNotNull(renderTimingType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"RenderCpuTimingMetrics.{prop}");
         }
 
+        var pipelineLatencyType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+PipelineLatencyMetrics");
+        foreach (var prop in new[] { "SampleCount", "AverageMs", "P95Ms", "P99Ms", "MaxMs" })
+        {
+            AssertNotNull(pipelineLatencyType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PipelineLatencyMetrics.{prop}");
+        }
+
         var ownershipMetricsType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+FrameOwnershipMetrics");
         foreach (var prop in new[]
                  {
@@ -210,6 +218,7 @@ static partial class Program
                      "LastRenderedSourceSequenceNumber",
                      "LastRenderedUtcUnixMs",
                      "LastRenderedSchedulerToPresentMs",
+                     "LastRenderedPipelineLatencyMs",
                      "LastDroppedPreviewPresentId",
                      "LastDroppedSourceSequenceNumber",
                      "LastDroppedUtcUnixMs",
@@ -258,6 +267,11 @@ static partial class Program
                      "D3DPresentCallP99Ms",
                      "D3DTotalFrameCpuP95Ms",
                      "D3DTotalFrameCpuP99Ms",
+                     "D3DPipelineLatencySampleCount",
+                     "D3DPipelineLatencyAvgMs",
+                     "D3DPipelineLatencyP95Ms",
+                     "D3DPipelineLatencyP99Ms",
+                     "D3DPipelineLatencyMaxMs",
                      "D3DFrameLatencyWaitEnabled",
                      "D3DFrameLatencyWaitHandleActive",
                      "D3DFrameLatencyWaitCallCount",
@@ -290,6 +304,7 @@ static partial class Program
                      "D3DLastRenderedSourceSequenceNumber",
                      "D3DLastRenderedUtcUnixMs",
                      "D3DLastRenderedSchedulerToPresentMs",
+                     "D3DLastRenderedPipelineLatencyMs",
                      "D3DLastDroppedPreviewPresentId",
                      "D3DLastDroppedSourceSequenceNumber",
                      "D3DLastDroppedUtcUnixMs",
@@ -313,6 +328,7 @@ static partial class Program
                      "PresentCallMs",
                      "TotalFrameCpuMs",
                      "SchedulerToPresentMs",
+                     "PipelineLatencyMs",
                      "ExpectedIntervalMs",
                      "DiagnosticThresholdMs",
                      "WorstOverBudgetMs",
@@ -346,6 +362,11 @@ static partial class Program
                      "PreviewD3DPresentCallP99Ms",
                      "PreviewD3DTotalFrameCpuP95Ms",
                      "PreviewD3DTotalFrameCpuP99Ms",
+                     "PreviewD3DPipelineLatencySampleCount",
+                     "PreviewD3DPipelineLatencyAvgMs",
+                     "PreviewD3DPipelineLatencyP95Ms",
+                     "PreviewD3DPipelineLatencyP99Ms",
+                     "PreviewD3DPipelineLatencyMaxMs",
                      "PreviewD3DFrameLatencyWaitEnabled",
                      "PreviewD3DFrameLatencyWaitHandleActive",
                      "PreviewD3DFrameLatencyWaitCallCount",
@@ -380,6 +401,7 @@ static partial class Program
                      "PreviewD3DLastRenderedSourceSequenceNumber",
                      "PreviewD3DLastRenderedUtcUnixMs",
                      "PreviewD3DLastRenderedSchedulerToPresentMs",
+                     "PreviewD3DLastRenderedPipelineLatencyMs",
                      "PreviewD3DLastDroppedPreviewPresentId",
                      "PreviewD3DLastDroppedSourceSequenceNumber",
                      "PreviewD3DLastDroppedUtcUnixMs",
@@ -414,12 +436,16 @@ static partial class Program
                      "PreviewD3DRenderSubmitCpuP99Ms",
                      "PreviewD3DPresentCallP99Ms",
                      "PreviewD3DTotalFrameCpuP99Ms",
+                     "PreviewD3DPipelineLatencyP95Ms",
+                     "PreviewD3DPipelineLatencyP99Ms",
+                     "PreviewD3DPipelineLatencyMaxMs",
                      "PreviewD3DFrameLatencyWaitTimeoutCount",
                      "PreviewD3DFrameLatencyWaitP95Ms",
                      "PreviewD3DFrameLatencyWaitMaxMs",
                      "PreviewD3DFrameStatsRecentMissedRefreshCount",
                      "PreviewD3DFrameStatsRecentFailureCount",
                      "PreviewD3DLastRenderedSchedulerToPresentMs",
+                     "PreviewD3DLastRenderedPipelineLatencyMs",
                      "PreviewD3DLastDropReason",
                      "FlashbackPlaybackState",
                      "FlashbackPlaybackP99FrameMs",

@@ -109,6 +109,7 @@ public sealed class PreviewSlowFrameDiagnostic
     public double PresentCallMs { get; init; }
     public double TotalFrameCpuMs { get; init; }
     public double SchedulerToPresentMs { get; init; }
+    public double PipelineLatencyMs { get; init; }
     public double ExpectedIntervalMs { get; init; }
     public double DiagnosticThresholdMs { get; init; }
     public double WorstOverBudgetMs { get; init; }
@@ -515,6 +516,11 @@ public sealed class AutomationSnapshot
     public double PreviewD3DTotalFrameCpuP95Ms { get; init; }
     public double PreviewD3DTotalFrameCpuP99Ms { get; init; }
     public double PreviewD3DTotalFrameCpuMaxMs { get; init; }
+    public int PreviewD3DPipelineLatencySampleCount { get; init; }
+    public double PreviewD3DPipelineLatencyAvgMs { get; init; }
+    public double PreviewD3DPipelineLatencyP95Ms { get; init; }
+    public double PreviewD3DPipelineLatencyP99Ms { get; init; }
+    public double PreviewD3DPipelineLatencyMaxMs { get; init; }
     public bool PreviewD3DFrameLatencyWaitEnabled { get; init; }
     public bool PreviewD3DFrameLatencyWaitHandleActive { get; init; }
     public long PreviewD3DFrameLatencyWaitCallCount { get; init; }
@@ -551,6 +557,7 @@ public sealed class AutomationSnapshot
     public long PreviewD3DLastRenderedQpc { get; init; }
     public long PreviewD3DLastRenderedUtcUnixMs { get; init; }
     public double PreviewD3DLastRenderedSchedulerToPresentMs { get; init; }
+    public double PreviewD3DLastRenderedPipelineLatencyMs { get; init; }
     public long PreviewD3DLastDroppedPreviewPresentId { get; init; }
     public long PreviewD3DLastDroppedSourceSequenceNumber { get; init; }
     public long PreviewD3DLastDroppedQpc { get; init; }
@@ -954,12 +961,16 @@ public sealed class PerformanceTimelineEntry
     public double PreviewD3DRenderSubmitCpuP99Ms { get; init; }
     public double PreviewD3DPresentCallP99Ms { get; init; }
     public double PreviewD3DTotalFrameCpuP99Ms { get; init; }
+    public double PreviewD3DPipelineLatencyP95Ms { get; init; }
+    public double PreviewD3DPipelineLatencyP99Ms { get; init; }
+    public double PreviewD3DPipelineLatencyMaxMs { get; init; }
     public long PreviewD3DFrameLatencyWaitTimeoutCount { get; init; }
     public double PreviewD3DFrameLatencyWaitP95Ms { get; init; }
     public double PreviewD3DFrameLatencyWaitMaxMs { get; init; }
     public long PreviewD3DFrameStatsRecentMissedRefreshCount { get; init; }
     public long PreviewD3DFrameStatsRecentFailureCount { get; init; }
     public double PreviewD3DLastRenderedSchedulerToPresentMs { get; init; }
+    public double PreviewD3DLastRenderedPipelineLatencyMs { get; init; }
     public string PreviewD3DLastDropReason { get; init; } = string.Empty;
     public string FlashbackPlaybackState { get; init; } = "N/A";
     public double FlashbackPlaybackObservedFps { get; init; }
@@ -1186,6 +1197,11 @@ public sealed class PreviewRuntimeSnapshot
     public double D3DTotalFrameCpuP95Ms { get; init; }
     public double D3DTotalFrameCpuP99Ms { get; init; }
     public double D3DTotalFrameCpuMaxMs { get; init; }
+    public int D3DPipelineLatencySampleCount { get; init; }
+    public double D3DPipelineLatencyAvgMs { get; init; }
+    public double D3DPipelineLatencyP95Ms { get; init; }
+    public double D3DPipelineLatencyP99Ms { get; init; }
+    public double D3DPipelineLatencyMaxMs { get; init; }
     public bool D3DFrameLatencyWaitEnabled { get; init; }
     public bool D3DFrameLatencyWaitHandleActive { get; init; }
     public long D3DFrameLatencyWaitCallCount { get; init; }
@@ -1220,6 +1236,7 @@ public sealed class PreviewRuntimeSnapshot
     public long D3DLastRenderedQpc { get; init; }
     public long D3DLastRenderedUtcUnixMs { get; init; }
     public double D3DLastRenderedSchedulerToPresentMs { get; init; }
+    public double D3DLastRenderedPipelineLatencyMs { get; init; }
     public long D3DLastDroppedPreviewPresentId { get; init; }
     public long D3DLastDroppedSourceSequenceNumber { get; init; }
     public long D3DLastDroppedQpc { get; init; }

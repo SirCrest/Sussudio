@@ -70,12 +70,15 @@ public static class PerformanceTimelineTools
                 PreviewD3DRenderSubmitP99Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DRenderSubmitCpuP99Ms"),
                 PreviewD3DPresentP99Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DPresentCallP99Ms"),
                 PreviewD3DTotalP99Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DTotalFrameCpuP99Ms"),
+                PreviewD3DPipelineP99Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DPipelineLatencyP99Ms"),
+                PreviewD3DPipelineMaxMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DPipelineLatencyMaxMs"),
                 PreviewD3DFrameLatencyWaitTimeouts = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameLatencyWaitTimeoutCount"),
                 PreviewD3DFrameLatencyWaitP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DFrameLatencyWaitP95Ms"),
                 PreviewD3DFrameLatencyWaitMaxMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DFrameLatencyWaitMaxMs"),
                 PreviewD3DRecentMissed = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentMissedRefreshCount"),
                 PreviewD3DRecentFailures = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentFailureCount"),
                 PreviewD3DSchedulerToPresentMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DLastRenderedSchedulerToPresentMs"),
+                PreviewD3DLastPipelineLatencyMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DLastRenderedPipelineLatencyMs"),
                 PreviewD3DLastDropReason = AutomationSnapshotFormatter.Get(item, "PreviewD3DLastDropReason"),
                 FlashbackPlaybackState = AutomationSnapshotFormatter.Get(item, "FlashbackPlaybackState"),
                 FlashbackPlaybackObservedFps = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackObservedFps"),
@@ -234,9 +237,11 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"D3D Render P99: {first.PreviewD3DRenderSubmitP99Ms:F1}ms -> {last.PreviewD3DRenderSubmitP99Ms:F1}ms (delta: {last.PreviewD3DRenderSubmitP99Ms - first.PreviewD3DRenderSubmitP99Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"D3D Present P99:{first.PreviewD3DPresentP99Ms:F1}ms -> {last.PreviewD3DPresentP99Ms:F1}ms (delta: {last.PreviewD3DPresentP99Ms - first.PreviewD3DPresentP99Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"D3D Total P99:  {first.PreviewD3DTotalP99Ms:F1}ms -> {last.PreviewD3DTotalP99Ms:F1}ms (delta: {last.PreviewD3DTotalP99Ms - first.PreviewD3DTotalP99Ms:+0.0;-0.0;0.0}ms)");
+            builder.AppendLine($"D3D Pipe P99:   {first.PreviewD3DPipelineP99Ms:F1}ms -> {last.PreviewD3DPipelineP99Ms:F1}ms (max latest={last.PreviewD3DPipelineMaxMs:F1}ms)");
             builder.AppendLine($"D3D P99 Bottleneck: {FormatD3DP99Bottleneck(first)} -> {FormatD3DP99Bottleneck(last)}");
             builder.AppendLine($"D3D Wait P95:   {first.PreviewD3DFrameLatencyWaitP95Ms:F1}ms -> {last.PreviewD3DFrameLatencyWaitP95Ms:F1}ms (timeouts: {first.PreviewD3DFrameLatencyWaitTimeouts} -> {last.PreviewD3DFrameLatencyWaitTimeouts}, max latest={last.PreviewD3DFrameLatencyWaitMaxMs:F1}ms)");
             builder.AppendLine($"D3D Sched->Prs: {first.PreviewD3DSchedulerToPresentMs:F1}ms -> {last.PreviewD3DSchedulerToPresentMs:F1}ms (latest rendered frame)");
+            builder.AppendLine($"D3D Last Pipe:  {first.PreviewD3DLastPipelineLatencyMs:F1}ms -> {last.PreviewD3DLastPipelineLatencyMs:F1}ms (latest rendered frame)");
             builder.AppendLine($"D3D Missed:     {first.PreviewD3DRecentMissed} -> {last.PreviewD3DRecentMissed} (latest-window delta: {last.PreviewD3DRecentMissed - first.PreviewD3DRecentMissed:+0;-0;0})");
             builder.AppendLine($"D3D Stat Fails: {first.PreviewD3DRecentFailures} -> {last.PreviewD3DRecentFailures} (latest-window delta: {last.PreviewD3DRecentFailures - first.PreviewD3DRecentFailures:+0;-0;0})");
             builder.AppendLine($"D3D Last Drop:  {FormatOptional(last.PreviewD3DLastDropReason)}");
@@ -539,12 +544,15 @@ public static class PerformanceTimelineTools
         public double PreviewD3DRenderSubmitP99Ms { get; init; }
         public double PreviewD3DPresentP99Ms { get; init; }
         public double PreviewD3DTotalP99Ms { get; init; }
+        public double PreviewD3DPipelineP99Ms { get; init; }
+        public double PreviewD3DPipelineMaxMs { get; init; }
         public long PreviewD3DFrameLatencyWaitTimeouts { get; init; }
         public double PreviewD3DFrameLatencyWaitP95Ms { get; init; }
         public double PreviewD3DFrameLatencyWaitMaxMs { get; init; }
         public long PreviewD3DRecentMissed { get; init; }
         public long PreviewD3DRecentFailures { get; init; }
         public double PreviewD3DSchedulerToPresentMs { get; init; }
+        public double PreviewD3DLastPipelineLatencyMs { get; init; }
         public string PreviewD3DLastDropReason { get; init; } = string.Empty;
         public string FlashbackPlaybackState { get; init; } = string.Empty;
         public double FlashbackPlaybackObservedFps { get; init; }

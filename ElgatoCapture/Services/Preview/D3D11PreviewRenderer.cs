@@ -327,6 +327,13 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         CpuStageTimingMetrics PresentCall,
         CpuStageTimingMetrics TotalFrame);
 
+    public readonly record struct PipelineLatencyMetrics(
+        int SampleCount,
+        double AverageMs,
+        double P95Ms,
+        double P99Ms,
+        double MaxMs);
+
     public readonly record struct FrameLatencyWaitMetrics(
         bool Enabled,
         bool HandleActive,
@@ -348,6 +355,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         long LastRenderedQpc,
         long LastRenderedUtcUnixMs,
         double LastRenderedSchedulerToPresentMs,
+        double LastRenderedPipelineLatencyMs,
         long LastDroppedPreviewPresentId,
         long LastDroppedSourceSequenceNumber,
         long LastDroppedQpc,
@@ -474,6 +482,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private long _lastRenderedQpc;
     private long _lastRenderedUtcUnixMs;
     private long _lastRenderedSchedulerToPresentTicks;
+    private long _lastRenderedPipelineLatencyTicks;
     private long _lastDroppedPreviewPresentId;
     private long _lastDroppedSourceSequenceNumber = -1;
     private long _lastDroppedQpc;
@@ -1334,22 +1343,26 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     public double GetEstimatedPipelineLatencyMs()
     {
+        return GetPipelineLatencyMetrics().AverageMs;
+    }
+
+    public PipelineLatencyMetrics GetPipelineLatencyMetrics()
+    {
         lock (_pipelineLatencyLock)
         {
             if (_pipelineLatencyCount <= 0)
             {
-                return 0;
+                return default;
             }
 
-            var sum = 0.0;
-            for (var i = 0; i < _pipelineLatencyCount; i++)
-            {
-                var idx = (_pipelineLatencyIndex - _pipelineLatencyCount + i + _pipelineLatencyWindowMs.Length)
-                    % _pipelineLatencyWindowMs.Length;
-                sum += _pipelineLatencyWindowMs[idx];
-            }
-
-            return sum / _pipelineLatencyCount;
+            var samples = CopyRecentRing(_pipelineLatencyWindowMs, _pipelineLatencyCount, _pipelineLatencyIndex, _pipelineLatencyCount);
+            var timing = SummarizeCpuStageTiming(samples);
+            return new PipelineLatencyMetrics(
+                timing.SampleCount,
+                timing.AverageMs,
+                timing.P95Ms,
+                timing.P99Ms,
+                timing.MaxMs);
         }
     }
 
@@ -1414,6 +1427,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     public FrameOwnershipMetrics GetFrameOwnershipMetrics()
     {
         var schedulerToPresentTicks = Interlocked.Read(ref _lastRenderedSchedulerToPresentTicks);
+        var pipelineLatencyTicks = Interlocked.Read(ref _lastRenderedPipelineLatencyTicks);
         return new FrameOwnershipMetrics(
             LastSubmittedPreviewPresentId: Interlocked.Read(ref _lastSubmittedPreviewPresentId),
             LastSubmittedSourceSequenceNumber: Interlocked.Read(ref _lastSubmittedSourceSequenceNumber),
@@ -1424,6 +1438,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             LastRenderedQpc: Interlocked.Read(ref _lastRenderedQpc),
             LastRenderedUtcUnixMs: Interlocked.Read(ref _lastRenderedUtcUnixMs),
             LastRenderedSchedulerToPresentMs: schedulerToPresentTicks > 0 ? TicksToMs(schedulerToPresentTicks) : 0,
+            LastRenderedPipelineLatencyMs: pipelineLatencyTicks > 0 ? TicksToMs(pipelineLatencyTicks) : 0,
             LastDroppedPreviewPresentId: Interlocked.Read(ref _lastDroppedPreviewPresentId),
             LastDroppedSourceSequenceNumber: Interlocked.Read(ref _lastDroppedSourceSequenceNumber),
             LastDroppedQpc: Interlocked.Read(ref _lastDroppedQpc),
@@ -1493,7 +1508,11 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         var schedulerToPresentTicks = frame.SchedulerSubmitTick > 0 && presentReturnTick > frame.SchedulerSubmitTick
             ? presentReturnTick - frame.SchedulerSubmitTick
             : 0;
+        var pipelineLatencyTicks = frame.ArrivalTick > 0 && presentReturnTick > frame.ArrivalTick
+            ? presentReturnTick - frame.ArrivalTick
+            : 0;
         Interlocked.Exchange(ref _lastRenderedSchedulerToPresentTicks, schedulerToPresentTicks);
+        Interlocked.Exchange(ref _lastRenderedPipelineLatencyTicks, pipelineLatencyTicks);
     }
 
     private void TrackFrameDropped(PendingFrame frame, string reason)
@@ -1647,14 +1666,14 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
-    private void TrackPipelineLatency(long arrivalTick)
+    private void TrackPipelineLatency(long arrivalTick, long presentEndTick)
     {
-        if (arrivalTick <= 0)
+        if (arrivalTick <= 0 || presentEndTick <= arrivalTick)
         {
             return;
         }
 
-        var latencyMs = (Stopwatch.GetTimestamp() - arrivalTick) * 1000.0 / Stopwatch.Frequency;
+        var latencyMs = (presentEndTick - arrivalTick) * 1000.0 / Stopwatch.Frequency;
         if (latencyMs < 0 || latencyMs > 10000)
         {
             return;
@@ -1789,6 +1808,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         var schedulerToPresentMs = frame.SchedulerSubmitTick > 0 && presentEndTick > frame.SchedulerSubmitTick
             ? TicksToMs(presentEndTick - frame.SchedulerSubmitTick)
             : 0;
+        var pipelineLatencyMs = frame.ArrivalTick > 0 && presentEndTick > frame.ArrivalTick
+            ? TicksToMs(presentEndTick - frame.ArrivalTick)
+            : 0;
         var worstObservedMs = Math.Max(
             Math.Max(presentIntervalMs > 0 ? presentIntervalMs : 0, totalMs),
             presentCallMs);
@@ -1811,6 +1833,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             PresentCallMs = IsValidRenderCpuStageMs(presentCallMs) ? presentCallMs : 0,
             TotalFrameCpuMs = totalMs,
             SchedulerToPresentMs = schedulerToPresentMs,
+            PipelineLatencyMs = pipelineLatencyMs,
             ExpectedIntervalMs = expectedIntervalMs,
             DiagnosticThresholdMs = thresholdMs,
             WorstOverBudgetMs = worstOverBudgetMs,

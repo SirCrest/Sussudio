@@ -841,6 +841,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PreviewD3DTotalFrameCpuP95Ms = previewRuntime.D3DTotalFrameCpuP95Ms,
             PreviewD3DTotalFrameCpuP99Ms = previewRuntime.D3DTotalFrameCpuP99Ms,
             PreviewD3DTotalFrameCpuMaxMs = previewRuntime.D3DTotalFrameCpuMaxMs,
+            PreviewD3DPipelineLatencySampleCount = previewRuntime.D3DPipelineLatencySampleCount,
+            PreviewD3DPipelineLatencyAvgMs = previewRuntime.D3DPipelineLatencyAvgMs,
+            PreviewD3DPipelineLatencyP95Ms = previewRuntime.D3DPipelineLatencyP95Ms,
+            PreviewD3DPipelineLatencyP99Ms = previewRuntime.D3DPipelineLatencyP99Ms,
+            PreviewD3DPipelineLatencyMaxMs = previewRuntime.D3DPipelineLatencyMaxMs,
             PreviewD3DFrameLatencyWaitEnabled = previewRuntime.D3DFrameLatencyWaitEnabled,
             PreviewD3DFrameLatencyWaitHandleActive = previewRuntime.D3DFrameLatencyWaitHandleActive,
             PreviewD3DFrameLatencyWaitCallCount = previewRuntime.D3DFrameLatencyWaitCallCount,
@@ -877,6 +882,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PreviewD3DLastRenderedQpc = previewRuntime.D3DLastRenderedQpc,
             PreviewD3DLastRenderedUtcUnixMs = previewRuntime.D3DLastRenderedUtcUnixMs,
             PreviewD3DLastRenderedSchedulerToPresentMs = previewRuntime.D3DLastRenderedSchedulerToPresentMs,
+            PreviewD3DLastRenderedPipelineLatencyMs = previewRuntime.D3DLastRenderedPipelineLatencyMs,
             PreviewD3DLastDroppedPreviewPresentId = previewRuntime.D3DLastDroppedPreviewPresentId,
             PreviewD3DLastDroppedSourceSequenceNumber = previewRuntime.D3DLastDroppedSourceSequenceNumber,
             PreviewD3DLastDroppedQpc = previewRuntime.D3DLastDroppedQpc,
@@ -1281,12 +1287,16 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 PreviewD3DRenderSubmitCpuP99Ms = snapshot.PreviewD3DRenderSubmitCpuP99Ms,
                 PreviewD3DPresentCallP99Ms = snapshot.PreviewD3DPresentCallP99Ms,
                 PreviewD3DTotalFrameCpuP99Ms = snapshot.PreviewD3DTotalFrameCpuP99Ms,
+                PreviewD3DPipelineLatencyP95Ms = snapshot.PreviewD3DPipelineLatencyP95Ms,
+                PreviewD3DPipelineLatencyP99Ms = snapshot.PreviewD3DPipelineLatencyP99Ms,
+                PreviewD3DPipelineLatencyMaxMs = snapshot.PreviewD3DPipelineLatencyMaxMs,
                 PreviewD3DFrameLatencyWaitTimeoutCount = snapshot.PreviewD3DFrameLatencyWaitTimeoutCount,
                 PreviewD3DFrameLatencyWaitP95Ms = snapshot.PreviewD3DFrameLatencyWaitP95Ms,
                 PreviewD3DFrameLatencyWaitMaxMs = snapshot.PreviewD3DFrameLatencyWaitMaxMs,
                 PreviewD3DFrameStatsRecentMissedRefreshCount = snapshot.PreviewD3DFrameStatsRecentMissedRefreshCount,
                 PreviewD3DFrameStatsRecentFailureCount = snapshot.PreviewD3DFrameStatsRecentFailureCount,
                 PreviewD3DLastRenderedSchedulerToPresentMs = snapshot.PreviewD3DLastRenderedSchedulerToPresentMs,
+                PreviewD3DLastRenderedPipelineLatencyMs = snapshot.PreviewD3DLastRenderedPipelineLatencyMs,
                 PreviewD3DLastDropReason = snapshot.PreviewD3DLastDropReason,
                 FlashbackPlaybackState = snapshot.FlashbackPlaybackState,
                 FlashbackPlaybackObservedFps = snapshot.FlashbackPlaybackObservedFps,
@@ -1833,7 +1843,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             previewRuntime.D3DFramesRendered + previewRuntime.D3DFramesDropped);
         var rendererDropPercent = DiagnosticThresholds.CalculatePercent(previewRuntime.D3DFramesDropped, rendererSubmitted);
         var renderLane =
-            $"render submitted={previewRuntime.D3DFramesSubmitted} rendered={previewRuntime.D3DFramesRendered} dropped={previewRuntime.D3DFramesDropped} ({rendererDropPercent:0.###}%) cpuP95={previewRuntime.D3DTotalFrameCpuP95Ms:0.##}ms cpuP99={previewRuntime.D3DTotalFrameCpuP99Ms:0.##}ms";
+            $"render submitted={previewRuntime.D3DFramesSubmitted} rendered={previewRuntime.D3DFramesRendered} dropped={previewRuntime.D3DFramesDropped} ({rendererDropPercent:0.###}%) cpuP95={previewRuntime.D3DTotalFrameCpuP95Ms:0.##}ms cpuP99={previewRuntime.D3DTotalFrameCpuP99Ms:0.##}ms pipelineP95={previewRuntime.D3DPipelineLatencyP95Ms:0.##}ms pipelineP99={previewRuntime.D3DPipelineLatencyP99Ms:0.##}ms lastPipeline={previewRuntime.D3DLastRenderedPipelineLatencyMs:0.##}ms";
         var presentTarget = previewRuntime.DisplayCadenceExpectedIntervalMs > 0
             ? $"{previewRuntime.DisplayCadenceExpectedIntervalMs:0.##}ms"
             : "n/a";

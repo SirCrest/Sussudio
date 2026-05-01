@@ -242,6 +242,12 @@ static partial class Program
                 "PreviewD3DTotalFrameCpuP95Ms": 1.4,
                 "PreviewD3DTotalFrameCpuP99Ms": 1.5,
                 "PreviewD3DTotalFrameCpuMaxMs": 1.6,
+                "PreviewD3DPipelineLatencySampleCount": 120,
+                "PreviewD3DPipelineLatencyAvgMs": 7.8,
+                "PreviewD3DPipelineLatencyP95Ms": 8.9,
+                "PreviewD3DPipelineLatencyP99Ms": 9.9,
+                "PreviewD3DPipelineLatencyMaxMs": 12.3,
+                "PreviewD3DLastRenderedPipelineLatencyMs": 8.4,
                 "PreviewD3DFrameLatencyWaitEnabled": true,
                 "PreviewD3DFrameLatencyWaitHandleActive": true,
                 "PreviewD3DFrameLatencyWaitCallCount": 118,
@@ -272,6 +278,7 @@ static partial class Program
                     "PresentCallMs": 3.3,
                     "TotalFrameCpuMs": 6.6,
                     "SchedulerToPresentMs": 7.7,
+                    "PipelineLatencyMs": 8.8,
                     "ExpectedIntervalMs": 8.33,
                     "DiagnosticThresholdMs": 8.5,
                     "WorstOverBudgetMs": 0.87,
@@ -304,9 +311,11 @@ static partial class Program
         AssertContains(formatted, "Decoder[0]: avg=2.1ms");
         AssertContains(formatted, "== Preview ==");
         AssertContains(formatted, "D3D CPU timing: input/upload avg=0.1ms P95=0.2ms P99=0.3ms max=0.4ms | render-submit avg=0.5ms P95=0.6ms P99=0.7ms max=0.8ms | present-call avg=0.9ms P95=1.0ms P99=1.1ms max=1.2ms | total-frame avg=1.3ms P95=1.4ms P99=1.5ms max=1.6ms samples=120");
+        AssertContains(formatted, "D3D pipeline latency: avg=7.8ms P95=8.9ms P99=9.9ms max=12.3ms last=8.4ms samples=120");
         AssertContains(formatted, "D3D frame-latency wait: enabled=true handle=true calls=118 signaled=110 timeouts=8 unexpected=0 lastResult=0 last=0.05ms avg=0.2ms P95=0.8ms max=2.0ms samples=118");
         AssertContains(formatted, "D3D DXGI stats: ok=119/120 failures=1 recentFailures=1 missedRefresh=4 recentMissed=2 lastError=DXGI_ERROR_WAS_STILL_DRAWING");
         AssertContains(formatted, "D3D Slow Frames: present=42 srcSeq=9001 reason=present_interval target=8.33ms over=0.87ms interval=9.20ms");
+        AssertContains(formatted, "presentCall=3.30ms sched=7.70ms pipeline=8.80ms");
         AssertContains(formatted, "== Source ==");
 
         using var failedFlashbackDoc = JsonDocument.Parse(
