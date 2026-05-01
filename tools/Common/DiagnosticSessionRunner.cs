@@ -185,6 +185,8 @@ public static class DiagnosticSessionRunner
         var startedRecording = false;
         var enabledFlashback = false;
         var disabledFlashback = false;
+        var startedFlashbackPlayback = false;
+        var runFlashbackPlayback = scenario == "flashback-playback";
         var runFlashbackStress = scenario == "flashback-stress";
         var runFlashbackScrubStress = scenario == "flashback-scrub-stress";
         var runFlashbackRestartCycle = scenario == "flashback-restart-cycle";
@@ -420,6 +422,41 @@ public static class DiagnosticSessionRunner
                 actions.Add("flashback recording settings deferred started");
             }
 
+            if (runFlashbackPlayback)
+            {
+                if (!await WaitForFlashbackStressBufferReadyAsync(
+                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                        cancellationToken).ConfigureAwait(false))
+                {
+                    warnings.Add("flashback playback: Flashback buffer did not become playback-ready within 30s");
+                }
+
+                var playResponse = await SendAsync(
+                        "FlashbackAction",
+                        new Dictionary<string, object?> { ["action"] = "play", ["positionMs"] = 1000 },
+                        null)
+                    .ConfigureAwait(false);
+                if (AutomationSnapshotFormatter.IsSuccess(playResponse))
+                {
+                    startedFlashbackPlayback = true;
+                    actions.Add("flashback playback started at 1000ms");
+                    var playingSnapshot = await WaitForFlashbackPlaybackStateAsync(
+                            (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                            "Playing",
+                            TimeSpan.FromSeconds(5),
+                            cancellationToken)
+                        .ConfigureAwait(false);
+                    if (playingSnapshot is null)
+                    {
+                        warnings.Add("flashback playback: playback did not report Playing within 5s");
+                    }
+                }
+                else
+                {
+                    warnings.Add($"flashback playback: play command failed - {AutomationSnapshotFormatter.Get(playResponse, "Message", "unknown error")}");
+                }
+            }
+
             await SampleLoopAsync(
                     durationSeconds,
                     sampleIntervalMs,
@@ -538,6 +575,12 @@ public static class DiagnosticSessionRunner
                     }
                 }
 
+                if (startedFlashbackPlayback)
+                {
+                    await SendAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null).ConfigureAwait(false);
+                    actions.Add("flashback playback returned live");
+                }
+
                 if (startedPreview && !GetBool(initialSnapshot, "IsPreviewing"))
                 {
                     await SendAsync("SetPreviewEnabled", new Dictionary<string, object?> { ["enabled"] = false }, null).ConfigureAwait(false);
@@ -637,6 +680,11 @@ public static class DiagnosticSessionRunner
         var playbackDecodeErrorSnapsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackDecodeErrorSnaps") ?? 0;
         var playbackLastWriteHeadWaitGapMsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs") ?? 0;
         var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(samples, lastSnapshot);
+        if (runFlashbackPlayback)
+        {
+            ValidateFlashbackPlaybackSession(lastSnapshot, playbackSessionMetrics, durationSeconds, warnings);
+        }
+
         var recordingMetrics = BuildFlashbackRecordingMetrics(samples);
         var exportMetrics = BuildFlashbackExportSessionMetrics(samples, lastSnapshot);
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
@@ -666,7 +714,7 @@ public static class DiagnosticSessionRunner
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0),
+                      (!(runFlashbackPlayback || runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -3054,6 +3102,71 @@ public static class DiagnosticSessionRunner
         }
     }
 
+    private static void ValidateFlashbackPlaybackSession(
+        JsonElement lastSnapshot,
+        FlashbackPlaybackSessionMetrics metrics,
+        int durationSeconds,
+        List<string> warnings)
+    {
+        var targetFps = GetDouble(lastSnapshot, "FlashbackPlaybackTargetFps");
+        if (targetFps <= 0)
+        {
+            targetFps = GetDouble(lastSnapshot, "SelectedExactFrameRate");
+        }
+
+        var frameCount = GetNullableLong(lastSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
+        if (frameCount <= 0)
+        {
+            warnings.Add("flashback playback: no playback frames were observed");
+            return;
+        }
+
+        if (targetFps > 0 && durationSeconds > 0)
+        {
+            var minimumExpectedFrames = Math.Max(1, (long)Math.Floor(targetFps * durationSeconds * 0.80));
+            if (frameCount < minimumExpectedFrames)
+            {
+                warnings.Add($"flashback playback: frame count below expected floor frames={frameCount} min={minimumExpectedFrames} targetFps={targetFps:0.##}");
+            }
+
+            var minimumObservedFps = targetFps * 0.95;
+            if (metrics.MinObservedFpsObserved > 0 && metrics.MinObservedFpsObserved < minimumObservedFps)
+            {
+                warnings.Add($"flashback playback: observed FPS dipped below floor min={metrics.MinObservedFpsObserved:0.##} floor={minimumObservedFps:0.##}");
+            }
+
+            var minimumOnePercentLow = targetFps * 0.80;
+            if (metrics.MinOnePercentLowFpsObserved > 0 && metrics.MinOnePercentLowFpsObserved < minimumOnePercentLow)
+            {
+                warnings.Add($"flashback playback: 1% low dipped below floor min={metrics.MinOnePercentLowFpsObserved:0.##} floor={minimumOnePercentLow:0.##}");
+            }
+        }
+
+        var droppedFrames = GetNullableLong(lastSnapshot, "FlashbackPlaybackDroppedFrames") ?? 0;
+        if (droppedFrames > 0)
+        {
+            warnings.Add($"flashback playback: dropped frames were reported dropped={droppedFrames}");
+        }
+
+        var submitFailures = GetNullableLong(lastSnapshot, "FlashbackPlaybackSubmitFailures") ?? 0;
+        if (submitFailures > 0)
+        {
+            warnings.Add($"flashback playback: submit failures were reported failures={submitFailures}");
+        }
+
+        const double maxHealthyAudioBufferedMs = 250.0;
+        if (metrics.MaxAudioBufferedDurationMsObserved > maxHealthyAudioBufferedMs)
+        {
+            warnings.Add($"flashback playback: audio buffered duration exceeded budget max={metrics.MaxAudioBufferedDurationMsObserved:0.##}ms budget={maxHealthyAudioBufferedMs:0.##}ms");
+        }
+
+        const double maxHealthyAvDriftMs = 250.0;
+        if (metrics.MaxAbsAvDriftMsObserved > maxHealthyAvDriftMs)
+        {
+            warnings.Add($"flashback playback: absolute A/V drift exceeded budget max={metrics.MaxAbsAvDriftMsObserved:0.##}ms budget={maxHealthyAvDriftMs:0.##}ms");
+        }
+    }
+
     private static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(
         IReadOnlyList<DiagnosticSessionSample> samples)
     {
@@ -3538,18 +3651,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "flashback-export-rejected" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "flashback-export-rejected" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
         => scenario is "recording-only" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
+        => scenario is "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
 }

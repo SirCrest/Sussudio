@@ -56,6 +56,7 @@ Scenarios:
 - `preview-only`
 - `recording-only`
 - `flashback`
+- `flashback-playback`
 - `combined`
 
 Each run writes:

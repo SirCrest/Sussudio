@@ -545,6 +545,7 @@ static partial class Program
 
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
+        AssertContains(diagnosticSessionText, "var runFlashbackPlayback = scenario == \"flashback-playback\";");
         AssertContains(diagnosticSessionText, "var runFlashbackStress = scenario == \"flashback-stress\";");
         AssertContains(diagnosticSessionText, "var runFlashbackScrubStress = scenario == \"flashback-scrub-stress\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRestartCycle = scenario == \"flashback-restart-cycle\";");
@@ -606,6 +607,16 @@ static partial class Program
         AssertContains(diagnosticSessionText, "coalescedScrubEnd={result.FlashbackPlaybackScrubUpdatesCoalescedAtEnd}");
         AssertContains(diagnosticSessionText, "failureUtcEnd={result.FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd}");
         AssertContains(diagnosticSessionText, "Flashback Playback Perf:");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"play\", [\"positionMs\"] = 1000 }");
+        AssertContains(diagnosticSessionText, "flashback playback started at 1000ms");
+        AssertContains(diagnosticSessionText, "flashback playback returned live");
+        AssertContains(diagnosticSessionText, "ValidateFlashbackPlaybackSession(lastSnapshot, playbackSessionMetrics, durationSeconds, warnings);");
+        AssertContains(diagnosticSessionText, "private static void ValidateFlashbackPlaybackSession(");
+        AssertContains(diagnosticSessionText, "flashback playback: no playback frames were observed");
+        AssertContains(diagnosticSessionText, "flashback playback: observed FPS dipped below floor");
+        AssertContains(diagnosticSessionText, "flashback playback: 1% low dipped below floor");
+        AssertContains(diagnosticSessionText, "flashback playback: audio buffered duration exceeded budget");
+        AssertContains(diagnosticSessionText, "flashback playback: absolute A/V drift exceeded budget");
         AssertContains(diagnosticSessionText, "BuildFlashbackPlaybackSessionMetrics(samples, lastSnapshot)");
         AssertContains(diagnosticSessionText, "fpsMin={result.FlashbackPlaybackMinObservedFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "onePercentLowFpsMin={result.FlashbackPlaybackMinOnePercentLowFpsObserved:0.##}");
@@ -778,8 +789,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
         AssertContains(diagnosticSessionText, "actions.Add(\n            \"flashback segment playback observed \"");
         AssertDoesNotContain(diagnosticSessionText, "flashback segment playback: excessive late frames");
-        AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0)");
-        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-encoder-cycle\" or \"flashback-export-playback\" or \"flashback-segment-playback\" or \"flashback-range-export\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-settings-deferred\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
+        AssertContains(diagnosticSessionText, "(!(runFlashbackPlayback || runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0)");
+        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-playback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-encoder-cycle\" or \"flashback-export-playback\" or \"flashback-segment-playback\" or \"flashback-range-export\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-settings-deferred\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
 
         var ecctlProgramText = ReadRepoFile("tools/ecctl/Program.cs")
             .Replace("\r\n", "\n");
@@ -788,8 +799,11 @@ static partial class Program
         var mcpDiagnosticSessionText = ReadRepoFile("tools/McpServer/Tools/DiagnosticSessionTools.cs")
             .Replace("\r\n", "\n");
         AssertContains(ecctlProgramText, "flashback-export-playback");
+        AssertContains(ecctlProgramText, "flashback-playback");
         AssertContains(ecctlCommandHandlersText, "flashback-export-playback");
+        AssertContains(ecctlCommandHandlersText, "flashback-playback");
         AssertContains(mcpDiagnosticSessionText, "flashback-export-playback");
+        AssertContains(mcpDiagnosticSessionText, "flashback-playback");
         AssertContains(ecctlProgramText, "flashback-segment-playback");
         AssertContains(ecctlCommandHandlersText, "flashback-segment-playback");
         AssertContains(mcpDiagnosticSessionText, "flashback-segment-playback");
