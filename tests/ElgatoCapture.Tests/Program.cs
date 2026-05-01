@@ -129,6 +129,9 @@ static partial class Program
                 "Recording verifier fails when ffprobe is unavailable",
                 RecordingVerifier_ReturnsFailure_WhenFfprobeUnavailable),
             await RunCheckAsync(
+                "Recording verifier runs ffprobe below normal priority",
+                RecordingVerifier_RunsFfprobeBelowNormalPriority),
+            await RunCheckAsync(
                 "Recording verifier passes HEVC when all fields match",
                 RecordingVerifier_PassesVerification_WhenAllFieldsMatch_Hevc),
             await RunCheckAsync(
@@ -4365,6 +4368,8 @@ static partial class Program
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Runtime/ProcessSupervisor.cs");
         AssertContains(sourceText, "public int TimeoutMs { get; init; } = 30_000;");
         AssertContains(sourceText, "public string Arguments { get; init; } = string.Empty;");
+        AssertContains(sourceText, "public ProcessPriorityClass? PriorityClass { get; init; }");
+        AssertContains(sourceText, "process.PriorityClass = priorityClass;");
 
         // ProcessRunResult contract
         AssertContains(sourceText, "public bool Started { get; init; }");

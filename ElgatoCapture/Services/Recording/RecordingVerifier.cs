@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -82,13 +83,9 @@ public sealed class RecordingVerifier : IRecordingVerifier
             "-of default=noprint_wrappers=1:nokey=0 " +
             $"\"{outputPath}\"";
 
-        var probe = await _processSupervisor.RunAsync(new ProcessSpec
-        {
-            FileName = _ffprobePath,
-            Arguments = ffprobeArgs,
-            TimeoutMs = 10000,
-            WorkingDirectory = Path.GetDirectoryName(outputPath)
-        }, cancellationToken).ConfigureAwait(false);
+        var probe = await _processSupervisor.RunAsync(
+            CreateFfprobeProcessSpec(outputPath, ffprobeArgs, timeoutMs: 10000),
+            cancellationToken).ConfigureAwait(false);
 
         if (!probe.Started || probe.TimedOut || probe.ExitCode != 0)
         {
@@ -225,13 +222,9 @@ public sealed class RecordingVerifier : IRecordingVerifier
             "-of json " +
             $"\"{outputPath}\"";
 
-        var probe = await _processSupervisor.RunAsync(new ProcessSpec
-        {
-            FileName = _ffprobePath,
-            Arguments = cadenceArgs,
-            TimeoutMs = 20000,
-            WorkingDirectory = Path.GetDirectoryName(outputPath)
-        }, cancellationToken).ConfigureAwait(false);
+        var probe = await _processSupervisor.RunAsync(
+            CreateFfprobeProcessSpec(outputPath, cadenceArgs, timeoutMs: 20000),
+            cancellationToken).ConfigureAwait(false);
 
         if (!probe.Started || probe.TimedOut || probe.ExitCode != 0 || string.IsNullOrWhiteSpace(probe.StdOut))
         {
@@ -294,13 +287,9 @@ public sealed class RecordingVerifier : IRecordingVerifier
             "-of json " +
             $"\"{outputPath}\"";
 
-        var probe = await _processSupervisor.RunAsync(new ProcessSpec
-        {
-            FileName = _ffprobePath,
-            Arguments = args,
-            TimeoutMs = 10000,
-            WorkingDirectory = Path.GetDirectoryName(outputPath)
-        }, cancellationToken).ConfigureAwait(false);
+        var probe = await _processSupervisor.RunAsync(
+            CreateFfprobeProcessSpec(outputPath, args, timeoutMs: 10000),
+            cancellationToken).ConfigureAwait(false);
 
         if (!probe.Started || probe.TimedOut || probe.ExitCode != 0 || string.IsNullOrWhiteSpace(probe.StdOut))
         {
@@ -357,15 +346,24 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
     private async Task<bool> CanRunFfprobeAsync(CancellationToken cancellationToken)
     {
-        var result = await _processSupervisor.RunAsync(new ProcessSpec
-        {
-            FileName = _ffprobePath,
-            Arguments = "-version",
-            TimeoutMs = 4000
-        }, cancellationToken).ConfigureAwait(false);
+        var result = await _processSupervisor.RunAsync(
+            CreateFfprobeProcessSpec(outputPath: null, arguments: "-version", timeoutMs: 4000),
+            cancellationToken).ConfigureAwait(false);
 
         return result.Started && !result.TimedOut && result.ExitCode == 0;
     }
+
+    private ProcessSpec CreateFfprobeProcessSpec(string? outputPath, string arguments, int timeoutMs)
+        => new()
+        {
+            FileName = _ffprobePath,
+            Arguments = arguments,
+            TimeoutMs = timeoutMs,
+            WorkingDirectory = string.IsNullOrWhiteSpace(outputPath)
+                ? null
+                : Path.GetDirectoryName(outputPath),
+            PriorityClass = ProcessPriorityClass.BelowNormal
+        };
 
     private static CadenceMetrics ComputeCadenceMetrics(IReadOnlyList<double> intervalsMs, double? expectedFrameRate)
     {

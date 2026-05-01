@@ -11,6 +11,7 @@ public sealed class ProcessSpec
     public string Arguments { get; init; } = string.Empty;
     public string? WorkingDirectory { get; init; }
     public int TimeoutMs { get; init; } = 30_000;
+    public ProcessPriorityClass? PriorityClass { get; init; }
 }
 
 public sealed class ProcessRunResult
@@ -60,6 +61,10 @@ public sealed class ProcessSupervisor : IProcessSupervisor
             }
 
             process = Process.Start(startInfo);
+            if (process != null && spec.PriorityClass.HasValue)
+            {
+                TrySetPriorityClass(process, spec.FileName, spec.PriorityClass.Value);
+            }
         }
         catch (Exception ex)
         {
@@ -156,6 +161,19 @@ public sealed class ProcessSupervisor : IProcessSupervisor
         catch
         {
             // Best-effort — process may have already exited.
+        }
+    }
+
+    private static void TrySetPriorityClass(Process process, string fileName, ProcessPriorityClass priorityClass)
+    {
+        try
+        {
+            process.PriorityClass = priorityClass;
+            Logger.LogEvent("CAP-PROC-PRIORITY", $"{fileName} priority={priorityClass}");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogEvent("CAP-PROC-PRIORITY-FAIL", $"{fileName} priority={priorityClass} error={ex.GetType().Name}:{ex.Message}");
         }
     }
 
