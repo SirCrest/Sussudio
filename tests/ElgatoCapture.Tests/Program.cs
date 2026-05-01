@@ -436,6 +436,9 @@ static partial class Program
                 "FlashbackBufferManager segment completion rejects outside paths",
                 FlashbackBufferManager_SegmentCompletionRejectsOutsidePaths),
             await RunCheckAsync(
+                "FlashbackBufferManager delete helper rejects outside paths",
+                FlashbackBufferManager_TryDeleteFileRejectsOutsidePaths),
+            await RunCheckAsync(
                 "FlashbackBufferManager segment diagnostics clamp active counters",
                 FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters),
             await RunCheckAsync(
@@ -2461,6 +2464,40 @@ static partial class Program
 
             AssertEqual(0L, GetLongProperty(manager, "TotalBytesWritten"), "Outside segment path should not update bytes");
             AssertEqual(0, (int)GetPrivateField(manager, "_completedSegmentSequence")!, "Outside segment path should not allocate sequence");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+            try { Directory.Delete(outsideDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_TryDeleteFileRejectsOutsidePaths()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        var outsideDir = Path.Combine(Path.GetTempPath(), $"fbdelete_outside_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        Directory.CreateDirectory(outsideDir);
+
+        try
+        {
+            var manager = CreateInitializedBufferManager(tempDir);
+            var tryDeleteFile = manager.GetType().GetMethod("TryDeleteFile", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FlashbackBufferManager.TryDeleteFile not found.");
+
+            var outsidePath = Path.Combine(outsideDir, "outside.ts");
+            File.WriteAllText(outsidePath, "keep");
+
+            var result = (bool)tryDeleteFile.Invoke(manager, new object[] { outsidePath })!;
+            AssertEqual(false, result, "Outside delete should be rejected");
+            AssertEqual(true, File.Exists(outsidePath), "Outside delete should preserve file");
+
+            var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+                .Replace("\r\n", "\n");
+            AssertContains(source, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session");
+            AssertOccursBefore(source, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session", "File.Delete(filePath);");
         }
         finally
         {

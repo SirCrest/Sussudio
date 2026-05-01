@@ -1344,6 +1344,12 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     private bool TryDeleteFile(string filePath)
     {
+        if (!IsPathInSessionDirectory(filePath))
+        {
+            Logger.Log($"FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session path='{filePath}'");
+            return false;
+        }
+
         try
         {
             File.Delete(filePath); // No-op if file doesn't exist (.NET 8+)
