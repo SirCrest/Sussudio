@@ -496,7 +496,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
         finally
         {
-            try { _exportLock.Release(); } catch (ObjectDisposedException) { }
+            ReleaseExportLockBestEffort("single_export");
         }
     }
 
@@ -1088,7 +1088,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
         finally
         {
-            try { _exportLock.Release(); } catch (ObjectDisposedException) { }
+            ReleaseExportLockBestEffort("segment_export");
         }
     }
 
@@ -1384,6 +1384,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             cancellationResult = CreateDisposedExportResult(outputPath);
             return false;
+        }
+    }
+
+    private void ReleaseExportLockBestEffort(string operation)
+    {
+        try
+        {
+            _exportLock.Release();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_LOCK_RELEASE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 

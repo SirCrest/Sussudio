@@ -323,6 +323,11 @@ static partial class Program
         AssertContains(sourceText, "finally\n            {\n                DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\");\n            }\n        });");
         AssertContains(sourceText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LINKED_CTS_DISPOSE_WARN");
+        AssertContains(sourceText, "ReleaseExportLockBestEffort(\"single_export\");");
+        AssertContains(sourceText, "ReleaseExportLockBestEffort(\"segment_export\");");
+        AssertContains(sourceText, "private void ReleaseExportLockBestEffort(string operation)");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_RELEASE_WARN");
+        AssertDoesNotContain(sourceText, "catch (ObjectDisposedException) { }");
         AssertDoesNotContain(sourceText, "}, linkedCts.Token);");
         AssertDoesNotContain(sourceText, "_disposeCts!.Token");
 
