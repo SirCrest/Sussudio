@@ -36,7 +36,7 @@ internal sealed partial class D3D11PreviewRenderer
 
                 if (Interlocked.CompareExchange(ref _sharedDeviceResetPending, 0, 1) == 1)
                 {
-                    while (_pendingFrames.TryDequeue(out var stale))
+                    while (TryDequeuePendingFrame(out var stale))
                     {
                         TrackFrameDropped(stale, "shared-device-reset");
                         stale.Dispose();
@@ -80,7 +80,7 @@ internal sealed partial class D3D11PreviewRenderer
                     }
                 }
 
-                if (!_pendingFrames.TryDequeue(out var frame))
+                if (!TryDequeuePendingFrame(out var frame))
                 {
                     _frameReadyEvent.Reset();
                     if (!_pendingFrames.IsEmpty ||
@@ -148,7 +148,7 @@ internal sealed partial class D3D11PreviewRenderer
         }
         finally
         {
-            while (_pendingFrames.TryDequeue(out var stale))
+            while (TryDequeuePendingFrame(out var stale))
             {
                 TrackFrameDropped(stale, "renderer-exit");
                 stale.Dispose();
@@ -2489,7 +2489,7 @@ internal sealed partial class D3D11PreviewRenderer
         if (Volatile.Read(ref _stopRequested) != 0) return;
 
         CleanupD3DResources();
-        while (_pendingFrames.TryDequeue(out var stalePending))
+        while (TryDequeuePendingFrame(out var stalePending))
         {
             TrackFrameDropped(stalePending, "device-lost");
             stalePending.Dispose();

@@ -156,9 +156,15 @@ static partial class Program
         var source = ReadRepoFile("ElgatoCapture/Services/Preview/D3D11PreviewRenderer.cs");
         var renderSource = ReadRepoFile("ElgatoCapture/Services/Preview/D3D11PreviewRenderer.Rendering.cs");
         AssertContains(source, "ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
+        AssertContains(source, "private int _pendingFrameCount;");
+        AssertContains(source, "public int PendingFrameCount => Math.Max(0, Volatile.Read(ref _pendingFrameCount));");
+        AssertContains(source, "private bool TryDequeuePendingFrame(out PendingFrame frame)");
+        AssertContains(source, "DecrementPendingFrameCount();");
+        AssertDoesNotContain(source, "_pendingFrames.Count");
         AssertContains(source, "private void TrackFrameDropped(PendingFrame frame, string reason)\n    {\n        Interlocked.Increment(ref _framesDropped);");
         AssertDoesNotContain(source, "TrackFrameDropped(frame, \"renderer-stopped\");\n                frame.Dispose();\n                Interlocked.Increment(ref _framesDropped);");
         AssertDoesNotContain(source, "TrackFrameDropped(oldest, \"renderer-backlog\");\n                    oldest.Dispose();\n                    Interlocked.Increment(ref _framesDropped);");
+        AssertDoesNotContain(renderSource, "_pendingFrames.TryDequeue");
         AssertContains(renderSource, "var framesRenderedBefore = Interlocked.Read(ref _framesRendered);");
         AssertContains(renderSource, "if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)\n                    {\n                        TrackFrameDropped(frame, \"render-skipped\");\n                    }");
         AssertNotNull(rendererType.GetProperty("SwapChainAddress", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.SwapChainAddress");
