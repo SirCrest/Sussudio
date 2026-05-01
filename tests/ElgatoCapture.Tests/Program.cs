@@ -736,6 +736,9 @@ static partial class Program
                 "Flashback exporter input stream counts are bounded",
                 FlashbackExporter_InputStreamCountsAreBounded),
             await RunCheckAsync(
+                "Flashback exporter segment template validation guards missing video streams",
+                FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream),
+            await RunCheckAsync(
                 "Flashback exporter returns cancellation result while waiting for export lock",
                 FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled),
             await RunCheckAsync(
