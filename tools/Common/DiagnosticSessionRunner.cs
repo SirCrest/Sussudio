@@ -45,6 +45,10 @@ public sealed class DiagnosticSessionResult
     public double FlashbackPlaybackP99FrameMsAtEnd { get; init; }
     public double FlashbackPlaybackMaxFrameMsAtEnd { get; init; }
     public double FlashbackPlaybackOnePercentLowFpsAtEnd { get; init; }
+    public double FlashbackPlaybackMinOnePercentLowFpsObserved { get; init; }
+    public double FlashbackPlaybackMaxP99FrameMsObserved { get; init; }
+    public double FlashbackPlaybackMaxFrameMsObserved { get; init; }
+    public double FlashbackPlaybackMaxSlowFramePercentObserved { get; init; }
     public long FlashbackPlaybackFrameCountAtEnd { get; init; }
     public long FlashbackPlaybackLateFramesAtEnd { get; init; }
     public long FlashbackPlaybackSlowFramesAtEnd { get; init; }
@@ -566,6 +570,7 @@ public static class DiagnosticSessionRunner
         var playbackNearLiveSnapsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackNearLiveSnaps") ?? 0;
         var playbackDecodeErrorSnapsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackDecodeErrorSnaps") ?? 0;
         var playbackLastWriteHeadWaitGapMsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs") ?? 0;
+        var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(samples, lastSnapshot);
         var recordingMetrics = BuildFlashbackRecordingMetrics(samples);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
 
@@ -611,6 +616,10 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackP99FrameMsAtEnd = playbackP99FrameMsAtEnd,
             FlashbackPlaybackMaxFrameMsAtEnd = playbackMaxFrameMsAtEnd,
             FlashbackPlaybackOnePercentLowFpsAtEnd = playbackOnePercentLowFpsAtEnd,
+            FlashbackPlaybackMinOnePercentLowFpsObserved = playbackSessionMetrics.MinOnePercentLowFpsObserved,
+            FlashbackPlaybackMaxP99FrameMsObserved = playbackSessionMetrics.MaxP99FrameMsObserved,
+            FlashbackPlaybackMaxFrameMsObserved = playbackSessionMetrics.MaxFrameMsObserved,
+            FlashbackPlaybackMaxSlowFramePercentObserved = playbackSessionMetrics.MaxSlowFramePercentObserved,
             FlashbackPlaybackFrameCountAtEnd = playbackFrameCountAtEnd,
             FlashbackPlaybackLateFramesAtEnd = playbackLateFramesAtEnd,
             FlashbackPlaybackSlowFramesAtEnd = playbackSlowFramesAtEnd,
@@ -734,10 +743,14 @@ public static class DiagnosticSessionRunner
             $"p99FrameMsEnd={result.FlashbackPlaybackP99FrameMsAtEnd:0.##} " +
             $"maxFrameMsEnd={result.FlashbackPlaybackMaxFrameMsAtEnd:0.##} " +
             $"onePercentLowFpsEnd={result.FlashbackPlaybackOnePercentLowFpsAtEnd:0.##} " +
+            $"onePercentLowFpsMin={result.FlashbackPlaybackMinOnePercentLowFpsObserved:0.##} " +
+            $"p99FrameMsMax={result.FlashbackPlaybackMaxP99FrameMsObserved:0.##} " +
+            $"maxFrameMsObserved={result.FlashbackPlaybackMaxFrameMsObserved:0.##} " +
             $"framesEnd={result.FlashbackPlaybackFrameCountAtEnd} " +
             $"lateEnd={result.FlashbackPlaybackLateFramesAtEnd} " +
             $"slowEnd={result.FlashbackPlaybackSlowFramesAtEnd} " +
             $"slowPctEnd={result.FlashbackPlaybackSlowFramePercentAtEnd:0.##} " +
+            $"slowPctMax={result.FlashbackPlaybackMaxSlowFramePercentObserved:0.##} " +
             $"droppedFramesEnd={result.FlashbackPlaybackDroppedFramesAtEnd}");
         builder.AppendLine(
             "Flashback Playback Stages: " +
@@ -2862,6 +2875,46 @@ public static class DiagnosticSessionRunner
         public long VideoEncoderPacketsWrittenDelta { get; init; }
         public long IntegritySequenceGapsAtEnd { get; init; }
         public long IntegrityQueueDroppedFramesAtEnd { get; init; }
+    }
+
+    private static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement lastSnapshot)
+    {
+        var metrics = new FlashbackPlaybackSessionMetrics();
+        ObservePlaybackSnapshot(metrics, lastSnapshot);
+        foreach (var sample in samples)
+        {
+            ObservePlaybackSnapshot(metrics, sample.Snapshot);
+        }
+
+        if (double.IsPositiveInfinity(metrics.MinOnePercentLowFpsObserved))
+        {
+            metrics.MinOnePercentLowFpsObserved = 0;
+        }
+
+        return metrics;
+    }
+
+    private static void ObservePlaybackSnapshot(FlashbackPlaybackSessionMetrics metrics, JsonElement snapshot)
+    {
+        var onePercentLow = GetDouble(snapshot, "FlashbackPlaybackOnePercentLowFps");
+        if (onePercentLow > 0)
+        {
+            metrics.MinOnePercentLowFpsObserved = Math.Min(metrics.MinOnePercentLowFpsObserved, onePercentLow);
+        }
+
+        metrics.MaxP99FrameMsObserved = Math.Max(metrics.MaxP99FrameMsObserved, GetDouble(snapshot, "FlashbackPlaybackP99FrameMs"));
+        metrics.MaxFrameMsObserved = Math.Max(metrics.MaxFrameMsObserved, GetDouble(snapshot, "FlashbackPlaybackMaxFrameMs"));
+        metrics.MaxSlowFramePercentObserved = Math.Max(metrics.MaxSlowFramePercentObserved, GetDouble(snapshot, "FlashbackPlaybackSlowFramePercent"));
+    }
+
+    private sealed class FlashbackPlaybackSessionMetrics
+    {
+        public double MinOnePercentLowFpsObserved { get; set; } = double.PositiveInfinity;
+        public double MaxP99FrameMsObserved { get; set; }
+        public double MaxFrameMsObserved { get; set; }
+        public double MaxSlowFramePercentObserved { get; set; }
     }
 
     private static PreviewD3DMetrics BuildPreviewD3DMetrics(
