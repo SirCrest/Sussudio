@@ -834,6 +834,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation()
+    {
+        var windowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs")
+            .Replace("\r\n", "\n");
+        var method = ExtractTextBetween(
+            windowText,
+            "public Task<WindowScreenshotResult> CaptureWindowScreenshotAsync",
+            "    private static uint[] InitCrc32Table()");
+
+        AssertContains(method, "if (cancellationToken.IsCancellationRequested)");
+        AssertContains(method, "Message = \"Screenshot canceled.\"");
+        AssertContains(method, "CancellationTokenRegistration cancellationRegistration = default;");
+        AssertContains(method, "cancellationToken.Register(() =>");
+        AssertContains(method, "_ = completion.Task.ContinueWith(");
+        AssertContains(method, "cancellationRegistration.Dispose()");
+        AssertContains(method, "if (!_dispatcherQueue.TryEnqueue(() =>");
+        AssertContains(method, "Message = \"Failed to enqueue screenshot capture on the UI thread.\"");
+
+        return Task.CompletedTask;
+    }
+
     private static Task PreviewStopCompatibilityOverloads_ArePreserved()
     {
         var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")

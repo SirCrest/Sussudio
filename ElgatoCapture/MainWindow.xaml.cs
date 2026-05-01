@@ -579,11 +579,48 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
 
     public Task<WindowScreenshotResult> CaptureWindowScreenshotAsync(string outputPath, CancellationToken cancellationToken = default)
     {
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return Task.FromResult(new WindowScreenshotResult
+            {
+                Succeeded = false,
+                Message = "Screenshot canceled."
+            });
+        }
+
         var completion = new TaskCompletionSource<WindowScreenshotResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        _dispatcherQueue.TryEnqueue(() =>
+        CancellationTokenRegistration cancellationRegistration = default;
+        if (cancellationToken.CanBeCanceled)
+        {
+            cancellationRegistration = cancellationToken.Register(() =>
+            {
+                completion.TrySetResult(new WindowScreenshotResult
+                {
+                    Succeeded = false,
+                    Message = "Screenshot canceled."
+                });
+            });
+            _ = completion.Task.ContinueWith(
+                _ => cancellationRegistration.Dispose(),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default);
+        }
+
+        if (!_dispatcherQueue.TryEnqueue(() =>
         {
             try
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    completion.TrySetResult(new WindowScreenshotResult
+                    {
+                        Succeeded = false,
+                        Message = "Screenshot canceled."
+                    });
+                    return;
+                }
+
                 var result = CaptureWindowScreenshotCore(outputPath);
                 completion.TrySetResult(result);
             }
@@ -595,7 +632,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
                     Message = $"Screenshot failed: {ex.Message}"
                 });
             }
-        });
+        }))
+        {
+            cancellationRegistration.Dispose();
+            completion.TrySetResult(new WindowScreenshotResult
+            {
+                Succeeded = false,
+                Message = "Failed to enqueue screenshot capture on the UI thread."
+            });
+        }
+
         return completion.Task;
     }
 

@@ -327,6 +327,9 @@ static partial class Program
                 "Window close cancels until recording stop completes",
                 MainWindowClose_CancelsCloseUntilRecordingStopCompletes),
             await RunCheckAsync(
+                "Window screenshot capture completes on dispatcher failure and cancellation",
+                MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation),
+            await RunCheckAsync(
                 "External FFmpeg and HDR probes use bounded process supervision",
                 ExternalProcessProbes_UseBoundedProcessSupervisor),
             await RunCheckAsync(
