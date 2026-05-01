@@ -243,6 +243,8 @@ public class CaptureDiagnosticsSnapshot
     public long FlashbackVideoEncoderPacketsWritten { get; init; }
     public long FlashbackVideoEncoderDroppedFrames { get; init; }
     public long FlashbackVideoSequenceGaps { get; init; }
+    public long FlashbackVideoQueueRejectedFrames { get; init; }
+    public string FlashbackVideoQueueLastRejectReason { get; init; } = string.Empty;
     public long FlashbackVideoQueueOldestFrameAgeMs { get; init; }
     public long FlashbackVideoQueueLastLatencyMs { get; init; }
     public int FlashbackVideoQueueLatencySampleCount { get; init; }
@@ -258,6 +260,8 @@ public class CaptureDiagnosticsSnapshot
     public int FlashbackGpuQueueMaxDepth { get; init; }
     public long FlashbackGpuFramesEnqueued { get; init; }
     public long FlashbackGpuFramesDropped { get; init; }
+    public long FlashbackGpuQueueRejectedFrames { get; init; }
+    public string FlashbackGpuQueueLastRejectReason { get; init; } = string.Empty;
     public long AudioDropsQueueSaturated { get; init; }
     public long AudioDropsBacklogEviction { get; init; }
 

@@ -1440,6 +1440,10 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandProcessedUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandFailureUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandFailure"), "AutomationSnapshot.FlashbackPlaybackLastCommandFailure");
+        AssertNotNull(snapshotType.GetProperty("FlashbackVideoQueueRejectedFrames"), "AutomationSnapshot.FlashbackVideoQueueRejectedFrames");
+        AssertNotNull(snapshotType.GetProperty("FlashbackVideoQueueLastRejectReason"), "AutomationSnapshot.FlashbackVideoQueueLastRejectReason");
+        AssertNotNull(snapshotType.GetProperty("FlashbackGpuQueueRejectedFrames"), "AutomationSnapshot.FlashbackGpuQueueRejectedFrames");
+        AssertNotNull(snapshotType.GetProperty("FlashbackGpuQueueLastRejectReason"), "AutomationSnapshot.FlashbackGpuQueueLastRejectReason");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportActive"), "AutomationSnapshot.FlashbackExportActive");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportId"), "AutomationSnapshot.FlashbackExportId");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportStatus"), "AutomationSnapshot.FlashbackExportStatus");

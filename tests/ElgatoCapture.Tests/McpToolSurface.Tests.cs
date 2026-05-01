@@ -698,6 +698,11 @@ static partial class Program
         AssertContains(source, "FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertContains(source, "FlashbackPlaybackLastWriteHeadWaitGapMs");
         AssertContains(source, "FlashbackPlaybackLastCommandFailure");
+        AssertContains(source, "FlashbackVideoQueueRejectedFrames");
+        AssertContains(source, "FlashbackVideoQueueLastRejectReason");
+        AssertContains(source, "FlashbackGpuQueueRejectedFrames");
+        AssertContains(source, "FlashbackGpuQueueLastRejectReason");
+        AssertContains(source, "Flashback Enqueue Rejects");
         AssertContains(source, "FatalCleanupInProgress");
         AssertContains(source, "FlashbackCleanupInProgress");
         AssertContains(source, "FlashbackExportFailureKind");

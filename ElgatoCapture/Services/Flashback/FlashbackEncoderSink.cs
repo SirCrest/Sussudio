@@ -68,6 +68,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private long _videoFramesSubmittedToEncoder;
     private long _videoDropsQueueSaturated;
     private long _videoDropsBacklogEviction;
+    private long _videoQueueRejectedFrames;
     private long _audioSamplesReceived;
     private long _audioDropsQueueSaturated;
     private long _audioDropsBacklogEviction;
@@ -76,6 +77,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private long _microphoneDropsBacklogEviction;
     private long _gpuFramesEnqueued;
     private long _gpuFramesDropped;
+    private long _gpuQueueRejectedFrames;
     private Action<Exception>? _onFatalError;
     private bool _forceRotateDraining;
     private int _videoQueueDepth;
@@ -93,6 +95,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private long _maxVideoBackpressureWaitMs;
     private long _videoSequenceGaps;
     private long _lastVideoSequenceNumber = -1;
+    private string? _lastVideoQueueRejectReason;
+    private string? _lastGpuQueueRejectReason;
     private readonly double[] _videoQueueLatencySamples = new double[VideoQueueLatencyWindowSize];
     private int _videoQueueLatencySampleCount;
     private int _videoQueueLatencySampleIndex;
@@ -148,6 +152,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     public long VideoDropsBacklogEviction => Interlocked.Read(ref _videoDropsBacklogEviction);
 
+    public long VideoQueueRejectedFrames => Interlocked.Read(ref _videoQueueRejectedFrames);
+
+    public string? LastVideoQueueRejectReason => Volatile.Read(ref _lastVideoQueueRejectReason);
+
     public long AudioDropsQueueSaturated => Interlocked.Read(ref _audioDropsQueueSaturated);
 
     public long AudioDropsBacklogEviction => Interlocked.Read(ref _audioDropsBacklogEviction);
@@ -172,6 +180,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public int GpuQueueMaxDepth => Volatile.Read(ref _gpuQueueMaxDepth);
     public long GpuFramesEnqueued => Interlocked.Read(ref _gpuFramesEnqueued);
     public long GpuFramesDropped => Interlocked.Read(ref _gpuFramesDropped);
+    public long GpuQueueRejectedFrames => Interlocked.Read(ref _gpuQueueRejectedFrames);
+    public string? LastGpuQueueRejectReason => Volatile.Read(ref _lastGpuQueueRejectReason);
     public bool EncodingFailed => Volatile.Read(ref _encodingFailure) != null;
     public string? EncodingFailureType => Volatile.Read(ref _encodingFailure)?.GetType().Name;
     public string? EncodingFailureMessage => Volatile.Read(ref _encodingFailure)?.Message;
@@ -1877,13 +1887,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Exception? overloadFailure = null;
             lock (_videoQueueSync)
             {
-                if (_disposed ||
-                    !_started ||
-                    _cts?.IsCancellationRequested == true ||
-                    Volatile.Read(ref _forceRotateDraining) ||
-                    Volatile.Read(ref _encodingFailure) != null)
+                var rejectReason = GetVideoEnqueueRejectReason();
+                if (rejectReason != null)
                 {
                     ReturnVideoPacket(packet);
+                    TrackVideoQueueRejected(rejectReason);
                     return VideoEnqueueResult.Rejected;
                 }
 
@@ -1897,13 +1905,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     return VideoEnqueueResult.Accepted;
                 }
 
-                if (_disposed ||
-                    !_started ||
-                    _cts?.IsCancellationRequested == true ||
-                    Volatile.Read(ref _forceRotateDraining) ||
-                    Volatile.Read(ref _encodingFailure) != null)
+                rejectReason = GetVideoEnqueueRejectReason();
+                if (rejectReason != null)
                 {
                     ReturnVideoPacket(packet);
+                    TrackVideoQueueRejected(rejectReason);
                     return VideoEnqueueResult.Rejected;
                 }
 
@@ -1945,13 +1951,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Exception? overloadFailure = null;
             lock (_videoQueueSync)
             {
-                if (_disposed ||
-                    !_started ||
-                    _cts?.IsCancellationRequested == true ||
-                    Volatile.Read(ref _forceRotateDraining) ||
-                    Volatile.Read(ref _encodingFailure) != null)
+                var rejectReason = GetVideoEnqueueRejectReason();
+                if (rejectReason != null)
                 {
                     ReleaseGpuTextureBestEffort(packet.Texture);
+                    TrackGpuQueueRejected(rejectReason);
                     return VideoEnqueueResult.Rejected;
                 }
 
@@ -1964,13 +1968,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     return VideoEnqueueResult.Accepted;
                 }
 
-                if (_disposed ||
-                    !_started ||
-                    _cts?.IsCancellationRequested == true ||
-                    Volatile.Read(ref _forceRotateDraining) ||
-                    Volatile.Read(ref _encodingFailure) != null)
+                rejectReason = GetVideoEnqueueRejectReason();
+                if (rejectReason != null)
                 {
                     ReleaseGpuTextureBestEffort(packet.Texture);
+                    TrackGpuQueueRejected(rejectReason);
                     return VideoEnqueueResult.Rejected;
                 }
 
@@ -1999,6 +2001,56 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 continue;
             }
+        }
+    }
+
+    private string? GetVideoEnqueueRejectReason()
+    {
+        if (_disposed)
+        {
+            return "disposed";
+        }
+
+        if (!_started)
+        {
+            return "not_started";
+        }
+
+        if (_cts?.IsCancellationRequested == true)
+        {
+            return "cancelled";
+        }
+
+        if (Volatile.Read(ref _forceRotateDraining))
+        {
+            return "force_rotate_draining";
+        }
+
+        var failure = Volatile.Read(ref _encodingFailure);
+        return failure != null
+            ? $"encoding_failed:{failure.GetType().Name}"
+            : null;
+    }
+
+    private void TrackVideoQueueRejected(string reason)
+    {
+        Volatile.Write(ref _lastVideoQueueRejectReason, reason);
+        var total = Interlocked.Increment(ref _videoQueueRejectedFrames);
+        if (total == 1 || total % 30 == 0)
+        {
+            Logger.Log(
+                $"FLASHBACK_SINK_VIDEO_QUEUE_REJECT reason={reason} total={total} depth={Volatile.Read(ref _videoQueueDepth)} capacity={VideoQueueCapacity}");
+        }
+    }
+
+    private void TrackGpuQueueRejected(string reason)
+    {
+        Volatile.Write(ref _lastGpuQueueRejectReason, reason);
+        var total = Interlocked.Increment(ref _gpuQueueRejectedFrames);
+        if (total == 1 || total % 30 == 0)
+        {
+            Logger.Log(
+                $"FLASHBACK_SINK_GPU_QUEUE_REJECT reason={reason} total={total} depth={Volatile.Read(ref _gpuQueueDepth)} capacity={GpuQueueCapacity}");
         }
     }
 

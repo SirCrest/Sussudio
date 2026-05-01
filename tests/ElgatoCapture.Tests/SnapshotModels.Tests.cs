@@ -362,6 +362,10 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackPlaybackMaxCommandQueueLatencyMs", 88L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastCommandQueued", "UpdateScrub");
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastCommandFailureUtcUnixMs", 999L);
+        SetPropertyOrBackingField(health, "FlashbackVideoQueueRejectedFrames", 11L);
+        SetPropertyOrBackingField(health, "FlashbackVideoQueueLastRejectReason", "force_rotate_draining");
+        SetPropertyOrBackingField(health, "FlashbackGpuQueueRejectedFrames", 13L);
+        SetPropertyOrBackingField(health, "FlashbackGpuQueueLastRejectReason", "encoding_failed:InvalidOperationException");
         SetPropertyOrBackingField(health, "FlashbackExportActive", true);
         SetPropertyOrBackingField(health, "FlashbackExportStatus", "Running");
         SetPropertyOrBackingField(health, "FlashbackExportFailureKind", "NoMediaWritten");
@@ -408,6 +412,10 @@ static partial class Program
         AssertEqual(88L, GetLongProperty(health, "FlashbackPlaybackMaxCommandQueueLatencyMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxCommandQueueLatencyMs round-trip");
         AssertEqual("UpdateScrub", GetStringProperty(health, "FlashbackPlaybackLastCommandQueued"), "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueued round-trip");
         AssertEqual(999L, GetLongProperty(health, "FlashbackPlaybackLastCommandFailureUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs round-trip");
+        AssertEqual(11L, GetLongProperty(health, "FlashbackVideoQueueRejectedFrames"), "CaptureHealthSnapshot.FlashbackVideoQueueRejectedFrames round-trip");
+        AssertEqual("force_rotate_draining", GetStringProperty(health, "FlashbackVideoQueueLastRejectReason"), "CaptureHealthSnapshot.FlashbackVideoQueueLastRejectReason round-trip");
+        AssertEqual(13L, GetLongProperty(health, "FlashbackGpuQueueRejectedFrames"), "CaptureHealthSnapshot.FlashbackGpuQueueRejectedFrames round-trip");
+        AssertEqual("encoding_failed:InvalidOperationException", GetStringProperty(health, "FlashbackGpuQueueLastRejectReason"), "CaptureHealthSnapshot.FlashbackGpuQueueLastRejectReason round-trip");
         AssertEqual(true, GetBoolProperty(health, "FlashbackExportActive"), "CaptureHealthSnapshot.FlashbackExportActive round-trip");
         AssertEqual("Running", GetStringProperty(health, "FlashbackExportStatus"), "CaptureHealthSnapshot.FlashbackExportStatus round-trip");
         AssertEqual("NoMediaWritten", GetStringProperty(health, "FlashbackExportFailureKind"), "CaptureHealthSnapshot.FlashbackExportFailureKind round-trip");
@@ -435,6 +443,10 @@ static partial class Program
         AssertEqual(9L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackCommandsEnqueued"), "CaptureHealthSnapshot JSON FlashbackPlaybackCommandsEnqueued");
         AssertEqual(256, GetIntProperty(jsonRoundTrip, "FlashbackPlaybackCommandQueueCapacity"), "CaptureHealthSnapshot JSON FlashbackPlaybackCommandQueueCapacity");
         AssertEqual(999L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackLastCommandFailureUtcUnixMs"), "CaptureHealthSnapshot JSON FlashbackPlaybackLastCommandFailureUtcUnixMs");
+        AssertEqual(11L, GetLongProperty(jsonRoundTrip, "FlashbackVideoQueueRejectedFrames"), "CaptureHealthSnapshot JSON FlashbackVideoQueueRejectedFrames");
+        AssertEqual("force_rotate_draining", GetStringProperty(jsonRoundTrip, "FlashbackVideoQueueLastRejectReason"), "CaptureHealthSnapshot JSON FlashbackVideoQueueLastRejectReason");
+        AssertEqual(13L, GetLongProperty(jsonRoundTrip, "FlashbackGpuQueueRejectedFrames"), "CaptureHealthSnapshot JSON FlashbackGpuQueueRejectedFrames");
+        AssertEqual("encoding_failed:InvalidOperationException", GetStringProperty(jsonRoundTrip, "FlashbackGpuQueueLastRejectReason"), "CaptureHealthSnapshot JSON FlashbackGpuQueueLastRejectReason");
         AssertEqual("Running", GetStringProperty(jsonRoundTrip, "FlashbackExportStatus"), "CaptureHealthSnapshot JSON FlashbackExportStatus");
         AssertEqual("NoMediaWritten", GetStringProperty(jsonRoundTrip, "FlashbackExportFailureKind"), "CaptureHealthSnapshot JSON FlashbackExportFailureKind");
         AssertEqual(1048576L, GetLongProperty(jsonRoundTrip, "FlashbackExportOutputBytes"), "CaptureHealthSnapshot JSON FlashbackExportOutputBytes");
@@ -880,6 +892,8 @@ static partial class Program
                 new("FlashbackVideoEncoderPacketsWritten", typeof(long)),
                 new("FlashbackVideoEncoderDroppedFrames", typeof(long)),
                 new("FlashbackVideoSequenceGaps", typeof(long)),
+                new("FlashbackVideoQueueRejectedFrames", typeof(long)),
+                NonNullString("FlashbackVideoQueueLastRejectReason"),
                 new("FlashbackVideoQueueOldestFrameAgeMs", typeof(long)),
                 new("FlashbackVideoQueueLastLatencyMs", typeof(long)),
                 new("FlashbackVideoQueueLatencySampleCount", typeof(int)),
@@ -895,6 +909,8 @@ static partial class Program
                 new("FlashbackGpuQueueMaxDepth", typeof(int)),
                 new("FlashbackGpuFramesEnqueued", typeof(long)),
                 new("FlashbackGpuFramesDropped", typeof(long)),
+                new("FlashbackGpuQueueRejectedFrames", typeof(long)),
+                NonNullString("FlashbackGpuQueueLastRejectReason"),
                 new("AudioDropsQueueSaturated", typeof(long)),
                 new("AudioDropsBacklogEviction", typeof(long)),
                 new("AudioChunksDropped", typeof(long))

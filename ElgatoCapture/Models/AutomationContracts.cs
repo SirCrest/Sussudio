@@ -597,6 +597,8 @@ public sealed class AutomationSnapshot
     public long FlashbackVideoEncoderPacketsWritten { get; init; }
     public long FlashbackVideoEncoderDroppedFrames { get; init; }
     public long FlashbackVideoSequenceGaps { get; init; }
+    public long FlashbackVideoQueueRejectedFrames { get; init; }
+    public string FlashbackVideoQueueLastRejectReason { get; init; } = string.Empty;
     public long FlashbackVideoQueueOldestFrameAgeMs { get; init; }
     public long FlashbackVideoQueueLastLatencyMs { get; init; }
     public int FlashbackVideoQueueLatencySampleCount { get; init; }
@@ -612,6 +614,8 @@ public sealed class AutomationSnapshot
     public int FlashbackGpuQueueMaxDepth { get; init; }
     public long FlashbackGpuFramesEnqueued { get; init; }
     public long FlashbackGpuFramesDropped { get; init; }
+    public long FlashbackGpuQueueRejectedFrames { get; init; }
+    public string FlashbackGpuQueueLastRejectReason { get; init; } = string.Empty;
     public long AudioDropsQueueSaturated { get; init; }
     public long AudioDropsBacklogEviction { get; init; }
     public long AudioChunksDropped { get; init; }
@@ -943,6 +947,10 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
     public long FlashbackPlaybackLastCommandFailureUtcUnixMs { get; init; }
     public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;
+    public long FlashbackVideoQueueRejectedFrames { get; init; }
+    public string FlashbackVideoQueueLastRejectReason { get; init; } = string.Empty;
+    public long FlashbackGpuQueueRejectedFrames { get; init; }
+    public string FlashbackGpuQueueLastRejectReason { get; init; } = string.Empty;
     public bool FatalCleanupInProgress { get; init; }
     public bool FlashbackCleanupInProgress { get; init; }
     public bool FlashbackExportActive { get; init; }

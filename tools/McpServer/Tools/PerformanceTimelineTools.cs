@@ -93,6 +93,10 @@ public static class PerformanceTimelineTools
                 FlashbackPlaybackLastWriteHeadWaitGapMs = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackLastWriteHeadWaitGapMs"),
                 FlashbackPlaybackLastCommandFailureUtcUnixMs = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackLastCommandFailureUtcUnixMs"),
                 FlashbackPlaybackLastCommandFailure = AutomationSnapshotFormatter.Get(item, "FlashbackPlaybackLastCommandFailure"),
+                FlashbackVideoQueueRejectedFrames = AutomationSnapshotFormatter.GetLong(item, "FlashbackVideoQueueRejectedFrames"),
+                FlashbackVideoQueueLastRejectReason = AutomationSnapshotFormatter.Get(item, "FlashbackVideoQueueLastRejectReason"),
+                FlashbackGpuQueueRejectedFrames = AutomationSnapshotFormatter.GetLong(item, "FlashbackGpuQueueRejectedFrames"),
+                FlashbackGpuQueueLastRejectReason = AutomationSnapshotFormatter.Get(item, "FlashbackGpuQueueLastRejectReason"),
                 FatalCleanupInProgress = AutomationSnapshotFormatter.GetBool(item, "FatalCleanupInProgress"),
                 FlashbackCleanupInProgress = AutomationSnapshotFormatter.GetBool(item, "FlashbackCleanupInProgress"),
                 FlashbackExportActive = AutomationSnapshotFormatter.GetBool(item, "FlashbackExportActive"),
@@ -220,6 +224,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Flashback Cmds: pending {first.FlashbackPlaybackPendingCommands} -> {last.FlashbackPlaybackPendingCommands}, maxPending latest={last.FlashbackPlaybackMaxPendingCommands}, maxLatency latest={last.FlashbackPlaybackMaxCommandQueueLatencyMs}ms, failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
             builder.AppendLine($"Flashback Failure: latest={FormatOptional(last.FlashbackPlaybackLastCommandFailure)}");
             builder.AppendLine($"Flashback Drops: submitFailures {first.FlashbackPlaybackSubmitFailures} -> {last.FlashbackPlaybackSubmitFailures}, droppedFrames {first.FlashbackPlaybackDroppedFrames} -> {last.FlashbackPlaybackDroppedFrames}, decodeSnaps {first.FlashbackPlaybackDecodeErrorSnaps} -> {last.FlashbackPlaybackDecodeErrorSnaps}");
+            builder.AppendLine($"Flashback Enqueue Rejects: video {first.FlashbackVideoQueueRejectedFrames} -> {last.FlashbackVideoQueueRejectedFrames} last={FormatOptional(last.FlashbackVideoQueueLastRejectReason)}, gpu {first.FlashbackGpuQueueRejectedFrames} -> {last.FlashbackGpuQueueRejectedFrames} last={FormatOptional(last.FlashbackGpuQueueLastRejectReason)}");
             builder.AppendLine($"Flashback Stages: switches {first.FlashbackPlaybackSegmentSwitches} -> {last.FlashbackPlaybackSegmentSwitches}, fmp4Reopens {first.FlashbackPlaybackFmp4Reopens} -> {last.FlashbackPlaybackFmp4Reopens}, writeHeadWaits {first.FlashbackPlaybackWriteHeadWaits} -> {last.FlashbackPlaybackWriteHeadWaits}, nearLiveSnaps {first.FlashbackPlaybackNearLiveSnaps} -> {last.FlashbackPlaybackNearLiveSnaps}, lastWriteHeadGap latest={last.FlashbackPlaybackLastWriteHeadWaitGapMs}ms");
             builder.AppendLine($"Cleanup State:  fatal={last.FatalCleanupInProgress} flashback={last.FlashbackCleanupInProgress}");
             builder.AppendLine($"Export State:    {FormatOptional(first.FlashbackExportStatus)} -> {FormatOptional(last.FlashbackExportStatus)} active={last.FlashbackExportActive} kind={FormatOptional(last.FlashbackExportFailureKind)}");
@@ -349,6 +354,10 @@ public static class PerformanceTimelineTools
         public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
         public long FlashbackPlaybackLastCommandFailureUtcUnixMs { get; init; }
         public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;
+        public long FlashbackVideoQueueRejectedFrames { get; init; }
+        public string FlashbackVideoQueueLastRejectReason { get; init; } = string.Empty;
+        public long FlashbackGpuQueueRejectedFrames { get; init; }
+        public string FlashbackGpuQueueLastRejectReason { get; init; } = string.Empty;
         public bool FatalCleanupInProgress { get; init; }
         public bool FlashbackCleanupInProgress { get; init; }
         public bool FlashbackExportActive { get; init; }

@@ -172,11 +172,13 @@ static partial class Program
             flashbackSource,
             "private bool TryEnqueueAudioPacket",
             "private static void ReturnRemainingBuffers");
-        AssertOccursBefore(flashbackVideoEnqueue, "Volatile.Read(ref _forceRotateDraining)", "queue.Writer.TryWrite(packet)");
-        AssertOccursBefore(flashbackGpuEnqueue, "Volatile.Read(ref _forceRotateDraining)", "queue.Writer.TryWrite(packet)");
+        AssertOccursBefore(flashbackVideoEnqueue, "GetVideoEnqueueRejectReason()", "queue.Writer.TryWrite(packet)");
+        AssertOccursBefore(flashbackGpuEnqueue, "GetVideoEnqueueRejectReason()", "queue.Writer.TryWrite(packet)");
         AssertOccursBefore(flashbackAudioEnqueue, "Volatile.Read(ref _forceRotateDraining)", "queue.Writer.TryWrite(packet)");
-        AssertContains(flashbackVideoEnqueue, "if (_disposed ||\n                    !_started ||");
-        AssertContains(flashbackGpuEnqueue, "if (_disposed ||\n                    !_started ||");
+        AssertContains(flashbackVideoEnqueue, "var rejectReason = GetVideoEnqueueRejectReason();");
+        AssertContains(flashbackVideoEnqueue, "TrackVideoQueueRejected(rejectReason);");
+        AssertContains(flashbackGpuEnqueue, "var rejectReason = GetVideoEnqueueRejectReason();");
+        AssertContains(flashbackGpuEnqueue, "TrackGpuQueueRejected(rejectReason);");
         AssertContains(flashbackAudioEnqueue, "if (_disposed ||\n            !_started ||");
         AssertContains(flashbackGpuEnqueue, "lock (_videoQueueSync)");
         AssertContains(flashbackAudioEnqueue, "lock (_videoQueueSync)");
