@@ -168,6 +168,9 @@ static partial class Program
         AssertContains(source, "LastSelectedSourceSequenceNumber");
         AssertContains(source, "RecordSelectedFrame");
         AssertContains(source, "RecordDroppedFrame");
+        AssertContains(source, "if (AddFrameInOrder(frame))");
+        AssertContains(source, "private bool AddFrameInOrder(BufferedFrame frame)");
+        AssertContains(source, "return false;");
         AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_TARGET_DEPTH");
         AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_MIN_TARGET_DEPTH");
         AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_MAX_TARGET_DEPTH");
@@ -269,6 +272,38 @@ static partial class Program
 
         ((IDisposable)dequeued).Dispose();
         AssertEqual(1, pool.ReturnCount, "dequeued preview lease return count");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task MjpegPreviewJitter_LateSequenceDoesNotCountAsQueued()
+    {
+        var jitterType = RequireType("ElgatoCapture.Services.Capture.MjpegPreviewJitterBuffer");
+        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
+        var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
+
+        var jitter = CreateUnstartedJitterBuffer(jitterType, targetDepth: 3);
+        SetPrivateField(jitter, "_nextPreviewSequence", 10L);
+        var frames = (IList)(GetPrivateField(jitter, "_frames")
+            ?? throw new InvalidOperationException("Jitter frame list missing."));
+        var bufferedFrameType = RequireNestedType(jitterType, "BufferedFrame");
+        var nv12 = Enum.Parse(formatType, "Nv12");
+        var pool = new TrackingArrayPool();
+        var owner = CreatePooledVideoFrame(frameType, nv12, 9L, 100L, 200L, 16, 16, 384, pool);
+        var lease = addLeaseMethod.Invoke(owner, Array.Empty<object>())
+            ?? throw new InvalidOperationException("AddLease returned null.");
+        ((IDisposable)owner).Dispose();
+
+        var lateFrame = CreateLeaseBufferedFrame(bufferedFrameType, lease, Stopwatch.GetTimestamp());
+        InvokeNonPublicInstanceMethod(jitter, "EnqueueBufferedFrame", new[] { lateFrame });
+
+        AssertEqual(0, frames.Count, "late preview sequence was not queued");
+        AssertEqual(0L, GetLongPrivateField(jitter, "_totalQueued"), "late preview sequence does not increment queued count");
+        AssertEqual(1L, GetLongPrivateField(jitter, "_totalDropped"), "late preview sequence increments dropped count");
+        AssertEqual(1L, GetLongPrivateField(jitter, "_deadlineDropCount"), "late preview sequence increments deadline drop count");
+        AssertEqual(1, pool.ReturnCount, "late preview sequence returns frame lease");
 
         return Task.CompletedTask;
     }

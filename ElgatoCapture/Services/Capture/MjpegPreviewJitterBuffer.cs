@@ -275,9 +275,11 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 Interlocked.Increment(ref _totalDropped);
             }
 
-            AddFrameInOrder(frame);
-            Interlocked.Increment(ref _totalQueued);
-            shouldSignal = true;
+            if (AddFrameInOrder(frame))
+            {
+                Interlocked.Increment(ref _totalQueued);
+                shouldSignal = true;
+            }
         }
 
         if (shouldSignal && Volatile.Read(ref _disposed) == 0)
@@ -610,12 +612,12 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         }
     }
 
-    private void AddFrameInOrder(BufferedFrame frame)
+    private bool AddFrameInOrder(BufferedFrame frame)
     {
         if (frame.SequenceNumber < 0)
         {
             _frames.Add(frame);
-            return;
+            return true;
         }
 
         if (frame.SequenceNumber < _nextPreviewSequence)
@@ -624,7 +626,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             frame.Dispose();
             Interlocked.Increment(ref _totalDropped);
             Interlocked.Increment(ref _deadlineDropCount);
-            return;
+            return false;
         }
 
         var index = _frames.FindIndex(candidate =>
@@ -638,6 +640,8 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         {
             _frames.Insert(index, frame);
         }
+
+        return true;
     }
 
     private BufferedFrame RemoveOldestFrame()
