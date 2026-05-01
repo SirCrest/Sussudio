@@ -527,10 +527,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             decoder.AudioChunkCallback = null;
                             if (!decoder.SeekTo(coalescedSeekTarget) && IsActiveFmp4Segment(_currentOpenFilePath))
                             {
-                                Logger.Log($"FLASHBACK_SEEK_REOPEN offset_ms={(long)coalescedSeekTarget.TotalMilliseconds}");
-                                decoder.CloseFile();
-                                decoder.OpenFile(_currentOpenFilePath!);
-                                decoder.SeekTo(coalescedSeekTarget);
+                                TryReopenCurrentFileAndSeek(decoder, ref fileOpen, coalescedSeekTarget, "seek");
                             }
                             frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
                             RestoreAudioCallback(decoder, coalescedSeekTarget.Ticks);
@@ -609,10 +606,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                                 decoder.AudioChunkCallback = null; // null during forward-decode
                                 if (!decoder.SeekTo(endScrubTarget) && IsActiveFmp4Segment(_currentOpenFilePath))
                                 {
-                                    Logger.Log($"FLASHBACK_ENDSCRUB_SEEK_REOPEN offset_ms={(long)endScrubTarget.TotalMilliseconds}");
-                                    decoder.CloseFile();
-                                    decoder.OpenFile(_currentOpenFilePath!);
-                                    decoder.SeekTo(endScrubTarget);
+                                    TryReopenCurrentFileAndSeek(decoder, ref fileOpen, endScrubTarget, "end_scrub");
                                 }
                                 frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
                             }
@@ -676,10 +670,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                                 // via eof_reached reset and don't need reopening.
                                 if (IsActiveFmp4Segment(_currentOpenFilePath) && _currentOpenFilePath != null)
                                 {
-                                    Logger.Log($"FLASHBACK_PLAY_SEEK_REOPEN_ACTIVE offset_ms={(long)seekTarget.TotalMilliseconds}");
-                                    decoder.CloseFile();
-                                    decoder.OpenFile(_currentOpenFilePath);
-                                    decoder.SeekTo(seekTarget);
+                                    TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, "play");
                                 }
                             }
                         }
@@ -903,6 +894,38 @@ internal sealed class FlashbackPlaybackController : IDisposable
         fileOpen = false;
         _currentOpenFilePath = null;
         _decoderHwAccel = "N/A";
+    }
+
+    private bool TryReopenCurrentFileAndSeek(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)
+    {
+        var currentPath = _currentOpenFilePath;
+        if (string.IsNullOrWhiteSpace(currentPath))
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SKIP reason={reason} detail=no_current_file");
+            return false;
+        }
+
+        try
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN reason={reason} offset_ms={(long)seekTarget.TotalMilliseconds}");
+            if (decoder.IsOpen)
+            {
+                decoder.CloseFile();
+            }
+
+            fileOpen = false;
+            decoder.OpenFile(currentPath);
+            fileOpen = true;
+            _currentOpenFilePath = currentPath;
+            return decoder.SeekTo(seekTarget);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            fileOpen = false;
+            _currentOpenFilePath = null;
+            return false;
+        }
     }
 
     private void ReleasePreviousHeldFrame()

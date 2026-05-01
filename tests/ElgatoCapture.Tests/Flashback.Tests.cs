@@ -621,6 +621,22 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackPlaybackController_Fmp4ReopenRetriesAreGuarded()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeek(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_ERROR");
+        AssertContains(sourceText, "fileOpen = false;\n            _currentOpenFilePath = null;\n            return false;");
+        AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, coalescedSeekTarget, \"seek\")");
+        AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, endScrubTarget, \"end_scrub\")");
+        AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, \"play\")");
+        AssertDoesNotContain(sourceText, "decoder.OpenFile(_currentOpenFilePath!)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")

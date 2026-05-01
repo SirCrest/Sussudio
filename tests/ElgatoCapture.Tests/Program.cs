@@ -550,6 +550,9 @@ static partial class Program
                 "Flashback playback releases decoded frames after submit failures",
                 FlashbackPlaybackController_SubmitFailuresReleaseDecodedFrames),
             await RunCheckAsync(
+                "Flashback playback guards fMP4 reopen retries",
+                FlashbackPlaybackController_Fmp4ReopenRetriesAreGuarded),
+            await RunCheckAsync(
                 "Flashback scrub coalescing does not requeue control commands",
                 FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands),
             await RunCheckAsync(
