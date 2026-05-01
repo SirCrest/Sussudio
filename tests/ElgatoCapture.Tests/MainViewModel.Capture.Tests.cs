@@ -216,7 +216,7 @@ static partial class Program
         AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_PLAY_REJECTED\");");
         AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_GOLIVE_REJECTED\");");
         AssertContains(flashbackWindowText, "_isFlashbackScrubbing = true;\n        (sender as UIElement)?.CapturePointer(e.Pointer);");
-        AssertContains(flashbackWindowText, "ViewModel.FlashbackEndScrub();");
+        AssertContains(flashbackWindowText, "if (!ViewModel.FlashbackEndScrub())\n        {\n            Logger.Log($\"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}\");\n        }");
         AssertContains(flashbackWindowText, "FLASHBACK_UI_SCRUB_END");
         AssertContains(flashbackWindowText, "FlashbackScrubArea_PointerCanceled");
         AssertContains(flashbackWindowText, "FlashbackScrubArea_PointerCaptureLost");

@@ -246,7 +246,10 @@ public sealed partial class MainWindow
 
         _isFlashbackScrubbing = false;
         element?.ReleasePointerCapture(pointer);
-        ViewModel.FlashbackEndScrub();
+        if (!ViewModel.FlashbackEndScrub())
+        {
+            Logger.Log($"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}");
+        }
         Logger.Log($"FLASHBACK_UI_SCRUB_END reason={reason}");
     }
     private void UpdateFlashbackScrubVisual(PointerRoutedEventArgs e)
