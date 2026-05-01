@@ -309,12 +309,11 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         return true;
     }
 
-    internal void FlashbackUpdateScrub(TimeSpan position)
+    internal bool FlashbackUpdateScrub(TimeSpan position)
     {
-        if (TryGetActiveFlashback(out var controller))
-        {
-            controller.UpdateScrub(position);
-        }
+        if (!TryGetActiveFlashback(out var controller)) return false;
+        controller.UpdateScrub(position);
+        return true;
     }
 
     internal bool FlashbackEndScrub()

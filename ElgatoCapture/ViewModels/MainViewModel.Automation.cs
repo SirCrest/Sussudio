@@ -80,9 +80,9 @@ public partial class MainViewModel
         return _sessionCoordinator.FlashbackSeek(position);
     }
 
-    public void FlashbackUpdateScrub(TimeSpan position)
+    public bool FlashbackUpdateScrub(TimeSpan position)
     {
-        _sessionCoordinator.FlashbackUpdateScrub(position);
+        return _sessionCoordinator.FlashbackUpdateScrub(position);
     }
 
     public bool FlashbackEndScrub()

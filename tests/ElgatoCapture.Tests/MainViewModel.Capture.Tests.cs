@@ -79,7 +79,7 @@ static partial class Program
         AssertContains(coordinatorText, "return controller is { IsInitialized: true, State: not FlashbackPlaybackState.Disabled };");
         AssertMemberContains(automationText, "GetFlashbackPlaybackSnapshot", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(automationText, "FlashbackBeginScrub", "_sessionCoordinator.FlashbackBeginScrub(position)");
-        AssertMemberContains(automationText, "FlashbackUpdateScrub", "_sessionCoordinator.FlashbackUpdateScrub(position)");
+        AssertMemberContains(automationText, "FlashbackUpdateScrub", "return _sessionCoordinator.FlashbackUpdateScrub(position)");
         AssertMemberContains(automationText, "FlashbackEndScrub", "_sessionCoordinator.FlashbackEndScrub()");
         AssertMemberContains(automationText, "FlashbackPlay", "_sessionCoordinator.FlashbackPlay()");
         AssertMemberContains(automationText, "FlashbackPause", "_sessionCoordinator.FlashbackPause()");
@@ -209,6 +209,7 @@ static partial class Program
         AssertContains(xamlText, "PointerCaptureLost=\"FlashbackScrubArea_PointerCaptureLost\"");
         AssertContains(flashbackWindowText, "private void EndFlashbackScrubInteraction(UIElement? element, Pointer pointer, string reason)");
         AssertContains(flashbackWindowText, "if (!ViewModel.FlashbackBeginScrub(targetPosition))\n        {\n            Logger.Log(\"FLASHBACK_UI_SCRUB_BEGIN_REJECTED\");\n            return;\n        }");
+        AssertContains(flashbackWindowText, "if (!ViewModel.FlashbackUpdateScrub(targetPosition))\n        {\n            Logger.Log(\"FLASHBACK_UI_SCRUB_UPDATE_REJECTED\");\n            EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, \"update_rejected\");\n            return;\n        }");
         AssertContains(flashbackWindowText, "_isFlashbackScrubbing = true;\n        (sender as UIElement)?.CapturePointer(e.Pointer);");
         AssertContains(flashbackWindowText, "ViewModel.FlashbackEndScrub();");
         AssertContains(flashbackWindowText, "FLASHBACK_UI_SCRUB_END");

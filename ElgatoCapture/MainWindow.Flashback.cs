@@ -220,7 +220,12 @@ public sealed partial class MainWindow
         _lastScrubUpdateTick = now;
 
         var targetPosition = ComputeFlashbackScrubPosition(e);
-        ViewModel.FlashbackUpdateScrub(targetPosition);
+        if (!ViewModel.FlashbackUpdateScrub(targetPosition))
+        {
+            Logger.Log("FLASHBACK_UI_SCRUB_UPDATE_REJECTED");
+            EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "update_rejected");
+            return;
+        }
         UpdateFlashbackScrubVisual(e);
     }
     private void FlashbackScrubArea_PointerReleased(object sender, PointerRoutedEventArgs e)
