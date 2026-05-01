@@ -690,7 +690,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
             if (flashbackSink != null)
             {
-                segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint);
+                segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);
                 if (segmentPaths.Count == 0)
                 {
                     if (requireCompleteLiveEdge)

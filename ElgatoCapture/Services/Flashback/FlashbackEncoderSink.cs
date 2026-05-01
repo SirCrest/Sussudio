@@ -1541,8 +1541,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    public IReadOnlyList<string> ForceRotateForExport(TimeSpan inPoint, TimeSpan outPoint)
+    public IReadOnlyList<string> ForceRotateForExport(
+        TimeSpan inPoint,
+        TimeSpan outPoint,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         if (inPoint < TimeSpan.Zero || outPoint <= inPoint)
         {
             Logger.Log(
@@ -1603,15 +1608,25 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var codecName = _sessionContext?.CodecName ?? string.Empty;
         var isSlowCodec = codecName.Contains("av1", StringComparison.OrdinalIgnoreCase);
         var timeoutSeconds = isSlowCodec ? 10 : 3;
-        if (!tcs.Task.Wait(TimeSpan.FromSeconds(timeoutSeconds)))
+        try
+        {
+            if (!tcs.Task.Wait(TimeSpan.FromSeconds(timeoutSeconds), cancellationToken))
+            {
+                var clearedPending = TryCancelPendingForceRotate(tcs);
+                tcs.TrySetResult(Array.Empty<string>());
+                Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT codec={codecName} timeout_s={timeoutSeconds} cleared_pending={clearedPending} vq={Volatile.Read(ref _videoQueueDepth)} aq={Volatile.Read(ref _audioQueueDepth)}");
+                return Array.Empty<string>();
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             var clearedPending = TryCancelPendingForceRotate(tcs);
             tcs.TrySetResult(Array.Empty<string>());
-            Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT codec={codecName} timeout_s={timeoutSeconds} cleared_pending={clearedPending} vq={Volatile.Read(ref _videoQueueDepth)} aq={Volatile.Read(ref _audioQueueDepth)}");
-            return Array.Empty<string>();
+            Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_CANCELLED codec={codecName} cleared_pending={clearedPending} vq={Volatile.Read(ref _videoQueueDepth)} aq={Volatile.Read(ref _audioQueueDepth)}");
+            throw;
         }
 
-        return tcs.Task.Result;
+        return tcs.Task.GetAwaiter().GetResult();
     }
 
     private bool TryCancelPendingForceRotate(TaskCompletionSource<IReadOnlyList<string>> requestTcs)

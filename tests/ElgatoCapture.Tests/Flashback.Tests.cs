@@ -2222,6 +2222,8 @@ static partial class Program
             sourceText,
             "public IReadOnlyList<string> ForceRotateForExport",
             "    private bool TryCancelPendingForceRotate");
+        AssertContains(forceRotateBlock, "CancellationToken cancellationToken = default");
+        AssertContains(forceRotateBlock, "cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(forceRotateBlock, "if (inPoint < TimeSpan.Zero || outPoint <= inPoint)");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_RANGE");
         AssertOccursBefore(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_RANGE", "var tcs = new TaskCompletionSource<IReadOnlyList<string>>(TaskCreationOptions.RunContinuationsAsynchronously);");
@@ -2258,7 +2260,11 @@ static partial class Program
             sourceText,
             "public IReadOnlyList<string> ForceRotateForExport",
             "    private bool TryCancelPendingForceRotate");
-        AssertContains(forceRotateBlock, "var clearedPending = TryCancelPendingForceRotate(tcs);\n            tcs.TrySetResult(Array.Empty<string>());");
+        AssertContains(forceRotateBlock, "if (!tcs.Task.Wait(TimeSpan.FromSeconds(timeoutSeconds), cancellationToken))");
+        AssertContains(forceRotateBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
+        AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_CANCELLED");
+        AssertContains(forceRotateBlock, "return tcs.Task.GetAwaiter().GetResult();");
+        AssertDoesNotContain(forceRotateBlock, "return tcs.Task.Result;");
 
         return Task.CompletedTask;
     }

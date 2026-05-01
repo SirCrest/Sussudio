@@ -379,6 +379,7 @@ static partial class Program
         AssertContains(captureServiceText, "var exportId = 0L;");
         AssertContains(captureServiceText, "var evictionPaused = false;");
         AssertContains(captureServiceText, "exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
+        AssertContains(captureServiceText, "segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);");
         AssertContains(captureServiceText, "evictionPaused = bufferManager != null;");
         AssertContains(captureServiceText, "if (exportId != 0)");
         AssertContains(captureServiceText, "if (evictionPaused)");
