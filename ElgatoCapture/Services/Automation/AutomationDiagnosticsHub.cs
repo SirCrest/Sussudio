@@ -1143,6 +1143,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackPlaybackCommandsProcessed = health.FlashbackPlaybackCommandsProcessed,
             FlashbackPlaybackCommandsDropped = health.FlashbackPlaybackCommandsDropped,
             FlashbackPlaybackCommandsSkippedNotReady = health.FlashbackPlaybackCommandsSkippedNotReady,
+            FlashbackPlaybackScrubUpdatesCoalesced = health.FlashbackPlaybackScrubUpdatesCoalesced,
             FlashbackPlaybackPendingCommands = health.FlashbackPlaybackPendingCommands,
             FlashbackPlaybackMaxPendingCommands = health.FlashbackPlaybackMaxPendingCommands,
             FlashbackPlaybackLastCommandQueueLatencyMs = health.FlashbackPlaybackLastCommandQueueLatencyMs,

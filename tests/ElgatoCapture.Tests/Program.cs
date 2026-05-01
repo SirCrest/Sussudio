@@ -1379,6 +1379,7 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsProcessed"), "AutomationSnapshot.FlashbackPlaybackCommandsProcessed");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsDropped"), "AutomationSnapshot.FlashbackPlaybackCommandsDropped");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsSkippedNotReady"), "AutomationSnapshot.FlashbackPlaybackCommandsSkippedNotReady");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackScrubUpdatesCoalesced"), "AutomationSnapshot.FlashbackPlaybackScrubUpdatesCoalesced");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackPendingCommands"), "AutomationSnapshot.FlashbackPlaybackPendingCommands");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxPendingCommands"), "AutomationSnapshot.FlashbackPlaybackMaxPendingCommands");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandQueueLatencyMs"), "AutomationSnapshot.FlashbackPlaybackLastCommandQueueLatencyMs");

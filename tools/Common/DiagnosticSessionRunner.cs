@@ -40,6 +40,7 @@ public sealed class DiagnosticSessionResult
     public int FlashbackPlaybackMaxCommandQueueLatencyMsObserved { get; init; }
     public long FlashbackPlaybackCommandsDroppedAtEnd { get; init; }
     public long FlashbackPlaybackCommandsSkippedNotReadyAtEnd { get; init; }
+    public long FlashbackPlaybackScrubUpdatesCoalescedAtEnd { get; init; }
     public double FlashbackPlaybackObservedFpsAtEnd { get; init; }
     public double FlashbackPlaybackAvgFrameMsAtEnd { get; init; }
     public double FlashbackPlaybackP99FrameMsAtEnd { get; init; }
@@ -567,6 +568,7 @@ public static class DiagnosticSessionRunner
         var playbackMaxLatencyObserved = GetMaxSnapshotInt(samples, lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
         var playbackDroppedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsDropped") ?? 0;
         var playbackSkippedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0;
+        var playbackScrubCoalescedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackScrubUpdatesCoalesced") ?? 0;
         var playbackObservedFpsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackObservedFps");
         var playbackAvgFrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackAvgFrameMs");
         var playbackP99FrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackP99FrameMs");
@@ -629,6 +631,7 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackMaxCommandQueueLatencyMsObserved = playbackMaxLatencyObserved,
             FlashbackPlaybackCommandsDroppedAtEnd = playbackDroppedAtEnd,
             FlashbackPlaybackCommandsSkippedNotReadyAtEnd = playbackSkippedAtEnd,
+            FlashbackPlaybackScrubUpdatesCoalescedAtEnd = playbackScrubCoalescedAtEnd,
             FlashbackPlaybackObservedFpsAtEnd = playbackObservedFpsAtEnd,
             FlashbackPlaybackAvgFrameMsAtEnd = playbackAvgFrameMsAtEnd,
             FlashbackPlaybackP99FrameMsAtEnd = playbackP99FrameMsAtEnd,
@@ -766,7 +769,8 @@ public static class DiagnosticSessionRunner
             $"maxPending={result.FlashbackPlaybackMaxPendingCommandsObserved} " +
             $"maxLatencyMs={result.FlashbackPlaybackMaxCommandQueueLatencyMsObserved} " +
             $"droppedEnd={result.FlashbackPlaybackCommandsDroppedAtEnd} " +
-            $"skippedEnd={result.FlashbackPlaybackCommandsSkippedNotReadyAtEnd}");
+            $"skippedEnd={result.FlashbackPlaybackCommandsSkippedNotReadyAtEnd} " +
+            $"coalescedScrubEnd={result.FlashbackPlaybackScrubUpdatesCoalescedAtEnd}");
         builder.AppendLine(
             "Flashback Playback Perf: " +
             $"fpsEnd={result.FlashbackPlaybackObservedFpsAtEnd:0.##} " +

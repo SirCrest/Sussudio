@@ -1023,6 +1023,7 @@ static partial class Program
                      "CommandsProcessed",
                      "CommandsDropped",
                      "CommandsSkippedNotReady",
+                     "ScrubUpdatesCoalesced",
                      "PendingCommands",
                      "MaxPendingCommands",
                      "LastCommandQueueLatencyMs",
