@@ -226,6 +226,17 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 {
                     await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, transitionToken).ConfigureAwait(false);
                 }
+                catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
+                {
+                    _flashbackEnabled = false;
+                    _pendingFlashbackEnableAfterRecording = false;
+                    if (_flashbackSink != null || _flashbackBufferManager != null || _flashbackExporter != null || _flashbackPlaybackController != null)
+                    {
+                        await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true).ConfigureAwait(false);
+                    }
+                    Logger.Log($"FLASHBACK_ENABLE_IMMEDIATE_CANCELLED type={ex.GetType().Name} error='{ex.Message}'");
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     _flashbackEnabled = false;

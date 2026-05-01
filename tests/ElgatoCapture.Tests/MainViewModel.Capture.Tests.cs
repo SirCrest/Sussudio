@@ -590,6 +590,8 @@ static partial class Program
             "\n        }, cancellationToken);");
         AssertContains(immediateEnableBranch, "try");
         AssertContains(immediateEnableBranch, "await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, transitionToken)");
+        AssertContains(immediateEnableBranch, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
+        AssertContains(immediateEnableBranch, "FLASHBACK_ENABLE_IMMEDIATE_CANCELLED");
         AssertContains(immediateEnableBranch, "catch");
         AssertContains(immediateEnableBranch, "_flashbackEnabled = false;");
         AssertContains(immediateEnableBranch, "_pendingFlashbackEnableAfterRecording = false;");
