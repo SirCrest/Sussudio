@@ -143,6 +143,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private volatile Task? _activeRecordingToggleTask;
     private int _activeRecordingTransitionTarget = -1;
     private bool _isLoadingSettings;
+    private bool _suppressFlashbackEncoderSettingsCycle;
     private string? _pendingSavedDeviceId;
     private string? _pendingSavedAudioDeviceId;
     private string? _pendingSavedMicrophoneDeviceId;

@@ -683,9 +683,9 @@ public partial class MainViewModel
         }, cancellationToken);
     }
 
-    public Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)
+    public async Task SetPresetAsync(string preset, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        var settings = await InvokeOnUiThreadAsync(() =>
         {
             var matched = AvailablePresets.FirstOrDefault(value =>
                 string.Equals(value, preset, StringComparison.OrdinalIgnoreCase));
@@ -694,9 +694,25 @@ public partial class MainViewModel
                 throw new InvalidOperationException($"Preset '{preset}' is not available.");
             }
 
-            SelectedPreset = matched;
-            return Task.CompletedTask;
-        }, cancellationToken);
+            _suppressFlashbackEncoderSettingsCycle = true;
+            try
+            {
+                SelectedPreset = matched;
+            }
+            finally
+            {
+                _suppressFlashbackEncoderSettingsCycle = false;
+            }
+
+            return (Quality: ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset);
+        }, cancellationToken).ConfigureAwait(false);
+
+        await _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
+                quality: settings.Quality,
+                customBitrateMbps: settings.Bitrate,
+                nvencPreset: settings.Preset,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public Task SetSplitEncodeModeAsync(string splitEncodeMode, CancellationToken cancellationToken = default)
@@ -772,9 +788,9 @@ public partial class MainViewModel
         }, cancellationToken);
     }
 
-    public Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)
+    public async Task SetQualityAsync(string quality, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        var settings = await InvokeOnUiThreadAsync(() =>
         {
             var matched = AvailableQualities.FirstOrDefault(value =>
                 string.Equals(value, quality, StringComparison.OrdinalIgnoreCase));
@@ -783,18 +799,50 @@ public partial class MainViewModel
                 throw new InvalidOperationException($"Quality '{quality}' is not available.");
             }
 
-            SelectedQuality = matched;
-            return Task.CompletedTask;
-        }, cancellationToken);
+            _suppressFlashbackEncoderSettingsCycle = true;
+            try
+            {
+                SelectedQuality = matched;
+            }
+            finally
+            {
+                _suppressFlashbackEncoderSettingsCycle = false;
+            }
+
+            return (Quality: ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset);
+        }, cancellationToken).ConfigureAwait(false);
+
+        await _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
+                quality: settings.Quality,
+                customBitrateMbps: settings.Bitrate,
+                nvencPreset: settings.Preset,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
-    public Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)
+    public async Task SetCustomBitrateAsync(double bitrateMbps, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        var settings = await InvokeOnUiThreadAsync(() =>
         {
-            CustomBitrateMbps = Math.Clamp(bitrateMbps, 1, 300);
-            return Task.CompletedTask;
-        }, cancellationToken);
+            _suppressFlashbackEncoderSettingsCycle = true;
+            try
+            {
+                CustomBitrateMbps = Math.Clamp(bitrateMbps, 1, 300);
+            }
+            finally
+            {
+                _suppressFlashbackEncoderSettingsCycle = false;
+            }
+
+            return (Quality: ParseVideoQuality(SelectedQuality), Bitrate: CustomBitrateMbps, Preset: SelectedPreset);
+        }, cancellationToken).ConfigureAwait(false);
+
+        await _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
+                quality: settings.Quality,
+                customBitrateMbps: settings.Bitrate,
+                nvencPreset: settings.Preset,
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public Task SetHdrEnabledAsync(bool enabled, CancellationToken cancellationToken = default)

@@ -58,7 +58,7 @@ public partial class MainViewModel
         SaveSettings();
 
         // Cycle the flashback encoder so the buffer uses the new bitrate.
-        if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
+        if (IsPreviewing && !IsRecording && _isLoadingSettings is false && _suppressFlashbackEncoderSettingsCycle is false)
         {
             TrackFlashbackEncoderSettingsCycle("bitrate");
         }
@@ -405,7 +405,7 @@ public partial class MainViewModel
         SaveSettings();
 
         // Cycle the flashback encoder so the buffer uses the new quality level.
-        if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
+        if (IsPreviewing && !IsRecording && _isLoadingSettings is false && _suppressFlashbackEncoderSettingsCycle is false)
         {
             TrackFlashbackEncoderSettingsCycle("quality");
         }
@@ -416,7 +416,7 @@ public partial class MainViewModel
         SaveSettings();
 
         // Cycle the flashback encoder so the buffer uses the new preset.
-        if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
+        if (IsPreviewing && !IsRecording && _isLoadingSettings is false && _suppressFlashbackEncoderSettingsCycle is false)
         {
             TrackFlashbackEncoderSettingsCycle("preset");
         }
