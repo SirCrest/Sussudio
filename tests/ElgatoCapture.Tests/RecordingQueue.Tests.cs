@@ -213,6 +213,9 @@ static partial class Program
             "private async Task DisposeTransientRecordingBackendAsync");
         AssertContains(stopRecordingBackend, "OperationCanceledException? flashbackCancellationException = null;");
         AssertContains(stopRecordingBackend, "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");");
+        AssertContains(stopRecordingBackend, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(stopRecordingBackend, "FLASHBACK_BUFFER_CYCLE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(stopRecordingBackend, "FLASHBACK_MIC_RESTART_WARN type={ex.GetType().Name} error='{ex.Message}'");
         AssertOccursBefore(
             stopRecordingBackend,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
@@ -264,6 +267,7 @@ static partial class Program
         AssertContains(cycleNewSinkStart, "unifiedVideoCapture.SetFlashbackSink(null);");
         AssertContains(cycleNewSinkStart, "_wasapiAudioCapture?.DetachFlashbackSink();");
         AssertContains(cycleNewSinkStart, "_microphoneCapture?.SetAudioWriter(null);");
+        AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(cycleNewSinkStart, "FLASHBACK_CYCLE_NEW_SINK_DETACH_WARN");
         AssertContains(captureServiceSource, "purgeSegments: purgeSegments");
         AssertContains(captureServiceSource, "purgeSegments: effectivePurgeSegments");
@@ -278,6 +282,8 @@ static partial class Program
         AssertContains(captureServiceSource, "BeginFlashbackRecordingAccounting");
         AssertContains(captureServiceSource, "EndFlashbackRecordingAccounting");
         AssertContains(captureServiceSource, "CancelRecordingStartRollback");
+        AssertContains(captureServiceSource, "FLASHBACK_RECORDING_START_ROLLBACK_WARN type={rollbackEx.GetType().Name} error='{rollbackEx.Message}'");
+        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(captureServiceSource, "VIDEO_DIAG flashback_recording_pipeline");
         AssertContains(captureServiceSource, "BeginFlashbackBackendCleanup");
         AssertContains(captureServiceSource, "detachMicrophoneWriter: !preserveDedicatedRecordingMic");

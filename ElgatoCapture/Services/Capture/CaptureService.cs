@@ -375,7 +375,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 catch (Exception ex)
                 {
                     cycleFailed = true;
-                    Logger.Log($"FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format} error='{ex.Message}'");
+                    Logger.Log($"FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format} type={ex.GetType().Name} error='{ex.Message}'");
                 }
             }
 
@@ -438,7 +438,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 catch (Exception ex)
                 {
                     cycleFailed = true;
-                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} error='{ex.Message}'");
+                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} type={ex.GetType().Name} error='{ex.Message}'");
                 }
             }
 
@@ -1533,7 +1533,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_PREVIEW_INIT_FAIL error='{ex.Message}'");
+            Logger.Log($"FLASHBACK_PREVIEW_INIT_FAIL type={ex.GetType().Name} error='{ex.Message}'");
             flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;
             unifiedVideoCapture.SetFlashbackSink(null);
             _wasapiAudioCapture?.DetachFlashbackSink();
@@ -1888,7 +1888,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_FAIL error='{ex.Message}' — falling back to full teardown");
+            Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}' — falling back to full teardown");
             try { newSink.FrameEncoded -= OnFlashbackFrameEncoded; }
             catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}"); }
             try { unifiedVideoCapture.SetFlashbackSink(null); }
@@ -3356,7 +3356,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     }
                     catch (Exception rollbackEx)
                     {
-                        Logger.Log($"FLASHBACK_RECORDING_START_ROLLBACK_WARN error='{rollbackEx.Message}'");
+                        Logger.Log($"FLASHBACK_RECORDING_START_ROLLBACK_WARN type={rollbackEx.GetType().Name} error='{rollbackEx.Message}'");
                     }
 
                     _unifiedVideoCapture?.EndFlashbackRecordingAccounting();
@@ -3726,7 +3726,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log($"FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL error='{ex.Message}'");
+                Logger.Log($"FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
                 fbResult = FinalizeResult.Failure(fbOutputPath, $"Flashback recording finalize failed: {ex.Message}");
             }
 
@@ -3794,7 +3794,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log($"FLASHBACK_BUFFER_CYCLE_FAIL error='{ex.Message}'");
+                Logger.Log($"FLASHBACK_BUFFER_CYCLE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
             }
 
             _recordingStopwatch.Stop();
@@ -3827,7 +3827,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log($"FLASHBACK_MIC_RESTART_WARN error='{ex.Message}'");
+                    Logger.Log($"FLASHBACK_MIC_RESTART_WARN type={ex.GetType().Name} error='{ex.Message}'");
                 }
             }
 
@@ -4078,7 +4078,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     {
                         await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true).ConfigureAwait(false);
                     }
-                    Logger.Log($"FLASHBACK_ENABLE_AFTER_RECORDING_FAIL error='{ex.Message}'");
+                    Logger.Log($"FLASHBACK_ENABLE_AFTER_RECORDING_FAIL type={ex.GetType().Name} error='{ex.Message}'");
                 }
             }
         }

@@ -412,7 +412,7 @@ static partial class Program
         AssertContains(encoderSettingsChange, "if (!cycleFailed)");
         AssertContains(
             encoderSettingsChange,
-            "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset}");
+            "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} type={ex.GetType().Name} error='{ex.Message}'");
 
         var formatChange = ExtractTextBetween(
             captureServiceText,
@@ -421,7 +421,7 @@ static partial class Program
         AssertContains(formatChange, "var cycleFailed = false;");
         AssertContains(formatChange, "cycleFailed = true;");
         AssertContains(formatChange, "if (!cycleFailed)");
-        AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format}");
+        AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format} type={ex.GetType().Name} error='{ex.Message}'");
 
         var cycleBuffer = ExtractTextBetween(
             captureServiceText,
@@ -429,6 +429,7 @@ static partial class Program
             "    private void OnFlashbackFrameEncoded");
         AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN");
         AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN");
+        AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
 
         return Task.CompletedTask;
     }
@@ -483,6 +484,9 @@ static partial class Program
         AssertContains(
             stopAndDisposeRecordingBackend,
             "await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken)");
+        AssertContains(
+            stopAndDisposeRecordingBackend,
+            "FLASHBACK_ENABLE_AFTER_RECORDING_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         var deferredEnableFailureBranch = ExtractTextBetween(
             stopAndDisposeRecordingBackend,
             "catch (Exception ex)\n                {",
