@@ -804,6 +804,13 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
     public double FlashbackPlaybackObservedFps { get; init; }
     public double FlashbackPlaybackAvgFrameMs { get; init; }
+    public int FlashbackPlaybackCadenceSampleCount { get; init; }
+    public double FlashbackPlaybackP95FrameMs { get; init; }
+    public double FlashbackPlaybackP99FrameMs { get; init; }
+    public double FlashbackPlaybackMaxFrameMs { get; init; }
+    public long FlashbackPlaybackSlowFrames { get; init; }
+    public double FlashbackPlaybackSlowFramePercent { get; init; }
+    public double FlashbackPlaybackOnePercentLowFps { get; init; }
     public double FlashbackAvDriftMs { get; init; }
     public bool FlashbackPlaybackThreadAlive { get; init; }
     public long FlashbackPlaybackCommandsEnqueued { get; init; }

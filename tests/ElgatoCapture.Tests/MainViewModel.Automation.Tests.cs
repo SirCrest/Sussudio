@@ -327,6 +327,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackCommandsSkippedNotReadyAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackObservedFpsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackAvgFrameMsAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackP99FrameMsAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackOnePercentLowFpsAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackSlowFramePercentAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackSegmentSwitchesAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackFmp4ReopensAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackWriteHeadWaitsAtEnd");

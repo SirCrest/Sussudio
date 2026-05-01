@@ -1205,6 +1205,13 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastSegmentSwitchUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastSegmentSwitchUtcUnixMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastFmp4ReopenUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastFmp4ReopenUtcUnixMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastWriteHeadWaitGapMs"), "AutomationSnapshot.FlashbackPlaybackLastWriteHeadWaitGapMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCadenceSampleCount"), "AutomationSnapshot.FlashbackPlaybackCadenceSampleCount");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackP95FrameMs"), "AutomationSnapshot.FlashbackPlaybackP95FrameMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackP99FrameMs"), "AutomationSnapshot.FlashbackPlaybackP99FrameMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxFrameMs"), "AutomationSnapshot.FlashbackPlaybackMaxFrameMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSlowFrames"), "AutomationSnapshot.FlashbackPlaybackSlowFrames");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSlowFramePercent"), "AutomationSnapshot.FlashbackPlaybackSlowFramePercent");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackOnePercentLowFps"), "AutomationSnapshot.FlashbackPlaybackOnePercentLowFps");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsEnqueued"), "AutomationSnapshot.FlashbackPlaybackCommandsEnqueued");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsProcessed"), "AutomationSnapshot.FlashbackPlaybackCommandsProcessed");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsDropped"), "AutomationSnapshot.FlashbackPlaybackCommandsDropped");

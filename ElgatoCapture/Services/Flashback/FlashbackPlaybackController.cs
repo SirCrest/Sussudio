@@ -35,6 +35,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
         public long QueuedTimestamp { get; init; }
     }
 
+    public readonly record struct PlaybackCadenceMetrics(
+        int SampleCount,
+        double P95FrameMs,
+        double P99FrameMs,
+        double MaxFrameMs,
+        long SlowFrameCount,
+        double SlowFramePercent,
+        double OnePercentLowFps);
+
     // --- Dependencies ---
     private readonly FlashbackBufferManager _bufferManager;
     private IPreviewFrameSink? _previewSink;
@@ -78,6 +87,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private double _playbackObservedFps;
     private double _playbackAvgFrameMs;
     private readonly Stopwatch _playbackFpsClock = new();
+    private const int PlaybackCadenceSampleCapacity = 240;
+    private readonly object _playbackCadenceLock = new();
+    private readonly double[] _playbackFrameIntervalsMs = new double[PlaybackCadenceSampleCapacity];
+    private int _playbackFrameIntervalHead;
+    private int _playbackFrameIntervalCount;
+    private long _playbackSlowFrameCount;
     private long _commandsEnqueued;
     private long _commandsProcessed;
     private long _commandsDropped;
@@ -1070,7 +1085,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
 
             PaceFrameInterval(pacingStopwatch, frameDuration, videoFrame.Pts.Ticks);
-            UpdateCadenceMetrics(pacingStopwatch);
+            UpdateCadenceMetrics(pacingStopwatch, frameDuration.TotalMilliseconds);
 
             // Log A/V drift every ~1 second for diagnostics
             if (_playbackFrameCount % 120 == 0)
@@ -1318,10 +1333,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private void UpdateCadenceMetrics(Stopwatch pacingStopwatch)
+    private void UpdateCadenceMetrics(Stopwatch pacingStopwatch, double expectedFrameMs)
     {
         var frameNum = Interlocked.Increment(ref _playbackFrameCount);
+        var intervalMs = pacingStopwatch.Elapsed.TotalMilliseconds;
         pacingStopwatch.Restart();
+        TrackPlaybackCadence(intervalMs, expectedFrameMs);
 
         if (frameNum == 1)
         {
@@ -1443,6 +1460,47 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public string LastCommandFailure => _lastCommandFailure;
     public bool PlaybackThreadAlive => _playbackThread is { IsAlive: true };
 
+    public PlaybackCadenceMetrics GetPlaybackCadenceMetrics()
+    {
+        double[] samples;
+        lock (_playbackCadenceLock)
+        {
+            if (_playbackFrameIntervalCount == 0)
+            {
+                return new PlaybackCadenceMetrics(0, 0, 0, 0, Interlocked.Read(ref _playbackSlowFrameCount), 0, 0);
+            }
+
+            samples = new double[_playbackFrameIntervalCount];
+            var oldest = (_playbackFrameIntervalHead - _playbackFrameIntervalCount + _playbackFrameIntervalsMs.Length) % _playbackFrameIntervalsMs.Length;
+            for (var i = 0; i < samples.Length; i++)
+            {
+                samples[i] = _playbackFrameIntervalsMs[(oldest + i) % _playbackFrameIntervalsMs.Length];
+            }
+        }
+
+        Array.Sort(samples);
+        var p95 = PercentileFromSorted(samples, 0.95);
+        var p99 = PercentileFromSorted(samples, 0.99);
+        var max = samples[^1];
+        var slow = Interlocked.Read(ref _playbackSlowFrameCount);
+        var totalFrames = Math.Max(1, Interlocked.Read(ref _playbackFrameCount));
+        var slowPercent = slow * 100.0 / totalFrames;
+        var onePercentLowFps = p99 > 0 ? 1000.0 / p99 : 0;
+        return new PlaybackCadenceMetrics(samples.Length, p95, p99, max, slow, slowPercent, onePercentLowFps);
+    }
+
+    private static double PercentileFromSorted(double[] sortedSamples, double percentile)
+    {
+        if (sortedSamples.Length == 0)
+        {
+            return 0;
+        }
+
+        var index = (int)Math.Ceiling(percentile * sortedSamples.Length) - 1;
+        index = Math.Clamp(index, 0, sortedSamples.Length - 1);
+        return sortedSamples[index];
+    }
+
     /// <summary>
     /// Audio-video drift in milliseconds. Positive = audio ahead, negative = audio behind.
     /// Uses the PTS of the chunk WASAPI is currently rendering (not just enqueued).
@@ -1514,6 +1572,29 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
+    private void TrackPlaybackCadence(double intervalMs, double expectedFrameMs)
+    {
+        if (intervalMs <= 0 || double.IsNaN(intervalMs) || double.IsInfinity(intervalMs))
+        {
+            return;
+        }
+
+        lock (_playbackCadenceLock)
+        {
+            _playbackFrameIntervalsMs[_playbackFrameIntervalHead] = intervalMs;
+            _playbackFrameIntervalHead = (_playbackFrameIntervalHead + 1) % _playbackFrameIntervalsMs.Length;
+            if (_playbackFrameIntervalCount < _playbackFrameIntervalsMs.Length)
+            {
+                _playbackFrameIntervalCount++;
+            }
+        }
+
+        if (expectedFrameMs > 0 && intervalMs > expectedFrameMs * 1.5)
+        {
+            Interlocked.Increment(ref _playbackSlowFrameCount);
+        }
+    }
+
     private static void UpdateMaxLong(ref long target, long value)
     {
         while (true)
@@ -1559,6 +1640,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
         _playbackObservedFps = 0;
         _playbackAvgFrameMs = 0;
         _playbackFpsClock.Reset();
+        Interlocked.Exchange(ref _playbackSlowFrameCount, 0);
+        lock (_playbackCadenceLock)
+        {
+            Array.Clear(_playbackFrameIntervalsMs);
+            _playbackFrameIntervalHead = 0;
+            _playbackFrameIntervalCount = 0;
+        }
     }
 
     private void RestoreAudioCallback(FlashbackDecoder decoder, long audioStartGateTicks = 0)

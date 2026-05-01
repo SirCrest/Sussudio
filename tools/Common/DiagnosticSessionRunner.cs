@@ -42,8 +42,13 @@ public sealed class DiagnosticSessionResult
     public long FlashbackPlaybackCommandsSkippedNotReadyAtEnd { get; init; }
     public double FlashbackPlaybackObservedFpsAtEnd { get; init; }
     public double FlashbackPlaybackAvgFrameMsAtEnd { get; init; }
+    public double FlashbackPlaybackP99FrameMsAtEnd { get; init; }
+    public double FlashbackPlaybackMaxFrameMsAtEnd { get; init; }
+    public double FlashbackPlaybackOnePercentLowFpsAtEnd { get; init; }
     public long FlashbackPlaybackFrameCountAtEnd { get; init; }
     public long FlashbackPlaybackLateFramesAtEnd { get; init; }
+    public long FlashbackPlaybackSlowFramesAtEnd { get; init; }
+    public double FlashbackPlaybackSlowFramePercentAtEnd { get; init; }
     public long FlashbackPlaybackDroppedFramesAtEnd { get; init; }
     public long FlashbackPlaybackSegmentSwitchesAtEnd { get; init; }
     public long FlashbackPlaybackFmp4ReopensAtEnd { get; init; }
@@ -538,8 +543,13 @@ public static class DiagnosticSessionRunner
         var playbackSkippedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0;
         var playbackObservedFpsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackObservedFps");
         var playbackAvgFrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackAvgFrameMs");
+        var playbackP99FrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackP99FrameMs");
+        var playbackMaxFrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackMaxFrameMs");
+        var playbackOnePercentLowFpsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackOnePercentLowFps");
         var playbackFrameCountAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
         var playbackLateFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLateFrames") ?? 0;
+        var playbackSlowFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSlowFrames") ?? 0;
+        var playbackSlowFramePercentAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackSlowFramePercent");
         var playbackDroppedFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackDroppedFrames") ?? 0;
         var playbackSegmentSwitchesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSegmentSwitches") ?? 0;
         var playbackFmp4ReopensAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackFmp4Reopens") ?? 0;
@@ -588,8 +598,13 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackCommandsSkippedNotReadyAtEnd = playbackSkippedAtEnd,
             FlashbackPlaybackObservedFpsAtEnd = playbackObservedFpsAtEnd,
             FlashbackPlaybackAvgFrameMsAtEnd = playbackAvgFrameMsAtEnd,
+            FlashbackPlaybackP99FrameMsAtEnd = playbackP99FrameMsAtEnd,
+            FlashbackPlaybackMaxFrameMsAtEnd = playbackMaxFrameMsAtEnd,
+            FlashbackPlaybackOnePercentLowFpsAtEnd = playbackOnePercentLowFpsAtEnd,
             FlashbackPlaybackFrameCountAtEnd = playbackFrameCountAtEnd,
             FlashbackPlaybackLateFramesAtEnd = playbackLateFramesAtEnd,
+            FlashbackPlaybackSlowFramesAtEnd = playbackSlowFramesAtEnd,
+            FlashbackPlaybackSlowFramePercentAtEnd = playbackSlowFramePercentAtEnd,
             FlashbackPlaybackDroppedFramesAtEnd = playbackDroppedFramesAtEnd,
             FlashbackPlaybackSegmentSwitchesAtEnd = playbackSegmentSwitchesAtEnd,
             FlashbackPlaybackFmp4ReopensAtEnd = playbackFmp4ReopensAtEnd,
@@ -697,8 +712,13 @@ public static class DiagnosticSessionRunner
             "Flashback Playback Perf: " +
             $"fpsEnd={result.FlashbackPlaybackObservedFpsAtEnd:0.##} " +
             $"avgFrameMsEnd={result.FlashbackPlaybackAvgFrameMsAtEnd:0.##} " +
+            $"p99FrameMsEnd={result.FlashbackPlaybackP99FrameMsAtEnd:0.##} " +
+            $"maxFrameMsEnd={result.FlashbackPlaybackMaxFrameMsAtEnd:0.##} " +
+            $"onePercentLowFpsEnd={result.FlashbackPlaybackOnePercentLowFpsAtEnd:0.##} " +
             $"framesEnd={result.FlashbackPlaybackFrameCountAtEnd} " +
             $"lateEnd={result.FlashbackPlaybackLateFramesAtEnd} " +
+            $"slowEnd={result.FlashbackPlaybackSlowFramesAtEnd} " +
+            $"slowPctEnd={result.FlashbackPlaybackSlowFramePercentAtEnd:0.##} " +
             $"droppedFramesEnd={result.FlashbackPlaybackDroppedFramesAtEnd}");
         builder.AppendLine(
             "Flashback Playback Stages: " +
