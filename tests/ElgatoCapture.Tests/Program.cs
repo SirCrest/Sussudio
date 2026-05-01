@@ -472,6 +472,9 @@ static partial class Program
                 "FlashbackBufferManager segment info skips missing files",
                 FlashbackBufferManager_GetSegmentInfoList_SkipsMissingFiles),
             await RunCheckAsync(
+                "FlashbackBufferManager active file path requires existing file",
+                FlashbackBufferManager_ActiveFilePath_RequiresExistingFile),
+            await RunCheckAsync(
                 "FlashbackBufferManager eviction pause and resume are balanced",
                 FlashbackBufferManager_EvictionPauseResume_Balanced),
             await RunCheckAsync(
@@ -2902,6 +2905,26 @@ static partial class Program
         var withoutActive = method.Invoke(manager, null)!;
 
         AssertEqual(1, GetCountProperty(withoutActive), "Segment info should omit missing active file");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_ActiveFilePath_RequiresExistingFile()
+    {
+        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(source, "return _activeSegmentPath != null && File.Exists(_activeSegmentPath)\n                    ? _activeSegmentPath\n                    : null;");
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        AssertEqual(null, GetPropertyValue(manager, "ActiveFilePath"), "Missing active file should not be exposed");
+
+        var active = Path.Combine(tempDir, "fb_test_0003.ts");
+        File.WriteAllText(active, "active");
+
+        AssertEqual(active, (string)GetPropertyValue(manager, "ActiveFilePath")!, "Existing active file should be exposed");
 
         return Task.CompletedTask;
     }
