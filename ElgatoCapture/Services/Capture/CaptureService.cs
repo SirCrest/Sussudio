@@ -3920,6 +3920,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 }
                 catch (Exception ex)
                 {
+                    _flashbackEnabled = false;
+                    _pendingFlashbackEnableAfterRecording = false;
+                    if (_flashbackSink != null || _flashbackBufferManager != null || _flashbackExporter != null || _flashbackPlaybackController != null)
+                    {
+                        await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true).ConfigureAwait(false);
+                    }
                     Logger.Log($"FLASHBACK_ENABLE_AFTER_RECORDING_FAIL error='{ex.Message}'");
                 }
             }

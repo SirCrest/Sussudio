@@ -419,6 +419,13 @@ static partial class Program
         AssertContains(
             stopAndDisposeRecordingBackend,
             "await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, cancellationToken)");
+        var deferredEnableFailureBranch = ExtractTextBetween(
+            stopAndDisposeRecordingBackend,
+            "catch (Exception ex)\n                {",
+            "Logger.Log($\"FLASHBACK_ENABLE_AFTER_RECORDING_FAIL");
+        AssertContains(deferredEnableFailureBranch, "_flashbackEnabled = false;");
+        AssertContains(deferredEnableFailureBranch, "_pendingFlashbackEnableAfterRecording = false;");
+        AssertContains(deferredEnableFailureBranch, "await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true)");
 
         return Task.CompletedTask;
     }
