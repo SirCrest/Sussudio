@@ -1753,7 +1753,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_PREVIEW_INIT_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+            var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested
+                ? "FLASHBACK_PREVIEW_INIT_CANCELLED"
+                : "FLASHBACK_PREVIEW_INIT_FAIL";
+            Logger.Log($"{failureToken} type={ex.GetType().Name} error='{ex.Message}'");
             flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;
             unifiedVideoCapture.SetFlashbackSink(null);
             _wasapiAudioCapture?.DetachFlashbackSink();

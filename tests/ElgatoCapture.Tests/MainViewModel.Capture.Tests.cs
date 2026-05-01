@@ -494,6 +494,7 @@ static partial class Program
             "FLASHBACK_UNIFIED_RECORDING_STOP_OK",
             "FLASHBACK_UNIFIED_RECORDING_STOP_FAIL",
             "FLASHBACK_PREVIEW_INIT_OK",
+            "FLASHBACK_PREVIEW_INIT_CANCELLED",
             "FLASHBACK_PREVIEW_DISPOSE_OK",
             "FLASHBACK_BUFFER_CYCLE_OK",
             "FLASHBACK_RECORDING_ACTIVE",
@@ -539,6 +540,13 @@ static partial class Program
             captureServiceText,
             "private async Task CycleFlashbackBufferAsync",
             "    private void OnFlashbackFrameEncoded");
+        var ensureFlashbackPreviewBackend = ExtractTextBetween(
+            captureServiceText,
+            "private async Task EnsureFlashbackPreviewBackendAsync",
+            "private async Task DisposeFlashbackPreviewBackendAsync");
+        AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
+        AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_CANCELLED");
+        AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_FAIL");
         AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN");
         AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN");
         AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");

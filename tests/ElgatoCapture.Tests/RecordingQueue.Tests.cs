@@ -389,7 +389,10 @@ static partial class Program
         AssertContains(captureServiceSource, "EndFlashbackRecordingAccounting");
         AssertContains(captureServiceSource, "CancelRecordingStartRollback");
         AssertContains(captureServiceSource, "FLASHBACK_RECORDING_START_ROLLBACK_WARN type={rollbackEx.GetType().Name} error='{rollbackEx.Message}'");
-        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(captureServiceSource, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
+        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_CANCELLED");
+        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_FAIL");
+        AssertContains(captureServiceSource, "Logger.Log($\"{failureToken} type={ex.GetType().Name} error='{ex.Message}'\")");
         AssertContains(captureServiceSource, "VIDEO_DIAG flashback_recording_pipeline");
         AssertContains(captureServiceSource, "BeginFlashbackBackendCleanup");
         AssertContains(captureServiceSource, "detachMicrophoneWriter: !preserveDedicatedRecordingMic");
