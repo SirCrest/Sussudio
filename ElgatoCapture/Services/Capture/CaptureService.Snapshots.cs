@@ -1451,6 +1451,7 @@ public partial class CaptureService
             FlashbackPlaybackLastCommandProcessed = fbPlayback?.LastCommandProcessed ?? "None",
             FlashbackPlaybackLastCommandQueuedUtcUnixMs = fbPlayback?.LastCommandQueuedUtcUnixMs ?? 0,
             FlashbackPlaybackLastCommandProcessedUtcUnixMs = fbPlayback?.LastCommandProcessedUtcUnixMs ?? 0,
+            FlashbackPlaybackLastCommandFailureUtcUnixMs = fbPlayback?.LastCommandFailureUtcUnixMs ?? 0,
             FlashbackPlaybackLastCommandFailure = fbPlayback?.LastCommandFailure ?? string.Empty,
             FlashbackExportActive = flashbackExportActive,
             FlashbackExportId = flashbackExportId,

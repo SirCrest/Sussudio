@@ -500,8 +500,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackSegmentSwitchesAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackFmp4ReopensAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackWriteHeadWaitsAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd");
         AssertContains(diagnosticSessionText, "Flashback Playback Commands:");
         AssertContains(diagnosticSessionText, "coalescedScrubEnd={result.FlashbackPlaybackScrubUpdatesCoalescedAtEnd}");
+        AssertContains(diagnosticSessionText, "failureUtcEnd={result.FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd}");
         AssertContains(diagnosticSessionText, "Flashback Playback Perf:");
         AssertContains(diagnosticSessionText, "BuildFlashbackPlaybackSessionMetrics(samples, lastSnapshot)");
         AssertContains(diagnosticSessionText, "onePercentLowFpsMin={result.FlashbackPlaybackMinOnePercentLowFpsObserved:0.##}");

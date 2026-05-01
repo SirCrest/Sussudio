@@ -848,6 +848,7 @@ public sealed class AutomationSnapshot
     public string FlashbackPlaybackLastCommandProcessed { get; init; } = "None";
     public long FlashbackPlaybackLastCommandQueuedUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastCommandProcessedUtcUnixMs { get; init; }
+    public long FlashbackPlaybackLastCommandFailureUtcUnixMs { get; init; }
     public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;
     public bool FlashbackExportActive { get; init; }
     public long FlashbackExportId { get; init; }

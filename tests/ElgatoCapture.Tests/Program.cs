@@ -1429,6 +1429,7 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandProcessed"), "AutomationSnapshot.FlashbackPlaybackLastCommandProcessed");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandQueuedUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandProcessedUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandFailureUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandFailure"), "AutomationSnapshot.FlashbackPlaybackLastCommandFailure");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportActive"), "AutomationSnapshot.FlashbackExportActive");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportId"), "AutomationSnapshot.FlashbackExportId");

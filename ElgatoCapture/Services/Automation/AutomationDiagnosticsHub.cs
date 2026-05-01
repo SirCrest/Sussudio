@@ -1172,6 +1172,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackPlaybackLastCommandProcessed = health.FlashbackPlaybackLastCommandProcessed,
             FlashbackPlaybackLastCommandQueuedUtcUnixMs = health.FlashbackPlaybackLastCommandQueuedUtcUnixMs,
             FlashbackPlaybackLastCommandProcessedUtcUnixMs = health.FlashbackPlaybackLastCommandProcessedUtcUnixMs,
+            FlashbackPlaybackLastCommandFailureUtcUnixMs = health.FlashbackPlaybackLastCommandFailureUtcUnixMs,
             FlashbackPlaybackLastCommandFailure = health.FlashbackPlaybackLastCommandFailure,
             FlashbackExportActive = health.FlashbackExportActive,
             FlashbackExportId = health.FlashbackExportId,

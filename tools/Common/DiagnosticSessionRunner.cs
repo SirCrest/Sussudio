@@ -41,6 +41,8 @@ public sealed class DiagnosticSessionResult
     public long FlashbackPlaybackCommandsDroppedAtEnd { get; init; }
     public long FlashbackPlaybackCommandsSkippedNotReadyAtEnd { get; init; }
     public long FlashbackPlaybackScrubUpdatesCoalescedAtEnd { get; init; }
+    public string FlashbackPlaybackLastCommandFailureAtEnd { get; init; } = string.Empty;
+    public long FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd { get; init; }
     public double FlashbackPlaybackObservedFpsAtEnd { get; init; }
     public double FlashbackPlaybackAvgFrameMsAtEnd { get; init; }
     public double FlashbackPlaybackP99FrameMsAtEnd { get; init; }
@@ -598,6 +600,8 @@ public static class DiagnosticSessionRunner
         var playbackDroppedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsDropped") ?? 0;
         var playbackSkippedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0;
         var playbackScrubCoalescedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackScrubUpdatesCoalesced") ?? 0;
+        var playbackLastCommandFailureAtEnd = GetString(lastSnapshot, "FlashbackPlaybackLastCommandFailure") ?? string.Empty;
+        var playbackLastCommandFailureUtcUnixMsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLastCommandFailureUtcUnixMs") ?? 0;
         var playbackObservedFpsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackObservedFps");
         var playbackAvgFrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackAvgFrameMs");
         var playbackP99FrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackP99FrameMs");
@@ -668,6 +672,8 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackCommandsDroppedAtEnd = playbackDroppedAtEnd,
             FlashbackPlaybackCommandsSkippedNotReadyAtEnd = playbackSkippedAtEnd,
             FlashbackPlaybackScrubUpdatesCoalescedAtEnd = playbackScrubCoalescedAtEnd,
+            FlashbackPlaybackLastCommandFailureAtEnd = playbackLastCommandFailureAtEnd,
+            FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd = playbackLastCommandFailureUtcUnixMsAtEnd,
             FlashbackPlaybackObservedFpsAtEnd = playbackObservedFpsAtEnd,
             FlashbackPlaybackAvgFrameMsAtEnd = playbackAvgFrameMsAtEnd,
             FlashbackPlaybackP99FrameMsAtEnd = playbackP99FrameMsAtEnd,
@@ -828,7 +834,9 @@ public static class DiagnosticSessionRunner
             $"maxLatencyMs={result.FlashbackPlaybackMaxCommandQueueLatencyMsObserved} " +
             $"droppedEnd={result.FlashbackPlaybackCommandsDroppedAtEnd} " +
             $"skippedEnd={result.FlashbackPlaybackCommandsSkippedNotReadyAtEnd} " +
-            $"coalescedScrubEnd={result.FlashbackPlaybackScrubUpdatesCoalescedAtEnd}");
+            $"coalescedScrubEnd={result.FlashbackPlaybackScrubUpdatesCoalescedAtEnd} " +
+            $"failureEnd={FormatOptional(result.FlashbackPlaybackLastCommandFailureAtEnd)} " +
+            $"failureUtcEnd={result.FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd}");
         builder.AppendLine(
             "Flashback Playback Perf: " +
             $"fpsEnd={result.FlashbackPlaybackObservedFpsAtEnd:0.##} " +

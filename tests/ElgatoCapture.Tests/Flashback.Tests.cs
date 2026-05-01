@@ -1144,6 +1144,7 @@ static partial class Program
                      "LastCommandProcessed",
                      "LastCommandQueuedUtcUnixMs",
                      "LastCommandProcessedUtcUnixMs",
+                     "LastCommandFailureUtcUnixMs",
                      "LastCommandFailure",
                      "PlaybackThreadAlive"
                  })
@@ -1359,10 +1360,10 @@ static partial class Program
         AssertContains(sourceText, "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_PLAYBACK_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'\");\n        }");
         AssertContains(sourceText, "finally\n        {\n            timeEndPeriod(1);");
         AssertContains(sourceText, "var threadExited = true;");
-        AssertContains(sourceText, "if (ReferenceEquals(Thread.CurrentThread, thread))\n            {\n                Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self\");\n                _lastCommandFailure = \"thread_join_skipped:self\";\n                threadExited = false;\n            }");
-        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT\");\n                _lastCommandFailure = \"thread_join_timeout\";\n                threadExited = false;");
-        AssertContains(sourceText, "_lastCommandFailure = \"thread_join_skipped:self\";");
-        AssertContains(sourceText, "_lastCommandFailure = \"thread_join_timeout\";");
+        AssertContains(sourceText, "if (ReferenceEquals(Thread.CurrentThread, thread))\n            {\n                Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self\");\n                SetLastCommandFailure(\"thread_join_skipped:self\");\n                threadExited = false;\n            }");
+        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT\");\n                SetLastCommandFailure(\"thread_join_timeout\");\n                threadExited = false;");
+        AssertContains(sourceText, "SetLastCommandFailure(\"thread_join_skipped:self\");");
+        AssertContains(sourceText, "SetLastCommandFailure(\"thread_join_timeout\");");
         AssertContains(sourceText, "if (threadExited)\n        {\n            DisposePlaybackCtsBestEffort(_playCts, \"stop_thread\");");
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);\n            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);\n            Volatile.Write(ref _playbackThreadStarted, 0);");
         AssertContains(sourceText, "if (cts.IsCancellationRequested)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");");
@@ -1379,7 +1380,7 @@ static partial class Program
         AssertContains(sourceText, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
         AssertContains(sourceText, "DrainAbandonedCommandsOnThreadExit();");
         AssertContains(sourceText, "Interlocked.Add(ref _commandsDropped, abandoned);");
-        AssertContains(sourceText, "if (string.IsNullOrEmpty(_lastCommandFailure))\n            {\n                _lastCommandFailure = $\"abandoned_on_exit:{abandoned}\";\n            }");
+        AssertContains(sourceText, "if (string.IsNullOrEmpty(_lastCommandFailure))\n            {\n                SetLastCommandFailure($\"abandoned_on_exit:{abandoned}\");\n            }");
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);");
         AssertContains(sourceText, "ReferenceEquals(Thread.CurrentThread, _playbackThread)");
         AssertContains(sourceText, "_playbackThread = null;");
@@ -1389,7 +1390,7 @@ static partial class Program
         AssertContains(sourceText, "private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_CTS_DISPOSE_WARN");
         AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);");
-        AssertContains(sourceText, "_lastCommandQueued = command.Kind.ToString();\n        _lastCommandFailure = string.Empty;\n        return true;");
+        AssertContains(sourceText, "_lastCommandQueued = command.Kind.ToString();\n        ClearLastCommandFailure();\n        return true;");
 
         return Task.CompletedTask;
     }
@@ -1700,7 +1701,9 @@ static partial class Program
         AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live)");
         AssertContains(drainAbandonedCommands, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, \"thread_not_running\", \"thread_not_running\", false);");
-        AssertContains(sourceText, "private bool RejectCommand(CommandKind kind, string failure, string reason, bool returnValue)\n    {\n        Interlocked.Increment(ref _commandsSkippedNotReady);\n        _lastCommandFailure = $\"{failure}:{kind}\";\n        Logger.Log($\"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}\");\n        return returnValue;\n    }");
+        AssertContains(sourceText, "private bool RejectCommand(CommandKind kind, string failure, string reason, bool returnValue)\n    {\n        Interlocked.Increment(ref _commandsSkippedNotReady);\n        SetLastCommandFailure($\"{failure}:{kind}\");\n        Logger.Log($\"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}\");\n        return returnValue;\n    }");
+        AssertContains(sourceText, "private void SetLastCommandFailure(string failure)\n    {\n        _lastCommandFailure = failure;\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());\n    }");
+        AssertContains(sourceText, "private void ClearLastCommandFailure()\n    {\n        _lastCommandFailure = string.Empty;\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);\n    }");
         AssertContains(sourceText, "private void TrackCoalescedScrubUpdate()");
         AssertContains(sourceText, "Interlocked.Increment(ref _scrubUpdatesCoalesced);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SCRUB_COALESCED");

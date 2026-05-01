@@ -116,6 +116,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private long _maxCommandQueueLatencyMs;
     private long _lastCommandQueuedUtcUnixMs;
     private long _lastCommandProcessedUtcUnixMs;
+    private long _lastCommandFailureUtcUnixMs;
     private string _lastCommandQueued = "None";
     private string _lastCommandProcessed = "None";
     private string _lastCommandFailure = string.Empty;
@@ -408,7 +409,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             DecrementPendingCommands();
             Interlocked.Increment(ref _commandsDropped);
-            _lastCommandFailure = $"write_failed:{command.Kind}";
+            SetLastCommandFailure($"write_failed:{command.Kind}");
             Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP kind={command.Kind}");
             return false;
         }
@@ -417,7 +418,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         UpdateMaxPendingCommands(pending);
         Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         _lastCommandQueued = command.Kind.ToString();
-        _lastCommandFailure = string.Empty;
+        ClearLastCommandFailure();
         return true;
     }
 
@@ -489,13 +490,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
             if (ReferenceEquals(Thread.CurrentThread, thread))
             {
                 Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self");
-                _lastCommandFailure = "thread_join_skipped:self";
+                SetLastCommandFailure("thread_join_skipped:self");
                 threadExited = false;
             }
             else if (!thread.Join(TimeSpan.FromSeconds(3)))
             {
                 Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT");
-                _lastCommandFailure = "thread_join_timeout";
+                SetLastCommandFailure("thread_join_timeout");
                 threadExited = false;
             }
         }
@@ -929,7 +930,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         catch (Exception ex)
         {
-            _lastCommandFailure = ex.GetType().Name + ":" + ex.Message;
+            SetLastCommandFailure(ex.GetType().Name + ":" + ex.Message);
             Logger.Log($"FLASHBACK_PLAYBACK_FATAL type={ex.GetType().Name} error='{ex.Message}'");
             CleanupDecoder(ref decoder, ref fileOpen);
             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
@@ -989,7 +990,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Interlocked.Add(ref _commandsDropped, abandoned);
             if (string.IsNullOrEmpty(_lastCommandFailure))
             {
-                _lastCommandFailure = $"abandoned_on_exit:{abandoned}";
+                SetLastCommandFailure($"abandoned_on_exit:{abandoned}");
             }
             Logger.Log($"FLASHBACK_PLAYBACK_CMD_ABANDONED count={abandoned}");
         }
@@ -1935,6 +1936,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long MaxCommandQueueLatencyMs => Interlocked.Read(ref _maxCommandQueueLatencyMs);
     public long LastCommandQueuedUtcUnixMs => Interlocked.Read(ref _lastCommandQueuedUtcUnixMs);
     public long LastCommandProcessedUtcUnixMs => Interlocked.Read(ref _lastCommandProcessedUtcUnixMs);
+    public long LastCommandFailureUtcUnixMs => Interlocked.Read(ref _lastCommandFailureUtcUnixMs);
     public string LastCommandQueued => _lastCommandQueued;
     public string LastCommandProcessed => _lastCommandProcessed;
     public string LastCommandFailure => _lastCommandFailure;
@@ -2047,9 +2049,21 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private bool RejectCommand(CommandKind kind, string failure, string reason, bool returnValue)
     {
         Interlocked.Increment(ref _commandsSkippedNotReady);
-        _lastCommandFailure = $"{failure}:{kind}";
+        SetLastCommandFailure($"{failure}:{kind}");
         Logger.Log($"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}");
         return returnValue;
+    }
+
+    private void SetLastCommandFailure(string failure)
+    {
+        _lastCommandFailure = failure;
+        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+    }
+
+    private void ClearLastCommandFailure()
+    {
+        _lastCommandFailure = string.Empty;
+        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);
     }
 
     private void TrackCoalescedScrubUpdate()

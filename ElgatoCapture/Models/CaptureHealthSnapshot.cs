@@ -74,6 +74,7 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public string FlashbackPlaybackLastCommandProcessed { get; init; } = "None";
     public long FlashbackPlaybackLastCommandQueuedUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastCommandProcessedUtcUnixMs { get; init; }
+    public long FlashbackPlaybackLastCommandFailureUtcUnixMs { get; init; }
     public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;
 
     // ── Export ──────────────────────────────────────────────────────────
