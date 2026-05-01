@@ -802,11 +802,18 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (segmentInfo != null &&
                 segmentInfo.TryGetValue(path, out var info))
             {
+                var startPts = FromSegmentMilliseconds(info.StartPtsMs);
+                var endPts = FromSegmentMilliseconds(info.EndPtsMs);
+                if (endPts < startPts)
+                {
+                    endPts = startPts;
+                }
+
                 segments.Add(new FlashbackExportSegment
                 {
                     Path = path,
-                    StartPts = TimeSpan.FromMilliseconds(info.StartPtsMs),
-                    EndPts = TimeSpan.FromMilliseconds(info.EndPtsMs)
+                    StartPts = startPts,
+                    EndPts = endPts
                 });
             }
             else
@@ -816,6 +823,18 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
 
         return segments;
+    }
+
+    private static TimeSpan FromSegmentMilliseconds(long milliseconds)
+    {
+        if (milliseconds <= 0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        return milliseconds >= TimeSpan.MaxValue.TotalMilliseconds
+            ? TimeSpan.MaxValue
+            : TimeSpan.FromMilliseconds(milliseconds);
     }
 
     private static TimeSpan ClampFlashbackBufferPosition(TimeSpan position, TimeSpan bufferedDuration)
