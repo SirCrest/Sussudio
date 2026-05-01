@@ -505,6 +505,18 @@ static partial class Program
             method.Invoke(null, new object?[] { "Flashback buffer has no active file" })?.ToString(),
             "missing active file export rejection is classified");
         AssertEqual(
+            "OutputWriteFailed",
+            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=avio_open2 code=-13 msg='Permission denied'" })?.ToString(),
+            "output open failure is classified");
+        AssertEqual(
+            "OutputWriteFailed",
+            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=av_interleaved_write_frame code=-5 msg='I/O error'" })?.ToString(),
+            "output packet write failure is classified");
+        AssertEqual(
+            "InputReadFailed",
+            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=av_read_frame code=-5 msg='I/O error'" })?.ToString(),
+            "input read failure is classified");
+        AssertEqual(
             "NoMediaWritten",
             method.Invoke(null, new object?[] { "Flashback export wrote no packets." })?.ToString(),
             "empty media export failure is classified");

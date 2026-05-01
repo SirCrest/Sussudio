@@ -1105,6 +1105,18 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             return "InvalidOutputPath";
         }
 
+        if (ContainsFlashbackExportFailureText(statusMessage, "operation=avio_open2") ||
+            ContainsFlashbackExportFailureText(statusMessage, "operation=avformat_write_header") ||
+            ContainsFlashbackExportFailureText(statusMessage, "operation=av_interleaved_write_frame") ||
+            ContainsFlashbackExportFailureText(statusMessage, "operation=av_write_trailer") ||
+            ContainsFlashbackExportFailureText(statusMessage, "temporary export file was not created") ||
+            ContainsFlashbackExportFailureText(statusMessage, "access is denied") ||
+            ContainsFlashbackExportFailureText(statusMessage, "permission denied") ||
+            ContainsFlashbackExportFailureText(statusMessage, "sharing violation"))
+        {
+            return "OutputWriteFailed";
+        }
+
         if (ContainsFlashbackExportFailureText(statusMessage, "live-edge segment"))
         {
             return "IncompleteLiveEdge";
@@ -1122,6 +1134,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             ContainsFlashbackExportFailureText(statusMessage, "buffer has no active file"))
         {
             return "InputUnavailable";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "operation=avformat_open_input") ||
+            ContainsFlashbackExportFailureText(statusMessage, "operation=av_read_frame"))
+        {
+            return "InputReadFailed";
         }
 
         if (ContainsFlashbackExportFailureText(statusMessage, "input context") ||
