@@ -668,8 +668,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         ReturnRemainingVideoBuffers(_videoQueue);
         ReturnRemainingBuffers(_audioQueue);
         ReturnRemainingBuffers(_microphoneQueue);
-        ReturnRemainingGpuBuffers(_gpuQueue);
-        ReturnRemainingCudaFrames(_cudaQueue);
+        ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
+        ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);
         Interlocked.Exchange(ref _videoQueueDepth, 0);
         Interlocked.Exchange(ref _audioQueueDepth, 0);
         Interlocked.Exchange(ref _microphoneQueueDepth, 0);
@@ -767,7 +767,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         Interlocked.Exchange(ref queueDepth, 0);
     }
 
-    private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue)
+    private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)
     {
         if (queue == null)
         {
@@ -778,9 +778,11 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         {
             Marshal.Release(packet.Texture);
         }
+
+        Interlocked.Exchange(ref queueDepth, 0);
     }
 
-    private static unsafe void ReturnRemainingCudaFrames(Channel<CudaFramePacket>? queue)
+    private static unsafe void ReturnRemainingCudaFrames(Channel<CudaFramePacket>? queue, ref int queueDepth)
     {
         if (queue == null)
         {
@@ -795,6 +797,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 ffmpeg.av_frame_free(&frame);
             }
         }
+
+        Interlocked.Exchange(ref queueDepth, 0);
     }
 
     private LibAvEncoderOptions CreateOptions(RecordingContext context)
@@ -890,8 +894,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             ReturnRemainingVideoBuffers(_videoQueue);
             ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
             ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
-            ReturnRemainingGpuBuffers(_gpuQueue);
-            ReturnRemainingCudaFrames(_cudaQueue);
+            ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
+            ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);
         }
         catch (Exception ex)
         {
@@ -901,8 +905,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             ReturnRemainingVideoBuffers(_videoQueue);
             ReturnRemainingBuffers(_audioQueue, ref _audioQueueDepth);
             ReturnRemainingBuffers(_microphoneQueue, ref _microphoneQueueDepth);
-            ReturnRemainingGpuBuffers(_gpuQueue);
-            ReturnRemainingCudaFrames(_cudaQueue);
+            ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);
+            ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);
             try
             {
                 _encoder.Dispose();
@@ -937,7 +941,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 }
 
                 RemoveQueuedVideoTick(packet.EnqueueTick);
-                Interlocked.Decrement(ref _videoQueueDepth);
+                DecrementQueueDepth(ref _videoQueueDepth, "video");
             }
 
             RecordVideoPacketDequeued(packet);
@@ -975,7 +979,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var drainedAny = false;
         while (reader.TryRead(out var packet))
         {
-            Interlocked.Decrement(ref _gpuQueueDepth);
+            DecrementQueueDepth(ref _gpuQueueDepth, "gpu");
             try
             {
                 _encoder.SendGpuVideoFrame(packet.Texture, packet.Subresource);
@@ -1007,7 +1011,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var drainedAny = false;
         while (reader.TryRead(out var packet))
         {
-            Interlocked.Decrement(ref _cudaQueueDepth);
+            DecrementQueueDepth(ref _cudaQueueDepth, "cuda");
             var frame = (AVFrame*)packet.Frame;
             try
             {
@@ -1047,7 +1051,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var drainedAny = false;
         while (reader.TryRead(out var packet))
         {
-            Interlocked.Decrement(ref _audioQueueDepth);
+            DecrementQueueDepth(ref _audioQueueDepth, "audio");
             try
             {
                 _encoder.SendAudioSamples(packet.Buffer.AsSpan(0, packet.Length));
@@ -1068,7 +1072,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         var drainedAny = false;
         while (reader.TryRead(out var packet))
         {
-            Interlocked.Decrement(ref _microphoneQueueDepth);
+            DecrementQueueDepth(ref _microphoneQueueDepth, "microphone");
             try
             {
                 _encoder.SendMicrophoneSamples(packet.Buffer.AsSpan(0, packet.Length));
@@ -1277,11 +1281,10 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     return VideoEnqueueResult.Rejected;
                 }
 
-                if (queue.Writer.TryWrite(packet))
+                if (TryWriteVideoPacket(queue, packet))
                 {
                     RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
                     TrackQueuedVideoTick(packet.EnqueueTick);
-                    UpdateMaxDepth(ref _videoQueueMaxDepth, Interlocked.Increment(ref _videoQueueDepth));
                     Interlocked.Increment(ref _videoFramesEnqueued);
                     SignalWork();
                     return VideoEnqueueResult.Accepted;
@@ -1335,10 +1338,9 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 return VideoEnqueueResult.Rejected;
             }
 
-            if (queue.Writer.TryWrite(packet))
+            if (TryWriteGpuPacket(queue, packet))
             {
                 RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                UpdateMaxDepth(ref _gpuQueueMaxDepth, Interlocked.Increment(ref _gpuQueueDepth));
                 Interlocked.Increment(ref _gpuFramesEnqueued);
                 SignalWork();
                 return VideoEnqueueResult.Accepted;
@@ -1386,10 +1388,9 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 return VideoEnqueueResult.Rejected;
             }
 
-            if (queue.Writer.TryWrite(packet))
+            if (TryWriteCudaPacket(queue, packet))
             {
                 RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                UpdateMaxDepth(ref _cudaQueueMaxDepth, Interlocked.Increment(ref _cudaQueueDepth));
                 Interlocked.Increment(ref _cudaFramesEnqueued);
                 SignalWork();
                 return VideoEnqueueResult.Accepted;
@@ -1426,6 +1427,45 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             SignalWork();
             Thread.Sleep(1);
         }
+    }
+
+    private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
+    {
+        var depth = Interlocked.Increment(ref _videoQueueDepth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            UpdateMaxDepth(ref _videoQueueMaxDepth, depth);
+            return true;
+        }
+
+        DecrementQueueDepth(ref _videoQueueDepth, "video_write_failed");
+        return false;
+    }
+
+    private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
+    {
+        var depth = Interlocked.Increment(ref _gpuQueueDepth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            UpdateMaxDepth(ref _gpuQueueMaxDepth, depth);
+            return true;
+        }
+
+        DecrementQueueDepth(ref _gpuQueueDepth, "gpu_write_failed");
+        return false;
+    }
+
+    private bool TryWriteCudaPacket(Channel<CudaFramePacket> queue, CudaFramePacket packet)
+    {
+        var depth = Interlocked.Increment(ref _cudaQueueDepth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            UpdateMaxDepth(ref _cudaQueueMaxDepth, depth);
+            return true;
+        }
+
+        DecrementQueueDepth(ref _cudaQueueDepth, "cuda_write_failed");
+        return false;
     }
 
     private void FailEncoding(Exception ex)
@@ -1471,16 +1511,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             return false;
         }
 
-        if (queue.Writer.TryWrite(packet))
+        if (TryWriteAudioPacket(queue, packet, ref _audioQueueDepth, "audio"))
         {
-            Interlocked.Increment(ref _audioQueueDepth);
             SignalWork();
             return true;
         }
 
         if (queue.Reader.TryRead(out var evictedPacket))
         {
-            Interlocked.Decrement(ref _audioQueueDepth);
+            DecrementQueueDepth(ref _audioQueueDepth, "audio_evict");
             var evicted = Interlocked.Increment(ref _audioDropsBacklogEviction);
             if (evicted == 1 || evicted % 120 == 0)
             {
@@ -1491,9 +1530,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             }
 
             ReturnBuffer(evictedPacket.Buffer);
-            if (queue.Writer.TryWrite(packet))
+            if (TryWriteAudioPacket(queue, packet, ref _audioQueueDepth, "audio_after_evict"))
             {
-                Interlocked.Increment(ref _audioQueueDepth);
                 SignalWork();
                 return true;
             }
@@ -1511,16 +1549,15 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             return false;
         }
 
-        if (queue.Writer.TryWrite(packet))
+        if (TryWriteAudioPacket(queue, packet, ref _microphoneQueueDepth, "microphone"))
         {
-            Interlocked.Increment(ref _microphoneQueueDepth);
             SignalWork();
             return true;
         }
 
         if (queue.Reader.TryRead(out var evictedPacket))
         {
-            Interlocked.Decrement(ref _microphoneQueueDepth);
+            DecrementQueueDepth(ref _microphoneQueueDepth, "microphone_evict");
             var evicted = Interlocked.Increment(ref _microphoneDropsBacklogEviction);
             if (evicted == 1 || evicted % 120 == 0)
             {
@@ -1530,9 +1567,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             }
 
             ReturnBuffer(evictedPacket.Buffer);
-            if (queue.Writer.TryWrite(packet))
+            if (TryWriteAudioPacket(queue, packet, ref _microphoneQueueDepth, "microphone_after_evict"))
             {
-                Interlocked.Increment(ref _microphoneQueueDepth);
                 SignalWork();
                 return true;
             }
@@ -1540,6 +1576,40 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         ReturnBuffer(packet.Buffer);
         return false;
+    }
+
+    private static bool TryWriteAudioPacket(
+        Channel<AudioSamplePacket> queue,
+        AudioSamplePacket packet,
+        ref int queueDepth,
+        string queueName)
+    {
+        Interlocked.Increment(ref queueDepth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            return true;
+        }
+
+        DecrementQueueDepth(ref queueDepth, $"{queueName}_write_failed");
+        return false;
+    }
+
+    private static void DecrementQueueDepth(ref int target, string queueName)
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref target);
+            if (current <= 0)
+            {
+                Logger.Log($"LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName}");
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref target, current - 1, current) == current)
+            {
+                return;
+            }
+        }
     }
 
     private static byte[] GetBuffer(int size)
