@@ -421,6 +421,31 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
+    public void AbandonGeneratedSegmentPath(string generatedPath, string? restoreActivePath)
+    {
+        if (string.IsNullOrWhiteSpace(generatedPath))
+        {
+            return;
+        }
+
+        lock (_indexLock)
+        {
+            if (string.Equals(_activeSegmentPath, generatedPath, StringComparison.OrdinalIgnoreCase))
+            {
+                _activeSegmentPath = restoreActivePath;
+                if (_nextSegmentIndex > 0)
+                {
+                    _nextSegmentIndex--;
+                }
+            }
+
+            if (!string.Equals(generatedPath, restoreActivePath, StringComparison.OrdinalIgnoreCase))
+            {
+                TryDeleteFile(generatedPath);
+            }
+        }
+    }
+
     private static void CleanupStaleSessionDirectories(string tempDirectory, string currentSessionDirectory)
     {
         try

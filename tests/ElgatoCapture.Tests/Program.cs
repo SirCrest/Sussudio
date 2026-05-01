@@ -601,6 +601,9 @@ static partial class Program
                 "Flashback decoder unreferences discarded audio frames",
                 FlashbackDecoder_DiscardedAudioFramesAreUnreffed),
             await RunCheckAsync(
+                "Flashback encoder sink restores active segment after rotation failure",
+                FlashbackEncoderSink_RotateFailureRestoresActiveSegment),
+            await RunCheckAsync(
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
             await RunCheckAsync(

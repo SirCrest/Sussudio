@@ -1010,4 +1010,32 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackEncoderSink_RotateFailureRestoresActiveSegment()
+    {
+        var sinkText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+        var bufferText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+
+        var rotateBlock = ExtractTextBetween(
+            sinkText,
+            "private bool RotateSegment(TimeSpan currentPts)",
+            "    public IReadOnlyList<string> ForceRotateForExport");
+        AssertContains(rotateBlock, "string? completedPath = null;");
+        AssertContains(rotateBlock, "string? newPath = null;");
+        AssertContains(rotateBlock, "completedPath = _tsFilePath;");
+        AssertContains(rotateBlock, "newPath = _bufferManager.GenerateSegmentPath();");
+        AssertContains(rotateBlock, "if (newPath != null)\n            {\n                _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);\n            }");
+
+        var abandonBlock = ExtractTextBetween(
+            bufferText,
+            "public void AbandonGeneratedSegmentPath",
+            "    private static void CleanupStaleSessionDirectories");
+        AssertContains(abandonBlock, "_activeSegmentPath = restoreActivePath;");
+        AssertContains(abandonBlock, "_nextSegmentIndex--;");
+        AssertContains(abandonBlock, "TryDeleteFile(generatedPath);");
+
+        return Task.CompletedTask;
+    }
 }

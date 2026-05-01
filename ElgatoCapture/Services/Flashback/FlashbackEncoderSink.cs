@@ -1248,10 +1248,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private bool RotateSegment(TimeSpan currentPts)
     {
+        string? completedPath = null;
+        string? newPath = null;
         try
         {
-            var completedPath = _tsFilePath;
-            var newPath = _bufferManager.GenerateSegmentPath();
+            completedPath = _tsFilePath;
+            newPath = _bufferManager.GenerateSegmentPath();
 
             // RotateOutput flushes encoder queues, writes trailer, then resets
             // TotalBytesWritten to 0 for the new segment. PreviousTotalBytes
@@ -1276,6 +1278,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
         catch (Exception ex)
         {
+            if (newPath != null)
+            {
+                _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);
+            }
+
             // Advance _segmentStartPts to prevent infinite retry on every frame
             _segmentStartPts = currentPts;
             Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}");
