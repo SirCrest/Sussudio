@@ -4590,9 +4590,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             Logger.Log($"CaptureService.Dispose cleanup warning: {ex.Message}");
         }
 
-        _sessionTransitionLock.Dispose();
-        _flashbackBackendLeaseLock.Dispose();
-        _flashbackExportOperationLock.Dispose();
+        DisposeCoordinationLocksBestEffort();
         _sessionState = CaptureSessionState.Disposed;
     }
 
@@ -4608,10 +4606,27 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             Logger.Log($"CaptureService.DisposeAsync cleanup warning: {ex.Message}");
         }
 
-        _sessionTransitionLock.Dispose();
-        _flashbackBackendLeaseLock.Dispose();
-        _flashbackExportOperationLock.Dispose();
+        DisposeCoordinationLocksBestEffort();
         _sessionState = CaptureSessionState.Disposed;
+    }
+
+    private void DisposeCoordinationLocksBestEffort()
+    {
+        DisposeSemaphoreBestEffort(_sessionTransitionLock, "session_transition");
+        DisposeSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_backend_lease");
+        DisposeSemaphoreBestEffort(_flashbackExportOperationLock, "flashback_export_operation");
+    }
+
+    private static void DisposeSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)
+    {
+        try
+        {
+            semaphore.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"CAPTURE_SERVICE_SEMAPHORE_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 }
 

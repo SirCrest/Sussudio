@@ -333,7 +333,11 @@ static partial class Program
         AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
         AssertContains(captureServiceText, "if (exportOperationLockHeld)");
         AssertContains(captureServiceText, "_flashbackExportOperationLock.Release();");
-        AssertContains(captureServiceText, "_flashbackExportOperationLock.Dispose();");
+        AssertContains(captureServiceText, "DisposeCoordinationLocksBestEffort();");
+        AssertContains(captureServiceText, "DisposeSemaphoreBestEffort(_sessionTransitionLock, \"session_transition\");");
+        AssertContains(captureServiceText, "DisposeSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_backend_lease\");");
+        AssertContains(captureServiceText, "DisposeSemaphoreBestEffort(_flashbackExportOperationLock, \"flashback_export_operation\");");
+        AssertContains(captureServiceText, "CAPTURE_SERVICE_SEMAPHORE_DISPOSE_WARN");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_ACTIVE_FILE_FALLBACK");
         AssertContains(captureServiceText, "Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths)");
         AssertContains(captureServiceText, "StartPts = TimeSpan.FromMilliseconds(info.StartPtsMs)");
