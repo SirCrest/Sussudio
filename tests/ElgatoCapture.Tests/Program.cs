@@ -550,6 +550,9 @@ static partial class Program
                 "Flashback clamp bounds stale markers to buffered duration",
                 FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration),
             await RunCheckAsync(
+                "Flashback command positions clamp before file lookup",
+                FlashbackPlaybackController_ClampsCommandPositionsBeforeFileLookup),
+            await RunCheckAsync(
                 "Flashback pause from live does not block on exact seek",
                 FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek),
             await RunCheckAsync(

@@ -521,6 +521,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         SuppressLiveAudio();
                         SafePauseRendering("seek");
 
+                        cmd = cmd with { Position = ClampPosition(cmd.Position) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
                         if (!decoder.IsOpen)
@@ -564,6 +565,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         SafePauseRendering("begin_scrub");
                         SetState(FlashbackPlaybackState.Scrubbing);
 
+                        cmd = cmd with { Position = ClampPosition(cmd.Position) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
                         if (!decoder.IsOpen)
@@ -598,6 +600,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             newer = newer with { Position = TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks)) };
                             cmd = newer;
                         }
+                        cmd = cmd with { Position = ClampPosition(cmd.Position) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
                         if (!decoder.IsOpen)
