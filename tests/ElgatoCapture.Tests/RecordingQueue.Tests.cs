@@ -164,6 +164,8 @@ static partial class Program
         AssertContains(captureServiceSource, "MarkSessionPreservedForRecovery");
         AssertContains(captureServiceSource, "FLASHBACK_RECOVERY_PRESERVE");
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_PURGE_WARN");
+        AssertContains(captureServiceSource, "flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;");
+        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_PLAYBACK_WARN");
         AssertContains(captureServiceSource, "ResolveFlashbackSegmentPurge");
         AssertContains(captureServiceSource, "FLASHBACK_SEGMENT_PURGE_BLOCKED");
         AssertContains(captureServiceSource, "WaitForForceRotateIdle(TimeSpan.FromSeconds(10))");

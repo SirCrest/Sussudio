@@ -1380,8 +1380,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_PREVIEW_INIT_FAIL error='{ex.Message}'");
+            flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;
             unifiedVideoCapture.SetFlashbackSink(null);
             _wasapiAudioCapture?.DetachFlashbackSink();
+            _microphoneCapture?.SetAudioWriter(null);
+            try { _flashbackPlaybackController?.Dispose(); }
+            catch (Exception disposeEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_PLAYBACK_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
             try { await flashbackSink.DisposeAsync().ConfigureAwait(false); }
             catch (Exception disposeEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_SINK_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
 
