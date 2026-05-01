@@ -515,6 +515,10 @@ static partial class Program
             method.Invoke(null, new object?[] { "Flashback export duration must be finite, greater than zero, and within TimeSpan range." })?.ToString(),
             "invalid duration export rejection is classified");
         AssertEqual(
+            "InvalidRange",
+            method.Invoke(null, new object?[] { "Flashback export range is empty or invalid." })?.ToString(),
+            "invalid export range is classified");
+        AssertEqual(
             "UnavailableDuringRecording",
             method.Invoke(null, new object?[] { "Cannot export while Flashback is the active recording backend." })?.ToString(),
             "recording backend export rejection is classified");
@@ -566,6 +570,30 @@ static partial class Program
             "OutputWriteFailed",
             method.Invoke(null, new object?[] { "Flashback export failed: output file length unavailable 'clip.mp4'." })?.ToString(),
             "unreadable completed output export failure is classified");
+        AssertEqual(
+            "IncompleteLiveEdge",
+            method.Invoke(null, new object?[] { "Flashback export skipped a live-edge segment." })?.ToString(),
+            "live-edge segment export failure is classified");
+        AssertEqual(
+            "SegmentUnavailable",
+            method.Invoke(null, new object?[] { "Flashback export failed: no segment paths were readable." })?.ToString(),
+            "missing segment export failure is classified");
+        AssertEqual(
+            "InvalidInputStream",
+            method.Invoke(null, new object?[] { "Flashback export failed: input had no streams." })?.ToString(),
+            "invalid input stream export failure is classified");
+        AssertEqual(
+            "Disposed",
+            method.Invoke(null, new object?[] { "Flashback exporter is disposed." })?.ToString(),
+            "disposed exporter failure is classified");
+        AssertEqual(
+            "Cancelled",
+            method.Invoke(null, new object?[] { "Flashback export cancelled." })?.ToString(),
+            "cancelled export failure is classified");
+        AssertEqual(
+            "Timeout",
+            method.Invoke(null, new object?[] { "Flashback export lock timed out after 30s." })?.ToString(),
+            "export timeout failure is classified");
 
         return Task.CompletedTask;
     }
