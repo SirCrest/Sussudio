@@ -544,10 +544,21 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             return false;
         }
 
+        var nv12FrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(_width, _height, isP010: false);
+        var p010FrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(_width, _height, isP010: true);
+        var maxFrameSize = Math.Max(nv12FrameSize, p010FrameSize);
+        var matchesConfiguredFrameSize =
+            expectedSize == nv12FrameSize ||
+            (p010FrameSize > 0 && expectedSize == p010FrameSize);
+        if (maxFrameSize <= 0 || !matchesConfiguredFrameSize)
+        {
+            Logger.Log($"FLASHBACK_SINK_VIDEO_FRAME_INVALID_SIZE expected={expectedSize} max={maxFrameSize} configured={_width}x{_height}");
+            return false;
+        }
+
         var buffer = GetBuffer(expectedSize);
         data[..expectedSize].CopyTo(buffer.AsSpan(0, expectedSize));
         var enqueueTick = Environment.TickCount64;
-        var p010FrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(_width, _height, isP010: true);
         var isP010 = p010FrameSize > 0 && expectedSize == p010FrameSize;
         var packet = VideoFramePacket.Frame(buffer, expectedSize, enqueueTick, isP010);
         Interlocked.Exchange(ref _lastVideoEnqueueTick, enqueueTick);
@@ -583,6 +594,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
 
         var expectedSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(frame.Width, frame.Height, frame.PixelFormat == PooledVideoPixelFormat.P010);
+        if (expectedSize <= 0)
+        {
+            Logger.Log($"FLASHBACK_SINK_VIDEO_FRAME_INVALID_SIZE expected={expectedSize} actual={frame.Width}x{frame.Height}");
+            frame.Dispose();
+            return false;
+        }
+
         if (frame.Length < expectedSize)
         {
             Logger.Log($"FLASHBACK_SINK_VIDEO_FRAME_SHORT actual={frame.Length} expected={expectedSize}");
@@ -625,6 +643,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var queue = _gpuQueue;
         if (_disposed || !_started || queue == null || d3d11Texture2D == IntPtr.Zero || Volatile.Read(ref _forceRotateDraining))
         {
+            return false;
+        }
+
+        if (subresourceIndex < 0)
+        {
+            Logger.Log($"FLASHBACK_SINK_GPU_FRAME_INVALID_SUBRESOURCE subresource={subresourceIndex}");
             return false;
         }
 

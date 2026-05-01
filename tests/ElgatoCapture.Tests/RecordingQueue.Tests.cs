@@ -141,6 +141,13 @@ static partial class Program
         AssertContains(flashbackSource, "TryEnqueueGpuPacket");
         AssertContains(flashbackSource, "Volatile.Read(ref _forceRotateDraining)");
         AssertContains(flashbackSource, "Volatile.Read(ref _encodingFailure) != null");
+        AssertContains(flashbackSource, "var maxFrameSize = Math.Max(nv12FrameSize, p010FrameSize);");
+        AssertContains(flashbackSource, "var matchesConfiguredFrameSize =\n            expectedSize == nv12FrameSize ||\n            (p010FrameSize > 0 && expectedSize == p010FrameSize);");
+        AssertContains(flashbackSource, "if (maxFrameSize <= 0 || !matchesConfiguredFrameSize)");
+        AssertContains(flashbackSource, "FLASHBACK_SINK_VIDEO_FRAME_INVALID_SIZE expected={expectedSize} max={maxFrameSize}");
+        AssertContains(flashbackSource, "if (expectedSize <= 0)\n        {\n            Logger.Log($\"FLASHBACK_SINK_VIDEO_FRAME_INVALID_SIZE expected={expectedSize} actual={frame.Width}x{frame.Height}\");\n            frame.Dispose();\n            return false;\n        }");
+        AssertContains(flashbackSource, "if (subresourceIndex < 0)\n        {\n            Logger.Log($\"FLASHBACK_SINK_GPU_FRAME_INVALID_SUBRESOURCE subresource={subresourceIndex}\");\n            return false;\n        }");
+        AssertOccursBefore(flashbackSource, "FLASHBACK_SINK_GPU_FRAME_INVALID_SUBRESOURCE", "Marshal.AddRef(d3d11Texture2D);");
         var flashbackBufferDispose = ExtractSourceBlock(
             flashbackBufferSource,
             "public void Dispose()",
