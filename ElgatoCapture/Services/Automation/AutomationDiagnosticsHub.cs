@@ -765,6 +765,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PreviewCadenceP95IntervalMs = previewRuntime.DisplayCadenceP95IntervalMs,
             PreviewCadenceP99IntervalMs = previewRuntime.DisplayCadenceP99IntervalMs,
             PreviewCadenceMaxIntervalMs = previewRuntime.DisplayCadenceMaxIntervalMs,
+            PreviewCadenceOnePercentLowFps = previewRuntime.DisplayCadenceOnePercentLowFps,
             PreviewCadenceJitterStdDevMs = previewRuntime.DisplayCadenceJitterStdDevMs,
             PreviewCadenceSlowFrameCount = previewRuntime.DisplayCadenceSlowFrameCount,
             PreviewCadenceSlowFramePercent = previewRuntime.DisplayCadenceSlowFramePercent,
@@ -1205,6 +1206,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 PreviewCadenceP95Ms = snapshot.PreviewCadenceP95IntervalMs,
                 PreviewCadenceP99Ms = snapshot.PreviewCadenceP99IntervalMs,
                 PreviewCadenceMaxMs = snapshot.PreviewCadenceMaxIntervalMs,
+                PreviewCadenceOnePercentLowFps = snapshot.PreviewCadenceOnePercentLowFps,
                 PreviewCadenceSlowFramePercent = snapshot.PreviewCadenceSlowFramePercent,
                 PreviewD3DPendingFrameCount = snapshot.PreviewD3DPendingFrameCount,
                 PreviewD3DPresentCallP95Ms = snapshot.PreviewD3DPresentCallP95Ms,
@@ -1558,7 +1560,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 ? $" dxgiStats err={previewRuntime.D3DFrameStatsLastError} fail={previewRuntime.D3DFrameStatsFailureCount}/{previewRuntime.D3DFrameStatsSampleCount} recentFail={recentD3DStatsFailures}"
                 : string.Empty;
         var presentLane =
-            $"present target={presentTarget} avg={previewRuntime.DisplayCadenceAverageIntervalMs:0.##}ms p95={previewRuntime.DisplayCadenceP95IntervalMs:0.##}ms p99={previewRuntime.DisplayCadenceP99IntervalMs:0.##}ms max={previewRuntime.DisplayCadenceMaxIntervalMs:0.##}ms slow={previewRuntime.DisplayCadenceSlowFramePercent:0.##}% rate={previewRuntime.DisplayCadenceObservedFps:0.##}fps sync={previewRuntime.D3DPresentSyncInterval} latency={previewRuntime.D3DMaxFrameLatency} buffers={previewRuntime.D3DSwapChainBufferCount} swap={previewRuntime.D3DSwapChainAddress}{dxgiStats}";
+            $"present target={presentTarget} avg={previewRuntime.DisplayCadenceAverageIntervalMs:0.##}ms p95={previewRuntime.DisplayCadenceP95IntervalMs:0.##}ms p99={previewRuntime.DisplayCadenceP99IntervalMs:0.##}ms max={previewRuntime.DisplayCadenceMaxIntervalMs:0.##}ms slow={previewRuntime.DisplayCadenceSlowFramePercent:0.##}% rate={previewRuntime.DisplayCadenceObservedFps:0.##}fps 1pctLow={previewRuntime.DisplayCadenceOnePercentLowFps:0.##}fps sync={previewRuntime.D3DPresentSyncInterval} latency={previewRuntime.D3DMaxFrameLatency} buffers={previewRuntime.D3DSwapChainBufferCount} swap={previewRuntime.D3DSwapChainAddress}{dxgiStats}";
         var recordingLane =
             $"recording integrity={captureRuntime.RecordingIntegrityStatus} complete={captureRuntime.RecordingIntegrityComplete} seqGaps={captureRuntime.RecordingIntegritySequenceGaps} queueDrops={captureRuntime.RecordingIntegrityQueueDroppedFrames}";
         var audioLane =

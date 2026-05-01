@@ -451,6 +451,7 @@ public sealed class AutomationSnapshot
     public double PreviewCadenceP95IntervalMs { get; init; }
     public double PreviewCadenceP99IntervalMs { get; init; }
     public double PreviewCadenceMaxIntervalMs { get; init; }
+    public double PreviewCadenceOnePercentLowFps { get; init; }
     public double PreviewCadenceJitterStdDevMs { get; init; }
     public long PreviewCadenceSlowFrameCount { get; init; }
     public double PreviewCadenceSlowFramePercent { get; init; }
@@ -890,6 +891,7 @@ public sealed class PerformanceTimelineEntry
     public double PreviewCadenceP95Ms { get; init; }
     public double PreviewCadenceP99Ms { get; init; }
     public double PreviewCadenceMaxMs { get; init; }
+    public double PreviewCadenceOnePercentLowFps { get; init; }
     public double PreviewCadenceSlowFramePercent { get; init; }
     public int PreviewD3DPendingFrameCount { get; init; }
     public double PreviewD3DPresentCallP95Ms { get; init; }
@@ -1041,6 +1043,7 @@ public sealed class PreviewRuntimeSnapshot
     public double DisplayCadenceP95IntervalMs { get; init; }
     public double DisplayCadenceP99IntervalMs { get; init; }
     public double DisplayCadenceMaxIntervalMs { get; init; }
+    public double DisplayCadenceOnePercentLowFps { get; init; }
     public double DisplayCadenceJitterStdDevMs { get; init; }
     public long DisplayCadenceSlowFrameCount { get; init; }
     public double DisplayCadenceSlowFramePercent { get; init; }

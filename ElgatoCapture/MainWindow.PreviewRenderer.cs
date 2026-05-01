@@ -260,6 +260,7 @@ public sealed partial class MainWindow
             DisplayCadenceP95IntervalMs = rendererCadence?.P95IntervalMs ?? 0,
             DisplayCadenceP99IntervalMs = rendererCadence?.P99IntervalMs ?? 0,
             DisplayCadenceMaxIntervalMs = rendererCadence?.MaxIntervalMs ?? 0,
+            DisplayCadenceOnePercentLowFps = rendererCadence?.OnePercentLowFps ?? 0,
             DisplayCadenceJitterStdDevMs = rendererCadence?.JitterStdDevMs ?? 0,
             DisplayCadenceSlowFrameCount = rendererCadence?.SlowFrameCount ?? 0,
             DisplayCadenceSlowFramePercent = rendererCadence?.SlowFramePercent ?? 0,

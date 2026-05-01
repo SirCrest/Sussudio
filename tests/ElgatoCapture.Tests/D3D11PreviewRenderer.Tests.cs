@@ -116,7 +116,7 @@ static partial class Program
         var expectedProps = new[]
         {
             "SampleCount", "ObservedFps", "ExpectedIntervalMs", "AverageIntervalMs",
-            "P95IntervalMs", "P99IntervalMs", "MaxIntervalMs", "JitterStdDevMs", "SlowFrameCount", "SlowFramePercent"
+            "P95IntervalMs", "P99IntervalMs", "MaxIntervalMs", "OnePercentLowFps", "JitterStdDevMs", "SlowFrameCount", "SlowFramePercent"
         };
 
         foreach (var prop in expectedProps)
@@ -227,6 +227,7 @@ static partial class Program
                      "D3DSwapChainBufferCount",
                      "D3DPendingFrameCount",
                      "DisplayCadenceP99IntervalMs",
+                     "DisplayCadenceOnePercentLowFps",
                      "D3DCpuTimingSampleCount",
                      "D3DInputUploadCpuP95Ms",
                      "D3DInputUploadCpuP99Ms",
@@ -301,6 +302,7 @@ static partial class Program
                      "PreviewD3DSwapChainBufferCount",
                      "PreviewD3DPendingFrameCount",
                      "PreviewCadenceP99IntervalMs",
+                     "PreviewCadenceOnePercentLowFps",
                      "PreviewD3DCpuTimingSampleCount",
                      "PreviewD3DInputUploadCpuP95Ms",
                      "PreviewD3DInputUploadCpuP99Ms",
@@ -345,6 +347,7 @@ static partial class Program
         foreach (var prop in new[]
                  {
                      "PreviewCadenceSlowFramePercent",
+                     "PreviewCadenceOnePercentLowFps",
                      "PreviewD3DPendingFrameCount",
                      "PreviewD3DPresentCallP95Ms",
                      "PreviewD3DTotalFrameCpuP95Ms",

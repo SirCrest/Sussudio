@@ -309,6 +309,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         double P95IntervalMs,
         double P99IntervalMs,
         double MaxIntervalMs,
+        double OnePercentLowFps,
         double JitterStdDevMs,
         long SlowFrameCount,
         double SlowFramePercent);
@@ -1168,6 +1169,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                     P95IntervalMs: 0,
                     P99IntervalMs: 0,
                     MaxIntervalMs: 0,
+                    OnePercentLowFps: 0,
                     JitterStdDevMs: 0,
                     SlowFrameCount: 0,
                     SlowFramePercent: 0);
@@ -1218,6 +1220,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
         var p99Index = (int)Math.Ceiling((sorted.Length - 1) * 0.99);
         var p99IntervalMs = sorted[Math.Clamp(p99Index, 0, sorted.Length - 1)];
+        var onePercentLowFps = p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0;
         var slowPercent = slowFrameCount <= 0
             ? 0
             : (double)slowFrameCount / Math.Max(1, sampleCount) * 100.0;
@@ -1230,6 +1233,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             P95IntervalMs: p95IntervalMs,
             P99IntervalMs: p99IntervalMs,
             MaxIntervalMs: max,
+            OnePercentLowFps: onePercentLowFps,
             JitterStdDevMs: jitterStdDevMs,
             SlowFrameCount: slowFrameCount,
             SlowFramePercent: slowPercent);
