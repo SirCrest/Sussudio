@@ -123,6 +123,22 @@ static partial class Program
 
     // ── FlashbackExporter ──
 
+    private static Task FlashbackEncoderSink_StartFailureRollsBackStartedState()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+
+        var startCatchBlock = ExtractTextBetween(
+            sourceText,
+            "catch\n        {\n            /* Cleanup must not throw",
+            "            throw;\n        }");
+
+        AssertContains(startCatchBlock, "lock (_sync)\n            {\n                _started = false;\n            }");
+        AssertOccursBefore(startCatchBlock, "_started = false;", "throw;");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_CleanupOrphanedTempFiles_HandlesNonexistentDirectory()
     {
         var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");

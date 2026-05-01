@@ -327,6 +327,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _microphoneQueue = null;
             _gpuQueue = null;
             _gpuEncodingEnabled = false;
+            lock (_sync)
+            {
+                _started = false;
+            }
             DisposeCtsBestEffort(_cts, "start_fail");
             _cts = null;
             _encodingTask = null;
