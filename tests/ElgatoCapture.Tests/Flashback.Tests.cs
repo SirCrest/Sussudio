@@ -1906,6 +1906,8 @@ static partial class Program
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
+        var wasapiPlaybackText = ReadRepoFile("ElgatoCapture/Services/Audio/WasapiAudioPlayback.cs")
+            .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private void SafeSuppressPreviewSubmission(string operation)");
         AssertContains(sourceText, "private void SafeResumePreviewSubmission(string operation)");
@@ -1925,6 +1927,11 @@ static partial class Program
         AssertContains(sourceText, "SafeResumeRendering(\"play_no_file\")");
         AssertContains(sourceText, "SafeResumeRendering(\"nudge_no_file\")");
         AssertContains(sourceText, "if (_audioPlayback == null)\n        {\n            decoder.AudioChunkCallback = null;\n            return;\n        }");
+        AssertContains(wasapiPlaybackText, "if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested) return;");
+        AssertContains(wasapiPlaybackText, "_resumeRequested = false;\n        _pauseRequested = true;");
+        AssertContains(wasapiPlaybackText, "if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) return;");
+        AssertContains(wasapiPlaybackText, "_pauseRequested = false;\n        _resumeRequested = true;");
+        AssertContains(wasapiPlaybackText, "WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
         AssertDoesNotContain(sourceText, "_videoCapture?.SuppressPreviewSubmission();\n                        SuppressLiveAudio();\n                        _audioPlayback?.PauseRendering();");
 
         return Task.CompletedTask;

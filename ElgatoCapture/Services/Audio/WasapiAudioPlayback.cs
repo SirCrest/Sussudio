@@ -236,8 +236,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
     public void PauseRendering()
     {
         if (Volatile.Read(ref _started) == 0) return;
-        if (Volatile.Read(ref _renderingPaused) != 0) return;
+        if (Volatile.Read(ref _renderingPaused) != 0 && !_resumeRequested) return;
 
+        _resumeRequested = false;
         _pauseRequested = true;
         _renderEvent?.Set();
     }
@@ -245,8 +246,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
     public void ResumeRendering()
     {
         if (Volatile.Read(ref _started) == 0) return;
-        if (Volatile.Read(ref _renderingPaused) == 0) return;
+        if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) return;
 
+        _pauseRequested = false;
         _resumeRequested = true;
         _renderEvent?.Set();
     }
@@ -400,6 +402,12 @@ internal sealed class WasapiAudioPlayback : IDisposable
             if (_resumeRequested)
             {
                 _resumeRequested = false;
+                if (Volatile.Read(ref _renderingPaused) == 0)
+                {
+                    Logger.Log("WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
+                    continue;
+                }
+
                 try
                 {
                     if (_audioClient != null && _audioRenderClient != null && _bufferFrameCount > 0)
