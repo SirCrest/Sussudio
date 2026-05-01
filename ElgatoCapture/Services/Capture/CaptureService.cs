@@ -519,6 +519,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (bufferManager == null)
                 return FailFlashbackExport(outputPath, "Flashback buffer not active");
 
+            if (fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint)
+                return FailFlashbackExport(outputPath, "Flashback export range is empty or invalid.");
+
             return await ExportFlashbackCoreAsync(fileInPoint, fileOutPoint, outputPath, progress, ct,
                 snapshotSink: flashbackSink, snapshotBufferManager: bufferManager).ConfigureAwait(false);
         }

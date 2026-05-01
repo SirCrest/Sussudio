@@ -284,6 +284,8 @@ static partial class Program
         AssertContains(captureServiceText, "_flashbackExportStartedUtcUnixMs = now;");
         AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = now;");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\");");
+        AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export range is empty or invalid.\");");
         AssertContains(captureServiceText, "? \"Cancelled\"");
         AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
         AssertContains(captureServiceText, "if (exportOperationLockHeld)");
