@@ -1296,6 +1296,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             if (!_started || _disposed)
                 return Array.Empty<string>();
+
+            if (_encodingFailure != null || _encodingTask?.IsCompleted == true)
+            {
+                Logger.Log(
+                    $"FLASHBACK_SINK_FORCE_ROTATE_REJECTED failed={_encodingFailure != null} " +
+                    $"completed={_encodingTask?.IsCompleted == true} type={_encodingFailure?.GetType().Name ?? "None"}");
+                return Array.Empty<string>();
+            }
         }
 
         // Signal the encoding thread to perform the rotation (all encoder ops must be on that thread)

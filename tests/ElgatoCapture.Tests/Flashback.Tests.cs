@@ -1038,4 +1038,21 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackEncoderSink_ForceRotateRejectsFailedEncoder()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+
+        var forceRotateBlock = ExtractTextBetween(
+            sourceText,
+            "public IReadOnlyList<string> ForceRotateForExport",
+            "    private bool TryCancelPendingForceRotate");
+        AssertContains(forceRotateBlock, "if (_encodingFailure != null || _encodingTask?.IsCompleted == true)");
+        AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED");
+        AssertContains(forceRotateBlock, "return Array.Empty<string>();");
+        AssertContains(forceRotateBlock, "var tcs = new TaskCompletionSource<IReadOnlyList<string>>(TaskCreationOptions.RunContinuationsAsynchronously);");
+
+        return Task.CompletedTask;
+    }
 }
