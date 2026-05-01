@@ -2225,6 +2225,10 @@ static partial class Program
         AssertContains(wasapiPlaybackText, "DecrementPlaybackQueueDepth();\n        return false;");
         AssertContains(wasapiPlaybackText, "private bool TryDequeueChunk(out PlaybackChunk chunk)");
         AssertContains(wasapiPlaybackText, "DecrementPlaybackQueueDepth();");
+        AssertContains(wasapiPlaybackText, "private const int OutputSampleRate = 48000;");
+        AssertContains(wasapiPlaybackText, "UpdateRenderingPtsForActiveChunk();");
+        AssertContains(wasapiPlaybackText, "var frameOffset = Math.Max(0, _activeChunkOffset) / OutputBlockAlign;");
+        AssertContains(wasapiPlaybackText, "var offsetTicks = frameOffset * TimeSpan.TicksPerSecond / OutputSampleRate;");
         AssertDoesNotContain(wasapiPlaybackText, "_sampleQueue.Reader.Count");
         AssertDoesNotContain(wasapiPlaybackText, "_sampleQueue.Writer.TryWrite(chunk))\n        {\n            Interlocked.Increment(ref _playbackQueueDepth);");
         AssertDoesNotContain(sourceText, "_videoCapture?.SuppressPreviewSubmission();\n                        SuppressLiveAudio();\n                        _audioPlayback?.PauseRendering();");

@@ -74,6 +74,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const double FlashbackPlaybackOnePercentLowWarningRatio = 0.98;
     private const int FlashbackPlaybackMinFramesForPerfAlert = 60;
     private const double FlashbackPlaybackAudioMasterFallbackWarningRatio = 0.50;
+    private const int FlashbackPlaybackAudioQueueBacklogWarningDepth = 24;
     private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;
     private const long FlashbackRecordingBackpressureWarningMs = 100;
     private const double FlashbackRecordingQueueDepthWarningRatio = 0.75;
@@ -1574,6 +1575,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             string.Equals(snapshot.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
             snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
             snapshot.FlashbackPlaybackAudioMasterFallbacks >= snapshot.FlashbackPlaybackFrameCount * FlashbackPlaybackAudioMasterFallbackWarningRatio;
+        var playbackAudioQueueBacklog =
+            string.Equals(snapshot.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
+            snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
+            snapshot.WasapiPlaybackQueueDepth >= FlashbackPlaybackAudioQueueBacklogWarningDepth;
         var captureOnePercentLowDegraded =
             IsCaptureOnePercentLowDegraded(
                 snapshot.ExpectedCaptureFrameRate,
@@ -1804,6 +1809,18 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"avDrift={snapshot.FlashbackAvDriftMs:0.##}ms renderCallbacks={snapshot.WasapiPlaybackRenderCallbackCount} " +
             $"renderSilence={snapshot.WasapiPlaybackRenderSilenceCount} queueDepth={snapshot.WasapiPlaybackQueueDepth}.",
             "Flashback playback returned to audio-master pacing.",
+            throttleMs: 5000);
+
+        SetAlertState(
+            "flashback-playback-audio-queue-backlog",
+            playbackAudioQueueBacklog,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback playback audio queue is backing up: queueDepth={snapshot.WasapiPlaybackQueueDepth} " +
+            $"drops={snapshot.WasapiPlaybackQueueDropCount} renderSilence={snapshot.WasapiPlaybackRenderSilenceCount} " +
+            $"avDrift={snapshot.FlashbackAvDriftMs:0.##}ms target={snapshot.FlashbackPlaybackTargetFps:0.##}fps " +
+            $"observed={snapshot.FlashbackPlaybackObservedFps:0.##}fps audioMasterFallback={snapshot.FlashbackPlaybackAudioMasterFallbacks}.",
+            "Flashback playback audio queue returned to healthy depth.",
             throttleMs: 5000);
 
         SetAlertState(

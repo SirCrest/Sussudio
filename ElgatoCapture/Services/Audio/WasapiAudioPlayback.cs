@@ -15,6 +15,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private const int OutputChannels = 2;
     private const int BytesPerSample = 4;
     private const int OutputBlockAlign = OutputChannels * BytesPerSample;
+    private const int OutputSampleRate = 48000;
     private const uint WaitTimeoutMs = 100;
 
     private readonly object _chunkLock = new();
@@ -45,7 +46,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private volatile bool _resumeRequested;
     private volatile float _targetVolume = 1.0f;
     private float _currentVolume;
-    private const float VolumeRampPerFrame = 1.0f / (0.3f * 48000); // 300ms ramp at 48kHz
+    private const float VolumeRampPerFrame = 1.0f / (0.3f * OutputSampleRate); // 300ms ramp at 48kHz
     private long _renderCallbackCount;
     private int _renderSilenceCount;
     private int _playbackQueueDropCount;
@@ -519,8 +520,18 @@ internal sealed class WasapiAudioPlayback : IDisposable
             var copyLength = Math.Min(destination.Length - written, available);
             activeBuffer.AsSpan(_activeChunkOffset, copyLength).CopyTo(destination[written..]);
             _activeChunkOffset += copyLength;
+            UpdateRenderingPtsForActiveChunk();
             written += copyLength;
         }
+    }
+
+    private void UpdateRenderingPtsForActiveChunk()
+    {
+        if (_activeChunk.PtsTicks == 0) return;
+
+        var frameOffset = Math.Max(0, _activeChunkOffset) / OutputBlockAlign;
+        var offsetTicks = frameOffset * TimeSpan.TicksPerSecond / OutputSampleRate;
+        Interlocked.Exchange(ref _renderingPtsTicks, _activeChunk.PtsTicks + offsetTicks);
     }
 
     private bool TryDequeueChunk(out PlaybackChunk chunk)
