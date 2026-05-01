@@ -430,6 +430,9 @@ static partial class Program
                 "FlashbackBufferManager valid segment lookup skips missing files",
                 FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles),
             await RunCheckAsync(
+                "FlashbackBufferManager stale left-edge lookup uses oldest segment",
+                FlashbackBufferManager_GetValidSegmentFileForPosition_StaleLeftEdgeUsesOldest),
+            await RunCheckAsync(
                 "FlashbackBufferManager GetNextSegmentFile walks forward through segments",
                 FlashbackBufferManager_GetNextSegmentFile_WalksForward),
             await RunCheckAsync(
@@ -2338,6 +2341,27 @@ static partial class Program
         File.Delete(existingFallback);
         var missingAll = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(2) }) as string;
         AssertEqual(null, missingAll, "Missing completed and active segments should return null");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_GetValidSegmentFileForPosition_StaleLeftEdgeUsesOldest()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var oldest = Path.Combine(tempDir, "oldest.ts");
+        var active = Path.Combine(tempDir, "fb_test_0003.ts");
+        File.WriteAllText(oldest, "oldest");
+        File.WriteAllText(active, "active");
+
+        AddCompletedSegment(manager, oldest, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+
+        var method = manager.GetType().GetMethod("GetValidSegmentFileForPosition")!;
+        var fallback = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(1) }) as string;
+
+        AssertEqual(oldest, fallback!, "Position before first segment should use oldest existing segment, not active");
 
         return Task.CompletedTask;
     }
