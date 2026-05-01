@@ -800,6 +800,7 @@ static partial class Program
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(1, 1, 100.0), \"single_complete\")");
         AssertContains(sourceText, "if (!TryValidateCompletedOutputFile(outputPath, out var outputBytes, out var outputFailure))");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'\");");
+        AssertContains(sourceText, "DeleteFailedOutputFileIfPresent(outputPath, outputFailure);");
         AssertContains(sourceText, "return FinalizeResult.Failure(outputPath, outputFailure);");
         AssertContains(sourceText, "ReportProgress(\n                        progress,\n                        new ExportProgress(\n                            segIdx + 1,\n                            segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), \"segments_complete\")");
@@ -818,6 +819,9 @@ static partial class Program
         AssertContains(sourceText, "Flashback export failed: output file is empty");
         AssertContains(sourceText, "Flashback export failed: output file length unavailable");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'\");");
+        AssertContains(sourceText, "private static void DeleteFailedOutputFileIfPresent(string outputPath, string reason)");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_FAILED_OUTPUT_DELETE path='{outputPath}' reason='{reason}'");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_FAILED_OUTPUT_DELETE_WARN path='{outputPath}' reason='{reason}'");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_ORPHAN_CLEANUP_FAIL path='{Path.GetFileName(tmpFile)}' type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_ORPHAN_SCAN_FAIL dir='{directory}' type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(sourceText, "FLASHBACK_EXPORT_CLEANUP_WARN op=close_input");

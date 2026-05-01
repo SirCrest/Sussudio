@@ -528,6 +528,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             if (!TryValidateCompletedOutputFile(outputPath, out var outputBytes, out var outputFailure))
             {
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'");
+                DeleteFailedOutputFileIfPresent(outputPath, outputFailure);
                 return FinalizeResult.Failure(outputPath, outputFailure);
             }
 
@@ -1184,6 +1185,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             if (!TryValidateCompletedOutputFile(outputPath, out var outputBytes, out var outputFailure))
             {
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'");
+                DeleteFailedOutputFileIfPresent(outputPath, outputFailure);
                 return FinalizeResult.Failure(outputPath, outputFailure);
             }
 
@@ -1819,6 +1821,22 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private static void DeleteFailedOutputFileIfPresent(string outputPath, string reason)
+    {
+        try
+        {
+            if (File.Exists(outputPath))
+            {
+                File.Delete(outputPath);
+                Logger.Log($"FLASHBACK_EXPORT_FAILED_OUTPUT_DELETE path='{outputPath}' reason='{reason}'");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_FAILED_OUTPUT_DELETE_WARN path='{outputPath}' reason='{reason}' type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 
