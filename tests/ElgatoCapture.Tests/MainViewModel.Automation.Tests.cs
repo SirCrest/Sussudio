@@ -262,6 +262,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
+        AssertContains(captureServiceText, "var sessionLockHeld = false;");
+        AssertContains(captureServiceText, "sessionLockHeld = true;");
+        AssertContains(captureServiceText, "if (sessionLockHeld)");
         AssertContains(captureServiceText, "var exportOperationLockHeld = false;");
         AssertContains(captureServiceText, "exportOperationLockHeld = true;");
         AssertContains(captureServiceText, "catch (OperationCanceledException) when (ct.IsCancellationRequested)");

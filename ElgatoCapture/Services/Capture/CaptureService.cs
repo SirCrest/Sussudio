@@ -476,10 +476,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         FlashbackBufferManager? bufferManager;
         FlashbackEncoderSink? flashbackSink;
         TimeSpan fileInPoint, fileOutPoint;
+        var sessionLockHeld = false;
         var backendLeaseHeld = false;
-        await _sessionTransitionLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
+            await _sessionTransitionLock.WaitAsync(ct).ConfigureAwait(false);
+            sessionLockHeld = true;
+
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {
                 Logger.Log("FLASHBACK_EXPORT_REJECTED reason=flashback_recording_active");
@@ -499,9 +502,16 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 fileOutPoint = outPoint.HasValue ? outPoint.Value + validStart : TimeSpan.MaxValue;
             }
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return FailFlashbackExport(outputPath, "Flashback export cancelled.");
+        }
         finally
         {
-            _sessionTransitionLock.Release();
+            if (sessionLockHeld)
+            {
+                _sessionTransitionLock.Release();
+            }
         }
 
         try
@@ -529,10 +539,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         FlashbackBufferManager? bufferManager;
         FlashbackEncoderSink? flashbackSink;
         TimeSpan fileInPoint;
+        var sessionLockHeld = false;
         var backendLeaseHeld = false;
-        await _sessionTransitionLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
+            await _sessionTransitionLock.WaitAsync(ct).ConfigureAwait(false);
+            sessionLockHeld = true;
+
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {
                 Logger.Log("FLASHBACK_EXPORT_REJECTED reason=flashback_recording_active");
@@ -554,9 +567,16 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 fileInPoint = rangeStart + validStart;
             }
         }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return FailFlashbackExport(outputPath, "Flashback export cancelled.");
+        }
         finally
         {
-            _sessionTransitionLock.Release();
+            if (sessionLockHeld)
+            {
+                _sessionTransitionLock.Release();
+            }
         }
 
         try
