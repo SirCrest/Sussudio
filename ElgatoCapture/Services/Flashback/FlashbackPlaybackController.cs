@@ -247,14 +247,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public bool BeginScrub(TimeSpan position)
     {
         if (IsNotReady(CommandKind.BeginScrub)) return false;
-        if (!EnsurePlaybackThread()) return false;
+        if (!EnsurePlaybackThread(CommandKind.BeginScrub)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.BeginScrub, Position = position });
     }
 
     public bool Seek(TimeSpan position)
     {
         if (IsNotReady(CommandKind.Seek)) return false;
-        if (!EnsurePlaybackThread()) return false;
+        if (!EnsurePlaybackThread(CommandKind.Seek)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Seek, Position = position });
     }
 
@@ -289,14 +289,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public bool Play()
     {
         if (IsNotReady(CommandKind.Play)) return false;
-        if (!EnsurePlaybackThread()) return false;
+        if (!EnsurePlaybackThread(CommandKind.Play)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Play });
     }
 
     public bool Pause()
     {
         if (IsNotReady(CommandKind.Pause)) return false;
-        if (!EnsurePlaybackThread()) return false; // Thread must be running to handle Live→Paused
+        if (!EnsurePlaybackThread(CommandKind.Pause)) return false; // Thread must be running to handle Live→Paused
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });
     }
 
@@ -304,7 +304,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (IsNotReady(CommandKind.GoLive)) return false;
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
-        if (!EnsurePlaybackThread()) return false;
+        if (!EnsurePlaybackThread(CommandKind.GoLive)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });
     }
 
@@ -312,7 +312,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (IsNotReady(CommandKind.Nudge)) return false;
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
-        if (!EnsurePlaybackThread()) return false;
+        if (!EnsurePlaybackThread(CommandKind.Nudge)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Nudge, Delta = delta });
     }
 
@@ -418,11 +418,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
         return true;
     }
 
-    private bool EnsurePlaybackThread()
+    private bool EnsurePlaybackThread(CommandKind commandKind)
     {
         lock (_playbackThreadSync)
         {
-        if (_disposedFlag != 0) return false;
+        if (_disposedFlag != 0) return RejectCommand(commandKind, "disposed", "disposed", false);
         if (Interlocked.CompareExchange(ref _playbackThreadStarted, 1, 0) != 0)
             return true;
 
@@ -443,13 +443,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         catch (Exception ex)
         {
-            _lastCommandFailure = $"thread_start_failed:{ex.GetType().Name}:{ex.Message}";
             Logger.Log($"FLASHBACK_PLAYBACK_THREAD_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
             DisposePlaybackCtsBestEffort(_playCts, "thread_start_fail");
             _playCts = null;
             _playbackThread = null;
             Interlocked.Exchange(ref _playbackThreadStarted, 0);
-            return false;
+            return RejectCommand(
+                commandKind,
+                $"thread_start_failed:{ex.GetType().Name}:{ex.Message}",
+                $"thread_start_failed type={ex.GetType().Name}",
+                false);
         }
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_START");
         return true;
