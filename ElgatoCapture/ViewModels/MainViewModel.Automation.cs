@@ -480,6 +480,8 @@ public partial class MainViewModel
             {
                 if (IsCurrentFlashbackExport(exportId, exportCts))
                 {
+                    IsFlashbackExporting = false;
+                    FlashbackExportProgress = 0;
                     _exportCts = null;
                 }
                 DisposeFlashbackExportCtsBestEffort(exportCts, "automation_inline_cleanup");

@@ -146,6 +146,7 @@ static partial class Program
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "_exportCts = null;");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "if (!_dispatcherQueue.TryEnqueue(");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "finally");
+        AssertContains(rawAutomationText, "IsFlashbackExporting = false;\n                    FlashbackExportProgress = 0;\n                    _exportCts = null;");
         AssertContains(automationText, "private static void DisposeFlashbackExportCtsBestEffort(CancellationTokenSource cts, string operation)");
         AssertContains(rawAutomationText, "FLASHBACK_EXPORT_CTS_DISPOSE_WARN");
         AssertContains(rawAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"ui_current\");");
