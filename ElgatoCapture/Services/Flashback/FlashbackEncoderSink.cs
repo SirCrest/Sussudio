@@ -1259,6 +1259,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private void OnVideoFrameEncoded()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         Interlocked.Exchange(ref _lastVideoWriteTick, Environment.TickCount64);
         var encoded = Interlocked.Increment(ref _encodedVideoFrames);
 
@@ -1284,7 +1289,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         // NOTE: This event fires on the encoding background thread, NOT the UI thread.
         // Handlers must marshal to DispatcherQueue if they need to update UI state.
-        if (Volatile.Read(ref _recordingActive) == 1)
+        if (!_disposed && Volatile.Read(ref _recordingActive) == 1)
         {
             try
             {
