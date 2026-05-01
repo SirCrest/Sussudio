@@ -58,6 +58,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const int VerificationPerfectionMinSamples = 120;
     private const int TimelineCapacity = 240;
     private const int FlashbackPlaybackCommandStallThresholdMs = 1000;
+    private const int FlashbackExportStallThresholdMs = 30000;
     private const double FlashbackPlaybackSlowFpsRatio = 0.75;
     private const int FlashbackPlaybackMinFramesForPerfAlert = 60;
     private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;
@@ -1395,7 +1396,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             "flashback-export-stalled",
             snapshot.FlashbackExportActive &&
             exportProgressReferenceUtcUnixMs > 0 &&
-            exportLastProgressAgeMs >= 30000,
+            exportLastProgressAgeMs >= FlashbackExportStallThresholdMs,
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Flashback,
             $"Flashback export has not reported progress for {exportLastProgressAgeMs}ms " +
@@ -1571,6 +1572,12 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             health.FlashbackActive &&
             (health.FlashbackStartupCacheOverBudget ||
              (health.FlashbackTempDriveFreeBytes >= 0 && health.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes));
+        var exportProgressReferenceUtcUnixMs = health.FlashbackExportLastProgressUtcUnixMs > 0
+            ? health.FlashbackExportLastProgressUtcUnixMs
+            : health.FlashbackExportStartedUtcUnixMs;
+        var exportLastProgressAgeMs = health.FlashbackExportActive && exportProgressReferenceUtcUnixMs > 0
+            ? Math.Max(0, nowUnixMs - exportProgressReferenceUtcUnixMs)
+            : 0;
 
         if (flashbackTempPressure)
         {
@@ -1590,6 +1597,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         if (health.FlashbackExportActive)
         {
+            if (exportLastProgressAgeMs >= FlashbackExportStallThresholdMs)
+            {
+                return new DiagnosticEvaluation(
+                    "Warning",
+                    "flashback_export",
+                    "Flashback export progress is stalled.",
+                    $"{exportLane} progressAgeMs={exportLastProgressAgeMs}",
+                    sourceLane,
+                    decodeLane,
+                    previewLane,
+                    renderLane,
+                    presentLane,
+                    recordingLane,
+                    audioLane);
+            }
+
             return new DiagnosticEvaluation(
                 "Busy",
                 "flashback_export",
