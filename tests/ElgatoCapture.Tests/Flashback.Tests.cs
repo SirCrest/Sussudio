@@ -1226,6 +1226,31 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_InputStreamsAndFrameSizesAreBounded()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private const int MaxSupportedInputStreams = 64;");
+        AssertContains(sourceText, "private const int MaxDecodedVideoDimension = 8192;");
+        AssertContains(sourceText, "private const int MaxDecodedVideoFrameBytes = 512 * 1024 * 1024;");
+        AssertContains(sourceText, "if (!TryGetInputStreamCount(_formatCtx, out var streamCount, out var streamCountFailure))");
+        AssertContains(sourceText, "if (!IsValidStreamIndex(_videoStreamIndex, streamCount))");
+        AssertContains(sourceText, "if (_audioStreamIndex >= 0 && !IsValidStreamIndex(_audioStreamIndex, streamCount))");
+        AssertContains(sourceText, "FLASHBACK_DECODER_AUDIO_WARN reason=invalid_stream_index");
+        AssertContains(sourceText, "ValidateVideoDimensions(_videoWidth, _videoHeight);");
+        AssertContains(sourceText, "private static void ValidateVideoDimensions(int width, int height)");
+        AssertContains(sourceText, "width > MaxDecodedVideoDimension");
+        AssertContains(sourceText, "height > MaxDecodedVideoDimension");
+        AssertContains(sourceText, "(width & 1) != 0");
+        AssertContains(sourceText, "var pixels = (long)width * height;");
+        AssertContains(sourceText, "if (bytes <= 0 || bytes > MaxDecodedVideoFrameBytes || bytes > int.MaxValue)");
+        AssertDoesNotContain(sourceText, "return width * height * 2 + width * (height / 2) * 2;");
+        AssertDoesNotContain(sourceText, "return width * height + width * (height / 2);");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackDecoder_HeldFrameCleanupIsBestEffort()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")

@@ -22,6 +22,9 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     private const int OutputAudioSampleRate = 48000;
     private const int OutputAudioChannels = 2;
     private const int VideoFrameBufferCount = 2;
+    private const int MaxSupportedInputStreams = 64;
+    private const int MaxDecodedVideoDimension = 8192;
+    private const int MaxDecodedVideoFrameBytes = 512 * 1024 * 1024;
 
     private AVFormatContext* _formatCtx;
     private AVCodecContext* _videoCodecCtx;
@@ -215,11 +218,15 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             ThrowIfError(
                 ffmpeg.avformat_find_stream_info(_formatCtx, null),
                 "avformat_find_stream_info");
+            if (!TryGetInputStreamCount(_formatCtx, out var streamCount, out var streamCountFailure))
+            {
+                throw CreateException(streamCountFailure);
+            }
 
             // Find video stream
             _videoStreamIndex = ffmpeg.av_find_best_stream(
                 _formatCtx, AVMediaType.AVMEDIA_TYPE_VIDEO, -1, -1, null, 0);
-            if (_videoStreamIndex < 0)
+            if (!IsValidStreamIndex(_videoStreamIndex, streamCount))
             {
                 throw CreateException("No video stream found in file.");
             }
@@ -227,6 +234,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             // Find audio stream (optional)
             _audioStreamIndex = ffmpeg.av_find_best_stream(
                 _formatCtx, AVMediaType.AVMEDIA_TYPE_AUDIO, -1, -1, null, 0);
+            if (_audioStreamIndex >= 0 && !IsValidStreamIndex(_audioStreamIndex, streamCount))
+            {
+                Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN reason=invalid_stream_index index={_audioStreamIndex} stream_count={streamCount}; audio disabled");
+                _audioStreamIndex = -1;
+            }
 
             // Set up video decoder
             InitializeVideoDecoder();
@@ -471,6 +483,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         var codecPar = videoStream->codecpar;
         _videoWidth = codecPar->width;
         _videoHeight = codecPar->height;
+        ValidateVideoDimensions(_videoWidth, _videoHeight);
 
         // Determine pixel format and HDR status
         _decodedPixelFormat = (AVPixelFormat)codecPar->format;
@@ -1281,15 +1294,59 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
     private static int CalculateFrameBufferSize(int width, int height, bool isHdr)
     {
-        if (isHdr)
+        ValidateVideoDimensions(width, height);
+        var pixels = (long)width * height;
+        var bytes = isHdr ? pixels * 3 : pixels + pixels / 2;
+        if (bytes <= 0 || bytes > MaxDecodedVideoFrameBytes || bytes > int.MaxValue)
         {
-            // P010: Y plane (w*h*2) + UV plane (w*(h/2)*2)
-            return width * height * 2 + width * (height / 2) * 2;
+            throw CreateException($"Invalid decoded video frame size: {bytes} bytes for {width}x{height} hdr={isHdr}.");
         }
 
-        // NV12: Y plane (w*h) + UV plane (w*(h/2))
-        return width * height + width * (height / 2);
+        return (int)bytes;
     }
+
+    private static void ValidateVideoDimensions(int width, int height)
+    {
+        if (width <= 0 ||
+            height <= 0 ||
+            width > MaxDecodedVideoDimension ||
+            height > MaxDecodedVideoDimension ||
+            (width & 1) != 0 ||
+            (height & 1) != 0)
+        {
+            throw CreateException($"Invalid video dimensions: {width}x{height}.");
+        }
+    }
+
+    private static bool TryGetInputStreamCount(AVFormatContext* formatCtx, out int streamCount, out string failureMessage)
+    {
+        streamCount = 0;
+        if (formatCtx == null)
+        {
+            failureMessage = "input context was not available.";
+            return false;
+        }
+
+        var nativeStreamCount = formatCtx->nb_streams;
+        if (nativeStreamCount == 0)
+        {
+            failureMessage = "input had no streams.";
+            return false;
+        }
+
+        if (nativeStreamCount > MaxSupportedInputStreams)
+        {
+            failureMessage = $"input stream count {nativeStreamCount} exceeds supported maximum {MaxSupportedInputStreams}.";
+            return false;
+        }
+
+        streamCount = (int)nativeStreamCount;
+        failureMessage = string.Empty;
+        return true;
+    }
+
+    private static bool IsValidStreamIndex(int streamIndex, int streamCount)
+        => streamIndex >= 0 && streamIndex < streamCount;
 
     private void ThrowIfNotInitialized()
     {

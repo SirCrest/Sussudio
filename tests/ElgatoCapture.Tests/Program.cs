@@ -616,6 +616,9 @@ static partial class Program
                 "Flashback decoder rejects invalid timestamps",
                 FlashbackDecoder_PtsConversionRejectsInvalidTimestamps),
             await RunCheckAsync(
+                "Flashback decoder input streams and frame sizes are bounded",
+                FlashbackDecoder_InputStreamsAndFrameSizesAreBounded),
+            await RunCheckAsync(
                 "Flashback decoder held-frame cleanup is best effort",
                 FlashbackDecoder_HeldFrameCleanupIsBestEffort),
             await RunCheckAsync(
