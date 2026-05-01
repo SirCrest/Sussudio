@@ -950,6 +950,14 @@ static partial class Program
         AssertContains(sourceText, "if (!double.IsFinite(seconds) || seconds <= 0)");
         AssertContains(sourceText, "private static double ResolveSessionFrameRate(double frameRate)\n        => double.IsFinite(frameRate) && frameRate > 0 ? frameRate : 30.0;");
         AssertContains(sourceText, "private static long ToNonNegativeLongSaturated(double value)");
+        AssertContains(sourceText, "private static long NonNegativeByteDelta(long currentBytes, long startBytes)");
+        AssertContains(sourceText, "private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)");
+        AssertContains(sourceText, "var finalSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
+        AssertContains(sourceText, "var crashSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
+        AssertContains(sourceText, "var segmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, Interlocked.Read(ref _segmentStartBytes));");
+        AssertDoesNotContain(sourceText, "_encoder.TotalBytesWritten - Interlocked.Read(ref _segmentStartBytes)");
+        AssertDoesNotContain(sourceText, "result.PreviousTotalBytes - Interlocked.Read(ref _segmentStartBytes)");
+        AssertDoesNotContain(sourceText, "LastRecordingEndPts - LastRecordingStartPts");
 
         return Task.CompletedTask;
     }

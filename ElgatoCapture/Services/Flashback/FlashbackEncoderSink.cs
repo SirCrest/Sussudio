@@ -513,7 +513,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     $"FLASHBACK_RECORDING_READY output='{_recordingOutputPath}' " +
                     $"start_pts_ms={(long)LastRecordingStartPts.TotalMilliseconds} " +
                     $"end_pts_ms={(long)LastRecordingEndPts.TotalMilliseconds} " +
-                    $"duration_s={(LastRecordingEndPts - LastRecordingStartPts).TotalSeconds:F1}");
+                    $"duration_s={NonNegativeDuration(LastRecordingEndPts, LastRecordingStartPts).TotalSeconds:F1}");
             }
         }
     }
@@ -1110,7 +1110,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 if (_tsFilePath != null && finalPts > _segmentStartPts)
                 {
-                    var finalSegmentBytes = _encoder.TotalBytesWritten - Interlocked.Read(ref _segmentStartBytes);
+                    var finalSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));
                     _bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, finalPts, finalSegmentBytes);
                 }
             }
@@ -1143,7 +1143,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     var crashPts = ResolveEncoderPts();
                     if (crashPts > _segmentStartPts)
                     {
-                        var crashSegmentBytes = _encoder.TotalBytesWritten - Interlocked.Read(ref _segmentStartBytes);
+                        var crashSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));
                         _bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, crashPts, crashSegmentBytes);
                     }
                 }
@@ -1311,6 +1311,35 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return value >= long.MaxValue ? long.MaxValue : (long)value;
     }
 
+    private static long NonNegativeByteDelta(long currentBytes, long startBytes)
+    {
+        currentBytes = Math.Max(0, currentBytes);
+        startBytes = Math.Max(0, startBytes);
+        if (currentBytes <= startBytes)
+        {
+            return 0;
+        }
+
+        return currentBytes - startBytes;
+    }
+
+    private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)
+    {
+        if (end <= start)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var endTicks = end.Ticks;
+        var startTicks = start.Ticks;
+        if (startTicks < 0 && endTicks > long.MaxValue + startTicks)
+        {
+            return TimeSpan.MaxValue;
+        }
+
+        return TimeSpan.FromTicks(endTicks - startTicks);
+    }
+
     private bool RotateSegment(TimeSpan currentPts)
     {
         string? completedPath = null;
@@ -1324,7 +1353,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             // TotalBytesWritten to 0 for the new segment. PreviousTotalBytes
             // in the result includes all drain/trailer bytes.
             var result = _encoder.RotateOutput(newPath);
-            var segmentBytes = result.PreviousTotalBytes - Interlocked.Read(ref _segmentStartBytes);
+            var segmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, Interlocked.Read(ref _segmentStartBytes));
 
             _bufferManager.OnSegmentCompleted(completedPath!, _segmentStartPts, currentPts, segmentBytes);
 
