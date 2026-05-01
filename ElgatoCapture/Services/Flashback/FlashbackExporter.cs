@@ -439,7 +439,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             AtomicMoveTempFile(tmpPath, outputPath);
             _activeTempPath = null;
 
-            var outputBytes = new FileInfo(outputPath).Length;
+            var outputBytes = GetFileLengthBestEffort(outputPath);
             Logger.Log(
                 $"FLASHBACK_EXPORT_OK output='{outputPath}' packets={totalPackets} bytes={outputBytes}");
             ReportProgress(progress, new ExportProgress(1, 1, 100.0), "single_complete");
@@ -1029,7 +1029,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             AtomicMoveTempFile(tmpPath, outputPath);
             _activeTempPath = null;
 
-            var outputBytes = new FileInfo(outputPath).Length;
+            var outputBytes = GetFileLengthBestEffort(outputPath);
             Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_OK output='{outputPath}' segments={segments.Count} packets={totalPackets} bytes={outputBytes}");
             ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), "segments_complete");
             return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from {segments.Count} segments");
@@ -1365,6 +1365,19 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_EXPORT_PROGRESS_WARN stage={stage} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private static long GetFileLengthBestEffort(string path)
+    {
+        try
+        {
+            return new FileInfo(path).Length;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_WARN reason='output_length_unavailable' path='{path}' msg='{ex.Message}'");
+            return -1;
         }
     }
 
