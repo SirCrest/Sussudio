@@ -1282,6 +1282,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
             snapshot.FlashbackPlaybackObservedFps > 0 &&
             snapshot.FlashbackPlaybackObservedFps < snapshot.SelectedFrameRate * FlashbackPlaybackSlowFpsRatio;
+        var previewSlowFrameDetail = FormatPreviewSlowFrameAlertDetail(snapshot);
 
         SetAlertState(
             "preview-blank",
@@ -1331,7 +1332,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Preview,
             $"Preview cadence degraded: slowFrames={snapshot.PreviewCadenceSlowFramePercent:0.##}% " +
-            $"p95={snapshot.PreviewCadenceP95IntervalMs:0.##}ms expected={snapshot.PreviewCadenceExpectedIntervalMs:0.##}ms.",
+            $"p95={snapshot.PreviewCadenceP95IntervalMs:0.##}ms expected={snapshot.PreviewCadenceExpectedIntervalMs:0.##}ms{previewSlowFrameDetail}.",
             "Preview cadence returned to healthy range.");
 
         SetAlertState(
@@ -1444,6 +1445,18 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"Performance below perfection threshold (score={snapshot.PerformanceScore:0.##}): {snapshot.PerformanceSummary}",
             "Performance returned to perfection threshold.",
             throttleMs: 5000);
+    }
+
+    private static string FormatPreviewSlowFrameAlertDetail(AutomationSnapshot snapshot)
+    {
+        if (snapshot.PreviewD3DRecentSlowFrames.Length <= 0)
+        {
+            return string.Empty;
+        }
+
+        var frame = snapshot.PreviewD3DRecentSlowFrames[^1];
+        var reason = string.IsNullOrWhiteSpace(frame.SlowReason) ? "unknown" : frame.SlowReason;
+        return $" latestSlowFrameReason={reason} over={frame.WorstOverBudgetMs:0.##}ms interval={frame.PresentIntervalMs:0.##}ms total={frame.TotalFrameCpuMs:0.##}ms presentCall={frame.PresentCallMs:0.##}ms pending={frame.PendingFrameCount}";
     }
 
     private readonly record struct DiagnosticEvaluation(
