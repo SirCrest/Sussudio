@@ -430,6 +430,9 @@ static partial class Program
                 "FlashbackBufferManager segment lookup returns correct file for position",
                 FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment),
             await RunCheckAsync(
+                "FlashbackBufferManager segment completion rejects invalid metadata",
+                FlashbackBufferManager_SegmentCompletionRejectsInvalidMetadata),
+            await RunCheckAsync(
                 "FlashbackBufferManager valid segment lookup skips missing files",
                 FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles),
             await RunCheckAsync(
@@ -2327,6 +2330,20 @@ static partial class Program
         // Position 20s → not in any completed segment → falls back to active
         var result3 = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(20) }) as string;
         AssertContains(result3!, "fb_test_0003.ts");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_SegmentCompletionRejectsInvalidMetadata()
+    {
+        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(source, "if (string.IsNullOrWhiteSpace(path))\n        {\n            Logger.Log(\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=empty_path\");\n            return;\n        }");
+        AssertContains(source, "if (endPts <= startPts)\n        {\n            Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=invalid_range path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}\");\n            return;\n        }");
+        AssertContains(source, "var safeSizeBytes = Math.Max(0, sizeBytes);");
+        AssertContains(source, "_completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes));");
+        AssertContains(source, "_completedSegmentBytes += safeSizeBytes;");
 
         return Task.CompletedTask;
     }

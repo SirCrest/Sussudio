@@ -733,12 +733,25 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     public void OnSegmentCompleted(string path, TimeSpan startPts, TimeSpan endPts, long sizeBytes)
     {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            Logger.Log("FLASHBACK_BUFFER_SEGMENT_SKIP reason=empty_path");
+            return;
+        }
+
+        if (endPts <= startPts)
+        {
+            Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=invalid_range path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}");
+            return;
+        }
+
+        var safeSizeBytes = Math.Max(0, sizeBytes);
         lock (_indexLock)
         {
             var sequenceNumber = _completedSegments.Count;
-            _completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, sizeBytes));
-            _completedSegmentBytes += sizeBytes;
-            Logger.Log($"FLASHBACK_BUFFER_SEGMENT_COMPLETE seq={sequenceNumber} path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} size_bytes={sizeBytes}");
+            _completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes));
+            _completedSegmentBytes += safeSizeBytes;
+            Logger.Log($"FLASHBACK_BUFFER_SEGMENT_COMPLETE seq={sequenceNumber} path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} size_bytes={safeSizeBytes}");
 
             if (!(Volatile.Read(ref _evictionPauseCount) > 0))
             {
