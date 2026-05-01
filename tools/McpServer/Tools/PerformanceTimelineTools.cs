@@ -219,6 +219,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"D3D Render P99: {first.PreviewD3DRenderSubmitP99Ms:F1}ms -> {last.PreviewD3DRenderSubmitP99Ms:F1}ms (delta: {last.PreviewD3DRenderSubmitP99Ms - first.PreviewD3DRenderSubmitP99Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"D3D Present P99:{first.PreviewD3DPresentP99Ms:F1}ms -> {last.PreviewD3DPresentP99Ms:F1}ms (delta: {last.PreviewD3DPresentP99Ms - first.PreviewD3DPresentP99Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"D3D Total P99:  {first.PreviewD3DTotalP99Ms:F1}ms -> {last.PreviewD3DTotalP99Ms:F1}ms (delta: {last.PreviewD3DTotalP99Ms - first.PreviewD3DTotalP99Ms:+0.0;-0.0;0.0}ms)");
+            builder.AppendLine($"D3D P99 Bottleneck: {FormatD3DP99Bottleneck(first)} -> {FormatD3DP99Bottleneck(last)}");
             builder.AppendLine($"D3D Wait P95:   {first.PreviewD3DFrameLatencyWaitP95Ms:F1}ms -> {last.PreviewD3DFrameLatencyWaitP95Ms:F1}ms (timeouts: {first.PreviewD3DFrameLatencyWaitTimeouts} -> {last.PreviewD3DFrameLatencyWaitTimeouts}, max latest={last.PreviewD3DFrameLatencyWaitMaxMs:F1}ms)");
             builder.AppendLine($"D3D Sched->Prs: {first.PreviewD3DSchedulerToPresentMs:F1}ms -> {last.PreviewD3DSchedulerToPresentMs:F1}ms (latest rendered frame)");
             builder.AppendLine($"D3D Missed:     {first.PreviewD3DRecentMissed} -> {last.PreviewD3DRecentMissed} (latest-window delta: {last.PreviewD3DRecentMissed - first.PreviewD3DRecentMissed:+0;-0;0})");
@@ -282,6 +283,37 @@ public static class PerformanceTimelineTools
 
     private static string FormatFlashbackStageCell(TimelineRow row)
         => $"{row.FlashbackPlaybackSegmentSwitches}/{row.FlashbackPlaybackFmp4Reopens}/{row.FlashbackPlaybackWriteHeadWaits}/{row.FlashbackPlaybackNearLiveSnaps}/{row.FlashbackPlaybackLastWriteHeadWaitGapMs}";
+
+    private static string FormatD3DP99Bottleneck(TimelineRow row)
+    {
+        var stages = new[]
+        {
+            ("input", row.PreviewD3DInputUploadP99Ms),
+            ("render", row.PreviewD3DRenderSubmitP99Ms),
+            ("present", row.PreviewD3DPresentP99Ms),
+            ("wait", row.PreviewD3DFrameLatencyWaitP95Ms)
+        };
+
+        var dominant = stages
+            .Where(stage => double.IsFinite(stage.Item2) && stage.Item2 > 0)
+            .OrderByDescending(stage => stage.Item2)
+            .FirstOrDefault();
+        if (string.IsNullOrWhiteSpace(dominant.Item1))
+        {
+            return "none";
+        }
+
+        var namedTotal = stages
+            .Where(stage => double.IsFinite(stage.Item2) && stage.Item2 > 0)
+            .Sum(stage => stage.Item2);
+        if (row.PreviewD3DTotalP99Ms > 0 &&
+            row.PreviewD3DTotalP99Ms > namedTotal * 1.25)
+        {
+            return $"other({row.PreviewD3DTotalP99Ms:0.0}ms)";
+        }
+
+        return $"{dominant.Item1}({dominant.Item2:0.0}ms)";
+    }
 
     private static string FormatExportFailureKind(string failureKind)
         => CompactCell(string.IsNullOrWhiteSpace(failureKind) ? "-" : failureKind, 6);

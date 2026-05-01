@@ -737,6 +737,8 @@ static partial class Program
         AssertContains(source, "D3D Render P99:");
         AssertContains(source, "D3D Present P99:");
         AssertContains(source, "D3D Total P99:");
+        AssertContains(source, "D3D P99 Bottleneck:");
+        AssertContains(source, "FormatD3DP99Bottleneck");
         AssertContains(source, "Flashback P99:");
         AssertContains(source, "Flashback Decode:");
         AssertContains(source, "Flashback Cmds:");
