@@ -1563,6 +1563,7 @@ static partial class Program
         AssertContains(nudgeBlock, "ReleasePlaybackFrameForLive(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "RestoreLiveAudio();");
         AssertContains(nudgeBlock, "SafeResumePreviewSubmission(\"nudge_no_file\");");
+        AssertContains(nudgeBlock, "SafeResumeRendering(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "SetState(FlashbackPlaybackState.Live);");
         AssertContains(nudgeBlock, "SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart);");
         AssertDoesNotContain(nudgeBlock, "if (decoder != null)");
@@ -1720,6 +1721,7 @@ static partial class Program
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"decode_error\")");
         AssertContains(sourceText, "SafeFlushPlayback(\"restore_live_audio\")");
         AssertContains(sourceText, "SafeResumeRendering(\"play_no_file\")");
+        AssertContains(sourceText, "SafeResumeRendering(\"nudge_no_file\")");
         AssertContains(sourceText, "if (_audioPlayback == null)\n        {\n            decoder.AudioChunkCallback = null;\n            return;\n        }");
         AssertDoesNotContain(sourceText, "_videoCapture?.SuppressPreviewSubmission();\n                        SuppressLiveAudio();\n                        _audioPlayback?.PauseRendering();");
 

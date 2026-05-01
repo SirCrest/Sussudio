@@ -884,6 +884,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             ReleasePlaybackFrameForLive("nudge_no_file");
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("nudge_no_file");
+                            SafeResumeRendering("nudge_no_file");
                             SetState(FlashbackPlaybackState.Live);
                             Logger.Log($"FLASHBACK_PLAYBACK_NUDGE_NO_FILE pos_ms={(long)nudgedPos.TotalMilliseconds}");
                             break;
