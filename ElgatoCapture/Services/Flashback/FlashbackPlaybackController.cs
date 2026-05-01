@@ -389,6 +389,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private bool SendCommand(PlaybackCommand command)
     {
+        if (_disposedFlag != 0 && command.Kind != CommandKind.Stop)
+        {
+            return RejectCommand(command.Kind, "disposed", "disposed", false);
+        }
+
         var queuedCommand = new PlaybackCommand
         {
             Kind = command.Kind,
