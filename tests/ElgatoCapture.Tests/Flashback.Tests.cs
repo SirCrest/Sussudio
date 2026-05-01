@@ -1180,6 +1180,38 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackPlaybackController_InOutPointChangesStopAfterDispose()
+    {
+        var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+        var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
+
+        var controllerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackPlaybackController");
+        using var controller = (IDisposable)Activator.CreateInstance(controllerType, new[] { bufferManager })!;
+
+        var setInPoint = controllerType.GetMethod("SetInPoint", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController.SetInPoint not found.");
+        var setOutPoint = controllerType.GetMethod("SetOutPoint", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController.SetOutPoint not found.");
+        var clearInOut = controllerType.GetMethod("ClearInOutPoints", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController.ClearInOutPoints not found.");
+
+        setInPoint.Invoke(controller, null);
+        controller.Dispose();
+        clearInOut.Invoke(controller, null);
+        setOutPoint.Invoke(controller, null);
+
+        AssertEqual(TimeSpan.Zero, (TimeSpan?)GetPropertyValue(controller, "InPoint"), "Disposed clear should preserve existing in point");
+        AssertEqual(null, GetPropertyValue(controller, "OutPoint"), "Disposed set out should not create a marker");
+
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_SET_IN_SKIP reason=disposed");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_SET_OUT_SKIP reason=disposed");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_CLEAR_INOUT_SKIP reason=disposed");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")

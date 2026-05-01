@@ -320,6 +320,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     public TimeSpan SetInPoint()
     {
+        if (_disposedFlag != 0)
+        {
+            Logger.Log("FLASHBACK_PLAYBACK_SET_IN_SKIP reason=disposed");
+            return PlaybackPosition;
+        }
+
         var pos = PlaybackPosition;
         InPoint = pos;
         var outTicks = Interlocked.Read(ref _outPointTicks);
@@ -335,6 +341,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     public TimeSpan SetOutPoint()
     {
+        if (_disposedFlag != 0)
+        {
+            Logger.Log("FLASHBACK_PLAYBACK_SET_OUT_SKIP reason=disposed");
+            return PlaybackPosition;
+        }
+
         var pos = PlaybackPosition;
         OutPoint = pos;
         var inTicks = Interlocked.Read(ref _inPointTicks);
@@ -350,6 +362,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     public void ClearInOutPoints()
     {
+        if (_disposedFlag != 0)
+        {
+            Logger.Log("FLASHBACK_PLAYBACK_CLEAR_INOUT_SKIP reason=disposed");
+            return;
+        }
+
         InPoint = null;
         OutPoint = null;
         Logger.Log("FLASHBACK_PLAYBACK_CLEAR_INOUT");

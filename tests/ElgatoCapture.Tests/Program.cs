@@ -607,6 +607,9 @@ static partial class Program
                 "Flashback in/out point setters normalize markers",
                 FlashbackPlaybackController_InOutPointSettersNormalizeMarkers),
             await RunCheckAsync(
+                "Flashback in/out point changes stop after dispose",
+                FlashbackPlaybackController_InOutPointChangesStopAfterDispose),
+            await RunCheckAsync(
                 "Flashback clamp bounds stale markers to buffered duration",
                 FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration),
             await RunCheckAsync(
