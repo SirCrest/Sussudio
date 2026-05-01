@@ -759,6 +759,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!decoder.IsOpen)
                         {
                             PlaybackPosition = nudgedPos;
+                            isPlaying = false;
+                            isScrubbing = false;
+                            RestoreLiveAudio();
+                            SafeResumePreviewSubmission("nudge_no_file");
+                            SetState(FlashbackPlaybackState.Live);
                             Logger.Log($"FLASHBACK_PLAYBACK_NUDGE_NO_FILE pos_ms={(long)nudgedPos.TotalMilliseconds}");
                             break;
                         }

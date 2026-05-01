@@ -721,6 +721,9 @@ static partial class Program
         AssertContains(nudgeBlock, "EnsureFileOpen(decoder, ref fileOpen, nudgedPos + frozenValidStart);");
         AssertContains(nudgeBlock, "if (!decoder.IsOpen)");
         AssertContains(nudgeBlock, "FLASHBACK_PLAYBACK_NUDGE_NO_FILE");
+        AssertContains(nudgeBlock, "RestoreLiveAudio();");
+        AssertContains(nudgeBlock, "SafeResumePreviewSubmission(\"nudge_no_file\");");
+        AssertContains(nudgeBlock, "SetState(FlashbackPlaybackState.Live);");
         AssertContains(nudgeBlock, "SeekAndDisplayKeyframe(decoder, nudgedPos, frozenValidStart);");
         AssertDoesNotContain(nudgeBlock, "if (decoder != null)");
 
