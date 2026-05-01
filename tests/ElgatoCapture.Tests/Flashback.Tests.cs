@@ -808,7 +808,12 @@ static partial class Program
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(0, segments.Count, 0), \"segments_start\");");
         AssertContains(sourceText, "if (ShouldReportProgressHeartbeat(ref lastProgressHeartbeatTick))");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(0, 1, 0), \"single_heartbeat\");");
-        AssertContains(sourceText, "ReportProgress(\n                                progress,\n                                new ExportProgress(\n                                    segIdx,\n                                    segments.Count,");
+        var segmentExportLoopBlock = ExtractTextBetween(
+            sourceText,
+            "var segmentVideoFrameDurUs = 33333L;",
+            "// Update cross-segment offset:");
+        AssertContains(segmentExportLoopBlock, "ReportProgress(");
+        AssertContains(segmentExportLoopBlock, "\"segment_heartbeat\");");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(1, 1, 100.0), \"single_complete\")");
         AssertContains(sourceText, "if (!TryFinalizeTempOutputFile(tmpPath, outputPath, out var outputBytes, out var outputFailure))");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'\");");
@@ -841,6 +846,29 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_EXPORT_CLEANUP_WARN op=free_output_context");
         AssertContains(sourceText, "FLASHBACK_EXPORT_PROGRESS_UPDATE_WARN");
         AssertDoesNotContain(sourceText, "catch { /* Best-effort: segment may be deleted mid-export; progress tracking is non-critical */ }");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackExporter_ReleasesBufferedSegmentPacketsOnFailures()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
+        AssertContains(sourceText, "FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
+        AssertContains(sourceText, "bufferedStreamIndices?.Clear();");
+
+        var segmentLoopBlock = ExtractTextBetween(
+            sourceText,
+            "var segmentVideoFrameDurUs = 33333L;",
+            "// Update cross-segment offset:");
+        AssertContains(segmentLoopBlock, "// Free any remaining buffered packets (EOF before all bases discovered)\n                    FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
+        AssertContains(segmentLoopBlock, "finally\n                                    {\n                                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                                    }");
+        AssertOccursBefore(
+            segmentLoopBlock,
+            "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), \"av_interleaved_write_frame\");",
+            "finally\n                                    {\n                                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                                    }");
 
         return Task.CompletedTask;
     }

@@ -967,6 +967,9 @@ static partial class Program
                 "Flashback exporter progress callbacks are best effort",
                 FlashbackExporter_ProgressCallbacksAreBestEffort),
             await RunCheckAsync(
+                "Flashback exporter releases buffered segment packets on failures",
+                FlashbackExporter_ReleasesBufferedSegmentPacketsOnFailures),
+            await RunCheckAsync(
                 "Flashback exporter timestamp conversions are saturating",
                 FlashbackExporter_TimestampConversionsAreSaturating),
             await RunCheckAsync(
