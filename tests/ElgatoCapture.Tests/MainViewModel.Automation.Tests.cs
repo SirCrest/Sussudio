@@ -718,7 +718,8 @@ static partial class Program
         AssertContains(bufferText, "info.EnumerateFiles(\"fb_*\", SearchOption.TopDirectoryOnly)");
         AssertContains(bufferText, "Directory.EnumerateFiles(tempDirectory, \"fb_*\", SearchOption.TopDirectoryOnly)");
         AssertContains(bufferText, "Directory.Delete(fullPath, recursive: true);");
-        AssertContains(bufferText, "if (string.Equals(_activeSegmentPath, currentPath, StringComparison.OrdinalIgnoreCase))\n                return _activeSegmentPath;");
+        AssertContains(bufferText, "if (string.Equals(_activeSegmentPath, currentPath, StringComparison.OrdinalIgnoreCase))\n                return _activeSegmentPath != null && File.Exists(_activeSegmentPath) ? _activeSegmentPath : null;");
+        AssertContains(bufferText, "return GetOldestExistingSegmentPath()\n                ?? (_activeSegmentPath != null && File.Exists(_activeSegmentPath) ? _activeSegmentPath : null);");
         AssertContains(bufferText, "public TimeSpan? GetSegmentStartPts(string path)");
         AssertContains(playbackText, "var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);");
         AssertContains(playbackText, "if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)");

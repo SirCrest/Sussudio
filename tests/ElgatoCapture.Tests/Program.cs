@@ -436,6 +436,9 @@ static partial class Program
                 "FlashbackBufferManager GetNextSegmentFile walks forward through segments",
                 FlashbackBufferManager_GetNextSegmentFile_WalksForward),
             await RunCheckAsync(
+                "FlashbackBufferManager GetNextSegmentFile skips missing indexed segments",
+                FlashbackBufferManager_GetNextSegmentFile_SkipsMissingIndexedSegments),
+            await RunCheckAsync(
                 "FlashbackBufferManager GetValidSegmentPaths returns overlapping segments",
                 FlashbackBufferManager_GetValidSegmentPaths_ReturnsOverlapping),
             await RunCheckAsync(
@@ -2369,25 +2372,58 @@ static partial class Program
     private static Task FlashbackBufferManager_GetNextSegmentFile_WalksForward()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
         var manager = CreateInitializedBufferManager(tempDir);
 
-        AddCompletedSegment(manager, "/a.ts", TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 500);
-        AddCompletedSegment(manager, "/b.ts", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
-        AddCompletedSegment(manager, "/c.ts", TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 500);
+        var a = Path.Combine(tempDir, "a.ts");
+        var b = Path.Combine(tempDir, "b.ts");
+        var c = Path.Combine(tempDir, "c.ts");
+        var active = Path.Combine(tempDir, "fb_test_0003.ts");
+        File.WriteAllText(a, "a");
+        File.WriteAllText(b, "b");
+        File.WriteAllText(c, "c");
+        File.WriteAllText(active, "active");
+
+        AddCompletedSegment(manager, a, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 500);
+        AddCompletedSegment(manager, b, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+        AddCompletedSegment(manager, c, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 500);
 
         var method = manager.GetType().GetMethod("GetNextSegmentFile")!;
 
-        // From a → b
-        var next1 = method.Invoke(manager, new object[] { "/a.ts" }) as string;
-        AssertEqual("/b.ts", next1!, "a→b");
+        var nextA = method.Invoke(manager, new object[] { a }) as string;
+        AssertEqual(b, nextA!, "a to b");
 
-        // From b → c
-        var next2 = method.Invoke(manager, new object[] { "/b.ts" }) as string;
-        AssertEqual("/c.ts", next2!, "b→c");
+        var nextB = method.Invoke(manager, new object[] { b }) as string;
+        AssertEqual(c, nextB!, "b to c");
 
-        // From c (last completed) → active segment
-        var next3 = method.Invoke(manager, new object[] { "/c.ts" }) as string;
-        AssertContains(next3!, "fb_test_0003.ts");
+        var nextC = method.Invoke(manager, new object[] { c }) as string;
+        AssertContains(nextC!, "fb_test_0003.ts");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_GetNextSegmentFile_SkipsMissingIndexedSegments()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var current = Path.Combine(tempDir, "current.ts");
+        var missingNext = Path.Combine(tempDir, "missing-next.ts");
+        var existingNext = Path.Combine(tempDir, "existing-next.ts");
+        var active = Path.Combine(tempDir, "fb_test_0003.ts");
+        File.WriteAllText(current, "current");
+        File.WriteAllText(existingNext, "next");
+        File.WriteAllText(active, "active");
+
+        AddCompletedSegment(manager, current, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 500);
+        AddCompletedSegment(manager, missingNext, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+        AddCompletedSegment(manager, existingNext, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 500);
+
+        var method = manager.GetType().GetMethod("GetNextSegmentFile")!;
+        var next = method.Invoke(manager, new object[] { current }) as string;
+
+        AssertEqual(existingNext, next!, "Next segment lookup should skip missing indexed segment");
 
         return Task.CompletedTask;
     }

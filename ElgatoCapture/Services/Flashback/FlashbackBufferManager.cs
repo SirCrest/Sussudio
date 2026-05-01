@@ -859,19 +859,24 @@ internal sealed class FlashbackBufferManager : IDisposable
                 if (_completedSegments[i].Path == currentPath)
                 {
                     // Found current — return next if it exists
-                    if (i + 1 < _completedSegments.Count)
-                        return _completedSegments[i + 1].Path;
+                    for (var nextIndex = i + 1; nextIndex < _completedSegments.Count; nextIndex++)
+                    {
+                        var nextPath = _completedSegments[nextIndex].Path;
+                        if (File.Exists(nextPath))
+                            return nextPath;
+                    }
                     // Current is the last completed — fall back to active
-                    return _activeSegmentPath;
+                    return _activeSegmentPath != null && File.Exists(_activeSegmentPath)
+                        ? _activeSegmentPath
+                        : null;
                 }
             }
             if (string.Equals(_activeSegmentPath, currentPath, StringComparison.OrdinalIgnoreCase))
-                return _activeSegmentPath;
+                return _activeSegmentPath != null && File.Exists(_activeSegmentPath) ? _activeSegmentPath : null;
             // currentPath not found (evicted or unknown)
             // Return the oldest available segment, or active if none
-            if (_completedSegments.Count > 0)
-                return _completedSegments[0].Path;
-            return _activeSegmentPath;
+            return GetOldestExistingSegmentPath()
+                ?? (_activeSegmentPath != null && File.Exists(_activeSegmentPath) ? _activeSegmentPath : null);
         }
     }
 
