@@ -226,7 +226,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 {
                     await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, transitionToken).ConfigureAwait(false);
                 }
-                catch
+                catch (Exception ex)
                 {
                     _flashbackEnabled = false;
                     _pendingFlashbackEnableAfterRecording = false;
@@ -234,6 +234,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     {
                         await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true).ConfigureAwait(false);
                     }
+                    Logger.Log($"FLASHBACK_ENABLE_IMMEDIATE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
                     throw;
                 }
             }
@@ -2579,8 +2580,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 newPlayback.SetVolume(_isMonitoringMuted ? 0f : _previewVolume);
                 playback = newPlayback;
             }
-            catch
+            catch (Exception ex)
             {
+                Logger.Log($"WASAPI_PLAYBACK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
                 if (ReferenceEquals(_wasapiAudioPlayback, newPlayback))
                 {
                     _wasapiAudioPlayback = null;
@@ -2595,8 +2597,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             capture.SetPlayback(playback);
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Log($"WASAPI_PLAYBACK_ATTACH_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
             StopWasapiPlayback();
             throw;
         }

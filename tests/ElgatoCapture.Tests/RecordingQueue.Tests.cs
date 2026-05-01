@@ -228,6 +228,8 @@ static partial class Program
         AssertContains(captureServiceSource, "SafeClearWasapiCapturePlayback(capture, \"detach_capture\")");
         AssertContains(captureServiceSource, "private static void DisposeWasapiPlaybackBestEffort(WasapiAudioPlayback playback)");
         AssertContains(captureServiceSource, "StopWasapiPlaybackBestEffort(newPlayback, \"start_fail\")");
+        AssertContains(captureServiceSource, "WASAPI_PLAYBACK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
+        AssertContains(captureServiceSource, "WASAPI_PLAYBACK_ATTACH_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
         AssertContains(captureServiceSource, "StopWasapiPlayback();\n            throw;");
         AssertContains(captureServiceSource, "if (ReferenceEquals(_wasapiAudioPlayback, newPlayback))");
         AssertContains(captureServiceSource, "private static void StopWasapiPlaybackBestEffort(WasapiAudioPlayback playback, string operation)");

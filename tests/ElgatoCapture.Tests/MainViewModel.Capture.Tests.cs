@@ -506,6 +506,7 @@ static partial class Program
         AssertContains(immediateEnableBranch, "_flashbackEnabled = false;");
         AssertContains(immediateEnableBranch, "_pendingFlashbackEnableAfterRecording = false;");
         AssertContains(immediateEnableBranch, "await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true)");
+        AssertContains(immediateEnableBranch, "FLASHBACK_ENABLE_IMMEDIATE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(immediateEnableBranch, "throw;");
 
         AssertContains(stopAndDisposeRecordingBackend, "if (_pendingFlashbackEnableAfterRecording)");
