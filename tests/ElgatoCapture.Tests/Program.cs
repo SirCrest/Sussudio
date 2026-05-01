@@ -673,6 +673,9 @@ static partial class Program
                 "FlashbackBufferManager purge forgets active segment path",
                 FlashbackBufferManager_PurgeCompletedSegments_ForgetsActivePath),
             await RunCheckAsync(
+                "FlashbackBufferManager partial purge accounts for deleted active segment",
+                FlashbackBufferManager_PurgeCompletedSegments_AccountsForActiveBytesOnPartialPurge),
+            await RunCheckAsync(
                 "FlashbackBufferManager removes stale legacy root segments",
                 FlashbackBufferManager_RemovesStaleLegacyRootSegments),
             await RunCheckAsync(
@@ -3471,8 +3474,63 @@ static partial class Program
 
         AssertContains(
             purgeBlock,
-            "if (_activeSegmentPath != null)\n            {\n                TryDeleteFile(_activeSegmentPath);\n                _activeSegmentPath = null; // Force new path generation on next GetFilePath()\n            }");
+            "if (_activeSegmentPath != null)\n            {\n                var activeSegmentBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);\n                if (TryDeleteFile(_activeSegmentPath))\n                {\n                    freedBytes = AddNonNegativeSaturated(freedBytes, activeSegmentBytes);\n                }\n                _activeSegmentPath = null; // Force new path generation on next GetFilePath()\n                _previousActiveSegmentBytes = 0;\n            }");
         AssertDoesNotContain(purgeBlock, "if (_activeSegmentPath != null && TryDeleteFile(_activeSegmentPath))");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_PurgeCompletedSegments_AccountsForActiveBytesOnPartialPurge()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_partial_purge_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+        FileStream? lockedCompleted = null;
+
+        try
+        {
+            var completedPath = Path.Combine(tempDir, "completed-locked.ts");
+            var activePath = Path.Combine(tempDir, "fb_test_0003.ts");
+            File.WriteAllBytes(completedPath, new byte[100]);
+            File.WriteAllBytes(activePath, new byte[50]);
+
+            var onSegmentCompleted = manager.GetType().GetMethod("OnSegmentCompleted")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.OnSegmentCompleted not found.");
+            var updateDiskBytes = manager.GetType().GetMethod("UpdateDiskBytes")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.UpdateDiskBytes not found.");
+            var purgeCompleted = manager.GetType().GetMethod("PurgeCompletedSegments")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.PurgeCompletedSegments not found.");
+
+            onSegmentCompleted.Invoke(manager, new object[]
+            {
+                completedPath,
+                TimeSpan.Zero,
+                TimeSpan.FromSeconds(1),
+                100L
+            });
+            updateDiskBytes.Invoke(manager, new object[] { 50L });
+            AssertEqual(150L, GetLongProperty(manager, "TotalDiskBytes"), "Setup should track completed plus active bytes");
+
+            lockedCompleted = new FileStream(completedPath, FileMode.Open, FileAccess.Read, FileShare.None);
+            purgeCompleted.Invoke(manager, null);
+
+            AssertEqual(false, File.Exists(activePath), "Partial purge should still delete stale active segment");
+            AssertEqual(100L, GetLongProperty(manager, "TotalDiskBytes"), "Partial purge subtracts deleted active bytes");
+            AssertEqual(0L, (long)GetPrivateField(manager, "_previousActiveSegmentBytes")!, "Partial purge resets active byte baseline");
+
+            updateDiskBytes.Invoke(manager, new object[] { 25L });
+            AssertEqual(175L, GetLongProperty(manager, "TotalBytesWritten"), "Next active segment bytes are counted after purge baseline reset");
+        }
+        finally
+        {
+            lockedCompleted?.Dispose();
+            if (manager is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
 
         return Task.CompletedTask;
     }
