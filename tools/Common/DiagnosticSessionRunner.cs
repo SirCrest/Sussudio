@@ -44,6 +44,7 @@ public sealed class DiagnosticSessionResult
     public string FlashbackPlaybackLastCommandFailureAtEnd { get; init; } = string.Empty;
     public long FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd { get; init; }
     public double FlashbackPlaybackObservedFpsAtEnd { get; init; }
+    public double FlashbackPlaybackMinObservedFpsObserved { get; init; }
     public double FlashbackPlaybackAvgFrameMsAtEnd { get; init; }
     public double FlashbackPlaybackP99FrameMsAtEnd { get; init; }
     public double FlashbackPlaybackMaxFrameMsAtEnd { get; init; }
@@ -69,6 +70,9 @@ public sealed class DiagnosticSessionResult
     public long FlashbackPlaybackMaxAudioMasterDelayDoublesObserved { get; init; }
     public long FlashbackPlaybackMaxAudioMasterDelayShrinksObserved { get; init; }
     public long FlashbackPlaybackMaxAudioMasterFallbacksObserved { get; init; }
+    public double FlashbackPlaybackMaxAudioBufferedDurationMsObserved { get; init; }
+    public double FlashbackPlaybackMaxAudioQueueDurationMsObserved { get; init; }
+    public double FlashbackPlaybackMaxAbsAvDriftMsObserved { get; init; }
     public long FlashbackPlaybackSubmitFailuresAtEnd { get; init; }
     public long FlashbackPlaybackSegmentSwitchesAtEnd { get; init; }
     public long FlashbackPlaybackFmp4ReopensAtEnd { get; init; }
@@ -684,6 +688,7 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackLastCommandFailureAtEnd = playbackLastCommandFailureAtEnd,
             FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd = playbackLastCommandFailureUtcUnixMsAtEnd,
             FlashbackPlaybackObservedFpsAtEnd = playbackObservedFpsAtEnd,
+            FlashbackPlaybackMinObservedFpsObserved = playbackSessionMetrics.MinObservedFpsObserved,
             FlashbackPlaybackAvgFrameMsAtEnd = playbackAvgFrameMsAtEnd,
             FlashbackPlaybackP99FrameMsAtEnd = playbackP99FrameMsAtEnd,
             FlashbackPlaybackMaxFrameMsAtEnd = playbackMaxFrameMsAtEnd,
@@ -709,6 +714,9 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackMaxAudioMasterDelayDoublesObserved = playbackSessionMetrics.MaxAudioMasterDelayDoublesObserved,
             FlashbackPlaybackMaxAudioMasterDelayShrinksObserved = playbackSessionMetrics.MaxAudioMasterDelayShrinksObserved,
             FlashbackPlaybackMaxAudioMasterFallbacksObserved = playbackSessionMetrics.MaxAudioMasterFallbacksObserved,
+            FlashbackPlaybackMaxAudioBufferedDurationMsObserved = playbackSessionMetrics.MaxAudioBufferedDurationMsObserved,
+            FlashbackPlaybackMaxAudioQueueDurationMsObserved = playbackSessionMetrics.MaxAudioQueueDurationMsObserved,
+            FlashbackPlaybackMaxAbsAvDriftMsObserved = playbackSessionMetrics.MaxAbsAvDriftMsObserved,
             FlashbackPlaybackSubmitFailuresAtEnd = playbackSubmitFailuresAtEnd,
             FlashbackPlaybackSegmentSwitchesAtEnd = playbackSegmentSwitchesAtEnd,
             FlashbackPlaybackFmp4ReopensAtEnd = playbackFmp4ReopensAtEnd,
@@ -855,6 +863,7 @@ public static class DiagnosticSessionRunner
         builder.AppendLine(
             "Flashback Playback Perf: " +
             $"fpsEnd={result.FlashbackPlaybackObservedFpsAtEnd:0.##} " +
+            $"fpsMin={result.FlashbackPlaybackMinObservedFpsObserved:0.##} " +
             $"avgFrameMsEnd={result.FlashbackPlaybackAvgFrameMsAtEnd:0.##} " +
             $"p99FrameMsEnd={result.FlashbackPlaybackP99FrameMsAtEnd:0.##} " +
             $"maxFrameMsEnd={result.FlashbackPlaybackMaxFrameMsAtEnd:0.##} " +
@@ -874,6 +883,9 @@ public static class DiagnosticSessionRunner
             $"audioMasterShrinkMax={result.FlashbackPlaybackMaxAudioMasterDelayShrinksObserved} " +
             $"audioMasterFallbackEnd={result.FlashbackPlaybackAudioMasterFallbacksAtEnd} " +
             $"audioMasterFallbackMax={result.FlashbackPlaybackMaxAudioMasterFallbacksObserved} " +
+            $"audioBufferedMsMax={result.FlashbackPlaybackMaxAudioBufferedDurationMsObserved:0.##} " +
+            $"audioQueueMsMax={result.FlashbackPlaybackMaxAudioQueueDurationMsObserved:0.##} " +
+            $"absAvDriftMsMax={result.FlashbackPlaybackMaxAbsAvDriftMsObserved:0.##} " +
             $"submitFailuresEnd={result.FlashbackPlaybackSubmitFailuresAtEnd}");
         builder.AppendLine(
             "Flashback Playback Decode: " +
@@ -3100,11 +3112,22 @@ public static class DiagnosticSessionRunner
             metrics.MinOnePercentLowFpsObserved = 0;
         }
 
+        if (double.IsPositiveInfinity(metrics.MinObservedFpsObserved))
+        {
+            metrics.MinObservedFpsObserved = 0;
+        }
+
         return metrics;
     }
 
     private static void ObservePlaybackSnapshot(FlashbackPlaybackSessionMetrics metrics, JsonElement snapshot)
     {
+        var observedFps = GetDouble(snapshot, "FlashbackPlaybackObservedFps");
+        if (observedFps > 0)
+        {
+            metrics.MinObservedFpsObserved = Math.Min(metrics.MinObservedFpsObserved, observedFps);
+        }
+
         var onePercentLow = GetDouble(snapshot, "FlashbackPlaybackOnePercentLowFps");
         if (onePercentLow > 0)
         {
@@ -3119,10 +3142,14 @@ public static class DiagnosticSessionRunner
         metrics.MaxAudioMasterDelayDoublesObserved = Math.Max(metrics.MaxAudioMasterDelayDoublesObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterDelayDoubles") ?? 0);
         metrics.MaxAudioMasterDelayShrinksObserved = Math.Max(metrics.MaxAudioMasterDelayShrinksObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterDelayShrinks") ?? 0);
         metrics.MaxAudioMasterFallbacksObserved = Math.Max(metrics.MaxAudioMasterFallbacksObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0);
+        metrics.MaxAudioBufferedDurationMsObserved = Math.Max(metrics.MaxAudioBufferedDurationMsObserved, GetDouble(snapshot, "WasapiPlaybackBufferedDurationMs"));
+        metrics.MaxAudioQueueDurationMsObserved = Math.Max(metrics.MaxAudioQueueDurationMsObserved, GetDouble(snapshot, "WasapiPlaybackQueueDurationMs"));
+        metrics.MaxAbsAvDriftMsObserved = Math.Max(metrics.MaxAbsAvDriftMsObserved, Math.Abs(GetDouble(snapshot, "FlashbackAvDriftMs")));
     }
 
     private sealed class FlashbackPlaybackSessionMetrics
     {
+        public double MinObservedFpsObserved { get; set; } = double.PositiveInfinity;
         public double MinOnePercentLowFpsObserved { get; set; } = double.PositiveInfinity;
         public double MaxP99FrameMsObserved { get; set; }
         public double MaxFrameMsObserved { get; set; }
@@ -3132,6 +3159,9 @@ public static class DiagnosticSessionRunner
         public long MaxAudioMasterDelayDoublesObserved { get; set; }
         public long MaxAudioMasterDelayShrinksObserved { get; set; }
         public long MaxAudioMasterFallbacksObserved { get; set; }
+        public double MaxAudioBufferedDurationMsObserved { get; set; }
+        public double MaxAudioQueueDurationMsObserved { get; set; }
+        public double MaxAbsAvDriftMsObserved { get; set; }
     }
 
     private static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(
