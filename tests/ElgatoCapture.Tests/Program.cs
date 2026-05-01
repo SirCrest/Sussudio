@@ -463,6 +463,9 @@ static partial class Program
                 "FlashbackBufferManager segment path lookups normalize equivalent paths",
                 FlashbackBufferManager_SegmentPathLookupsNormalizeEquivalentPaths),
             await RunCheckAsync(
+                "FlashbackBufferManager segment start PTS skips missing files",
+                FlashbackBufferManager_GetSegmentStartPts_SkipsMissingFiles),
+            await RunCheckAsync(
                 "FlashbackBufferManager GetNextSegmentFile skips missing indexed segments",
                 FlashbackBufferManager_GetNextSegmentFile_SkipsMissingIndexedSegments),
             await RunCheckAsync(
@@ -2801,8 +2804,8 @@ static partial class Program
         AssertContains(source, "Path.GetFullPath(right)");
         AssertContains(source, "FLASHBACK_BUFFER_PATH_COMPARE_WARN");
         AssertContains(source, "if (IsSameSegmentPath(_completedSegments[i].Path, currentPath))");
-        AssertContains(source, "if (IsSameSegmentPath(seg.Path, path))");
-        AssertContains(source, "if (IsSameSegmentPath(_activeSegmentPath, path))");
+        AssertContains(source, "if (IsSameSegmentPath(seg.Path, path) && File.Exists(seg.Path))");
+        AssertContains(source, "if (IsSameSegmentPath(_activeSegmentPath, path) &&");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -2824,6 +2827,36 @@ static partial class Program
         var startMethod = manager.GetType().GetMethod("GetSegmentStartPts")!;
         var start = (TimeSpan?)startMethod.Invoke(manager, new object[] { equivalentA });
         AssertEqual(TimeSpan.Zero, start!.Value, "Equivalent completed segment path should resolve start PTS");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_GetSegmentStartPts_SkipsMissingFiles()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var missingCompleted = Path.Combine(tempDir, "missing-completed.ts");
+        var existingCompleted = Path.Combine(tempDir, "existing-completed.ts");
+        var active = Path.Combine(tempDir, "fb_test_0003.ts");
+        File.WriteAllText(existingCompleted, "segment");
+        File.WriteAllText(active, "active");
+
+        AddCompletedSegment(manager, missingCompleted, TimeSpan.Zero, TimeSpan.FromSeconds(5), 500);
+        AddCompletedSegment(manager, existingCompleted, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+
+        var method = manager.GetType().GetMethod("GetSegmentStartPts")!;
+
+        var missingStart = (TimeSpan?)method.Invoke(manager, new object[] { missingCompleted });
+        AssertEqual(null, missingStart, "Missing completed segment should not expose start PTS");
+
+        var existingStart = (TimeSpan?)method.Invoke(manager, new object[] { existingCompleted });
+        AssertEqual(TimeSpan.FromSeconds(5), existingStart!.Value, "Existing completed segment should expose start PTS");
+
+        File.Delete(active);
+        var missingActiveStart = (TimeSpan?)method.Invoke(manager, new object[] { active });
+        AssertEqual(null, missingActiveStart, "Missing active segment should not expose start PTS");
 
         return Task.CompletedTask;
     }

@@ -1028,11 +1028,13 @@ internal sealed class FlashbackBufferManager : IDisposable
         {
             foreach (var seg in _completedSegments)
             {
-                if (IsSameSegmentPath(seg.Path, path))
+                if (IsSameSegmentPath(seg.Path, path) && File.Exists(seg.Path))
                     return seg.StartPts;
             }
 
-            if (IsSameSegmentPath(_activeSegmentPath, path))
+            if (IsSameSegmentPath(_activeSegmentPath, path) &&
+                _activeSegmentPath != null &&
+                File.Exists(_activeSegmentPath))
             {
                 return _completedSegments.Count > 0
                     ? _completedSegments[^1].EndPts
