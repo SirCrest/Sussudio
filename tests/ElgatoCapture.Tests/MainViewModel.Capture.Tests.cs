@@ -73,7 +73,10 @@ static partial class Program
         var viewModelText = string.Join("\n", viewModelFiles.Values);
         var automationText = viewModelFiles["MainViewModel.Automation.cs"];
         var settingsText = viewModelFiles["MainViewModel.Settings.cs"];
+        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+            .Replace("\r\n", "\n");
 
+        AssertContains(coordinatorText, "return controller is { IsInitialized: true, State: not FlashbackPlaybackState.Disabled };");
         AssertMemberContains(automationText, "GetFlashbackPlaybackSnapshot", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(automationText, "FlashbackBeginScrub", "_sessionCoordinator.FlashbackBeginScrub(position)");
         AssertMemberContains(automationText, "FlashbackUpdateScrub", "_sessionCoordinator.FlashbackUpdateScrub(position)");

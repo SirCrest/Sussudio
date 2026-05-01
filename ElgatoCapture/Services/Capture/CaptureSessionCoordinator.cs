@@ -408,7 +408,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     {
         ThrowIfDisposed();
         controller = _captureService.FlashbackPlaybackController;
-        return controller is { State: not FlashbackPlaybackState.Disabled };
+        return controller is { IsInitialized: true, State: not FlashbackPlaybackState.Disabled };
     }
 
     private Task EnqueueAsync(
