@@ -196,6 +196,11 @@ static partial class Program
         AssertContains(source, "DecrementCompressedQueueDepth(\"write_failed\");");
         AssertContains(source, "DecrementCompressedQueueDepth(\"dequeue\");");
         AssertEqual(false, source.Contains("Interlocked.Decrement(ref _compressedQueueDepth)", StringComparison.Ordinal), "compressed queue depth decrements must be guarded");
+        AssertContains(source, "private void SignalEmitter(string operation)");
+        AssertContains(source, "MJPEG_PIPELINE_EMIT_SIGNAL_SKIPPED");
+        AssertContains(source, "SignalEmitter(\"decoded_frame\");");
+        AssertContains(source, "SignalEmitter(\"stop_requested\");");
+        AssertEqual(1, source.Split("_emitSignal.Set();", StringSplitOptions.None).Length - 1, "All MJPEG emit wakeups go through SignalEmitter");
         AssertContains(source, "seqNo != _nextEmitSeq");
         AssertContains(source, "MarkKnownMissing");
         AssertContains(source, "MJPEG_PIPELINE_FATAL_MISSING");

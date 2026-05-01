@@ -490,7 +490,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                     }
 
                     frameOwned = false; // ownership transferred to reorder ring
-                    _emitSignal.Set();
+                    SignalEmitter("decoded_frame");
                     Interlocked.Increment(ref _totalFramesDecoded);
                 }
                 catch (SoftwareMjpegDecoderPermanentException ex)
@@ -917,7 +917,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
     {
         if (Interlocked.Exchange(ref _stopRequested, 1) != 0)
         {
-            _emitSignal.Set();
+            SignalEmitter("stop_already_requested");
             return;
         }
 
@@ -929,7 +929,19 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             Monitor.PulseAll(_reorderLock);
         }
 
-        _emitSignal.Set();
+        SignalEmitter("stop_requested");
+    }
+
+    private void SignalEmitter(string operation)
+    {
+        try
+        {
+            _emitSignal.Set();
+        }
+        catch (ObjectDisposedException)
+        {
+            Logger.Log($"MJPEG_PIPELINE_EMIT_SIGNAL_SKIPPED op={operation} reason=disposed");
+        }
     }
 
     private bool TryWaitForShutdown(TimeSpan timeout, out string? failureReason)
@@ -964,7 +976,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
             }
         }
 
-        _emitSignal.Set();
+        SignalEmitter("wait_for_shutdown");
         if (_emitThread is { IsAlive: true } emitThread)
         {
             if (ReferenceEquals(Thread.CurrentThread, emitThread))
