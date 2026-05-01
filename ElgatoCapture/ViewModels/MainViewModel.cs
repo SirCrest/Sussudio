@@ -616,6 +616,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (!enqueued)
         {
             registration.Dispose();
+            Logger.Log("INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=async");
             completion.TrySetException(new InvalidOperationException("Failed to enqueue UI operation."));
         }
 
@@ -677,6 +678,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         if (!enqueued)
         {
             registration.Dispose();
+            Logger.Log("INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=value");
             completion.TrySetException(new InvalidOperationException("Failed to enqueue UI operation."));
         }
 

@@ -2418,6 +2418,7 @@ internal sealed partial class D3D11PreviewRenderer
                 catch
                 {
                     // Best-effort: panel may already be torn down during app shutdown.
+                    Logger.Log("D3D11 preview swap chain unbind skipped: UI callback failed during cleanup.");
                 }
                 finally
                 {
@@ -2427,12 +2428,20 @@ internal sealed partial class D3D11PreviewRenderer
 
             if (enqueued)
             {
-                done.Wait(TimeSpan.FromSeconds(2));
+                if (!done.Wait(TimeSpan.FromSeconds(2)))
+                {
+                    Logger.Log("D3D11 preview swap chain unbind timed out on UI thread during cleanup.");
+                }
+            }
+            else
+            {
+                Logger.Log("D3D11 preview swap chain unbind enqueue failed during cleanup.");
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Dispatcher may be shut down — safe to ignore during cleanup.
+            Logger.Log($"D3D11 preview swap chain unbind ignored during cleanup: {ex.GetType().Name}: {ex.Message}");
         }
     }
 

@@ -106,6 +106,8 @@ static partial class Program
         AssertContains(mainViewModelText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing");
         AssertContains(mainViewModelText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing_after_enqueue");
         AssertContains(mainViewModelText, "UI_OPERATION_ENQUEUE_FAILED op='{operationName}'");
+        AssertContains(mainViewModelText, "INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=async");
+        AssertContains(mainViewModelText, "INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=value");
         AssertContains(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
         AssertContains(mainViewModelText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
         var deviceManagementText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.DeviceManagement.cs"));
@@ -123,6 +125,9 @@ static partial class Program
         AssertContains(
             File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "Services", "Preview", "D3D11PreviewRenderer.Rendering.cs")),
             "D3D_FIRST_FRAME_UI_ENQUEUE_FAILED");
+        AssertContains(
+            File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "Services", "Preview", "D3D11PreviewRenderer.Rendering.cs")),
+            "D3D11 preview swap chain unbind enqueue failed during cleanup.");
 
         foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe"), SearchOption.AllDirectories))
         {
