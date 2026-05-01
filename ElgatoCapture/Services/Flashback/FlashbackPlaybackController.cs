@@ -452,20 +452,18 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                     case CommandKind.UpdateScrub:
                         if (!isScrubbing) break;
-                        // Drain stale UpdateScrub commands — only process the latest position (F2 fix)
-                        while (_commandChannel.Reader.TryRead(out var newer))
+                        // Drain stale UpdateScrub commands only. Leave control commands queued
+                        // so their latency/accounting stays tied to the original command.
+                        while (_commandChannel.Reader.TryPeek(out var newer) &&
+                               newer.Kind == CommandKind.UpdateScrub)
                         {
-                            TrackCommandDequeued(newer);
-                            if (newer.Kind == CommandKind.UpdateScrub)
+                            if (!_commandChannel.Reader.TryRead(out newer))
                             {
-                                cmd = newer;
-                            }
-                            else
-                            {
-                                // Non-scrub command consumed — re-queue it for the next iteration
-                                SendCommand(newer);
                                 break;
                             }
+
+                            TrackCommandDequeued(newer);
+                            cmd = newer;
                         }
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);

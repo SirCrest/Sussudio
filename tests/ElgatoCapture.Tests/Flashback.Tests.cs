@@ -399,4 +399,24 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        var updateScrubBlock = ExtractTextBetween(
+            sourceText,
+            "case CommandKind.UpdateScrub:",
+            "                    case CommandKind.EndScrub:");
+
+        AssertContains(updateScrubBlock, "_commandChannel.Reader.TryPeek(out var newer) &&\n                               newer.Kind == CommandKind.UpdateScrub");
+        AssertContains(updateScrubBlock, "if (!_commandChannel.Reader.TryRead(out newer))");
+        AssertContains(updateScrubBlock, "TrackCommandDequeued(newer);");
+        AssertContains(updateScrubBlock, "cmd = newer;");
+        AssertDoesNotContain(updateScrubBlock, "SendCommand(newer)");
+        AssertDoesNotContain(updateScrubBlock, "Non-scrub command consumed");
+
+        return Task.CompletedTask;
+    }
 }

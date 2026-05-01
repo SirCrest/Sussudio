@@ -532,6 +532,9 @@ static partial class Program
                 "Flashback pause from live does not block on exact seek",
                 FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek),
             await RunCheckAsync(
+                "Flashback scrub coalescing does not requeue control commands",
+                FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands),
+            await RunCheckAsync(
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
 
