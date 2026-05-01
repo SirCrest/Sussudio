@@ -898,6 +898,21 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackPlaybackController_FrameDuration_GuardsInvalidDecoderFps()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0))");
+        AssertContains(sourceText, "frameDuration = ResolveFrameDuration(decoder);");
+        AssertContains(sourceText, "private TimeSpan ResolveFrameDuration(FlashbackDecoder decoder)");
+        AssertContains(sourceText, "if (!double.IsFinite(fps) || fps <= 0)\n        {\n            fps = decoder.FrameRate;\n        }");
+        AssertContains(sourceText, "if (!double.IsFinite(fps) || fps <= 0)\n        {\n            fps = 60.0;\n        }");
+        AssertContains(sourceText, "return TimeSpan.FromSeconds(1.0 / fps);");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")

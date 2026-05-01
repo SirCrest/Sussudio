@@ -580,6 +580,9 @@ static partial class Program
                 "Flashback pause from live does not block on exact seek",
                 FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek),
             await RunCheckAsync(
+                "Flashback playback guards invalid decoder frame rates",
+                FlashbackPlaybackController_FrameDuration_GuardsInvalidDecoderFps),
+            await RunCheckAsync(
                 "Flashback nudge opens decoder after pause from live",
                 FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused),
             await RunCheckAsync(

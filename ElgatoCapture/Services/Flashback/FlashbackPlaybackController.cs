@@ -602,7 +602,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             {
                                 TryReopenCurrentFileAndSeek(decoder, ref fileOpen, coalescedSeekTarget, "seek");
                             }
-                            frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
+                            frameDuration = ResolveFrameDuration(decoder);
                             RestoreAudioCallback(decoder, coalescedSeekTarget.Ticks);
                             SafeFlushPlayback("seek_resume");
                             SafeResumeRendering("seek_resume");
@@ -693,7 +693,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                                 {
                                     TryReopenCurrentFileAndSeek(decoder, ref fileOpen, endScrubTarget, "end_scrub");
                                 }
-                                frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
+                                frameDuration = ResolveFrameDuration(decoder);
                             }
                             if (decoder != null)
                             {
@@ -760,7 +760,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                                 }
                             }
                         }
-                        frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
+                        frameDuration = ResolveFrameDuration(decoder);
                         RestoreAudioCallback(decoder, seekTarget.Ticks);
                         SafeFlushPlayback("play");
                         SafeResumeRendering("play");
@@ -1279,11 +1279,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             // exactly what rate we told NVENC to encode at. TS container metadata can
             // report doubled rates (e.g. 240 for 120fps) and the decoder's PTS calibration
             // needs ~10 frames to correct. The encode rate is authoritative from frame 1.
-            var groundTruthFps = _bufferManager.EncodeFrameRate;
-            if (groundTruthFps > 0)
-                frameDuration = TimeSpan.FromSeconds(1.0 / groundTruthFps);
-            else
-                frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
+            frameDuration = ResolveFrameDuration(decoder);
 
             PaceFrameInterval(pacingStopwatch, frameDuration, videoFrame.Pts.Ticks);
             UpdateCadenceMetrics(pacingStopwatch, frameDuration.TotalMilliseconds);
@@ -1453,6 +1449,24 @@ internal sealed class FlashbackPlaybackController : IDisposable
             return true;
         }
         return false;
+    }
+
+    private TimeSpan ResolveFrameDuration(FlashbackDecoder decoder)
+    {
+        // The encode rate is authoritative when present. Decoder/container metadata
+        // can be wrong, and invalid floating-point values must never tear down playback.
+        var fps = _bufferManager.EncodeFrameRate;
+        if (!double.IsFinite(fps) || fps <= 0)
+        {
+            fps = decoder.FrameRate;
+        }
+
+        if (!double.IsFinite(fps) || fps <= 0)
+        {
+            fps = 60.0;
+        }
+
+        return TimeSpan.FromSeconds(1.0 / fps);
     }
 
     /// <summary>
