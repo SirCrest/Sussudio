@@ -38,6 +38,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
+        lock (_lifetimeSync)
+        {
+            if (_disposed)
+            {
+                return Task.FromResult(CreateDisposedExportResult(request.OutputPath));
+            }
+        }
+
         if (request.Segments is { Count: > 0 })
             return ExportSegmentsAsync(request.Segments, request.InPoint, request.OutPoint,
                 request.OutputPath, request.FastStart, progress, ct);
@@ -70,7 +78,16 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
-        var linkedCts = CreateExportCancellationSource(ct);
+        CancellationTokenSource linkedCts;
+        try
+        {
+            linkedCts = CreateExportCancellationSource(ct);
+        }
+        catch (ObjectDisposedException)
+        {
+            return Task.FromResult(CreateDisposedExportResult(outputPath));
+        }
+
         return Task.Run(() =>
         {
             try
@@ -97,7 +114,16 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
-        var linkedCts = CreateExportCancellationSource(ct);
+        CancellationTokenSource linkedCts;
+        try
+        {
+            linkedCts = CreateExportCancellationSource(ct);
+        }
+        catch (ObjectDisposedException)
+        {
+            return Task.FromResult(CreateDisposedExportResult(outputPath));
+        }
+
         return Task.Run(() =>
         {
             try
@@ -1354,11 +1380,23 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             cancellationResult = FinalizeResult.Failure(outputPath, message);
             return false;
         }
+        catch (ObjectDisposedException)
+        {
+            cancellationResult = CreateDisposedExportResult(outputPath);
+            return false;
+        }
     }
 
     private static FinalizeResult CreateCancelledExportResult(string outputPath)
     {
         const string message = "Flashback export cancelled.";
+        Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+        return FinalizeResult.Failure(outputPath, message);
+    }
+
+    private static FinalizeResult CreateDisposedExportResult(string outputPath)
+    {
+        const string message = "Flashback exporter is disposed.";
         Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
         return FinalizeResult.Failure(outputPath, message);
     }

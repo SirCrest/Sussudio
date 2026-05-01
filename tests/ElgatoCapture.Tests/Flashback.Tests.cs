@@ -311,9 +311,14 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private readonly object _lifetimeSync = new();");
-        AssertContains(sourceText, "var linkedCts = CreateExportCancellationSource(ct);");
+        AssertContains(sourceText, "return Task.FromResult(CreateDisposedExportResult(request.OutputPath));");
+        AssertEqual(2, sourceText.Split("return Task.FromResult(CreateDisposedExportResult(outputPath));", StringSplitOptions.None).Length - 1, "Single and segment wrappers return disposed result");
+        AssertContains(sourceText, "catch (ObjectDisposedException)\n        {\n            cancellationResult = CreateDisposedExportResult(outputPath);\n            return false;\n        }");
+        AssertContains(sourceText, "linkedCts = CreateExportCancellationSource(ct);");
         AssertContains(sourceText, "CancellationTokenSource.CreateLinkedTokenSource(ct, disposeCts.Token)");
         AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposed, this);");
+        AssertContains(sourceText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
+        AssertContains(sourceText, "const string message = \"Flashback exporter is disposed.\";");
         AssertContains(sourceText, "finally\n            {\n                linkedCts.Dispose();\n            }\n        });");
         AssertDoesNotContain(sourceText, "}, linkedCts.Token);");
         AssertDoesNotContain(sourceText, "_disposeCts!.Token");
