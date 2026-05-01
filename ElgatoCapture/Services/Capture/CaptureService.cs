@@ -159,7 +159,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     internal FlashbackPlaybackController? FlashbackPlaybackController => _flashbackPlaybackController;
     internal FlashbackBufferManager? FlashbackBufferManager => _flashbackBufferManager;
     public long FlashbackOutputBytes => _flashbackSink?.OutputBytes ?? 0;
-    public long FlashbackTotalBytesWritten => _flashbackSink?.TotalBytesWritten ?? 0;
+    public long FlashbackTotalBytesWritten => _flashbackBufferManager?.TotalBytesWritten ?? 0;
     public string? EncoderCodecName => _flashbackSink?.CodecName;
     public uint EncoderTargetBitRate => _flashbackSink?.TargetBitRate ?? 0;
     public int EncoderWidth => _flashbackSink?.EncoderWidth ?? 0;
