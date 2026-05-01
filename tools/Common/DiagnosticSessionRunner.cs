@@ -63,6 +63,12 @@ public sealed class DiagnosticSessionResult
     public long FlashbackPlaybackSlowFramesAtEnd { get; init; }
     public double FlashbackPlaybackSlowFramePercentAtEnd { get; init; }
     public long FlashbackPlaybackDroppedFramesAtEnd { get; init; }
+    public long FlashbackPlaybackAudioMasterDelayDoublesAtEnd { get; init; }
+    public long FlashbackPlaybackAudioMasterDelayShrinksAtEnd { get; init; }
+    public long FlashbackPlaybackAudioMasterFallbacksAtEnd { get; init; }
+    public long FlashbackPlaybackMaxAudioMasterDelayDoublesObserved { get; init; }
+    public long FlashbackPlaybackMaxAudioMasterDelayShrinksObserved { get; init; }
+    public long FlashbackPlaybackMaxAudioMasterFallbacksObserved { get; init; }
     public long FlashbackPlaybackSubmitFailuresAtEnd { get; init; }
     public long FlashbackPlaybackSegmentSwitchesAtEnd { get; init; }
     public long FlashbackPlaybackFmp4ReopensAtEnd { get; init; }
@@ -616,6 +622,9 @@ public static class DiagnosticSessionRunner
         var playbackSlowFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSlowFrames") ?? 0;
         var playbackSlowFramePercentAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackSlowFramePercent");
         var playbackDroppedFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackDroppedFrames") ?? 0;
+        var playbackAudioMasterDelayDoublesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackAudioMasterDelayDoubles") ?? 0;
+        var playbackAudioMasterDelayShrinksAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackAudioMasterDelayShrinks") ?? 0;
+        var playbackAudioMasterFallbacksAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0;
         var playbackSubmitFailuresAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSubmitFailures") ?? 0;
         var playbackSegmentSwitchesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSegmentSwitches") ?? 0;
         var playbackFmp4ReopensAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackFmp4Reopens") ?? 0;
@@ -694,6 +703,12 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackSlowFramesAtEnd = playbackSlowFramesAtEnd,
             FlashbackPlaybackSlowFramePercentAtEnd = playbackSlowFramePercentAtEnd,
             FlashbackPlaybackDroppedFramesAtEnd = playbackDroppedFramesAtEnd,
+            FlashbackPlaybackAudioMasterDelayDoublesAtEnd = playbackAudioMasterDelayDoublesAtEnd,
+            FlashbackPlaybackAudioMasterDelayShrinksAtEnd = playbackAudioMasterDelayShrinksAtEnd,
+            FlashbackPlaybackAudioMasterFallbacksAtEnd = playbackAudioMasterFallbacksAtEnd,
+            FlashbackPlaybackMaxAudioMasterDelayDoublesObserved = playbackSessionMetrics.MaxAudioMasterDelayDoublesObserved,
+            FlashbackPlaybackMaxAudioMasterDelayShrinksObserved = playbackSessionMetrics.MaxAudioMasterDelayShrinksObserved,
+            FlashbackPlaybackMaxAudioMasterFallbacksObserved = playbackSessionMetrics.MaxAudioMasterFallbacksObserved,
             FlashbackPlaybackSubmitFailuresAtEnd = playbackSubmitFailuresAtEnd,
             FlashbackPlaybackSegmentSwitchesAtEnd = playbackSegmentSwitchesAtEnd,
             FlashbackPlaybackFmp4ReopensAtEnd = playbackFmp4ReopensAtEnd,
@@ -853,6 +868,12 @@ public static class DiagnosticSessionRunner
             $"slowPctEnd={result.FlashbackPlaybackSlowFramePercentAtEnd:0.##} " +
             $"slowPctMax={result.FlashbackPlaybackMaxSlowFramePercentObserved:0.##} " +
             $"droppedFramesEnd={result.FlashbackPlaybackDroppedFramesAtEnd} " +
+            $"audioMasterDoubleEnd={result.FlashbackPlaybackAudioMasterDelayDoublesAtEnd} " +
+            $"audioMasterDoubleMax={result.FlashbackPlaybackMaxAudioMasterDelayDoublesObserved} " +
+            $"audioMasterShrinkEnd={result.FlashbackPlaybackAudioMasterDelayShrinksAtEnd} " +
+            $"audioMasterShrinkMax={result.FlashbackPlaybackMaxAudioMasterDelayShrinksObserved} " +
+            $"audioMasterFallbackEnd={result.FlashbackPlaybackAudioMasterFallbacksAtEnd} " +
+            $"audioMasterFallbackMax={result.FlashbackPlaybackMaxAudioMasterFallbacksObserved} " +
             $"submitFailuresEnd={result.FlashbackPlaybackSubmitFailuresAtEnd}");
         builder.AppendLine(
             "Flashback Playback Decode: " +
@@ -3095,6 +3116,9 @@ public static class DiagnosticSessionRunner
         metrics.MaxSlowFramePercentObserved = Math.Max(metrics.MaxSlowFramePercentObserved, GetDouble(snapshot, "FlashbackPlaybackSlowFramePercent"));
         metrics.MaxDecodeP99MsObserved = Math.Max(metrics.MaxDecodeP99MsObserved, GetDouble(snapshot, "FlashbackPlaybackDecodeP99Ms"));
         metrics.MaxDecodeMsObserved = Math.Max(metrics.MaxDecodeMsObserved, GetDouble(snapshot, "FlashbackPlaybackDecodeMaxMs"));
+        metrics.MaxAudioMasterDelayDoublesObserved = Math.Max(metrics.MaxAudioMasterDelayDoublesObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterDelayDoubles") ?? 0);
+        metrics.MaxAudioMasterDelayShrinksObserved = Math.Max(metrics.MaxAudioMasterDelayShrinksObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterDelayShrinks") ?? 0);
+        metrics.MaxAudioMasterFallbacksObserved = Math.Max(metrics.MaxAudioMasterFallbacksObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0);
     }
 
     private sealed class FlashbackPlaybackSessionMetrics
@@ -3105,6 +3129,9 @@ public static class DiagnosticSessionRunner
         public double MaxSlowFramePercentObserved { get; set; }
         public double MaxDecodeP99MsObserved { get; set; }
         public double MaxDecodeMsObserved { get; set; }
+        public long MaxAudioMasterDelayDoublesObserved { get; set; }
+        public long MaxAudioMasterDelayShrinksObserved { get; set; }
+        public long MaxAudioMasterFallbacksObserved { get; set; }
     }
 
     private static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(
