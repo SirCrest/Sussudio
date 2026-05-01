@@ -244,8 +244,9 @@ public partial class MainViewModel
         var inPoint = playback.InPoint;
         var outPoint = playback.OutPoint;
 
-        var (result, errorMessage) = await ExportFlashbackCoreAsync(async (progress, ct) =>
+        var (result, errorMessage, isCurrent) = await ExportFlashbackCoreAsync(async (progress, ct) =>
             await _sessionCoordinator.ExportFlashbackRangeAsync(inPoint, outPoint, file.Path, progress, ct));
+        if (!isCurrent) return;
 
         if (errorMessage != null)
         {
@@ -266,8 +267,9 @@ public partial class MainViewModel
         var file = await PickFlashbackExportFileAsync($"Flashback_Last5m_{DateTime.Now:yyyyMMdd_HHmmss}");
         if (file == null) return;
 
-        var (result, errorMessage) = await ExportFlashbackCoreAsync(async (progress, ct) =>
+        var (result, errorMessage, isCurrent) = await ExportFlashbackCoreAsync(async (progress, ct) =>
             await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(300, file.Path, progress, ct));
+        if (!isCurrent) return;
 
         if (errorMessage != null)
         {
@@ -291,11 +293,18 @@ public partial class MainViewModel
         return await picker.PickSaveFileAsync();
     }
 
-    private async Task<(FinalizeResult? Result, string? ErrorMessage)> ExportFlashbackCoreAsync(
+    private async Task<(FinalizeResult? Result, string? ErrorMessage, bool IsCurrent)> ExportFlashbackCoreAsync(
         Func<IProgress<ExportProgress>, CancellationToken, Task<FinalizeResult>> exportAction)
     {
         // Export snapshots the flashback backend under CaptureService locks, then runs
         // outside the transition lock so long FFmpeg work does not block lifecycle commands.
+        var exportId = Interlocked.Increment(ref _flashbackExportOperationId);
+        var oldExportCts = _exportCts;
+        oldExportCts?.Cancel();
+        _exportCts = new CancellationTokenSource();
+        var exportCts = _exportCts;
+        var ct = exportCts.Token;
+
         IsFlashbackExporting = true;
         FlashbackExportProgress = 0;
         try
@@ -305,26 +314,32 @@ public partial class MainViewModel
                 _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
             });
 
-            var oldExportCts = _exportCts;
-            oldExportCts?.Cancel();
-            oldExportCts?.Dispose();
-            _exportCts = new CancellationTokenSource();
-            var ct = _exportCts.Token;
-
             var result = await exportAction(progress, ct);
-            return (result, null);
+            return (result, null, IsCurrentFlashbackExport(exportId, exportCts));
         }
         catch (Exception ex)
         {
             Logger.LogException(ex);
-            return (null, ex.Message);
+            return (null, ex.Message, IsCurrentFlashbackExport(exportId, exportCts));
         }
         finally
         {
-            IsFlashbackExporting = false;
-            FlashbackExportProgress = 0;
+            if (IsCurrentFlashbackExport(exportId, exportCts))
+            {
+                IsFlashbackExporting = false;
+                FlashbackExportProgress = 0;
+                _exportCts = null;
+                exportCts.Dispose();
+            }
+            else
+            {
+                exportCts.Dispose();
+            }
         }
     }
+
+    private bool IsCurrentFlashbackExport(int exportId, CancellationTokenSource exportCts)
+        => Volatile.Read(ref _flashbackExportOperationId) == exportId && ReferenceEquals(_exportCts, exportCts);
 
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
         double seconds, string outputPath, bool useSelectionRange, CancellationToken ct)

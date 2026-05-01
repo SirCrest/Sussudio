@@ -157,6 +157,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private CancellationTokenSource? _deviceAudioModeCts;
     private CancellationTokenSource? _deviceAudioRefreshCts;
     private CancellationTokenSource? _exportCts;
+    private int _flashbackExportOperationId;
     private bool _suppressMicrophoneMonitorUpdate;
     [ObservableProperty]
     public partial bool IsRecordingTransitioning { get; set; }

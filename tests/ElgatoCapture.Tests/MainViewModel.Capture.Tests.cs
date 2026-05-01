@@ -90,6 +90,15 @@ static partial class Program
         AssertMemberContains(automationText, "UpdateFlashbackBitrate", "_sessionCoordinator.FlashbackTotalBytesWritten");
         AssertMemberContains(automationText, "ExportFlashbackAsync", "_sessionCoordinator.ExportFlashbackRangeAsync(");
         AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
+        AssertMemberContains(automationText, "ExportFlashbackAsync", "if (!isCurrent) return;");
+        AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "if (!isCurrent) return;");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "private int _flashbackExportOperationId;");
+        AssertContains(automationText, "private async Task<(FinalizeResult? Result, string? ErrorMessage, bool IsCurrent)> ExportFlashbackCoreAsync");
+        AssertContains(automationText, "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
+        AssertContains(automationText, "oldExportCts?.Cancel();");
+        AssertContains(automationText, "IsCurrentFlashbackExport(exportId, exportCts)");
+        AssertContains(automationText, "_exportCts = null;");
+        AssertContains(automationText, "ReferenceEquals(_exportCts, exportCts)");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
         AssertMemberContains(automationText, "GetFlashbackSegments", "_sessionCoordinator.GetFlashbackSegments()");
         AssertMemberContains(automationText, "SetFlashbackEnabledAsync", "_sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken)");
