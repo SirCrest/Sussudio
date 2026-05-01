@@ -1343,7 +1343,23 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     public double GetEstimatedPipelineLatencyMs()
     {
-        return GetPipelineLatencyMetrics().AverageMs;
+        lock (_pipelineLatencyLock)
+        {
+            if (_pipelineLatencyCount <= 0)
+            {
+                return 0;
+            }
+
+            var sum = 0.0;
+            for (var i = 0; i < _pipelineLatencyCount; i++)
+            {
+                var idx = (_pipelineLatencyIndex - _pipelineLatencyCount + i + _pipelineLatencyWindowMs.Length)
+                    % _pipelineLatencyWindowMs.Length;
+                sum += _pipelineLatencyWindowMs[idx];
+            }
+
+            return sum / _pipelineLatencyCount;
+        }
     }
 
     public PipelineLatencyMetrics GetPipelineLatencyMetrics()
