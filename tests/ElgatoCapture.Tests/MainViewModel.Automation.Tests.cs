@@ -538,7 +538,15 @@ static partial class Program
         AssertContains(diagnosticsText, "1pctLow={previewRuntime.DisplayCadenceOnePercentLowFps:0.##}fps");
         AssertContains(diagnosticsText, "PreviewD3DPresentCallP95Ms = snapshot.PreviewD3DPresentCallP95Ms");
         AssertContains(diagnosticsText, "PreviewD3DTotalFrameCpuP95Ms = snapshot.PreviewD3DTotalFrameCpuP95Ms");
+        AssertContains(diagnosticsText, "PreviewD3DInputUploadCpuP99Ms = snapshot.PreviewD3DInputUploadCpuP99Ms");
+        AssertContains(diagnosticsText, "PreviewD3DRenderSubmitCpuP99Ms = snapshot.PreviewD3DRenderSubmitCpuP99Ms");
+        AssertContains(diagnosticsText, "PreviewD3DPresentCallP99Ms = snapshot.PreviewD3DPresentCallP99Ms");
+        AssertContains(diagnosticsText, "PreviewD3DTotalFrameCpuP99Ms = snapshot.PreviewD3DTotalFrameCpuP99Ms");
         AssertContains(diagnosticsText, "PreviewD3DFrameStatsRecentMissedRefreshCount = snapshot.PreviewD3DFrameStatsRecentMissedRefreshCount");
+        AssertContains(diagnosticsText, "FlashbackPlaybackP99FrameMs = snapshot.FlashbackPlaybackP99FrameMs");
+        AssertContains(diagnosticsText, "FlashbackPlaybackDecodeP99Ms = snapshot.FlashbackPlaybackDecodeP99Ms");
+        AssertContains(diagnosticsText, "FlashbackPlaybackPendingCommands = snapshot.FlashbackPlaybackPendingCommands");
+        AssertContains(diagnosticsText, "FlashbackPlaybackSubmitFailures = snapshot.FlashbackPlaybackSubmitFailures");
         AssertContains(diagnosticSessionText, "FlashbackRecordingFileGrowthObserved");
         AssertContains(diagnosticSessionText, "FlashbackRecordingVideoFramesSubmittedDelta");
         AssertContains(diagnosticSessionText, "FlashbackRecordingVideoEncoderPacketsWrittenDelta");

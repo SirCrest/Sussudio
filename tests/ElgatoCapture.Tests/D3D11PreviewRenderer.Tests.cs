@@ -359,10 +359,20 @@ static partial class Program
                      "PreviewD3DPendingFrameCount",
                      "PreviewD3DPresentCallP95Ms",
                      "PreviewD3DTotalFrameCpuP95Ms",
+                     "PreviewD3DInputUploadCpuP99Ms",
+                     "PreviewD3DRenderSubmitCpuP99Ms",
+                     "PreviewD3DPresentCallP99Ms",
+                     "PreviewD3DTotalFrameCpuP99Ms",
                      "PreviewD3DFrameStatsRecentMissedRefreshCount",
                      "PreviewD3DFrameStatsRecentFailureCount",
                      "PreviewD3DLastRenderedSchedulerToPresentMs",
                      "PreviewD3DLastDropReason",
+                     "FlashbackPlaybackState",
+                     "FlashbackPlaybackP99FrameMs",
+                     "FlashbackPlaybackDecodeP99Ms",
+                     "FlashbackPlaybackPendingCommands",
+                     "FlashbackPlaybackSubmitFailures",
+                     "FlashbackPlaybackDecodeErrorSnaps",
                      "ProcessCpuPercent"
                  })
         {

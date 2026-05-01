@@ -900,10 +900,28 @@ public sealed class PerformanceTimelineEntry
     public int PreviewD3DPendingFrameCount { get; init; }
     public double PreviewD3DPresentCallP95Ms { get; init; }
     public double PreviewD3DTotalFrameCpuP95Ms { get; init; }
+    public double PreviewD3DInputUploadCpuP99Ms { get; init; }
+    public double PreviewD3DRenderSubmitCpuP99Ms { get; init; }
+    public double PreviewD3DPresentCallP99Ms { get; init; }
+    public double PreviewD3DTotalFrameCpuP99Ms { get; init; }
     public long PreviewD3DFrameStatsRecentMissedRefreshCount { get; init; }
     public long PreviewD3DFrameStatsRecentFailureCount { get; init; }
     public double PreviewD3DLastRenderedSchedulerToPresentMs { get; init; }
     public string PreviewD3DLastDropReason { get; init; } = string.Empty;
+    public string FlashbackPlaybackState { get; init; } = "N/A";
+    public double FlashbackPlaybackObservedFps { get; init; }
+    public double FlashbackPlaybackP99FrameMs { get; init; }
+    public double FlashbackPlaybackMaxFrameMs { get; init; }
+    public double FlashbackPlaybackOnePercentLowFps { get; init; }
+    public double FlashbackPlaybackSlowFramePercent { get; init; }
+    public double FlashbackPlaybackDecodeP99Ms { get; init; }
+    public double FlashbackPlaybackDecodeMaxMs { get; init; }
+    public int FlashbackPlaybackPendingCommands { get; init; }
+    public int FlashbackPlaybackMaxPendingCommands { get; init; }
+    public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }
+    public long FlashbackPlaybackSubmitFailures { get; init; }
+    public long FlashbackPlaybackDroppedFrames { get; init; }
+    public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
     public long PipelineLatencyMs { get; init; }
     public double ProcessCpuPercent { get; init; }
     public double MemoryWorkingSetMb { get; init; }

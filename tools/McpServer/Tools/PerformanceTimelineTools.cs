@@ -62,6 +62,20 @@ public static class PerformanceTimelineTools
                 PreviewD3DRecentFailures = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentFailureCount"),
                 PreviewD3DSchedulerToPresentMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DLastRenderedSchedulerToPresentMs"),
                 PreviewD3DLastDropReason = AutomationSnapshotFormatter.Get(item, "PreviewD3DLastDropReason"),
+                FlashbackPlaybackState = AutomationSnapshotFormatter.Get(item, "FlashbackPlaybackState"),
+                FlashbackPlaybackObservedFps = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackObservedFps"),
+                FlashbackPlaybackP99FrameMs = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackP99FrameMs"),
+                FlashbackPlaybackMaxFrameMs = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackMaxFrameMs"),
+                FlashbackPlaybackOnePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackOnePercentLowFps"),
+                FlashbackPlaybackSlowFramePercent = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackSlowFramePercent"),
+                FlashbackPlaybackDecodeP99Ms = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackDecodeP99Ms"),
+                FlashbackPlaybackDecodeMaxMs = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackDecodeMaxMs"),
+                FlashbackPlaybackPendingCommands = AutomationSnapshotFormatter.GetInt(item, "FlashbackPlaybackPendingCommands"),
+                FlashbackPlaybackMaxPendingCommands = AutomationSnapshotFormatter.GetInt(item, "FlashbackPlaybackMaxPendingCommands"),
+                FlashbackPlaybackMaxCommandQueueLatencyMs = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackMaxCommandQueueLatencyMs"),
+                FlashbackPlaybackSubmitFailures = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackSubmitFailures"),
+                FlashbackPlaybackDroppedFrames = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackDroppedFrames"),
+                FlashbackPlaybackDecodeErrorSnaps = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackDecodeErrorSnaps"),
                 LatencyMs = AutomationSnapshotFormatter.GetLong(item, "PipelineLatencyMs"),
                 WorkingMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryWorkingSetMb"),
                 ManagedMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryManagedHeapMb"),
@@ -82,14 +96,14 @@ public static class PerformanceTimelineTools
         var builder = new StringBuilder();
         builder.AppendLine($"Performance Timeline ({entries.Count} samples)");
         builder.AppendLine();
-        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | D3DQ | D3DPrs | D3DTot | InP99 | RsP99 | PrP99 | TotP99 | D3DSch | D3DMiss | D3DDrop      | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
-        builder.AppendLine(new string('-', 257));
+        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | D3DQ | D3DPrs | D3DTot | InP99 | RsP99 | PrP99 | TotP99 | D3DSch | D3DMiss | D3DDrop      | FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
+        builder.AppendLine(new string('-', 304));
 
         foreach (var e in entries)
         {
             builder.AppendLine(string.Format(
                 CultureInfo.InvariantCulture,
-                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,4} | {9,6:F1} | {10,6:F1} | {11,5:F1} | {12,5:F1} | {13,5:F1} | {14,6:F1} | {15,6:F1} | {16,7} | {17,-12} | {18,4} | {19,7} | {20,5} | {21,6:F1} | {22,6:F1} | {23,4} | {24,4} | {25,4} | {26,4:F1} | {27,4} | {28,4}",
+                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,4} | {9,6:F1} | {10,6:F1} | {11,5:F1} | {12,5:F1} | {13,5:F1} | {14,6:F1} | {15,6:F1} | {16,7} | {17,-12} | {18,-7} | {19,5:F1} | {20,5:F1} | {21,5:F1} | {22,5} | {23,6} | {24,4} | {25,7} | {26,5} | {27,6:F1} | {28,6:F1} | {29,4} | {30,4} | {31,4} | {32,4:F1} | {33,4} | {34,4}",
                 e.Timestamp,
                 e.CaptureAvgMs,
                 e.CaptureP95Ms,
@@ -108,6 +122,12 @@ public static class PerformanceTimelineTools
                 e.PreviewD3DSchedulerToPresentMs,
                 e.PreviewD3DRecentMissed,
                 CompactCell(e.PreviewD3DLastDropReason, 12),
+                CompactCell(e.FlashbackPlaybackState, 7),
+                e.FlashbackPlaybackOnePercentLowFps,
+                e.FlashbackPlaybackP99FrameMs,
+                e.FlashbackPlaybackDecodeP99Ms,
+                e.FlashbackPlaybackPendingCommands,
+                e.FlashbackPlaybackSubmitFailures,
                 e.VidQueue,
                 e.VidDrops,
                 e.LatencyMs,
@@ -146,6 +166,13 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"D3D Missed:     {first.PreviewD3DRecentMissed} -> {last.PreviewD3DRecentMissed} (latest-window delta: {last.PreviewD3DRecentMissed - first.PreviewD3DRecentMissed:+0;-0;0})");
             builder.AppendLine($"D3D Stat Fails: {first.PreviewD3DRecentFailures} -> {last.PreviewD3DRecentFailures} (latest-window delta: {last.PreviewD3DRecentFailures - first.PreviewD3DRecentFailures:+0;-0;0})");
             builder.AppendLine($"D3D Last Drop:  {FormatOptional(last.PreviewD3DLastDropReason)}");
+            builder.AppendLine($"Flashback State:{FormatOptional(first.FlashbackPlaybackState)} -> {FormatOptional(last.FlashbackPlaybackState)}");
+            builder.AppendLine($"Flashback 1%Low:{first.FlashbackPlaybackOnePercentLowFps:F1}fps -> {last.FlashbackPlaybackOnePercentLowFps:F1}fps");
+            builder.AppendLine($"Flashback P99:  {first.FlashbackPlaybackP99FrameMs:F1}ms -> {last.FlashbackPlaybackP99FrameMs:F1}ms (max latest={last.FlashbackPlaybackMaxFrameMs:F1}ms)");
+            builder.AppendLine($"Flashback Decode:{first.FlashbackPlaybackDecodeP99Ms:F1}ms -> {last.FlashbackPlaybackDecodeP99Ms:F1}ms (max latest={last.FlashbackPlaybackDecodeMaxMs:F1}ms)");
+            builder.AppendLine($"Flashback Slow%:{first.FlashbackPlaybackSlowFramePercent:F1}% -> {last.FlashbackPlaybackSlowFramePercent:F1}%");
+            builder.AppendLine($"Flashback Cmds: pending {first.FlashbackPlaybackPendingCommands} -> {last.FlashbackPlaybackPendingCommands}, maxPending latest={last.FlashbackPlaybackMaxPendingCommands}, maxLatency latest={last.FlashbackPlaybackMaxCommandQueueLatencyMs}ms");
+            builder.AppendLine($"Flashback Drops: submitFailures {first.FlashbackPlaybackSubmitFailures} -> {last.FlashbackPlaybackSubmitFailures}, droppedFrames {first.FlashbackPlaybackDroppedFrames} -> {last.FlashbackPlaybackDroppedFrames}, decodeSnaps {first.FlashbackPlaybackDecodeErrorSnaps} -> {last.FlashbackPlaybackDecodeErrorSnaps}");
             builder.AppendLine($"Capture Rate:   {first.CaptureFps:F1}fps -> {last.CaptureFps:F1}fps (derived avg)");
             builder.AppendLine($"Capture 1% Low: {first.CaptureOnePercentLowFps:F1}fps -> {last.CaptureOnePercentLowFps:F1}fps");
             builder.AppendLine($"Preview Rate:   {first.PreviewFps:F1}fps -> {last.PreviewFps:F1}fps (derived avg)");
@@ -206,6 +233,20 @@ public static class PerformanceTimelineTools
         public long PreviewD3DRecentFailures { get; init; }
         public double PreviewD3DSchedulerToPresentMs { get; init; }
         public string PreviewD3DLastDropReason { get; init; } = string.Empty;
+        public string FlashbackPlaybackState { get; init; } = string.Empty;
+        public double FlashbackPlaybackObservedFps { get; init; }
+        public double FlashbackPlaybackP99FrameMs { get; init; }
+        public double FlashbackPlaybackMaxFrameMs { get; init; }
+        public double FlashbackPlaybackOnePercentLowFps { get; init; }
+        public double FlashbackPlaybackSlowFramePercent { get; init; }
+        public double FlashbackPlaybackDecodeP99Ms { get; init; }
+        public double FlashbackPlaybackDecodeMaxMs { get; init; }
+        public int FlashbackPlaybackPendingCommands { get; init; }
+        public int FlashbackPlaybackMaxPendingCommands { get; init; }
+        public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }
+        public long FlashbackPlaybackSubmitFailures { get; init; }
+        public long FlashbackPlaybackDroppedFrames { get; init; }
+        public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
         public long LatencyMs { get; init; }
         public double WorkingMb { get; init; }
         public double ManagedMb { get; init; }
