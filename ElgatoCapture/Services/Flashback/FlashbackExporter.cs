@@ -224,6 +224,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
+        var tmpPath = outputPath + ".tmp";
+        if (IsSamePath(inputTsPath, tmpPath))
+        {
+            var message = $"Flashback export failed: temporary output path must not overwrite source segment '{tmpPath}'.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+
         if (!TryWaitForExportLock(outputPath, ct, out var cancellationResult))
         {
             return cancellationResult;
@@ -231,7 +239,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         try
         {
-        var tmpPath = outputPath + ".tmp";
         _activeTempPath = tmpPath;
 
         try
@@ -540,6 +547,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
+        var tmpPath = outputPath + ".tmp";
+        if (segments.Any(segment => IsSamePath(segment.Path, tmpPath)))
+        {
+            var message = $"Flashback export failed: temporary output path must not overwrite source segment '{tmpPath}'.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+
         // Estimate total bytes for progress
         long totalEstimatedBytes = 0;
         var readableSegmentCount = 0;
@@ -573,7 +588,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         try
         {
-        var tmpPath = outputPath + ".tmp";
         _activeTempPath = tmpPath;
 
         try

@@ -700,6 +700,44 @@ static partial class Program
                 AssertEqual(false, GetBoolProperty(segmentResult, "Succeeded"), "Segment export rejects source overwrite");
                 AssertContains(GetStringProperty(segmentResult, "StatusMessage"), "must not overwrite source segment");
                 AssertEqual(8L, new FileInfo(sourcePath).Length, "Segment rejection preserves source bytes");
+
+                var outputPath = Path.Combine(tempDir, "fb_output.mp4");
+                var tempSourcePath = outputPath + ".tmp";
+                File.WriteAllBytes(tempSourcePath, new byte[] { 0x01, 0x02, 0x03, 0x04 });
+
+                var tempSingleResult = exportCore.Invoke(exporter, new object?[]
+                {
+                    tempSourcePath,
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    outputPath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(tempSingleResult, "Succeeded"), "Single-file export rejects temp source overwrite");
+                AssertContains(GetStringProperty(tempSingleResult, "StatusMessage"), "temporary output path must not overwrite source segment");
+                AssertEqual(4L, new FileInfo(tempSourcePath).Length, "Single-file temp rejection preserves source bytes");
+
+                var tempSegment = Activator.CreateInstance(segmentType)!;
+                SetPropertyBackingField(tempSegment, "Path", tempSourcePath);
+                var tempSegments = Array.CreateInstance(segmentType, 1);
+                tempSegments.SetValue(tempSegment, 0);
+                var tempSegmentResult = exportSegmentsCore.Invoke(exporter, new object?[]
+                {
+                    tempSegments,
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    outputPath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(tempSegmentResult, "Succeeded"), "Segment export rejects temp source overwrite");
+                AssertContains(GetStringProperty(tempSegmentResult, "StatusMessage"), "temporary output path must not overwrite source segment");
+                AssertEqual(4L, new FileInfo(tempSourcePath).Length, "Segment temp rejection preserves source bytes");
             }
             finally
             {
