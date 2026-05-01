@@ -239,6 +239,9 @@ static partial class Program
         AssertContains(diagnosticsText, "\"flashback-export-stalled\"");
         AssertContains(diagnosticsText, "DiagnosticsCategory.Flashback");
         AssertContains(diagnosticsText, "health.FlashbackExportActive");
+        AssertContains(diagnosticsText, "var exportProgressReferenceUtcUnixMs = snapshot.FlashbackExportLastProgressUtcUnixMs > 0");
+        AssertContains(diagnosticsText, ": snapshot.FlashbackExportStartedUtcUnixMs;");
+        AssertContains(diagnosticsText, "exportProgressReferenceUtcUnixMs > 0 &&");
         AssertContains(diagnosticsText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackCommandStallThresholdMs = 1000;");
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackSlowFpsRatio = 0.75;");

@@ -1295,8 +1295,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private void UpdateAlerts(AutomationSnapshot snapshot)
     {
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var exportLastProgressAgeMs = snapshot.FlashbackExportActive && snapshot.FlashbackExportLastProgressUtcUnixMs > 0
-            ? nowUnixMs - snapshot.FlashbackExportLastProgressUtcUnixMs
+        var exportProgressReferenceUtcUnixMs = snapshot.FlashbackExportLastProgressUtcUnixMs > 0
+            ? snapshot.FlashbackExportLastProgressUtcUnixMs
+            : snapshot.FlashbackExportStartedUtcUnixMs;
+        var exportLastProgressAgeMs = snapshot.FlashbackExportActive && exportProgressReferenceUtcUnixMs > 0
+            ? Math.Max(0, nowUnixMs - exportProgressReferenceUtcUnixMs)
             : 0;
         var playbackCommandQueueAgeMs =
             snapshot.FlashbackPlaybackPendingCommands > 0 &&
@@ -1391,7 +1394,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         SetAlertState(
             "flashback-export-stalled",
             snapshot.FlashbackExportActive &&
-            snapshot.FlashbackExportLastProgressUtcUnixMs > 0 &&
+            exportProgressReferenceUtcUnixMs > 0 &&
             exportLastProgressAgeMs >= 30000,
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Flashback,
