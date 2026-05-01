@@ -102,7 +102,12 @@ internal sealed partial class D3D11PreviewRenderer
                 try
                 {
                     WaitForFrameLatencySignal();
+                    var framesRenderedBefore = Interlocked.Read(ref _framesRendered);
                     RenderFrame(frame);
+                    if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)
+                    {
+                        TrackFrameDropped(frame, "render-skipped");
+                    }
 
                     // Keep the event set while more frames are queued so the
                     // render thread drains the elastic buffer without waiting.

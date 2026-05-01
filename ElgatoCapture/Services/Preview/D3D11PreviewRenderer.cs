@@ -1116,7 +1116,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             {
                 TrackFrameDropped(frame, "renderer-stopped");
                 frame.Dispose();
-                Interlocked.Increment(ref _framesDropped);
                 return;
             }
 
@@ -1133,7 +1132,6 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 {
                     TrackFrameDropped(oldest, "renderer-backlog");
                     oldest.Dispose();
-                    Interlocked.Increment(ref _framesDropped);
                 }
             }
 
@@ -1380,6 +1378,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     private void TrackFrameDropped(PendingFrame frame, string reason)
     {
+        Interlocked.Increment(ref _framesDropped);
         Interlocked.Exchange(ref _lastDroppedPreviewPresentId, frame.PreviewPresentId);
         Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, frame.SourceSequenceNumber);
         Interlocked.Exchange(ref _lastDroppedQpc, Stopwatch.GetTimestamp());
