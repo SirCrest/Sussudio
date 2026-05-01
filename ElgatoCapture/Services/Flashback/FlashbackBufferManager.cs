@@ -855,6 +855,12 @@ internal sealed class FlashbackBufferManager : IDisposable
         var safeSizeBytes = Math.Max(0, sizeBytes);
         lock (_indexLock)
         {
+            if (!IsPathInSessionDirectory(path))
+            {
+                Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=outside_session path='{Path.GetFileName(path)}'");
+                return;
+            }
+
             if (safeSizeBytes >= _previousActiveSegmentBytes)
             {
                 Interlocked.Add(ref _totalBytesWritten, safeSizeBytes - _previousActiveSegmentBytes);
@@ -936,6 +942,26 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
 
         return null;
+    }
+
+    private bool IsPathInSessionDirectory(string path)
+    {
+        if (string.IsNullOrWhiteSpace(_sessionDirectory))
+        {
+            return false;
+        }
+
+        try
+        {
+            var sessionRoot = EnsureTrailingDirectorySeparator(Path.GetFullPath(_sessionDirectory));
+            var fullPath = Path.GetFullPath(path);
+            return IsPathUnderDirectory(fullPath, sessionRoot);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_BUFFER_SEGMENT_PATH_WARN path='{path}' type={ex.GetType().Name} msg='{ex.Message}'");
+            return false;
+        }
     }
 
     /// <summary>
