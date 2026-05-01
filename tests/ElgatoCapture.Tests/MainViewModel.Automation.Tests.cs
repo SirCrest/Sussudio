@@ -257,7 +257,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(diagnosticSessionText, "var runFlashbackStress = scenario == \"flashback-stress\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRecording = scenario == \"flashback-recording\";");
+        AssertContains(diagnosticSessionText, "var runFlashbackExportRejected = scenario == \"flashback-export-rejected\";");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");
+        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportRejectedAsync(");
         AssertContains(diagnosticSessionText, "private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(");
         AssertContains(diagnosticSessionText, "private static void ValidateFlashbackRecordingSession(");
         AssertContains(diagnosticSessionText, "\"flashback recording: RecordingBackend never reported Flashback\"");
@@ -282,8 +284,11 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command latency exceeded threshold \"");
         AssertContains(diagnosticSessionText, "$\"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs}\"");
-        AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackRecording) || warnings.Count == 0)");
-        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-recording\" or \"combined\"");
+        AssertContains(diagnosticSessionText, "\"flashback-rejected-export.mp4\"");
+        AssertContains(diagnosticSessionText, "$\"flashback export rejected: expected Failed status, got {status}\"");
+        AssertContains(diagnosticSessionText, "message.Contains(\"Flashback buffer not active\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0)");
+        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-recording\" or \"flashback-export-rejected\" or \"combined\"");
 
         return Task.CompletedTask;
     }

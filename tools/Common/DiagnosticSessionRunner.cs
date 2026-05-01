@@ -82,8 +82,10 @@ public static class DiagnosticSessionRunner
         var startedPreview = false;
         var startedRecording = false;
         var enabledFlashback = false;
+        var disabledFlashback = false;
         var runFlashbackStress = scenario == "flashback-stress";
         var runFlashbackRecording = scenario == "flashback-recording";
+        var runFlashbackExportRejected = scenario == "flashback-export-rejected";
         using var commandSendGate = new SemaphoreSlim(1, 1);
 
         var initialResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
@@ -100,6 +102,13 @@ public static class DiagnosticSessionRunner
                 actions.Add("flashback enabled");
             }
 
+            if (runFlashbackExportRejected && GetBool(initialSnapshot, "FlashbackActive"))
+            {
+                await SendAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = false }, null).ConfigureAwait(false);
+                disabledFlashback = true;
+                actions.Add("flashback disabled for rejected export");
+            }
+
             if (ScenarioNeedsPreview(scenario) && !GetBool(initialSnapshot, "IsPreviewing"))
             {
                 await SendAsync("SetPreviewEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
@@ -111,7 +120,9 @@ public static class DiagnosticSessionRunner
             if (ScenarioNeedsRecording(scenario) && !GetBool(initialSnapshot, "IsRecording"))
             {
                 if (runFlashbackRecording &&
-                    !await WaitForFlashbackStressBufferReadyAsync(SendAsync, cancellationToken).ConfigureAwait(false))
+                    !await WaitForFlashbackStressBufferReadyAsync(
+                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                        cancellationToken).ConfigureAwait(false))
                 {
                     warnings.Add("flashback recording: Flashback buffer did not become recording-ready within 30s");
                 }
@@ -149,16 +160,33 @@ public static class DiagnosticSessionRunner
                     outputDirectory,
                     actions,
                     warnings,
-                    SendAsync,
+                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
                     cancellationToken);
                 actions.Add("flashback stress started");
             }
 
-            await SampleLoopAsync(durationSeconds, sampleIntervalMs, samples, SendAsync, cancellationToken).ConfigureAwait(false);
+            await SampleLoopAsync(
+                    durationSeconds,
+                    sampleIntervalMs,
+                    samples,
+                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                    cancellationToken)
+                .ConfigureAwait(false);
 
             if (flashbackStressTask is not null)
             {
                 await flashbackStressTask.ConfigureAwait(false);
+            }
+
+            if (runFlashbackExportRejected)
+            {
+                await RunFlashbackExportRejectedAsync(
+                        outputDirectory,
+                        actions,
+                        warnings,
+                        (command, payload, timeoutMs, allowFailure) => SendAsync(command, payload, timeoutMs, allowFailure),
+                        cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             if (presentMonTask is not null)
@@ -194,6 +222,12 @@ public static class DiagnosticSessionRunner
                 {
                     await SendAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = false }, null).ConfigureAwait(false);
                     actions.Add("flashback restored off");
+                }
+
+                if (disabledFlashback && GetBool(initialSnapshot, "FlashbackActive"))
+                {
+                    await SendAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
+                    actions.Add("flashback restored on");
                 }
             }
         }
@@ -253,7 +287,7 @@ public static class DiagnosticSessionRunner
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!(runFlashbackStress || runFlashbackRecording) || warnings.Count == 0),
+                      (!(runFlashbackStress || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -279,13 +313,17 @@ public static class DiagnosticSessionRunner
         await WriteJsonAsync(summaryPath, result, cancellationToken).ConfigureAwait(false);
         return result;
 
-        async Task<JsonElement> SendAsync(string command, Dictionary<string, object?>? payload, int? responseTimeoutMs)
+        async Task<JsonElement> SendAsync(
+            string command,
+            Dictionary<string, object?>? payload,
+            int? responseTimeoutMs,
+            bool allowFailure = false)
         {
             await commandSendGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 var response = await sendCommandAsync(command, payload, responseTimeoutMs).ConfigureAwait(false);
-                if (!AutomationSnapshotFormatter.IsSuccess(response))
+                if (!AutomationSnapshotFormatter.IsSuccess(response) && !allowFailure)
                 {
                     commandFailureCount++;
                     warnings.Add($"{command}: {AutomationSnapshotFormatter.Get(response, "Message", "command failed")}");
@@ -493,6 +531,54 @@ public static class DiagnosticSessionRunner
         }
     }
 
+    private static async Task RunFlashbackExportRejectedAsync(
+        string outputDirectory,
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        var exportPath = Path.Combine(outputDirectory, "flashback-rejected-export.mp4");
+        var exportResponse = await sendCommandAsync(
+                "FlashbackExport",
+                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                60_000,
+                true)
+            .ConfigureAwait(false);
+        actions.Add("flashback rejected export requested");
+
+        if (AutomationSnapshotFormatter.IsSuccess(exportResponse))
+        {
+            warnings.Add("flashback export rejected: export unexpectedly succeeded while Flashback was inactive");
+        }
+
+        await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null, false).ConfigureAwait(false);
+        if (!TryGetSnapshot(snapshotResponse, out var snapshot))
+        {
+            warnings.Add("flashback export rejected: no snapshot returned after rejected export");
+            return;
+        }
+
+        var status = GetString(snapshot, "FlashbackExportStatus") ?? string.Empty;
+        var message = GetString(snapshot, "FlashbackExportMessage") ?? string.Empty;
+        var lastSuccess = GetString(snapshot, "LastExportSuccess") ?? string.Empty;
+        if (!string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add($"flashback export rejected: expected Failed status, got {status}");
+        }
+
+        if (!message.Contains("Flashback buffer not active", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add($"flashback export rejected: unexpected message '{message}'");
+        }
+
+        if (!string.Equals(lastSuccess, "false", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add($"flashback export rejected: expected LastExportSuccess=false, got {lastSuccess}");
+        }
+    }
+
     private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
@@ -685,7 +771,7 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-recording" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-recording" or "flashback-export-rejected" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
