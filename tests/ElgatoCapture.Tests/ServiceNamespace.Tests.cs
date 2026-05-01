@@ -112,6 +112,8 @@ static partial class Program
         AssertContains(deviceManagementText, "CancelPendingAudioControlWork");
         AssertContains(deviceManagementText, "_deviceAudioModeCts");
         AssertContains(deviceManagementText, "_deviceAudioRefreshCts");
+        AssertContains(deviceManagementText, "AUDIO_DEVICES_CHANGED_UI_ENQUEUE_FAILED");
+        AssertContains(deviceManagementText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
 
         foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe"), SearchOption.AllDirectories))
         {

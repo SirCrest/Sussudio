@@ -23,10 +23,13 @@ public partial class MainViewModel
 {
     private void OnAudioDevicesChanged()
     {
-        _dispatcherQueue.TryEnqueue(() =>
+        if (!_dispatcherQueue.TryEnqueue(() =>
         {
             _ = RefreshAudioDeviceListAsync();
-        });
+        }))
+        {
+            Logger.Log("AUDIO_DEVICES_CHANGED_UI_ENQUEUE_FAILED");
+        }
     }
 
     private List<AudioInputDevice> FilterOutCaptureCardAudio(List<AudioInputDevice> devices)
@@ -304,7 +307,7 @@ public partial class MainViewModel
 
     private void OnDeviceFormatProbeCompleted(object? sender, DeviceService.DeviceFormatProbeCompletedEventArgs e)
     {
-        _dispatcherQueue.TryEnqueue(() =>
+        if (!_dispatcherQueue.TryEnqueue(() =>
         {
             if (e.RequestId != Interlocked.Read(ref _deviceScanGeneration))
             {
@@ -492,7 +495,10 @@ public partial class MainViewModel
                     _isRebuildingModeOptions = false;
                 }
             }
-        });
+        }))
+        {
+            Logger.Log($"FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
+        }
     }
 
     partial void OnSelectedResolutionChanged(string? value)
