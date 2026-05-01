@@ -1090,6 +1090,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (string.IsNullOrWhiteSpace(filePath))
         {
             Logger.Log("FLASHBACK_PLAYBACK_NO_FILE");
+            if (decoder.IsOpen)
+            {
+                CloseDecoderFileBestEffort(decoder, "ensure_file_open_no_file");
+            }
+
+            fileOpen = false;
+            _currentOpenFilePath = null;
+            _decoderHwAccel = "N/A";
             return;
         }
 
