@@ -107,6 +107,63 @@ public partial class CaptureService
         };
     }
 
+    private static long ComputeFlashbackExportElapsedMs(
+        bool active,
+        long startedUtcUnixMs,
+        long completedUtcUnixMs,
+        long nowUtcUnixMs)
+    {
+        if (startedUtcUnixMs <= 0)
+        {
+            return 0;
+        }
+
+        var endUtcUnixMs = active
+            ? nowUtcUnixMs
+            : completedUtcUnixMs > 0
+                ? completedUtcUnixMs
+                : nowUtcUnixMs;
+
+        return Math.Max(0, endUtcUnixMs - startedUtcUnixMs);
+    }
+
+    private static long ComputeFlashbackExportLastProgressAgeMs(
+        bool active,
+        long startedUtcUnixMs,
+        long lastProgressUtcUnixMs,
+        long nowUtcUnixMs)
+    {
+        if (!active)
+        {
+            return 0;
+        }
+
+        var referenceUtcUnixMs = lastProgressUtcUnixMs > 0
+            ? lastProgressUtcUnixMs
+            : startedUtcUnixMs;
+
+        return referenceUtcUnixMs > 0
+            ? Math.Max(0, nowUtcUnixMs - referenceUtcUnixMs)
+            : 0;
+    }
+
+    private static long GetFileLengthOrZero(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return 0;
+        }
+
+        try
+        {
+            return new FileInfo(path).Length;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
     private (
         string? FirstObservedFramePixelFormat,
         string? LatestObservedFramePixelFormat,
@@ -1294,12 +1351,30 @@ public partial class CaptureService
             flashbackExportMessage = _flashbackExportMessage;
         }
 
+        var snapshotUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var flashbackExportElapsedMs = ComputeFlashbackExportElapsedMs(
+            flashbackExportActive,
+            flashbackExportStartedUtcUnixMs,
+            flashbackExportCompletedUtcUnixMs,
+            snapshotUtcUnixMs);
+        var flashbackExportLastProgressAgeMs = ComputeFlashbackExportLastProgressAgeMs(
+            flashbackExportActive,
+            flashbackExportStartedUtcUnixMs,
+            flashbackExportLastProgressUtcUnixMs,
+            snapshotUtcUnixMs);
+        var flashbackExportOutputBytes = GetFileLengthOrZero(
+            !string.IsNullOrWhiteSpace(flashbackExportOutputPath)
+                ? flashbackExportOutputPath
+                : _lastExportResult?.OutputPath);
+        var flashbackExportThroughputBytesPerSec = flashbackExportElapsedMs > 0
+            ? flashbackExportOutputBytes / (flashbackExportElapsedMs / 1000.0)
+            : 0;
         var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics() ?? default;
         var playbackDecode = fbPlayback?.GetPlaybackDecodeMetrics() ?? default;
 
         return new CaptureHealthSnapshot
         {
-            TimestampUtc = DateTimeOffset.UtcNow,
+            TimestampUtc = DateTimeOffset.FromUnixTimeMilliseconds(snapshotUtcUnixMs),
             SessionState = _sessionState,
             IsRecording = _isRecording,
             RecordingBackend = ResolveRecordingBackendName(),
@@ -1377,6 +1452,10 @@ public partial class CaptureService
             FlashbackExportStartedUtcUnixMs = flashbackExportStartedUtcUnixMs,
             FlashbackExportLastProgressUtcUnixMs = flashbackExportLastProgressUtcUnixMs,
             FlashbackExportCompletedUtcUnixMs = flashbackExportCompletedUtcUnixMs,
+            FlashbackExportElapsedMs = flashbackExportElapsedMs,
+            FlashbackExportLastProgressAgeMs = flashbackExportLastProgressAgeMs,
+            FlashbackExportOutputBytes = flashbackExportOutputBytes,
+            FlashbackExportThroughputBytesPerSec = flashbackExportThroughputBytesPerSec,
             FlashbackExportSegmentsProcessed = flashbackExportSegmentsProcessed,
             FlashbackExportTotalSegments = flashbackExportTotalSegments,
             FlashbackExportPercent = flashbackExportPercent,

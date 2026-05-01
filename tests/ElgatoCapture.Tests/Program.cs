@@ -1329,6 +1329,10 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackExportStartedUtcUnixMs"), "AutomationSnapshot.FlashbackExportStartedUtcUnixMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportLastProgressUtcUnixMs"), "AutomationSnapshot.FlashbackExportLastProgressUtcUnixMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportCompletedUtcUnixMs"), "AutomationSnapshot.FlashbackExportCompletedUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportElapsedMs"), "AutomationSnapshot.FlashbackExportElapsedMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportLastProgressAgeMs"), "AutomationSnapshot.FlashbackExportLastProgressAgeMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportOutputBytes"), "AutomationSnapshot.FlashbackExportOutputBytes");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportThroughputBytesPerSec"), "AutomationSnapshot.FlashbackExportThroughputBytesPerSec");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportSegmentsProcessed"), "AutomationSnapshot.FlashbackExportSegmentsProcessed");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportTotalSegments"), "AutomationSnapshot.FlashbackExportTotalSegments");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportPercent"), "AutomationSnapshot.FlashbackExportPercent");

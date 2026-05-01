@@ -81,6 +81,10 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackExportStartedUtcUnixMs { get; init; }
     public long FlashbackExportLastProgressUtcUnixMs { get; init; }
     public long FlashbackExportCompletedUtcUnixMs { get; init; }
+    public long FlashbackExportElapsedMs { get; init; }
+    public long FlashbackExportLastProgressAgeMs { get; init; }
+    public long FlashbackExportOutputBytes { get; init; }
+    public double FlashbackExportThroughputBytesPerSec { get; init; }
     public int FlashbackExportSegmentsProcessed { get; init; }
     public int FlashbackExportTotalSegments { get; init; }
     public double FlashbackExportPercent { get; init; }
