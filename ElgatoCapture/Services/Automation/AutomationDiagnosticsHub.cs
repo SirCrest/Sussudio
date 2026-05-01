@@ -40,6 +40,12 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private long _lastD3DFrameStatsMissedRefreshes;
     private long _lastD3DFrameStatsFailures;
     private long _lastD3DFrameStatsEvalTick;
+    private long _lastFlashbackDroppedFrames;
+    private long _lastFlashbackVideoEncoderDroppedFrames;
+    private long _lastFlashbackVideoSequenceGaps;
+    private long _lastFlashbackGpuFramesDropped;
+    private long _lastFlashbackVideoBackpressureEvents;
+    private long _lastFlashbackRecordingEvalTick;
     private Task? _autoVerificationTask;
     private int _verificationInProgress;
     private int _autoVerificationScheduled;
@@ -1324,6 +1330,36 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             Math.Max(0, failures - previousFailures));
     }
 
+    private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(
+        AutomationSnapshot snapshot,
+        long nowTick)
+    {
+        var droppedFrames = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackDroppedFrames) : 0;
+        var encoderDroppedFrames = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackVideoEncoderDroppedFrames) : 0;
+        var sequenceGaps = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackVideoSequenceGaps) : 0;
+        var gpuFramesDropped = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackGpuFramesDropped) : 0;
+        var backpressureEvents = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackVideoBackpressureEvents) : 0;
+
+        var previousTick = Interlocked.Exchange(ref _lastFlashbackRecordingEvalTick, nowTick);
+        var previousDroppedFrames = Interlocked.Exchange(ref _lastFlashbackDroppedFrames, droppedFrames);
+        var previousEncoderDroppedFrames = Interlocked.Exchange(ref _lastFlashbackVideoEncoderDroppedFrames, encoderDroppedFrames);
+        var previousSequenceGaps = Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps);
+        var previousGpuFramesDropped = Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped);
+        var previousBackpressureEvents = Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents);
+
+        if (previousTick == 0 || nowTick < previousTick)
+        {
+            return FlashbackRecordingRecentCounters.Empty;
+        }
+
+        return new FlashbackRecordingRecentCounters(
+            Math.Max(0, droppedFrames - previousDroppedFrames),
+            Math.Max(0, encoderDroppedFrames - previousEncoderDroppedFrames),
+            Math.Max(0, sequenceGaps - previousSequenceGaps),
+            Math.Max(0, gpuFramesDropped - previousGpuFramesDropped),
+            Math.Max(0, backpressureEvents - previousBackpressureEvents));
+    }
+
     private double CalculateProcessCpuPercent(double processCpuTotalMs)
     {
         var nowTimestamp = Stopwatch.GetTimestamp();
@@ -1352,6 +1388,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private void UpdateAlerts(AutomationSnapshot snapshot)
     {
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var flashbackRecordingRecent = UpdateFlashbackRecordingRecentCounters(snapshot, Stopwatch.GetTimestamp());
+        var flashbackRecordingRecentBackpressure =
+            flashbackRecordingRecent.BackpressureEvents > 0 &&
+            snapshot.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs;
         var exportLastProgressAgeMs = snapshot.FlashbackExportActive
             ? Math.Max(0, snapshot.FlashbackExportLastProgressAgeMs)
             : 0;
@@ -1485,17 +1525,19 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         SetAlertState(
             "flashback-recording-degraded",
             snapshot.FlashbackActive &&
-            (snapshot.FlashbackDroppedFrames > 0 ||
-             snapshot.FlashbackVideoEncoderDroppedFrames > 0 ||
-             snapshot.FlashbackVideoSequenceGaps > 0 ||
-             snapshot.FlashbackGpuFramesDropped > 0 ||
-             snapshot.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs),
+            (flashbackRecordingRecent.DroppedFrames > 0 ||
+             flashbackRecordingRecent.EncoderDroppedFrames > 0 ||
+             flashbackRecordingRecent.SequenceGaps > 0 ||
+             flashbackRecordingRecent.GpuFramesDropped > 0 ||
+             flashbackRecordingRecentBackpressure),
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Flashback,
-            $"Flashback recording path degraded: dropped={snapshot.FlashbackDroppedFrames} encoderDrops={snapshot.FlashbackVideoEncoderDroppedFrames} " +
-            $"seqGaps={snapshot.FlashbackVideoSequenceGaps} gpuOverloads={snapshot.FlashbackGpuFramesDropped} " +
+            $"Flashback recording path degraded: recentDropped={flashbackRecordingRecent.DroppedFrames} recentEncoderDrops={flashbackRecordingRecent.EncoderDroppedFrames} " +
+            $"recentSeqGaps={flashbackRecordingRecent.SequenceGaps} recentGpuOverloads={flashbackRecordingRecent.GpuFramesDropped} " +
+            $"recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents} " +
+            $"totals=dropped:{snapshot.FlashbackDroppedFrames},encoderDrops:{snapshot.FlashbackVideoEncoderDroppedFrames},seqGaps:{snapshot.FlashbackVideoSequenceGaps},gpuOverloads:{snapshot.FlashbackGpuFramesDropped} " +
             $"queue={snapshot.FlashbackVideoQueueDepth}/{snapshot.FlashbackVideoQueueCapacity} maxQueue={snapshot.FlashbackVideoQueueMaxDepth} " +
-            $"backpressure={snapshot.FlashbackVideoBackpressureWaitMs}ms/{snapshot.FlashbackVideoBackpressureEvents} max={snapshot.FlashbackVideoBackpressureMaxWaitMs}ms.",
+            $"backpressure={snapshot.FlashbackVideoBackpressureWaitMs}ms/{snapshot.FlashbackVideoBackpressureEvents} last={snapshot.FlashbackVideoBackpressureLastWaitMs}ms max={snapshot.FlashbackVideoBackpressureMaxWaitMs}ms.",
             "Flashback recording path returned to healthy range.",
             throttleMs: 5000);
 
@@ -1595,6 +1637,16 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         string AudioLane);
 
     private readonly record struct PerformanceEvaluation(double Score, bool PerfectionMet, string Summary);
+
+    private readonly record struct FlashbackRecordingRecentCounters(
+        long DroppedFrames,
+        long EncoderDroppedFrames,
+        long SequenceGaps,
+        long GpuFramesDropped,
+        long BackpressureEvents)
+    {
+        public static FlashbackRecordingRecentCounters Empty { get; } = new(0, 0, 0, 0, 0);
+    }
 
     private static DiagnosticEvaluation BuildDiagnosticEvaluation(
         CaptureHealthSnapshot health,
