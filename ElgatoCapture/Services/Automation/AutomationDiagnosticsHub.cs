@@ -69,6 +69,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const int FlashbackPlaybackCommandStallThresholdMs = 1000;
     private const int FlashbackExportStallThresholdMs = 30000;
     private const double FlashbackPlaybackSlowFpsRatio = 0.75;
+    private const double CaptureOnePercentLowWarningRatio = 0.98;
+    private const double PreviewOnePercentLowWarningRatio = 0.98;
     private const double FlashbackPlaybackOnePercentLowWarningRatio = 0.98;
     private const int FlashbackPlaybackMinFramesForPerfAlert = 60;
     private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;
@@ -1561,6 +1563,16 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 snapshot.FlashbackPlaybackFrameCount,
                 snapshot.FlashbackPlaybackCadenceSampleCount,
                 snapshot.FlashbackPlaybackOnePercentLowFps);
+        var captureOnePercentLowDegraded =
+            IsCaptureOnePercentLowDegraded(
+                snapshot.ExpectedCaptureFrameRate,
+                snapshot.CaptureCadenceSampleCount,
+                snapshot.CaptureCadenceOnePercentLowFps);
+        var previewOnePercentLowDegraded =
+            IsPreviewOnePercentLowDegraded(
+                snapshot.PreviewCadenceExpectedIntervalMs,
+                snapshot.PreviewCadenceSampleCount,
+                snapshot.PreviewCadenceOnePercentLowFps);
         var previewSlowFrameDetail = FormatPreviewSlowFrameAlertDetail(snapshot);
 
         SetAlertState(
@@ -1638,6 +1650,29 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"Capture cadence drop estimate={snapshot.CaptureCadenceEstimatedDropPercent:0.##}% " +
             $"(estDropped={snapshot.CaptureCadenceEstimatedDroppedFrames}, severeGaps={snapshot.CaptureCadenceSevereGapCount}).",
             "Capture cadence drop estimate returned to healthy range.");
+
+        SetAlertState(
+            "capture-cadence-low-1pct",
+            captureOnePercentLowDegraded,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Capture,
+            $"Capture cadence 1% low is below target: onePercentLow={snapshot.CaptureCadenceOnePercentLowFps:0.##}fps " +
+            $"target={snapshot.ExpectedCaptureFrameRate:0.##}fps avg={snapshot.CaptureCadenceObservedFps:0.##}fps " +
+            $"p95={snapshot.CaptureCadenceP95IntervalMs:0.##}ms p99={snapshot.CaptureCadenceP99IntervalMs:0.##}ms max={snapshot.CaptureCadenceMaxIntervalMs:0.##}ms.",
+            "Capture cadence 1% low returned to target range.",
+            throttleMs: 5000);
+
+        SetAlertState(
+            "preview-display-low-1pct",
+            previewOnePercentLowDegraded,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Preview,
+            $"Preview/display 1% low is below target: onePercentLow={snapshot.PreviewCadenceOnePercentLowFps:0.##}fps " +
+            $"target={(snapshot.PreviewCadenceExpectedIntervalMs > 0 ? 1000.0 / snapshot.PreviewCadenceExpectedIntervalMs : 0):0.##}fps " +
+            $"avg={snapshot.PreviewCadenceObservedFps:0.##}fps p95={snapshot.PreviewCadenceP95IntervalMs:0.##}ms " +
+            $"p99={snapshot.PreviewCadenceP99IntervalMs:0.##}ms max={snapshot.PreviewCadenceMaxIntervalMs:0.##}ms{previewSlowFrameDetail}.",
+            "Preview/display 1% low returned to target range.",
+            throttleMs: 5000);
 
         SetAlertState(
             "flashback-export-stalled",
@@ -1862,6 +1897,32 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             onePercentLowFps > 0 &&
             onePercentLowFps < targetFrameRate * FlashbackPlaybackOnePercentLowWarningRatio;
 
+    private static bool IsCaptureOnePercentLowDegraded(
+        double targetFrameRate,
+        int cadenceSampleCount,
+        double onePercentLowFps)
+        =>
+            targetFrameRate > 0 &&
+            cadenceSampleCount >= CapturePerfectionMinSamples &&
+            onePercentLowFps > 0 &&
+            onePercentLowFps < targetFrameRate * CaptureOnePercentLowWarningRatio;
+
+    private static bool IsPreviewOnePercentLowDegraded(
+        double expectedIntervalMs,
+        int cadenceSampleCount,
+        double onePercentLowFps)
+    {
+        if (expectedIntervalMs <= 0 ||
+            cadenceSampleCount < PreviewPerfectionMinSamples ||
+            onePercentLowFps <= 0)
+        {
+            return false;
+        }
+
+        var targetFrameRate = 1000.0 / expectedIntervalMs;
+        return onePercentLowFps < targetFrameRate * PreviewOnePercentLowWarningRatio;
+    }
+
     private static bool IsFlashbackRecordingQueueBackedUp(
         int queueDepth,
         int queueCapacity,
@@ -1995,6 +2056,16 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 health.FlashbackPlaybackFrameCount,
                 health.FlashbackPlaybackCadenceSampleCount,
                 health.FlashbackPlaybackOnePercentLowFps);
+        var captureOnePercentLowDegraded =
+            IsCaptureOnePercentLowDegraded(
+                health.ExpectedFrameRate,
+                health.CaptureCadenceSampleCount,
+                health.CaptureCadenceOnePercentLowFps);
+        var previewOnePercentLowDegraded =
+            IsPreviewOnePercentLowDegraded(
+                previewRuntime.DisplayCadenceExpectedIntervalMs,
+                previewRuntime.DisplayCadenceSampleCount,
+                previewRuntime.DisplayCadenceOnePercentLowFps);
         var flashbackTempPressure =
             health.FlashbackActive &&
             (health.FlashbackStartupCacheOverBudget ||
@@ -2275,6 +2346,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 audioLane);
         }
 
+        if (captureOnePercentLowDegraded)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "source_capture",
+                "Source/capture 1% low is below target.",
+                sourceLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
         if (health.MjpegDecodeFailures > 0 ||
             health.MjpegEmitFailures > 0 ||
             health.MjpegCompressedDropsQueueFull > 0 ||
@@ -2348,6 +2435,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 "Warning",
                 "present_display",
                 "Present/display cadence is the likely preview bottleneck.",
+                presentLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (previewOnePercentLowDegraded)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "present_display",
+                "Present/display 1% low is below target.",
                 presentLane,
                 sourceLane,
                 decodeLane,

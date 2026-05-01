@@ -281,6 +281,8 @@ static partial class Program
         AssertContains(diagnosticsText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackCommandStallThresholdMs = 1000;");
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackSlowFpsRatio = 0.75;");
+        AssertContains(diagnosticsText, "private const double CaptureOnePercentLowWarningRatio = 0.98;");
+        AssertContains(diagnosticsText, "private const double PreviewOnePercentLowWarningRatio = 0.98;");
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackOnePercentLowWarningRatio = 0.98;");
         AssertContains(diagnosticsText, "private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;");
         AssertContains(diagnosticsText, "private const long FlashbackRecordingBackpressureWarningMs = 100;");
@@ -331,6 +333,8 @@ static partial class Program
         AssertContains(diagnosticsText, "FlashbackPlaybackCommandQueueCapacity");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackObservedFps < snapshot.SelectedFrameRate * FlashbackPlaybackSlowFpsRatio");
         AssertContains(diagnosticsText, "IsFlashbackPlaybackFrametimeDegraded(\n                snapshot.FlashbackPlaybackState");
+        AssertContains(diagnosticsText, "IsCaptureOnePercentLowDegraded(\n                snapshot.ExpectedCaptureFrameRate");
+        AssertContains(diagnosticsText, "IsPreviewOnePercentLowDegraded(\n                snapshot.PreviewCadenceExpectedIntervalMs");
         AssertContains(diagnosticsText, "private static bool IsFlashbackRecordingQueueBackedUp(");
         AssertContains(diagnosticsText, "queueDepth >= Math.Ceiling(queueCapacity * FlashbackRecordingQueueDepthWarningRatio)");
         AssertContains(diagnosticsText, "oldestFrameAgeMs >= FlashbackRecordingQueueAgeWarningMs");
@@ -382,6 +386,10 @@ static partial class Program
         AssertContains(diagnosticsText, "recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}");
         AssertContains(diagnosticsText, "UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick)");
         AssertContains(diagnosticsText, "recentMissed={recentD3DMissedRefreshes} recentFail={recentD3DStatsFailures}");
+        AssertContains(diagnosticsText, "\"capture-cadence-low-1pct\"");
+        AssertContains(diagnosticsText, "\"Capture cadence 1% low is below target:");
+        AssertContains(diagnosticsText, "\"preview-display-low-1pct\"");
+        AssertContains(diagnosticsText, "\"Preview/display 1% low is below target:");
         AssertContains(diagnosticsText, "var previewSubmitFailed = string.Equals(");
         AssertContains(diagnosticsText, "health.MjpegPreviewJitterLastDropReason,\n            \"submit-failed\"");
         AssertContains(diagnosticsText, "if (previewSubmitFailed ||\n            recentPreviewDeadlineDrops > 0 ||\n            recentPreviewUnderflows > 3)");
@@ -394,6 +402,10 @@ static partial class Program
         AssertContains(diagnosticsText, "renderSubmit={frame.RenderSubmitCpuMs:0.##}ms");
         AssertContains(diagnosticsText, "var unsyncedPresentCallSlow =\n            previewRuntime.D3DPresentSyncInterval == 0 &&\n            previewRuntime.D3DPresentCallP95Ms > 4.0;");
         AssertContains(diagnosticsText, "if (presentCadenceOverBudget ||\n            unsyncedPresentCallSlow)");
+        AssertContains(diagnosticsText, "if (captureOnePercentLowDegraded)");
+        AssertContains(diagnosticsText, "\"Source/capture 1% low is below target.\"");
+        AssertContains(diagnosticsText, "if (previewOnePercentLowDegraded)");
+        AssertContains(diagnosticsText, "\"Present/display 1% low is below target.\"");
         AssertContains(diagnosticsText, "if (rendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&\n            rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)");
         AssertDoesNotContain(diagnosticsText, "rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||\n            previewRuntime.DisplayCadenceSlowFramePercent > 1.0");
 
