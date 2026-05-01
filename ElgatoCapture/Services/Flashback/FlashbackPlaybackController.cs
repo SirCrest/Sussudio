@@ -681,7 +681,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             break;
                         }
 
-                        SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.Seek);
+                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.Seek))
+                        {
+                            isPlaying = false;
+                            isScrubbing = false;
+                            RestoreLiveAfterSeekDisplayFailure("seek_display_failed");
+                            break;
+                        }
                         isPlaying = _wasPlayingBeforeScrub;
                         if (isPlaying)
                         {
@@ -727,7 +733,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             SetState(FlashbackPlaybackState.Live);
                             break;
                         }
-                        SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub);
+                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub))
+                        {
+                            isScrubbing = false;
+                            RestoreLiveAfterSeekDisplayFailure("begin_scrub_display_failed");
+                        }
                         break;
 
                     case CommandKind.UpdateScrub:
@@ -764,7 +774,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             Logger.Log($"FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE pos_ms={(long)cmd.Position.TotalMilliseconds}");
                             break;
                         }
-                        SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub);
+                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub))
+                        {
+                            isScrubbing = false;
+                            RestoreLiveAfterSeekDisplayFailure("scrub_update_display_failed");
+                        }
                         break;
 
                     case CommandKind.EndScrub:
@@ -945,7 +959,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             }
                             // Forward decode failed (EOF) — fall through to full seek
                         }
-                        SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge);
+                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge))
+                        {
+                            isPlaying = false;
+                            isScrubbing = false;
+                            RestoreLiveAfterSeekDisplayFailure("nudge_display_failed");
+                        }
                         break;
                 }
             }
@@ -1226,6 +1245,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
         ReleasePreviousHeldFrame();
     }
 
+    private void RestoreLiveAfterSeekDisplayFailure(string operation)
+    {
+        ReleasePlaybackFrameForLive(operation);
+        RestoreLiveAudio();
+        SafeResumePreviewSubmission(operation);
+        SafeResumeRendering(operation);
+        SetState(FlashbackPlaybackState.Live);
+    }
+
     private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)
     {
         if (!TryValidatePreviewFrame(frame, out var skipReason))
@@ -1304,7 +1332,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private void SeekAndDisplayKeyframe(
+    private bool SeekAndDisplayKeyframe(
         FlashbackDecoder decoder,
         ref bool fileOpen,
         TimeSpan bufferPosition,
@@ -1324,7 +1352,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             PlaybackPosition = bufferPosition;
             SetSeekDisplayFailure(kind, "no_file", bufferPosition);
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_NO_FILE pos_ms={(long)bufferPosition.TotalMilliseconds}");
-            return;
+            return false;
         }
 
         try
@@ -1357,7 +1385,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 PlaybackPosition = bufferPosition;
                 SetSeekDisplayFailure(kind, "seek_failed", bufferPosition);
                 Logger.Log($"FLASHBACK_PLAYBACK_SEEK_FAIL offset_ms={(long)filePts.TotalMilliseconds}");
-                return;
+                return false;
             }
             seekSuccess:
 
@@ -1368,7 +1396,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 {
                     PlaybackPosition = bufferPosition;
                     SetSeekDisplayFailure(kind, "submit_failed", bufferPosition);
-                    return;
+                    return false;
                 }
                 Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
 
@@ -1385,6 +1413,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             }
 
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_OK pos_ms={(long)PlaybackPosition.TotalMilliseconds} file_pts_ms={(long)filePts.TotalMilliseconds} got_frame={gotFrame}");
+            return gotFrame;
         }
         catch (Exception ex)
         {
@@ -1392,6 +1421,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             PlaybackPosition = bufferPosition;
             SetSeekDisplayFailure(kind, ex.GetType().Name, bufferPosition);
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_ERROR type={ex.GetType().Name} error='{ex.Message}'");
+            return false;
         }
     }
 
