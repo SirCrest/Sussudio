@@ -41,6 +41,8 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackPlaybackNearLiveSnaps { get; init; }
     public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
     public long FlashbackPlaybackSubmitFailures { get; init; }
+    public long FlashbackPlaybackLastDropUtcUnixMs { get; init; }
+    public string FlashbackPlaybackLastDropReason { get; init; } = string.Empty;
     public long FlashbackPlaybackLastSubmitFailureUtcUnixMs { get; init; }
     public string FlashbackPlaybackLastSubmitFailure { get; init; } = string.Empty;
     public long FlashbackPlaybackLastSegmentSwitchUtcUnixMs { get; init; }

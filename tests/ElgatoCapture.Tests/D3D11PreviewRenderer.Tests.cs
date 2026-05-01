@@ -411,6 +411,8 @@ static partial class Program
                      "FlashbackPlaybackDecodeP99Ms",
                      "FlashbackPlaybackPendingCommands",
                      "FlashbackPlaybackSubmitFailures",
+                     "FlashbackPlaybackLastDropUtcUnixMs",
+                     "FlashbackPlaybackLastDropReason",
                      "FlashbackPlaybackLastSubmitFailureUtcUnixMs",
                      "FlashbackPlaybackLastSubmitFailure",
                      "FlashbackPlaybackSegmentSwitches",
