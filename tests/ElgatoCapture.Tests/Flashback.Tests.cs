@@ -733,7 +733,10 @@ static partial class Program
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return;\n        EnsurePlaybackThread();\n        SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
         AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");\n                        return;");
         AssertContains(sourceText, "var canRead = _commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();");
-        AssertContains(sourceText, "if (!canRead)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed\");\n                            return;\n                        }");
+        AssertContains(sourceText, "if (!canRead)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed\");\n                            isScrubbing = false;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
+        AssertContains(sourceText, "SafeResumePreviewSubmission(\"channel_closed\");\n                            SetState(FlashbackPlaybackState.Live);\n                            return;\n                        }");
+        AssertContains(sourceText, "if (_disposedFlag != 0)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT\");\n                            isScrubbing = false;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
+        AssertContains(sourceText, "SafeResumePreviewSubmission(\"thread_disposed\");\n                            SetState(FlashbackPlaybackState.Live);\n                            return;\n                        }");
         AssertContains(sourceText, "catch (OperationCanceledException)\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_CANCELLED\");");
         AssertContains(sourceText, "finally\n        {\n            timeEndPeriod(1);");
         AssertContains(sourceText, "var threadExited = true;");

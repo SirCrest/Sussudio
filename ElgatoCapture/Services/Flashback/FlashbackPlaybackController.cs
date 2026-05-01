@@ -477,12 +477,28 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!canRead)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed");
+                            isScrubbing = false;
+                            CleanupDecoder(ref decoder, ref fileOpen);
+                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
+                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
+                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
+                            RestoreLiveAudio();
+                            SafeResumePreviewSubmission("channel_closed");
+                            SetState(FlashbackPlaybackState.Live);
                             return;
                         }
 
                         if (_disposedFlag != 0)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
+                            isScrubbing = false;
+                            CleanupDecoder(ref decoder, ref fileOpen);
+                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
+                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
+                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
+                            RestoreLiveAudio();
+                            SafeResumePreviewSubmission("thread_disposed");
+                            SetState(FlashbackPlaybackState.Live);
                             return;
                         }
                         if (!_commandChannel.Reader.TryRead(out cmd))
