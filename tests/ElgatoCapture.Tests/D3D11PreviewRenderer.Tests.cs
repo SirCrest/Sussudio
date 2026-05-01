@@ -377,6 +377,7 @@ static partial class Program
                      "FlashbackCleanupInProgress",
                      "FlashbackExportActive",
                      "FlashbackExportStatus",
+                     "FlashbackExportFailureKind",
                      "FlashbackExportPercent",
                      "FlashbackExportThroughputBytesPerSec",
                      "FlashbackExportLastProgressAgeMs",

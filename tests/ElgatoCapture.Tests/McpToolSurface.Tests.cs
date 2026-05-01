@@ -693,12 +693,14 @@ static partial class Program
         AssertContains(source, "FlashbackPlaybackSubmitFailures");
         AssertContains(source, "FatalCleanupInProgress");
         AssertContains(source, "FlashbackCleanupInProgress");
+        AssertContains(source, "FlashbackExportFailureKind");
         AssertContains(source, "FlashbackExportPercent");
         AssertContains(source, "FlashbackExportThroughputBytesPerSec");
         AssertContains(source, "FlashbackExportLastProgressAgeMs");
         AssertContains(source, "FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail");
         AssertContains(source, "Cln | ExStat");
-        AssertContains(source, "ExStat  | Ex%   | ExMBps");
+        AssertContains(source, "ExStat  | ExKind | Ex%");
+        AssertContains(source, "FormatExportFailureKind");
         AssertContains(source, "D3D Input P99:");
         AssertContains(source, "D3D Render P99:");
         AssertContains(source, "D3D Present P99:");
@@ -707,6 +709,7 @@ static partial class Program
         AssertContains(source, "Flashback Decode:");
         AssertContains(source, "Flashback Cmds:");
         AssertContains(source, "Cleanup State:");
+        AssertContains(source, "kind={FormatOptional(last.FlashbackExportFailureKind)}");
         AssertContains(source, "Export Progress:");
         AssertContains(source, "Export Output:");
 

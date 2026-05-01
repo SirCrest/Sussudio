@@ -929,6 +929,7 @@ public sealed class PerformanceTimelineEntry
     public bool FlashbackCleanupInProgress { get; init; }
     public bool FlashbackExportActive { get; init; }
     public string FlashbackExportStatus { get; init; } = "NotStarted";
+    public string FlashbackExportFailureKind { get; init; } = string.Empty;
     public long FlashbackExportElapsedMs { get; init; }
     public long FlashbackExportLastProgressAgeMs { get; init; }
     public long FlashbackExportOutputBytes { get; init; }

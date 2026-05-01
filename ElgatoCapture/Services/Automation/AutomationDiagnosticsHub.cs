@@ -1256,6 +1256,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 FlashbackCleanupInProgress = snapshot.FlashbackCleanupInProgress,
                 FlashbackExportActive = snapshot.FlashbackExportActive,
                 FlashbackExportStatus = snapshot.FlashbackExportStatus,
+                FlashbackExportFailureKind = snapshot.FlashbackExportFailureKind,
                 FlashbackExportElapsedMs = snapshot.FlashbackExportElapsedMs,
                 FlashbackExportLastProgressAgeMs = snapshot.FlashbackExportLastProgressAgeMs,
                 FlashbackExportOutputBytes = snapshot.FlashbackExportOutputBytes,
