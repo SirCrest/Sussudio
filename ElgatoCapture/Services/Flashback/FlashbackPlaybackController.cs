@@ -1331,6 +1331,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)bufferPosition.TotalMilliseconds} framePts_ms={(long)absoluteFramePts.TotalMilliseconds} latestPts_ms={(long)absoluteLatestPts.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
             if (decoder.IsOpen) decoder.CloseFile();
             fileOpen = false;
+            _currentOpenFilePath = null;
+            _decoderHwAccel = "N/A";
             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
             Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
@@ -1478,6 +1480,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
         if (decoder.IsOpen) decoder.CloseFile();
         fileOpen = false;
+        _currentOpenFilePath = null;
+        _decoderHwAccel = "N/A";
         Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
         Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);

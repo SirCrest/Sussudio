@@ -687,6 +687,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackPlaybackController_SnapLiveClearsOpenFileIdentity()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        var nearLiveBlock = ExtractTextBetween(
+            sourceText,
+            "Logger.Log($\"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP",
+            "SetState(FlashbackPlaybackState.Live);");
+        AssertContains(nearLiveBlock, "fileOpen = false;\n            _currentOpenFilePath = null;\n            _decoderHwAccel = \"N/A\";");
+
+        var decodeErrorBlock = ExtractTextBetween(
+            sourceText,
+            "Logger.Log($\"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK",
+            "SetState(FlashbackPlaybackState.Live);");
+        AssertContains(decodeErrorBlock, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")

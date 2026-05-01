@@ -556,6 +556,9 @@ static partial class Program
                 "Flashback end-of-segment open failures snap live",
                 FlashbackPlaybackController_EndOfSegmentOpenFailuresSnapLive),
             await RunCheckAsync(
+                "Flashback snap-live clears open file identity",
+                FlashbackPlaybackController_SnapLiveClearsOpenFileIdentity),
+            await RunCheckAsync(
                 "Flashback pause from live does not block on exact seek",
                 FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek),
             await RunCheckAsync(
