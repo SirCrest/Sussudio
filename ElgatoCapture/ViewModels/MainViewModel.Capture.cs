@@ -357,6 +357,14 @@ public partial class MainViewModel
         if (SelectedDevice == null || SelectedFormat == null)
             return;
 
+        var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);
+        await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);
+        if (Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration)
+        {
+            Logger.Log($"REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
+            return;
+        }
+
         // If a flashback encoder cycle (codec/quality/bitrate change) is still
         // in progress, wait for it to release the session transition lock before
         // we attempt the reinit. Without this, the reinit can read stale encoder

@@ -129,6 +129,12 @@ static partial class Program
         AssertContains(viewModelFiles["MainViewModel.cs"], "CancelFlashbackExportCts(exportCts);");
         AssertContains(rawViewModelText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"viewmodel_dispose\");");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "private const int PreviewReinitializeDebounceMs = 250;");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "private int _previewReinitializeGeneration;");
+        AssertContains(rawCaptureText, "var reinitializeGeneration = Interlocked.Increment(ref _previewReinitializeGeneration);");
+        AssertContains(rawCaptureText, "await Task.Delay(PreviewReinitializeDebounceMs).ConfigureAwait(true);");
+        AssertContains(rawCaptureText, "Volatile.Read(ref _previewReinitializeGeneration) != reinitializeGeneration");
+        AssertContains(rawCaptureText, "REINIT_COALESCED reason='{reason}' generation={reinitializeGeneration}");
         AssertContains(rawCaptureText, "await AwaitWithTimeoutAsync(\n                    pendingCycle,\n                    FlashbackCycleBeforeReinitializeTimeoutMs,\n                    \"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
         AssertContains(rawCaptureText, "catch (TimeoutException ex)\n            {\n                Logger.Log($\"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}\");");
         AssertContains(rawCaptureText, "REINIT_WAIT_FLASHBACK_CYCLE_FAULT");
