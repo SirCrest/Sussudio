@@ -281,7 +281,10 @@ public partial class MainViewModel
         }
         else
         {
-            _dispatcherQueue.TryEnqueue(ApplyFormats);
+            if (!_dispatcherQueue.TryEnqueue(ApplyFormats))
+            {
+                Logger.Log($"RECORDING_FORMATS_UI_ENQUEUE_FAILED formats={formats.Count}");
+            }
         }
     }
 
@@ -305,7 +308,10 @@ public partial class MainViewModel
         }
         else
         {
-            _dispatcherQueue.TryEnqueue(ApplyModes);
+            if (!_dispatcherQueue.TryEnqueue(ApplyModes))
+            {
+                Logger.Log($"SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED modes={modes.Count}");
+            }
         }
     }
 

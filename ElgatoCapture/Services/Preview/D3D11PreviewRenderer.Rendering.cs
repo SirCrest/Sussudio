@@ -527,7 +527,10 @@ internal sealed partial class D3D11PreviewRenderer
         if (Interlocked.Exchange(ref _firstFrameRaised, 1) == 0)
         {
             Logger.Log(firstFrameMessage);
-            _dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke());
+            if (!_dispatcherQueue.TryEnqueue(() => FirstFrameRendered?.Invoke()))
+            {
+                Logger.Log("D3D_FIRST_FRAME_UI_ENQUEUE_FAILED");
+            }
         }
 
         Interlocked.Increment(ref _framesRendered);

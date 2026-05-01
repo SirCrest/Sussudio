@@ -114,6 +114,15 @@ static partial class Program
         AssertContains(deviceManagementText, "_deviceAudioRefreshCts");
         AssertContains(deviceManagementText, "AUDIO_DEVICES_CHANGED_UI_ENQUEUE_FAILED");
         AssertContains(deviceManagementText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
+        AssertContains(
+            File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.Telemetry.cs")),
+            "SOURCE_TELEMETRY_UI_ENQUEUE_FAILED");
+        var settingsText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.Settings.cs"));
+        AssertContains(settingsText, "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
+        AssertContains(settingsText, "SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED");
+        AssertContains(
+            File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "Services", "Preview", "D3D11PreviewRenderer.Rendering.cs")),
+            "D3D_FIRST_FRAME_UI_ENQUEUE_FAILED");
 
         foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe"), SearchOption.AllDirectories))
         {

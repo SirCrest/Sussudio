@@ -46,10 +46,15 @@ public partial class MainViewModel
 
     private void OnSourceTelemetryUpdated(object? sender, SourceSignalTelemetrySnapshot snapshot)
     {
-        _dispatcherQueue.TryEnqueue(() =>
+        if (!_dispatcherQueue.TryEnqueue(() =>
         {
             ApplySourceTelemetrySnapshot(snapshot, allowAutoRetarget: true);
-        });
+        }))
+        {
+            Logger.Log(
+                $"SOURCE_TELEMETRY_UI_ENQUEUE_FAILED availability={snapshot.Availability} " +
+                $"origin={snapshot.Origin} mode='{snapshot.GetModeKey()}'");
+        }
     }
 
     private void ApplySourceTelemetrySnapshot(SourceSignalTelemetrySnapshot snapshot, bool allowAutoRetarget)
