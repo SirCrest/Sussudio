@@ -468,6 +468,12 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackRecordingBackendObserved");
         AssertContains(diagnosticSessionText, "PreviewD3DFrameStatsMissedRefreshDelta");
         AssertContains(diagnosticSessionText, "PreviewD3DFrameStatsFailureDelta");
+        AssertContains(diagnosticSessionText, "PreviewSchedulerDroppedAtEnd");
+        AssertContains(diagnosticSessionText, "PreviewSchedulerDeadlineDropsAtEnd");
+        AssertContains(diagnosticSessionText, "PreviewSchedulerUnderflowsAtEnd");
+        AssertContains(diagnosticSessionText, "PreviewSchedulerLastDropReasonAtEnd");
+        AssertContains(diagnosticSessionText, "Preview Scheduler:");
+        AssertContains(diagnosticSessionText, "lastDropReasonEnd={FormatOptional(result.PreviewSchedulerLastDropReasonAtEnd)}");
         AssertContains(diagnosticSessionText, "PreviewD3DLatestSlowFrameReason");
         AssertContains(diagnosticSessionText, "PreviewD3DInputUploadCpuP99MsAtEnd");
         AssertContains(diagnosticSessionText, "PreviewD3DInputUploadCpuMaxMsObserved");
