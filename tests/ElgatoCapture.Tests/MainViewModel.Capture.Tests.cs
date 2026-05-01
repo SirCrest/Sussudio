@@ -327,6 +327,8 @@ static partial class Program
     private static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
     {
         var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("ElgatoCapture/Services/Capture/CaptureService.cs");
+        var captureServiceRawText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
         var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var startVideoPreview = ExtractTextBetween(
@@ -386,6 +388,24 @@ static partial class Program
             startAudioPreview,
             "AttachFlashbackAudioIfSupported(_wasapiAudioCapture,",
             "await StartWasapiPlaybackAsync(transitionToken)");
+        var updateAudioInput = ExtractTextBetween(
+            captureServiceText,
+            "public Task UpdateAudioInputAsync",
+            "public Task CleanupAsync");
+        AssertContains(updateAudioInput, "var committedSwitchToken = CancellationToken.None;");
+        AssertContains(updateAudioInput, "await newCapture.InitializeAsync(resolvedId, committedSwitchToken)");
+        AssertContains(updateAudioInput, "await StartWasapiPlaybackAsync(committedSwitchToken)");
+        AssertOccursBefore(
+            updateAudioInput,
+            "newCapture.AttachRecordingSink(activeSink);",
+            "await StartWasapiPlaybackAsync(committedSwitchToken)");
+        var updateAudioInputRaw = ExtractTextBetween(
+            captureServiceRawText,
+            "public Task UpdateAudioInputAsync",
+            "public Task CleanupAsync");
+        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN");
+        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN");
+        AssertContains(updateAudioInputRaw, "AUDIO_INPUT_SWITCH_CANCEL_DEFERRED");
 
         AssertContains(captureServiceText, "_flashbackBackendSettings = CloneCaptureSettings(settings)");
         AssertContains(captureServiceText, "_flashbackBackendSettings = CloneCaptureSettings(_currentSettings)");

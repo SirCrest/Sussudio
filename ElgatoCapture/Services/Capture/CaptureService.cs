@@ -3845,38 +3845,71 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             var oldCapture = _wasapiAudioCapture;
             _wasapiAudioCapture = null;
             DetachWasapiAudioCapture(oldCapture);
-            await oldCapture.DisposeAsync().ConfigureAwait(false);
+            try
+            {
+                await oldCapture.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+            }
+
+            var committedSwitchToken = CancellationToken.None;
 
             var resolvedId = audioDeviceId ?? _currentDevice?.AudioDeviceId;
             if (!string.IsNullOrEmpty(resolvedId))
             {
-                var newCapture = new WasapiAudioCapture();
-                await newCapture.InitializeAsync(resolvedId, transitionToken).ConfigureAwait(false);
-                newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
-                newCapture.CaptureFailed += OnWasapiCaptureFailed;
-                newCapture.Start();
-                _wasapiAudioCapture = newCapture;
-                Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
-                Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
-
-                AttachFlashbackAudioIfSupported(newCapture, "audio_input_switch");
-
-                if (_isAudioPreviewActive)
+                WasapiAudioCapture? newCapture = new WasapiAudioCapture();
+                try
                 {
-                    await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
-                }
+                    await newCapture.InitializeAsync(resolvedId, committedSwitchToken).ConfigureAwait(false);
+                    newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
+                    newCapture.CaptureFailed += OnWasapiCaptureFailed;
+                    newCapture.Start();
+                    _wasapiAudioCapture = newCapture;
+                    Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
+                    Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
 
-                if (activeSink != null)
+                    AttachFlashbackAudioIfSupported(newCapture, "audio_input_switch");
+
+                    if (activeSink != null)
+                    {
+                        newCapture.AttachRecordingSink(activeSink);
+                    }
+
+                    if (_isAudioPreviewActive)
+                    {
+                        await StartWasapiPlaybackAsync(committedSwitchToken).ConfigureAwait(false);
+                    }
+
+                    Logger.Log($"Audio input switched to: {audioDeviceName ?? resolvedId}");
+                    newCapture = null;
+                }
+                finally
                 {
-                    newCapture.AttachRecordingSink(activeSink);
+                    if (newCapture != null && !ReferenceEquals(_wasapiAudioCapture, newCapture))
+                    {
+                        try
+                        {
+                            await newCapture.DisposeAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception ex)
+                        {
+                            Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                        }
+                    }
                 }
-
-                Logger.Log($"Audio input switched to: {audioDeviceName ?? resolvedId}");
             }
             else
             {
                 Logger.Log("Audio input cleared — no device available");
                 AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
+            }
+
+            if (transitionToken.IsCancellationRequested)
+            {
+                Logger.Log("AUDIO_INPUT_SWITCH_CANCEL_DEFERRED");
+                transitionToken.ThrowIfCancellationRequested();
             }
         }, cancellationToken);
 
