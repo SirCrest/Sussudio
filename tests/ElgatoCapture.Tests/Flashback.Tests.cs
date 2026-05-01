@@ -353,6 +353,8 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_EXPORT_CLEANUP_WARN op=close_input");
         AssertContains(sourceText, "FLASHBACK_EXPORT_CLEANUP_WARN op=close_output_io");
         AssertContains(sourceText, "FLASHBACK_EXPORT_CLEANUP_WARN op=free_output_context");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_PROGRESS_UPDATE_WARN");
+        AssertDoesNotContain(sourceText, "catch { /* Best-effort: segment may be deleted mid-export; progress tracking is non-critical */ }");
 
         return Task.CompletedTask;
     }

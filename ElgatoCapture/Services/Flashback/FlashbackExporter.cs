@@ -989,7 +989,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
                     // Track bytes for progress
                     try { if (File.Exists(segPath)) bytesProcessed += new FileInfo(segPath).Length; }
-                    catch { /* Best-effort: segment may be deleted mid-export; progress tracking is non-critical */ }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"FLASHBACK_EXPORT_PROGRESS_UPDATE_WARN path='{segPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+                    }
 
                     // Close this segment's input
                     CloseActiveInput();
