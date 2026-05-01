@@ -1113,6 +1113,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             ContainsFlashbackExportFailureText(statusMessage, "operation=avformat_write_header") ||
             ContainsFlashbackExportFailureText(statusMessage, "operation=av_interleaved_write_frame") ||
             ContainsFlashbackExportFailureText(statusMessage, "operation=av_write_trailer") ||
+            ContainsFlashbackExportFailureText(statusMessage, "output file length unavailable") ||
             ContainsFlashbackExportFailureText(statusMessage, "temporary export file was not created") ||
             ContainsFlashbackExportFailureText(statusMessage, "access is denied") ||
             ContainsFlashbackExportFailureText(statusMessage, "permission denied") ||
@@ -1155,6 +1156,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         if (ContainsFlashbackExportFailureText(statusMessage, "no usable video stream") ||
             ContainsFlashbackExportFailureText(statusMessage, "no segment had complete video parameters") ||
+            ContainsFlashbackExportFailureText(statusMessage, "output file is empty") ||
             ContainsFlashbackExportFailureText(statusMessage, "no video packets") ||
             ContainsFlashbackExportFailureText(statusMessage, "no packets"))
         {

@@ -536,6 +536,14 @@ static partial class Program
             "NoMediaWritten",
             method.Invoke(null, new object?[] { "Flashback export wrote no packets." })?.ToString(),
             "empty media export failure is classified");
+        AssertEqual(
+            "NoMediaWritten",
+            method.Invoke(null, new object?[] { "Flashback export failed: output file is empty 'clip.mp4'." })?.ToString(),
+            "empty completed output export failure is classified");
+        AssertEqual(
+            "OutputWriteFailed",
+            method.Invoke(null, new object?[] { "Flashback export failed: output file length unavailable 'clip.mp4'." })?.ToString(),
+            "unreadable completed output export failure is classified");
 
         return Task.CompletedTask;
     }
@@ -778,7 +786,9 @@ static partial class Program
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(0, 1, 0), \"single_heartbeat\");");
         AssertContains(sourceText, "ReportProgress(\n                                progress,\n                                new ExportProgress(\n                                    segIdx,\n                                    segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(1, 1, 100.0), \"single_complete\")");
-        AssertContains(sourceText, "var outputBytes = GetFileLengthBestEffort(outputPath);");
+        AssertContains(sourceText, "if (!TryValidateCompletedOutputFile(outputPath, out var outputBytes, out var outputFailure))");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'\");");
+        AssertContains(sourceText, "return FinalizeResult.Failure(outputPath, outputFailure);");
         AssertContains(sourceText, "ReportProgress(\n                        progress,\n                        new ExportProgress(\n                            segIdx + 1,\n                            segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), \"segments_complete\")");
         AssertContains(sourceText, "private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)\n    {\n        value = NormalizeExportProgress(value, stage);");
@@ -791,6 +801,10 @@ static partial class Program
         AssertContains(sourceText, "(now - last) * 1000.0 / Stopwatch.Frequency < ProgressHeartbeatIntervalMs");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_PROGRESS_WARN stage={stage} type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(sourceText, "private static long GetFileLengthBestEffort(string path)\n    {\n        try\n        {\n            return new FileInfo(path).Length;\n        }\n        catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_WARN reason='output_length_unavailable' path='{path}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            return -1;\n        }\n    }");
+        AssertContains(sourceText, "private static bool TryValidateCompletedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
+        AssertContains(sourceText, "outputBytes > 0");
+        AssertContains(sourceText, "Flashback export failed: output file is empty");
+        AssertContains(sourceText, "Flashback export failed: output file length unavailable");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_ORPHAN_CLEANUP_FAIL path='{Path.GetFileName(tmpFile)}' type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_ORPHAN_SCAN_FAIL dir='{directory}' type={ex.GetType().Name} msg='{ex.Message}'\");");

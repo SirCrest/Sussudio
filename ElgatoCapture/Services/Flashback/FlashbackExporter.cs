@@ -524,7 +524,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             AtomicMoveTempFile(tmpPath, outputPath);
             _activeTempPath = null;
 
-            var outputBytes = GetFileLengthBestEffort(outputPath);
+            if (!TryValidateCompletedOutputFile(outputPath, out var outputBytes, out var outputFailure))
+            {
+                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'");
+                return FinalizeResult.Failure(outputPath, outputFailure);
+            }
+
             Logger.Log(
                 $"FLASHBACK_EXPORT_OK output='{outputPath}' packets={totalPackets} bytes={outputBytes}");
             ReportProgress(progress, new ExportProgress(1, 1, 100.0), "single_complete");
@@ -1175,7 +1180,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             AtomicMoveTempFile(tmpPath, outputPath);
             _activeTempPath = null;
 
-            var outputBytes = GetFileLengthBestEffort(outputPath);
+            if (!TryValidateCompletedOutputFile(outputPath, out var outputBytes, out var outputFailure))
+            {
+                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'");
+                return FinalizeResult.Failure(outputPath, outputFailure);
+            }
+
             Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_OK output='{outputPath}' segments={segments.Count} packets={totalPackets} bytes={outputBytes}");
             ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), "segments_complete");
             return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from {segments.Count} segments");
@@ -1660,6 +1670,21 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             Logger.Log($"FLASHBACK_EXPORT_WARN reason='output_length_unavailable' path='{path}' type={ex.GetType().Name} msg='{ex.Message}'");
             return -1;
         }
+    }
+
+    private static bool TryValidateCompletedOutputFile(string outputPath, out long outputBytes, out string failureMessage)
+    {
+        outputBytes = GetFileLengthBestEffort(outputPath);
+        if (outputBytes > 0)
+        {
+            failureMessage = string.Empty;
+            return true;
+        }
+
+        failureMessage = outputBytes == 0
+            ? $"Flashback export failed: output file is empty '{outputPath}'."
+            : $"Flashback export failed: output file length unavailable '{outputPath}'.";
+        return false;
     }
 
     private static long AddNonNegativeSaturated(long left, long right)
