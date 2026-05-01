@@ -218,14 +218,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public bool BeginScrub(TimeSpan position)
     {
         if (IsNotReady(CommandKind.BeginScrub)) return false;
-        EnsurePlaybackThread();
+        if (!EnsurePlaybackThread()) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.BeginScrub, Position = position });
     }
 
     public bool Seek(TimeSpan position)
     {
         if (IsNotReady(CommandKind.Seek)) return false;
-        EnsurePlaybackThread();
+        if (!EnsurePlaybackThread()) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Seek, Position = position });
     }
 
@@ -257,14 +257,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public bool Play()
     {
         if (IsNotReady(CommandKind.Play)) return false;
-        EnsurePlaybackThread();
+        if (!EnsurePlaybackThread()) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Play });
     }
 
     public bool Pause()
     {
         if (IsNotReady(CommandKind.Pause)) return false;
-        EnsurePlaybackThread(); // Thread must be running to handle Live→Paused
+        if (!EnsurePlaybackThread()) return false; // Thread must be running to handle Live→Paused
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });
     }
 
@@ -272,7 +272,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (IsNotReady(CommandKind.GoLive)) return false;
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
-        EnsurePlaybackThread();
+        if (!EnsurePlaybackThread()) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });
     }
 
@@ -280,7 +280,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (IsNotReady(CommandKind.Nudge)) return false;
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
-        EnsurePlaybackThread();
+        if (!EnsurePlaybackThread()) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Nudge, Delta = delta });
     }
 
@@ -361,11 +361,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
         return true;
     }
 
-    private void EnsurePlaybackThread()
+    private bool EnsurePlaybackThread()
     {
-        if (_disposedFlag != 0) return;
+        if (_disposedFlag != 0) return false;
         if (Interlocked.CompareExchange(ref _playbackThreadStarted, 1, 0) != 0)
-            return;
+            return true;
 
         // Recreate the command channel — the previous one was completed by StopPlaybackThread.
         // A completed channel silently drops all TryWrite calls.
@@ -382,15 +382,18 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             _playbackThread.Start();
         }
-        catch
+        catch (Exception ex)
         {
-            /* Cleanup must not throw — tear down CTS before re-throwing thread start failure */
+            _lastCommandFailure = $"thread_start_failed:{ex.GetType().Name}:{ex.Message}";
+            Logger.Log($"FLASHBACK_PLAYBACK_THREAD_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
             _playCts.Dispose();
             _playCts = null;
+            _playbackThread = null;
             Interlocked.Exchange(ref _playbackThreadStarted, 0);
-            throw;
+            return false;
         }
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_START");
+        return true;
     }
 
     private void StopPlaybackThread()
