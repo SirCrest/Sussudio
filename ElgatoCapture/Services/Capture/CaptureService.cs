@@ -3763,6 +3763,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             EnsureInitialized();
             transitionToken.ThrowIfCancellationRequested();
 
+            var createdCaptureForAudioPreview = false;
             // Create WASAPI capture if it wasn't started with the preview (audio was disabled at start)
             if (_wasapiAudioCapture == null && _currentDevice != null)
             {
@@ -3776,6 +3777,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     wasapiCapture.CaptureFailed += OnWasapiCaptureFailed;
                     wasapiCapture.Start();
                     _wasapiAudioCapture = wasapiCapture;
+                    createdCaptureForAudioPreview = true;
                     _avSyncBaselineDriftMs = double.NaN;
                     Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
                     Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
@@ -3794,10 +3796,33 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
 
             _isAudioPreviewActive = true;
-            if (_wasapiAudioCapture != null)
+            try
             {
                 AttachFlashbackAudioIfSupported(_wasapiAudioCapture, "audio_preview_start");
                 await StartWasapiPlaybackAsync(transitionToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                _isAudioPreviewActive = false;
+                if (createdCaptureForAudioPreview)
+                {
+                    var capture = _wasapiAudioCapture;
+                    _wasapiAudioCapture = null;
+                    DetachWasapiAudioCapture(capture);
+                    if (capture != null)
+                    {
+                        try
+                        {
+                            await capture.DisposeAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception disposeEx)
+                        {
+                            Logger.Log($"AUDIO_PREVIEW_START_ROLLBACK_DISPOSE_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}");
+                        }
+                    }
+                }
+
+                throw;
             }
 
             StatusChanged?.Invoke(this, "Audio preview started");

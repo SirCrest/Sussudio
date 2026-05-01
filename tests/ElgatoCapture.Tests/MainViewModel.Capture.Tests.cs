@@ -400,6 +400,19 @@ static partial class Program
             startAudioPreview,
             "AttachFlashbackAudioIfSupported(_wasapiAudioCapture,",
             "await StartWasapiPlaybackAsync(transitionToken)");
+        AssertContains(startAudioPreview, "var createdCaptureForAudioPreview = false;");
+        AssertContains(startAudioPreview, "createdCaptureForAudioPreview = true;");
+        AssertContains(startAudioPreview, "_isAudioPreviewActive = false;");
+        AssertContains(startAudioPreview, "DetachWasapiAudioCapture(capture);");
+        AssertOccursBefore(
+            startAudioPreview,
+            "_isAudioPreviewActive = true;",
+            "await StartWasapiPlaybackAsync(transitionToken)");
+        var startAudioPreviewRaw = ExtractTextBetween(
+            captureServiceRawText,
+            "public Task StartAudioPreviewAsync",
+            "public Task StopAudioPreviewAsync");
+        AssertContains(startAudioPreviewRaw, "AUDIO_PREVIEW_START_ROLLBACK_DISPOSE_WARN");
         var updateAudioInput = ExtractTextBetween(
             captureServiceText,
             "public Task UpdateAudioInputAsync",
