@@ -1028,6 +1028,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Interlocked.Exchange(ref _videoFramesSubmittedToEncoder, 0);
         Interlocked.Exchange(ref _videoDropsQueueSaturated, 0);
         Interlocked.Exchange(ref _videoDropsBacklogEviction, 0);
+        Interlocked.Exchange(ref _videoQueueRejectedFrames, 0);
+        Volatile.Write(ref _lastVideoQueueRejectReason, null);
         Interlocked.Exchange(ref _audioDropsQueueSaturated, 0);
         Interlocked.Exchange(ref _audioDropsBacklogEviction, 0);
         Interlocked.Exchange(ref _droppedAudioSamplesCount, 0);
@@ -1035,6 +1037,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         Interlocked.Exchange(ref _microphoneDropsBacklogEviction, 0);
         Interlocked.Exchange(ref _gpuFramesEnqueued, 0);
         Interlocked.Exchange(ref _gpuFramesDropped, 0);
+        Interlocked.Exchange(ref _gpuQueueRejectedFrames, 0);
+        Volatile.Write(ref _lastGpuQueueRejectReason, null);
         Interlocked.Exchange(ref _videoQueueMaxDepth, 0);
         Interlocked.Exchange(ref _gpuQueueMaxDepth, 0);
         Interlocked.Exchange(ref _audioSamplesReceived, 0);
