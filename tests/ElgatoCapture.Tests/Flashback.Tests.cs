@@ -1275,6 +1275,8 @@ static partial class Program
         AssertContains(sourceText, "private bool EnsurePlaybackThread()");
         AssertContains(sourceText, "private readonly object _playbackThreadSync = new();");
         AssertContains(sourceText, "lock (_playbackThreadSync)");
+        AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposedFlag != 0, this);");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_UPDATE_SKIP reason=disposed");
         AssertContains(sourceText, "private const int CommandQueueCapacity = 256;");
         AssertContains(sourceText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
         AssertContains(sourceText, "private Channel<PlaybackCommand> _commandChannel = CreateCommandChannel();");

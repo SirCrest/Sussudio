@@ -209,12 +209,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
         WasapiAudioPlayback? audioPlayback,
         WasapiAudioCapture? audioCapture)
     {
-        _previewSink = previewSink ?? throw new ArgumentNullException(nameof(previewSink));
-        _videoCapture = videoCapture ?? throw new ArgumentNullException(nameof(videoCapture));
-        _audioPlayback = audioPlayback;
-        _audioCapture = audioCapture;
-        _initialized = true;
-        Logger.Log("FLASHBACK_PLAYBACK_INIT");
+        lock (_playbackThreadSync)
+        {
+            ObjectDisposedException.ThrowIf(_disposedFlag != 0, this);
+            _previewSink = previewSink ?? throw new ArgumentNullException(nameof(previewSink));
+            _videoCapture = videoCapture ?? throw new ArgumentNullException(nameof(videoCapture));
+            _audioPlayback = audioPlayback;
+            _audioCapture = audioCapture;
+            _initialized = true;
+            Logger.Log("FLASHBACK_PLAYBACK_INIT");
+        }
     }
 
     /// <summary>
@@ -224,9 +228,18 @@ internal sealed class FlashbackPlaybackController : IDisposable
     /// </summary>
     public void UpdateAudioComponents(WasapiAudioPlayback? audioPlayback, WasapiAudioCapture? audioCapture)
     {
-        _audioPlayback = audioPlayback;
-        _audioCapture = audioCapture;
-        Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_UPDATE playback={audioPlayback != null} capture={audioCapture != null}");
+        lock (_playbackThreadSync)
+        {
+            if (_disposedFlag != 0)
+            {
+                Logger.Log("FLASHBACK_PLAYBACK_AUDIO_UPDATE_SKIP reason=disposed");
+                return;
+            }
+
+            _audioPlayback = audioPlayback;
+            _audioCapture = audioCapture;
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_UPDATE playback={audioPlayback != null} capture={audioCapture != null}");
+        }
     }
 
     // --- State transitions (called from UI thread) ---
