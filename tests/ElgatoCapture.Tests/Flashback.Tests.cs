@@ -146,6 +146,7 @@ static partial class Program
         AssertContains(startCatchBlock, "lock (_sync)\n            {\n                _started = false;\n            }");
         AssertEqual(1, startCatchBlock.Split("_started = false;", StringSplitOptions.None).Length - 1, "Start failure rollback clears started state once");
         AssertOccursBefore(startCatchBlock, "_started = false;", "throw;");
+        AssertContains(startCatchBlock, "_tsFilePath = null;\n            _recordingOutputPath = string.Empty;\n            _segmentStartPts = TimeSpan.Zero;\n            _segmentDuration = TimeSpan.Zero;\n            _ptsBaseOffset = TimeSpan.Zero;\n            Interlocked.Exchange(ref _segmentStartBytes, 0);");
 
         return Task.CompletedTask;
     }

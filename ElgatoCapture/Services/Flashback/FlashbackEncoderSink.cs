@@ -345,6 +345,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _height = 0;
             _audioEnabled = false;
             _microphoneEnabled = false;
+            _tsFilePath = null;
+            _recordingOutputPath = string.Empty;
+            _segmentStartPts = TimeSpan.Zero;
+            _segmentDuration = TimeSpan.Zero;
+            _ptsBaseOffset = TimeSpan.Zero;
+            Interlocked.Exchange(ref _segmentStartBytes, 0);
 
             if (_ownsBufferManager)
             {
