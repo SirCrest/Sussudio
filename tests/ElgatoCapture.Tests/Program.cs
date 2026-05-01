@@ -1209,6 +1209,8 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedSourceLatencyMs"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedSourceLatencyMs");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastDroppedSourceSequenceNumber"), "AutomationSnapshot.MjpegPreviewJitterLastDroppedSourceSequenceNumber");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastDropReason"), "AutomationSnapshot.MjpegPreviewJitterLastDropReason");
+        AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameStatsRecentMissedRefreshCount"), "AutomationSnapshot.PreviewD3DFrameStatsRecentMissedRefreshCount");
+        AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameStatsRecentFailureCount"), "AutomationSnapshot.PreviewD3DFrameStatsRecentFailureCount");
         AssertNotNull(snapshotType.GetProperty("DiagnosticHealthStatus"), "AutomationSnapshot.DiagnosticHealthStatus");
         AssertNotNull(snapshotType.GetProperty("DiagnosticLikelyStage"), "AutomationSnapshot.DiagnosticLikelyStage");
         AssertNotNull(snapshotType.GetProperty("DiagnosticSummary"), "AutomationSnapshot.DiagnosticSummary");

@@ -322,6 +322,8 @@ static partial class Program
                      "PreviewD3DFrameStatsLastPresentRefreshDelta",
                      "PreviewD3DFrameStatsLastSyncRefreshDelta",
                      "PreviewD3DFrameStatsMissedRefreshCount",
+                     "PreviewD3DFrameStatsRecentMissedRefreshCount",
+                     "PreviewD3DFrameStatsRecentFailureCount",
                      "PreviewD3DLastSubmittedPreviewPresentId",
                      "PreviewD3DLastSubmittedSourceSequenceNumber",
                      "PreviewD3DLastSubmittedUtcUnixMs",

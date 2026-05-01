@@ -37,6 +37,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private long _lastPreviewJitterUnderflows;
     private long _lastPreviewJitterDeadlineDrops;
     private long _lastPreviewJitterEvalTick;
+    private long _lastD3DFrameStatsMissedRefreshes;
+    private long _lastD3DFrameStatsFailures;
+    private long _lastD3DFrameStatsEvalTick;
     private Task? _autoVerificationTask;
     private int _verificationInProgress;
     private int _autoVerificationScheduled;
@@ -440,6 +443,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             captureCadenceDropPercent: health.CaptureCadenceEstimatedDropPercent,
             lastVerification: lastVerification);
         var (recentPreviewUnderflows, recentPreviewDeadlineDrops) = UpdatePreviewJitterRecentCounters(health, nowTick);
+        var (recentD3DMissedRefreshes, recentD3DStatsFailures) = UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick);
         var diagnostic = BuildDiagnosticEvaluation(
             health,
             captureRuntime,
@@ -448,7 +452,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             viewModelSnapshot.IsRecording,
             performance,
             recentPreviewUnderflows,
-            recentPreviewDeadlineDrops);
+            recentPreviewDeadlineDrops,
+            recentD3DMissedRefreshes,
+            recentD3DStatsFailures);
         var hdrTruthVerdict = BuildHdrTruthVerdict(captureRuntime, viewModelSnapshot.IsHdrEnabled, lastVerification);
         var previewHdrInputDetected =
             IsHdrSubtype(captureRuntime.NegotiatedPixelFormat) ||
@@ -822,6 +828,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PreviewD3DFrameStatsLastPresentRefreshDelta = previewRuntime.D3DFrameStatsLastPresentRefreshDelta,
             PreviewD3DFrameStatsLastSyncRefreshDelta = previewRuntime.D3DFrameStatsLastSyncRefreshDelta,
             PreviewD3DFrameStatsMissedRefreshCount = previewRuntime.D3DFrameStatsMissedRefreshCount,
+            PreviewD3DFrameStatsRecentMissedRefreshCount = recentD3DMissedRefreshes,
+            PreviewD3DFrameStatsRecentFailureCount = recentD3DStatsFailures,
             PreviewD3DLastSubmittedPreviewPresentId = previewRuntime.D3DLastSubmittedPreviewPresentId,
             PreviewD3DLastSubmittedSourceSequenceNumber = previewRuntime.D3DLastSubmittedSourceSequenceNumber,
             PreviewD3DLastSubmittedQpc = previewRuntime.D3DLastSubmittedQpc,
@@ -1264,6 +1272,26 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             Math.Max(0, deadlineDrops - previousDeadlineDrops));
     }
 
+    private (long RecentMissedRefreshes, long RecentFailures) UpdateD3DFrameStatsRecentCounters(
+        PreviewRuntimeSnapshot previewRuntime,
+        long nowTick)
+    {
+        var missedRefreshes = Math.Max(0, previewRuntime.D3DFrameStatsMissedRefreshCount);
+        var failures = Math.Max(0, previewRuntime.D3DFrameStatsFailureCount);
+        var previousTick = Interlocked.Exchange(ref _lastD3DFrameStatsEvalTick, nowTick);
+        var previousMissedRefreshes = Interlocked.Exchange(ref _lastD3DFrameStatsMissedRefreshes, missedRefreshes);
+        var previousFailures = Interlocked.Exchange(ref _lastD3DFrameStatsFailures, failures);
+
+        if (previousTick == 0 || nowTick < previousTick)
+        {
+            return (0, 0);
+        }
+
+        return (
+            Math.Max(0, missedRefreshes - previousMissedRefreshes),
+            Math.Max(0, failures - previousFailures));
+    }
+
     private void UpdateAlerts(AutomationSnapshot snapshot)
     {
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -1482,7 +1510,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         bool isRecording,
         PerformanceEvaluation performance,
         long recentPreviewUnderflows,
-        long recentPreviewDeadlineDrops)
+        long recentPreviewDeadlineDrops,
+        long recentD3DMissedRefreshes,
+        long recentD3DStatsFailures)
     {
         var sourceTarget = health.ExpectedFrameRate > 0
             ? $"{1000.0 / health.ExpectedFrameRate:0.##}ms"
@@ -1503,9 +1533,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             ? $"{previewRuntime.DisplayCadenceExpectedIntervalMs:0.##}ms"
             : "n/a";
         var dxgiStats = previewRuntime.D3DFrameStatsSuccessCount > 0
-            ? $" dxgiStats ok={previewRuntime.D3DFrameStatsSuccessCount}/{previewRuntime.D3DFrameStatsSampleCount} pc={previewRuntime.D3DFrameStatsPresentCount} prc={previewRuntime.D3DFrameStatsPresentRefreshCount} prDelta={previewRuntime.D3DFrameStatsLastPresentRefreshDelta} missed={previewRuntime.D3DFrameStatsMissedRefreshCount}"
+            ? $" dxgiStats ok={previewRuntime.D3DFrameStatsSuccessCount}/{previewRuntime.D3DFrameStatsSampleCount} pc={previewRuntime.D3DFrameStatsPresentCount} prc={previewRuntime.D3DFrameStatsPresentRefreshCount} prDelta={previewRuntime.D3DFrameStatsLastPresentRefreshDelta} missed={previewRuntime.D3DFrameStatsMissedRefreshCount} recentMissed={recentD3DMissedRefreshes} recentFail={recentD3DStatsFailures}"
             : previewRuntime.D3DFrameStatsSampleCount > 0
-                ? $" dxgiStats err={previewRuntime.D3DFrameStatsLastError} fail={previewRuntime.D3DFrameStatsFailureCount}/{previewRuntime.D3DFrameStatsSampleCount}"
+                ? $" dxgiStats err={previewRuntime.D3DFrameStatsLastError} fail={previewRuntime.D3DFrameStatsFailureCount}/{previewRuntime.D3DFrameStatsSampleCount} recentFail={recentD3DStatsFailures}"
                 : string.Empty;
         var presentLane =
             $"present target={presentTarget} avg={previewRuntime.DisplayCadenceAverageIntervalMs:0.##}ms p95={previewRuntime.DisplayCadenceP95IntervalMs:0.##}ms p99={previewRuntime.DisplayCadenceP99IntervalMs:0.##}ms max={previewRuntime.DisplayCadenceMaxIntervalMs:0.##}ms slow={previewRuntime.DisplayCadenceSlowFramePercent:0.##}% rate={previewRuntime.DisplayCadenceObservedFps:0.##}fps sync={previewRuntime.D3DPresentSyncInterval} latency={previewRuntime.D3DMaxFrameLatency} buffers={previewRuntime.D3DSwapChainBufferCount} swap={previewRuntime.D3DSwapChainAddress}{dxgiStats}";

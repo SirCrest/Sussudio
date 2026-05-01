@@ -210,6 +210,13 @@ static partial class Program
                   { "WorkerIndex": 0, "AvgMs": 2.1, "P95Ms": 3.1, "MaxMs": 4.1, "SampleCount": 5 }
                 ],
                 "PreviewRendererMode": "D3D11VideoProcessor",
+                "PreviewD3DFrameStatsSampleCount": 120,
+                "PreviewD3DFrameStatsSuccessCount": 119,
+                "PreviewD3DFrameStatsFailureCount": 1,
+                "PreviewD3DFrameStatsRecentFailureCount": 1,
+                "PreviewD3DFrameStatsMissedRefreshCount": 4,
+                "PreviewD3DFrameStatsRecentMissedRefreshCount": 2,
+                "PreviewD3DFrameStatsLastError": "DXGI_ERROR_WAS_STILL_DRAWING",
                 "PreviewD3DRecentSlowFrames": [
                   {
                     "PreviewPresentId": 42,
@@ -247,6 +254,7 @@ static partial class Program
         AssertContains(formatted, "== MJPEG Pipeline Timing ==");
         AssertContains(formatted, "Decoder[0]: avg=2.1ms");
         AssertContains(formatted, "== Preview ==");
+        AssertContains(formatted, "D3D DXGI stats: ok=119/120 failures=1 recentFailures=1 missedRefresh=4 recentMissed=2 lastError=DXGI_ERROR_WAS_STILL_DRAWING");
         AssertContains(formatted, "D3D Slow Frames: present=42 srcSeq=9001 reason=present_interval target=8.33ms over=0.87ms interval=9.20ms");
         AssertContains(formatted, "== Source ==");
 

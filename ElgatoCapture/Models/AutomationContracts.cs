@@ -515,6 +515,8 @@ public sealed class AutomationSnapshot
     public long PreviewD3DFrameStatsLastPresentRefreshDelta { get; init; }
     public long PreviewD3DFrameStatsLastSyncRefreshDelta { get; init; }
     public long PreviewD3DFrameStatsMissedRefreshCount { get; init; }
+    public long PreviewD3DFrameStatsRecentMissedRefreshCount { get; init; }
+    public long PreviewD3DFrameStatsRecentFailureCount { get; init; }
     public long PreviewD3DLastSubmittedPreviewPresentId { get; init; }
     public long PreviewD3DLastSubmittedSourceSequenceNumber { get; init; }
     public long PreviewD3DLastSubmittedQpc { get; init; }
