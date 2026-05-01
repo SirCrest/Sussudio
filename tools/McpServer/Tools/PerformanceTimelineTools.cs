@@ -88,6 +88,13 @@ public static class PerformanceTimelineTools
                 FlashbackPlaybackPendingCommands = AutomationSnapshotFormatter.GetInt(item, "FlashbackPlaybackPendingCommands"),
                 FlashbackPlaybackMaxPendingCommands = AutomationSnapshotFormatter.GetInt(item, "FlashbackPlaybackMaxPendingCommands"),
                 FlashbackPlaybackMaxCommandQueueLatencyMs = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackMaxCommandQueueLatencyMs"),
+                FlashbackPlaybackCommandsEnqueued = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackCommandsEnqueued"),
+                FlashbackPlaybackCommandsProcessed = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackCommandsProcessed"),
+                FlashbackPlaybackCommandsDropped = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackCommandsDropped"),
+                FlashbackPlaybackCommandsSkippedNotReady = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackCommandsSkippedNotReady"),
+                FlashbackPlaybackScrubUpdatesCoalesced = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackScrubUpdatesCoalesced"),
+                FlashbackPlaybackLastCommandQueued = AutomationSnapshotFormatter.Get(item, "FlashbackPlaybackLastCommandQueued"),
+                FlashbackPlaybackLastCommandProcessed = AutomationSnapshotFormatter.Get(item, "FlashbackPlaybackLastCommandProcessed"),
                 FlashbackPlaybackSubmitFailures = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackSubmitFailures"),
                 FlashbackPlaybackLastDropUtcUnixMs = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackLastDropUtcUnixMs"),
                 FlashbackPlaybackLastDropReason = AutomationSnapshotFormatter.Get(item, "FlashbackPlaybackLastDropReason"),
@@ -237,6 +244,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Flashback Decode:{first.FlashbackPlaybackDecodeP99Ms:F1}ms -> {last.FlashbackPlaybackDecodeP99Ms:F1}ms (max latest={last.FlashbackPlaybackDecodeMaxMs:F1}ms)");
             builder.AppendLine($"Flashback Slow%:{first.FlashbackPlaybackSlowFramePercent:F1}% -> {last.FlashbackPlaybackSlowFramePercent:F1}%");
             builder.AppendLine($"Flashback Cmds: pending {first.FlashbackPlaybackPendingCommands} -> {last.FlashbackPlaybackPendingCommands}, maxPending latest={last.FlashbackPlaybackMaxPendingCommands}, maxLatency latest={last.FlashbackPlaybackMaxCommandQueueLatencyMs}ms, failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
+            builder.AppendLine($"Flashback Cmd Counters: enqueued {first.FlashbackPlaybackCommandsEnqueued} -> {last.FlashbackPlaybackCommandsEnqueued}, processed {first.FlashbackPlaybackCommandsProcessed} -> {last.FlashbackPlaybackCommandsProcessed}, dropped {first.FlashbackPlaybackCommandsDropped} -> {last.FlashbackPlaybackCommandsDropped}, skippedNotReady {first.FlashbackPlaybackCommandsSkippedNotReady} -> {last.FlashbackPlaybackCommandsSkippedNotReady}, scrubCoalesced {first.FlashbackPlaybackScrubUpdatesCoalesced} -> {last.FlashbackPlaybackScrubUpdatesCoalesced}, lastQueued={FormatOptional(last.FlashbackPlaybackLastCommandQueued)}, lastProcessed={FormatOptional(last.FlashbackPlaybackLastCommandProcessed)}");
             builder.AppendLine($"Flashback Failure: latest={FormatOptional(last.FlashbackPlaybackLastCommandFailure)}");
             builder.AppendLine($"Flashback Drops: submitFailures {first.FlashbackPlaybackSubmitFailures} -> {last.FlashbackPlaybackSubmitFailures}, lastSubmitFailure={FormatOptional(last.FlashbackPlaybackLastSubmitFailure)} failureUtc latest={last.FlashbackPlaybackLastSubmitFailureUtcUnixMs}, droppedFrames {first.FlashbackPlaybackDroppedFrames} -> {last.FlashbackPlaybackDroppedFrames}, lastDrop={FormatOptional(last.FlashbackPlaybackLastDropReason)} dropUtc latest={last.FlashbackPlaybackLastDropUtcUnixMs}, decodeSnaps {first.FlashbackPlaybackDecodeErrorSnaps} -> {last.FlashbackPlaybackDecodeErrorSnaps}");
             builder.AppendLine($"Flashback Enqueue Rejects: video {first.FlashbackVideoQueueRejectedFrames} -> {last.FlashbackVideoQueueRejectedFrames} last={FormatOptional(last.FlashbackVideoQueueLastRejectReason)}, gpu {first.FlashbackGpuQueueRejectedFrames} -> {last.FlashbackGpuQueueRejectedFrames} last={FormatOptional(last.FlashbackGpuQueueLastRejectReason)}");
@@ -475,6 +483,13 @@ public static class PerformanceTimelineTools
         public int FlashbackPlaybackPendingCommands { get; init; }
         public int FlashbackPlaybackMaxPendingCommands { get; init; }
         public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }
+        public long FlashbackPlaybackCommandsEnqueued { get; init; }
+        public long FlashbackPlaybackCommandsProcessed { get; init; }
+        public long FlashbackPlaybackCommandsDropped { get; init; }
+        public long FlashbackPlaybackCommandsSkippedNotReady { get; init; }
+        public long FlashbackPlaybackScrubUpdatesCoalesced { get; init; }
+        public string FlashbackPlaybackLastCommandQueued { get; init; } = string.Empty;
+        public string FlashbackPlaybackLastCommandProcessed { get; init; } = string.Empty;
         public long FlashbackPlaybackSubmitFailures { get; init; }
         public long FlashbackPlaybackLastDropUtcUnixMs { get; init; }
         public string FlashbackPlaybackLastDropReason { get; init; } = string.Empty;

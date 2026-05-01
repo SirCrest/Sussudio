@@ -699,6 +699,13 @@ static partial class Program
         AssertContains(source, "FlashbackPlaybackP99FrameMs");
         AssertContains(source, "FlashbackPlaybackDecodeP99Ms");
         AssertContains(source, "FlashbackPlaybackPendingCommands");
+        AssertContains(source, "FlashbackPlaybackCommandsEnqueued");
+        AssertContains(source, "FlashbackPlaybackCommandsProcessed");
+        AssertContains(source, "FlashbackPlaybackCommandsDropped");
+        AssertContains(source, "FlashbackPlaybackCommandsSkippedNotReady");
+        AssertContains(source, "FlashbackPlaybackScrubUpdatesCoalesced");
+        AssertContains(source, "FlashbackPlaybackLastCommandQueued");
+        AssertContains(source, "FlashbackPlaybackLastCommandProcessed");
         AssertContains(source, "FlashbackPlaybackSubmitFailures");
         AssertContains(source, "FlashbackPlaybackLastDropUtcUnixMs");
         AssertContains(source, "FlashbackPlaybackLastDropReason");
@@ -748,6 +755,9 @@ static partial class Program
         AssertContains(source, "Flashback P99:");
         AssertContains(source, "Flashback Decode:");
         AssertContains(source, "Flashback Cmds:");
+        AssertContains(source, "Flashback Cmd Counters:");
+        AssertContains(source, "lastQueued={FormatOptional(last.FlashbackPlaybackLastCommandQueued)}");
+        AssertContains(source, "lastProcessed={FormatOptional(last.FlashbackPlaybackLastCommandProcessed)}");
         AssertContains(source, "Flashback Failure:");
         AssertContains(source, "Flashback Stages:");
         AssertContains(source, "failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
