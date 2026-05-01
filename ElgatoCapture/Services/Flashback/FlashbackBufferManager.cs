@@ -193,7 +193,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             {
                 if (TryDeleteFile(_completedSegments[i].Path))
                 {
-                    freedBytes += _completedSegments[i].SizeBytes;
+                    freedBytes = AddNonNegativeSaturated(freedBytes, _completedSegments[i].SizeBytes);
                     _completedSegments.RemoveAt(i);
                 }
             }
@@ -215,8 +215,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             else
             {
                 // Partial purge — adjust byte counters for what we freed
-                _completedSegmentBytes = Math.Max(0, _completedSegmentBytes - freedBytes);
-                _totalDiskBytes = Math.Max(0, _totalDiskBytes - freedBytes);
+                _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, freedBytes);
+                _totalDiskBytes = SubtractNonNegative(_totalDiskBytes, freedBytes);
                 Logger.Log($"FLASHBACK_PURGE_PARTIAL freed={freedBytes} remaining_segments={_completedSegments.Count}");
             }
         }
@@ -496,7 +496,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                     latestActivityUtc = latestActivityUtc > file.LastWriteTimeUtc
                         ? latestActivityUtc
                         : file.LastWriteTimeUtc;
-                    directoryBytes += file.Length;
+                    directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);
                 }
 
                 if (!looksLikeFlashbackSession && info.EnumerateFileSystemInfos().Any())
@@ -513,7 +513,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 {
                     Directory.Delete(fullPath, recursive: true);
                     deletedCount++;
-                    freedBytes += directoryBytes;
+                    freedBytes = AddNonNegativeSaturated(freedBytes, directoryBytes);
                 }
                 catch (Exception ex)
                 {
@@ -602,7 +602,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                     continue;
                 }
 
-                totalCacheBytes += directoryBytes;
+                totalCacheBytes = AddNonNegativeSaturated(totalCacheBytes, directoryBytes);
                 sessionCount++;
                 candidates.Add(new StartupCacheCandidate(fullPath, latestActivityUtc, directoryBytes));
             }
@@ -623,8 +623,8 @@ internal sealed class FlashbackBufferManager : IDisposable
                 {
                     Directory.Delete(candidate.Path, recursive: true);
                     deletedCount++;
-                    freedBytes += candidate.SizeBytes;
-                    totalCacheBytes -= candidate.SizeBytes;
+                    freedBytes = AddNonNegativeSaturated(freedBytes, candidate.SizeBytes);
+                    totalCacheBytes = SubtractNonNegative(totalCacheBytes, candidate.SizeBytes);
                     sessionCount = Math.Max(0, sessionCount - 1);
                 }
                 catch (Exception ex)
@@ -693,7 +693,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 latestActivityUtc = latestActivityUtc > file.LastWriteTimeUtc
                     ? latestActivityUtc
                     : file.LastWriteTimeUtc;
-                directoryBytes += file.Length;
+                directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);
             }
 
             if (!looksLikeFlashbackSession && info.EnumerateFileSystemInfos().Any())
@@ -740,7 +740,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                     var length = info.Length;
                     info.Delete();
                     deletedCount++;
-                    freedBytes += length;
+                    freedBytes = AddNonNegativeSaturated(freedBytes, length);
                 }
                 catch (Exception ex)
                 {

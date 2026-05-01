@@ -2420,8 +2420,9 @@ static partial class Program
         AssertContains(source, "SizeBytes = activeSizeBytes,");
         AssertContains(source, "var safeActiveSegmentBytes = Math.Max(0, activeSegmentBytes);");
         AssertContains(source, "_totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeActiveSegmentBytes);");
-        AssertContains(source, "_completedSegmentBytes = Math.Max(0, _completedSegmentBytes - freedBytes);");
-        AssertContains(source, "_totalDiskBytes = Math.Max(0, _totalDiskBytes - freedBytes);");
+        AssertContains(source, "_completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, freedBytes);");
+        AssertContains(source, "_totalDiskBytes = SubtractNonNegative(_totalDiskBytes, freedBytes);");
+        AssertContains(source, "freedBytes = AddNonNegativeSaturated(freedBytes, _completedSegments[i].SizeBytes);");
         AssertContains(source, "FLASHBACK_BUFFER_DELETE_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
 
         return Task.CompletedTask;
@@ -2443,6 +2444,9 @@ static partial class Program
         AssertContains(source, "var totalDuration = NonNegativeDeltaTicks(latestTicks, startTicks);");
         AssertContains(source, "var evictTicks = ToNonNegativeLongSaturated(excessBytes / bytesPerTick);");
         AssertContains(source, "var newStart = AddNonNegativeSaturated(Math.Max(0, startTicks), evictTicks);");
+        AssertContains(source, "directoryBytes = AddNonNegativeSaturated(directoryBytes, file.Length);");
+        AssertContains(source, "totalCacheBytes = AddNonNegativeSaturated(totalCacheBytes, directoryBytes);");
+        AssertContains(source, "totalCacheBytes = SubtractNonNegative(totalCacheBytes, candidate.SizeBytes);");
 
         return Task.CompletedTask;
     }
