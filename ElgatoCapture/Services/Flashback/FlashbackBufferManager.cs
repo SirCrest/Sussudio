@@ -1049,6 +1049,11 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
+            if (outPoint <= inPoint)
+            {
+                return Array.Empty<string>();
+            }
+
             var paths = new List<string>();
             foreach (var seg in _completedSegments)
             {

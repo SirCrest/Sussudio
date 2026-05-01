@@ -2922,6 +2922,12 @@ static partial class Program
         var missing = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5.5) })!;
         AssertEqual(0, GetCountProperty(missing), "Missing overlapping file should not be returned");
 
+        var emptyRange = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(8) })!;
+        AssertEqual(0, GetCountProperty(emptyRange), "Empty range should not return segments");
+
+        var invertedRange = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(12), TimeSpan.FromSeconds(3) })!;
+        AssertEqual(0, GetCountProperty(invertedRange), "Inverted range should not return segments");
+
         return Task.CompletedTask;
     }
 
