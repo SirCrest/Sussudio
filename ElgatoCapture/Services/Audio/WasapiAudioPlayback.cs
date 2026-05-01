@@ -419,29 +419,6 @@ internal sealed class WasapiAudioPlayback : IDisposable
                     continue;
                 }
 
-                try
-                {
-                    if (_audioClient != null && _audioRenderClient != null && _bufferFrameCount > 0)
-                    {
-                        WasapiComInterop.ThrowIfFailed(
-                            _audioClient.GetCurrentPadding(out var paddingFrames),
-                            "IAudioClient.GetCurrentPadding(pre-fill)");
-                        var availableFrames = _bufferFrameCount - paddingFrames;
-                        if (availableFrames > 0)
-                        {
-                            WasapiComInterop.ThrowIfFailed(
-                                _audioRenderClient.GetBuffer(availableFrames, out _),
-                                "IAudioRenderClient.GetBuffer(pre-fill)");
-                            WasapiComInterop.ThrowIfFailed(
-                                _audioRenderClient.ReleaseBuffer(availableFrames, WasapiComInterop.AUDCLNT_BUFFERFLAGS_SILENT),
-                                "IAudioRenderClient.ReleaseBuffer(pre-fill)");
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Logger.Log($"WASAPI_PREFILL_WARN: {ex.Message}");
-                }
                 try { _audioClient?.Start(); }
                 catch (Exception ex) { Logger.Log($"WASAPI_RESUME_RENDER_WARN: {ex.Message}"); }
                 Interlocked.Exchange(ref _renderingPaused, 0);

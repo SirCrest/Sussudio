@@ -1973,6 +1973,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
             // ffplay: sync_threshold = clamp(frame_duration, 40ms, 100ms)
             var syncThresholdMs = Math.Clamp(nominalDelayMs, 40.0, 100.0);
+            const double MaxAudioMasterCorrectionMs = 250.0;
+
+            if (Math.Abs(diffMs) > MaxAudioMasterCorrectionMs)
+            {
+                // WASAPI render PTS can lag decoded video by the endpoint buffer/device
+                // latency after resume. Do not let that stale clock halve video cadence.
+                WallClockPace(pacingStopwatch, frameDuration);
+                return;
+            }
 
             double adjustedDelayMs;
             if (diffMs > syncThresholdMs)
