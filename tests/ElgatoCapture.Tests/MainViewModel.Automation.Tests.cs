@@ -282,10 +282,14 @@ static partial class Program
         AssertContains(diagnosticsText, "health.FlashbackPlaybackSubmitFailures > 0");
         AssertContains(diagnosticsText, "\"flashback_export\"");
         AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
-        AssertContains(diagnosticsText, "recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows}");
+        AssertContains(diagnosticsText, "var previewLastDropReason = string.IsNullOrWhiteSpace(health.MjpegPreviewJitterLastDropReason)");
+        AssertContains(diagnosticsText, "recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}");
         AssertContains(diagnosticsText, "UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick)");
         AssertContains(diagnosticsText, "recentMissed={recentD3DMissedRefreshes} recentFail={recentD3DStatsFailures}");
-        AssertContains(diagnosticsText, "if (recentPreviewDeadlineDrops > 0 ||\n            recentPreviewUnderflows > 3)");
+        AssertContains(diagnosticsText, "var previewSubmitFailed = string.Equals(");
+        AssertContains(diagnosticsText, "health.MjpegPreviewJitterLastDropReason,\n            \"submit-failed\"");
+        AssertContains(diagnosticsText, "if (previewSubmitFailed ||\n            recentPreviewDeadlineDrops > 0 ||\n            recentPreviewUnderflows > 3)");
+        AssertContains(diagnosticsText, "\"Preview scheduler failed to submit frames.\"");
         AssertContains(diagnosticsText, "var presentCadenceOverBudget =\n            previewRuntime.DisplayCadenceExpectedIntervalMs > 0 &&\n            previewRuntime.DisplayCadenceP95IntervalMs > previewRuntime.DisplayCadenceExpectedIntervalMs * 1.5;");
         AssertContains(diagnosticsText, "var previewSlowFrameDetail = FormatPreviewSlowFrameAlertDetail(snapshot);");
         AssertContains(diagnosticsText, "latestSlowFrameReason={reason} over={frame.WorstOverBudgetMs:0.##}ms");

@@ -1586,8 +1586,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"source target={sourceTarget} avg={health.CaptureCadenceAverageIntervalMs:0.##}ms p95={health.CaptureCadenceP95IntervalMs:0.##}ms p99={health.CaptureCadenceP99IntervalMs:0.##}ms max={health.CaptureCadenceMaxIntervalMs:0.##}ms rate={health.CaptureCadenceObservedFps:0.##}/{health.ExpectedFrameRate:0.##}fps 1pctLow={health.CaptureCadenceOnePercentLowFps:0.##}fps gaps={health.CaptureCadenceSevereGapCount} drops={health.CaptureCadenceEstimatedDroppedFrames} ({health.CaptureCadenceEstimatedDropPercent:0.###}%)";
         var decodeLane =
             $"decode p95={health.MjpegDecodeP95Ms:0.##}ms callbackP95={health.MjpegCallbackP95Ms:0.##}ms dropped={health.MjpegTotalDropped} failures={health.MjpegDecodeFailures + health.MjpegEmitFailures}";
+        var previewLastDropReason = string.IsNullOrWhiteSpace(health.MjpegPreviewJitterLastDropReason)
+            ? "none"
+            : health.MjpegPreviewJitterLastDropReason;
         var previewLane =
-            $"preview scheduler target={health.MjpegPreviewJitterTargetDepth} depth={health.MjpegPreviewJitterQueueDepth}/{health.MjpegPreviewJitterMaxDepth} deadlineDrops={health.MjpegPreviewJitterDeadlineDropCount} underflows={health.MjpegPreviewJitterUnderflowCount} recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows}";
+            $"preview scheduler target={health.MjpegPreviewJitterTargetDepth} depth={health.MjpegPreviewJitterQueueDepth}/{health.MjpegPreviewJitterMaxDepth} dropped={health.MjpegPreviewJitterTotalDropped} deadlineDrops={health.MjpegPreviewJitterDeadlineDropCount} underflows={health.MjpegPreviewJitterUnderflowCount} recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}";
         var rendererSubmitted = Math.Max(
             previewRuntime.D3DFramesSubmitted,
             previewRuntime.D3DFramesRendered + previewRuntime.D3DFramesDropped);
@@ -1837,13 +1840,20 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 audioLane);
         }
 
-        if (recentPreviewDeadlineDrops > 0 ||
+        var previewSubmitFailed = string.Equals(
+            health.MjpegPreviewJitterLastDropReason,
+            "submit-failed",
+            StringComparison.OrdinalIgnoreCase);
+        if (previewSubmitFailed ||
+            recentPreviewDeadlineDrops > 0 ||
             recentPreviewUnderflows > 3)
         {
             return new DiagnosticEvaluation(
                 "Warning",
                 "preview_scheduler",
-                "Preview scheduler is skipping stale or missing frames.",
+                previewSubmitFailed
+                    ? "Preview scheduler failed to submit frames."
+                    : "Preview scheduler is skipping stale or missing frames.",
                 previewLane,
                 sourceLane,
                 decodeLane,
