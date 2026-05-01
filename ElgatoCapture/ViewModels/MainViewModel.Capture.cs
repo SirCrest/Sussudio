@@ -364,9 +364,24 @@ public partial class MainViewModel
         var pendingCycle = _pendingFlashbackCycleTask;
         if (pendingCycle != null)
         {
-            try { await pendingCycle.ConfigureAwait(false); }
+            try
+            {
+                await AwaitWithTimeoutAsync(
+                    pendingCycle,
+                    FlashbackCycleBeforeReinitializeTimeoutMs,
+                    "Flashback encoder settings cycle before reinitialize").ConfigureAwait(false);
+            }
+            catch (TimeoutException ex)
+            {
+                Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}");
+                StatusText = $"Failed to apply format: {ex.Message}";
+                return;
+            }
             catch { /* cycle errors don't block reinit */ }
-            _pendingFlashbackCycleTask = null;
+            if (ReferenceEquals(_pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)
+            {
+                _pendingFlashbackCycleTask = null;
+            }
         }
 
         await _previewReinitializeGate.WaitAsync();

@@ -74,6 +74,8 @@ static partial class Program
         var automationText = viewModelFiles["MainViewModel.Automation.cs"];
         var rawAutomationText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Automation.cs")
             .Replace("\r\n", "\n");
+        var rawCaptureText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Capture.cs")
+            .Replace("\r\n", "\n");
         var settingsText = viewModelFiles["MainViewModel.Settings.cs"];
         var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
@@ -114,6 +116,10 @@ static partial class Program
         AssertMemberContains(automationText, "ExportFlashbackAsync", "if (!isCurrent) return;");
         AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "if (!isCurrent) return;");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _flashbackExportOperationId;");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;");
+        AssertContains(rawCaptureText, "await AwaitWithTimeoutAsync(\n                    pendingCycle,\n                    FlashbackCycleBeforeReinitializeTimeoutMs,\n                    \"Flashback encoder settings cycle before reinitialize\").ConfigureAwait(false);");
+        AssertContains(rawCaptureText, "catch (TimeoutException ex)\n            {\n                Logger.Log($\"REINIT_WAIT_FLASHBACK_CYCLE_TIMEOUT reason={reason} timeoutMs={FlashbackCycleBeforeReinitializeTimeoutMs}\");");
+        AssertContains(viewModelFiles["MainViewModel.Capture.cs"], "if (ReferenceEquals(_pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)\n            {\n                _pendingFlashbackCycleTask = null;\n            }");
         AssertContains(automationText, "private async Task<(FinalizeResult? Result, string? ErrorMessage, bool IsCurrent)> ExportFlashbackCoreAsync");
         AssertContains(automationText, "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertContains(automationText, "CancelFlashbackExportCts(oldExportCts);");

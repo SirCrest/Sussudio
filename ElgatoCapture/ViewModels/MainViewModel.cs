@@ -40,6 +40,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private const string HevcRecordingFormat = "HEVC";
     private const string Av1RecordingFormat = "AV1";
     private const int DefaultDisposeTimeoutMs = 30000;
+    private const int FlashbackCycleBeforeReinitializeTimeoutMs = 30000;
     private const string HdrToggleBlockedWhileRecordingMessage = "Stop recording before switching between HDR and SDR pipelines.";
     private const string LiveInfoUnavailable = "\u2014";
     private const string AutoResolutionValue = "Source";
