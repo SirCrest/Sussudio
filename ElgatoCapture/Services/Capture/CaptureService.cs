@@ -1979,15 +1979,16 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         _wasapiAudioCapture?.DetachFlashbackSink();
         unifiedVideoCapture.SetFlashbackSink(null);
         oldSink.FrameEncoded -= OnFlashbackFrameEncoded;
+        var committedCycleToken = CancellationToken.None;
 
         // Stop and dispose the old sink (leaves buffer manager and segments intact)
         try
         {
-            await oldSink.StopAsync(cancellationToken).ConfigureAwait(false);
+            await oldSink.StopAsync(committedCycleToken).ConfigureAwait(false);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (cancellationToken.IsCancellationRequested)
         {
-            throw;
+            Logger.Log($"FLASHBACK_CYCLE_STOP_CANCEL_DEFERRED type={ex.GetType().Name} msg={ex.Message}");
         }
         catch (Exception ex)
         {
@@ -2002,6 +2003,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             Logger.Log($"FLASHBACK_CYCLE_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
         }
+
+        // From this point on the old sink is no longer a usable backend. Keep
+        // cancellation deferred until a replacement is attached or teardown is complete.
+        _flashbackSink = null;
+        _flashbackBackendSettings = null;
 
         var oldSinkCompletionTask = oldSink.EncodingCompletionTask;
         if (!oldSinkCompletionTask.IsCompleted)
@@ -2021,10 +2027,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 oldExporter,
                 reason: "buffer_cycle_deferred_cleanup",
                 purgeSegments: effectivePurgeSegments,
-                cancellationToken: cancellationToken);
+                cancellationToken: committedCycleToken);
 
-            await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+            await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, committedCycleToken).ConfigureAwait(false);
             Logger.Log("FLASHBACK_BUFFER_CYCLE_OK mode=deferred_full_rebuild");
+            cancellationToken.ThrowIfCancellationRequested();
             return;
         }
 
@@ -2042,9 +2049,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (bufferManager.SegmentCount > 0)
             {
                 Logger.Log($"FLASHBACK_CYCLE_PURGE_INCOMPLETE remaining={bufferManager.SegmentCount} — falling back to full teardown");
-                await DisposeFlashbackPreviewBackendCoreAsync(cancellationToken, purgeSegments: effectivePurgeSegments).ConfigureAwait(false);
-                await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+                await DisposeFlashbackPreviewBackendCoreAsync(committedCycleToken, purgeSegments: effectivePurgeSegments).ConfigureAwait(false);
+                await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, committedCycleToken).ConfigureAwait(false);
                 Logger.Log("FLASHBACK_BUFFER_CYCLE_OK mode=purge_fallback_rebuild");
+                cancellationToken.ThrowIfCancellationRequested();
                 return;
             }
         }
@@ -2062,7 +2070,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             var ptsOffset = effectivePurgeSegments ? TimeSpan.Zero : bufferManager.LatestPts;
             await newSink.StartAsync(
                 CreateFlashbackSessionContext(unifiedVideoCapture, _currentSettings),
-                cancellationToken,
+                committedCycleToken,
                 ptsBaseOffset: ptsOffset).ConfigureAwait(false);
 
             newSink.FrameEncoded += OnFlashbackFrameEncoded;
@@ -2089,10 +2097,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
             Logger.Log($"FLASHBACK_BUFFER_CYCLE_OK mode=sink_only segments={bufferManager.SegmentCount} buffered={bufferManager.BufferedDuration.TotalSeconds:F1}s");
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            throw;
-        }
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}' — falling back to full teardown");
@@ -2110,9 +2114,15 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _flashbackBackendSettings = null;
 
             // Full teardown and rebuild
-            await DisposeFlashbackPreviewBackendCoreAsync(cancellationToken, purgeSegments: effectivePurgeSegments).ConfigureAwait(false);
-            await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, cancellationToken).ConfigureAwait(false);
+            await DisposeFlashbackPreviewBackendCoreAsync(committedCycleToken, purgeSegments: effectivePurgeSegments).ConfigureAwait(false);
+            await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, committedCycleToken).ConfigureAwait(false);
             Logger.Log("FLASHBACK_BUFFER_CYCLE_OK mode=fallback_full_rebuild");
+        }
+
+        if (cancellationToken.IsCancellationRequested)
+        {
+            Logger.Log("FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
+            cancellationToken.ThrowIfCancellationRequested();
         }
         }
         finally

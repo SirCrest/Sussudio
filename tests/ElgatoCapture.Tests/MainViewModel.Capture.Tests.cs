@@ -487,6 +487,14 @@ static partial class Program
         AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN");
         AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN");
         AssertContains(cycleBuffer, "FLASHBACK_CYCLE_NEW_SINK_FAIL type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(cycleBuffer, "var committedCycleToken = CancellationToken.None;");
+        AssertContains(cycleBuffer, "await oldSink.StopAsync(committedCycleToken)");
+        AssertContains(cycleBuffer, "await newSink.StartAsync(\n                CreateFlashbackSessionContext(unifiedVideoCapture, _currentSettings),\n                committedCycleToken,");
+        AssertContains(cycleBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
+        AssertOccursBefore(
+            cycleBuffer,
+            "await oldSink.DisposeAsync().ConfigureAwait(false);",
+            "_flashbackSink = null;");
 
         return Task.CompletedTask;
     }

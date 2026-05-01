@@ -301,11 +301,15 @@ static partial class Program
             captureServiceSource,
             "private async Task CycleFlashbackBufferAsync",
             "private void OnFlashbackFrameEncoded");
+        AssertContains(cycleFlashbackBuffer, "var committedCycleToken = CancellationToken.None;");
+        AssertContains(cycleFlashbackBuffer, "FLASHBACK_CYCLE_STOP_CANCEL_DEFERRED");
+        AssertContains(cycleFlashbackBuffer, "cancellationToken: committedCycleToken");
+        AssertContains(cycleFlashbackBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
+        AssertDoesNotContain(cycleFlashbackBuffer, "cancellationToken: cancellationToken");
         AssertOccursBefore(
             cycleFlashbackBuffer,
-            "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
-            "FLASHBACK_CYCLE_STOP_WARN");
-        AssertContains(cycleFlashbackBuffer, "cancellationToken: cancellationToken");
+            "await oldSink.DisposeAsync().ConfigureAwait(false);",
+            "_flashbackSink = null;");
         AssertContains(cycleFlashbackBuffer, "var oldPlaybackController = _flashbackPlaybackController;");
         AssertContains(cycleFlashbackBuffer, "_flashbackPlaybackController = null;");
         AssertContains(cycleFlashbackBuffer, "oldPlaybackController.GoLive();");
@@ -322,10 +326,8 @@ static partial class Program
             cycleFlashbackBuffer,
             "var newSink = new FlashbackEncoderSink(bufferManager);",
             "finally");
-        AssertOccursBefore(
-            cycleNewSinkStart,
-            "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
-            "FLASHBACK_CYCLE_NEW_SINK_FAIL");
+        AssertContains(cycleNewSinkStart, "committedCycleToken,");
+        AssertContains(cycleNewSinkStart, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
         AssertContains(cycleNewSinkStart, "newSink.FrameEncoded -= OnFlashbackFrameEncoded;");
         AssertContains(cycleNewSinkStart, "unifiedVideoCapture.SetFlashbackSink(null);");
         AssertContains(cycleNewSinkStart, "_wasapiAudioCapture?.DetachFlashbackSink();");
