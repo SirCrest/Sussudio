@@ -604,6 +604,9 @@ static partial class Program
                 "Flashback decoder unreferences discarded audio frames",
                 FlashbackDecoder_DiscardedAudioFramesAreUnreffed),
             await RunCheckAsync(
+                "Flashback decoder rejects invalid timestamps",
+                FlashbackDecoder_PtsConversionRejectsInvalidTimestamps),
+            await RunCheckAsync(
                 "Flashback decoder held-frame cleanup is best effort",
                 FlashbackDecoder_HeldFrameCleanupIsBestEffort),
             await RunCheckAsync(

@@ -847,12 +847,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     private DecodedVideoFrame ConvertAndOutputVideoFrame()
     {
         // Calculate PTS first (used by both paths)
-        var pts = TimeSpan.Zero;
-        if (_videoFrame->pts != ffmpeg.AV_NOPTS_VALUE && _videoTimeBase.den > 0)
-        {
-            var seconds = (double)_videoFrame->pts * _videoTimeBase.num / _videoTimeBase.den;
-            pts = TimeSpan.FromSeconds(seconds);
-        }
+        var pts = DecodePtsToTimeSpan(_videoFrame->pts, _videoTimeBase);
 
         _currentPosition = pts;
 
@@ -1107,6 +1102,22 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
     }
 
+    private static TimeSpan DecodePtsToTimeSpan(long pts, AVRational timeBase)
+    {
+        if (pts == ffmpeg.AV_NOPTS_VALUE || timeBase.num <= 0 || timeBase.den <= 0)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var seconds = (double)pts * timeBase.num / timeBase.den;
+        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)
+        {
+            return TimeSpan.Zero;
+        }
+
+        return TimeSpan.FromSeconds(seconds);
+    }
+
     // ── Private: Audio Conversion ───────────────────────────────────────────
 
     private DecodedAudioChunk ConvertAndOutputAudioFrame()
@@ -1133,12 +1144,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 _audioFrame->extended_data, inputSamples);
         }
 
-        var pts = TimeSpan.Zero;
-        if (_audioFrame->pts != ffmpeg.AV_NOPTS_VALUE && _audioTimeBase.den > 0)
-        {
-            var seconds = (double)_audioFrame->pts * _audioTimeBase.num / _audioTimeBase.den;
-            pts = TimeSpan.FromSeconds(seconds);
-        }
+        var pts = DecodePtsToTimeSpan(_audioFrame->pts, _audioTimeBase);
 
         ffmpeg.av_frame_unref(_audioFrame);
 
