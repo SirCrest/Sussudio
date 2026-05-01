@@ -205,6 +205,8 @@ static partial class Program
         AssertContains(xamlText, "PointerCanceled=\"FlashbackScrubArea_PointerCanceled\"");
         AssertContains(xamlText, "PointerCaptureLost=\"FlashbackScrubArea_PointerCaptureLost\"");
         AssertContains(flashbackWindowText, "private void EndFlashbackScrubInteraction(UIElement? element, Pointer pointer, string reason)");
+        AssertContains(flashbackWindowText, "if (!ViewModel.FlashbackBeginScrub(targetPosition))\n        {\n            Logger.Log(\"FLASHBACK_UI_SCRUB_BEGIN_REJECTED\");\n            return;\n        }");
+        AssertContains(flashbackWindowText, "_isFlashbackScrubbing = true;\n        (sender as UIElement)?.CapturePointer(e.Pointer);");
         AssertContains(flashbackWindowText, "ViewModel.FlashbackEndScrub();");
         AssertContains(flashbackWindowText, "FLASHBACK_UI_SCRUB_END");
         AssertContains(flashbackWindowText, "FlashbackScrubArea_PointerCanceled");

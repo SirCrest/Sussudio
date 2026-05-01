@@ -199,10 +199,15 @@ public sealed partial class MainWindow
     private long _lastScrubUpdateTick;
     private void FlashbackScrubArea_PointerPressed(object sender, PointerRoutedEventArgs e)
     {
+        var targetPosition = ComputeFlashbackScrubPosition(e);
+        if (!ViewModel.FlashbackBeginScrub(targetPosition))
+        {
+            Logger.Log("FLASHBACK_UI_SCRUB_BEGIN_REJECTED");
+            return;
+        }
+
         _isFlashbackScrubbing = true;
         (sender as UIElement)?.CapturePointer(e.Pointer);
-        var targetPosition = ComputeFlashbackScrubPosition(e);
-        ViewModel.FlashbackBeginScrub(targetPosition);
         UpdateFlashbackScrubVisual(e);
     }
     private void FlashbackScrubArea_PointerMoved(object sender, PointerRoutedEventArgs e)
