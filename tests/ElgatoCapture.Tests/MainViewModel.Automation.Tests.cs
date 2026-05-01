@@ -303,7 +303,7 @@ static partial class Program
         AssertContains(diagnosticsText, "var flashbackRecordingQueueBacklog =");
         AssertContains(diagnosticsText, "IsFlashbackRecordingQueueBackedUp(");
         AssertContains(diagnosticsText, "flashbackRecordingRecentForceRotateGap");
-        AssertContains(diagnosticsText, "snapshot.FlashbackVideoQueueLastRejectReason, \"force_rotate_draining\"");
+        AssertContains(diagnosticsText, "IsFlashbackForceRotateRejectReason(snapshot.FlashbackVideoQueueLastRejectReason)");
         AssertContains(diagnosticsText, "flashbackRecordingRecent.SequenceGaps > 0");
         AssertContains(diagnosticsText, "(flashbackRecordingRecent.SequenceGaps > 0 && !flashbackRecordingRecentForceRotateGap)");
         AssertContains(diagnosticsText, "flashbackRecordingRecent.GpuFramesDropped > 0");
@@ -330,6 +330,8 @@ static partial class Program
         AssertContains(diagnosticsText, "private static bool IsFlashbackRecordingQueueBackedUp(");
         AssertContains(diagnosticsText, "queueDepth >= Math.Ceiling(queueCapacity * FlashbackRecordingQueueDepthWarningRatio)");
         AssertContains(diagnosticsText, "oldestFrameAgeMs >= FlashbackRecordingQueueAgeWarningMs");
+        AssertContains(diagnosticsText, "private static bool IsFlashbackForceRotateRejectReason(string? reason)");
+        AssertContains(diagnosticsText, "string.Equals(reason, \"force_rotate_queue_guard\"");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackOnePercentLowFps");
         AssertContains(diagnosticsText, "Flashback playback is below target rate");
         AssertContains(diagnosticsText, "Flashback playback frametime degraded");

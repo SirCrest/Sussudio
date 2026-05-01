@@ -1519,7 +1519,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             snapshot.FlashbackActive &&
             flashbackRecordingRecent.SequenceGaps > 0 &&
             snapshot.FlashbackVideoQueueRejectedFrames > 0 &&
-            string.Equals(snapshot.FlashbackVideoQueueLastRejectReason, "force_rotate_draining", StringComparison.OrdinalIgnoreCase);
+            IsFlashbackForceRotateRejectReason(snapshot.FlashbackVideoQueueLastRejectReason);
         ObserveFlashbackExportCompletion(snapshot);
         var exportLastProgressAgeMs = snapshot.FlashbackExportActive
             ? Math.Max(0, snapshot.FlashbackExportLastProgressAgeMs)
@@ -1855,6 +1855,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             queueDepth >= Math.Ceiling(queueCapacity * FlashbackRecordingQueueDepthWarningRatio) &&
             oldestFrameAgeMs >= FlashbackRecordingQueueAgeWarningMs;
 
+    private static bool IsFlashbackForceRotateRejectReason(string? reason)
+        =>
+            string.Equals(reason, "force_rotate_draining", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(reason, "force_rotate_queue_guard", StringComparison.OrdinalIgnoreCase);
+
     private readonly record struct DiagnosticEvaluation(
         string HealthStatus,
         string LikelyStage,
@@ -1995,7 +2000,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 health.FlashbackVideoQueueDepth,
                 health.FlashbackVideoQueueCapacity,
                 health.FlashbackVideoQueueOldestFrameAgeMs) &&
-            string.Equals(health.FlashbackVideoQueueLastRejectReason, "force_rotate_draining", StringComparison.OrdinalIgnoreCase);
+            IsFlashbackForceRotateRejectReason(health.FlashbackVideoQueueLastRejectReason);
         var exportLastProgressAgeMs = health.FlashbackExportActive
             ? Math.Max(0, health.FlashbackExportLastProgressAgeMs)
             : 0;

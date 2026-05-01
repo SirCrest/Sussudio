@@ -1740,10 +1740,13 @@ static partial class Program
         AssertContains(sourceText, "Volatile.Write(ref _lastVideoQueueRejectReason, null);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _gpuQueueRejectedFrames, 0);");
         AssertContains(sourceText, "Volatile.Write(ref _lastGpuQueueRejectReason, null);");
-        AssertContains(sourceText, "private string? GetVideoEnqueueRejectReason()");
+        AssertContains(sourceText, "private const double ForceRotateQueueGuardRatio = 0.65;");
+        AssertContains(sourceText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
         AssertContains(sourceText, "private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)");
         AssertContains(sourceText, "private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)");
-        AssertContains(sourceText, "return \"force_rotate_draining\";");
+        AssertContains(sourceText, "return \"force_rotate_queue_guard\";");
+        AssertContains(sourceText, "private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)");
+        AssertContains(sourceText, "queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio)");
         AssertContains(sourceText, "return \"cancelled\";");
         AssertContains(sourceText, "return \"disposed\";");
         AssertContains(sourceText, "return \"not_started\";");

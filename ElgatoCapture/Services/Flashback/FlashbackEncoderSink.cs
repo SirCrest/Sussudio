@@ -21,6 +21,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private const int AudioQueueCapacity = 1800;
     private const int GpuQueueCapacity = 8;
     private const int QueueBackpressureTimeoutMs = 250;
+    private const double ForceRotateQueueGuardRatio = 0.65;
     private const int StopTimeoutMs = 30_000;
     private const int DisposeTimeoutMs = 1_000;
     private const int VideoQueueLatencyWindowSize = 256;
@@ -1940,7 +1941,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Exception? overloadFailure = null;
             lock (_videoQueueSync)
             {
-                var rejectReason = GetVideoEnqueueRejectReason();
+                var rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
                 if (rejectReason != null)
                 {
                     ReturnVideoPacket(packet);
@@ -1957,7 +1958,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     return VideoEnqueueResult.Accepted;
                 }
 
-                rejectReason = GetVideoEnqueueRejectReason();
+                rejectReason = GetVideoEnqueueRejectReason(isGpu: false);
                 if (rejectReason != null)
                 {
                     ReturnVideoPacket(packet);
@@ -2003,7 +2004,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Exception? overloadFailure = null;
             lock (_videoQueueSync)
             {
-                var rejectReason = GetVideoEnqueueRejectReason();
+                var rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
                 if (rejectReason != null)
                 {
                     ReleaseGpuTextureBestEffort(packet.Texture);
@@ -2019,7 +2020,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     return VideoEnqueueResult.Accepted;
                 }
 
-                rejectReason = GetVideoEnqueueRejectReason();
+                rejectReason = GetVideoEnqueueRejectReason(isGpu: true);
                 if (rejectReason != null)
                 {
                     ReleaseGpuTextureBestEffort(packet.Texture);
@@ -2055,7 +2056,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    private string? GetVideoEnqueueRejectReason()
+    private string? GetVideoEnqueueRejectReason(bool isGpu)
     {
         if (_disposed)
         {
@@ -2074,7 +2075,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         if (Volatile.Read(ref _forceRotateDraining))
         {
-            return "force_rotate_draining";
+            var queueDepth = isGpu
+                ? Volatile.Read(ref _gpuQueueDepth)
+                : Volatile.Read(ref _videoQueueDepth);
+            var queueCapacity = isGpu ? GpuQueueCapacity : VideoQueueCapacity;
+            if (IsForceRotateQueueGuarded(queueDepth, queueCapacity))
+            {
+                return "force_rotate_queue_guard";
+            }
         }
 
         var failure = Volatile.Read(ref _encodingFailure);
@@ -2082,6 +2090,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             ? $"encoding_failed:{failure.GetType().Name}"
             : null;
     }
+
+    private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)
+        =>
+            queueCapacity > 0 &&
+            queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio);
 
     private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
     {
@@ -2111,7 +2124,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)
     {
-        var lifecycleReason = GetVideoEnqueueRejectReason();
+        var lifecycleReason = GetVideoEnqueueRejectReason(isGpu: false);
         if (lifecycleReason != null)
         {
             return lifecycleReason;
@@ -2132,7 +2145,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)
     {
-        var lifecycleReason = GetVideoEnqueueRejectReason();
+        var lifecycleReason = GetVideoEnqueueRejectReason(isGpu: true);
         if (lifecycleReason != null)
         {
             return lifecycleReason;
@@ -2235,7 +2248,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         if (_disposed ||
             !_started ||
             _cts?.IsCancellationRequested == true ||
-            Volatile.Read(ref _forceRotateDraining) ||
+            (Volatile.Read(ref _forceRotateDraining) &&
+             IsForceRotateQueueGuarded(Volatile.Read(ref queueDepth), AudioQueueCapacity)) ||
             Volatile.Read(ref _encodingFailure) != null)
         {
             ReturnBuffer(packet.Buffer);
