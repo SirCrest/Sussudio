@@ -159,6 +159,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private CancellationTokenSource? _deviceAudioRefreshCts;
     private CancellationTokenSource? _exportCts;
     private int _flashbackExportOperationId;
+    private int _audioEnabledChangeGeneration;
     private int _flashbackSettingsRestartGeneration;
     private bool _suppressMicrophoneMonitorUpdate;
     [ObservableProperty]
@@ -1133,6 +1134,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     partial void OnIsAudioEnabledChanged(bool value)
     {
         Logger.Log($"Audio capture enabled: {value}");
+        var changeGeneration = Interlocked.Increment(ref _audioEnabledChangeGeneration);
 
         if (value)
         {
@@ -1142,6 +1144,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             {
                 EnqueueUiOperation(async () =>
                 {
+                    if (changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || !IsAudioEnabled)
+                    {
+                        Logger.Log($"AUDIO_TOGGLE_SKIP op=enable stale_generation={changeGeneration}");
+                        return;
+                    }
+
                     await _sessionCoordinator.StartAudioPreviewAsync();
                     // Cycle the flashback encoder so it reconnects its audio feed.
                     // Without this, the first recording after audio off->on produces
@@ -1161,6 +1169,12 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
             EnqueueUiOperation(async () =>
             {
                 await Task.Delay(350);
+                if (changeGeneration != Volatile.Read(ref _audioEnabledChangeGeneration) || IsAudioEnabled)
+                {
+                    Logger.Log($"AUDIO_TOGGLE_SKIP op=disable stale_generation={changeGeneration}");
+                    return;
+                }
+
                 await _sessionCoordinator.StopAudioPreviewWithTeardownAsync();
             }, "audio capture teardown");
 
