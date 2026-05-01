@@ -491,6 +491,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
             RemoveOldestPendingCommand();
             DisposeCancellationRegistrationBestEffort(cancellationRegistration, "enqueue_failed");
             Interlocked.Decrement(ref _pendingCommands);
+            Logger.LogEvent("CAP-COORD-ENQUEUE-FAIL", $"{kind} corr={correlationId}");
             throw new InvalidOperationException("Failed to enqueue capture command.");
         }
 

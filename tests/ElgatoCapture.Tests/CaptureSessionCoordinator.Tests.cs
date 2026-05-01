@@ -125,6 +125,7 @@ static partial class Program
         AssertContains(cycleMethod, "coalesceLatest: true");
         AssertContains(queueProcessor, "Volatile.Read(ref _latestFlashbackEncoderCycleGeneration)");
         AssertContains(queueProcessor, "CAP-COORD-SKIP");
+        AssertContains(coordinatorText, "CAP-COORD-ENQUEUE-FAIL");
 
         return Task.CompletedTask;
     }
