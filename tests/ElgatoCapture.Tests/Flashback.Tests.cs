@@ -391,6 +391,59 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_ReturnsFailure_WhenSegmentFilesAreGone()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_missing_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var exporter = Activator.CreateInstance(exporterType)!;
+            try
+            {
+                var segment = Activator.CreateInstance(segmentType)!;
+                SetPropertyBackingField(segment, "Path", Path.Combine(tempDir, "missing-segment.ts"));
+                var segments = Array.CreateInstance(segmentType, 1);
+                segments.SetValue(segment, 0);
+                var outputPath = Path.Combine(tempDir, "missing-export.mp4");
+
+                var exportSegmentsCore = exporterType.GetMethod("ExportSegmentsCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FlashbackExporter.ExportSegmentsCore not found.");
+
+                var result = exportSegmentsCore.Invoke(exporter, new object?[]
+                {
+                    segments,
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    outputPath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Missing segment export reports failure");
+                AssertContains(GetStringProperty(result, "StatusMessage"), "no readable segment files");
+                AssertEqual(false, File.Exists(outputPath), "Missing segment export does not create output");
+                AssertEqual(false, File.Exists(outputPath + ".tmp"), "Missing segment export does not leave temp output");
+            }
+            finally
+            {
+                if (exporter is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_DisposeTimeoutDoesNotTearDownActiveNativeState()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")

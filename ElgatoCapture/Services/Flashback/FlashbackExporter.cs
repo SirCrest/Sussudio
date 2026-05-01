@@ -512,12 +512,37 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
+        if (ct.IsCancellationRequested)
+        {
+            const string message = "Flashback export cancelled.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+
         // Estimate total bytes for progress
         long totalEstimatedBytes = 0;
+        var readableSegmentCount = 0;
         foreach (var segment in segments)
         {
-            try { if (File.Exists(segment.Path)) totalEstimatedBytes += new FileInfo(segment.Path).Length; }
-            catch { /* Best-effort: segment may be deleted mid-scan; progress estimate is non-critical */ }
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(segment.Path) && File.Exists(segment.Path))
+                {
+                    readableSegmentCount++;
+                    totalEstimatedBytes += new FileInfo(segment.Path).Length;
+                }
+            }
+            catch
+            {
+                // Best-effort: segment may be deleted mid-scan; progress estimate is non-critical.
+            }
+        }
+
+        if (readableSegmentCount == 0)
+        {
+            var message = $"Flashback export failed: no readable segment files were available from {segments.Count} planned segments.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
         }
 
         if (!TryWaitForExportLock(outputPath, ct, out var cancellationResult))
