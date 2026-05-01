@@ -2294,6 +2294,9 @@ static partial class Program
         AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request", "while (DrainAudioPackets(audioQueue.Reader))");
         AssertContains(loopBlock, "if (localTcs.Task.IsCompleted)\n                        {\n                            Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed\");\n                            madeProgress = true;\n                            continue;\n                        }");
         AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed", "while (DrainAudioPackets(audioQueue.Reader))");
+        AssertContains(loopBlock, "if (localTcs.Task.IsCompleted)\n                        {\n                            Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain\");\n                            madeProgress = true;\n                            continue;\n                        }");
+        AssertOccursBefore(loopBlock, "while (DrainVideoPackets(videoQueue.Reader))", "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain");
+        AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain", "var currentPts = ResolveEncoderPts();");
         AssertContains(loopBlock, "finally\n                    {\n                        lock (_videoQueueSync)\n                        {\n                            Volatile.Write(ref _forceRotateDraining, false);\n                        }\n                    }");
 
         var forceRotateBlock = ExtractTextBetween(

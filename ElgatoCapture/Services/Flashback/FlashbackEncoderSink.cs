@@ -1150,6 +1150,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                             Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_DRAIN in_flight_rounds={inFlightCount}");
                         }
 
+                        if (localTcs.Task.IsCompleted)
+                        {
+                            Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed_after_drain");
+                            madeProgress = true;
+                            continue;
+                        }
+
                         var currentPts = ResolveEncoderPts();
 
                         if (currentPts > _segmentStartPts)
