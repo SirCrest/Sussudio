@@ -833,6 +833,15 @@ static partial class Program
         AssertContains(sourceText, "CancelEncodingCts(\"stop_timeout\");");
         AssertContains(sourceText, "private void CancelEncodingCts(string operation)");
         AssertContains(sourceText, "FLASHBACK_SINK_CANCEL_WARN");
+        AssertContains(sourceText, "DisposeCtsBestEffort(_cts, \"start_fail\");");
+        AssertContains(sourceText, "DisposeCtsBestEffort(_cts, \"finalize_dispose\");");
+        AssertContains(sourceText, "DisposeWorkAvailableBestEffort(\"finalize_dispose\");");
+        AssertContains(sourceText, "DisposeEncoderBestEffort(\"start_fail\");");
+        AssertContains(sourceText, "DisposeEncoderBestEffort(\"finalize_dispose\");");
+        AssertContains(sourceText, "DisposeEncoderBestEffort(\"encoding_loop_fatal\");");
+        AssertContains(sourceText, "FLASHBACK_SINK_CTS_DISPOSE_WARN");
+        AssertContains(sourceText, "FLASHBACK_SINK_WORK_SIGNAL_DISPOSE_WARN");
+        AssertContains(sourceText, "FLASHBACK_SINK_ENCODER_DISPOSE_WARN");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_SINK_BUFFER_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}\");");
         AssertContains(sourceText, "ReturnVideoPacketBestEffort(packet);");
         AssertContains(sourceText, "ReleaseGpuTextureBestEffort(packet.Texture);");

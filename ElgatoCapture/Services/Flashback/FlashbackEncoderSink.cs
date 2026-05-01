@@ -321,7 +321,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _microphoneQueue = null;
             _gpuQueue = null;
             _gpuEncodingEnabled = false;
-            _cts?.Dispose();
+            DisposeCtsBestEffort(_cts, "start_fail");
             _cts = null;
             _encodingTask = null;
             _sessionContext = null;
@@ -338,7 +338,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 _bufferManager.PurgeAllSegments();
             }
-            _encoder.Dispose();
+            DisposeEncoderBestEffort("start_fail");
             throw;
         }
     }
@@ -800,7 +800,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         ReturnAllRemainingQueuedBuffers();
 
-        _cts?.Dispose();
+        DisposeCtsBestEffort(_cts, "finalize_dispose");
         _cts = null;
         _videoQueue = null;
         _audioQueue = null;
@@ -809,17 +809,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         _gpuEncodingEnabled = false;
         _microphoneEnabled = false;
         _encodingTask = null;
-        _workAvailable.Dispose();
+        DisposeWorkAvailableBestEffort("finalize_dispose");
         CompletePendingForceRotateWithEmptyResult();
-
-        try
-        {
-            _encoder.Dispose();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_SINK_DISPOSE_FAIL type={ex.GetType().Name} msg={ex.Message}");
-        }
+        DisposeEncoderBestEffort("finalize_dispose");
 
         if (_ownsBufferManager)
         {
@@ -843,6 +835,44 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_SINK_CANCEL_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void DisposeCtsBestEffort(CancellationTokenSource? cts, string operation)
+    {
+        if (cts == null) return;
+
+        try
+        {
+            cts.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_CTS_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void DisposeWorkAvailableBestEffort(string operation)
+    {
+        try
+        {
+            _workAvailable.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_WORK_SIGNAL_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private void DisposeEncoderBestEffort(string operation)
+    {
+        try
+        {
+            _encoder.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_ENCODER_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
         }
     }
 
@@ -1131,14 +1161,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
 
             ReturnAllRemainingQueuedBuffers();
-            try
-            {
-                _encoder.Dispose();
-            }
-            catch
-            {
-                // Preserve the original failure.
-            }
+            DisposeEncoderBestEffort("encoding_loop_fatal");
         }
     }
 
