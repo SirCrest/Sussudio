@@ -1248,13 +1248,22 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         // Signal the encoding thread to perform the rotation (all encoder ops must be on that thread)
         var tcs = new TaskCompletionSource<IReadOnlyList<string>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        TaskCompletionSource<IReadOnlyList<string>>? supersededTcs;
         lock (_sync)
         {
+            supersededTcs = _forceRotateTcs;
             _forceRotateInPoint = inPoint;
             _forceRotateOutPoint = outPoint;
             _forceRotateTcs = tcs;
             Volatile.Write(ref _forceRotateRequested, true);
         }
+
+        if (supersededTcs != null)
+        {
+            Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SUPERSEDED");
+            supersededTcs.TrySetResult(Array.Empty<string>());
+        }
+
         _workAvailable.Set();
 
         // AV1 encoding is significantly slower than H.264/HEVC — drain can take

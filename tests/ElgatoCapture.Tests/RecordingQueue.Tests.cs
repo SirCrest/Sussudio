@@ -83,6 +83,10 @@ static partial class Program
         AssertContains(flashbackSource, "public bool IsForceRotateActive");
         AssertContains(flashbackSource, "WaitForForceRotateIdle");
         AssertContains(flashbackSource, "CompletePendingForceRotateWithEmptyResult");
+        AssertContains(flashbackSource, "TaskCompletionSource<IReadOnlyList<string>>? supersededTcs;");
+        AssertContains(flashbackSource, "supersededTcs = _forceRotateTcs;");
+        AssertContains(flashbackSource, "FLASHBACK_SINK_FORCE_ROTATE_SUPERSEDED");
+        AssertContains(flashbackSource, "supersededTcs.TrySetResult(Array.Empty<string>())");
         AssertContains(flashbackSource, "TryCancelPendingForceRotate(tcs)");
         AssertContains(flashbackSource, "ReferenceEquals(_forceRotateTcs, requestTcs)");
         AssertContains(flashbackSource, "cleared_pending={clearedPending}");
