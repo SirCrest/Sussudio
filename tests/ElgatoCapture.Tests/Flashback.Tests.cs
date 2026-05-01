@@ -753,6 +753,7 @@ static partial class Program
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"go_live\")");
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"decode_error\")");
         AssertContains(sourceText, "SafeFlushPlayback(\"restore_live_audio\")");
+        AssertContains(sourceText, "SafeResumeRendering(\"play_no_file\")");
         AssertDoesNotContain(sourceText, "_videoCapture?.SuppressPreviewSubmission();\n                        SuppressLiveAudio();\n                        _audioPlayback?.PauseRendering();");
 
         return Task.CompletedTask;

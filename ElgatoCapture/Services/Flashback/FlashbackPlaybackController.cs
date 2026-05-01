@@ -643,6 +643,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             isPlaying = false;
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("play_no_file");
+                            SafeResumeRendering("play_no_file");
                             SetState(FlashbackPlaybackState.Live);
                             break;
                         }
