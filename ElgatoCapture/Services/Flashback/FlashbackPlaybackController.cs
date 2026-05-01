@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -735,7 +736,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             break;
                         }
                         var seekTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
-                        if (State == FlashbackPlaybackState.Paused && prevFile == _currentOpenFilePath)
+                        if (State == FlashbackPlaybackState.Paused && IsSamePlaybackPath(prevFile, _currentOpenFilePath))
                         {
                             // Resume from Paused — decoder is already positioned at the
                             // correct frame (set by Pause or scrub). Skip the expensive
@@ -974,7 +975,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         // If already open on the correct file, nothing to do
-        if (fileOpen && decoder.IsOpen && filePath == _currentOpenFilePath)
+        if (fileOpen && decoder.IsOpen && IsSamePlaybackPath(filePath, _currentOpenFilePath))
             return;
 
         try
@@ -1735,7 +1736,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     /// </summary>
     private bool IsActiveFmp4Segment(string? path)
         => path != null
-        && path == _bufferManager.ActiveFilePath
+        && IsSamePlaybackPath(path, _bufferManager.ActiveFilePath)
         && path.EndsWith(".mp4", StringComparison.OrdinalIgnoreCase);
 
     // --- Position mapping ---
@@ -1785,6 +1786,27 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (rightTicks > 0 && leftTicks < long.MinValue + rightTicks)
             return TimeSpan.MinValue;
         return TimeSpan.FromTicks(leftTicks - rightTicks);
+    }
+
+    private static bool IsSamePlaybackPath(string? left, string? right)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+        {
+            return false;
+        }
+
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(left),
+                Path.GetFullPath(right),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_PATH_COMPARE_WARN left='{left}' right='{right}' type={ex.GetType().Name} msg='{ex.Message}'");
+            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     // --- State management ---

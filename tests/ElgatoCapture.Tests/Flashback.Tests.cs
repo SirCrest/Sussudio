@@ -1403,6 +1403,13 @@ static partial class Program
         AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeekKeyframe(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_ERROR");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_ERROR");
+        AssertContains(sourceText, "private static bool IsSamePlaybackPath(string? left, string? right)");
+        AssertContains(sourceText, "Path.GetFullPath(left)");
+        AssertContains(sourceText, "Path.GetFullPath(right)");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_PATH_COMPARE_WARN");
+        AssertContains(sourceText, "&& IsSamePlaybackPath(path, _bufferManager.ActiveFilePath)");
+        AssertContains(sourceText, "if (fileOpen && decoder.IsOpen && IsSamePlaybackPath(filePath, _currentOpenFilePath))\n            return;");
+        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Paused && IsSamePlaybackPath(prevFile, _currentOpenFilePath))");
         AssertContains(sourceText, "fileOpen = false;\n            _currentOpenFilePath = null;\n            return false;");
         AssertContains(sourceText, "_currentOpenFilePath = currentPath;\n            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";\n            return decoder.SeekTo(seekTarget);");
         AssertContains(sourceText, "_currentOpenFilePath = currentPath;\n            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";\n            return decoder.SeekToKeyframe(seekTarget);");
