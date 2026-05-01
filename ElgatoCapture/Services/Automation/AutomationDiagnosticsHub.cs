@@ -1239,6 +1239,12 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var exportLastProgressAgeMs = snapshot.FlashbackExportActive && snapshot.FlashbackExportLastProgressUtcUnixMs > 0
             ? nowUnixMs - snapshot.FlashbackExportLastProgressUtcUnixMs
             : 0;
+        var playbackCommandQueueAgeMs =
+            snapshot.FlashbackPlaybackPendingCommands > 0 &&
+            snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > 0 &&
+            snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > snapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs
+                ? nowUnixMs - snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs
+                : 0;
 
         SetAlertState(
             "preview-blank",
@@ -1328,6 +1334,19 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"progress={snapshot.FlashbackExportPercent:0.##}%, segments={snapshot.FlashbackExportSegmentsProcessed}/{snapshot.FlashbackExportTotalSegments}).",
             "Flashback export progress resumed.",
             throttleMs: 10000);
+
+        SetAlertState(
+            "flashback-playback-command-stalled",
+            playbackCommandQueueAgeMs >= 1000,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback playback command queue has not drained for {playbackCommandQueueAgeMs}ms " +
+            $"(pending={snapshot.FlashbackPlaybackPendingCommands}, maxPending={snapshot.FlashbackPlaybackMaxPendingCommands}, " +
+            $"lastLatency={snapshot.FlashbackPlaybackLastCommandQueueLatencyMs}ms, maxLatency={snapshot.FlashbackPlaybackMaxCommandQueueLatencyMs}ms, " +
+            $"lastQueued={snapshot.FlashbackPlaybackLastCommandQueued}, lastProcessed={snapshot.FlashbackPlaybackLastCommandProcessed}, " +
+            $"threadAlive={snapshot.FlashbackPlaybackThreadAlive}).",
+            "Flashback playback command queue drained.",
+            throttleMs: 1000);
 
         SetAlertState(
             "hdr-parity-mismatch",

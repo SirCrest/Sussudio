@@ -219,6 +219,10 @@ static partial class Program
         AssertContains(diagnosticsText, "\"flashback-export-stalled\"");
         AssertContains(diagnosticsText, "DiagnosticsCategory.Flashback");
         AssertContains(diagnosticsText, "health.FlashbackExportActive");
+        AssertContains(diagnosticsText, "\"flashback-playback-command-stalled\"");
+        AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackPendingCommands > 0");
+        AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > snapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs");
+        AssertContains(diagnosticsText, "Flashback playback command queue has not drained");
         AssertContains(diagnosticsText, "\"flashback_export\"");
         AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
         AssertContains(diagnosticsText, "recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows}");
