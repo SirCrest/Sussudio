@@ -256,7 +256,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                 new MjpegWorkItem(buffer, jpegData.Length, width, height, arrivalTick, seq)))
         {
             Interlocked.Add(ref _compressedQueueBytes, -jpegData.Length);
-            Interlocked.Decrement(ref _compressedQueueDepth);
+            DecrementCompressedQueueDepth("write_failed");
             Interlocked.Decrement(ref _compressedFramesQueued);
             ArrayPool<byte>.Shared.Return(buffer);
             var dropped = Interlocked.Increment(ref _totalFramesDropped);
@@ -279,6 +279,24 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
 
     private static bool HasJpegStartOfImage(ReadOnlySpan<byte> data)
         => data.Length >= 2 && data[0] == 0xFF && data[1] == 0xD8;
+
+    private void DecrementCompressedQueueDepth(string operation)
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref _compressedQueueDepth);
+            if (current <= 0)
+            {
+                Logger.Log($"MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW op={operation}");
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _compressedQueueDepth, current - 1, current) == current)
+            {
+                return;
+            }
+        }
+    }
 
     public PipelineTimingMetrics GetTimingMetrics()
     {
@@ -428,7 +446,7 @@ internal sealed class ParallelMjpegDecodePipeline : IDisposable
                     continue;
                 }
 
-                Interlocked.Decrement(ref _compressedQueueDepth);
+                DecrementCompressedQueueDepth("dequeue");
                 Interlocked.Add(ref _compressedQueueBytes, -item.JpegLength);
                 Interlocked.Increment(ref _compressedFramesDequeued);
 

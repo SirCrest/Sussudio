@@ -191,6 +191,11 @@ static partial class Program
         AssertContains(source, "SortedDictionary<long, DecodedFrame>");
         AssertContains(source, "DefaultDecodedReorderByteBudget");
         AssertContains(source, "TryAddDecodedFrame");
+        AssertContains(source, "private void DecrementCompressedQueueDepth(string operation)");
+        AssertContains(source, "MJPEG_PIPELINE_COMPRESSED_DEPTH_UNDERFLOW");
+        AssertContains(source, "DecrementCompressedQueueDepth(\"write_failed\");");
+        AssertContains(source, "DecrementCompressedQueueDepth(\"dequeue\");");
+        AssertEqual(false, source.Contains("Interlocked.Decrement(ref _compressedQueueDepth)", StringComparison.Ordinal), "compressed queue depth decrements must be guarded");
         AssertContains(source, "seqNo != _nextEmitSeq");
         AssertContains(source, "MarkKnownMissing");
         AssertContains(source, "MJPEG_PIPELINE_FATAL_MISSING");
