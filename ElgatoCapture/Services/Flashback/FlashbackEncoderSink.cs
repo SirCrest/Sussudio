@@ -206,7 +206,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         lock (_sync)
         {
-            if (_started)
+            if (_started || _encodingTask is { IsCompleted: false })
             {
                 throw new InvalidOperationException("Flashback encoder sink has already started.");
             }
@@ -970,6 +970,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             if (!ReferenceEquals(completedTask, _encodingTask))
             {
                 cancellationToken.ThrowIfCancellationRequested();
+                var timeoutFailure = new TimeoutException("Flashback encode drain timed out while stopping.");
+                lock (_sync)
+                {
+                    _encodingFailure ??= timeoutFailure;
+                }
                 CancelEncodingCts("stop_timeout");
                 CompletePendingForceRotateWithEmptyResult();
                 Logger.Log("FLASHBACK_SINK_STOP_DRAIN_TIMEOUT");

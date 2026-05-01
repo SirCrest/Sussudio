@@ -142,6 +142,7 @@ static partial class Program
         AssertContains(sourceText, "Flashback session width must be positive.");
         AssertContains(sourceText, "Flashback session height must be positive.");
         AssertContains(sourceText, "Flashback session codec name is required.");
+        AssertContains(sourceText, "if (_started || _encodingTask is { IsCompleted: false })");
         AssertContains(startCatchBlock, "Logger.Log($\"FLASHBACK_SINK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(startCatchBlock, "lock (_sync)\n            {\n                _started = false;\n            }");
         AssertEqual(1, startCatchBlock.Split("_started = false;", StringSplitOptions.None).Length - 1, "Start failure rollback clears started state once");
@@ -1394,6 +1395,8 @@ static partial class Program
         AssertContains(sourceText, "ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);");
         AssertContains(sourceText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
         AssertContains(sourceText, "Interlocked.Exchange(ref queueDepth, 0);");
+        AssertContains(sourceText, "var timeoutFailure = new TimeoutException(\"Flashback encode drain timed out while stopping.\");");
+        AssertContains(sourceText, "_encodingFailure ??= timeoutFailure;");
         AssertContains(sourceText, "CancelEncodingCts(\"dispose\");");
         AssertContains(sourceText, "CancelEncodingCts(\"stop_timeout\");");
         AssertContains(sourceText, "private void CancelEncodingCts(string operation)");
