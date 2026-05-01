@@ -943,6 +943,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             if (_flashbackExportActive)
             {
+                Logger.Log(
+                    "FLASHBACK_EXPORT_REJECTED_DIAGNOSTICS_DEFERRED " +
+                    $"active_id={_flashbackExportId} status='{_flashbackExportStatus}' " +
+                    $"rejected_status='{result.StatusMessage}' output='{outputPath}'");
                 return;
             }
 
