@@ -49,6 +49,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private long _renderCallbackCount;
     private int _renderSilenceCount;
     private int _playbackQueueDropCount;
+    private int _playbackQueueDepth;
     private long _lastRenderCallbackTickMs;
     private long _renderingPtsTicks; // PTS of chunk currently being rendered
 
@@ -56,7 +57,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
 
     public int RenderSilenceCount => Volatile.Read(ref _renderSilenceCount);
 
-    public int PlaybackQueueDepth => _sampleQueue.Reader.Count;
+    public int PlaybackQueueDepth => Math.Max(0, Volatile.Read(ref _playbackQueueDepth));
 
     public int PlaybackQueueDropCount => Volatile.Read(ref _playbackQueueDropCount);
 
@@ -144,6 +145,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             Interlocked.Exchange(ref _renderCallbackCount, 0);
             Volatile.Write(ref _renderSilenceCount, 0);
             Volatile.Write(ref _playbackQueueDropCount, 0);
+            Volatile.Write(ref _playbackQueueDepth, 0);
             Interlocked.Exchange(ref _lastRenderCallbackTickMs, 0);
             Interlocked.Exchange(ref _initialized, 1);
             Logger.Log("WASAPI playback initialized (f32le 48kHz stereo).");
@@ -263,7 +265,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
         lock (_chunkLock)
         {
             ReturnActiveChunk();
-            while (_sampleQueue.Reader.TryRead(out var queuedChunk))
+            while (TryDequeueChunk(out var queuedChunk))
             {
                 ReturnChunk(queuedChunk);
             }
@@ -302,7 +304,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
         lock (_chunkLock)
         {
             ReturnActiveChunk();
-            while (_sampleQueue.Reader.TryRead(out var queuedChunk))
+            while (TryDequeueChunk(out var queuedChunk))
             {
                 ReturnChunk(queuedChunk);
             }
@@ -332,16 +334,18 @@ internal sealed class WasapiAudioPlayback : IDisposable
     {
         if (_sampleQueue.Writer.TryWrite(chunk))
         {
+            Interlocked.Increment(ref _playbackQueueDepth);
             return;
         }
 
         // Queue full — evict oldest chunk to make room for the new one.
         // The evicted chunk is the real drop; the new chunk replaces it.
-        if (_sampleQueue.Reader.TryRead(out var droppedChunk))
+        if (TryDequeueChunk(out var droppedChunk))
         {
             ReturnChunk(droppedChunk);
             if (_sampleQueue.Writer.TryWrite(chunk))
             {
+                Interlocked.Increment(ref _playbackQueueDepth);
                 Interlocked.Increment(ref _playbackQueueDropCount);
                 return;
             }
@@ -506,7 +510,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             if (!_hasActiveChunk || _activeChunkOffset >= _activeChunk.Length)
             {
                 ReturnActiveChunk();
-                if (!_sampleQueue.Reader.TryRead(out _activeChunk))
+                if (!TryDequeueChunk(out _activeChunk))
                 {
                     Interlocked.Increment(ref _renderSilenceCount);
                     destination[written..].Clear();
@@ -532,6 +536,34 @@ internal sealed class WasapiAudioPlayback : IDisposable
             activeBuffer.AsSpan(_activeChunkOffset, copyLength).CopyTo(destination[written..]);
             _activeChunkOffset += copyLength;
             written += copyLength;
+        }
+    }
+
+    private bool TryDequeueChunk(out PlaybackChunk chunk)
+    {
+        if (_sampleQueue.Reader.TryRead(out chunk))
+        {
+            DecrementPlaybackQueueDepth();
+            return true;
+        }
+
+        return false;
+    }
+
+    private void DecrementPlaybackQueueDepth()
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref _playbackQueueDepth);
+            if (current <= 0)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _playbackQueueDepth, current - 1, current) == current)
+            {
+                return;
+            }
         }
     }
 

@@ -1932,6 +1932,11 @@ static partial class Program
         AssertContains(wasapiPlaybackText, "if (Volatile.Read(ref _renderingPaused) == 0 && !_pauseRequested) return;");
         AssertContains(wasapiPlaybackText, "_pauseRequested = false;\n        _resumeRequested = true;");
         AssertContains(wasapiPlaybackText, "WASAPI_PLAYBACK_RENDER_RESUME_CANCELED_PENDING_PAUSE");
+        AssertContains(wasapiPlaybackText, "private int _playbackQueueDepth;");
+        AssertContains(wasapiPlaybackText, "public int PlaybackQueueDepth => Math.Max(0, Volatile.Read(ref _playbackQueueDepth));");
+        AssertContains(wasapiPlaybackText, "private bool TryDequeueChunk(out PlaybackChunk chunk)");
+        AssertContains(wasapiPlaybackText, "DecrementPlaybackQueueDepth();");
+        AssertDoesNotContain(wasapiPlaybackText, "_sampleQueue.Reader.Count");
         AssertDoesNotContain(sourceText, "_videoCapture?.SuppressPreviewSubmission();\n                        SuppressLiveAudio();\n                        _audioPlayback?.PauseRendering();");
 
         return Task.CompletedTask;
