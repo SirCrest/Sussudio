@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -549,6 +550,12 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             return FinalizeResult.Failure(outputPath, $"Stopped (libav encode failed: {_encodingFailure.Message})");
         }
 
+        if (!TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure))
+        {
+            Logger.Log($"LIBAV_SINK_STOP_OUTPUT_INVALID output='{outputPath}' reason='{outputFailure}'");
+            return FinalizeResult.Failure(outputPath, $"Stopped (output file invalid: {outputFailure})");
+        }
+
         if (context?.HdrPipelineActive == true)
         {
             var (validationSucceeded, validationDetail) = await HdrValidationRunner
@@ -572,7 +579,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
 
         Logger.Log(
-            $"LIBAV_SINK_STOP output='{outputPath}' frames={EncodedVideoFrames} dropped={DroppedVideoFrames} audio_samples={AudioSamplesReceived} mic_samples={MicrophoneSamplesReceived}");
+            $"LIBAV_SINK_STOP output='{outputPath}' bytes={outputBytes} frames={EncodedVideoFrames} dropped={DroppedVideoFrames} audio_samples={AudioSamplesReceived} mic_samples={MicrophoneSamplesReceived}");
         return FinalizeResult.Success(outputPath, "Stopped");
     }
 
@@ -720,6 +727,41 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
 
         return (numerator, denominator);
+    }
+
+    private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)
+    {
+        outputBytes = 0;
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            failureMessage = "output path is empty";
+            return false;
+        }
+
+        try
+        {
+            if (!File.Exists(outputPath))
+            {
+                failureMessage = "output file is missing";
+                return false;
+            }
+
+            outputBytes = new FileInfo(outputPath).Length;
+            if (outputBytes <= 0)
+            {
+                failureMessage = "output file is empty";
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            failureMessage = $"output file length unavailable: {ex.Message}";
+            Logger.Log($"LIBAV_SINK_STOP_OUTPUT_VALIDATE_WARN output='{outputPath}' type={ex.GetType().Name} msg={ex.Message}");
+            return false;
+        }
+
+        failureMessage = string.Empty;
+        return true;
     }
 
     private void CompleteWriter<TPacket>(Channel<TPacket>? channel)

@@ -510,6 +510,22 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task LibAvRecordingSink_StopValidatesFinalOutput()
+    {
+        var libAvSource = ReadRepoFile("ElgatoCapture/Services/Recording/LibAvRecordingSink.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(libAvSource, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");
+        AssertContains(libAvSource, "if (!TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure))\n        {\n            Logger.Log($\"LIBAV_SINK_STOP_OUTPUT_INVALID output='{outputPath}' reason='{outputFailure}'\");\n            return FinalizeResult.Failure(outputPath, $\"Stopped (output file invalid: {outputFailure})\");\n        }");
+        AssertOccursBefore(libAvSource, "TryValidateStoppedOutputFile(outputPath, out var outputBytes, out var outputFailure)", "if (context?.HdrPipelineActive == true)");
+        AssertContains(libAvSource, "failureMessage = \"output file is missing\";");
+        AssertContains(libAvSource, "failureMessage = \"output file is empty\";");
+        AssertContains(libAvSource, "LIBAV_SINK_STOP_OUTPUT_VALIDATE_WARN");
+        AssertContains(libAvSource, "LIBAV_SINK_STOP output='{outputPath}' bytes={outputBytes}");
+
+        return Task.CompletedTask;
+    }
+
     private static string ExtractSourceBlock(string source, string startToken, string endToken)
     {
         var start = source.IndexOf(startToken, StringComparison.Ordinal);

@@ -549,6 +549,9 @@ static partial class Program
                 "Recording video queues fail explicitly instead of evicting frames",
                 RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames),
             await RunCheckAsync(
+                "LibAv recording stop validates final output",
+                LibAvRecordingSink_StopValidatesFinalOutput),
+            await RunCheckAsync(
                 "MJPG HFR mode only activates for SDR 4K120-style settings",
                 CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest),
             await RunCheckAsync(
