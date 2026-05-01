@@ -589,6 +589,9 @@ static partial class Program
                 "Flashback exporter output path validation returns failure",
                 FlashbackExporter_OutputPathValidation_ReturnsFailure),
             await RunCheckAsync(
+                "Flashback exporter progress callbacks are best effort",
+                FlashbackExporter_ProgressCallbacksAreBestEffort),
+            await RunCheckAsync(
                 "Flashback exporter returns cancellation result while waiting for export lock",
                 FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled),
             await RunCheckAsync(

@@ -442,7 +442,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             var outputBytes = new FileInfo(outputPath).Length;
             Logger.Log(
                 $"FLASHBACK_EXPORT_OK output='{outputPath}' packets={totalPackets} bytes={outputBytes}");
-            progress?.Report(new ExportProgress(1, 1, 100.0));
+            ReportProgress(progress, new ExportProgress(1, 1, 100.0), "single_complete");
             return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from .ts");
         }
         catch (OperationCanceledException)
@@ -994,8 +994,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     // Close this segment's input
                     CloseActiveInput();
 
-                    progress?.Report(new ExportProgress(segIdx + 1, segments.Count,
-                        totalEstimatedBytes > 0 ? 100.0 * bytesProcessed / totalEstimatedBytes : 100.0 * (segIdx + 1) / segments.Count));
+                    ReportProgress(
+                        progress,
+                        new ExportProgress(
+                            segIdx + 1,
+                            segments.Count,
+                            totalEstimatedBytes > 0 ? 100.0 * bytesProcessed / totalEstimatedBytes : 100.0 * (segIdx + 1) / segments.Count),
+                        "segment_complete");
 
                     Logger.Log($"FLASHBACK_EXPORT_SEGMENT_OK seg={segIdx}/{segments.Count} path='{Path.GetFileName(segPath)}' packets={totalPackets} seg_max_pts_us={segMaxPtsUs} seg_abs_max_pts_us={segAbsMaxPtsUs} local_in_us={segmentInOffsetUs} local_out_us={segmentOutOffsetUs} bases_discovered={segAllBasesDiscovered}");
 
@@ -1026,7 +1031,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
             var outputBytes = new FileInfo(outputPath).Length;
             Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_OK output='{outputPath}' segments={segments.Count} packets={totalPackets} bytes={outputBytes}");
-            progress?.Report(new ExportProgress(segments.Count, segments.Count, 100.0));
+            ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), "segments_complete");
             return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from {segments.Count} segments");
         }
         catch (OperationCanceledException)
@@ -1349,6 +1354,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         const string message = "Flashback export cancelled.";
         Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
         return FinalizeResult.Failure(outputPath, message);
+    }
+
+    private static void ReportProgress(IProgress<ExportProgress>? progress, ExportProgress value, string stage)
+    {
+        try
+        {
+            progress?.Report(value);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_PROGRESS_WARN stage={stage} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 
     private static bool IsSamePath(string? left, string? right)
