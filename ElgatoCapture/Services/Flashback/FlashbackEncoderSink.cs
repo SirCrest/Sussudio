@@ -863,6 +863,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         _gpuEncodingEnabled = false;
         _audioEnabled = false;
         _microphoneEnabled = false;
+        _sessionContext = null;
+        _width = 0;
+        _height = 0;
         _encodingTask = null;
         DisposeWorkAvailableBestEffort("finalize_dispose");
         CompletePendingForceRotateWithEmptyResult();
