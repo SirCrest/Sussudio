@@ -994,6 +994,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' type={ex.GetType().Name} error='{ex.Message}'");
+            _decoderHwAccel = "N/A";
             fileOpen = false;
             _currentOpenFilePath = null;
         }
@@ -1051,11 +1052,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
             decoder.OpenFile(currentPath);
             fileOpen = true;
             _currentOpenFilePath = currentPath;
+            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
             return decoder.SeekTo(seekTarget);
         }
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            _decoderHwAccel = "N/A";
             fileOpen = false;
             _currentOpenFilePath = null;
             return false;
@@ -1374,6 +1377,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     decoder.OpenFile(nextFile);
                     fileOpen = true;
                     _currentOpenFilePath = nextFile;
+                    _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
                     // Gate audio at last played position, not seek target — audio between
                     // the last played sample and the seek point would otherwise be dropped,
                     // causing an audible gap at segment boundaries.
@@ -1415,6 +1419,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     fileOpen = false;
                     decoder.OpenFile(currentOpenFilePath);
                     fileOpen = true;
+                    _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
                     var fmpAudioGate = Interlocked.Read(ref _lastAudioPtsTicks);
                     decoder.AudioChunkCallback = null;
                     decoder.SeekTo(resumeTarget);
