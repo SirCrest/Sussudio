@@ -1499,6 +1499,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
             return true;
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
         catch (Exception ex)
         {
             SnapToLiveOnError(decoder, ex, ref fileOpen);
