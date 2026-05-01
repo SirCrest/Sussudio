@@ -423,6 +423,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private readonly record struct PlaybackCommandHealth");
         AssertContains(diagnosticSessionText, "BuildPlaybackCommandHealth");
         AssertContains(diagnosticSessionText, "nonCoalescedDropped={commandHealth.NonCoalescedDropped}");
+        AssertContains(diagnosticSessionText, "GetCounterDelta(snapshot, baselineSnapshot, \"FlashbackPlaybackSubmitFailures\")");
+        AssertContains(diagnosticSessionText, "commandHealth.SubmitFailures > 0");
+        AssertContains(diagnosticSessionText, "submitFailures={commandHealth.SubmitFailures}");
         AssertContains(diagnosticSessionText, "GetCounterDelta(snapshot, baselineSnapshot, \"FlashbackPlaybackCommandsDropped\")");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackObservedFpsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackAvgFrameMsAtEnd");

@@ -132,6 +132,7 @@ public static class DiagnosticSessionRunner
     private readonly record struct PlaybackCommandHealth(
         long Dropped,
         long Skipped,
+        long SubmitFailures,
         long CoalescedScrub,
         long NonCoalescedDropped);
 
@@ -1012,12 +1013,13 @@ public static class DiagnosticSessionRunner
             var threadAlive = GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive");
             var maxPending = GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
             var maxLatencyMs = GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
-            if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0)
+            if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || commandHealth.SubmitFailures > 0)
             {
                 warnings.Add(
                     "flashback stress: " +
                     $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                    $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped}");
+                    $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} " +
+                    $"submitFailures={commandHealth.SubmitFailures}");
             }
 
             if (maxPending > FlashbackStressMaxPlaybackPendingCommands ||
@@ -1882,12 +1884,13 @@ public static class DiagnosticSessionRunner
         var maxPending = GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
         var maxLatencyMs = GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
 
-        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0)
+        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || commandHealth.SubmitFailures > 0)
         {
             warnings.Add(
                 "flashback scrub stress: " +
                 $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped}");
+                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} " +
+                $"submitFailures={commandHealth.SubmitFailures}");
         }
 
         if (maxPending > FlashbackScrubStressMaxPlaybackPendingCommands ||
@@ -2214,12 +2217,13 @@ public static class DiagnosticSessionRunner
         var commandHealth = BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot);
         var pending = GetInt(finalSnapshot, "FlashbackPlaybackPendingCommands");
         var state = GetString(finalSnapshot, "FlashbackPlaybackState") ?? "Unknown";
-        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0)
+        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || commandHealth.SubmitFailures > 0)
         {
             warnings.Add(
                 "flashback export playback: " +
                 $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped}");
+                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} " +
+                $"submitFailures={commandHealth.SubmitFailures}");
         }
 
         if (pending > 0)
@@ -2342,12 +2346,13 @@ public static class DiagnosticSessionRunner
                 $"frames={frameCount} observedFps={observedFps:0.##}");
         }
 
-        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || pending > 0)
+        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || commandHealth.SubmitFailures > 0 || pending > 0)
         {
             warnings.Add(
                 "flashback segment playback: command queue unhealthy " +
                 $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} pending={pending}");
+                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} " +
+                $"submitFailures={commandHealth.SubmitFailures} pending={pending}");
         }
 
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
@@ -2640,12 +2645,13 @@ public static class DiagnosticSessionRunner
             warnings.Add($"flashback range export: pending commands remained after go-live pending={pending}");
         }
 
-        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0)
+        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || commandHealth.SubmitFailures > 0)
         {
             warnings.Add(
                 "flashback range export: " +
                 $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped}");
+                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} " +
+                $"submitFailures={commandHealth.SubmitFailures}");
         }
 
         if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))
@@ -3260,10 +3266,12 @@ public static class DiagnosticSessionRunner
     {
         var dropped = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackCommandsDropped");
         var skipped = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackCommandsSkippedNotReady");
+        var submitFailures = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackSubmitFailures");
         var coalescedScrub = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackScrubUpdatesCoalesced");
         return new PlaybackCommandHealth(
             dropped,
             skipped,
+            submitFailures,
             coalescedScrub,
             Math.Max(0, dropped - coalescedScrub));
     }
