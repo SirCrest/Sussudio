@@ -19,6 +19,8 @@ namespace ElgatoCapture.Services.Flashback;
 /// </summary>
 internal sealed unsafe class FlashbackExporter : IDisposable
 {
+    private const int MaxSupportedInputStreams = 64;
+
     private readonly SemaphoreSlim _exportLock = new(1, 1);
     private readonly object _lifetimeSync = new();
     private CancellationTokenSource? _disposeCts = new();
@@ -242,6 +244,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             // Open input .ts file
             OpenInput(inputTsPath);
             ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+            if (!TryGetInputStreamCount(_activeInputContext, "single_export", out var streamCount, out var streamCountFailure))
+            {
+                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{streamCountFailure}'");
+                return FinalizeResult.Failure(outputPath, streamCountFailure);
+            }
 
             // Seek to inPoint
             if (inPoint > TimeSpan.Zero)
@@ -257,10 +264,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             // Create output .mp4 context
             CreateOutputContext(tmpPath, fastStart);
             var videoStreamIndex = FindVideoStreamIndex(_activeInputContext);
-            var streamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext);
+            var streamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext, streamCount);
             OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
 
-            var streamCount = checked((int)_activeInputContext->nb_streams);
             var timestampBasesUs = new long[streamCount]; // per-stream base in microseconds
             var hasTimestampBase = new bool[streamCount];
             long? globalMinBaseUs = null; // global minimum base in microseconds
@@ -634,6 +640,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     // Open this segment
                     OpenInput(segPath);
                     ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+                    if (!TryGetInputStreamCount(_activeInputContext, "segment_export", out var currentStreamCount, out var streamCountFailure))
+                    {
+                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='invalid_stream_count' detail='{streamCountFailure}'");
+                        CloseActiveInput();
+                        continue;
+                    }
 
                     if (isFirst)
                     {
@@ -641,7 +653,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         videoStreamIndex = FindVideoStreamIndex(_activeInputContext);
 
                         // Log input stream details for diagnostics
-                        var inputNbStreams = checked((int)_activeInputContext->nb_streams);
+                        var inputNbStreams = currentStreamCount;
                         for (var si = 0; si < inputNbStreams; si++)
                         {
                             var inStr = _activeInputContext->streams[si];
@@ -696,7 +708,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         }
 
                         CreateOutputContext(tmpPath, fastStart);
-                        streamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext);
+                        streamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext, inputNbStreams);
                         Logger.Log($"FLASHBACK_EXPORT_STREAM_MAP video_idx={videoStreamIndex} map=[{string.Join(",", streamMap)}]");
                         OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
                         streamCount = inputNbStreams;
@@ -706,7 +718,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         // Validate that this segment's stream layout matches the first segment's.
                         // Mismatched layouts (e.g. microphone toggled mid-capture) would cause
                         // packet->stream_index to map incorrectly, producing corrupt output.
-                        var segNbStreams = checked((int)_activeInputContext->nb_streams);
+                        var segNbStreams = currentStreamCount;
                         if (segNbStreams != streamCount)
                         {
                             Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_count_mismatch' expected={streamCount} actual={segNbStreams}");
@@ -738,7 +750,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     var segmentVideoFrameDurUs = 33333L;
                     if (useSegmentTimeline &&
                         videoStreamIndex >= 0 &&
-                        videoStreamIndex < checked((int)_activeInputContext->nb_streams))
+                        videoStreamIndex < currentStreamCount)
                     {
                         segmentVideoFrameDurUs = ResolveFrameDurationUs(_activeInputContext->streams[videoStreamIndex]);
                     }
@@ -1205,6 +1217,37 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         return ffmpeg.av_find_best_stream(inputContext, AVMediaType.AVMEDIA_TYPE_VIDEO, -1, -1, null, 0);
     }
 
+    private static bool TryGetInputStreamCount(
+        AVFormatContext* inputContext,
+        string operation,
+        out int streamCount,
+        out string failureMessage)
+    {
+        streamCount = 0;
+        if (inputContext == null)
+        {
+            failureMessage = $"Flashback export failed: input context was not available during {operation}.";
+            return false;
+        }
+
+        var nativeStreamCount = inputContext->nb_streams;
+        if (nativeStreamCount == 0)
+        {
+            failureMessage = $"Flashback export failed: input had no streams during {operation}.";
+            return false;
+        }
+
+        if (nativeStreamCount > MaxSupportedInputStreams)
+        {
+            failureMessage = $"Flashback export failed: input stream count {nativeStreamCount} exceeds supported maximum {MaxSupportedInputStreams} during {operation}.";
+            return false;
+        }
+
+        streamCount = (int)nativeStreamCount;
+        failureMessage = string.Empty;
+        return true;
+    }
+
     private static void LogTimestampBaseDrift(long[] timestampBasesUs, bool[] hasTimestampBase)
     {
         // All values are already in microseconds — find min/max to detect drift
@@ -1294,9 +1337,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     /// Copies stream templates from input to output, skipping streams with invalid codec parameters
     /// (e.g., audio with 0 channels). Returns a mapping array: streamMap[inputIndex] = outputIndex, or -1 if skipped.
     /// </summary>
-    private static int[] CopyTemplateStreams(AVFormatContext* inputContext, AVFormatContext* outputContext)
+    private static int[] CopyTemplateStreams(AVFormatContext* inputContext, AVFormatContext* outputContext, int inputStreamCount)
     {
-        var inputStreamCount = checked((int)inputContext->nb_streams);
         var streamMap = new int[inputStreamCount];
 
         for (var streamIndex = 0; streamIndex < inputStreamCount; streamIndex++)

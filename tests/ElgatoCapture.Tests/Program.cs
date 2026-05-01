@@ -643,6 +643,9 @@ static partial class Program
                 "Flashback exporter timestamp conversions are saturating",
                 FlashbackExporter_TimestampConversionsAreSaturating),
             await RunCheckAsync(
+                "Flashback exporter input stream counts are bounded",
+                FlashbackExporter_InputStreamCountsAreBounded),
+            await RunCheckAsync(
                 "Flashback exporter returns cancellation result while waiting for export lock",
                 FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled),
             await RunCheckAsync(
