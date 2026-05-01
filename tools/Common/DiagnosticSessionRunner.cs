@@ -35,6 +35,11 @@ public sealed class DiagnosticSessionResult
     public string LikelyStage { get; init; } = "diagnostic_unavailable";
     public string Summary { get; init; } = string.Empty;
     public string Evidence { get; init; } = string.Empty;
+    public int FlashbackPlaybackPendingCommandsAtEnd { get; init; }
+    public int FlashbackPlaybackMaxPendingCommandsObserved { get; init; }
+    public int FlashbackPlaybackMaxCommandQueueLatencyMsObserved { get; init; }
+    public long FlashbackPlaybackCommandsDroppedAtEnd { get; init; }
+    public long FlashbackPlaybackCommandsSkippedNotReadyAtEnd { get; init; }
     public bool RecordingVerificationRun { get; init; }
     public bool? RecordingVerificationSucceeded { get; init; }
     public string? RecordingVerificationMessage { get; init; }
@@ -267,6 +272,11 @@ public static class DiagnosticSessionRunner
         var likelyStage = GetString(lastSnapshot, "DiagnosticLikelyStage") ?? "diagnostic_unavailable";
         var summary = GetString(lastSnapshot, "DiagnosticSummary") ?? string.Empty;
         var evidence = GetString(lastSnapshot, "DiagnosticEvidence") ?? string.Empty;
+        var playbackPendingAtEnd = GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands");
+        var playbackMaxPendingObserved = GetMaxSnapshotInt(samples, lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
+        var playbackMaxLatencyObserved = GetMaxSnapshotInt(samples, lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
+        var playbackDroppedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsDropped") ?? 0;
+        var playbackSkippedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0;
 
         var samplesPath = Path.Combine(outputDirectory, "samples.json");
         var frameLedgerPath = Path.Combine(outputDirectory, "frame-ledger.json");
@@ -300,6 +310,11 @@ public static class DiagnosticSessionRunner
             LikelyStage = likelyStage,
             Summary = summary,
             Evidence = evidence,
+            FlashbackPlaybackPendingCommandsAtEnd = playbackPendingAtEnd,
+            FlashbackPlaybackMaxPendingCommandsObserved = playbackMaxPendingObserved,
+            FlashbackPlaybackMaxCommandQueueLatencyMsObserved = playbackMaxLatencyObserved,
+            FlashbackPlaybackCommandsDroppedAtEnd = playbackDroppedAtEnd,
+            FlashbackPlaybackCommandsSkippedNotReadyAtEnd = playbackSkippedAtEnd,
             RecordingVerificationRun = verification.HasValue,
             RecordingVerificationSucceeded = verificationSucceeded,
             RecordingVerificationMessage = verification.HasValue
@@ -382,6 +397,14 @@ public static class DiagnosticSessionRunner
         {
             builder.AppendLine($"PresentMon: {(result.PresentMon.Success ? "PASS" : "FAIL")} | {result.PresentMon.Message}");
         }
+
+        builder.AppendLine(
+            "Flashback Playback Commands: " +
+            $"pendingEnd={result.FlashbackPlaybackPendingCommandsAtEnd} " +
+            $"maxPending={result.FlashbackPlaybackMaxPendingCommandsObserved} " +
+            $"maxLatencyMs={result.FlashbackPlaybackMaxCommandQueueLatencyMsObserved} " +
+            $"droppedEnd={result.FlashbackPlaybackCommandsDroppedAtEnd} " +
+            $"skippedEnd={result.FlashbackPlaybackCommandsSkippedNotReadyAtEnd}");
 
         builder.AppendLine($"Artifacts: {result.OutputDirectory}");
         builder.AppendLine($"  Summary: {result.SummaryPath}");
@@ -721,6 +744,20 @@ public static class DiagnosticSessionRunner
             EventCount = events.Count,
             Events = events
         };
+    }
+
+    private static int GetMaxSnapshotInt(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement lastSnapshot,
+        string propertyName)
+    {
+        var max = GetInt(lastSnapshot, propertyName);
+        foreach (var sample in samples)
+        {
+            max = Math.Max(max, GetInt(sample.Snapshot, propertyName));
+        }
+
+        return max;
     }
 
     private static async Task WriteJsonAsync<T>(string path, T value, CancellationToken cancellationToken)

@@ -266,6 +266,14 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var runFlashbackStress = scenario == \"flashback-stress\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRecording = scenario == \"flashback-recording\";");
         AssertContains(diagnosticSessionText, "var runFlashbackExportRejected = scenario == \"flashback-export-rejected\";");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackPendingCommandsAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxPendingCommandsObserved");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxCommandQueueLatencyMsObserved");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackCommandsDroppedAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackCommandsSkippedNotReadyAtEnd");
+        AssertContains(diagnosticSessionText, "Flashback Playback Commands:");
+        AssertContains(diagnosticSessionText, "GetMaxSnapshotInt(samples, lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")");
+        AssertContains(diagnosticSessionText, "GetMaxSnapshotInt(samples, lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportRejectedAsync(");
         AssertContains(diagnosticSessionText, "private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(");
