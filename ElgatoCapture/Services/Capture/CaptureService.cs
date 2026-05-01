@@ -3625,7 +3625,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"Cleanup flashback dispose warning: {ex.Message}");
+            Logger.Log($"FLASHBACK_CLEANUP_DISPOSE_WARN type={ex.GetType().Name} msg='{ex.Message}'");
         }
 
         var pendingLibAvDrainTask = _pendingLibAvDrainTask;
@@ -3655,7 +3655,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log($"Cleanup unified video stop/dispose warning: {ex.Message}");
+                Logger.Log($"FLASHBACK_CLEANUP_UNIFIED_VIDEO_WARN type={ex.GetType().Name} msg='{ex.Message}'");
             }
         }
 
@@ -3670,7 +3670,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             catch (Exception ex)
             {
-                Logger.Log($"Cleanup WASAPI capture dispose warning: {ex.Message}");
+                Logger.Log($"FLASHBACK_CLEANUP_WASAPI_WARN type={ex.GetType().Name} msg='{ex.Message}'");
             }
         }
 

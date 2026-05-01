@@ -467,7 +467,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             var failure = _encodingFailure;
             if (failure != null)
             {
-                Logger.Log($"FLASHBACK_RECORDING_FAIL error='{failure.Message}'");
+                Logger.Log($"FLASHBACK_RECORDING_FAIL type={failure.GetType().Name} error='{failure.Message}'");
                 return new FinalizeResult
                 {
                     Succeeded = false,

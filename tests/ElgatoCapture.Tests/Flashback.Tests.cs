@@ -858,6 +858,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_SINK_WORK_SIGNAL_DISPOSE_WARN");
         AssertContains(sourceText, "FLASHBACK_SINK_ENCODER_DISPOSE_WARN");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_SINK_BUFFER_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}\");");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_RECORDING_FAIL type={failure.GetType().Name} error='{failure.Message}'\");");
         AssertContains(sourceText, "ReturnVideoPacketBestEffort(packet);");
         AssertContains(sourceText, "ReleaseGpuTextureBestEffort(packet.Texture);");
         AssertContains(sourceText, "FLASHBACK_SINK_RETURN_VIDEO_PACKET_WARN");
