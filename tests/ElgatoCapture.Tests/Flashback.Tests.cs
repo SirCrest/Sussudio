@@ -931,6 +931,15 @@ static partial class Program
         AssertContains(incompleteVideoParamsBlock, "var videoStream = _activeInputContext->streams[videoStreamIndex];");
         AssertContains(incompleteVideoParamsBlock, "var videoHasValidParams = videoWidth > 0 && videoHeight > 0;");
         AssertContains(incompleteVideoParamsBlock, "no segment had complete video parameters");
+        AssertContains(sourceText, "var streamLayoutMismatch = FindSegmentStreamLayoutMismatch(");
+        AssertContains(sourceText, "reason='stream_layout_mismatch' detail='{streamLayoutMismatch}'");
+        AssertContains(sourceText, "private static string? FindSegmentStreamLayoutMismatch(");
+        AssertContains(sourceText, "inputCodec->codec_type != templateCodec->codec_type");
+        AssertContains(sourceText, "inputCodec->codec_id != templateCodec->codec_id");
+        AssertContains(sourceText, "inputCodec->width != templateCodec->width || inputCodec->height != templateCodec->height");
+        AssertContains(sourceText, "inputCodec->sample_rate != templateCodec->sample_rate");
+        AssertContains(sourceText, "inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels");
+        AssertContains(sourceText, "inputCodec->format != templateCodec->format");
 
         return Task.CompletedTask;
     }

@@ -814,6 +814,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             CloseActiveInput();
                             continue;
                         }
+
+                        var streamLayoutMismatch = FindSegmentStreamLayoutMismatch(
+                            _activeInputContext,
+                            _activeOutputContext,
+                            streamMap,
+                            segNbStreams);
+                        if (streamLayoutMismatch != null)
+                        {
+                            Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_layout_mismatch' detail='{streamLayoutMismatch}'");
+                            CloseActiveInput();
+                            continue;
+                        }
                     }
 
                     // Seek to inPoint in first segment
@@ -1517,6 +1529,79 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         return streamMap;
+    }
+
+    private static string? FindSegmentStreamLayoutMismatch(
+        AVFormatContext* inputContext,
+        AVFormatContext* outputContext,
+        int[] streamMap,
+        int inputStreamCount)
+    {
+        if (inputContext == null || outputContext == null)
+        {
+            return "missing_context";
+        }
+
+        var comparableStreamCount = Math.Min(inputStreamCount, streamMap.Length);
+        for (var streamIndex = 0; streamIndex < comparableStreamCount; streamIndex++)
+        {
+            var outputIndex = streamMap[streamIndex];
+            if (outputIndex < 0)
+            {
+                continue;
+            }
+
+            if (outputIndex >= outputContext->nb_streams)
+            {
+                return $"stream={streamIndex} output_index_out_of_range output={outputIndex} output_count={outputContext->nb_streams}";
+            }
+
+            var inputStream = inputContext->streams[streamIndex];
+            var outputStream = outputContext->streams[outputIndex];
+            if (inputStream == null || outputStream == null || inputStream->codecpar == null || outputStream->codecpar == null)
+            {
+                return $"stream={streamIndex} missing_codec_params";
+            }
+
+            var inputCodec = inputStream->codecpar;
+            var templateCodec = outputStream->codecpar;
+            if (inputCodec->codec_type != templateCodec->codec_type)
+            {
+                return $"stream={streamIndex} codec_type expected={templateCodec->codec_type} actual={inputCodec->codec_type}";
+            }
+
+            if (inputCodec->codec_id != templateCodec->codec_id)
+            {
+                return $"stream={streamIndex} codec_id expected={templateCodec->codec_id} actual={inputCodec->codec_id}";
+            }
+
+            if (inputCodec->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
+            {
+                if (inputCodec->width != templateCodec->width || inputCodec->height != templateCodec->height)
+                {
+                    return $"stream={streamIndex} video_size expected={templateCodec->width}x{templateCodec->height} actual={inputCodec->width}x{inputCodec->height}";
+                }
+            }
+            else if (inputCodec->codec_type == AVMediaType.AVMEDIA_TYPE_AUDIO)
+            {
+                if (inputCodec->sample_rate != templateCodec->sample_rate)
+                {
+                    return $"stream={streamIndex} sample_rate expected={templateCodec->sample_rate} actual={inputCodec->sample_rate}";
+                }
+
+                if (inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels)
+                {
+                    return $"stream={streamIndex} channels expected={templateCodec->ch_layout.nb_channels} actual={inputCodec->ch_layout.nb_channels}";
+                }
+
+                if (inputCodec->format != templateCodec->format)
+                {
+                    return $"stream={streamIndex} sample_format expected={templateCodec->format} actual={inputCodec->format}";
+                }
+            }
+        }
+
+        return null;
     }
 
     private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)
