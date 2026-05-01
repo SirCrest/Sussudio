@@ -635,6 +635,15 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     var segAllBasesDiscovered = false;
                     long segMaxPtsUs = 0; // track highest rebased PTS in this segment for offset calculation
                     long segAbsMaxPtsUs = 0; // track highest absolute PTS for outPoint check
+                    long segmentVideoTimestampRepairUs = 0;
+                    var segmentVideoPacketsSeen = 0;
+                    var segmentVideoFrameDurUs = 33333L;
+                    if (useSegmentTimeline &&
+                        videoStreamIndex >= 0 &&
+                        videoStreamIndex < checked((int)_activeInputContext->nb_streams))
+                    {
+                        segmentVideoFrameDurUs = ResolveFrameDurationUs(_activeInputContext->streams[videoStreamIndex]);
+                    }
 
                     while (true)
                     {
@@ -746,13 +755,42 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                         if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
                                         {
                                             buffPkt->pts = buffPkt->pts - segBaseTs + offsetTs;
-                                            // Track max PTS for offset calculation
                                             var ptsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
+                                            if (useSegmentTimeline && si == videoStreamIndex)
+                                            {
+                                                var repairUs = ResolveSegmentBoundaryTimestampRepairUs(
+                                                    ptsUs,
+                                                    outputPtsOffsetUs,
+                                                    segmentVideoFrameDurUs,
+                                                    segmentVideoPacketsSeen,
+                                                    segmentVideoTimestampRepairUs);
+                                                if (repairUs > 0)
+                                                {
+                                                    segmentVideoTimestampRepairUs += repairUs;
+                                                    Logger.Log($"FLASHBACK_EXPORT_SEGMENT_PTS_REPAIR seg={segIdx} stream={si} repair_us={repairUs} total_repair_us={segmentVideoTimestampRepairUs}");
+                                                }
+
+                                                if (segmentVideoTimestampRepairUs > 0)
+                                                {
+                                                    var repairTs = ffmpeg.av_rescale_q(segmentVideoTimestampRepairUs, usTimeBase, outStr->time_base);
+                                                    buffPkt->pts -= repairTs;
+                                                    ptsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
+                                                }
+
+                                                segmentVideoPacketsSeen++;
+                                            }
+
+                                            // Track max PTS for offset calculation
                                             if (ptsUs > segMaxPtsUs) segMaxPtsUs = ptsUs;
                                         }
                                         if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
                                         {
                                             buffPkt->dts = buffPkt->dts - segBaseTs + offsetTs;
+                                            if (useSegmentTimeline && si == videoStreamIndex && segmentVideoTimestampRepairUs > 0)
+                                            {
+                                                var repairTs = ffmpeg.av_rescale_q(segmentVideoTimestampRepairUs, usTimeBase, outStr->time_base);
+                                                buffPkt->dts -= repairTs;
+                                            }
                                             if (oi < lastDtsPerStream.Length && lastDtsPerStream[oi] != long.MinValue && buffPkt->dts <= lastDtsPerStream[oi])
                                                 buffPkt->dts = lastDtsPerStream[oi] + 1;
                                         }
@@ -816,11 +854,40 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             {
                                 packet->pts = packet->pts - segBase + offset;
                                 var ptsUs = ffmpeg.av_rescale_q(packet->pts, outStream2->time_base, usTimeBase);
+                                if (useSegmentTimeline && streamIndex == videoStreamIndex)
+                                {
+                                    var repairUs = ResolveSegmentBoundaryTimestampRepairUs(
+                                        ptsUs,
+                                        outputPtsOffsetUs,
+                                        segmentVideoFrameDurUs,
+                                        segmentVideoPacketsSeen,
+                                        segmentVideoTimestampRepairUs);
+                                    if (repairUs > 0)
+                                    {
+                                        segmentVideoTimestampRepairUs += repairUs;
+                                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_PTS_REPAIR seg={segIdx} stream={streamIndex} repair_us={repairUs} total_repair_us={segmentVideoTimestampRepairUs}");
+                                    }
+
+                                    if (segmentVideoTimestampRepairUs > 0)
+                                    {
+                                        var repairTs = ffmpeg.av_rescale_q(segmentVideoTimestampRepairUs, usTimeBase, outStream2->time_base);
+                                        packet->pts -= repairTs;
+                                        ptsUs = ffmpeg.av_rescale_q(packet->pts, outStream2->time_base, usTimeBase);
+                                    }
+
+                                    segmentVideoPacketsSeen++;
+                                }
+
                                 if (ptsUs > segMaxPtsUs) segMaxPtsUs = ptsUs;
                             }
                             if (packet->dts != ffmpeg.AV_NOPTS_VALUE)
                             {
                                 packet->dts = packet->dts - segBase + offset;
+                                if (useSegmentTimeline && streamIndex == videoStreamIndex && segmentVideoTimestampRepairUs > 0)
+                                {
+                                    var repairTs = ffmpeg.av_rescale_q(segmentVideoTimestampRepairUs, usTimeBase, outStream2->time_base);
+                                    packet->dts -= repairTs;
+                                }
                                 // Enforce DTS monotonicity — mp4 muxer rejects non-monotonic DTS
                                 if (mappedIndex < lastDtsPerStream.Length && lastDtsPerStream[mappedIndex] != long.MinValue && packet->dts <= lastDtsPerStream[mappedIndex])
                                     packet->dts = lastDtsPerStream[mappedIndex] + 1;
@@ -853,9 +920,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     if (segMaxPtsUs > outputPtsOffsetUs)
                     {
                         var videoStream = videoStreamIndex >= 0 ? _activeInputContext->streams[videoStreamIndex] : null;
-                        long frameDurUs = (videoStream != null && videoStream->avg_frame_rate.num > 0)
-                            ? 1_000_000L * videoStream->avg_frame_rate.den / videoStream->avg_frame_rate.num
-                            : 33333; // fallback ~30fps
+                        long frameDurUs = ResolveFrameDurationUs(videoStream);
                         outputPtsOffsetUs = segMaxPtsUs + frameDurUs;
                     }
 
@@ -924,6 +989,48 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             try { _exportLock.Release(); } catch (ObjectDisposedException) { }
         }
+    }
+
+    private static long ResolveFrameDurationUs(AVStream* videoStream)
+    {
+        if (videoStream != null && videoStream->avg_frame_rate.num > 0)
+        {
+            return Math.Max(1, 1_000_000L * videoStream->avg_frame_rate.den / videoStream->avg_frame_rate.num);
+        }
+
+        if (videoStream != null && videoStream->r_frame_rate.num > 0)
+        {
+            return Math.Max(1, 1_000_000L * videoStream->r_frame_rate.den / videoStream->r_frame_rate.num);
+        }
+
+        return 33333; // fallback ~30fps
+    }
+
+    private static long ResolveSegmentBoundaryTimestampRepairUs(
+        long ptsUs,
+        long outputPtsOffsetUs,
+        long frameDurUs,
+        int segmentVideoPacketsSeen,
+        long existingRepairUs)
+    {
+        if (outputPtsOffsetUs <= 0 ||
+            frameDurUs <= 0 ||
+            segmentVideoPacketsSeen <= 0 ||
+            segmentVideoPacketsSeen > 12)
+        {
+            return 0;
+        }
+
+        var expectedPtsUs = outputPtsOffsetUs + segmentVideoPacketsSeen * frameDurUs;
+        var repairedPtsUs = ptsUs - existingRepairUs;
+        var gapUs = repairedPtsUs - expectedPtsUs;
+        var thresholdUs = frameDurUs + frameDurUs / 2;
+        if (gapUs <= thresholdUs)
+        {
+            return 0;
+        }
+
+        return gapUs;
     }
 
     /// <summary>
