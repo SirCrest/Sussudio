@@ -44,6 +44,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
         double SlowFramePercent,
         double OnePercentLowFps);
 
+    public readonly record struct PlaybackDecodeMetrics(
+        int SampleCount,
+        double AvgMs,
+        double P95Ms,
+        double P99Ms,
+        double MaxMs);
+
     // --- Dependencies ---
     private readonly FlashbackBufferManager _bufferManager;
     private IPreviewFrameSink? _previewSink;
@@ -93,6 +100,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private int _playbackFrameIntervalHead;
     private int _playbackFrameIntervalCount;
     private long _playbackSlowFrameCount;
+    private readonly object _playbackDecodeLock = new();
+    private readonly double[] _playbackDecodeDurationsMs = new double[PlaybackCadenceSampleCapacity];
+    private int _playbackDecodeDurationHead;
+    private int _playbackDecodeDurationCount;
     private long _commandsEnqueued;
     private long _commandsProcessed;
     private long _commandsDropped;
@@ -812,7 +823,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         // backward nudge requires full seek (keyframe snap acceptable)
                         if (cmd.Delta.Ticks > 0)
                         {
-                            var got = decoder.TryDecodeNextVideoFrame(out var nudgeFrame);
+                            var got = TryDecodeNextVideoFrameWithMetrics(decoder, out var nudgeFrame);
                             if (got)
                             {
                                 if (!TrySubmitAndHoldFrame(nudgeFrame, "nudge"))
@@ -1128,7 +1139,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             }
             seekSuccess:
 
-            var gotFrame = decoder.TryDecodeNextVideoFrame(out var frame);
+            var gotFrame = TryDecodeNextVideoFrameWithMetrics(decoder, out var frame);
             if (gotFrame)
             {
                 if (!TrySubmitAndHoldFrame(frame, "seek"))
@@ -1178,7 +1189,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!decoder.TryDecodeNextVideoFrame(out var videoFrame))
+            if (!TryDecodeNextVideoFrameWithMetrics(decoder, out var videoFrame))
             {
                 return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen);
             }
@@ -1209,7 +1220,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         Interlocked.Increment(ref _playbackDroppedFrames);
                         skipped++;
 
-                        if (!decoder.TryDecodeNextVideoFrame(out videoFrame))
+                        if (!TryDecodeNextVideoFrameWithMetrics(decoder, out videoFrame))
                             return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen);
 
                         // Recompute drift with the new frame's PTS
@@ -1700,6 +1711,39 @@ internal sealed class FlashbackPlaybackController : IDisposable
         return new PlaybackCadenceMetrics(samples.Length, p95, p99, max, slow, slowPercent, onePercentLowFps);
     }
 
+    public PlaybackDecodeMetrics GetPlaybackDecodeMetrics()
+    {
+        double[] samples;
+        lock (_playbackDecodeLock)
+        {
+            if (_playbackDecodeDurationCount == 0)
+            {
+                return new PlaybackDecodeMetrics(0, 0, 0, 0, 0);
+            }
+
+            samples = new double[_playbackDecodeDurationCount];
+            var oldest = (_playbackDecodeDurationHead - _playbackDecodeDurationCount + _playbackDecodeDurationsMs.Length) % _playbackDecodeDurationsMs.Length;
+            for (var i = 0; i < samples.Length; i++)
+            {
+                samples[i] = _playbackDecodeDurationsMs[(oldest + i) % _playbackDecodeDurationsMs.Length];
+            }
+        }
+
+        var total = 0.0;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            total += samples[i];
+        }
+
+        Array.Sort(samples);
+        return new PlaybackDecodeMetrics(
+            samples.Length,
+            total / samples.Length,
+            PercentileFromSorted(samples, 0.95),
+            PercentileFromSorted(samples, 0.99),
+            samples[^1]);
+    }
+
     private static double PercentileFromSorted(double[] sortedSamples, double percentile)
     {
         if (sortedSamples.Length == 0)
@@ -1812,6 +1856,37 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (expectedFrameMs > 0 && intervalMs > expectedFrameMs * 1.5)
         {
             Interlocked.Increment(ref _playbackSlowFrameCount);
+        }
+    }
+
+    private bool TryDecodeNextVideoFrameWithMetrics(FlashbackDecoder decoder, out DecodedVideoFrame frame)
+    {
+        var start = Stopwatch.GetTimestamp();
+        var decoded = decoder.TryDecodeNextVideoFrame(out frame);
+        if (decoded)
+        {
+            var elapsedMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
+            TrackPlaybackDecodeDuration(elapsedMs);
+        }
+
+        return decoded;
+    }
+
+    private void TrackPlaybackDecodeDuration(double elapsedMs)
+    {
+        if (elapsedMs <= 0 || double.IsNaN(elapsedMs) || double.IsInfinity(elapsedMs))
+        {
+            return;
+        }
+
+        lock (_playbackDecodeLock)
+        {
+            _playbackDecodeDurationsMs[_playbackDecodeDurationHead] = elapsedMs;
+            _playbackDecodeDurationHead = (_playbackDecodeDurationHead + 1) % _playbackDecodeDurationsMs.Length;
+            if (_playbackDecodeDurationCount < _playbackDecodeDurationsMs.Length)
+            {
+                _playbackDecodeDurationCount++;
+            }
         }
     }
 

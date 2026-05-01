@@ -226,6 +226,11 @@ static partial class Program
                 new("FlashbackPlaybackSlowFrames", typeof(long)),
                 new("FlashbackPlaybackSlowFramePercent", typeof(double)),
                 new("FlashbackPlaybackOnePercentLowFps", typeof(double)),
+                new("FlashbackPlaybackDecodeSampleCount", typeof(int)),
+                new("FlashbackPlaybackDecodeAvgMs", typeof(double)),
+                new("FlashbackPlaybackDecodeP95Ms", typeof(double)),
+                new("FlashbackPlaybackDecodeP99Ms", typeof(double)),
+                new("FlashbackPlaybackDecodeMaxMs", typeof(double)),
                 new("FlashbackAvDriftMs", typeof(double)),
                 new("FlashbackPlaybackThreadAlive", typeof(bool)),
                 new("FlashbackPlaybackCommandsEnqueued", typeof(long)),
@@ -320,6 +325,11 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastSegmentSwitchUtcUnixMs", 123L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastFmp4ReopenUtcUnixMs", 456L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastWriteHeadWaitGapMs", 789L);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeSampleCount", 120);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeAvgMs", 1.25d);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeP95Ms", 2.5d);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeP99Ms", 3.5d);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeMaxMs", 4.5d);
         SetPropertyOrBackingField(health, "FlashbackPlaybackCommandsEnqueued", 9L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackPendingCommands", 2);
         SetPropertyOrBackingField(health, "FlashbackPlaybackMaxPendingCommands", 5);
@@ -352,6 +362,11 @@ static partial class Program
         AssertEqual(123L, GetLongProperty(health, "FlashbackPlaybackLastSegmentSwitchUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastSegmentSwitchUtcUnixMs round-trip");
         AssertEqual(456L, GetLongProperty(health, "FlashbackPlaybackLastFmp4ReopenUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastFmp4ReopenUtcUnixMs round-trip");
         AssertEqual(789L, GetLongProperty(health, "FlashbackPlaybackLastWriteHeadWaitGapMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastWriteHeadWaitGapMs round-trip");
+        AssertEqual(120, GetIntProperty(health, "FlashbackPlaybackDecodeSampleCount"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeSampleCount round-trip");
+        AssertEqual(1.25d, GetDoubleProperty(health, "FlashbackPlaybackDecodeAvgMs"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeAvgMs round-trip");
+        AssertEqual(2.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeP95Ms"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeP95Ms round-trip");
+        AssertEqual(3.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeP99Ms"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeP99Ms round-trip");
+        AssertEqual(4.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeMaxMs"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeMaxMs round-trip");
         AssertEqual(9L, GetLongProperty(health, "FlashbackPlaybackCommandsEnqueued"), "CaptureHealthSnapshot.FlashbackPlaybackCommandsEnqueued round-trip");
         AssertEqual(2, GetIntProperty(health, "FlashbackPlaybackPendingCommands"), "CaptureHealthSnapshot.FlashbackPlaybackPendingCommands round-trip");
         AssertEqual(5, GetIntProperty(health, "FlashbackPlaybackMaxPendingCommands"), "CaptureHealthSnapshot.FlashbackPlaybackMaxPendingCommands round-trip");

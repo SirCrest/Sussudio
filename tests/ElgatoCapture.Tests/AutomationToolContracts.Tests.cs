@@ -192,6 +192,11 @@ static partial class Program
                 "FlashbackPlaybackLastCommandQueued": "UpdateScrub",
                 "FlashbackPlaybackLastCommandProcessed": "BeginScrub",
                 "FlashbackPlaybackLastCommandFailure": "not_ready:Pause",
+                "FlashbackPlaybackDecodeSampleCount": 120,
+                "FlashbackPlaybackDecodeAvgMs": 1.25,
+                "FlashbackPlaybackDecodeP95Ms": 2.5,
+                "FlashbackPlaybackDecodeP99Ms": 3.5,
+                "FlashbackPlaybackDecodeMaxMs": 4.5,
                 "FlashbackExportActive": true,
                 "FlashbackExportStatus": "Running",
                 "FlashbackExportId": 7,
@@ -250,6 +255,7 @@ static partial class Program
         AssertContains(formatted, "Encoder: hevc_nvenc");
         AssertContains(formatted, "Temp Cache: cache=50 MB budget=100 MB free=2 GB sessions=2 deleted=1 freed=25 MB overBudget=false");
         AssertContains(formatted, "Playback Commands: pending=1 maxPending=4 lastLatency=12ms maxLatency=87ms enq=12 proc=11 drop=0 skip=2 threadAlive=true lastQueued=UpdateScrub lastProcessed=BeginScrub failure=not_ready:Pause");
+        AssertContains(formatted, "Playback Decode: avg=1.25ms P95=2.5ms P99=3.5ms max=4.5ms samples=120");
         AssertContains(formatted, "Export: active=true status=Running id=7 progress=37.5% segments=3/8");
         AssertContains(formatted, "== MJPEG Pipeline Timing ==");
         AssertContains(formatted, "Decoder[0]: avg=2.1ms");

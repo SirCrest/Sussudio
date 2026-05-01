@@ -1295,6 +1295,7 @@ public partial class CaptureService
         }
 
         var playbackCadence = fbPlayback?.GetPlaybackCadenceMetrics() ?? default;
+        var playbackDecode = fbPlayback?.GetPlaybackDecodeMetrics() ?? default;
 
         return new CaptureHealthSnapshot
         {
@@ -1348,6 +1349,11 @@ public partial class CaptureService
             FlashbackPlaybackSlowFrames = playbackCadence.SlowFrameCount,
             FlashbackPlaybackSlowFramePercent = playbackCadence.SlowFramePercent,
             FlashbackPlaybackOnePercentLowFps = playbackCadence.OnePercentLowFps,
+            FlashbackPlaybackDecodeSampleCount = playbackDecode.SampleCount,
+            FlashbackPlaybackDecodeAvgMs = playbackDecode.AvgMs,
+            FlashbackPlaybackDecodeP95Ms = playbackDecode.P95Ms,
+            FlashbackPlaybackDecodeP99Ms = playbackDecode.P99Ms,
+            FlashbackPlaybackDecodeMaxMs = playbackDecode.MaxMs,
             FlashbackAvDriftMs = fbPlayback?.AvDriftMs ?? 0,
             FlashbackPlaybackThreadAlive = fbPlayback?.PlaybackThreadAlive ?? false,
             FlashbackPlaybackCommandsEnqueued = fbPlayback?.CommandsEnqueued ?? 0,
