@@ -2147,6 +2147,12 @@ static partial class Program
         AssertContains(sourceText, "if (!TryValidateSoftwareVideoFrame(_videoFrame, _decodedPixelFormat, _videoWidth, _videoHeight, _isHdr, out var frameFailure))");
         AssertContains(sourceText, "FLASHBACK_DECODER_VIDEO_WARN reason=invalid_software_frame");
         AssertContains(sourceText, "ffmpeg.av_frame_unref(_videoFrame);\n            return default;");
+        var softwareOutputBlock = ExtractTextBetween(
+            sourceText,
+            "var outputSize = CalculateFrameBufferSize(_videoWidth, _videoHeight, _isHdr);",
+            "    private void CopyFramePlanesToBuffer");
+        AssertContains(softwareOutputBlock, "finally\n        {\n            ffmpeg.av_frame_unref(_videoFrame);\n        }");
+        AssertOccursBefore(softwareOutputBlock, "CopyFramePlanesToBuffer((byte*)dataPtr, outputSize);", "finally\n        {\n            ffmpeg.av_frame_unref(_videoFrame);\n        }");
         AssertContains(sourceText, "private static bool TryValidateSoftwareVideoFrame(");
         AssertContains(sourceText, "width_mismatch frame={frame->width} expected={width}");
         AssertContains(sourceText, "height_mismatch frame={frame->height} expected={height}");

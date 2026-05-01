@@ -949,55 +949,59 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             return default;
         }
 
-        var targetFormat = _isHdr ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
-        var outputSize = CalculateFrameBufferSize(_videoWidth, _videoHeight, _isHdr);
-
-        // Select the next buffer in the double-buffer ring
-        var bufferIndex = _currentVideoBufferIndex;
-        _currentVideoBufferIndex = (_currentVideoBufferIndex + 1) % VideoFrameBufferCount;
-
-        var buffer = _videoFrameBuffers[bufferIndex]!;
-        if (buffer.Length < outputSize)
+        try
         {
-            Logger.Log($"FLASHBACK_DECODER_VIDEO_REALLOC old={buffer.Length} new={outputSize}");
-            if (_videoFrameHandles[bufferIndex].IsAllocated)
+            var outputSize = CalculateFrameBufferSize(_videoWidth, _videoHeight, _isHdr);
+
+            // Select the next buffer in the double-buffer ring
+            var bufferIndex = _currentVideoBufferIndex;
+            _currentVideoBufferIndex = (_currentVideoBufferIndex + 1) % VideoFrameBufferCount;
+
+            var buffer = _videoFrameBuffers[bufferIndex]!;
+            if (buffer.Length < outputSize)
             {
-                _videoFrameHandles[bufferIndex].Free();
+                Logger.Log($"FLASHBACK_DECODER_VIDEO_REALLOC old={buffer.Length} new={outputSize}");
+                if (_videoFrameHandles[bufferIndex].IsAllocated)
+                {
+                    _videoFrameHandles[bufferIndex].Free();
+                }
+
+                ArrayPool<byte>.Shared.Return(buffer);
+                buffer = ArrayPool<byte>.Shared.Rent(outputSize);
+                _videoFrameBuffers[bufferIndex] = buffer;
+                _videoFrameHandles[bufferIndex] = GCHandle.Alloc(buffer, GCHandleType.Pinned);
             }
 
-            ArrayPool<byte>.Shared.Return(buffer);
-            buffer = ArrayPool<byte>.Shared.Rent(outputSize);
-            _videoFrameBuffers[bufferIndex] = buffer;
-            _videoFrameHandles[bufferIndex] = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-        }
+            var dataPtr = _videoFrameHandles[bufferIndex].AddrOfPinnedObject();
 
-        var dataPtr = _videoFrameHandles[bufferIndex].AddrOfPinnedObject();
-
-        if (_needsConvert)
-        {
-            if (!_isHdr)
-                ConvertYuv420pToNv12((byte*)dataPtr);
+            if (_needsConvert)
+            {
+                if (!_isHdr)
+                    ConvertYuv420pToNv12((byte*)dataPtr);
+                else
+                    ConvertYuv420p10leToP010((byte*)dataPtr);
+            }
             else
-                ConvertYuv420p10leToP010((byte*)dataPtr);
-        }
-        else
-        {
-            CopyFramePlanesToBuffer((byte*)dataPtr, outputSize);
-        }
+            {
+                CopyFramePlanesToBuffer((byte*)dataPtr, outputSize);
+            }
 
-        ffmpeg.av_frame_unref(_videoFrame);
-
-        return new DecodedVideoFrame
+            return new DecodedVideoFrame
+            {
+                Data = dataPtr,
+                DataLength = outputSize,
+                Width = _videoWidth,
+                Height = _videoHeight,
+                IsHdr = _isHdr,
+                Pts = pts,
+                IsD3D11Texture = false,
+                HeldFrame = IntPtr.Zero
+            };
+        }
+        finally
         {
-            Data = dataPtr,
-            DataLength = outputSize,
-            Width = _videoWidth,
-            Height = _videoHeight,
-            IsHdr = _isHdr,
-            Pts = pts,
-            IsD3D11Texture = false,
-            HeldFrame = IntPtr.Zero
-        };
+            ffmpeg.av_frame_unref(_videoFrame);
+        }
     }
 
     private void CopyFramePlanesToBuffer(byte* dest, int destSize)
