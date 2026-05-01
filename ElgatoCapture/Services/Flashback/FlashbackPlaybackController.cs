@@ -1287,7 +1287,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             if (!TryDecodeNextVideoFrameWithMetrics(decoder, out var videoFrame))
             {
-                return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen);
+                return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
             }
 
             // Frame skip: when video falls significantly behind audio, decode-and-discard
@@ -1317,7 +1317,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         skipped++;
 
                         if (!TryDecodeNextVideoFrameWithMetrics(decoder, out videoFrame))
-                            return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen);
+                            return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
 
                         // Recompute drift with the new frame's PTS
                         wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
@@ -1379,7 +1379,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
         FlashbackDecoder decoder,
         Stopwatch pacingStopwatch,
         TimeSpan frozenValidStart,
-        ref bool fileOpen)
+        ref bool fileOpen,
+        CancellationToken cancellationToken)
     {
         // Use absolute PTS to measure distance from live edge.
         // PlaybackPosition uses frozenValidStart (captured at scrub time) while
@@ -1480,7 +1481,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Increment(ref _playbackWriteHeadWaits);
         Interlocked.Exchange(ref _lastWriteHeadWaitGapMs, Math.Max(0, (long)gapFromLive));
         Logger.Log($"FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT gapFromLive_ms={gapFromLive:F0} pos_ms={(long)pos.TotalMilliseconds} lastFrameAbsPts_ms={(long)lastFrameAbsPts.TotalMilliseconds} latestPts_ms={(long)latestAbsPts.TotalMilliseconds}");
-        Thread.Sleep(50);
+        if (cancellationToken.WaitHandle.WaitOne(50))
+        {
+            return false;
+        }
+
         pacingStopwatch.Restart();
         return true;
     }
