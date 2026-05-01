@@ -156,6 +156,13 @@ static partial class Program
         var source = ReadRepoFile("ElgatoCapture/Services/Preview/D3D11PreviewRenderer.cs");
         var renderSource = ReadRepoFile("ElgatoCapture/Services/Preview/D3D11PreviewRenderer.Rendering.cs");
         AssertContains(source, "ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
+        AssertContains(source, "ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL");
+        AssertContains(source, "private long _dxgiFrameStatisticsFrameCounter;");
+        AssertContains(source, "private long _dxgiFrameStatisticsLastSampleFrameCounter;");
+        AssertContains(source, "var frameCounter = Interlocked.Increment(ref _dxgiFrameStatisticsFrameCounter);");
+        AssertContains(source, "frameCounter % _dxgiFrameStatisticsSampleIntervalFrames != 0");
+        AssertContains(source, "_dxgiFrameStatisticsLastSampleFrameCounter = frameCounter;");
+        AssertContains(source, "frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter");
         AssertContains(source, "private int _pendingFrameCount;");
         AssertContains(source, "public int PendingFrameCount => Math.Max(0, Volatile.Read(ref _pendingFrameCount));");
         AssertContains(source, "var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);\n            _pendingFrames.Enqueue(frame);");

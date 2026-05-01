@@ -381,6 +381,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private readonly int _maxPendingFrames = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RENDER_QUEUE_DEPTH", 4, 1, 8);
     private readonly bool _waitableSwapChainEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_WAITABLE_SWAPCHAIN", 0, 0, 1) != 0;
     private readonly bool _dxgiFrameStatisticsEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS", 1, 0, 1) != 0;
+    private readonly int _dxgiFrameStatisticsSampleIntervalFrames = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL", 2, 1, 120);
     private readonly bool _dxgiFrameStatisticsDwmFlushEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH", 0, 0, 1) != 0;
     private readonly double _slowFrameDiagnosticThresholdMs = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PREVIEW_SLOW_FRAME_THRESHOLD_MS", 0, 0, 1000);
     private readonly bool _mediaPresentDurationEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_MEDIA_PRESENT_DURATION", 0, 0, 1) != 0;
@@ -461,6 +462,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private long _dxgiFrameStatisticsLastPresentRefreshDelta;
     private long _dxgiFrameStatisticsLastSyncRefreshDelta;
     private long _dxgiFrameStatisticsMissedRefreshCount;
+    private long _dxgiFrameStatisticsFrameCounter;
+    private long _dxgiFrameStatisticsLastSampleFrameCounter;
     private bool _dxgiFrameStatisticsHasBaseline;
     private long _lastSubmittedPreviewPresentId;
     private long _lastSubmittedSourceSequenceNumber = -1;
@@ -1556,6 +1559,13 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             return;
         }
 
+        var frameCounter = Interlocked.Increment(ref _dxgiFrameStatisticsFrameCounter);
+        if (_dxgiFrameStatisticsSampleIntervalFrames > 1 &&
+            frameCounter % _dxgiFrameStatisticsSampleIntervalFrames != 0)
+        {
+            return;
+        }
+
         try
         {
             if (_dxgiFrameStatisticsDwmFlushEnabled)
@@ -1566,6 +1576,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             var result = _swapChain.GetFrameStatistics(out var stats);
             lock (_dxgiFrameStatisticsLock)
             {
+                _dxgiFrameStatisticsLastSampleFrameCounter = frameCounter;
                 _dxgiFrameStatisticsSampleCount++;
                 if (result.Failure)
                 {
@@ -1628,6 +1639,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         {
             lock (_dxgiFrameStatisticsLock)
             {
+                _dxgiFrameStatisticsLastSampleFrameCounter = frameCounter;
                 _dxgiFrameStatisticsSampleCount++;
                 _dxgiFrameStatisticsFailureCount++;
                 _dxgiFrameStatisticsLastError = $"{ex.GetType().Name}:0x{ex.HResult:X8}";
@@ -1751,15 +1763,21 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         long presentRefreshDelta;
         long syncRefreshDelta;
         long missedRefreshCount;
+        var frameStatisticsFrameCounter = Interlocked.Read(ref _dxgiFrameStatisticsFrameCounter);
+        long frameStatisticsLastSampleFrameCounter;
         lock (_dxgiFrameStatisticsLock)
         {
             presentDelta = _dxgiFrameStatisticsLastPresentDelta;
             presentRefreshDelta = _dxgiFrameStatisticsLastPresentRefreshDelta;
             syncRefreshDelta = _dxgiFrameStatisticsLastSyncRefreshDelta;
             missedRefreshCount = _dxgiFrameStatisticsMissedRefreshCount;
+            frameStatisticsLastSampleFrameCounter = _dxgiFrameStatisticsLastSampleFrameCounter;
         }
 
-        var dxgiRefreshSlip = presentDelta > 0 && presentRefreshDelta > presentDelta;
+        var dxgiRefreshSlip =
+            frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter &&
+            presentDelta > 0 &&
+            presentRefreshDelta > presentDelta;
         if ((presentIntervalMs <= 0 || presentIntervalMs < thresholdMs) &&
             totalMs < thresholdMs &&
             presentCallMs < thresholdMs &&
