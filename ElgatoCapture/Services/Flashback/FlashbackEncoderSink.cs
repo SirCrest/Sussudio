@@ -734,7 +734,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         CompleteWriter(_audioQueue);
         CompleteWriter(_microphoneQueue);
         CompleteWriter(_gpuQueue);
-        _cts?.Cancel();
+        CancelEncodingCts("dispose");
 
         if (_encodingTask == null)
         {
@@ -834,6 +834,18 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
+    private void CancelEncodingCts(string operation)
+    {
+        try
+        {
+            _cts?.Cancel();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_CANCEL_WARN op={operation} type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
     private async Task<FinalizeResult> StopCoreAsync(CancellationToken cancellationToken)
     {
         var outputPath = _recordingOutputPath ?? _tsFilePath ?? string.Empty;
@@ -858,7 +870,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             if (!ReferenceEquals(completedTask, _encodingTask))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                _cts?.Cancel();
+                CancelEncodingCts("stop_timeout");
                 Logger.Log("FLASHBACK_SINK_STOP_DRAIN_TIMEOUT");
                 return FinalizeResult.Failure(outputPath, "Stopped (flashback encode drain timed out)");
             }
