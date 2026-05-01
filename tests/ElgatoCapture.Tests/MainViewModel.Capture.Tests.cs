@@ -115,6 +115,7 @@ static partial class Program
         AssertContains(automationText, "ReferenceEquals(_exportCts, exportCts)");
         AssertContains(automationText, "private static void CancelFlashbackExportCts(CancellationTokenSource? cts)");
         AssertContains(automationText, "catch (ObjectDisposedException)");
+        AssertContains(rawAutomationText, "FLASHBACK_EXPORT_CTS_CANCEL_WARN");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "CancelFlashbackExportCts(oldExportCts);");

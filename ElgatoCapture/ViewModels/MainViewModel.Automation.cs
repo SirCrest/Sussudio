@@ -368,6 +368,10 @@ public partial class MainViewModel
             // A previous automation export may have completed on a background
             // thread while its UI cleanup was still queued.
         }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_CTS_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
