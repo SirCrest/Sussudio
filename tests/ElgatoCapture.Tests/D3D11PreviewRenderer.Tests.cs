@@ -171,6 +171,14 @@ static partial class Program
         AssertContains(source, "private int _pendingFrameCount;");
         AssertContains(source, "public int PendingFrameCount => Math.Max(0, Volatile.Read(ref _pendingFrameCount));");
         AssertContains(source, "var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);\n            _pendingFrames.Enqueue(frame);");
+        AssertContains(source, "private void SignalFrameReady(string operation)");
+        AssertContains(source, "private void ResetFrameReady(string operation)");
+        AssertContains(source, "D3D11_PREVIEW_FRAME_SIGNAL_SKIPPED");
+        AssertContains(source, "D3D11_PREVIEW_FRAME_RESET_SKIPPED");
+        AssertContains(source, "SignalFrameReady(\"pending_frame\");");
+        AssertContains(renderSource, "SignalFrameReady(\"render_loop_drain\");");
+        AssertEqual(1, (source + renderSource).Split("_frameReadyEvent.Set();", StringSplitOptions.None).Length - 1, "All D3D frame-ready signals go through SignalFrameReady");
+        AssertEqual(1, (source + renderSource).Split("_frameReadyEvent.Reset();", StringSplitOptions.None).Length - 1, "All D3D frame-ready resets go through ResetFrameReady");
         AssertContains(source, "private bool TryDequeuePendingFrame(out PendingFrame frame)");
         AssertContains(source, "DecrementPendingFrameCount();");
         AssertDoesNotContain(source, "_pendingFrames.Count");

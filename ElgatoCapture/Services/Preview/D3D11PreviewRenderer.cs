@@ -605,7 +605,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     {
         Interlocked.Exchange(ref _hdrPassthroughEnabled, enabled ? 1 : 0);
         Interlocked.Exchange(ref _swapChainColorSpaceDirty, 1);
-        _frameReadyEvent.Set();
+        SignalFrameReady("hdr_passthrough");
     }
 
     public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath)
@@ -709,7 +709,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         if (Volatile.Read(ref _isRendering) != 0)
         {
             Interlocked.Exchange(ref _sharedDeviceResetPending, 1);
-            _frameReadyEvent.Set();
+            SignalFrameReady("shared_device_reset");
         }
     }
 
@@ -747,7 +747,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             Interlocked.Exchange(ref _compositionTransformDirty, 1);
             Interlocked.Exchange(ref _firstFrameRaised, 0);
             Interlocked.Exchange(ref _sharedDeviceResetPending, 0);
-            _frameReadyEvent.Reset();
+            ResetFrameReady("start");
 
             _renderThread = new Thread(RenderThreadMain)
             {
@@ -793,7 +793,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         // AccessViolationException in WinUI 3's ISwapChainPanelNative.
         Interlocked.Exchange(ref _skipSwapChainDisposal, 1);
 
-        _frameReadyEvent.Set();
+        SignalFrameReady("stop_render_thread");
         if (Thread.CurrentThread != renderThread)
         {
             if (!renderThread.Join(TimeSpan.FromMilliseconds(_renderThreadStopTimeoutMs)))
@@ -883,7 +883,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
         // Wake the render thread AFTER the swap chain is safely unbound so it
         // sees _stopRequested and exits without attempting to Present.
-        _frameReadyEvent.Set();
+        SignalFrameReady("stop");
         if (Thread.CurrentThread != renderThread)
         {
             if (!renderThread.Join(TimeSpan.FromMilliseconds(_renderThreadStopTimeoutMs)))
@@ -951,7 +951,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Volatile.Write(ref _panelPixelHeight, pixelHeight);
         Volatile.Write(ref _rasterizationScale, rasterizationScale);
         Interlocked.Exchange(ref _compositionTransformDirty, 1);
-        _frameReadyEvent.Set();
+        SignalFrameReady("panel_size_changed");
         Logger.Log($"D3D11 preview resize requested width={pixelWidth} height={pixelHeight} scale={rasterizationScale}.");
     }
 
@@ -1214,7 +1214,31 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             Interlocked.Increment(ref _framesSubmitted);
         }
 
-        _frameReadyEvent.Set();
+        SignalFrameReady("pending_frame");
+    }
+
+    private void SignalFrameReady(string operation)
+    {
+        try
+        {
+            _frameReadyEvent.Set();
+        }
+        catch (ObjectDisposedException)
+        {
+            Logger.Log($"D3D11_PREVIEW_FRAME_SIGNAL_SKIPPED op={operation} reason=disposed");
+        }
+    }
+
+    private void ResetFrameReady(string operation)
+    {
+        try
+        {
+            _frameReadyEvent.Reset();
+        }
+        catch (ObjectDisposedException)
+        {
+            Logger.Log($"D3D11_PREVIEW_FRAME_RESET_SKIPPED op={operation} reason=disposed");
+        }
     }
 
     private bool TryDequeuePendingFrame(out PendingFrame frame)

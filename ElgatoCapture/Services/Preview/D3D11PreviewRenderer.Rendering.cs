@@ -82,12 +82,12 @@ internal sealed partial class D3D11PreviewRenderer
 
                 if (!TryDequeuePendingFrame(out var frame))
                 {
-                    _frameReadyEvent.Reset();
+                    ResetFrameReady("render_loop_idle");
                     if (!_pendingFrames.IsEmpty ||
                         Volatile.Read(ref _compositionTransformDirty) != 0 ||
                         Volatile.Read(ref _sharedDeviceResetPending) != 0)
                     {
-                        _frameReadyEvent.Set();
+                        SignalFrameReady("render_loop_race");
                     }
                     continue;
                 }
@@ -113,7 +113,7 @@ internal sealed partial class D3D11PreviewRenderer
                     // render thread drains the elastic buffer without waiting.
                     if (!_pendingFrames.IsEmpty)
                     {
-                        _frameReadyEvent.Set();
+                        SignalFrameReady("render_loop_drain");
                     }
                 }
                 catch (Exception ex)
@@ -138,7 +138,7 @@ internal sealed partial class D3D11PreviewRenderer
                     Volatile.Read(ref _compositionTransformDirty) == 0 &&
                     Volatile.Read(ref _sharedDeviceResetPending) == 0)
                 {
-                    _frameReadyEvent.Reset();
+                    ResetFrameReady("render_loop_empty_after_failure");
                 }
             }
         }
