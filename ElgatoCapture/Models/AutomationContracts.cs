@@ -949,6 +949,8 @@ public sealed class PerformanceTimelineEntry
     public int FlashbackExportSegmentsProcessed { get; init; }
     public int FlashbackExportTotalSegments { get; init; }
     public double FlashbackExportPercent { get; init; }
+    public long FlashbackExportInPointMs { get; init; }
+    public long FlashbackExportOutPointMs { get; init; }
     public long PipelineLatencyMs { get; init; }
     public double ProcessCpuPercent { get; init; }
     public double MemoryWorkingSetMb { get; init; }

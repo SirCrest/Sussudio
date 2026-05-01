@@ -1276,6 +1276,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 FlashbackExportSegmentsProcessed = snapshot.FlashbackExportSegmentsProcessed,
                 FlashbackExportTotalSegments = snapshot.FlashbackExportTotalSegments,
                 FlashbackExportPercent = snapshot.FlashbackExportPercent,
+                FlashbackExportInPointMs = snapshot.FlashbackExportInPointMs,
+                FlashbackExportOutPointMs = snapshot.FlashbackExportOutPointMs,
                 PipelineLatencyMs = snapshot.EstimatedPipelineLatencyMs,
                 ProcessCpuPercent = snapshot.ProcessCpuPercent,
                 MemoryWorkingSetMb = snapshot.MemoryWorkingSetMb,

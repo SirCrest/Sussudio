@@ -696,6 +696,8 @@ static partial class Program
         AssertContains(source, "FlashbackCleanupInProgress");
         AssertContains(source, "FlashbackExportFailureKind");
         AssertContains(source, "FlashbackExportPercent");
+        AssertContains(source, "FlashbackExportInPointMs");
+        AssertContains(source, "FlashbackExportOutPointMs");
         AssertContains(source, "FlashbackExportThroughputBytesPerSec");
         AssertContains(source, "FlashbackExportLastProgressAgeMs");
         AssertContains(source, "MjpegPreviewJitterLatencyP95Ms");
@@ -721,6 +723,8 @@ static partial class Program
         AssertContains(source, "Cleanup State:");
         AssertContains(source, "kind={FormatOptional(last.FlashbackExportFailureKind)}");
         AssertContains(source, "Export Progress:");
+        AssertContains(source, "Export Range:");
+        AssertContains(source, "FormatExportOutPoint");
         AssertContains(source, "Export Output:");
 
         return Task.CompletedTask;

@@ -390,6 +390,8 @@ static partial class Program
                      "FlashbackExportStatus",
                      "FlashbackExportFailureKind",
                      "FlashbackExportPercent",
+                     "FlashbackExportInPointMs",
+                     "FlashbackExportOutPointMs",
                      "FlashbackExportThroughputBytesPerSec",
                      "FlashbackExportLastProgressAgeMs",
                      "ProcessCpuPercent"
