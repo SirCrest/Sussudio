@@ -1233,6 +1233,8 @@ public partial class CaptureService
         var fbSink = _flashbackSink;
         var bufMgr = _flashbackBufferManager;
         var fbPlayback = _flashbackPlaybackController;
+        var fatalCleanupInProgress = Volatile.Read(ref _fatalCleanupInProgress) != 0;
+        var flashbackCleanupInProgress = Volatile.Read(ref _flashbackCleanupInProgress) != 0;
         var observedTelemetry = ResolveObservedFrameTelemetry();
         var videoFramesDropped = sink?.DroppedVideoFrames ?? Interlocked.Read(ref _videoFramesDropped);
         var sourceTelemetrySuppressedReason = ResolveSourceTelemetrySuppressedReason(_latestSourceTelemetry);
@@ -1560,6 +1562,8 @@ public partial class CaptureService
             FlashbackEncodingFailed = flashbackEncodingFailed,
             FlashbackEncodingFailureType = flashbackFailureType,
             FlashbackEncodingFailureMessage = flashbackFailureMessage,
+            FatalCleanupInProgress = fatalCleanupInProgress,
+            FlashbackCleanupInProgress = flashbackCleanupInProgress,
             FlashbackForceRotateActive = fbSink?.IsForceRotateActive ?? false,
             FlashbackVideoQueueCapacity = fbSink?.VideoQueueCapacityFrames ?? 0,
             FlashbackVideoQueueMaxDepth = fbSink?.VideoQueueMaxDepth ?? 0,

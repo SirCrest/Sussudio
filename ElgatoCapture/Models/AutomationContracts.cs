@@ -587,6 +587,8 @@ public sealed class AutomationSnapshot
     public bool FlashbackEncodingFailed { get; init; }
     public string? FlashbackEncodingFailureType { get; init; }
     public string? FlashbackEncodingFailureMessage { get; init; }
+    public bool FatalCleanupInProgress { get; init; }
+    public bool FlashbackCleanupInProgress { get; init; }
     public bool FlashbackForceRotateActive { get; init; }
     public int FlashbackVideoQueueCapacity { get; init; }
     public int FlashbackVideoQueueMaxDepth { get; init; }

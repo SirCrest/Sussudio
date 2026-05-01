@@ -911,6 +911,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackEncodingFailed = health.FlashbackEncodingFailed,
             FlashbackEncodingFailureType = health.FlashbackEncodingFailureType,
             FlashbackEncodingFailureMessage = health.FlashbackEncodingFailureMessage,
+            FatalCleanupInProgress = health.FatalCleanupInProgress,
+            FlashbackCleanupInProgress = health.FlashbackCleanupInProgress,
             FlashbackForceRotateActive = health.FlashbackForceRotateActive,
             FlashbackTempDriveFreeBytes = health.FlashbackTempDriveFreeBytes,
             FlashbackStartupCacheBudgetBytes = health.FlashbackStartupCacheBudgetBytes,
@@ -1767,7 +1769,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"flashback recording active={health.FlashbackActive} failed={health.FlashbackEncodingFailed} type={health.FlashbackEncodingFailureType ?? "None"} " +
             $"dropped={health.FlashbackDroppedFrames} encoderDrops={health.FlashbackVideoEncoderDroppedFrames} seqGaps={health.FlashbackVideoSequenceGaps} " +
             $"gpuOverloads={health.FlashbackGpuFramesDropped} forceRotate={health.FlashbackForceRotateActive} queue={health.FlashbackVideoQueueDepth}/{health.FlashbackVideoQueueCapacity} maxQueue={health.FlashbackVideoQueueMaxDepth} " +
-            $"queueAgeMs={health.FlashbackVideoQueueOldestFrameAgeMs} backpressure={health.FlashbackVideoBackpressureWaitMs}ms/{health.FlashbackVideoBackpressureEvents} maxBackpressure={health.FlashbackVideoBackpressureMaxWaitMs}ms";
+            $"queueAgeMs={health.FlashbackVideoQueueOldestFrameAgeMs} backpressure={health.FlashbackVideoBackpressureWaitMs}ms/{health.FlashbackVideoBackpressureEvents} maxBackpressure={health.FlashbackVideoBackpressureMaxWaitMs}ms " +
+            $"fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}";
         var exportLane =
             $"export active={health.FlashbackExportActive} status={health.FlashbackExportStatus} id={health.FlashbackExportId} progress={health.FlashbackExportPercent:0.##}% segments={health.FlashbackExportSegmentsProcessed}/{health.FlashbackExportTotalSegments} elapsedMs={health.FlashbackExportElapsedMs} progressAgeMs={health.FlashbackExportLastProgressAgeMs} bytes={health.FlashbackExportOutputBytes} throughputBps={health.FlashbackExportThroughputBytesPerSec:0.##} lastProgressUtc={health.FlashbackExportLastProgressUtcUnixMs} completedUtc={health.FlashbackExportCompletedUtcUnixMs}";
         var tempCacheLane =

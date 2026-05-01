@@ -287,6 +287,8 @@ static partial class Program
         AssertContains(diagnosticsText, "snapshot.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs");
         AssertContains(diagnosticsText, "Flashback recording path degraded:");
         AssertContains(diagnosticsText, "forceRotate={snapshot.FlashbackForceRotateActive}");
+        AssertContains(diagnosticsText, "FatalCleanupInProgress = health.FatalCleanupInProgress");
+        AssertContains(diagnosticsText, "FlashbackCleanupInProgress = health.FlashbackCleanupInProgress");
         AssertContains(diagnosticsText, "recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents}");
         AssertContains(diagnosticsText, "\"flashback-playback-slow\"");
         AssertContains(diagnosticsText, "\"flashback-playback-submit-failures\"");
@@ -303,6 +305,7 @@ static partial class Program
         AssertContains(diagnosticsText, "\"Flashback playback is below target rate.\"");
         AssertContains(diagnosticsText, "\"Flashback playback frame submission failed.\"");
         AssertContains(diagnosticsText, "flashback recording active={health.FlashbackActive}");
+        AssertContains(diagnosticsText, "fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}");
         AssertContains(diagnosticsText, "var flashbackRecordingDegraded =");
         AssertContains(diagnosticsText, "health.FlashbackVideoEncoderDroppedFrames > 0");
         AssertContains(diagnosticsText, "health.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs");

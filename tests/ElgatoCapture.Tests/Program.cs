@@ -1380,6 +1380,8 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheDeletedSessionCount"), "AutomationSnapshot.FlashbackStartupCacheDeletedSessionCount");
         AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheFreedBytes"), "AutomationSnapshot.FlashbackStartupCacheFreedBytes");
         AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheOverBudget"), "AutomationSnapshot.FlashbackStartupCacheOverBudget");
+        AssertNotNull(snapshotType.GetProperty("FatalCleanupInProgress"), "AutomationSnapshot.FatalCleanupInProgress");
+        AssertNotNull(snapshotType.GetProperty("FlashbackCleanupInProgress"), "AutomationSnapshot.FlashbackCleanupInProgress");
         AssertNotNull(snapshotType.GetProperty("FlashbackForceRotateActive"), "AutomationSnapshot.FlashbackForceRotateActive");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoFramesSubmittedToEncoder"), "AutomationSnapshot.FlashbackVideoFramesSubmittedToEncoder");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoEncoderPacketsWritten"), "AutomationSnapshot.FlashbackVideoEncoderPacketsWritten");
