@@ -329,9 +329,11 @@ static partial class Program
         AssertContains(sourceText, "if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FinalizeResult.Failure(outputPath, outputPathFailure);\n        }");
         AssertContains(sourceText, "private static bool TryValidateOutputDirectory(string outputPath, out string failureMessage)");
         AssertContains(sourceText, "failureMessage = \"Flashback export failed: output path is required.\";");
-        AssertContains(sourceText, "catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)");
+        AssertContains(sourceText, "catch (Exception ex)\n        {\n            failureMessage = $\"Flashback export failed: output path is invalid '{outputPath}'.\";\n            Logger.Log($\"FLASHBACK_EXPORT_PATH_VALIDATE_WARN path='{outputPath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            return false;\n        }");
         AssertContains(sourceText, "failureMessage = $\"Flashback export failed: output path is invalid '{outputPath}'.\";");
         AssertContains(sourceText, "failureMessage = $\"Flashback export failed: output directory does not exist for '{outputPath}'.\";");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_PATH_COMPARE_WARN");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN");
 
         return Task.CompletedTask;
     }

@@ -517,9 +517,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     totalEstimatedBytes += new FileInfo(segment.Path).Length;
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Best-effort: segment may be deleted mid-scan; progress estimate is non-critical.
+                Logger.Log($"FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN path='{segment.Path}' type={ex.GetType().Name} msg='{ex.Message}'");
             }
         }
 
@@ -1395,8 +1395,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 Path.GetFullPath(right),
                 StringComparison.OrdinalIgnoreCase);
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.Log($"FLASHBACK_EXPORT_PATH_COMPARE_WARN left='{left}' right='{right}' type={ex.GetType().Name} msg='{ex.Message}'");
             return false;
         }
     }
@@ -1414,9 +1415,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             fullOutputPath = Path.GetFullPath(outputPath);
         }
-        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        catch (Exception ex)
         {
             failureMessage = $"Flashback export failed: output path is invalid '{outputPath}'.";
+            Logger.Log($"FLASHBACK_EXPORT_PATH_VALIDATE_WARN path='{outputPath}' type={ex.GetType().Name} msg='{ex.Message}'");
             return false;
         }
 
