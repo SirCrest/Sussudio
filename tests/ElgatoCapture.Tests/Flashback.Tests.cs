@@ -416,6 +416,15 @@ static partial class Program
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
+        var seekBlock = ExtractTextBetween(
+            sourceText,
+            "case CommandKind.Seek:",
+            "                    case CommandKind.BeginScrub:");
+
+        AssertContains(seekBlock, "_commandChannel.Reader.TryPeek(out var newerSeek) &&\n                               newerSeek.Kind == CommandKind.Seek");
+        AssertContains(seekBlock, "TrackCommandDequeued(newerSeek);");
+        AssertContains(seekBlock, "FLASHBACK_PLAYBACK_SEEK");
+
         var updateScrubBlock = ExtractTextBetween(
             sourceText,
             "case CommandKind.UpdateScrub:",

@@ -16,6 +16,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     // --- Command types marshalled to the playback thread ---
     private enum CommandKind
     {
+        Seek,
         BeginScrub,
         UpdateScrub,
         EndScrub,
@@ -194,6 +195,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (IsNotReady(CommandKind.BeginScrub)) return;
         EnsurePlaybackThread();
         SendCommand(new PlaybackCommand { Kind = CommandKind.BeginScrub, Position = position });
+    }
+
+    public void Seek(TimeSpan position)
+    {
+        if (IsNotReady(CommandKind.Seek)) return;
+        EnsurePlaybackThread();
+        SendCommand(new PlaybackCommand { Kind = CommandKind.Seek, Position = position });
     }
 
     public void UpdateScrub(TimeSpan position)
@@ -424,6 +432,63 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         CleanupDecoder(ref decoder, ref fileOpen);
                         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
                         return;
+
+                    case CommandKind.Seek:
+                        while (_commandChannel.Reader.TryPeek(out var newerSeek) &&
+                               newerSeek.Kind == CommandKind.Seek)
+                        {
+                            if (!_commandChannel.Reader.TryRead(out newerSeek))
+                            {
+                                break;
+                            }
+
+                            TrackCommandDequeued(newerSeek);
+                            cmd = newerSeek;
+                        }
+
+                        _wasPlayingBeforeScrub = isPlaying || State == FlashbackPlaybackState.Live;
+                        isPlaying = false;
+                        isScrubbing = false;
+                        frozenValidStart = _bufferManager.ValidStartPts;
+                        _videoCapture?.SuppressPreviewSubmission();
+                        SuppressLiveAudio();
+                        _audioPlayback?.PauseRendering();
+
+                        decoder ??= CreateDecoder();
+                        EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
+                        if (!decoder.IsOpen)
+                        {
+                            Logger.Log("FLASHBACK_PLAYBACK_SEEK_NO_FILE - restoring live");
+                            RestoreLiveAudio();
+                            _videoCapture?.ResumePreviewSubmission();
+                            _audioPlayback?.ResumeRendering();
+                            SetState(FlashbackPlaybackState.Live);
+                            break;
+                        }
+
+                        SeekAndDisplayKeyframe(decoder, cmd.Position, frozenValidStart);
+                        isPlaying = _wasPlayingBeforeScrub;
+                        if (isPlaying)
+                        {
+                            ResetPlaybackMetrics();
+                            pacingStopwatch.Restart();
+                            var coalescedSeekTarget = PlaybackPosition + frozenValidStart;
+                            decoder.AudioChunkCallback = null;
+                            if (!decoder.SeekTo(coalescedSeekTarget) && IsActiveFmp4Segment(_currentOpenFilePath))
+                            {
+                                Logger.Log($"FLASHBACK_SEEK_REOPEN offset_ms={(long)coalescedSeekTarget.TotalMilliseconds}");
+                                decoder.CloseFile();
+                                decoder.OpenFile(_currentOpenFilePath!);
+                                decoder.SeekTo(coalescedSeekTarget);
+                            }
+                            frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
+                            RestoreAudioCallback(decoder, coalescedSeekTarget.Ticks);
+                            _audioPlayback?.Flush();
+                            _audioPlayback?.ResumeRendering();
+                        }
+                        SetState(isPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused);
+                        Logger.Log($"FLASHBACK_PLAYBACK_SEEK pos_ms={(long)PlaybackPosition.TotalMilliseconds} resumePlay={isPlaying}");
+                        break;
 
                     case CommandKind.BeginScrub:
                         _wasPlayingBeforeScrub = isPlaying || State == FlashbackPlaybackState.Live;

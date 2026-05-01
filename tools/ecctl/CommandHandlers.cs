@@ -134,7 +134,7 @@ internal static class CommandHandlers
         var includePresentMon = ConsumeFlag(context.Rest, "--presentmon");
         var verify = ConsumeFlag(context.Rest, "--verify");
         var leaveRunning = ConsumeFlag(context.Rest, "--leave-running");
-        EnsureNoArgs(context.Rest, "diagnostic-session [--scenario observe|preview-only|recording-only|flashback|flashback-stress|flashback-lifecycle|flashback-export-concurrent|flashback-recording|flashback-export-rejected|combined] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
+        EnsureNoArgs(context.Rest, "diagnostic-session [--scenario observe|preview-only|recording-only|flashback|flashback-stress|flashback-scrub-stress|flashback-lifecycle|flashback-export-concurrent|flashback-recording|flashback-export-rejected|combined] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
 
         var result = await DiagnosticSessionRunner.RunAsync(
                 new DiagnosticSessionOptions

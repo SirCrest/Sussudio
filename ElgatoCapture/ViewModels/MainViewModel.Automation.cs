@@ -75,6 +75,11 @@ public partial class MainViewModel
         return _sessionCoordinator.FlashbackBeginScrub(position);
     }
 
+    public bool FlashbackSeek(TimeSpan position)
+    {
+        return _sessionCoordinator.FlashbackSeek(position);
+    }
+
     public void FlashbackUpdateScrub(TimeSpan position)
     {
         _sessionCoordinator.FlashbackUpdateScrub(position);
@@ -133,13 +138,7 @@ public partial class MainViewModel
             case AutomationFlashbackAction.GoLive:
                 return FlashbackGoLive();
             case AutomationFlashbackAction.Seek:
-                if (!FlashbackBeginScrub(position ?? TimeSpan.Zero))
-                {
-                    return false;
-                }
-
-                FlashbackEndScrub();
-                return true;
+                return FlashbackSeek(position ?? TimeSpan.Zero);
             default:
                 throw new InvalidOperationException($"Unsupported flashback action '{action}'.");
         }

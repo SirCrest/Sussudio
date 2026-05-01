@@ -65,6 +65,7 @@ public static class DiagnosticSessionRunner
 {
     private const int FlashbackStressMaxPlaybackPendingCommands = 3;
     private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;
+    private const int FlashbackScrubStressMaxPlaybackPendingCommands = 20;
 
     public static async Task<DiagnosticSessionResult> RunAsync(
         DiagnosticSessionOptions options,
@@ -95,6 +96,7 @@ public static class DiagnosticSessionRunner
         var enabledFlashback = false;
         var disabledFlashback = false;
         var runFlashbackStress = scenario == "flashback-stress";
+        var runFlashbackScrubStress = scenario == "flashback-scrub-stress";
         var runFlashbackLifecycle = scenario == "flashback-lifecycle";
         var runFlashbackExportConcurrent = scenario == "flashback-export-concurrent";
         var runFlashbackRecording = scenario == "flashback-recording";
@@ -179,6 +181,17 @@ public static class DiagnosticSessionRunner
             }
 
             Task? flashbackLifecycleTask = null;
+            Task? flashbackScrubStressTask = null;
+            if (runFlashbackScrubStress)
+            {
+                flashbackScrubStressTask = RunFlashbackScrubStressAsync(
+                    actions,
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken);
+                actions.Add("flashback scrub stress started");
+            }
+
             if (runFlashbackLifecycle)
             {
                 flashbackLifecycleTask = RunFlashbackLifecycleAsync(
@@ -217,6 +230,11 @@ public static class DiagnosticSessionRunner
             if (flashbackLifecycleTask is not null)
             {
                 await flashbackLifecycleTask.ConfigureAwait(false);
+            }
+
+            if (flashbackScrubStressTask is not null)
+            {
+                await flashbackScrubStressTask.ConfigureAwait(false);
             }
 
             if (flashbackExportConcurrentTask is not null)
@@ -339,7 +357,7 @@ public static class DiagnosticSessionRunner
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!(runFlashbackStress || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0),
+                      (!(runFlashbackStress || runFlashbackScrubStress || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -709,6 +727,121 @@ public static class DiagnosticSessionRunner
         actions.Add("flashback concurrent exports verified");
     }
 
+    private static async Task RunFlashbackScrubStressAsync(
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        {
+            warnings.Add("flashback scrub stress: Flashback buffer did not become playback-ready within 30s");
+            return;
+        }
+
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
+            .ConfigureAwait(false);
+        actions.Add("flashback scrub stress pause requested");
+
+        var positions = new[]
+        {
+            250, 500, 750, 1_000, 1_250, 1_500, 1_750, 2_000,
+            2_250, 2_500, 2_750, 3_000, 2_400, 1_800, 1_200, 600
+        };
+        var seekTasks = new Task<JsonElement>[positions.Length];
+        for (var i = 0; i < positions.Length; i++)
+        {
+            seekTasks[i] = sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = positions[i] },
+                null);
+        }
+
+        var seekResponses = await Task.WhenAll(seekTasks).ConfigureAwait(false);
+        actions.Add("flashback scrub stress seek burst requested");
+        var failedSeeks = 0;
+        foreach (var response in seekResponses)
+        {
+            if (!AutomationSnapshotFormatter.IsSuccess(response))
+            {
+                failedSeeks++;
+            }
+        }
+
+        if (failedSeeks > 0)
+        {
+            warnings.Add($"flashback scrub stress: {failedSeeks} seek command(s) failed");
+        }
+
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "play" }, null)
+            .ConfigureAwait(false);
+        actions.Add("flashback scrub stress play requested");
+
+        await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
+            .ConfigureAwait(false);
+        actions.Add("flashback scrub stress go-live requested");
+
+        var drained = false;
+        JsonElement lastSnapshot = default;
+        var waitStarted = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(waitStarted) < TimeSpan.FromSeconds(10))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(snapshotResponse, out lastSnapshot) &&
+                GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands") == 0)
+            {
+                drained = true;
+                break;
+            }
+
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!drained)
+        {
+            warnings.Add(
+                "flashback scrub stress: playback command queue did not drain within 10s " +
+                $"pending={GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands")} " +
+                $"maxPending={GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands")} " +
+                $"lastLatencyMs={GetInt(lastSnapshot, "FlashbackPlaybackLastCommandQueueLatencyMs")} " +
+                $"maxLatencyMs={GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs")}");
+            return;
+        }
+
+        var dropped = GetInt(lastSnapshot, "FlashbackPlaybackCommandsDropped");
+        var skipped = GetInt(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady");
+        var state = GetString(lastSnapshot, "FlashbackPlaybackState") ?? "Unknown";
+        var threadAlive = GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive");
+        var maxPending = GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
+        var maxLatencyMs = GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
+
+        if (dropped > 0 || skipped > 0)
+        {
+            warnings.Add($"flashback scrub stress: dropped={dropped} skipped={skipped}");
+        }
+
+        if (maxPending > FlashbackScrubStressMaxPlaybackPendingCommands ||
+            maxLatencyMs > FlashbackStressMaxPlaybackCommandLatencyMs)
+        {
+            warnings.Add(
+                "flashback scrub stress: playback command latency exceeded threshold " +
+                $"maxPending={maxPending}/{FlashbackScrubStressMaxPlaybackPendingCommands} " +
+                $"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs}");
+        }
+
+        if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add($"flashback scrub stress: playback ended in state {state}");
+        }
+
+        if (threadAlive)
+        {
+            warnings.Add("flashback scrub stress: playback worker still alive after drain wait");
+        }
+    }
+
     private static async Task RunFlashbackLifecycleAsync(
         List<string> actions,
         List<string> warnings,
@@ -1055,18 +1188,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "flashback-export-rejected" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "flashback-export-rejected" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
         => scenario is "recording-only" or "flashback-recording" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-stress" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "combined";
+        => scenario is "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "combined";
 
 }
