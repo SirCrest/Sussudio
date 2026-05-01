@@ -1140,9 +1140,13 @@ static partial class Program
 
         AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(_videoFrame->pts, _videoTimeBase);");
         AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(_audioFrame->pts, _audioTimeBase);");
+        AssertContains(sourceText, "var timestampUs = ToAvTimeBaseTimestamp(target);");
         AssertContains(sourceText, "private static TimeSpan DecodePtsToTimeSpan(long pts, AVRational timeBase)");
         AssertContains(sourceText, "if (pts == ffmpeg.AV_NOPTS_VALUE || timeBase.num <= 0 || timeBase.den <= 0)");
         AssertContains(sourceText, "if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)");
+        AssertContains(sourceText, "private static long ToAvTimeBaseTimestamp(TimeSpan value)");
+        AssertContains(sourceText, "if (!double.IsFinite(microseconds) || microseconds >= long.MaxValue)\n        {\n            return long.MaxValue;\n        }");
+        AssertDoesNotContain(sourceText, "(long)(target.TotalSeconds * ffmpeg.AV_TIME_BASE)");
         AssertDoesNotContain(sourceText, "var seconds = (double)_videoFrame->pts * _videoTimeBase.num / _videoTimeBase.den;\n            pts = TimeSpan.FromSeconds(seconds);");
         AssertDoesNotContain(sourceText, "var seconds = (double)_audioFrame->pts * _audioTimeBase.num / _audioTimeBase.den;\n            pts = TimeSpan.FromSeconds(seconds);");
 

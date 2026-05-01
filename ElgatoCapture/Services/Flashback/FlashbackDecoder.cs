@@ -284,7 +284,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     {
         ThrowIfNotOpen();
 
-        var timestampUs = (long)(target.TotalSeconds * ffmpeg.AV_TIME_BASE);
+        var timestampUs = ToAvTimeBaseTimestamp(target);
         var result = ffmpeg.av_seek_frame(
             _formatCtx, -1, timestampUs, ffmpeg.AVSEEK_FLAG_BACKWARD);
 
@@ -1116,6 +1116,22 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
 
         return TimeSpan.FromSeconds(seconds);
+    }
+
+    private static long ToAvTimeBaseTimestamp(TimeSpan value)
+    {
+        if (value <= TimeSpan.Zero)
+        {
+            return 0;
+        }
+
+        var microseconds = value.TotalMilliseconds * 1000.0;
+        if (!double.IsFinite(microseconds) || microseconds >= long.MaxValue)
+        {
+            return long.MaxValue;
+        }
+
+        return (long)microseconds;
     }
 
     // ── Private: Audio Conversion ───────────────────────────────────────────
