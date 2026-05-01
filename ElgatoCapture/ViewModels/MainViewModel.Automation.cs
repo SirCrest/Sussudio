@@ -316,13 +316,16 @@ public partial class MainViewModel
         {
             var progress = new Progress<ExportProgress>(p =>
             {
-                _dispatcherQueue.TryEnqueue(() =>
+                if (!_dispatcherQueue.TryEnqueue(() =>
                 {
                     if (IsCurrentFlashbackExport(exportId, exportCts))
                     {
                         FlashbackExportProgress = p.Percent;
                     }
-                });
+                }))
+                {
+                    Logger.Log($"FLASHBACK_EXPORT_PROGRESS_UI_ENQUEUE_FAILED source=ui percent={p.Percent:0.###}");
+                }
             });
 
             var result = await exportAction(progress, ct);
@@ -383,25 +386,31 @@ public partial class MainViewModel
         _exportCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         var exportCts = _exportCts;
 
-        _dispatcherQueue.TryEnqueue(() =>
+        if (!_dispatcherQueue.TryEnqueue(() =>
         {
             if (IsCurrentFlashbackExport(exportId, exportCts))
             {
                 IsFlashbackExporting = true;
                 FlashbackExportProgress = 0;
             }
-        });
+        }))
+        {
+            Logger.Log("FLASHBACK_EXPORT_START_UI_ENQUEUE_FAILED source=automation");
+        }
         try
         {
             var progress = new Progress<ExportProgress>(p =>
             {
-                _dispatcherQueue.TryEnqueue(() =>
+                if (!_dispatcherQueue.TryEnqueue(() =>
                 {
                     if (IsCurrentFlashbackExport(exportId, exportCts))
                     {
                         FlashbackExportProgress = p.Percent;
                     }
-                });
+                }))
+                {
+                    Logger.Log($"FLASHBACK_EXPORT_PROGRESS_UI_ENQUEUE_FAILED source=automation percent={p.Percent:0.###}");
+                }
             });
 
             if (useSelectionRange)
