@@ -2403,7 +2403,7 @@ static partial class Program
         AssertContains(source, "private int _completedSegmentSequence;");
         AssertContains(source, "var sequenceNumber = _completedSegmentSequence++;");
         AssertContains(source, "_completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes));");
-        AssertContains(source, "_completedSegmentBytes += safeSizeBytes;");
+        AssertContains(source, "_completedSegmentBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeSizeBytes);");
         AssertContains(source, "_completedSegmentSequence = 0;");
 
         return Task.CompletedTask;
@@ -2419,7 +2419,7 @@ static partial class Program
         AssertContains(source, "EndPtsMs = (long)activeEndPts.TotalMilliseconds,");
         AssertContains(source, "SizeBytes = activeSizeBytes,");
         AssertContains(source, "var safeActiveSegmentBytes = Math.Max(0, activeSegmentBytes);");
-        AssertContains(source, "_totalDiskBytes = Math.Max(0, _completedSegmentBytes + safeActiveSegmentBytes);");
+        AssertContains(source, "_totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeActiveSegmentBytes);");
         AssertContains(source, "_completedSegmentBytes = Math.Max(0, _completedSegmentBytes - freedBytes);");
         AssertContains(source, "_totalDiskBytes = Math.Max(0, _totalDiskBytes - freedBytes);");
         AssertContains(source, "FLASHBACK_BUFFER_DELETE_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
@@ -2433,8 +2433,16 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(source, "var maxTicks = Math.Max(0, _options.BufferDuration.Ticks);");
+        AssertContains(source, "var duration = NonNegativeDeltaTicks(ptsTicks, startTicks);");
         AssertContains(source, "var newStartTicks = Math.Max(0, ptsTicks - maxTicks);");
         AssertContains(source, "Interlocked.CompareExchange(ref _validStartPtsTicks, newStartTicks, startTicks);");
+        AssertContains(source, "private static long AddNonNegativeSaturated(long left, long right)");
+        AssertContains(source, "private static long SubtractNonNegative(long left, long right)");
+        AssertContains(source, "private static long NonNegativeDeltaTicks(long latestTicks, long startTicks)");
+        AssertContains(source, "private static long ToNonNegativeLongSaturated(double value)");
+        AssertContains(source, "var totalDuration = NonNegativeDeltaTicks(latestTicks, startTicks);");
+        AssertContains(source, "var evictTicks = ToNonNegativeLongSaturated(excessBytes / bytesPerTick);");
+        AssertContains(source, "var newStart = AddNonNegativeSaturated(Math.Max(0, startTicks), evictTicks);");
 
         return Task.CompletedTask;
     }

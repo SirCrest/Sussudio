@@ -96,7 +96,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         {
             var latest = Interlocked.Read(ref _latestPtsTicks);
             var start = Interlocked.Read(ref _validStartPtsTicks);
-            var duration = latest - start;
+            var duration = NonNegativeDeltaTicks(latest, start);
             return duration > 0 ? TimeSpan.FromTicks(duration) : TimeSpan.Zero;
         }
     }
@@ -785,7 +785,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
             var sequenceNumber = _completedSegmentSequence++;
             _completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes));
-            _completedSegmentBytes += safeSizeBytes;
+            _completedSegmentBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeSizeBytes);
             Logger.Log($"FLASHBACK_BUFFER_SEGMENT_COMPLETE seq={sequenceNumber} path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} size_bytes={safeSizeBytes}");
 
             if (!(Volatile.Read(ref _evictionPauseCount) > 0))
@@ -1026,7 +1026,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         {
             var maxTicks = Math.Max(0, _options.BufferDuration.Ticks);
             var startTicks = Interlocked.Read(ref _validStartPtsTicks);
-            var duration = ptsTicks - startTicks;
+            var duration = NonNegativeDeltaTicks(ptsTicks, startTicks);
             if (duration > maxTicks)
             {
                 // Double-check under lock to close the TOCTOU window where PauseEviction()
@@ -1070,20 +1070,20 @@ internal sealed class FlashbackBufferManager : IDisposable
                 Interlocked.Add(ref _totalBytesWritten, safeActiveSegmentBytes - _previousActiveSegmentBytes);
             _previousActiveSegmentBytes = safeActiveSegmentBytes;
 
-            _totalDiskBytes = Math.Max(0, _completedSegmentBytes + safeActiveSegmentBytes);
+            _totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeActiveSegmentBytes);
 
             if (!(Volatile.Read(ref _evictionPauseCount) > 0) && _totalDiskBytes > _options.MaxDiskBytes)
             {
                 var excessBytes = _totalDiskBytes - _options.MaxDiskBytes;
                 var latestTicks = Interlocked.Read(ref _latestPtsTicks);
                 var startTicks = Interlocked.Read(ref _validStartPtsTicks);
-                var totalDuration = latestTicks - startTicks;
+                var totalDuration = NonNegativeDeltaTicks(latestTicks, startTicks);
 
                 if (totalDuration > 0)
                 {
                     var bytesPerTick = (double)_totalDiskBytes / totalDuration;
-                    var evictTicks = (long)(excessBytes / bytesPerTick);
-                    var newStart = startTicks + evictTicks;
+                    var evictTicks = ToNonNegativeLongSaturated(excessBytes / bytesPerTick);
+                    var newStart = AddNonNegativeSaturated(Math.Max(0, startTicks), evictTicks);
                     if (newStart > latestTicks) newStart = latestTicks;
                     Interlocked.Exchange(ref _validStartPtsTicks, newStart);
 
@@ -1123,6 +1123,39 @@ internal sealed class FlashbackBufferManager : IDisposable
             Interlocked.Exchange(ref _evictionPauseCount, 0);
             Logger.Log("FLASHBACK_BUFFER_PURGE");
         }
+    }
+
+    private static long AddNonNegativeSaturated(long left, long right)
+    {
+        left = Math.Max(0, left);
+        right = Math.Max(0, right);
+        return left > long.MaxValue - right ? long.MaxValue : left + right;
+    }
+
+    private static long SubtractNonNegative(long left, long right)
+    {
+        left = Math.Max(0, left);
+        right = Math.Max(0, right);
+        return left <= right ? 0 : left - right;
+    }
+
+    private static long NonNegativeDeltaTicks(long latestTicks, long startTicks)
+    {
+        if (latestTicks <= startTicks)
+            return 0;
+
+        if (startTicks < 0 && latestTicks > long.MaxValue + startTicks)
+            return long.MaxValue;
+
+        return latestTicks - startTicks;
+    }
+
+    private static long ToNonNegativeLongSaturated(double value)
+    {
+        if (!double.IsFinite(value) || value <= 0)
+            return 0;
+
+        return value >= long.MaxValue ? long.MaxValue : (long)value;
     }
 
     public void Dispose()
@@ -1165,8 +1198,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             {
                 if (TryDeleteFile(oldest.Path))
                 {
-                    evictedBytes += oldest.SizeBytes;
-                    _completedSegmentBytes -= oldest.SizeBytes;
+                    evictedBytes = AddNonNegativeSaturated(evictedBytes, oldest.SizeBytes);
+                    _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
                     _completedSegments.RemoveAt(0);
                     evictedCount++;
                 }
@@ -1187,8 +1220,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             var oldest = _completedSegments[0];
             if (TryDeleteFile(oldest.Path))
             {
-                evictedBytes += oldest.SizeBytes;
-                _completedSegmentBytes -= oldest.SizeBytes;
+                evictedBytes = AddNonNegativeSaturated(evictedBytes, oldest.SizeBytes);
+                _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
                 _completedSegments.RemoveAt(0);
                 evictedCount++;
             }
