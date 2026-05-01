@@ -320,7 +320,8 @@ internal sealed class FlashbackBufferManager : IDisposable
         {
             lock (_indexLock)
             {
-                return _completedSegments.Count + (_activeSegmentPath != null ? 1 : 0);
+                return _completedSegments.Count(seg => File.Exists(seg.Path)) +
+                    (_activeSegmentPath != null && File.Exists(_activeSegmentPath) ? 1 : 0);
             }
         }
     }

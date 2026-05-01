@@ -475,6 +475,9 @@ static partial class Program
                 "FlashbackBufferManager active file path requires existing file",
                 FlashbackBufferManager_ActiveFilePath_RequiresExistingFile),
             await RunCheckAsync(
+                "FlashbackBufferManager segment count skips missing files",
+                FlashbackBufferManager_SegmentCount_SkipsMissingFiles),
+            await RunCheckAsync(
                 "FlashbackBufferManager eviction pause and resume are balanced",
                 FlashbackBufferManager_EvictionPauseResume_Balanced),
             await RunCheckAsync(
@@ -2925,6 +2928,34 @@ static partial class Program
         File.WriteAllText(active, "active");
 
         AssertEqual(active, (string)GetPropertyValue(manager, "ActiveFilePath")!, "Existing active file should be exposed");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_SegmentCount_SkipsMissingFiles()
+    {
+        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(source, "return _completedSegments.Count(seg => File.Exists(seg.Path)) +\n                    (_activeSegmentPath != null && File.Exists(_activeSegmentPath) ? 1 : 0);");
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var missingCompleted = Path.Combine(tempDir, "missing-completed.ts");
+        var existingCompleted = Path.Combine(tempDir, "existing-completed.ts");
+        var active = Path.Combine(tempDir, "fb_test_0003.ts");
+        File.WriteAllText(existingCompleted, "segment");
+        File.WriteAllText(active, "active");
+
+        AddCompletedSegment(manager, missingCompleted, TimeSpan.Zero, TimeSpan.FromSeconds(5), 500);
+        AddCompletedSegment(manager, existingCompleted, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+
+        AssertEqual(2, GetIntProperty(manager, "SegmentCount"), "Segment count should include existing completed plus active");
+
+        File.Delete(active);
+
+        AssertEqual(1, GetIntProperty(manager, "SegmentCount"), "Segment count should omit missing active file");
 
         return Task.CompletedTask;
     }
