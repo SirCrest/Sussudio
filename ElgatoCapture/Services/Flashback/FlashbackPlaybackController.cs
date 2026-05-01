@@ -386,7 +386,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 {
                     if (!_commandChannel.Reader.TryRead(out cmd))
                     {
-                        _commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();
+                        var canRead = _commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();
+                        if (!canRead)
+                        {
+                            Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed");
+                            return;
+                        }
+
                         if (_disposedFlag != 0)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
@@ -640,6 +646,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         break;
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.Log("FLASHBACK_PLAYBACK_THREAD_CANCELLED");
+            CleanupDecoder(ref decoder, ref fileOpen);
+            try { RestoreLiveAudio(); } catch { /* Best-effort: restore audio during cancellation cleanup */ }
+            try { _videoCapture?.ResumePreviewSubmission(); } catch { /* Best-effort: resume preview during cancellation cleanup */ }
+            SetState(FlashbackPlaybackState.Live);
         }
         catch (Exception ex)
         {
