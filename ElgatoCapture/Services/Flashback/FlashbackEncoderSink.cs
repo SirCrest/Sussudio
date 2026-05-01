@@ -165,6 +165,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public long LastVideoWriteTick => Interlocked.Read(ref _lastVideoWriteTick);
     public long LastVideoQueueLatencyMs => Interlocked.Read(ref _lastVideoQueueLatencyMs);
     public long VideoQueueOldestFrameAgeMs => GetVideoQueueOldestFrameAgeMs();
+    public (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) VideoQueueLatencyMetrics => GetVideoQueueLatencyMetrics();
     public int VideoQueueLatencySampleCount => GetVideoQueueLatencyMetrics().SampleCount;
     public double VideoQueueLatencyAvgMs => GetVideoQueueLatencyMetrics().AverageMs;
     public double VideoQueueLatencyP95Ms => GetVideoQueueLatencyMetrics().P95Ms;

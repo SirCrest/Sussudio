@@ -1291,16 +1291,12 @@ public partial class CaptureService
                                                         (flashbackIsRecordingBackend ? fbSink?.VideoQueueOldestFrameAgeMs ?? 0 : 0);
         var activeRecordingVideoQueueLastLatencyMs = sink?.LastVideoQueueLatencyMs ??
                                                      (flashbackIsRecordingBackend ? fbSink?.LastVideoQueueLatencyMs ?? 0 : 0);
-        var activeRecordingVideoQueueLatencySampleCount = sink?.VideoQueueLatencySampleCount ??
-                                                          (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencySampleCount ?? 0 : 0);
-        var activeRecordingVideoQueueLatencyAvgMs = sink?.VideoQueueLatencyAvgMs ??
-                                                    (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyAvgMs ?? 0 : 0);
-        var activeRecordingVideoQueueLatencyP95Ms = sink?.VideoQueueLatencyP95Ms ??
-                                                    (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyP95Ms ?? 0 : 0);
-        var activeRecordingVideoQueueLatencyP99Ms = sink?.VideoQueueLatencyP99Ms ??
-                                                    (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyP99Ms ?? 0 : 0);
-        var activeRecordingVideoQueueLatencyMaxMs = sink?.VideoQueueLatencyMaxMs ??
-                                                    (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyMaxMs ?? 0 : 0);
+        (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) emptyVideoQueueLatencyMetrics = default;
+        var flashbackVideoQueueLatencyMetrics = fbSink?.VideoQueueLatencyMetrics ?? emptyVideoQueueLatencyMetrics;
+        var activeRecordingVideoQueueLatencyMetrics = sink?.VideoQueueLatencyMetrics ??
+                                                      (flashbackIsRecordingBackend
+                                                          ? flashbackVideoQueueLatencyMetrics
+                                                          : emptyVideoQueueLatencyMetrics);
         var activeRecordingVideoBackpressureWaitMs = sink?.VideoBackpressureWaitMs ??
                                                      (flashbackIsRecordingBackend ? fbSink?.VideoBackpressureWaitMs ?? 0 : 0);
         var activeRecordingVideoBackpressureEvents = sink?.VideoBackpressureEvents ??
@@ -1551,11 +1547,11 @@ public partial class CaptureService
             RecordingVideoSequenceGaps = activeRecordingVideoSequenceGaps,
             RecordingVideoQueueOldestFrameAgeMs = activeRecordingVideoQueueOldestFrameAgeMs,
             RecordingVideoQueueLastLatencyMs = activeRecordingVideoQueueLastLatencyMs,
-            RecordingVideoQueueLatencySampleCount = activeRecordingVideoQueueLatencySampleCount,
-            RecordingVideoQueueLatencyAvgMs = activeRecordingVideoQueueLatencyAvgMs,
-            RecordingVideoQueueLatencyP95Ms = activeRecordingVideoQueueLatencyP95Ms,
-            RecordingVideoQueueLatencyP99Ms = activeRecordingVideoQueueLatencyP99Ms,
-            RecordingVideoQueueLatencyMaxMs = activeRecordingVideoQueueLatencyMaxMs,
+            RecordingVideoQueueLatencySampleCount = activeRecordingVideoQueueLatencyMetrics.SampleCount,
+            RecordingVideoQueueLatencyAvgMs = activeRecordingVideoQueueLatencyMetrics.AverageMs,
+            RecordingVideoQueueLatencyP95Ms = activeRecordingVideoQueueLatencyMetrics.P95Ms,
+            RecordingVideoQueueLatencyP99Ms = activeRecordingVideoQueueLatencyMetrics.P99Ms,
+            RecordingVideoQueueLatencyMaxMs = activeRecordingVideoQueueLatencyMetrics.MaxMs,
             RecordingVideoBackpressureWaitMs = activeRecordingVideoBackpressureWaitMs,
             RecordingVideoBackpressureEvents = activeRecordingVideoBackpressureEvents,
             RecordingVideoBackpressureLastWaitMs = activeRecordingVideoBackpressureLastWaitMs,
@@ -1589,11 +1585,11 @@ public partial class CaptureService
             FlashbackVideoQueueLastRejectReason = fbSink?.LastVideoQueueRejectReason ?? string.Empty,
             FlashbackVideoQueueOldestFrameAgeMs = fbSink?.VideoQueueOldestFrameAgeMs ?? 0,
             FlashbackVideoQueueLastLatencyMs = fbSink?.LastVideoQueueLatencyMs ?? 0,
-            FlashbackVideoQueueLatencySampleCount = fbSink?.VideoQueueLatencySampleCount ?? 0,
-            FlashbackVideoQueueLatencyAvgMs = fbSink?.VideoQueueLatencyAvgMs ?? 0,
-            FlashbackVideoQueueLatencyP95Ms = fbSink?.VideoQueueLatencyP95Ms ?? 0,
-            FlashbackVideoQueueLatencyP99Ms = fbSink?.VideoQueueLatencyP99Ms ?? 0,
-            FlashbackVideoQueueLatencyMaxMs = fbSink?.VideoQueueLatencyMaxMs ?? 0,
+            FlashbackVideoQueueLatencySampleCount = flashbackVideoQueueLatencyMetrics.SampleCount,
+            FlashbackVideoQueueLatencyAvgMs = flashbackVideoQueueLatencyMetrics.AverageMs,
+            FlashbackVideoQueueLatencyP95Ms = flashbackVideoQueueLatencyMetrics.P95Ms,
+            FlashbackVideoQueueLatencyP99Ms = flashbackVideoQueueLatencyMetrics.P99Ms,
+            FlashbackVideoQueueLatencyMaxMs = flashbackVideoQueueLatencyMetrics.MaxMs,
             FlashbackVideoBackpressureWaitMs = fbSink?.VideoBackpressureWaitMs ?? 0,
             FlashbackVideoBackpressureEvents = fbSink?.VideoBackpressureEvents ?? 0,
             FlashbackVideoBackpressureLastWaitMs = fbSink?.LastVideoBackpressureWaitMs ?? 0,
