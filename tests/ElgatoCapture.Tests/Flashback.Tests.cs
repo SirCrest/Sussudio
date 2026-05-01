@@ -310,9 +310,13 @@ static partial class Program
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(sourceText, "var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, _disposeCts!.Token);");
+        AssertContains(sourceText, "private readonly object _lifetimeSync = new();");
+        AssertContains(sourceText, "var linkedCts = CreateExportCancellationSource(ct);");
+        AssertContains(sourceText, "CancellationTokenSource.CreateLinkedTokenSource(ct, disposeCts.Token)");
+        AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposed, this);");
         AssertContains(sourceText, "finally\n            {\n                linkedCts.Dispose();\n            }\n        });");
         AssertDoesNotContain(sourceText, "}, linkedCts.Token);");
+        AssertDoesNotContain(sourceText, "_disposeCts!.Token");
 
         return Task.CompletedTask;
     }
@@ -398,7 +402,7 @@ static partial class Program
             "        try\n        {\n            CleanupNativeState();");
 
         AssertContains(timeoutBlock, "FLASHBACK_EXPORT_DISPOSE: timed out waiting for export lock");
-        AssertContains(timeoutBlock, "_disposed = true;");
+        AssertContains(timeoutBlock, "ClearDisposeCtsReference(disposeCts);");
         AssertContains(timeoutBlock, "return;");
         AssertDoesNotContain(timeoutBlock, "CleanupNativeState()");
         AssertDoesNotContain(timeoutBlock, "_exportLock.Dispose()");

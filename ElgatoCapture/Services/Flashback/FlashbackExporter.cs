@@ -20,6 +20,7 @@ namespace ElgatoCapture.Services.Flashback;
 internal sealed unsafe class FlashbackExporter : IDisposable
 {
     private readonly SemaphoreSlim _exportLock = new(1, 1);
+    private readonly object _lifetimeSync = new();
     private CancellationTokenSource? _disposeCts = new();
     private AVFormatContext* _activeInputContext;
     private AVFormatContext* _activeOutputContext;
@@ -69,8 +70,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
-        EnsureNotDisposed();
-        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, _disposeCts!.Token);
+        var linkedCts = CreateExportCancellationSource(ct);
         return Task.Run(() =>
         {
             try
@@ -97,8 +97,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
-        EnsureNotDisposed();
-        var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, _disposeCts!.Token);
+        var linkedCts = CreateExportCancellationSource(ct);
         return Task.Run(() =>
         {
             try
@@ -114,9 +113,16 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
     public void Dispose()
     {
-        if (_disposed)
+        CancellationTokenSource? disposeCts;
+        lock (_lifetimeSync)
         {
-            return;
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+            disposeCts = _disposeCts;
         }
 
         Logger.Log("FLASHBACK_EXPORT_DISPOSE");
@@ -124,7 +130,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         // Signal any running export to cancel — ExportCore/ExportSegmentsCore will exit
         // via OperationCanceledException, clean up native state in their own finally block,
         // and release _exportLock before we acquire it.
-        try { _disposeCts?.Cancel(); } catch (ObjectDisposedException) { /* Best-effort: CTS may already be disposed if Dispose races */ }
+        try { disposeCts?.Cancel(); } catch (ObjectDisposedException) { /* Best-effort: CTS may already be disposed if Dispose races */ }
 
         // Wait for the export task to release the lock. The CTS is cancelled so
         // the task should exit promptly. Timeout prevents app hang if FFmpeg is stuck.
@@ -132,8 +138,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         if (!lockAcquired)
         {
             Logger.Log("FLASHBACK_EXPORT_DISPOSE: timed out waiting for export lock (10s)");
-            _disposed = true;
-            _disposeCts = null;
+            ClearDisposeCtsReference(disposeCts);
             GC.SuppressFinalize(this);
             return;
         }
@@ -148,9 +153,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         _exportLock.Dispose();
-        _disposeCts?.Dispose();
-        _disposeCts = null;
-        _disposed = true;
+        disposeCts?.Dispose();
+        ClearDisposeCtsReference(disposeCts);
         GC.SuppressFinalize(this);
     }
 
@@ -1404,9 +1408,33 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
     }
 
+    private CancellationTokenSource CreateExportCancellationSource(CancellationToken ct)
+    {
+        lock (_lifetimeSync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            var disposeCts = _disposeCts ?? throw new ObjectDisposedException(nameof(FlashbackExporter));
+            return CancellationTokenSource.CreateLinkedTokenSource(ct, disposeCts.Token);
+        }
+    }
+
+    private void ClearDisposeCtsReference(CancellationTokenSource? disposeCts)
+    {
+        lock (_lifetimeSync)
+        {
+            if (ReferenceEquals(_disposeCts, disposeCts))
+            {
+                _disposeCts = null;
+            }
+        }
+    }
+
     private void EnsureNotDisposed()
     {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        lock (_lifetimeSync)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+        }
     }
 
     private static void ThrowIfError(int errorCode, string operation)
