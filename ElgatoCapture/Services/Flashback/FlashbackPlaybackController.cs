@@ -1400,7 +1400,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             var nextFile = currentOpenFilePath != null
                 ? _bufferManager.GetNextSegmentFile(currentOpenFilePath)
                 : null;
-            if (nextFile != null && nextFile != currentOpenFilePath)
+            if (nextFile != null && !IsSamePlaybackPath(nextFile, currentOpenFilePath))
             {
                 Interlocked.Increment(ref _playbackSegmentSwitches);
                 Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
