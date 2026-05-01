@@ -432,6 +432,9 @@ static partial class Program
             await RunCheckAsync(
                 "FlashbackBufferManager removes stale legacy root segments",
                 FlashbackBufferManager_RemovesStaleLegacyRootSegments),
+            await RunCheckAsync(
+                "FlashbackBufferManager trims startup session cache budget",
+                FlashbackBufferManager_TrimsStartupSessionCacheBudget),
 
             // --- GpuPipelineHandles ---
             await RunCheckAsync(
@@ -2374,6 +2377,61 @@ static partial class Program
     }
 
     // ── GpuPipelineHandles / RecordingContextRequest tests ──
+
+    private static Task FlashbackBufferManager_TrimsStartupSessionCacheBudget()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_cache_budget_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var currentSession = Path.Combine(tempDir, "current-session");
+            var oldSession = Path.Combine(tempDir, "old-session");
+            var recentSession = Path.Combine(tempDir, "recent-session");
+            var preservedSession = Path.Combine(tempDir, "preserved-session");
+            var nonFlashbackDirectory = Path.Combine(tempDir, "not-flashback");
+
+            Directory.CreateDirectory(currentSession);
+            Directory.CreateDirectory(oldSession);
+            Directory.CreateDirectory(recentSession);
+            Directory.CreateDirectory(preservedSession);
+            Directory.CreateDirectory(nonFlashbackDirectory);
+
+            WriteSizedFile(Path.Combine(currentSession, "fb_current_0001.ts"), 1);
+            WriteSizedFile(Path.Combine(oldSession, "fb_old_0001.ts"), 20);
+            WriteSizedFile(Path.Combine(recentSession, "fb_recent_0001.ts"), 10);
+            WriteSizedFile(Path.Combine(preservedSession, "fb_preserved_0001.ts"), 100);
+            File.WriteAllText(Path.Combine(preservedSession, ".flashback-recovery-preserve"), "keep");
+            File.WriteAllText(Path.Combine(nonFlashbackDirectory, "notes.txt"), "keep");
+
+            var now = DateTime.UtcNow;
+            File.SetLastWriteTimeUtc(Path.Combine(oldSession, "fb_old_0001.ts"), now - TimeSpan.FromHours(2));
+            File.SetLastWriteTimeUtc(Path.Combine(recentSession, "fb_recent_0001.ts"), now - TimeSpan.FromMinutes(5));
+
+            var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+            var cleanup = managerType.GetMethod("CleanupSessionCacheBudget", BindingFlags.Static | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("CleanupSessionCacheBudget not found.");
+
+            cleanup.Invoke(null, new object[] { tempDir, currentSession, 25L });
+
+            AssertEqual(true, Directory.Exists(currentSession), "Current session preserved");
+            AssertEqual(false, Directory.Exists(oldSession), "Oldest session removed to satisfy budget");
+            AssertEqual(true, Directory.Exists(recentSession), "Recent session preserved once budget is satisfied");
+            AssertEqual(true, Directory.Exists(preservedSession), "Recovery-preserved session skipped");
+            AssertEqual(true, Directory.Exists(nonFlashbackDirectory), "Non-flashback directory preserved");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static void WriteSizedFile(string path, int byteCount)
+    {
+        File.WriteAllBytes(path, Enumerable.Repeat((byte)0x47, byteCount).ToArray());
+    }
 
     private static Task GpuPipelineHandles_None_ReturnsZeroedStruct()
     {

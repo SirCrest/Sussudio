@@ -662,10 +662,16 @@ static partial class Program
 
         AssertContains(bufferText, "private static readonly TimeSpan StaleSessionMinAge = TimeSpan.FromHours(12);");
         AssertContains(bufferText, "private const int MaxStaleSessionDirectoryScansPerInit = 64;");
+        AssertContains(bufferText, "private const int MaxStartupCacheSessionDirectoryScansPerInit = 256;");
+        AssertContains(bufferText, "private const int MaxStartupCacheSessionDirectoriesPerInit = 32;");
+        AssertContains(bufferText, "private const long StartupCacheBudgetMultiplier = 2;");
         AssertContains(bufferText, "private const int MaxStaleRootSegmentFileScansPerInit = 512;");
         AssertContains(bufferText, "CleanupStaleRootSegmentFiles(_options.TempDirectory);");
         AssertContains(bufferText, "CleanupStaleSessionDirectories(_options.TempDirectory, sessionDirectory);");
+        AssertContains(bufferText, "CleanupSessionCacheBudget(_options.TempDirectory, sessionDirectory, CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));");
         AssertContains(bufferText, "if (string.Equals(fullPath, currentFullPath, StringComparison.OrdinalIgnoreCase))");
+        AssertContains(bufferText, "FLASHBACK_CACHE_BUDGET_PRESERVE_SKIP");
+        AssertContains(bufferText, "FLASHBACK_CACHE_BUDGET_CLEANUP");
         AssertContains(bufferText, "info.EnumerateFiles(\"fb_*\", SearchOption.TopDirectoryOnly)");
         AssertContains(bufferText, "Directory.EnumerateFiles(tempDirectory, \"fb_*\", SearchOption.TopDirectoryOnly)");
         AssertContains(bufferText, "Directory.Delete(fullPath, recursive: true);");

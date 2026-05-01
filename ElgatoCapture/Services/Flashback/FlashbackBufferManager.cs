@@ -19,6 +19,9 @@ internal sealed class FlashbackBufferManager : IDisposable
     private static readonly TimeSpan StaleSessionMinAge = TimeSpan.FromHours(12);
     private const int MaxStaleSessionDirectoryScansPerInit = 64;
     private const int MaxStaleSessionDirectoriesPerInit = 16;
+    private const int MaxStartupCacheSessionDirectoryScansPerInit = 256;
+    private const int MaxStartupCacheSessionDirectoriesPerInit = 32;
+    private const long StartupCacheBudgetMultiplier = 2;
     private const int MaxStaleRootSegmentFileScansPerInit = 512;
     private const int MaxStaleRootSegmentFilesPerInit = 128;
     private const string RecoveryPreserveMarkerFileName = ".flashback-recovery-preserve";
@@ -42,6 +45,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private long _previousActiveSegmentBytes; // for monotonic written counter
 
     private record CompletedSegment(string Path, int SequenceNumber, TimeSpan StartPts, TimeSpan EndPts, long SizeBytes);
+    private record StartupCacheCandidate(string Path, DateTime LastActivityUtc, long SizeBytes);
 
     public FlashbackBufferManager(FlashbackBufferOptions? options = null)
     {
@@ -315,6 +319,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             FlashbackExporter.CleanupOrphanedTempFiles(_options.TempDirectory);
             CleanupStaleRootSegmentFiles(_options.TempDirectory);
             CleanupStaleSessionDirectories(_options.TempDirectory, sessionDirectory);
+            CleanupSessionCacheBudget(_options.TempDirectory, sessionDirectory, CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));
 
             _activeSegmentPath = null;
             _completedSegments.Clear();
@@ -455,6 +460,155 @@ internal sealed class FlashbackBufferManager : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_STALE_SESSION_CLEANUP_WARN type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private static long CalculateStartupTempCacheBudgetBytes(long sessionMaxDiskBytes)
+    {
+        if (sessionMaxDiskBytes <= 0)
+        {
+            return 0;
+        }
+
+        return sessionMaxDiskBytes > long.MaxValue / StartupCacheBudgetMultiplier
+            ? long.MaxValue
+            : sessionMaxDiskBytes * StartupCacheBudgetMultiplier;
+    }
+
+    private static void CleanupSessionCacheBudget(string tempDirectory, string currentSessionDirectory, long maxCacheBytes)
+    {
+        if (maxCacheBytes <= 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var currentFullPath = Path.GetFullPath(currentSessionDirectory);
+            var candidates = new List<StartupCacheCandidate>();
+            var scannedCount = 0;
+            var deletedCount = 0;
+            long freedBytes = 0;
+            long totalCacheBytes = TryGetFlashbackSessionDirectoryStats(
+                currentFullPath,
+                out _,
+                out var currentBytes,
+                out _)
+                ? currentBytes
+                : 0;
+
+            foreach (var directory in Directory.EnumerateDirectories(tempDirectory))
+            {
+                if (scannedCount >= MaxStartupCacheSessionDirectoryScansPerInit)
+                {
+                    break;
+                }
+
+                scannedCount++;
+
+                var fullPath = Path.GetFullPath(directory);
+                if (string.Equals(fullPath, currentFullPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName)))
+                {
+                    Logger.Log($"FLASHBACK_CACHE_BUDGET_PRESERVE_SKIP dir='{fullPath}'");
+                    continue;
+                }
+
+                if (!TryGetFlashbackSessionDirectoryStats(fullPath, out var latestActivityUtc, out var directoryBytes, out var hasFiles))
+                {
+                    continue;
+                }
+
+                if (!hasFiles || directoryBytes <= 0)
+                {
+                    continue;
+                }
+
+                totalCacheBytes += directoryBytes;
+                candidates.Add(new StartupCacheCandidate(fullPath, latestActivityUtc, directoryBytes));
+            }
+
+            if (totalCacheBytes <= maxCacheBytes)
+            {
+                return;
+            }
+
+            foreach (var candidate in candidates.OrderBy(candidate => candidate.LastActivityUtc))
+            {
+                if (deletedCount >= MaxStartupCacheSessionDirectoriesPerInit || totalCacheBytes <= maxCacheBytes)
+                {
+                    break;
+                }
+
+                try
+                {
+                    Directory.Delete(candidate.Path, recursive: true);
+                    deletedCount++;
+                    freedBytes += candidate.SizeBytes;
+                    totalCacheBytes -= candidate.SizeBytes;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_CACHE_BUDGET_DELETE_WARN dir='{candidate.Path}' type={ex.GetType().Name} msg={ex.Message}");
+                }
+            }
+
+            if (deletedCount > 0)
+            {
+                Logger.Log($"FLASHBACK_CACHE_BUDGET_CLEANUP deleted={deletedCount} freed_bytes={freedBytes} remaining_bytes={totalCacheBytes} budget_bytes={maxCacheBytes}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_CACHE_BUDGET_CLEANUP_WARN type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private static bool TryGetFlashbackSessionDirectoryStats(
+        string fullPath,
+        out DateTime latestActivityUtc,
+        out long directoryBytes,
+        out bool hasFiles)
+    {
+        latestActivityUtc = DateTime.MinValue;
+        directoryBytes = 0;
+        hasFiles = false;
+
+        try
+        {
+            var info = new DirectoryInfo(fullPath);
+            if (!info.Exists)
+            {
+                return false;
+            }
+
+            latestActivityUtc = info.LastWriteTimeUtc;
+            var looksLikeFlashbackSession = false;
+            foreach (var file in info.EnumerateFiles("fb_*", SearchOption.TopDirectoryOnly))
+            {
+                looksLikeFlashbackSession = true;
+                hasFiles = true;
+                latestActivityUtc = latestActivityUtc > file.LastWriteTimeUtc
+                    ? latestActivityUtc
+                    : file.LastWriteTimeUtc;
+                directoryBytes += file.Length;
+            }
+
+            if (!looksLikeFlashbackSession && info.EnumerateFileSystemInfos().Any())
+            {
+                return false;
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SESSION_STATS_WARN dir='{fullPath}' type={ex.GetType().Name} msg={ex.Message}");
+            return false;
         }
     }
 
