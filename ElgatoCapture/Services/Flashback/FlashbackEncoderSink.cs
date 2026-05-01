@@ -1186,7 +1186,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 }
 
                 RemoveQueuedVideoTick(packet.EnqueueTick);
-                Interlocked.Decrement(ref _videoQueueDepth);
+                DecrementQueueDepth(ref _videoQueueDepth, "video");
             }
 
             RecordVideoPacketDequeued(packet);
@@ -1226,7 +1226,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var drainedAny = false;
         while (reader.TryRead(out var packet))
         {
-            Interlocked.Decrement(ref _gpuQueueDepth);
+            DecrementQueueDepth(ref _gpuQueueDepth, "gpu");
             try
             {
                 _encoder.SendGpuVideoFrame(packet.Texture, packet.Subresource);
@@ -1433,7 +1433,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var drainedAny = false;
         while (reader.TryRead(out var packet))
         {
-            Interlocked.Decrement(ref _audioQueueDepth);
+            DecrementQueueDepth(ref _audioQueueDepth, "audio");
             try
             {
                 _encoder.SendAudioSamples(packet.Buffer.AsSpan(0, packet.Length));
@@ -1454,7 +1454,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var drainedAny = false;
         while (reader.TryRead(out var packet))
         {
-            Interlocked.Decrement(ref _microphoneQueueDepth);
+            DecrementQueueDepth(ref _microphoneQueueDepth, "microphone");
             try
             {
                 _encoder.SendMicrophoneSamples(packet.Buffer.AsSpan(0, packet.Length));
@@ -1498,6 +1498,18 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 return;
             }
         }
+    }
+
+    private static void DecrementQueueDepth(ref int target, string queueName)
+    {
+        var depth = Interlocked.Decrement(ref target);
+        if (depth >= 0)
+        {
+            return;
+        }
+
+        Interlocked.Exchange(ref target, 0);
+        Logger.Log($"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName} depth={depth}");
     }
 
     private static void UpdateMaxValue(ref long target, long value)
@@ -1836,7 +1848,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         if (queue.Reader.TryRead(out var evictedPacket))
         {
-            Interlocked.Decrement(ref queueDepth);
+            DecrementQueueDepth(ref queueDepth, "audio_evict");
             Interlocked.Increment(ref backlogEvictions);
             // Track dropped audio samples for A/V drift diagnostics (analogous to SkipVideoFrame for video)
             var evictedSamples = GetSampleCount(evictedPacket.Length);

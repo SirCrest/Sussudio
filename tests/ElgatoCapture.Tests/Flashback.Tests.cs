@@ -859,6 +859,14 @@ static partial class Program
         AssertContains(sourceText, "ReleaseGpuTextureBestEffort(packet.Texture);");
         AssertContains(sourceText, "FLASHBACK_SINK_RETURN_VIDEO_PACKET_WARN");
         AssertContains(sourceText, "FLASHBACK_SINK_RELEASE_GPU_PACKET_WARN");
+        AssertContains(sourceText, "private static void DecrementQueueDepth(ref int target, string queueName)");
+        AssertContains(sourceText, "FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW");
+        AssertContains(sourceText, "DecrementQueueDepth(ref _videoQueueDepth, \"video\");");
+        AssertContains(sourceText, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu\");");
+        AssertContains(sourceText, "DecrementQueueDepth(ref _audioQueueDepth, \"audio\");");
+        AssertContains(sourceText, "DecrementQueueDepth(ref _microphoneQueueDepth, \"microphone\");");
+        AssertDoesNotContain(sourceText, "Interlocked.Decrement(ref _videoQueueDepth)");
+        AssertDoesNotContain(sourceText, "Interlocked.Decrement(ref _gpuQueueDepth)");
         AssertDoesNotContain(sourceText, "Marshal.Release(packet.Texture);");
 
         return Task.CompletedTask;
