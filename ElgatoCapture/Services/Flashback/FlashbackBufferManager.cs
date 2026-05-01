@@ -748,6 +748,13 @@ internal sealed class FlashbackBufferManager : IDisposable
         var safeSizeBytes = Math.Max(0, sizeBytes);
         lock (_indexLock)
         {
+            if (safeSizeBytes >= _previousActiveSegmentBytes)
+            {
+                Interlocked.Add(ref _totalBytesWritten, safeSizeBytes - _previousActiveSegmentBytes);
+            }
+
+            _previousActiveSegmentBytes = 0;
+
             var sequenceNumber = _completedSegments.Count;
             _completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes));
             _completedSegmentBytes += safeSizeBytes;

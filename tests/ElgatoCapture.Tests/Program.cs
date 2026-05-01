@@ -436,6 +436,9 @@ static partial class Program
                 "FlashbackBufferManager segment diagnostics clamp active counters",
                 FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters),
             await RunCheckAsync(
+                "FlashbackBufferManager segment rotation keeps total bytes written monotonic",
+                FlashbackBufferManager_SegmentRotationKeepsTotalBytesWrittenMonotonic),
+            await RunCheckAsync(
                 "FlashbackBufferManager valid segment lookup skips missing files",
                 FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles),
             await RunCheckAsync(
@@ -2378,6 +2381,32 @@ static partial class Program
         AssertContains(source, "_totalDiskBytes = Math.Max(0, _completedSegmentBytes + safeActiveSegmentBytes);");
         AssertContains(source, "_completedSegmentBytes = Math.Max(0, _completedSegmentBytes - freedBytes);");
         AssertContains(source, "_totalDiskBytes = Math.Max(0, _totalDiskBytes - freedBytes);");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_SegmentRotationKeepsTotalBytesWrittenMonotonic()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var updateDiskBytes = manager.GetType().GetMethod("UpdateDiskBytes")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.UpdateDiskBytes not found.");
+        var onSegmentCompleted = manager.GetType().GetMethod("OnSegmentCompleted")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.OnSegmentCompleted not found.");
+
+        updateDiskBytes.Invoke(manager, new object[] { 1000L });
+        onSegmentCompleted.Invoke(manager, new object[]
+        {
+            Path.Combine(tempDir, "completed-0.ts"),
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(1),
+            1200L
+        });
+        AssertEqual(1200L, GetLongProperty(manager, "TotalBytesWritten"), "Final segment bytes counted at rotation");
+
+        updateDiskBytes.Invoke(manager, new object[] { 100L });
+        AssertEqual(1300L, GetLongProperty(manager, "TotalBytesWritten"), "First bytes from next segment counted after rotation");
 
         return Task.CompletedTask;
     }
