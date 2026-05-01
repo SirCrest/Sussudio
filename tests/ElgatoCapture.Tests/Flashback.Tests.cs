@@ -730,7 +730,7 @@ static partial class Program
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n        {\n            SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n        }");
         AssertContains(sourceText, "case CommandKind.Stop:\n                        isPlaying = false;\n                        isScrubbing = false;\n                        CleanupDecoder(ref decoder, ref fileOpen);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);\n                        RestoreLiveAudio();\n                        SafeResumePreviewSubmission(\"thread_stop\");\n                        SetState(FlashbackPlaybackState.Live);");
-        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return;\n        EnsurePlaybackThread();\n        SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
+        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        EnsurePlaybackThread();\n        return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
         AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");\n                        return;");
         AssertContains(sourceText, "var canRead = _commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();");
         AssertContains(sourceText, "if (!canRead)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT channel_closed\");\n                            isScrubbing = false;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
@@ -873,8 +873,8 @@ static partial class Program
             "                    case CommandKind.EndScrub:");
         var updateScrubMethod = ExtractTextBetween(
             sourceText,
-            "public void UpdateScrub(TimeSpan position)",
-            "    public void EndScrub()");
+            "public bool UpdateScrub(TimeSpan position)",
+            "    public bool EndScrub()");
         var drainAbandonedCommands = ExtractTextBetween(
             sourceText,
             "private void DrainAbandonedCommandsOnThreadExit()",
@@ -885,7 +885,9 @@ static partial class Program
         AssertContains(updateScrubMethod, "Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);");
         AssertContains(updateScrubMethod, "Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0");
         AssertContains(updateScrubMethod, "Interlocked.Increment(ref _commandsDropped);");
+        AssertContains(updateScrubMethod, "return true;");
         AssertContains(updateScrubMethod, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
+        AssertContains(updateScrubMethod, "return false;");
         AssertContains(updateScrubBlock, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
         AssertContains(updateScrubBlock, "TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks))");
         AssertContains(updateScrubBlock, "_commandChannel.Reader.TryPeek(out var newer) &&\n                               newer.Kind == CommandKind.UpdateScrub");

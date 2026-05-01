@@ -298,57 +298,49 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     internal bool FlashbackBeginScrub(TimeSpan position)
     {
         if (!TryGetActiveFlashback(out var controller)) return false;
-        controller.BeginScrub(position);
-        return true;
+        return controller.BeginScrub(position);
     }
 
     internal bool FlashbackSeek(TimeSpan position)
     {
         if (!TryGetActiveFlashback(out var controller)) return false;
-        controller.Seek(position);
-        return true;
+        return controller.Seek(position);
     }
 
     internal bool FlashbackUpdateScrub(TimeSpan position)
     {
         if (!TryGetActiveFlashback(out var controller)) return false;
-        controller.UpdateScrub(position);
-        return true;
+        return controller.UpdateScrub(position);
     }
 
     internal bool FlashbackEndScrub()
     {
         if (!TryGetActiveFlashback(out var controller)) return false;
-        controller.EndScrub();
-        return true;
+        return controller.EndScrub();
     }
 
     internal bool FlashbackPlay()
     {
         if (!TryGetActiveFlashback(out var controller)) return false;
-        controller.Play();
-        return true;
+        return controller.Play();
     }
 
     internal bool FlashbackPause()
     {
         if (!TryGetActiveFlashback(out var controller)) return false;
-        controller.Pause();
-        return true;
+        return controller.Pause();
     }
 
     internal bool FlashbackGoLive()
     {
         if (!TryGetActiveFlashback(out var controller)) return false;
-        controller.GoLive();
-        return true;
+        return controller.GoLive();
     }
 
     internal bool FlashbackNudge(TimeSpan delta)
     {
         if (!TryGetActiveFlashback(out var controller)) return false;
-        controller.NudgePosition(delta);
-        return true;
+        return controller.NudgePosition(delta);
     }
 
     internal TimeSpan? FlashbackSetInPoint()

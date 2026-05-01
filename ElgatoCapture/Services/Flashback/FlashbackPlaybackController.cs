@@ -215,70 +215,73 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- State transitions (called from UI thread) ---
 
-    public void BeginScrub(TimeSpan position)
+    public bool BeginScrub(TimeSpan position)
     {
-        if (IsNotReady(CommandKind.BeginScrub)) return;
+        if (IsNotReady(CommandKind.BeginScrub)) return false;
         EnsurePlaybackThread();
-        SendCommand(new PlaybackCommand { Kind = CommandKind.BeginScrub, Position = position });
+        return SendCommand(new PlaybackCommand { Kind = CommandKind.BeginScrub, Position = position });
     }
 
-    public void Seek(TimeSpan position)
+    public bool Seek(TimeSpan position)
     {
-        if (IsNotReady(CommandKind.Seek)) return;
+        if (IsNotReady(CommandKind.Seek)) return false;
         EnsurePlaybackThread();
-        SendCommand(new PlaybackCommand { Kind = CommandKind.Seek, Position = position });
+        return SendCommand(new PlaybackCommand { Kind = CommandKind.Seek, Position = position });
     }
 
-    public void UpdateScrub(TimeSpan position)
+    public bool UpdateScrub(TimeSpan position)
     {
-        if (IsNotReady(CommandKind.UpdateScrub)) return;
+        if (IsNotReady(CommandKind.UpdateScrub)) return false;
         Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
         if (Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0)
         {
             Interlocked.Increment(ref _commandsDropped);
-            return;
+            return true;
         }
 
         if (!SendCommand(new PlaybackCommand { Kind = CommandKind.UpdateScrub, Position = position }))
         {
             Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
+            return false;
         }
+
+        return true;
     }
 
-    public void EndScrub()
+    public bool EndScrub()
     {
-        if (IsNotReady(CommandKind.EndScrub)) return;
-        SendCommand(new PlaybackCommand { Kind = CommandKind.EndScrub });
+        if (IsNotReady(CommandKind.EndScrub)) return false;
+        return SendCommand(new PlaybackCommand { Kind = CommandKind.EndScrub });
     }
 
-    public void Play()
+    public bool Play()
     {
-        if (IsNotReady(CommandKind.Play)) return;
+        if (IsNotReady(CommandKind.Play)) return false;
         EnsurePlaybackThread();
-        SendCommand(new PlaybackCommand { Kind = CommandKind.Play });
+        return SendCommand(new PlaybackCommand { Kind = CommandKind.Play });
     }
 
-    public void Pause()
+    public bool Pause()
     {
-        if (IsNotReady(CommandKind.Pause)) return;
+        if (IsNotReady(CommandKind.Pause)) return false;
         EnsurePlaybackThread(); // Thread must be running to handle Live→Paused
-        SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });
+        return SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });
     }
 
-    public void GoLive()
+    public bool GoLive()
     {
-        if (IsNotReady(CommandKind.GoLive)) return;
-        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return;
+        if (IsNotReady(CommandKind.GoLive)) return false;
+        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
         EnsurePlaybackThread();
-        SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });
+        return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });
     }
 
-    public void NudgePosition(TimeSpan delta)
+    public bool NudgePosition(TimeSpan delta)
     {
-        if (IsNotReady(CommandKind.Nudge)) return;
-        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return;
+        if (IsNotReady(CommandKind.Nudge)) return false;
+        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
         EnsurePlaybackThread();
-        SendCommand(new PlaybackCommand { Kind = CommandKind.Nudge, Delta = delta });
+        return SendCommand(new PlaybackCommand { Kind = CommandKind.Nudge, Delta = delta });
     }
 
     // --- In/Out point helpers ---
