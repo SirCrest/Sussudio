@@ -258,7 +258,10 @@ public partial class MainViewModel
 
     public async Task ExportFlashbackAsync()
     {
-        if (!_sessionCoordinator.IsFlashbackActive) return;
+        if (!EnsureFlashbackActiveForExport("export"))
+        {
+            return;
+        }
 
         var file = await PickFlashbackExportFileAsync($"Flashback_{DateTime.Now:yyyyMMdd_HHmmss}");
         if (file == null) return;
@@ -285,7 +288,10 @@ public partial class MainViewModel
 
     public async Task SaveFlashbackLast5mAsync()
     {
-        if (!_sessionCoordinator.IsFlashbackActive) return;
+        if (!EnsureFlashbackActiveForExport("save_last_5m"))
+        {
+            return;
+        }
 
         var file = await PickFlashbackExportFileAsync($"Flashback_Last5m_{DateTime.Now:yyyyMMdd_HHmmss}");
         if (file == null) return;
@@ -314,6 +320,18 @@ public partial class MainViewModel
         picker.SuggestedFileName = suggestedFileName;
         WinRT.Interop.InitializeWithWindow.Initialize(picker, _windowHandle);
         return await picker.PickSaveFileAsync();
+    }
+
+    private bool EnsureFlashbackActiveForExport(string operation)
+    {
+        if (_sessionCoordinator.IsFlashbackActive)
+        {
+            return true;
+        }
+
+        Logger.Log($"FLASHBACK_EXPORT_UI_REJECTED op={operation} reason=inactive");
+        StatusText = "Flashback export unavailable: flashback is not active.";
+        return false;
     }
 
     private async Task<(FinalizeResult? Result, string? ErrorMessage, bool IsCurrent)> ExportFlashbackCoreAsync(

@@ -115,6 +115,10 @@ static partial class Program
         AssertContains(coordinatorText, "Exception failure = Volatile.Read(ref _isDisposed)");
         AssertMemberContains(automationText, "ExportFlashbackAsync", "_sessionCoordinator.ExportFlashbackRangeAsync(");
         AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
+        AssertContains(rawAutomationText, "EnsureFlashbackActiveForExport(\"export\")");
+        AssertContains(rawAutomationText, "EnsureFlashbackActiveForExport(\"save_last_5m\")");
+        AssertContains(rawAutomationText, "FLASHBACK_EXPORT_UI_REJECTED op={operation} reason=inactive");
+        AssertContains(rawAutomationText, "Flashback export unavailable: flashback is not active.");
         AssertMemberContains(automationText, "ExportFlashbackAsync", "if (!isCurrent) return;");
         AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "if (!isCurrent) return;");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _flashbackExportOperationId;");
