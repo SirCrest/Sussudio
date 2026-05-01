@@ -1289,6 +1289,7 @@ static partial class Program
             "SetState(FlashbackPlaybackState.Live);");
         AssertContains(nearLiveBlock, "CloseDecoderFileBestEffort(decoder, \"near_live\");");
         AssertContains(nearLiveBlock, "fileOpen = false;\n            _currentOpenFilePath = null;\n            _decoderHwAccel = \"N/A\";");
+        AssertContains(nearLiveBlock, "ReleasePlaybackFrameForLive(\"near_live\");\n            RestoreLiveAudio();");
 
         var decodeErrorBlock = ExtractTextBetween(
             sourceText,
@@ -1299,6 +1300,7 @@ static partial class Program
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_SEEK_ERROR type={ex.GetType().Name} error='{ex.Message}'\");");
         AssertContains(decodeErrorBlock, "CloseDecoderFileBestEffort(decoder, \"decode_error\");");
         AssertContains(decodeErrorBlock, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
+        AssertContains(decodeErrorBlock, "ReleasePlaybackFrameForLive(\"decode_error\");\n        RestoreLiveAudio();");
         AssertContains(sourceText, "private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)\n    {\n        try\n        {\n            if (decoder.IsOpen) decoder.CloseFile();\n        }\n        catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_PLAYBACK_DECODER_CLOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'\");\n        }\n    }");
         var ensureFileOpenBlock = ExtractTextBetween(
             sourceText,
@@ -1553,6 +1555,7 @@ static partial class Program
         AssertContains(nudgeBlock, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));");
         AssertContains(nudgeBlock, "if (!decoder.IsOpen)");
         AssertContains(nudgeBlock, "FLASHBACK_PLAYBACK_NUDGE_NO_FILE");
+        AssertContains(nudgeBlock, "ReleasePlaybackFrameForLive(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "RestoreLiveAudio();");
         AssertContains(nudgeBlock, "SafeResumePreviewSubmission(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "SetState(FlashbackPlaybackState.Live);");
@@ -1581,6 +1584,15 @@ static partial class Program
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_submit_fail\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_previousHeldFrame, \"previous_frame\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip\");");
+        AssertContains(sourceText, "private void ReleasePlaybackFrameForLive(string operation)");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_RELEASE_HELD_FOR_LIVE op={operation}");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"seek_no_file\");");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"scrub_no_file\");");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"scrub_update_no_file\");");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"play_no_file\");");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"nudge_no_file\");");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"near_live\");");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"decode_error\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SUBMIT_FAIL");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(nudgeFrame, \"nudge\")");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(frame, \"seek\")");

@@ -640,6 +640,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!decoder.IsOpen)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_SEEK_NO_FILE - restoring live");
+                            ReleasePlaybackFrameForLive("seek_no_file");
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("seek_no_file");
                             SafeResumeRendering("seek_no_file");
@@ -685,6 +686,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_SCRUB_NO_FILE — restoring live");
                             isScrubbing = false;
+                            ReleasePlaybackFrameForLive("scrub_no_file");
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("scrub_no_file");
                             SafeResumeRendering("scrub_no_file");
@@ -719,6 +721,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!decoder.IsOpen)
                         {
                             isScrubbing = false;
+                            ReleasePlaybackFrameForLive("scrub_update_no_file");
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("scrub_update_no_file");
                             SafeResumeRendering("scrub_update_no_file");
@@ -783,6 +786,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE — restoring live");
                             isPlaying = false;
+                            ReleasePlaybackFrameForLive("play_no_file");
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("play_no_file");
                             SafeResumeRendering("play_no_file");
@@ -877,6 +881,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             PlaybackPosition = nudgedPos;
                             isPlaying = false;
                             isScrubbing = false;
+                            ReleasePlaybackFrameForLive("nudge_no_file");
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("nudge_no_file");
                             SetState(FlashbackPlaybackState.Live);
@@ -1164,6 +1169,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _previousHeldFrame = default;
             _hasPreviousHeldFrame = false;
         }
+    }
+
+    private void ReleasePlaybackFrameForLive(string operation)
+    {
+        if (_hasPreviousHeldFrame)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_RELEASE_HELD_FOR_LIVE op={operation}");
+        }
+
+        ReleasePreviousHeldFrame();
     }
 
     private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)
@@ -1579,6 +1594,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
             Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
+            ReleasePlaybackFrameForLive("near_live");
             RestoreLiveAudio();
             SafeResumePreviewSubmission("near_live");
             SetState(FlashbackPlaybackState.Live);
@@ -1747,6 +1763,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
         Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
+        ReleasePlaybackFrameForLive("decode_error");
         RestoreLiveAudio();
         SafeResumePreviewSubmission("decode_error");
         SetState(FlashbackPlaybackState.Live);
