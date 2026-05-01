@@ -392,9 +392,11 @@ static partial class Program
             "private void TryApplySharedPreviewDevice");
 
         AssertContains(setFlashbackEnabled, "_pendingFlashbackEnableAfterRecording = false;");
+        AssertContains(setFlashbackEnabled, "if (_flashbackEnabled == enabled)");
+        AssertContains(setFlashbackEnabled, "if (enabled && (_flashbackSink != null || _isRecording))");
         AssertContains(
             setFlashbackEnabled,
-            "if (_flashbackEnabled == enabled &&\n                (!enabled || _flashbackSink != null || _isRecording))");
+            "if (!enabled &&\n                    _flashbackSink == null &&\n                    _flashbackBufferManager == null &&\n                    _flashbackExporter == null &&\n                    _flashbackPlaybackController == null)");
         AssertContains(
             setFlashbackEnabled,
             "if (!_isVideoPreviewActive && !_isAudioPreviewActive && !_isRecording)\n                {\n                    await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);");
