@@ -759,6 +759,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             var statusMessage = ex is OperationCanceledException && ct.IsCancellationRequested
                 ? "Flashback export cancelled."
                 : ex.Message;
+            Logger.Log(
+                $"FLASHBACK_EXPORT_CORE_FAIL id={exportId} type={ex.GetType().Name} " +
+                $"cancelled={ct.IsCancellationRequested} msg='{statusMessage}'");
             var failure = FinalizeResult.Failure(outputPath, statusMessage);
             _lastExportResult = failure;
             if (exportId != 0)

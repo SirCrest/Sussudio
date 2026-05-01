@@ -364,7 +364,9 @@ static partial class Program
         AssertContains(captureServiceText, "private void RecordRejectedFlashbackExportDiagnostics(string outputPath, FinalizeResult result)");
         AssertContains(captureServiceText, "if (_flashbackExportActive)");
         AssertContains(captureServiceText, "if (_flashbackExportId != exportId || !_flashbackExportActive)");
-        AssertContains(captureServiceText, "var statusMessage = ex is OperationCanceledException && ct.IsCancellationRequested\n                ? \"Flashback export cancelled.\"\n                : ex.Message;\n            var failure = FinalizeResult.Failure(outputPath, statusMessage);");
+        AssertContains(captureServiceText, "var statusMessage = ex is OperationCanceledException && ct.IsCancellationRequested\n                ? \"Flashback export cancelled.\"\n                : ex.Message;");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_CORE_FAIL id={exportId} type={ex.GetType().Name}");
+        AssertContains(captureServiceText, "var failure = FinalizeResult.Failure(outputPath, statusMessage);");
         AssertContains(captureServiceText, "CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            else\n            {\n                RecordRejectedFlashbackExportDiagnostics(outputPath, failure);\n            }\n            return failure;");
         AssertContains(captureServiceText, "_flashbackExportStartedUtcUnixMs = now;");
         AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = now;");
