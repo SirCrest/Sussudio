@@ -297,69 +297,69 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 
     internal bool FlashbackBeginScrub(TimeSpan position)
     {
-        if (!TryGetActiveFlashback(out var controller)) return false;
+        if (!TryGetActiveFlashback(nameof(FlashbackBeginScrub), out var controller)) return false;
         return controller.BeginScrub(position);
     }
 
     internal bool FlashbackSeek(TimeSpan position)
     {
-        if (!TryGetActiveFlashback(out var controller)) return false;
+        if (!TryGetActiveFlashback(nameof(FlashbackSeek), out var controller)) return false;
         return controller.Seek(position);
     }
 
     internal bool FlashbackUpdateScrub(TimeSpan position)
     {
-        if (!TryGetActiveFlashback(out var controller)) return false;
+        if (!TryGetActiveFlashback(nameof(FlashbackUpdateScrub), out var controller)) return false;
         return controller.UpdateScrub(position);
     }
 
     internal bool FlashbackEndScrub()
     {
-        if (!TryGetActiveFlashback(out var controller)) return false;
+        if (!TryGetActiveFlashback(nameof(FlashbackEndScrub), out var controller)) return false;
         return controller.EndScrub();
     }
 
     internal bool FlashbackPlay()
     {
-        if (!TryGetActiveFlashback(out var controller)) return false;
+        if (!TryGetActiveFlashback(nameof(FlashbackPlay), out var controller)) return false;
         return controller.Play();
     }
 
     internal bool FlashbackPause()
     {
-        if (!TryGetActiveFlashback(out var controller)) return false;
+        if (!TryGetActiveFlashback(nameof(FlashbackPause), out var controller)) return false;
         return controller.Pause();
     }
 
     internal bool FlashbackGoLive()
     {
-        if (!TryGetActiveFlashback(out var controller)) return false;
+        if (!TryGetActiveFlashback(nameof(FlashbackGoLive), out var controller)) return false;
         return controller.GoLive();
     }
 
     internal bool FlashbackNudge(TimeSpan delta)
     {
-        if (!TryGetActiveFlashback(out var controller)) return false;
+        if (!TryGetActiveFlashback(nameof(FlashbackNudge), out var controller)) return false;
         return controller.NudgePosition(delta);
     }
 
     internal TimeSpan? FlashbackSetInPoint()
     {
-        return TryGetActiveFlashback(out var controller)
+        return TryGetActiveFlashback(nameof(FlashbackSetInPoint), out var controller)
             ? controller.SetInPoint()
             : null;
     }
 
     internal TimeSpan? FlashbackSetOutPoint()
     {
-        return TryGetActiveFlashback(out var controller)
+        return TryGetActiveFlashback(nameof(FlashbackSetOutPoint), out var controller)
             ? controller.SetOutPoint()
             : null;
     }
 
     internal bool FlashbackClearInOutPoints()
     {
-        if (!TryGetActiveFlashback(out var controller)) return false;
+        if (!TryGetActiveFlashback(nameof(FlashbackClearInOutPoints), out var controller)) return false;
         controller.ClearInOutPoints();
         return true;
     }
@@ -394,11 +394,24 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     public Task CleanupAsync(CancellationToken cancellationToken = default)
         => EnqueueAsync(CaptureCommandKind.Cleanup, ct => _captureService.CleanupAsync(ct), cancellationToken);
 
-    private bool TryGetActiveFlashback([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out FlashbackPlaybackController? controller)
+    private bool TryGetActiveFlashback(
+        string command,
+        [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out FlashbackPlaybackController? controller)
     {
         ThrowIfDisposed();
         controller = _captureService.FlashbackPlaybackController;
-        return controller is { IsInitialized: true, State: not FlashbackPlaybackState.Disabled };
+        if (controller is { IsInitialized: true, State: not FlashbackPlaybackState.Disabled })
+        {
+            return true;
+        }
+
+        var reason = controller == null
+            ? "missing_controller"
+            : !controller.IsInitialized
+                ? "not_initialized"
+                : $"state_{controller.State}";
+        Logger.Log($"FLASHBACK_COORD_COMMAND_REJECTED command={command} reason={reason}");
+        return false;
     }
 
     private Task EnqueueAsync(

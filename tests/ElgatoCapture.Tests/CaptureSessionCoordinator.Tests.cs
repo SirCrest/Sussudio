@@ -148,4 +148,21 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections()
+    {
+        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackBeginScrub), out var controller)");
+        AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackUpdateScrub), out var controller)");
+        AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackEndScrub), out var controller)");
+        AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackGoLive), out var controller)");
+        AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackClearInOutPoints), out var controller)");
+        AssertContains(coordinatorText, "private bool TryGetActiveFlashback(\n        string command,");
+        AssertContains(coordinatorText, "var reason = controller == null\n            ? \"missing_controller\"\n            : !controller.IsInitialized\n                ? \"not_initialized\"\n                : $\"state_{controller.State}\";");
+        AssertContains(coordinatorText, "Logger.Log($\"FLASHBACK_COORD_COMMAND_REJECTED command={command} reason={reason}\");");
+
+        return Task.CompletedTask;
+    }
 }

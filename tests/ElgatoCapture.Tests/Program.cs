@@ -177,6 +177,9 @@ static partial class Program
                 "Capture session coordinator propagates flashback mutation cancellation",
                 CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation),
             await RunCheckAsync(
+                "Capture session coordinator logs inactive flashback command rejections",
+                CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections),
+            await RunCheckAsync(
                 "Service namespaces follow service folders",
                 ServiceNamespaces_FollowServiceFolders),
             await RunCheckAsync(

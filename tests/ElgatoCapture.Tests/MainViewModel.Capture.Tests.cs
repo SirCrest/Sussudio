@@ -76,7 +76,7 @@ static partial class Program
         var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(coordinatorText, "return controller is { IsInitialized: true, State: not FlashbackPlaybackState.Disabled };");
+        AssertContains(coordinatorText, "if (controller is { IsInitialized: true, State: not FlashbackPlaybackState.Disabled })\n        {\n            return true;\n        }");
         AssertMemberContains(automationText, "GetFlashbackPlaybackSnapshot", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(automationText, "FlashbackBeginScrub", "_sessionCoordinator.FlashbackBeginScrub(position)");
         AssertMemberContains(automationText, "FlashbackUpdateScrub", "return _sessionCoordinator.FlashbackUpdateScrub(position)");
