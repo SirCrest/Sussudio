@@ -80,6 +80,7 @@ public static class DiagnosticSessionRunner
         var startedRecording = false;
         var enabledFlashback = false;
         var runFlashbackStress = scenario == "flashback-stress";
+        var runFlashbackRecording = scenario == "flashback-recording";
         using var commandSendGate = new SemaphoreSlim(1, 1);
 
         var initialResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
@@ -106,6 +107,12 @@ public static class DiagnosticSessionRunner
 
             if (ScenarioNeedsRecording(scenario) && !GetBool(initialSnapshot, "IsRecording"))
             {
+                if (runFlashbackRecording &&
+                    !await WaitForFlashbackStressBufferReadyAsync(SendAsync, cancellationToken).ConfigureAwait(false))
+                {
+                    warnings.Add("flashback recording: Flashback buffer did not become recording-ready within 30s");
+                }
+
                 await SendAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
                 startedRecording = true;
                 actions.Add("recording started");
@@ -201,6 +208,11 @@ public static class DiagnosticSessionRunner
             }
         }
 
+        if (runFlashbackRecording)
+        {
+            ValidateFlashbackRecordingSession(samples, warnings);
+        }
+
         var timelineResponse = await SendAsync(
                 "GetPerformanceTimeline",
                 new Dictionary<string, object?> { ["maxEntries"] = 240 },
@@ -238,7 +250,7 @@ public static class DiagnosticSessionRunner
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!runFlashbackStress || warnings.Count == 0),
+                      (!(runFlashbackStress || runFlashbackRecording) || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -474,6 +486,60 @@ public static class DiagnosticSessionRunner
         return false;
     }
 
+    private static void ValidateFlashbackRecordingSession(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        List<string> warnings)
+    {
+        var recordingSamples = samples
+            .Select(sample => sample.Snapshot)
+            .Where(snapshot => GetBool(snapshot, "IsRecording"))
+            .ToArray();
+        if (recordingSamples.Length == 0)
+        {
+            warnings.Add("flashback recording: no recording samples captured");
+            return;
+        }
+
+        if (!recordingSamples.Any(snapshot =>
+                string.Equals(GetString(snapshot, "RecordingBackend"), "Flashback", StringComparison.OrdinalIgnoreCase)))
+        {
+            warnings.Add("flashback recording: RecordingBackend never reported Flashback");
+        }
+
+        if (!recordingSamples.Any(snapshot => GetBool(snapshot, "RecordingFileGrowing")))
+        {
+            warnings.Add("flashback recording: recording file never reported growth");
+        }
+
+        var firstRecordingSample = recordingSamples[0];
+        var finalRecordingSample = recordingSamples[^1];
+        var submittedDelta =
+            (GetNullableLong(finalRecordingSample, "FlashbackVideoFramesSubmittedToEncoder") ?? 0) -
+            (GetNullableLong(firstRecordingSample, "FlashbackVideoFramesSubmittedToEncoder") ?? 0);
+        if (submittedDelta <= 0)
+        {
+            warnings.Add("flashback recording: no Flashback video frames submitted to encoder");
+        }
+
+        var packetsDelta =
+            (GetNullableLong(finalRecordingSample, "FlashbackVideoEncoderPacketsWritten") ?? 0) -
+            (GetNullableLong(firstRecordingSample, "FlashbackVideoEncoderPacketsWritten") ?? 0);
+        if (packetsDelta <= 0)
+        {
+            warnings.Add("flashback recording: no Flashback encoder packets written");
+        }
+
+        if (GetNullableLong(finalRecordingSample, "RecordingIntegritySequenceGaps") > 0)
+        {
+            warnings.Add("flashback recording: Flashback video sequence gaps were reported");
+        }
+
+        if (GetNullableLong(finalRecordingSample, "RecordingIntegrityQueueDroppedFrames") > 0)
+        {
+            warnings.Add("flashback recording: Flashback dropped frames were reported");
+        }
+    }
+
     private static async Task SampleLoopAsync(
         int durationSeconds,
         int sampleIntervalMs,
@@ -589,18 +655,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-recording" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-stress" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-recording" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
-        => scenario is "recording-only" or "combined";
+        => scenario is "recording-only" or "flashback-recording" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-stress" or "combined";
+        => scenario is "flashback" or "flashback-stress" or "flashback-recording" or "combined";
 
 }

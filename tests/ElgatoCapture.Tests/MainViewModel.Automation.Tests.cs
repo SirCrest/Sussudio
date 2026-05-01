@@ -251,8 +251,16 @@ static partial class Program
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
         AssertContains(diagnosticSessionText, "var runFlashbackStress = scenario == \"flashback-stress\";");
+        AssertContains(diagnosticSessionText, "var runFlashbackRecording = scenario == \"flashback-recording\";");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");
         AssertContains(diagnosticSessionText, "private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(");
+        AssertContains(diagnosticSessionText, "private static void ValidateFlashbackRecordingSession(");
+        AssertContains(diagnosticSessionText, "\"flashback recording: RecordingBackend never reported Flashback\"");
+        AssertContains(diagnosticSessionText, "\"flashback recording: no Flashback video frames submitted to encoder\"");
+        AssertContains(diagnosticSessionText, "submittedDelta");
+        AssertContains(diagnosticSessionText, "packetsDelta");
+        AssertContains(diagnosticSessionText, "RecordingIntegritySequenceGaps");
+        AssertContains(diagnosticSessionText, "RecordingIntegrityQueueDroppedFrames");
         AssertContains(diagnosticSessionText, "GetInt(snapshot, \"FlashbackBufferedDurationMs\") >= 8_000");
         AssertContains(diagnosticSessionText, "GetInt(snapshot, \"FlashbackEncodedFrames\") >= 240");
         AssertContains(diagnosticSessionText, "\"flashback stress: Flashback buffer did not become export-ready within 30s\"");
@@ -261,8 +269,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"seconds\"] = 1, [\"outputPath\"] = exportPath }");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"filePath\"] = exportPath, [\"strict\"] = true }");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s\"");
-        AssertContains(diagnosticSessionText, "(!runFlashbackStress || warnings.Count == 0)");
-        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"combined\"");
+        AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackRecording) || warnings.Count == 0)");
+        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-recording\" or \"combined\"");
 
         return Task.CompletedTask;
     }
