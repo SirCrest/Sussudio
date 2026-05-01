@@ -326,6 +326,7 @@ static partial class Program
         AssertContains(diagnosticsText, "recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents}");
         AssertContains(diagnosticsText, "\"flashback-playback-slow\"");
         AssertContains(diagnosticsText, "\"flashback-playback-frametime-degraded\"");
+        AssertContains(diagnosticsText, "\"flashback-playback-audio-master-fallback\"");
         AssertContains(diagnosticsText, "\"flashback-playback-submit-failures\"");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackSubmitFailures > 0");
         AssertContains(diagnosticsText, "Flashback playback frame submission failed");
@@ -351,6 +352,8 @@ static partial class Program
         AssertContains(diagnosticsText, "private static bool IsFlashbackForceRotateRejectReason(string? reason)");
         AssertContains(diagnosticsText, "string.Equals(reason, \"force_rotate_queue_guard\"");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackOnePercentLowFps");
+        AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackAudioMasterFallbacks >= snapshot.FlashbackPlaybackFrameCount * FlashbackPlaybackAudioMasterFallbackWarningRatio");
+        AssertContains(diagnosticsText, "Flashback playback is using wall-clock pacing instead of audio-master pacing");
         AssertContains(diagnosticsText, "Flashback playback is below target rate");
         AssertContains(diagnosticsText, "Flashback playback frametime degraded");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > snapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs");
@@ -385,6 +388,7 @@ static partial class Program
         AssertContains(diagnosticsText, "playback perf state={health.FlashbackPlaybackState}");
         AssertContains(diagnosticsText, "target={health.FlashbackPlaybackTargetFps:0.##}");
         AssertContains(diagnosticsText, "1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps");
+        AssertContains(diagnosticsText, "private const double FlashbackPlaybackAudioMasterFallbackWarningRatio = 0.50;");
         AssertContains(diagnosticsText, "decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms");
         AssertContains(diagnosticsText, "audioMasterDouble={health.FlashbackPlaybackAudioMasterDelayDoubles}");
         AssertContains(diagnosticsText, "audioMasterDouble={snapshot.FlashbackPlaybackAudioMasterDelayDoubles}");

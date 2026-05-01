@@ -73,6 +73,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const double PreviewOnePercentLowWarningRatio = 0.98;
     private const double FlashbackPlaybackOnePercentLowWarningRatio = 0.98;
     private const int FlashbackPlaybackMinFramesForPerfAlert = 60;
+    private const double FlashbackPlaybackAudioMasterFallbackWarningRatio = 0.50;
     private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;
     private const long FlashbackRecordingBackpressureWarningMs = 100;
     private const double FlashbackRecordingQueueDepthWarningRatio = 0.75;
@@ -1569,6 +1570,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 snapshot.FlashbackPlaybackFrameCount,
                 snapshot.FlashbackPlaybackCadenceSampleCount,
                 snapshot.FlashbackPlaybackOnePercentLowFps);
+        var playbackAudioMasterFallbackDominant =
+            string.Equals(snapshot.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
+            snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
+            snapshot.FlashbackPlaybackAudioMasterFallbacks >= snapshot.FlashbackPlaybackFrameCount * FlashbackPlaybackAudioMasterFallbackWarningRatio;
         var captureOnePercentLowDegraded =
             IsCaptureOnePercentLowDegraded(
                 snapshot.ExpectedCaptureFrameRate,
@@ -1786,6 +1791,19 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"decodeP99={snapshot.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={snapshot.FlashbackPlaybackDecodeMaxMs:0.##}ms samples={snapshot.FlashbackPlaybackCadenceSampleCount} " +
             $"audioMasterDouble={snapshot.FlashbackPlaybackAudioMasterDelayDoubles} audioMasterShrink={snapshot.FlashbackPlaybackAudioMasterDelayShrinks} audioMasterFallback={snapshot.FlashbackPlaybackAudioMasterFallbacks}.",
             "Flashback playback frametime returned to target range.",
+            throttleMs: 5000);
+
+        SetAlertState(
+            "flashback-playback-audio-master-fallback",
+            playbackAudioMasterFallbackDominant,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback playback is using wall-clock pacing instead of audio-master pacing: " +
+            $"fallbacks={snapshot.FlashbackPlaybackAudioMasterFallbacks} frames={snapshot.FlashbackPlaybackFrameCount} " +
+            $"target={snapshot.FlashbackPlaybackTargetFps:0.##}fps observed={snapshot.FlashbackPlaybackObservedFps:0.##}fps " +
+            $"avDrift={snapshot.FlashbackAvDriftMs:0.##}ms renderCallbacks={snapshot.WasapiPlaybackRenderCallbackCount} " +
+            $"renderSilence={snapshot.WasapiPlaybackRenderSilenceCount} queueDepth={snapshot.WasapiPlaybackQueueDepth}.",
+            "Flashback playback returned to audio-master pacing.",
             throttleMs: 5000);
 
         SetAlertState(
