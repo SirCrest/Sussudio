@@ -1942,6 +1942,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _playbackFrameIntervalHead = 0;
             _playbackFrameIntervalCount = 0;
         }
+
+        lock (_playbackDecodeLock)
+        {
+            Array.Clear(_playbackDecodeDurationsMs);
+            _playbackDecodeDurationHead = 0;
+            _playbackDecodeDurationCount = 0;
+        }
     }
 
     private void RestoreAudioCallback(FlashbackDecoder decoder, long audioStartGateTicks = 0)

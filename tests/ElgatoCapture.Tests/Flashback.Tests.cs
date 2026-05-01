@@ -975,4 +975,35 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackPlaybackController_ResetClearsDecodeMetrics()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        var resetMetricsBlock = ExtractTextBetween(
+            sourceText,
+            "private void ResetPlaybackMetrics()",
+            "private void RestoreAudioCallback");
+        AssertContains(resetMetricsBlock, "lock (_playbackDecodeLock)");
+        AssertContains(resetMetricsBlock, "Array.Clear(_playbackDecodeDurationsMs);");
+        AssertContains(resetMetricsBlock, "_playbackDecodeDurationHead = 0;");
+        AssertContains(resetMetricsBlock, "_playbackDecodeDurationCount = 0;");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackDecoder_DiscardedAudioFramesAreUnreffed()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+
+        var audioDecodeBlock = ExtractTextBetween(
+            sourceText,
+            "private void DecodeAndDeliverAudioPacket",
+            "// ── Private: Frame Conversion");
+        AssertContains(audioDecodeBlock, "if (callback == null)\n            {\n                ffmpeg.av_frame_unref(_audioFrame);\n                continue; // Codec advanced, but no delivery during seek/scrub\n            }");
+
+        return Task.CompletedTask;
+    }
 }

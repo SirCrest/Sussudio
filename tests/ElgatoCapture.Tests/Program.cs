@@ -589,6 +589,15 @@ static partial class Program
                 "Flashback scrub coalescing does not requeue control commands",
                 FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands),
             await RunCheckAsync(
+                "Flashback playback transitions use best-effort audio preview guards",
+                FlashbackPlaybackController_PlaybackTransitions_UseBestEffortAudioPreviewGuards),
+            await RunCheckAsync(
+                "Flashback playback metric reset clears decode timings",
+                FlashbackPlaybackController_ResetClearsDecodeMetrics),
+            await RunCheckAsync(
+                "Flashback decoder unreferences discarded audio frames",
+                FlashbackDecoder_DiscardedAudioFramesAreUnreffed),
+            await RunCheckAsync(
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
             await RunCheckAsync(

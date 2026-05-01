@@ -817,7 +817,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         {
             var callback = AudioChunkCallback;
             if (callback == null)
+            {
+                ffmpeg.av_frame_unref(_audioFrame);
                 continue; // Codec advanced, but no delivery during seek/scrub
+            }
+
             var chunk = ConvertAndOutputAudioFrame();
             if (chunk.ValidLength > 0)
             {
