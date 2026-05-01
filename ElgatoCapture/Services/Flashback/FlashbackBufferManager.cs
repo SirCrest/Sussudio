@@ -877,6 +877,15 @@ internal sealed class FlashbackBufferManager : IDisposable
                 return;
             }
 
+            if (_completedSegments.Count > 0 && startPts < _completedSegments[^1].EndPts)
+            {
+                var previous = _completedSegments[^1];
+                Logger.Log(
+                    $"FLASHBACK_BUFFER_SEGMENT_SKIP reason=non_monotonic path='{Path.GetFileName(path)}' " +
+                    $"start_ms={(long)startPts.TotalMilliseconds} previous_end_ms={(long)previous.EndPts.TotalMilliseconds}");
+                return;
+            }
+
             if (safeSizeBytes >= _previousActiveSegmentBytes)
             {
                 Interlocked.Add(ref _totalBytesWritten, safeSizeBytes - _previousActiveSegmentBytes);
