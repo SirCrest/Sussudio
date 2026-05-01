@@ -697,12 +697,14 @@ static partial class Program
         AssertContains(source, "FlashbackPlaybackNearLiveSnaps");
         AssertContains(source, "FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertContains(source, "FlashbackPlaybackLastWriteHeadWaitGapMs");
+        AssertContains(source, "FlashbackPlaybackLastCommandFailure");
         AssertContains(source, "FatalCleanupInProgress");
         AssertContains(source, "FlashbackCleanupInProgress");
         AssertContains(source, "FlashbackExportFailureKind");
         AssertContains(source, "FlashbackExportPercent");
         AssertContains(source, "FlashbackExportInPointMs");
         AssertContains(source, "FlashbackExportOutPointMs");
+        AssertContains(source, "FlashbackExportMessage");
         AssertContains(source, "FlashbackExportThroughputBytesPerSec");
         AssertContains(source, "FlashbackExportLastProgressAgeMs");
         AssertContains(source, "MjpegPreviewJitterLatencyP95Ms");
@@ -725,10 +727,12 @@ static partial class Program
         AssertContains(source, "Flashback P99:");
         AssertContains(source, "Flashback Decode:");
         AssertContains(source, "Flashback Cmds:");
+        AssertContains(source, "Flashback Failure:");
         AssertContains(source, "Flashback Stages:");
         AssertContains(source, "failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
         AssertContains(source, "Cleanup State:");
         AssertContains(source, "kind={FormatOptional(last.FlashbackExportFailureKind)}");
+        AssertContains(source, "Export Message:");
         AssertContains(source, "Export Progress:");
         AssertContains(source, "Export Range:");
         AssertContains(source, "FormatExportOutPoint");

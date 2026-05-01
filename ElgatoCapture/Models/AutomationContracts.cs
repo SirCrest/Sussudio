@@ -942,6 +942,7 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
     public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
     public long FlashbackPlaybackLastCommandFailureUtcUnixMs { get; init; }
+    public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;
     public bool FatalCleanupInProgress { get; init; }
     public bool FlashbackCleanupInProgress { get; init; }
     public bool FlashbackExportActive { get; init; }
@@ -956,6 +957,7 @@ public sealed class PerformanceTimelineEntry
     public double FlashbackExportPercent { get; init; }
     public long FlashbackExportInPointMs { get; init; }
     public long FlashbackExportOutPointMs { get; init; }
+    public string FlashbackExportMessage { get; init; } = string.Empty;
     public long PipelineLatencyMs { get; init; }
     public double ProcessCpuPercent { get; init; }
     public double MemoryWorkingSetMb { get; init; }

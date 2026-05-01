@@ -389,6 +389,7 @@ static partial class Program
                      "FlashbackPlaybackDecodeErrorSnaps",
                      "FlashbackPlaybackLastWriteHeadWaitGapMs",
                      "FlashbackPlaybackLastCommandFailureUtcUnixMs",
+                     "FlashbackPlaybackLastCommandFailure",
                      "FatalCleanupInProgress",
                      "FlashbackCleanupInProgress",
                      "FlashbackExportActive",
@@ -397,6 +398,7 @@ static partial class Program
                      "FlashbackExportPercent",
                      "FlashbackExportInPointMs",
                      "FlashbackExportOutPointMs",
+                     "FlashbackExportMessage",
                      "FlashbackExportThroughputBytesPerSec",
                      "FlashbackExportLastProgressAgeMs",
                      "ProcessCpuPercent"
