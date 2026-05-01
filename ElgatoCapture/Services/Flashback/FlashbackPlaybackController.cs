@@ -232,6 +232,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public bool UpdateScrub(TimeSpan position)
     {
         if (IsNotReady(CommandKind.UpdateScrub)) return false;
+        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, "thread_not_running", "thread_not_running", false);
         Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
         if (Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0)
         {
@@ -251,6 +252,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public bool EndScrub()
     {
         if (IsNotReady(CommandKind.EndScrub)) return false;
+        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
+        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, "thread_not_running", "thread_not_running", false);
         return SendCommand(new PlaybackCommand { Kind = CommandKind.EndScrub });
     }
 
@@ -1683,10 +1686,19 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private bool IsNotReady(CommandKind kind)
     {
         if (IsReady) return false;
+        return RejectCommand(
+            kind,
+            "not_ready",
+            $"not_ready initialized={_initialized} disposed={_disposedFlag != 0}",
+            true);
+    }
+
+    private bool RejectCommand(CommandKind kind, string failure, string reason, bool returnValue)
+    {
         Interlocked.Increment(ref _commandsSkippedNotReady);
-        _lastCommandFailure = $"not_ready:{kind}";
-        Logger.Log($"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason=not_ready initialized={_initialized} disposed={_disposedFlag != 0}");
-        return true;
+        _lastCommandFailure = $"{failure}:{kind}";
+        Logger.Log($"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}");
+        return returnValue;
     }
 
     private void TrackCommandDequeued(PlaybackCommand command)
