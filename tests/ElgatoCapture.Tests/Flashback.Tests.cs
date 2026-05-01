@@ -1929,6 +1929,8 @@ static partial class Program
         AssertContains(sourceText, "private const double FallbackPlaybackFrameRate = 60.0;");
         AssertContains(sourceText, "private const double MaxPlaybackFrameRate = 1000.0;");
         AssertContains(sourceText, "fps = Math.Min(fps, MaxPlaybackFrameRate);");
+        AssertContains(sourceText, "_playbackTargetFps = fps;");
+        AssertContains(sourceText, "public double PlaybackTargetFps => _playbackTargetFps;");
         AssertContains(sourceText, "return TimeSpan.FromSeconds(1.0 / fps);");
 
         return Task.CompletedTask;

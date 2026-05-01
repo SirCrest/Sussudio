@@ -865,6 +865,7 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackLastSegmentSwitchUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastFmp4ReopenUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
+    public double FlashbackPlaybackTargetFps { get; init; }
     public double FlashbackPlaybackObservedFps { get; init; }
     public double FlashbackPlaybackAvgFrameMs { get; init; }
     public int FlashbackPlaybackCadenceSampleCount { get; init; }
@@ -977,6 +978,7 @@ public sealed class PerformanceTimelineEntry
     public double PreviewD3DLastRenderedPipelineLatencyMs { get; init; }
     public string PreviewD3DLastDropReason { get; init; } = string.Empty;
     public string FlashbackPlaybackState { get; init; } = "N/A";
+    public double FlashbackPlaybackTargetFps { get; init; }
     public double FlashbackPlaybackObservedFps { get; init; }
     public double FlashbackPlaybackP99FrameMs { get; init; }
     public double FlashbackPlaybackMaxFrameMs { get; init; }

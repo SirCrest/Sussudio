@@ -1426,6 +1426,7 @@ public partial class CaptureService
             FlashbackPlaybackLastSegmentSwitchUtcUnixMs = fbPlayback?.LastSegmentSwitchUtcUnixMs ?? 0,
             FlashbackPlaybackLastFmp4ReopenUtcUnixMs = fbPlayback?.LastFmp4ReopenUtcUnixMs ?? 0,
             FlashbackPlaybackLastWriteHeadWaitGapMs = fbPlayback?.LastWriteHeadWaitGapMs ?? 0,
+            FlashbackPlaybackTargetFps = fbPlayback?.PlaybackTargetFps ?? 0,
             FlashbackPlaybackObservedFps = fbPlayback?.PlaybackObservedFps ?? 0,
             FlashbackPlaybackAvgFrameMs = fbPlayback?.PlaybackAvgFrameMs ?? 0,
             FlashbackPlaybackCadenceSampleCount = playbackCadence.SampleCount,

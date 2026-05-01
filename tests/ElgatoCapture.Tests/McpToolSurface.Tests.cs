@@ -698,6 +698,8 @@ static partial class Program
         AssertContains(source, "PreviewD3DFrameLatencyWaitMaxMs");
         AssertContains(source, "InP99 | RsP99 | PrP99 | TotP99");
         AssertContains(source, "FlashbackPlaybackP99FrameMs");
+        AssertContains(source, "FlashbackPlaybackTargetFps");
+        AssertContains(source, "Flashback target:");
         AssertContains(source, "FlashbackPlaybackDecodeP99Ms");
         AssertContains(source, "FlashbackPlaybackPendingCommands");
         AssertContains(source, "FlashbackPlaybackCommandsEnqueued");

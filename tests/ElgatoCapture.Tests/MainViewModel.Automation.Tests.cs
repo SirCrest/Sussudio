@@ -331,6 +331,8 @@ static partial class Program
         AssertContains(diagnosticsText, "Flashback playback frame submission failed");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackPendingCommands > 0");
         AssertContains(diagnosticsText, "FlashbackPlaybackCommandQueueCapacity");
+        AssertContains(diagnosticsText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps");
+        AssertContains(diagnosticsText, "FlashbackPlaybackTargetFps = snapshot.FlashbackPlaybackTargetFps");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackObservedFps < snapshot.SelectedFrameRate * FlashbackPlaybackSlowFpsRatio");
         AssertContains(diagnosticsText, "IsFlashbackPlaybackFrametimeDegraded(\n                snapshot.FlashbackPlaybackState");
         AssertContains(diagnosticsText, "IsCaptureOnePercentLowDegraded(\n                snapshot.ExpectedCaptureFrameRate");
@@ -381,6 +383,7 @@ static partial class Program
         AssertContains(diagnosticsText, "var playbackCommandFailure = string.IsNullOrWhiteSpace(health.FlashbackPlaybackLastCommandFailure)");
         AssertContains(diagnosticsText, "lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs}");
         AssertContains(diagnosticsText, "playback perf state={health.FlashbackPlaybackState}");
+        AssertContains(diagnosticsText, "target={health.FlashbackPlaybackTargetFps:0.##}");
         AssertContains(diagnosticsText, "1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps");
         AssertContains(diagnosticsText, "decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms");
         AssertContains(diagnosticsText, "audioMasterDouble={health.FlashbackPlaybackAudioMasterDelayDoubles}");

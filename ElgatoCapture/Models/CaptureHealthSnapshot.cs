@@ -52,6 +52,7 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackPlaybackLastSegmentSwitchUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastFmp4ReopenUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
+    public double FlashbackPlaybackTargetFps { get; init; }
     public double FlashbackPlaybackObservedFps { get; init; }
     public double FlashbackPlaybackAvgFrameMs { get; init; }
     public int FlashbackPlaybackCadenceSampleCount { get; init; }

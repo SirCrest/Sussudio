@@ -248,6 +248,7 @@ static partial class Program
                 new("FlashbackPlaybackLastSegmentSwitchUtcUnixMs", typeof(long)),
                 new("FlashbackPlaybackLastFmp4ReopenUtcUnixMs", typeof(long)),
                 new("FlashbackPlaybackLastWriteHeadWaitGapMs", typeof(long)),
+                new("FlashbackPlaybackTargetFps", typeof(double)),
                 new("FlashbackPlaybackObservedFps", typeof(double)),
                 new("FlashbackPlaybackAvgFrameMs", typeof(double)),
                 new("FlashbackPlaybackCadenceSampleCount", typeof(int)),
@@ -370,6 +371,7 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastSegmentSwitchUtcUnixMs", 123L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastFmp4ReopenUtcUnixMs", 456L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastWriteHeadWaitGapMs", 789L);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackTargetFps", 120d);
         SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeSampleCount", 120);
         SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeAvgMs", 1.25d);
         SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeP95Ms", 2.5d);
@@ -424,6 +426,7 @@ static partial class Program
         AssertEqual(123L, GetLongProperty(health, "FlashbackPlaybackLastSegmentSwitchUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastSegmentSwitchUtcUnixMs round-trip");
         AssertEqual(456L, GetLongProperty(health, "FlashbackPlaybackLastFmp4ReopenUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastFmp4ReopenUtcUnixMs round-trip");
         AssertEqual(789L, GetLongProperty(health, "FlashbackPlaybackLastWriteHeadWaitGapMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastWriteHeadWaitGapMs round-trip");
+        AssertEqual(120d, GetDoubleProperty(health, "FlashbackPlaybackTargetFps"), "CaptureHealthSnapshot.FlashbackPlaybackTargetFps round-trip");
         AssertEqual(120, GetIntProperty(health, "FlashbackPlaybackDecodeSampleCount"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeSampleCount round-trip");
         AssertEqual(1.25d, GetDoubleProperty(health, "FlashbackPlaybackDecodeAvgMs"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeAvgMs round-trip");
         AssertEqual(2.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeP95Ms"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeP95Ms round-trip");

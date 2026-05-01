@@ -1706,6 +1706,7 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxFrameMs"), "AutomationSnapshot.FlashbackPlaybackMaxFrameMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSlowFrames"), "AutomationSnapshot.FlashbackPlaybackSlowFrames");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSlowFramePercent"), "AutomationSnapshot.FlashbackPlaybackSlowFramePercent");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackTargetFps"), "AutomationSnapshot.FlashbackPlaybackTargetFps");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackOnePercentLowFps"), "AutomationSnapshot.FlashbackPlaybackOnePercentLowFps");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeSampleCount"), "AutomationSnapshot.FlashbackPlaybackDecodeSampleCount");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeAvgMs"), "AutomationSnapshot.FlashbackPlaybackDecodeAvgMs");

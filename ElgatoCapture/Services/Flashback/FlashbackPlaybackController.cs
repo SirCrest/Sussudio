@@ -101,6 +101,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private long _lastSegmentSwitchUtcUnixMs;
     private long _lastFmp4ReopenUtcUnixMs;
     private long _lastWriteHeadWaitGapMs;
+    private double _playbackTargetFps;
     private double _playbackObservedFps;
     private double _playbackAvgFrameMs;
     private readonly Stopwatch _playbackFpsClock = new();
@@ -1866,6 +1867,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         // The encode rate is authoritative when present. Decoder/container metadata
         // can be wrong, and invalid floating-point values must never tear down playback.
         var fps = ResolvePlaybackFrameRate(decoder);
+        _playbackTargetFps = fps;
         return TimeSpan.FromSeconds(1.0 / fps);
     }
 
@@ -2246,6 +2248,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long LastSegmentSwitchUtcUnixMs => Interlocked.Read(ref _lastSegmentSwitchUtcUnixMs);
     public long LastFmp4ReopenUtcUnixMs => Interlocked.Read(ref _lastFmp4ReopenUtcUnixMs);
     public long LastWriteHeadWaitGapMs => Interlocked.Read(ref _lastWriteHeadWaitGapMs);
+    public double PlaybackTargetFps => _playbackTargetFps;
     public double PlaybackObservedFps => _playbackObservedFps;
     public double PlaybackAvgFrameMs => _playbackAvgFrameMs;
     public long CommandsEnqueued => Interlocked.Read(ref _commandsEnqueued);
@@ -2613,6 +2616,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         // Reset audio clock extrapolation so stale PTS doesn't cause a jump
         Interlocked.Exchange(ref _audioClockPtsTicks, 0);
         Interlocked.Exchange(ref _audioClockWallTicks, 0);
+        _playbackTargetFps = 0;
         _playbackObservedFps = 0;
         _playbackAvgFrameMs = 0;
         _playbackFpsClock.Reset();
