@@ -1059,7 +1059,11 @@ static partial class Program
         AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(_encoder.NextVideoPts / finalFrameRate)");
         AssertDoesNotContain(sourceText, "ptsBaseOffset.TotalSeconds * context.FrameRate");
         AssertContains(sourceText, "var sessionFrameRate = ResolveSessionFrameRate(context.FrameRate);");
+        AssertContains(sourceText, "var sessionContext = context with { FrameRate = sessionFrameRate };");
+        AssertContains(sourceText, "_encoder.Initialize(CreateOptions(sessionContext, tsPath));");
         AssertContains(sourceText, "_bufferManager.EncodeFrameRate = sessionFrameRate;");
+        AssertContains(sourceText, "private const double FallbackSessionFrameRate = 30.0;");
+        AssertContains(sourceText, "private const double MaxSessionFrameRate = 1000.0;");
         AssertContains(sourceText, "var currentPts = ResolveEncoderPts();");
         AssertContains(sourceText, "var finalPts = ResolveEncoderPts();");
         AssertContains(sourceText, "var crashPts = ResolveEncoderPts();");
@@ -1067,7 +1071,12 @@ static partial class Program
         AssertContains(sourceText, "private TimeSpan ResolveEncoderPts()");
         AssertContains(sourceText, "var frameRate = ResolveSessionFrameRate(_sessionContext?.FrameRate ?? 30.0);");
         AssertContains(sourceText, "if (!double.IsFinite(seconds) || seconds <= 0)");
-        AssertContains(sourceText, "private static double ResolveSessionFrameRate(double frameRate)\n        => double.IsFinite(frameRate) && frameRate > 0 ? frameRate : 30.0;");
+        AssertContains(sourceText, "if (!double.IsFinite(frameRate) || frameRate <= 0)\n        {\n            return FallbackSessionFrameRate;\n        }");
+        AssertContains(sourceText, "return Math.Min(frameRate, MaxSessionFrameRate);");
+        AssertContains(sourceText, "private static (int? Numerator, int? Denominator) ResolveSessionFrameRateParts(int? numerator, int? denominator)");
+        AssertContains(sourceText, "if (!double.IsFinite(fps) || fps <= 0 || fps > MaxSessionFrameRate)");
+        AssertContains(sourceText, "FrameRateNumerator = frameRateNumerator,");
+        AssertContains(sourceText, "FrameRateDenominator = frameRateDenominator,");
         AssertContains(sourceText, "private static long ToNonNegativeLongSaturated(double value)");
         AssertContains(sourceText, "private static long NonNegativeByteDelta(long currentBytes, long startBytes)");
         AssertContains(sourceText, "private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)");

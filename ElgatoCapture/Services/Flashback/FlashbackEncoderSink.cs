@@ -26,6 +26,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private const int VideoQueueLatencyWindowSize = 256;
     private const int AudioInputBlockAlignBytes = 2 * sizeof(float);
     private const int MaxAudioPacketBytes = 4 * 1024 * 1024;
+    private const double FallbackSessionFrameRate = 30.0;
+    private const double MaxSessionFrameRate = 1000.0;
 
     private readonly object _sync = new();
     private readonly object _videoQueueSync = new();
@@ -209,6 +211,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         try
         {
             LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
+            var sessionFrameRate = ResolveSessionFrameRate(context.FrameRate);
+            var sessionContext = context with { FrameRate = sessionFrameRate };
 
             var sessionId = _bufferManager.SessionId;
             if (string.IsNullOrWhiteSpace(sessionId))
@@ -216,21 +220,21 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 sessionId = CreateSessionId();
                 _bufferManager.Initialize(sessionId);
             }
-            _bufferManager.SetSegmentExtension(GetSegmentExtension(context.CodecName));
+            _bufferManager.SetSegmentExtension(GetSegmentExtension(sessionContext.CodecName));
 
             var tsPath = _bufferManager.GetFilePath();
             _tsFilePath = tsPath;
             _recordingOutputPath = string.Empty;
 
-            _encoder.Initialize(CreateOptions(context, tsPath));
+            _encoder.Initialize(CreateOptions(sessionContext, tsPath));
 
             // FullMode = Wait only affects WriteAsync (which we never call).
             // TryWrite returns false immediately when full regardless of FullMode,
             // allowing our manual eviction paths to handle resource cleanup (COM Release,
             // ArrayPool Return) before dropping the packet.
-            if (!_encoder.UseHardwareFrames && (_width >= 2560 || _height >= 1440))
+            if (!_encoder.UseHardwareFrames && (sessionContext.Width >= 2560 || sessionContext.Height >= 1440))
             {
-                Logger.Log($"FLASHBACK_SINK_WARN_CPU_ENCODING width={_width} height={_height} — GPU encoding unavailable, performance will be severely degraded");
+                Logger.Log($"FLASHBACK_SINK_WARN_CPU_ENCODING width={sessionContext.Width} height={sessionContext.Height} — GPU encoding unavailable, performance will be severely degraded");
             }
 
             if (_encoder.UseHardwareFrames)
@@ -257,7 +261,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 SingleWriter = false,
                 FullMode = BoundedChannelFullMode.Wait
             });
-            if (context.MicrophoneEnabled)
+            if (sessionContext.MicrophoneEnabled)
             {
                 _microphoneQueue = Channel.CreateBounded<AudioSamplePacket>(new BoundedChannelOptions(AudioQueueCapacity)
                 {
@@ -268,12 +272,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
 
             _cts = new CancellationTokenSource();
-            _sessionContext = context;
+            _sessionContext = sessionContext;
             _encodingFailure = null;
-            _width = context.Width;
-            _height = context.Height;
-            _audioEnabled = context.AudioEnabled;
-            _microphoneEnabled = context.MicrophoneEnabled;
+            _width = sessionContext.Width;
+            _height = sessionContext.Height;
+            _audioEnabled = sessionContext.AudioEnabled;
+            _microphoneEnabled = sessionContext.MicrophoneEnabled;
             ResetEncodingCounters();
             Volatile.Write(ref _recordingActive, 0);
             // When continuing after a sink-only cycle (ptsBaseOffset > 0), we offset
@@ -285,7 +289,6 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _segmentStartPts = ptsBaseOffset;
             _segmentDuration = _bufferManager.Options.SegmentDuration;
 
-            var sessionFrameRate = ResolveSessionFrameRate(context.FrameRate);
             if (ptsBaseOffset > TimeSpan.Zero)
             {
                 var initialVideoPts = ToNonNegativeLongSaturated(ptsBaseOffset.TotalSeconds * sessionFrameRate);
@@ -306,10 +309,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 TaskScheduler.Default);
 
             Logger.Log(
-                $"FLASHBACK_SINK_START session='{sessionId}' output='{tsPath}' codec='{context.CodecName}' " +
-                $"width={_width} height={_height} fps={context.FrameRate:0.###} " +
+                $"FLASHBACK_SINK_START session='{sessionId}' output='{tsPath}' codec='{sessionContext.CodecName}' " +
+                $"width={_width} height={_height} fps={sessionFrameRate:0.###} " +
                 $"buffer_ms={(long)_bufferManager.Options.BufferDuration.TotalMilliseconds} " +
-                $"audio={_audioEnabled} microphone={_microphoneEnabled} p010={context.IsP010}");
+                $"audio={_audioEnabled} microphone={_microphoneEnabled} p010={sessionContext.IsP010}");
             return Task.CompletedTask;
         }
         catch
@@ -1311,7 +1314,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     }
 
     private static double ResolveSessionFrameRate(double frameRate)
-        => double.IsFinite(frameRate) && frameRate > 0 ? frameRate : 30.0;
+    {
+        if (!double.IsFinite(frameRate) || frameRate <= 0)
+        {
+            return FallbackSessionFrameRate;
+        }
+
+        return Math.Min(frameRate, MaxSessionFrameRate);
+    }
 
     private static long ToNonNegativeLongSaturated(double value)
     {
@@ -2023,6 +2033,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private static LibAvEncoderOptions CreateOptions(FlashbackSessionContext context, string outputPath)
     {
+        var (frameRateNumerator, frameRateDenominator) = ResolveSessionFrameRateParts(
+            context.FrameRateNumerator,
+            context.FrameRateDenominator);
+
         return new LibAvEncoderOptions
         {
             OutputPath = outputPath,
@@ -2032,8 +2046,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Width = context.Width,
             Height = context.Height,
             FrameRate = context.FrameRate,
-            FrameRateNumerator = context.FrameRateNumerator,
-            FrameRateDenominator = context.FrameRateDenominator,
+            FrameRateNumerator = frameRateNumerator,
+            FrameRateDenominator = frameRateDenominator,
             BitRate = context.BitRate,
             IsP010 = context.IsP010,
             NvencPreset = context.NvencPreset,
@@ -2057,6 +2071,22 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             MicrophoneChannels = 2,
             MicrophoneBitRate = 320_000
         };
+    }
+
+    private static (int? Numerator, int? Denominator) ResolveSessionFrameRateParts(int? numerator, int? denominator)
+    {
+        if (!numerator.HasValue || !denominator.HasValue || numerator <= 0 || denominator <= 0)
+        {
+            return (null, null);
+        }
+
+        var fps = (double)numerator.Value / denominator.Value;
+        if (!double.IsFinite(fps) || fps <= 0 || fps > MaxSessionFrameRate)
+        {
+            return (null, null);
+        }
+
+        return (numerator, denominator);
     }
 
     private static FlashbackSessionContext CreateSessionContext(RecordingContext context)
