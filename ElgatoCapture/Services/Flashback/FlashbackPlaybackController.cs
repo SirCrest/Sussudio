@@ -119,6 +119,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private string _lastCommandFailure = string.Empty;
     private long _latestScrubUpdateTicks;
     private int _scrubUpdateCommandQueued;
+    private long _scrubUpdatesCoalesced;
 
     // --- Deferred frame release for D3D11VA (C1 fix) ---
     // The renderer's render thread hasn't copied the texture yet when we release.
@@ -247,7 +248,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
         if (Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0)
         {
-            Interlocked.Increment(ref _commandsDropped);
+            TrackCoalescedScrubUpdate();
             return true;
         }
 
@@ -1813,6 +1814,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
         _lastCommandFailure = $"{failure}:{kind}";
         Logger.Log($"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}");
         return returnValue;
+    }
+
+    private void TrackCoalescedScrubUpdate()
+    {
+        var dropped = Interlocked.Increment(ref _commandsDropped);
+        var coalesced = Interlocked.Increment(ref _scrubUpdatesCoalesced);
+        if (coalesced == 1 || coalesced % 120 == 0)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_SCRUB_COALESCED count={coalesced} dropped={dropped}");
+        }
     }
 
     private void TrackCommandDequeued(PlaybackCommand command)

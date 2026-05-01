@@ -973,10 +973,11 @@ static partial class Program
 
         AssertContains(sourceText, "private long _latestScrubUpdateTicks;");
         AssertContains(sourceText, "private int _scrubUpdateCommandQueued;");
+        AssertContains(sourceText, "private long _scrubUpdatesCoalesced;");
         AssertContains(updateScrubMethod, "Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);");
         AssertContains(updateScrubMethod, "if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, \"thread_not_running\", \"thread_not_running\", false);");
         AssertContains(updateScrubMethod, "Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0");
-        AssertContains(updateScrubMethod, "Interlocked.Increment(ref _commandsDropped);");
+        AssertContains(updateScrubMethod, "TrackCoalescedScrubUpdate();");
         AssertContains(updateScrubMethod, "return true;");
         AssertContains(updateScrubMethod, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
         AssertContains(updateScrubMethod, "return false;");
@@ -992,6 +993,9 @@ static partial class Program
         AssertContains(drainAbandonedCommands, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, \"thread_not_running\", \"thread_not_running\", false);");
         AssertContains(sourceText, "private bool RejectCommand(CommandKind kind, string failure, string reason, bool returnValue)\n    {\n        Interlocked.Increment(ref _commandsSkippedNotReady);\n        _lastCommandFailure = $\"{failure}:{kind}\";\n        Logger.Log($\"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}\");\n        return returnValue;\n    }");
+        AssertContains(sourceText, "private void TrackCoalescedScrubUpdate()");
+        AssertContains(sourceText, "Interlocked.Increment(ref _scrubUpdatesCoalesced);");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_SCRUB_COALESCED");
         AssertDoesNotContain(updateScrubBlock, "SendCommand(newer)");
         AssertDoesNotContain(updateScrubBlock, "Non-scrub command consumed");
 
