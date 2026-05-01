@@ -1253,6 +1253,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 FlashbackPlaybackSubmitFailures = snapshot.FlashbackPlaybackSubmitFailures,
                 FlashbackPlaybackDroppedFrames = snapshot.FlashbackPlaybackDroppedFrames,
                 FlashbackPlaybackDecodeErrorSnaps = snapshot.FlashbackPlaybackDecodeErrorSnaps,
+                FlashbackPlaybackLastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs,
                 FatalCleanupInProgress = snapshot.FatalCleanupInProgress,
                 FlashbackCleanupInProgress = snapshot.FlashbackCleanupInProgress,
                 FlashbackExportActive = snapshot.FlashbackExportActive,

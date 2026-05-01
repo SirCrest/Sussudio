@@ -926,6 +926,7 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackSubmitFailures { get; init; }
     public long FlashbackPlaybackDroppedFrames { get; init; }
     public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
+    public long FlashbackPlaybackLastCommandFailureUtcUnixMs { get; init; }
     public bool FatalCleanupInProgress { get; init; }
     public bool FlashbackCleanupInProgress { get; init; }
     public bool FlashbackExportActive { get; init; }

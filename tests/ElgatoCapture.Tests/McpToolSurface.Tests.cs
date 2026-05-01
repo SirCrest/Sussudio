@@ -691,6 +691,7 @@ static partial class Program
         AssertContains(source, "FlashbackPlaybackDecodeP99Ms");
         AssertContains(source, "FlashbackPlaybackPendingCommands");
         AssertContains(source, "FlashbackPlaybackSubmitFailures");
+        AssertContains(source, "FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertContains(source, "FatalCleanupInProgress");
         AssertContains(source, "FlashbackCleanupInProgress");
         AssertContains(source, "FlashbackExportFailureKind");
@@ -708,6 +709,7 @@ static partial class Program
         AssertContains(source, "Flashback P99:");
         AssertContains(source, "Flashback Decode:");
         AssertContains(source, "Flashback Cmds:");
+        AssertContains(source, "failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
         AssertContains(source, "Cleanup State:");
         AssertContains(source, "kind={FormatOptional(last.FlashbackExportFailureKind)}");
         AssertContains(source, "Export Progress:");

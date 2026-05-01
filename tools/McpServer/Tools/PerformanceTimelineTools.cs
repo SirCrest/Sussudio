@@ -76,6 +76,7 @@ public static class PerformanceTimelineTools
                 FlashbackPlaybackSubmitFailures = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackSubmitFailures"),
                 FlashbackPlaybackDroppedFrames = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackDroppedFrames"),
                 FlashbackPlaybackDecodeErrorSnaps = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackDecodeErrorSnaps"),
+                FlashbackPlaybackLastCommandFailureUtcUnixMs = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackLastCommandFailureUtcUnixMs"),
                 FatalCleanupInProgress = AutomationSnapshotFormatter.GetBool(item, "FatalCleanupInProgress"),
                 FlashbackCleanupInProgress = AutomationSnapshotFormatter.GetBool(item, "FlashbackCleanupInProgress"),
                 FlashbackExportActive = AutomationSnapshotFormatter.GetBool(item, "FlashbackExportActive"),
@@ -188,7 +189,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Flashback P99:  {first.FlashbackPlaybackP99FrameMs:F1}ms -> {last.FlashbackPlaybackP99FrameMs:F1}ms (max latest={last.FlashbackPlaybackMaxFrameMs:F1}ms)");
             builder.AppendLine($"Flashback Decode:{first.FlashbackPlaybackDecodeP99Ms:F1}ms -> {last.FlashbackPlaybackDecodeP99Ms:F1}ms (max latest={last.FlashbackPlaybackDecodeMaxMs:F1}ms)");
             builder.AppendLine($"Flashback Slow%:{first.FlashbackPlaybackSlowFramePercent:F1}% -> {last.FlashbackPlaybackSlowFramePercent:F1}%");
-            builder.AppendLine($"Flashback Cmds: pending {first.FlashbackPlaybackPendingCommands} -> {last.FlashbackPlaybackPendingCommands}, maxPending latest={last.FlashbackPlaybackMaxPendingCommands}, maxLatency latest={last.FlashbackPlaybackMaxCommandQueueLatencyMs}ms");
+            builder.AppendLine($"Flashback Cmds: pending {first.FlashbackPlaybackPendingCommands} -> {last.FlashbackPlaybackPendingCommands}, maxPending latest={last.FlashbackPlaybackMaxPendingCommands}, maxLatency latest={last.FlashbackPlaybackMaxCommandQueueLatencyMs}ms, failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
             builder.AppendLine($"Flashback Drops: submitFailures {first.FlashbackPlaybackSubmitFailures} -> {last.FlashbackPlaybackSubmitFailures}, droppedFrames {first.FlashbackPlaybackDroppedFrames} -> {last.FlashbackPlaybackDroppedFrames}, decodeSnaps {first.FlashbackPlaybackDecodeErrorSnaps} -> {last.FlashbackPlaybackDecodeErrorSnaps}");
             builder.AppendLine($"Cleanup State:  fatal={last.FatalCleanupInProgress} flashback={last.FlashbackCleanupInProgress}");
             builder.AppendLine($"Export State:    {FormatOptional(first.FlashbackExportStatus)} -> {FormatOptional(last.FlashbackExportStatus)} active={last.FlashbackExportActive} kind={FormatOptional(last.FlashbackExportFailureKind)}");
@@ -288,6 +289,7 @@ public static class PerformanceTimelineTools
         public long FlashbackPlaybackSubmitFailures { get; init; }
         public long FlashbackPlaybackDroppedFrames { get; init; }
         public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
+        public long FlashbackPlaybackLastCommandFailureUtcUnixMs { get; init; }
         public bool FatalCleanupInProgress { get; init; }
         public bool FlashbackCleanupInProgress { get; init; }
         public bool FlashbackExportActive { get; init; }
