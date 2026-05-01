@@ -105,6 +105,8 @@ static partial class Program
         AssertOccursBefore(flashbackSource, "if (_ownsBufferManager)\n            {\n                _bufferManager.PurgeAllSegments();", "_encoder.Dispose();");
         AssertContains(flashbackSource, "CancelRecordingStartRollback");
         AssertContains(flashbackSource, "var wasRecording = Interlocked.Exchange(ref _recordingActive, 0) != 0");
+        AssertContains(flashbackSource, "if (!wasRecording)\n        {\n            const string message = \"Flashback recording was not active.\";");
+        AssertContains(flashbackSource, "FLASHBACK_RECORDING_END_REJECTED");
         AssertContains(flashbackSource, "finally");
         AssertContains(flashbackSource, "_bufferManager.ResumeEviction()");
         AssertContains(flashbackSource, "if (LastRecordingEndPts < LastRecordingStartPts)\n                {\n                    LastRecordingEndPts = _bufferManager.LatestPts;\n                    if (LastRecordingEndPts < LastRecordingStartPts)\n                    {\n                        LastRecordingEndPts = LastRecordingStartPts;\n                    }\n                }");

@@ -443,6 +443,19 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public async Task<FinalizeResult> EndRecordingAsync(CancellationToken cancellationToken)
     {
         var wasRecording = Interlocked.Exchange(ref _recordingActive, 0) != 0;
+        if (!wasRecording)
+        {
+            const string message = "Flashback recording was not active.";
+            Logger.Log($"FLASHBACK_RECORDING_END_REJECTED reason='{message}'");
+            return new FinalizeResult
+            {
+                Succeeded = false,
+                OutputPath = _recordingOutputPath ?? string.Empty,
+                StatusMessage = message,
+                PreservedArtifacts = _tsFilePath != null ? new[] { _tsFilePath } : Array.Empty<string>()
+            };
+        }
+
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
