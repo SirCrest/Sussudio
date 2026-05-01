@@ -529,10 +529,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         try
         {
             if (bufferManager == null)
-                return FailFlashbackExport(outputPath, "Flashback buffer not active");
+                return FailFlashbackExport(outputPath, "Flashback buffer not active", fileInPoint, fileOutPoint);
 
             if (fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint)
-                return FailFlashbackExport(outputPath, "Flashback export range is empty or invalid.");
+                return FailFlashbackExport(outputPath, "Flashback export range is empty or invalid.", fileInPoint, fileOutPoint);
 
             return await ExportFlashbackCoreAsync(fileInPoint, fileOutPoint, outputPath, progress, ct,
                 snapshotSink: flashbackSink, snapshotBufferManager: bufferManager).ConfigureAwait(false);
@@ -610,7 +610,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         try
         {
             if (bufferManager == null)
-                return FailFlashbackExport(outputPath, "Flashback buffer not active");
+                return FailFlashbackExport(outputPath, "Flashback buffer not active", fileInPoint, TimeSpan.MaxValue);
 
             return await ExportFlashbackCoreAsync(fileInPoint, TimeSpan.MaxValue, outputPath, progress, ct,
                 snapshotSink: flashbackSink, snapshotBufferManager: bufferManager).ConfigureAwait(false);
@@ -632,12 +632,16 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_backend_lease");
     }
 
-    private FinalizeResult FailFlashbackExport(string outputPath, string statusMessage)
+    private FinalizeResult FailFlashbackExport(
+        string outputPath,
+        string statusMessage,
+        TimeSpan? inPoint = null,
+        TimeSpan? outPoint = null)
     {
         var result = FinalizeResult.Failure(outputPath, statusMessage);
         Logger.Log($"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'");
         _lastExportResult = result;
-        RecordRejectedFlashbackExportDiagnostics(outputPath, result);
+        RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);
         return result;
     }
 
@@ -666,7 +670,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
-                return FailFlashbackExport(outputPath, "Flashback export cancelled.");
+                return FailFlashbackExport(outputPath, "Flashback export cancelled.", inPoint, outPoint);
             }
 
             var exporter = _flashbackExporter ??= new FlashbackExporter();
@@ -771,7 +775,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             else
             {
-                RecordRejectedFlashbackExportDiagnostics(outputPath, failure);
+                RecordRejectedFlashbackExportDiagnostics(outputPath, failure, inPoint, outPoint);
             }
             return failure;
         }
@@ -925,7 +929,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 
-    private void RecordRejectedFlashbackExportDiagnostics(string outputPath, FinalizeResult result)
+    private void RecordRejectedFlashbackExportDiagnostics(
+        string outputPath,
+        FinalizeResult result,
+        TimeSpan? inPoint = null,
+        TimeSpan? outPoint = null)
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
         lock (_flashbackExportDiagnosticsLock)
@@ -946,8 +954,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _flashbackExportSegmentsProcessed = 0;
             _flashbackExportTotalSegments = 0;
             _flashbackExportPercent = 0;
-            _flashbackExportInPointMs = 0;
-            _flashbackExportOutPointMs = 0;
+            _flashbackExportInPointMs = inPoint.HasValue ? (long)inPoint.Value.TotalMilliseconds : 0;
+            _flashbackExportOutPointMs = outPoint.HasValue
+                ? outPoint.Value == TimeSpan.MaxValue ? -1 : (long)outPoint.Value.TotalMilliseconds
+                : 0;
             _flashbackExportMessage = result.StatusMessage;
             _flashbackExportFailureKind = ClassifyFlashbackExportFailureKind(result.StatusMessage);
         }

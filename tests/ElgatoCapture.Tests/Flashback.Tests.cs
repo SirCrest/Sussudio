@@ -580,6 +580,21 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExportRejectedDiagnostics_PreserveAttemptedRange()
+    {
+        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export range is empty or invalid.\", fileInPoint, fileOutPoint);");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", fileInPoint, fileOutPoint);");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", fileInPoint, TimeSpan.MaxValue);");
+        AssertContains(captureServiceText, "RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
+        AssertContains(captureServiceText, "_flashbackExportInPointMs = inPoint.HasValue ? (long)inPoint.Value.TotalMilliseconds : 0;");
+        AssertContains(captureServiceText, "outPoint.Value == TimeSpan.MaxValue ? -1 : (long)outPoint.Value.TotalMilliseconds");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_RejectsEmptySegmentPaths()
     {
         var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");

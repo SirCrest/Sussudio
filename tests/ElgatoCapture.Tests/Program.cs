@@ -718,6 +718,9 @@ static partial class Program
                 "Flashback exporter rejects invalid export ranges",
                 FlashbackExporter_RejectsInvalidExportRanges),
             await RunCheckAsync(
+                "Flashback rejected export diagnostics preserve attempted range",
+                FlashbackExportRejectedDiagnostics_PreserveAttemptedRange),
+            await RunCheckAsync(
                 "Flashback exporter rejects empty segment paths",
                 FlashbackExporter_RejectsEmptySegmentPaths),
             await RunCheckAsync(
