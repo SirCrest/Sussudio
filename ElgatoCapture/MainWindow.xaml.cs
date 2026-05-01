@@ -130,6 +130,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private bool _isSettingsShelfAnimating;
     private bool _isFlashbackTimelineAnimating;
     private bool _isFlashbackScrubbing;
+    private bool _suppressFlashbackEnabledToggle;
     private bool _isFullScreen;
     private bool _isFullScreenTransitioning;
     private Windows.Graphics.RectInt32 _preFullScreenBounds;

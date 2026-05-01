@@ -144,6 +144,12 @@ static partial class Program
                 "Automation flashback and probe commands use async view-model surface",
                 MainViewModelAutomation_UsesAsyncFlashbackAndProbeSurface),
             await RunCheckAsync(
+                "Main window flashback scrub ends on release cancel and capture lost",
+                MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost),
+            await RunCheckAsync(
+                "Main window flashback toggle rolls back UI state on failure",
+                MainWindowFlashbackToggle_RollsBackUiStateOnFailure),
+            await RunCheckAsync(
                 "Flashback mutations route through capture coordinator",
                 MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator),
             await RunCheckAsync(

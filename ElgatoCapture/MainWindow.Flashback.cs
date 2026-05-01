@@ -294,10 +294,39 @@ public sealed partial class MainWindow
     }
     private void FlashbackEnabledToggle_Toggled(object sender, RoutedEventArgs e)
     {
-        ViewModel.IsFlashbackEnabled = FlashbackEnabledToggle.IsOn;
+        if (_suppressFlashbackEnabledToggle)
+        {
+            return;
+        }
+
+        var requestedEnabled = FlashbackEnabledToggle.IsOn;
         _ = RunUiEventHandlerAsync(
-            () => ViewModel.SetFlashbackEnabledAsync(FlashbackEnabledToggle.IsOn),
+            () => ApplyFlashbackEnabledToggleAsync(requestedEnabled),
             nameof(FlashbackEnabledToggle_Toggled));
+    }
+
+    private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)
+    {
+        var previousEnabled = ViewModel.IsFlashbackEnabled;
+        ViewModel.IsFlashbackEnabled = requestedEnabled;
+        try
+        {
+            await ViewModel.SetFlashbackEnabledAsync(requestedEnabled);
+        }
+        catch
+        {
+            ViewModel.IsFlashbackEnabled = previousEnabled;
+            _suppressFlashbackEnabledToggle = true;
+            try
+            {
+                FlashbackEnabledToggle.IsOn = previousEnabled;
+            }
+            finally
+            {
+                _suppressFlashbackEnabledToggle = false;
+            }
+            throw;
+        }
     }
     private void FlashbackBufferDurationCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {

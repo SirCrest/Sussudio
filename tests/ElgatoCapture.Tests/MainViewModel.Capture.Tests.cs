@@ -187,6 +187,28 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task MainWindowFlashbackToggle_RollsBackUiStateOnFailure()
+    {
+        var flashbackWindowText = ReadRepoFile("ElgatoCapture/MainWindow.Flashback.cs")
+            .Replace("\r\n", "\n");
+        var mainWindowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
+        AssertContains(flashbackWindowText, "if (_suppressFlashbackEnabledToggle)");
+        AssertContains(flashbackWindowText, "var requestedEnabled = FlashbackEnabledToggle.IsOn;");
+        AssertContains(flashbackWindowText, "ApplyFlashbackEnabledToggleAsync(requestedEnabled)");
+        AssertContains(flashbackWindowText, "private async Task ApplyFlashbackEnabledToggleAsync(bool requestedEnabled)");
+        AssertContains(flashbackWindowText, "var previousEnabled = ViewModel.IsFlashbackEnabled;");
+        AssertContains(flashbackWindowText, "ViewModel.IsFlashbackEnabled = requestedEnabled;");
+        AssertContains(flashbackWindowText, "ViewModel.IsFlashbackEnabled = previousEnabled;");
+        AssertContains(flashbackWindowText, "_suppressFlashbackEnabledToggle = true;");
+        AssertContains(flashbackWindowText, "FlashbackEnabledToggle.IsOn = previousEnabled;");
+        AssertContains(flashbackWindowText, "_suppressFlashbackEnabledToggle = false;");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
     {
         var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("ElgatoCapture/Services/Capture/CaptureService.cs");
