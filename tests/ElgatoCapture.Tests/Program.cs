@@ -240,6 +240,12 @@ static partial class Program
                 "Preview backend log reflects video-only fallback",
                 PreviewBackendLog_ReflectsVideoOnlyFallback),
             await RunCheckAsync(
+                "MainViewModel automation routes preview volume persistence through save hook",
+                MainViewModelAutomation_RoutesPreviewVolumePersistenceThroughSaveHook),
+            await RunCheckAsync(
+                "MainViewModel capture routes audio monitoring through coordinator",
+                MainViewModelCapture_RoutesAudioMonitoringThroughCoordinator),
+            await RunCheckAsync(
                 "MainViewModel audio controls map analog gain curve and clamp endpoints",
                 MainViewModelAudioControls_MapsAnalogGainCurveAndClamps),
             await RunCheckAsync(
@@ -254,6 +260,21 @@ static partial class Program
             await RunCheckAsync(
                 "Frame-time overlay uses detected-FPS bounded millisecond range",
                 FrameTimeOverlay_UsesDetectedFpsBoundedRange),
+            await RunCheckAsync(
+                "D3D preview letterbox rect calculates correctly",
+                D3D11PreviewRenderer_ComputeLetterboxRect_CalculatesCorrectly),
+            await RunCheckAsync(
+                "D3D preview black edge counting works correctly",
+                D3D11PreviewRenderer_BlackEdgeCounting_WorksCorrectly),
+            await RunCheckAsync(
+                "D3D preview device lost exceptions classify correctly",
+                D3D11PreviewRenderer_IsDeviceLostException_ClassifiesCorrectly),
+            await RunCheckAsync(
+                "D3D preview present cadence metrics expose expected properties",
+                D3D11PreviewRenderer_PresentCadenceMetrics_HasExpectedProperties),
+            await RunCheckAsync(
+                "D3D preview PNG CRC table generates 256 entries",
+                D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries),
             await RunCheckAsync(
                 "D3D preview diagnostics expose swap-chain and render timing contract",
                 D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming),
