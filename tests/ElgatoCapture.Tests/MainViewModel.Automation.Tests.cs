@@ -262,6 +262,10 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
+        AssertContains(captureServiceText, "var exportOperationLockHeld = false;");
+        AssertContains(captureServiceText, "exportOperationLockHeld = true;");
+        AssertContains(captureServiceText, "catch (OperationCanceledException) when (ct.IsCancellationRequested)");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\");");
         AssertContains(captureServiceText, "var exportId = 0L;");
         AssertContains(captureServiceText, "var evictionPaused = false;");
         AssertContains(captureServiceText, "exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
@@ -279,6 +283,7 @@ static partial class Program
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\");");
         AssertContains(captureServiceText, "? \"Cancelled\"");
         AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
+        AssertContains(captureServiceText, "if (exportOperationLockHeld)");
         AssertContains(captureServiceText, "_flashbackExportOperationLock.Release();");
         AssertContains(captureServiceText, "_flashbackExportOperationLock.Dispose();");
         AssertContains(captureServiceText, "Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths)");

@@ -573,11 +573,21 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         var bufferManager = snapshotBufferManager ?? _flashbackBufferManager;
         var exporter = _flashbackExporter ??= new FlashbackExporter();
 
-        await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);
         var exportId = 0L;
         var evictionPaused = false;
+        var exportOperationLockHeld = false;
         try
         {
+            try
+            {
+                await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);
+                exportOperationLockHeld = true;
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                return FailFlashbackExport(outputPath, "Flashback export cancelled.");
+            }
+
             exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);
             var diagnosticProgress = CreateFlashbackExportProgressSink(exportId, progress);
 
@@ -674,7 +684,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 bufferManager?.ResumeEviction();
             }
-            _flashbackExportOperationLock.Release();
+            if (exportOperationLockHeld)
+            {
+                _flashbackExportOperationLock.Release();
+            }
         }
     }
 
