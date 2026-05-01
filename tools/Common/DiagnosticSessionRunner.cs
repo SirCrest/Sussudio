@@ -237,7 +237,8 @@ public static class DiagnosticSessionRunner
             Scenario = scenario,
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
-                      (!verificationSucceeded.HasValue || verificationSucceeded.Value),
+                      (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
+                      (!runFlashbackStress || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -359,7 +360,11 @@ public static class DiagnosticSessionRunner
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
     {
-        await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken).ConfigureAwait(false);
+        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        {
+            warnings.Add("flashback stress: Flashback buffer did not become export-ready within 30s");
+            return;
+        }
 
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
             .ConfigureAwait(false);
@@ -444,6 +449,29 @@ public static class DiagnosticSessionRunner
                 warnings.Add("flashback stress: playback worker still alive after drain wait");
             }
         }
+    }
+
+    private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started) < TimeSpan.FromSeconds(30))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(response, out var snapshot) &&
+                GetBool(snapshot, "FlashbackActive") &&
+                GetInt(snapshot, "FlashbackBufferedDurationMs") >= 8_000 &&
+                GetInt(snapshot, "FlashbackEncodedFrames") >= 240)
+            {
+                return true;
+            }
+
+            await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+        }
+
+        return false;
     }
 
     private static async Task SampleLoopAsync(
