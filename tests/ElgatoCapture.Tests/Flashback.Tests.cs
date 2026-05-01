@@ -769,19 +769,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_TimestampAdditionsAreSaturating()
+    private static Task FlashbackPlaybackController_TimestampArithmeticIsSaturating()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private static TimeSpan SaturatingAdd(TimeSpan left, TimeSpan right)");
+        AssertContains(sourceText, "private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)");
         AssertContains(sourceText, "if (rightTicks > 0 && leftTicks > long.MaxValue - rightTicks)");
         AssertContains(sourceText, "if (rightTicks < 0 && leftTicks < long.MinValue - rightTicks)");
+        AssertContains(sourceText, "if (rightTicks < 0 && leftTicks > long.MaxValue + rightTicks)");
+        AssertContains(sourceText, "if (rightTicks > 0 && leftTicks < long.MinValue + rightTicks)");
         AssertDoesNotContain(sourceText, "cmd.Position + frozenValidStart");
         AssertDoesNotContain(sourceText, "PlaybackPosition + frozenValidStart");
         AssertDoesNotContain(sourceText, "PlaybackPosition + cmd.Delta");
         AssertDoesNotContain(sourceText, "bufferPosition + validStartPts");
         AssertDoesNotContain(sourceText, "pos + frozenValidStart");
+        AssertDoesNotContain(sourceText, "nudgeFrame.Pts - frozenValidStart");
+        AssertDoesNotContain(sourceText, "frame.Pts - validStartPts");
+        AssertDoesNotContain(sourceText, "videoFrame.Pts - frozenValidStart");
+        AssertDoesNotContain(sourceText, "latestAbsPts - lastFrameAbsPts");
+        AssertDoesNotContain(sourceText, "absoluteLatestPts - absoluteFramePts");
 
         return Task.CompletedTask;
     }

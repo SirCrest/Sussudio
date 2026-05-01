@@ -704,7 +704,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         }
                         SetState(isPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused);
                         var endScrubBufDur = _bufferManager.BufferedDuration;
-                        Logger.Log($"FLASHBACK_ENDSCRUB pos_ms={(long)PlaybackPosition.TotalMilliseconds} bufferDur_ms={(long)endScrubBufDur.TotalMilliseconds} gapFromLive_ms={(endScrubBufDur - PlaybackPosition).TotalMilliseconds:F0} resumePlay={isPlaying}");
+                        Logger.Log($"FLASHBACK_ENDSCRUB pos_ms={(long)PlaybackPosition.TotalMilliseconds} bufferDur_ms={(long)endScrubBufDur.TotalMilliseconds} gapFromLive_ms={SaturatingSubtract(endScrubBufDur, PlaybackPosition).TotalMilliseconds:F0} resumePlay={isPlaying}");
                         break;
 
                     case CommandKind.Play:
@@ -838,7 +838,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                                 {
                                     break;
                                 }
-                                var actualPos = nudgeFrame.Pts - frozenValidStart;
+                                var actualPos = SaturatingSubtract(nudgeFrame.Pts, frozenValidStart);
                                 if (actualPos < TimeSpan.Zero) actualPos = TimeSpan.Zero;
                                 PlaybackPosition = actualPos;
                                 break;
@@ -1137,7 +1137,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             if (filePts < currentValidStart)
             {
                 filePts = currentValidStart;
-                bufferPosition = filePts - validStartPts;
+                bufferPosition = SaturatingSubtract(filePts, validStartPts);
                 if (bufferPosition < TimeSpan.Zero) bufferPosition = TimeSpan.Zero;
             }
 
@@ -1172,7 +1172,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
 
                 // Set position to actual decoded frame PTS mapped back to buffer position
-                var actualPosition = frame.Pts - validStartPts;
+                var actualPosition = SaturatingSubtract(frame.Pts, validStartPts);
                 if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
                 PlaybackPosition = actualPosition;
             }
@@ -1265,7 +1265,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             }
             Interlocked.Exchange(ref _lastVideoPtsTicks, videoFrame.Pts.Ticks);
 
-            var newPosition = videoFrame.Pts - frozenValidStart;
+            var newPosition = SaturatingSubtract(videoFrame.Pts, frozenValidStart);
             if (newPosition < TimeSpan.Zero) newPosition = TimeSpan.Zero;
             PlaybackPosition = newPosition;
 
@@ -1317,7 +1317,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         // Fallback: if no frame was decoded yet, estimate from PlaybackPosition
         if (lastFrameAbsPts == TimeSpan.Zero)
             lastFrameAbsPts = SaturatingAdd(PlaybackPosition, frozenValidStart);
-        var gapFromLive = (latestAbsPts - lastFrameAbsPts).TotalMilliseconds;
+        var gapFromLive = SaturatingSubtract(latestAbsPts, lastFrameAbsPts).TotalMilliseconds;
         var pos = PlaybackPosition;
 
         if (gapFromLive > 2000)
@@ -1430,11 +1430,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
         ref bool fileOpen)
     {
         var absoluteLatestPts = _bufferManager.LatestPts;
+        var gapFromLive = SaturatingSubtract(absoluteLatestPts, absoluteFramePts);
         if (Interlocked.Read(ref _playbackFrameCount) > 60 &&
-            absoluteLatestPts - absoluteFramePts <= TimeSpan.FromMilliseconds(2000))
+            gapFromLive <= TimeSpan.FromMilliseconds(2000))
         {
             Interlocked.Increment(ref _playbackNearLiveSnaps);
-            var gapMs = (absoluteLatestPts - absoluteFramePts).TotalMilliseconds;
+            var gapMs = gapFromLive.TotalMilliseconds;
             Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)bufferPosition.TotalMilliseconds} framePts_ms={(long)absoluteFramePts.TotalMilliseconds} latestPts_ms={(long)absoluteLatestPts.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
             CloseDecoderFileBestEffort(decoder, "near_live");
             fileOpen = false;
@@ -1600,7 +1601,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Increment(ref _playbackDecodeErrorSnaps);
         var pos = PlaybackPosition;
         var bufDur = _bufferManager.BufferedDuration;
-        var gapMs = (bufDur - pos).TotalMilliseconds;
+        var gapMs = SaturatingSubtract(bufDur, pos).TotalMilliseconds;
         Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE type={ex.GetType().Name} error='{ex.Message}' pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
         Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
         CloseDecoderFileBestEffort(decoder, "decode_error");
@@ -1686,6 +1687,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (rightTicks < 0 && leftTicks < long.MinValue - rightTicks)
             return TimeSpan.MinValue;
         return TimeSpan.FromTicks(leftTicks + rightTicks);
+    }
+
+    private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)
+    {
+        var leftTicks = left.Ticks;
+        var rightTicks = right.Ticks;
+        if (rightTicks < 0 && leftTicks > long.MaxValue + rightTicks)
+            return TimeSpan.MaxValue;
+        if (rightTicks > 0 && leftTicks < long.MinValue + rightTicks)
+            return TimeSpan.MinValue;
+        return TimeSpan.FromTicks(leftTicks - rightTicks);
     }
 
     // --- State management ---
