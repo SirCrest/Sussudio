@@ -451,6 +451,9 @@ static partial class Program
                 "FlashbackBufferManager ignores updates after dispose",
                 FlashbackBufferManager_IgnoresUpdatesAfterDispose),
             await RunCheckAsync(
+                "FlashbackBufferManager ignores destructive operations after dispose",
+                FlashbackBufferManager_IgnoresDestructiveOperationsAfterDispose),
+            await RunCheckAsync(
                 "FlashbackBufferManager valid segment lookup skips missing files",
                 FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles),
             await RunCheckAsync(
@@ -2726,6 +2729,48 @@ static partial class Program
         AssertContains(source, "FLASHBACK_BUFFER_SEGMENT_SKIP reason=disposed");
         AssertContains(source, "public void UpdateLatestPts(TimeSpan pts)\n    {\n        if (_disposed)\n        {\n            return;\n        }");
         AssertContains(source, "public void UpdateDiskBytes(long activeSegmentBytes)\n    {\n        if (_disposed)\n        {\n            return;\n        }");
+
+        try { Directory.Delete(tempDir, recursive: true); } catch { }
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_IgnoresDestructiveOperationsAfterDispose()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_disposed_purge_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var completedPath = Path.Combine(tempDir, "segment-0.ts");
+        var activePath = Path.Combine(tempDir, "fb_test_0003.ts");
+        File.WriteAllText(completedPath, "segment");
+        File.WriteAllText(activePath, "active");
+        AddCompletedSegment(manager, completedPath, TimeSpan.Zero, TimeSpan.FromSeconds(1), 7);
+
+        var purgeCompleted = manager.GetType().GetMethod("PurgeCompletedSegments")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.PurgeCompletedSegments not found.");
+        var purgeAll = manager.GetType().GetMethod("PurgeAllSegments")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.PurgeAllSegments not found.");
+        var abandonGenerated = manager.GetType().GetMethod("AbandonGeneratedSegmentPath")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.AbandonGeneratedSegmentPath not found.");
+        var finalizeCycle = manager.GetType().GetMethod("FinalizeActiveSegmentForCycle")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.FinalizeActiveSegmentForCycle not found.");
+
+        ((IDisposable)manager).Dispose();
+
+        purgeCompleted.Invoke(manager, null);
+        purgeAll.Invoke(manager, null);
+        abandonGenerated.Invoke(manager, new object?[] { activePath, null });
+        finalizeCycle.Invoke(manager, null);
+
+        AssertEqual(true, File.Exists(completedPath), "Completed segment preserved after disposed purge");
+        AssertEqual(true, File.Exists(activePath), "Active segment preserved after disposed purge");
+        AssertEqual(2, GetIntProperty(manager, "SegmentCount"), "Disposed destructive operations do not clear indexed segments");
+        AssertEqual(activePath, GetStringProperty(manager, "ActiveFilePath"), "Disposed destructive operations do not clear active path");
+
+        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(source, "FLASHBACK_PURGE_SKIP reason=disposed");
+        AssertContains(source, "FLASHBACK_BUFFER_PURGE_SKIP reason=disposed");
 
         try { Directory.Delete(tempDir, recursive: true); } catch { }
         return Task.CompletedTask;

@@ -137,6 +137,11 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(_sessionDirectory))
             {
                 return;
@@ -163,6 +168,11 @@ internal sealed class FlashbackBufferManager : IDisposable
     /// </summary>
     public void ResetLatestPts()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         Interlocked.Exchange(ref _latestPtsTicks, 0);
     }
 
@@ -175,6 +185,11 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             _activeSegmentPath = null;
             _previousActiveSegmentBytes = 0;
         }
@@ -188,6 +203,12 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
+            if (_disposed)
+            {
+                Logger.Log("FLASHBACK_PURGE_SKIP reason=disposed");
+                return;
+            }
+
             long freedBytes = 0;
             for (int i = _completedSegments.Count - 1; i >= 0; i--)
             {
@@ -263,6 +284,11 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             var newCount = Interlocked.Increment(ref _evictionPauseCount);
             if (newCount == 1)
             {
@@ -282,6 +308,11 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
+            if (_disposed)
+            {
+                return (_recordingStartPts, ClampEndPtsToStart(_recordingStartPts, _recordingEndPts));
+            }
+
             var currentCount = Volatile.Read(ref _evictionPauseCount);
             if (currentCount <= 0)
             {
@@ -449,6 +480,11 @@ internal sealed class FlashbackBufferManager : IDisposable
 
         lock (_indexLock)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             if (IsSameSegmentPath(_activeSegmentPath, generatedPath))
             {
                 _activeSegmentPath = restoreActivePath;
@@ -1227,6 +1263,12 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
+            if (_disposed)
+            {
+                Logger.Log("FLASHBACK_BUFFER_PURGE_SKIP reason=disposed");
+                return;
+            }
+
             // Delete completed segments
             foreach (var seg in _completedSegments)
             {
