@@ -373,6 +373,8 @@ static partial class Program
                      "FlashbackPlaybackPendingCommands",
                      "FlashbackPlaybackSubmitFailures",
                      "FlashbackPlaybackDecodeErrorSnaps",
+                     "FatalCleanupInProgress",
+                     "FlashbackCleanupInProgress",
                      "FlashbackExportActive",
                      "FlashbackExportStatus",
                      "FlashbackExportPercent",
