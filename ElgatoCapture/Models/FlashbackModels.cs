@@ -57,11 +57,21 @@ public enum FlashbackPlaybackState
 
 internal sealed record ExportProgress(int SegmentsProcessed, int TotalSegments, double Percent);
 
+internal sealed record FlashbackExportSegment
+{
+    public required string Path { get; init; }
+    public TimeSpan? StartPts { get; init; }
+    public TimeSpan? EndPts { get; init; }
+}
+
 /// <summary>
 /// Groups the parameters for a flashback export operation (single-file or multi-segment).
 /// </summary>
 internal sealed record FlashbackExportRequest
 {
+    /// <summary>Segment files with buffer timeline metadata for multi-segment export.</summary>
+    public IReadOnlyList<FlashbackExportSegment>? Segments { get; init; }
+
     /// <summary>Segment file paths for multi-segment export, or null for single-file export.</summary>
     public IReadOnlyList<string>? SegmentPaths { get; init; }
 

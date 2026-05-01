@@ -260,6 +260,19 @@ static partial class Program
         AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
         AssertContains(captureServiceText, "_flashbackExportOperationLock.Release();");
         AssertContains(captureServiceText, "_flashbackExportOperationLock.Dispose();");
+        AssertContains(captureServiceText, "Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths)");
+        AssertContains(captureServiceText, "StartPts = TimeSpan.FromMilliseconds(info.StartPtsMs)");
+
+        var flashbackExporterText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(flashbackExporterText, "if (request.Segments is { Count: > 0 })");
+        AssertContains(flashbackExporterText, "var useSegmentTimeline = segment.StartPts.HasValue");
+        AssertContains(flashbackExporterText, "var comparePtsUs = useSegmentTimeline");
+
+        var sourceReaderText = ReadRepoFile("ElgatoCapture/Services/Capture/MfSourceReaderVideoCapture.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
+        AssertContains(sourceReaderText, "lock (_cadenceLock)");
 
         var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
             .Replace("\r\n", "\n");
@@ -272,6 +285,14 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackCommandsDroppedAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackCommandsSkippedNotReadyAtEnd");
         AssertContains(diagnosticSessionText, "Flashback Playback Commands:");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingBackendObserved");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingFileGrowthObserved");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingVideoFramesSubmittedDelta");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingVideoEncoderPacketsWrittenDelta");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingIntegritySequenceGapsAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingIntegrityQueueDroppedFramesAtEnd");
+        AssertContains(diagnosticSessionText, "Flashback Recording:");
+        AssertContains(diagnosticSessionText, "BuildFlashbackRecordingMetrics(samples)");
         AssertContains(diagnosticSessionText, "GetMaxSnapshotInt(samples, lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")");
         AssertContains(diagnosticSessionText, "GetMaxSnapshotInt(samples, lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");

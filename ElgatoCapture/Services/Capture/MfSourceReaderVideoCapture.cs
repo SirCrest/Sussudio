@@ -760,19 +760,27 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             return;
         }
 
-        // REVIEWED 2026-04-07: lock-free write (single MF read thread) + locked reader
-        // (GetSourceCadenceMetrics). Mixed sync is intentional — worst case is a slightly
-        // stale FPS reading in the stats overlay, not a crash or corruption.
-        // Capture array ref locally in case SetExpectedFrameRate replaces it.
-        var window = Volatile.Read(ref _sourceIntervalWindowMs);
-        var idx = Volatile.Read(ref _sourceIntervalIndex);
-        if (idx >= window.Length) return; // Array was replaced; skip this sample.
-        window[idx] = intervalMs;
-        Volatile.Write(ref _sourceIntervalIndex, (idx + 1) % window.Length);
-        var count = Volatile.Read(ref _sourceIntervalCount);
-        if (count < window.Length)
+        // Keep source cadence state coherent with diagnostics snapshots and frame-rate changes.
+        lock (_cadenceLock)
         {
-            Volatile.Write(ref _sourceIntervalCount, count + 1);
+            var window = _sourceIntervalWindowMs;
+            if (window.Length == 0)
+            {
+                return;
+            }
+
+            var idx = _sourceIntervalIndex;
+            if (idx < 0 || idx >= window.Length)
+            {
+                idx = 0;
+            }
+
+            window[idx] = intervalMs;
+            _sourceIntervalIndex = (idx + 1) % window.Length;
+            if (_sourceIntervalCount < window.Length)
+            {
+                _sourceIntervalCount++;
+            }
         }
     }
 

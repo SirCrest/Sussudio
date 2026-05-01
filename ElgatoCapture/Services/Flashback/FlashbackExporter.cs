@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,7 +28,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
     /// <summary>
     /// Exports a flashback range to .mp4 based on the request parameters.
-    /// Uses multi-segment export when <see cref="FlashbackExportRequest.SegmentPaths"/> is set,
+    /// Uses multi-segment export when <see cref="FlashbackExportRequest.Segments"/> or
+    /// <see cref="FlashbackExportRequest.SegmentPaths"/> is set,
     /// otherwise falls back to single-file export from <see cref="FlashbackExportRequest.InputTsPath"/>.
     /// </summary>
     public Task<FinalizeResult> ExportAsync(
@@ -35,9 +37,19 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
-        if (request.SegmentPaths is { Count: > 0 })
-            return ExportSegmentsAsync(request.SegmentPaths, request.InPoint, request.OutPoint,
+        if (request.Segments is { Count: > 0 })
+            return ExportSegmentsAsync(request.Segments, request.InPoint, request.OutPoint,
                 request.OutputPath, request.FastStart, progress, ct);
+
+        if (request.SegmentPaths is { Count: > 0 })
+            return ExportSegmentsAsync(
+                request.SegmentPaths.Select(path => new FlashbackExportSegment { Path = path }).ToArray(),
+                request.InPoint,
+                request.OutPoint,
+                request.OutputPath,
+                request.FastStart,
+                progress,
+                ct);
 
         return ExportSingleAsync(request.InputTsPath!, request.InPoint, request.OutPoint,
             request.OutputPath, request.FastStart, progress, ct);
@@ -77,7 +89,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     /// Opens segments sequentially, remapping PTS for continuous output.
     /// </summary>
     private Task<FinalizeResult> ExportSegmentsAsync(
-        IReadOnlyList<string> segmentPaths,
+        IReadOnlyList<FlashbackExportSegment> segments,
         TimeSpan inPoint,
         TimeSpan outPoint,
         string outputPath,
@@ -91,7 +103,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             try
             {
-                return ExportSegmentsCore(segmentPaths, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token);
+                return ExportSegmentsCore(segments, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token);
             }
             finally
             {
@@ -444,7 +456,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     }
 
     private FinalizeResult ExportSegmentsCore(
-        IReadOnlyList<string> segmentPaths,
+        IReadOnlyList<FlashbackExportSegment> segments,
         TimeSpan inPoint,
         TimeSpan outPoint,
         string outputPath,
@@ -452,7 +464,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
-        if (segmentPaths == null || segmentPaths.Count == 0)
+        if (segments == null || segments.Count == 0)
         {
             const string message = "Flashback export failed: no segment paths provided.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
@@ -476,9 +488,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         // Estimate total bytes for progress
         long totalEstimatedBytes = 0;
-        foreach (var segPath in segmentPaths)
+        foreach (var segment in segments)
         {
-            try { if (File.Exists(segPath)) totalEstimatedBytes += new FileInfo(segPath).Length; }
+            try { if (File.Exists(segment.Path)) totalEstimatedBytes += new FileInfo(segment.Path).Length; }
             catch { /* Best-effort: segment may be deleted mid-scan; progress estimate is non-critical */ }
         }
 
@@ -493,7 +505,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             DeleteTempFileIfPresent(tmpPath);
             LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
-            Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_START segments={segmentPaths.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
+            Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_START segments={segments.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
 
             var usTimeBase = new AVRational { num = 1, den = 1_000_000 };
             var outPtsLimitUs = outPoint == TimeSpan.MaxValue ? long.MaxValue : (long)(outPoint.TotalSeconds * ffmpeg.AV_TIME_BASE);
@@ -518,10 +530,22 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
             try
             {
-                for (var segIdx = 0; segIdx < segmentPaths.Count; segIdx++)
+                for (var segIdx = 0; segIdx < segments.Count; segIdx++)
                 {
                     ct.ThrowIfCancellationRequested();
-                    var segPath = segmentPaths[segIdx];
+                    var segment = segments[segIdx];
+                    var segPath = segment.Path;
+                    var useSegmentTimeline = segment.StartPts.HasValue;
+                    var segmentInOffsetUs = useSegmentTimeline
+                        ? Math.Max(0, (long)((inPoint - segment.StartPts!.Value).TotalMilliseconds * 1000))
+                        : 0;
+                    var segmentOutOffsetUs = useSegmentTimeline
+                        ? (long)((((segment.EndPts.HasValue && segment.EndPts.Value < outPoint) ? segment.EndPts.Value : outPoint) - segment.StartPts!.Value).TotalMilliseconds * 1000)
+                        : outPtsLimitUs;
+                    if (useSegmentTimeline && segmentOutOffsetUs < 0)
+                    {
+                        continue;
+                    }
 
                     if (!File.Exists(segPath))
                     {
@@ -530,7 +554,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     }
 
                     var isFirst = segIdx == 0 || _activeOutputContext == null;
-                    var isLast = segIdx == segmentPaths.Count - 1;
+                    var isLast = segIdx == segments.Count - 1;
 
                     // Open this segment
                     OpenInput(segPath);
@@ -562,7 +586,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             _activeInputContext->streams[videoStreamIndex]->codecpar->width > 0 &&
                             _activeInputContext->streams[videoStreamIndex]->codecpar->height > 0;
 
-                        if (!videoHasValidParams && segIdx < segmentPaths.Count - 1)
+                        if (!videoHasValidParams && segIdx < segments.Count - 1)
                         {
                             Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_params_incomplete' seg={segIdx} " +
                                 $"w={_activeInputContext->streams[videoStreamIndex]->codecpar->width} " +
@@ -594,7 +618,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     }
 
                     // Seek to inPoint in first segment
-                    if (isFirst && inPoint > TimeSpan.Zero)
+                    if (isFirst && inPoint > TimeSpan.Zero && !useSegmentTimeline)
                     {
                         var seekTimestamp = (long)(inPoint.TotalSeconds * ffmpeg.AV_TIME_BASE);
                         var seekResult = ffmpeg.av_seek_frame(_activeInputContext, -1, seekTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);
@@ -693,13 +717,24 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                         if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
                                         {
                                             var absPtsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
+                                            var comparePtsUs = useSegmentTimeline
+                                                ? absPtsUs - segMinBaseUs!.Value
+                                                : absPtsUs;
                                             if (si == videoStreamIndex && absPtsUs > segAbsMaxPtsUs)
                                                 segAbsMaxPtsUs = absPtsUs;
-                                            if (outPtsLimitUs < long.MaxValue && si == videoStreamIndex && absPtsUs > outPtsLimitUs)
+                                            if (useSegmentTimeline && comparePtsUs < segmentInOffsetUs)
                                             {
                                                 ffmpeg.av_packet_free(&buffPkt);
                                                 segBufferedPackets[bi] = IntPtr.Zero;
-                                                stopFlushing = true;
+                                                continue;
+                                            }
+
+                                            if (segmentOutOffsetUs < long.MaxValue && comparePtsUs > segmentOutOffsetUs)
+                                            {
+                                                ffmpeg.av_packet_free(&buffPkt);
+                                                segBufferedPackets[bi] = IntPtr.Zero;
+                                                if (si == videoStreamIndex)
+                                                    stopFlushing = true;
                                                 continue;
                                             }
                                         }
@@ -755,13 +790,23 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
                             // Check outPoint against absolute PTS BEFORE remapping
                             // At this point packet->pts is in outStream2->time_base but still absolute encoder PTS
-                            if (packet->pts != ffmpeg.AV_NOPTS_VALUE && streamIndex == videoStreamIndex)
+                            if (packet->pts != ffmpeg.AV_NOPTS_VALUE)
                             {
                                 var absPtsUs = ffmpeg.av_rescale_q(packet->pts, outStream2->time_base, usTimeBase);
-                                if (absPtsUs > segAbsMaxPtsUs)
+                                var comparePtsUs = useSegmentTimeline
+                                    ? absPtsUs - segMinBaseUs!.Value
+                                    : absPtsUs;
+                                if (streamIndex == videoStreamIndex && absPtsUs > segAbsMaxPtsUs)
                                     segAbsMaxPtsUs = absPtsUs;
-                                if (outPtsLimitUs < long.MaxValue && absPtsUs > outPtsLimitUs)
-                                    break;
+                                if (useSegmentTimeline && comparePtsUs < segmentInOffsetUs)
+                                    continue;
+                                if (segmentOutOffsetUs < long.MaxValue && comparePtsUs > segmentOutOffsetUs)
+                                {
+                                    if (streamIndex == videoStreamIndex)
+                                        break;
+
+                                    continue;
+                                }
                             }
 
                             var segBase = ffmpeg.av_rescale_q(segMinBaseUs!.Value, usTimeBase, outStream2->time_base);
@@ -821,10 +866,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     // Close this segment's input
                     CloseActiveInput();
 
-                    progress?.Report(new ExportProgress(segIdx + 1, segmentPaths.Count,
-                        totalEstimatedBytes > 0 ? 100.0 * bytesProcessed / totalEstimatedBytes : 100.0 * (segIdx + 1) / segmentPaths.Count));
+                    progress?.Report(new ExportProgress(segIdx + 1, segments.Count,
+                        totalEstimatedBytes > 0 ? 100.0 * bytesProcessed / totalEstimatedBytes : 100.0 * (segIdx + 1) / segments.Count));
 
-                    Logger.Log($"FLASHBACK_EXPORT_SEGMENT_OK seg={segIdx}/{segmentPaths.Count} path='{Path.GetFileName(segPath)}' packets={totalPackets} seg_max_pts_us={segMaxPtsUs} seg_abs_max_pts_us={segAbsMaxPtsUs} bases_discovered={segAllBasesDiscovered}");
+                    Logger.Log($"FLASHBACK_EXPORT_SEGMENT_OK seg={segIdx}/{segments.Count} path='{Path.GetFileName(segPath)}' packets={totalPackets} seg_max_pts_us={segMaxPtsUs} seg_abs_max_pts_us={segAbsMaxPtsUs} local_in_us={segmentInOffsetUs} local_out_us={segmentOutOffsetUs} bases_discovered={segAllBasesDiscovered}");
 
                     // If outPoint was hit, stop processing more segments
                     // Use absolute PTS (not rebased) since outPtsLimitUs is in absolute encoder time
@@ -852,9 +897,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             _activeTempPath = null;
 
             var outputBytes = new FileInfo(outputPath).Length;
-            Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_OK output='{outputPath}' segments={segmentPaths.Count} packets={totalPackets} bytes={outputBytes}");
-            progress?.Report(new ExportProgress(segmentPaths.Count, segmentPaths.Count, 100.0));
-            return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from {segmentPaths.Count} segments");
+            Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_OK output='{outputPath}' segments={segments.Count} packets={totalPackets} bytes={outputBytes}");
+            progress?.Report(new ExportProgress(segments.Count, segments.Count, 100.0));
+            return FinalizeResult.Success(outputPath, $"Exported {totalPackets} packets from {segments.Count} segments");
         }
         catch (OperationCanceledException)
         {

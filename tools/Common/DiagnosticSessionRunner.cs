@@ -40,6 +40,12 @@ public sealed class DiagnosticSessionResult
     public int FlashbackPlaybackMaxCommandQueueLatencyMsObserved { get; init; }
     public long FlashbackPlaybackCommandsDroppedAtEnd { get; init; }
     public long FlashbackPlaybackCommandsSkippedNotReadyAtEnd { get; init; }
+    public bool FlashbackRecordingBackendObserved { get; init; }
+    public bool FlashbackRecordingFileGrowthObserved { get; init; }
+    public long FlashbackRecordingVideoFramesSubmittedDelta { get; init; }
+    public long FlashbackRecordingVideoEncoderPacketsWrittenDelta { get; init; }
+    public long FlashbackRecordingIntegritySequenceGapsAtEnd { get; init; }
+    public long FlashbackRecordingIntegrityQueueDroppedFramesAtEnd { get; init; }
     public bool RecordingVerificationRun { get; init; }
     public bool? RecordingVerificationSucceeded { get; init; }
     public string? RecordingVerificationMessage { get; init; }
@@ -277,6 +283,7 @@ public static class DiagnosticSessionRunner
         var playbackMaxLatencyObserved = GetMaxSnapshotInt(samples, lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
         var playbackDroppedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsDropped") ?? 0;
         var playbackSkippedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0;
+        var recordingMetrics = BuildFlashbackRecordingMetrics(samples);
 
         var samplesPath = Path.Combine(outputDirectory, "samples.json");
         var frameLedgerPath = Path.Combine(outputDirectory, "frame-ledger.json");
@@ -315,6 +322,12 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackMaxCommandQueueLatencyMsObserved = playbackMaxLatencyObserved,
             FlashbackPlaybackCommandsDroppedAtEnd = playbackDroppedAtEnd,
             FlashbackPlaybackCommandsSkippedNotReadyAtEnd = playbackSkippedAtEnd,
+            FlashbackRecordingBackendObserved = recordingMetrics.BackendObserved,
+            FlashbackRecordingFileGrowthObserved = recordingMetrics.FileGrowthObserved,
+            FlashbackRecordingVideoFramesSubmittedDelta = recordingMetrics.VideoFramesSubmittedDelta,
+            FlashbackRecordingVideoEncoderPacketsWrittenDelta = recordingMetrics.VideoEncoderPacketsWrittenDelta,
+            FlashbackRecordingIntegritySequenceGapsAtEnd = recordingMetrics.IntegritySequenceGapsAtEnd,
+            FlashbackRecordingIntegrityQueueDroppedFramesAtEnd = recordingMetrics.IntegrityQueueDroppedFramesAtEnd,
             RecordingVerificationRun = verification.HasValue,
             RecordingVerificationSucceeded = verificationSucceeded,
             RecordingVerificationMessage = verification.HasValue
@@ -405,6 +418,14 @@ public static class DiagnosticSessionRunner
             $"maxLatencyMs={result.FlashbackPlaybackMaxCommandQueueLatencyMsObserved} " +
             $"droppedEnd={result.FlashbackPlaybackCommandsDroppedAtEnd} " +
             $"skippedEnd={result.FlashbackPlaybackCommandsSkippedNotReadyAtEnd}");
+        builder.AppendLine(
+            "Flashback Recording: " +
+            $"backendObserved={result.FlashbackRecordingBackendObserved} " +
+            $"fileGrowthObserved={result.FlashbackRecordingFileGrowthObserved} " +
+            $"submittedDelta={result.FlashbackRecordingVideoFramesSubmittedDelta} " +
+            $"packetsDelta={result.FlashbackRecordingVideoEncoderPacketsWrittenDelta} " +
+            $"seqGapsEnd={result.FlashbackRecordingIntegritySequenceGapsAtEnd} " +
+            $"queueDropsEnd={result.FlashbackRecordingIntegrityQueueDroppedFramesAtEnd}");
 
         builder.AppendLine($"Artifacts: {result.OutputDirectory}");
         builder.AppendLine($"  Summary: {result.SummaryPath}");
@@ -629,54 +650,84 @@ public static class DiagnosticSessionRunner
         IReadOnlyList<DiagnosticSessionSample> samples,
         List<string> warnings)
     {
+        var metrics = BuildFlashbackRecordingMetrics(samples);
+        if (metrics.SampleCount == 0)
+        {
+            warnings.Add("flashback recording: no recording samples captured");
+            return;
+        }
+
+        if (!metrics.BackendObserved)
+        {
+            warnings.Add("flashback recording: RecordingBackend never reported Flashback");
+        }
+
+        if (!metrics.FileGrowthObserved)
+        {
+            warnings.Add("flashback recording: recording file never reported growth");
+        }
+
+        if (metrics.VideoFramesSubmittedDelta <= 0)
+        {
+            warnings.Add("flashback recording: no Flashback video frames submitted to encoder");
+        }
+
+        if (metrics.VideoEncoderPacketsWrittenDelta <= 0)
+        {
+            warnings.Add("flashback recording: no Flashback encoder packets written");
+        }
+
+        if (metrics.IntegritySequenceGapsAtEnd > 0)
+        {
+            warnings.Add("flashback recording: Flashback video sequence gaps were reported");
+        }
+
+        if (metrics.IntegrityQueueDroppedFramesAtEnd > 0)
+        {
+            warnings.Add("flashback recording: Flashback dropped frames were reported");
+        }
+    }
+
+    private static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(
+        IReadOnlyList<DiagnosticSessionSample> samples)
+    {
         var recordingSamples = samples
             .Select(sample => sample.Snapshot)
             .Where(snapshot => GetBool(snapshot, "IsRecording"))
             .ToArray();
         if (recordingSamples.Length == 0)
         {
-            warnings.Add("flashback recording: no recording samples captured");
-            return;
-        }
-
-        if (!recordingSamples.Any(snapshot =>
-                string.Equals(GetString(snapshot, "RecordingBackend"), "Flashback", StringComparison.OrdinalIgnoreCase)))
-        {
-            warnings.Add("flashback recording: RecordingBackend never reported Flashback");
-        }
-
-        if (!recordingSamples.Any(snapshot => GetBool(snapshot, "RecordingFileGrowing")))
-        {
-            warnings.Add("flashback recording: recording file never reported growth");
+            return new FlashbackRecordingSessionMetrics();
         }
 
         var firstRecordingSample = recordingSamples[0];
         var finalRecordingSample = recordingSamples[^1];
-        var submittedDelta =
-            (GetNullableLong(finalRecordingSample, "FlashbackVideoFramesSubmittedToEncoder") ?? 0) -
-            (GetNullableLong(firstRecordingSample, "FlashbackVideoFramesSubmittedToEncoder") ?? 0);
-        if (submittedDelta <= 0)
+        return new FlashbackRecordingSessionMetrics
         {
-            warnings.Add("flashback recording: no Flashback video frames submitted to encoder");
-        }
+            SampleCount = recordingSamples.Length,
+            BackendObserved = recordingSamples.Any(snapshot =>
+                string.Equals(GetString(snapshot, "RecordingBackend"), "Flashback", StringComparison.OrdinalIgnoreCase)),
+            FileGrowthObserved = recordingSamples.Any(snapshot => GetBool(snapshot, "RecordingFileGrowing")),
+            VideoFramesSubmittedDelta =
+                (GetNullableLong(finalRecordingSample, "FlashbackVideoFramesSubmittedToEncoder") ?? 0) -
+                (GetNullableLong(firstRecordingSample, "FlashbackVideoFramesSubmittedToEncoder") ?? 0),
+            VideoEncoderPacketsWrittenDelta =
+                (GetNullableLong(finalRecordingSample, "FlashbackVideoEncoderPacketsWritten") ?? 0) -
+                (GetNullableLong(firstRecordingSample, "FlashbackVideoEncoderPacketsWritten") ?? 0),
+            IntegritySequenceGapsAtEnd = GetNullableLong(finalRecordingSample, "RecordingIntegritySequenceGaps") ?? 0,
+            IntegrityQueueDroppedFramesAtEnd = GetNullableLong(finalRecordingSample, "RecordingIntegrityQueueDroppedFrames") ?? 0
+        };
+    }
 
-        var packetsDelta =
-            (GetNullableLong(finalRecordingSample, "FlashbackVideoEncoderPacketsWritten") ?? 0) -
-            (GetNullableLong(firstRecordingSample, "FlashbackVideoEncoderPacketsWritten") ?? 0);
-        if (packetsDelta <= 0)
-        {
-            warnings.Add("flashback recording: no Flashback encoder packets written");
-        }
-
-        if (GetNullableLong(finalRecordingSample, "RecordingIntegritySequenceGaps") > 0)
-        {
-            warnings.Add("flashback recording: Flashback video sequence gaps were reported");
-        }
-
-        if (GetNullableLong(finalRecordingSample, "RecordingIntegrityQueueDroppedFrames") > 0)
-        {
-            warnings.Add("flashback recording: Flashback dropped frames were reported");
-        }
+    private sealed class FlashbackRecordingSessionMetrics
+    {
+        public int SampleCount { get; init; }
+        public bool BackendObserved { get; init; }
+        public bool FileGrowthObserved { get; init; }
+        public long VideoFramesSubmittedDelta { get; init; }
+        public long VideoEncoderPacketsWrittenDelta { get; init; }
+        public long IntegritySequenceGapsAtEnd { get; init; }
+        public long IntegrityQueueDroppedFramesAtEnd { get; init; }
     }
 
     private static async Task SampleLoopAsync(

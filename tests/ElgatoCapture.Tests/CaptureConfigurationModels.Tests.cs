@@ -266,6 +266,7 @@ static partial class Program
         var sessionContextType = RequireType("ElgatoCapture.Models.FlashbackSessionContext");
         var playbackStateType = RequireType("ElgatoCapture.Models.FlashbackPlaybackState");
         var exportProgressType = RequireType("ElgatoCapture.Models.ExportProgress");
+        var exportSegmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
         var exportRequestType = RequireType("ElgatoCapture.Models.FlashbackExportRequest");
 
         AssertEnumValues(playbackStateType, ("Disabled", 0), ("Buffering", 1), ("Live", 2), ("Scrubbing", 3), ("Playing", 4), ("Paused", 5));
@@ -310,9 +311,23 @@ static partial class Program
                 ConfigProperty("Percent", typeof(double), ConfigSetterExpectation.InitOnly)
             });
         AssertDeclaredConfigProperties(
+            exportSegmentType,
+            new ConfigPropertySpec[]
+            {
+                RequiredConfigString("Path", ConfigSetterExpectation.InitOnly),
+                ConfigProperty("StartPts", typeof(TimeSpan?), ConfigSetterExpectation.InitOnly),
+                ConfigProperty("EndPts", typeof(TimeSpan?), ConfigSetterExpectation.InitOnly)
+            });
+        AssertDeclaredConfigProperties(
             exportRequestType,
             new ConfigPropertySpec[]
             {
+                ConfigProperty(
+                    "Segments",
+                    typeof(IReadOnlyList<>).MakeGenericType(exportSegmentType),
+                    ConfigSetterExpectation.InitOnly,
+                    Nullability: ConfigNullability.Nullable,
+                    ElementNullability: ConfigNullability.NotNull),
                 ConfigProperty(
                     "SegmentPaths",
                     typeof(IReadOnlyList<string>),
@@ -362,14 +377,26 @@ static partial class Program
         AssertEqual(10, GetIntProperty(progress, "TotalSegments"), "ExportProgress.TotalSegments");
         AssertEqual(30d, GetDoubleProperty(progress, "Percent"), "ExportProgress.Percent");
 
+        var exportSegment = CreateConfigInstance(exportSegmentType);
+        SetPropertyOrBackingField(exportSegment, "Path", "segment.mp4");
+        SetPropertyOrBackingField(exportSegment, "StartPts", TimeSpan.FromSeconds(5));
+        SetPropertyOrBackingField(exportSegment, "EndPts", TimeSpan.FromSeconds(15));
+        AssertEqual("segment.mp4", GetStringProperty(exportSegment, "Path"), "FlashbackExportSegment.Path");
+        AssertEqual(TimeSpan.FromSeconds(5), (TimeSpan)GetPropertyValue(exportSegment, "StartPts")!, "FlashbackExportSegment.StartPts");
+        AssertEqual(TimeSpan.FromSeconds(15), (TimeSpan)GetPropertyValue(exportSegment, "EndPts")!, "FlashbackExportSegment.EndPts");
+
         var exportRequest = CreateConfigInstance(exportRequestType);
         AssertEqual(true, GetBoolProperty(exportRequest, "FastStart"), "FlashbackExportRequest.FastStart default");
+        var exportSegments = Array.CreateInstance(exportSegmentType, 1);
+        exportSegments.SetValue(exportSegment, 0);
+        SetPropertyOrBackingField(exportRequest, "Segments", exportSegments);
         SetPropertyOrBackingField(exportRequest, "SegmentPaths", new[] { "a.ts", "b.ts" });
         SetPropertyOrBackingField(exportRequest, "InputTsPath", "single.ts");
         SetPropertyOrBackingField(exportRequest, "InPoint", TimeSpan.FromSeconds(2));
         SetPropertyOrBackingField(exportRequest, "OutPoint", TimeSpan.FromSeconds(12));
         SetPropertyOrBackingField(exportRequest, "OutputPath", "clip.mp4");
         SetPropertyOrBackingField(exportRequest, "FastStart", false);
+        AssertEqual(1, GetCountProperty(GetPropertyValue(exportRequest, "Segments")!), "FlashbackExportRequest.Segments count");
         AssertEqual(2, GetCountProperty(GetPropertyValue(exportRequest, "SegmentPaths")!), "FlashbackExportRequest.SegmentPaths count");
         AssertEqual("single.ts", GetStringProperty(exportRequest, "InputTsPath"), "FlashbackExportRequest.InputTsPath");
         AssertEqual(TimeSpan.FromSeconds(12), (TimeSpan)GetPropertyValue(exportRequest, "OutPoint")!, "FlashbackExportRequest.OutPoint");

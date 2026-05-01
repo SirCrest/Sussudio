@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
@@ -645,6 +646,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
             var request = new FlashbackExportRequest
             {
+                Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths),
                 SegmentPaths = segmentPaths,
                 InputTsPath = tsPath,
                 InPoint = inPoint,
@@ -674,6 +676,40 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             _flashbackExportOperationLock.Release();
         }
+    }
+
+    private static IReadOnlyList<FlashbackExportSegment>? BuildFlashbackExportSegments(
+        FlashbackBufferManager? bufferManager,
+        IReadOnlyList<string>? segmentPaths)
+    {
+        if (segmentPaths is not { Count: > 0 })
+        {
+            return null;
+        }
+
+        var segmentInfo = bufferManager?.GetSegmentInfoList()
+            .Where(segment => !segment.IsActive)
+            .ToDictionary(segment => segment.Path, StringComparer.OrdinalIgnoreCase);
+        var segments = new List<FlashbackExportSegment>(segmentPaths.Count);
+        foreach (var path in segmentPaths)
+        {
+            if (segmentInfo != null &&
+                segmentInfo.TryGetValue(path, out var info))
+            {
+                segments.Add(new FlashbackExportSegment
+                {
+                    Path = path,
+                    StartPts = TimeSpan.FromMilliseconds(info.StartPtsMs),
+                    EndPts = TimeSpan.FromMilliseconds(info.EndPtsMs)
+                });
+            }
+            else
+            {
+                segments.Add(new FlashbackExportSegment { Path = path });
+            }
+        }
+
+        return segments;
     }
 
     private long BeginFlashbackExportDiagnostics(TimeSpan inPoint, TimeSpan outPoint, string outputPath)
