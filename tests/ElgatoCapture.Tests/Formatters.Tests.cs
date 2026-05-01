@@ -25,6 +25,7 @@ static partial class Program
         AssertContains(output, "== Audio ==");
         AssertContains(output, "== Flashback ==");
         AssertContains(output, "== Diagnostics ==");
+        AssertContains(output, "Process CPU:");
         AssertContains(output, "Legacy Score:");
         AssertContains(output, "Frame Time:");
         AssertContains(output, "Average Rate:");
@@ -36,9 +37,11 @@ static partial class Program
         var ecctlFormatterSource = ReadRepoFile("tools/ecctl/Formatters.cs");
         AssertContains(ecctlFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
         AssertContains(ecctlFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
+        AssertContains(ecctlFormatterSource, "ProcessCpuPercent");
         var sharedFormatterSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
         AssertContains(sharedFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
         AssertContains(sharedFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
+        AssertContains(sharedFormatterSource, "ProcessCpuPercent");
 
         const string failedFlashbackJson = """
                                           {"Snapshot":{"SessionState":"Error","StatusText":"Flashback failed","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":false,"IsRecording":false,"FlashbackActive":false,"FlashbackEncodingFailed":true,"FlashbackEncodingFailureType":"InvalidOperationException","FlashbackEncodingFailureMessage":"Flashback queue overloaded"}}

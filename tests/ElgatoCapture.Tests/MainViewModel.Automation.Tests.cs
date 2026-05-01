@@ -459,8 +459,11 @@ static partial class Program
         AssertContains(diagnosticSessionText, "PreviewD3DPresentCallMaxMsObserved");
         AssertContains(diagnosticSessionText, "PreviewD3DTotalFrameCpuP99MsAtEnd");
         AssertContains(diagnosticSessionText, "PreviewD3DTotalFrameCpuMaxMsObserved");
+        AssertContains(diagnosticSessionText, "ProcessCpuPercentAtEnd");
+        AssertContains(diagnosticSessionText, "ProcessCpuMaxPercentObserved");
         AssertContains(diagnosticSessionText, "Preview D3D Perf:");
         AssertContains(diagnosticSessionText, "Preview D3D CPU Timing:");
+        AssertContains(diagnosticSessionText, "Process Perf:");
         AssertContains(diagnosticSessionText, "PreviewCadenceOnePercentLowFpsAtEnd");
         AssertContains(diagnosticSessionText, "PreviewCadenceMinOnePercentLowFpsObserved");
         AssertContains(diagnosticSessionText, "BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples)");

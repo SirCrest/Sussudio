@@ -164,6 +164,7 @@ internal static class Formatters
         builder.AppendLine($"Pipeline Latency: {AutomationSnapshotFormatter.Get(snapshot, "EstimatedPipelineLatencyMs")}ms (source reader -> present)");
         builder.AppendLine();
         builder.AppendLine("== Memory & GC ==");
+        builder.AppendLine($"Process CPU: {AutomationSnapshotFormatter.Get(snapshot, "ProcessCpuPercent")}% | CPU Time: {AutomationSnapshotFormatter.Get(snapshot, "ProcessCpuTotalProcessorTimeMs")}ms");
         builder.AppendLine($"Working Set: {AutomationSnapshotFormatter.Get(snapshot, "MemoryWorkingSetMb")} MB | Private: {AutomationSnapshotFormatter.Get(snapshot, "MemoryPrivateBytesMb")} MB | Managed Heap: {AutomationSnapshotFormatter.Get(snapshot, "MemoryManagedHeapMb")} MB");
         builder.AppendLine($"Total Allocated: {AutomationSnapshotFormatter.Get(snapshot, "MemoryTotalAllocatedMb")} MB | GC Heap: {AutomationSnapshotFormatter.Get(snapshot, "MemoryGcHeapSizeMb")} MB");
         builder.AppendLine($"GC Collections: Gen0={AutomationSnapshotFormatter.Get(snapshot, "MemoryGcGen0Collections")} Gen1={AutomationSnapshotFormatter.Get(snapshot, "MemoryGcGen1Collections")} Gen2={AutomationSnapshotFormatter.Get(snapshot, "MemoryGcGen2Collections")}");
@@ -414,6 +415,7 @@ internal static class Formatters
                 PreviewD3DRecentMissed = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentMissedRefreshCount"),
                 PreviewD3DRecentFailures = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentFailureCount"),
                 LatencyMs = AutomationSnapshotFormatter.GetLong(item, "PipelineLatencyMs"),
+                CpuPct = AutomationSnapshotFormatter.GetDouble(item, "ProcessCpuPercent"),
                 WorkingMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryWorkingSetMb"),
                 ManagedMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryManagedHeapMb"),
                 Gen0 = AutomationSnapshotFormatter.GetInt(item, "GcGen0Collections"),
@@ -433,14 +435,14 @@ internal static class Formatters
         var builder = new StringBuilder();
         builder.AppendLine($"Performance Timeline ({entries.Count} samples)");
         builder.AppendLine();
-        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | D3DQ | D3DPrs | D3DTot | D3DMiss | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
+        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | D3DQ | D3DPrs | D3DTot | D3DMiss | VidQ | VidDrop | LatMs | CPU% | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
         builder.AppendLine(new string('-', 200));
 
         foreach (var entry in entries)
         {
             builder.AppendLine(string.Format(
                 CultureInfo.InvariantCulture,
-                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,4} | {9,6:F1} | {10,6:F1} | {11,7} | {12,4} | {13,7} | {14,5} | {15,6:F1} | {16,6:F1} | {17,4} | {18,4} | {19,4} | {20,4:F1} | {21,4} | {22,4}",
+                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,4} | {9,6:F1} | {10,6:F1} | {11,7} | {12,4} | {13,7} | {14,5} | {15,5:F1} | {16,6:F1} | {17,6:F1} | {18,4} | {19,4} | {20,4} | {21,4:F1} | {22,4} | {23,4}",
                 entry.Timestamp,
                 entry.CaptureAvgMs,
                 entry.CaptureP95Ms,
@@ -456,6 +458,7 @@ internal static class Formatters
                 entry.VidQueue,
                 entry.VidDrops,
                 entry.LatencyMs,
+                entry.CpuPct,
                 entry.WorkingMb,
                 entry.ManagedMb,
                 entry.Gen0,
@@ -489,6 +492,7 @@ internal static class Formatters
             builder.AppendLine($"Capture 1% Low: {first.CaptureOnePercentLowFps:F1}fps -> {last.CaptureOnePercentLowFps:F1}fps");
             builder.AppendLine($"Preview Rate:   {first.PreviewFps:F1}fps -> {last.PreviewFps:F1}fps (derived avg)");
             builder.AppendLine($"Video Drops:    {first.VidDrops} -> {last.VidDrops} (delta: {last.VidDrops - first.VidDrops:+0;-0;0})");
+            builder.AppendLine($"Process CPU:    {first.CpuPct:F1}% -> {last.CpuPct:F1}% (delta: {last.CpuPct - first.CpuPct:+0.0;-0.0;0.0}%)");
             builder.AppendLine($"Working Set:    {first.WorkingMb:F1}MB -> {last.WorkingMb:F1}MB (delta: {last.WorkingMb - first.WorkingMb:+0.0;-0.0;0.0}MB)");
             builder.AppendLine($"Managed Heap:   {first.ManagedMb:F1}MB -> {last.ManagedMb:F1}MB (delta: {last.ManagedMb - first.ManagedMb:+0.0;-0.0;0.0}MB)");
             builder.AppendLine($"GC Gen0:        {first.Gen0} -> {last.Gen0} (delta: {last.Gen0 - first.Gen0:+0;-0;0})");
@@ -508,6 +512,8 @@ internal static class Formatters
 
         var builder = new StringBuilder();
         builder.AppendLine("== Memory & GC ==");
+        builder.AppendLine($"Process CPU: {AutomationSnapshotFormatter.Get(snapshot, "ProcessCpuPercent")}%");
+        builder.AppendLine($"Process CPU Time: {AutomationSnapshotFormatter.Get(snapshot, "ProcessCpuTotalProcessorTimeMs")}ms");
         builder.AppendLine($"Working Set: {AutomationSnapshotFormatter.Get(snapshot, "MemoryWorkingSetMb")} MB");
         builder.AppendLine($"Private Bytes: {AutomationSnapshotFormatter.Get(snapshot, "MemoryPrivateBytesMb")} MB");
         builder.AppendLine($"Managed Heap: {AutomationSnapshotFormatter.Get(snapshot, "MemoryManagedHeapMb")} MB");
@@ -659,6 +665,7 @@ internal static class Formatters
         public long PreviewD3DRecentMissed { get; init; }
         public long PreviewD3DRecentFailures { get; init; }
         public long LatencyMs { get; init; }
+        public double CpuPct { get; init; }
         public double WorkingMb { get; init; }
         public double ManagedMb { get; init; }
         public int Gen0 { get; init; }

@@ -47,6 +47,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private int _timelineHead;
     private int _timelineCount;
     private readonly Process _currentProcess = Process.GetCurrentProcess();
+    private long _lastProcessCpuSampleTimestamp;
+    private double _lastProcessCpuTotalMs;
 
     private const int MaxRecentEvents = 500;
     private const int PollIntervalMs = 500;
@@ -484,6 +486,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         // Memory & GC metrics (all APIs are thread-safe and microsecond-cheap)
         _currentProcess.Refresh();
+        var processCpuTotalMs = _currentProcess.TotalProcessorTime.TotalMilliseconds;
+        var processCpuPercent = CalculateProcessCpuPercent(processCpuTotalMs);
         var memoryWorkingSetMb = _currentProcess.WorkingSet64 / (1024.0 * 1024.0);
         var memoryPrivateBytesMb = _currentProcess.PrivateMemorySize64 / (1024.0 * 1024.0);
         var memoryManagedHeapMb = GC.GetTotalMemory(false) / (1024.0 * 1024.0);
@@ -1080,6 +1084,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             MemoryPrivateBytesMb = memoryPrivateBytesMb,
             MemoryManagedHeapMb = memoryManagedHeapMb,
             MemoryTotalAllocatedMb = memoryTotalAllocatedMb,
+            ProcessCpuPercent = processCpuPercent,
+            ProcessCpuTotalProcessorTimeMs = processCpuTotalMs,
             MemoryGcHeapSizeMb = memoryGcHeapSizeMb,
             MemoryGcGen0Collections = gcGen0,
             MemoryGcGen1Collections = gcGen1,
@@ -1216,6 +1222,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 PreviewD3DLastRenderedSchedulerToPresentMs = snapshot.PreviewD3DLastRenderedSchedulerToPresentMs,
                 PreviewD3DLastDropReason = snapshot.PreviewD3DLastDropReason,
                 PipelineLatencyMs = snapshot.EstimatedPipelineLatencyMs,
+                ProcessCpuPercent = snapshot.ProcessCpuPercent,
                 MemoryWorkingSetMb = snapshot.MemoryWorkingSetMb,
                 MemoryManagedHeapMb = snapshot.MemoryManagedHeapMb,
                 GcGen0Collections = snapshot.MemoryGcGen0Collections,
@@ -1313,6 +1320,31 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         return (
             Math.Max(0, missedRefreshes - previousMissedRefreshes),
             Math.Max(0, failures - previousFailures));
+    }
+
+    private double CalculateProcessCpuPercent(double processCpuTotalMs)
+    {
+        var nowTimestamp = Stopwatch.GetTimestamp();
+        var previousTimestamp = _lastProcessCpuSampleTimestamp;
+        var previousCpuTotalMs = _lastProcessCpuTotalMs;
+
+        _lastProcessCpuSampleTimestamp = nowTimestamp;
+        _lastProcessCpuTotalMs = processCpuTotalMs;
+
+        if (previousTimestamp <= 0)
+        {
+            return 0.0;
+        }
+
+        var elapsedMs = Stopwatch.GetElapsedTime(previousTimestamp, nowTimestamp).TotalMilliseconds;
+        if (elapsedMs <= 0)
+        {
+            return 0.0;
+        }
+
+        var cpuDeltaMs = Math.Max(0.0, processCpuTotalMs - previousCpuTotalMs);
+        var cpuCapacityMs = elapsedMs * Math.Max(1, Environment.ProcessorCount);
+        return Math.Clamp(cpuDeltaMs * 100.0 / cpuCapacityMs, 0.0, 100.0);
     }
 
     private void UpdateAlerts(AutomationSnapshot snapshot)

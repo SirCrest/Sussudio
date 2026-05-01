@@ -757,6 +757,8 @@ public sealed class AutomationSnapshot
     public double MemoryPrivateBytesMb { get; init; }
     public double MemoryManagedHeapMb { get; init; }
     public double MemoryTotalAllocatedMb { get; init; }
+    public double ProcessCpuPercent { get; init; }
+    public double ProcessCpuTotalProcessorTimeMs { get; init; }
     public double MemoryGcHeapSizeMb { get; init; }
     public int MemoryGcGen0Collections { get; init; }
     public int MemoryGcGen1Collections { get; init; }
@@ -901,6 +903,7 @@ public sealed class PerformanceTimelineEntry
     public double PreviewD3DLastRenderedSchedulerToPresentMs { get; init; }
     public string PreviewD3DLastDropReason { get; init; } = string.Empty;
     public long PipelineLatencyMs { get; init; }
+    public double ProcessCpuPercent { get; init; }
     public double MemoryWorkingSetMb { get; init; }
     public double MemoryManagedHeapMb { get; init; }
     public int GcGen0Collections { get; init; }

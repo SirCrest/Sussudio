@@ -99,6 +99,8 @@ public sealed class DiagnosticSessionResult
     public double PreviewD3DPresentCallMaxMsObserved { get; init; }
     public double PreviewD3DTotalFrameCpuP99MsAtEnd { get; init; }
     public double PreviewD3DTotalFrameCpuMaxMsObserved { get; init; }
+    public double ProcessCpuPercentAtEnd { get; init; }
+    public double ProcessCpuMaxPercentObserved { get; init; }
     public bool RecordingVerificationRun { get; init; }
     public bool? RecordingVerificationSucceeded { get; init; }
     public string? RecordingVerificationMessage { get; init; }
@@ -604,6 +606,11 @@ public static class DiagnosticSessionRunner
         var exportMetrics = BuildFlashbackExportSessionMetrics(samples, lastSnapshot);
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
+        var processCpuMaxPercentObserved = samples
+            .Select(sample => GetDouble(sample.Snapshot, "ProcessCpuPercent"))
+            .Append(GetDouble(lastSnapshot, "ProcessCpuPercent"))
+            .DefaultIfEmpty(0.0)
+            .Max();
 
         var samplesPath = Path.Combine(outputDirectory, "samples.json");
         var frameLedgerPath = Path.Combine(outputDirectory, "frame-ledger.json");
@@ -701,6 +708,8 @@ public static class DiagnosticSessionRunner
             PreviewD3DPresentCallMaxMsObserved = previewD3DMetrics.PresentCallMaxMsObserved,
             PreviewD3DTotalFrameCpuP99MsAtEnd = previewD3DMetrics.TotalFrameCpuP99MsAtEnd,
             PreviewD3DTotalFrameCpuMaxMsObserved = previewD3DMetrics.TotalFrameCpuMaxMsObserved,
+            ProcessCpuPercentAtEnd = GetDouble(lastSnapshot, "ProcessCpuPercent"),
+            ProcessCpuMaxPercentObserved = processCpuMaxPercentObserved,
             RecordingVerificationRun = verification.HasValue,
             RecordingVerificationSucceeded = verificationSucceeded,
             RecordingVerificationMessage = verification.HasValue
@@ -864,6 +873,10 @@ public static class DiagnosticSessionRunner
             $"presentCallMaxObserved={result.PreviewD3DPresentCallMaxMsObserved:0.##} " +
             $"totalFrameP99End={result.PreviewD3DTotalFrameCpuP99MsAtEnd:0.##} " +
             $"totalFrameMaxObserved={result.PreviewD3DTotalFrameCpuMaxMsObserved:0.##}");
+        builder.AppendLine(
+            "Process Perf: " +
+            $"cpuPercentEnd={result.ProcessCpuPercentAtEnd:0.##} " +
+            $"cpuPercentMaxObserved={result.ProcessCpuMaxPercentObserved:0.##}");
 
         builder.AppendLine($"Artifacts: {result.OutputDirectory}");
         builder.AppendLine($"  Summary: {result.SummaryPath}");

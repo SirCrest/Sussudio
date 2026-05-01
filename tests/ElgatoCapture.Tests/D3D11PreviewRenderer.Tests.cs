@@ -337,7 +337,9 @@ static partial class Program
                      "PreviewD3DLastDroppedSourceSequenceNumber",
                      "PreviewD3DLastDroppedUtcUnixMs",
                      "PreviewD3DLastDropReason",
-                     "PreviewD3DRecentSlowFrames"
+                     "PreviewD3DRecentSlowFrames",
+                     "ProcessCpuPercent",
+                     "ProcessCpuTotalProcessorTimeMs"
                  })
         {
             AssertNotNull(automationSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"AutomationSnapshot.{prop}");
@@ -354,7 +356,8 @@ static partial class Program
                      "PreviewD3DFrameStatsRecentMissedRefreshCount",
                      "PreviewD3DFrameStatsRecentFailureCount",
                      "PreviewD3DLastRenderedSchedulerToPresentMs",
-                     "PreviewD3DLastDropReason"
+                     "PreviewD3DLastDropReason",
+                     "ProcessCpuPercent"
                  })
         {
             AssertNotNull(performanceTimelineEntryType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PerformanceTimelineEntry.{prop}");
