@@ -3326,7 +3326,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.TraceWarning($"Suppressed exception in CaptureService.StartRecordingAsync: {ex.Message}");
+                Logger.Log($"CAPTURE_RECORDING_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
 
                 if (flashbackRecordingStartedSink != null)
                 {

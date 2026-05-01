@@ -199,6 +199,8 @@ static partial class Program
         AssertContains(captureServiceSource, "preserveFlashbackSegmentsAfterFailedRecordingFinalize");
         AssertContains(captureServiceSource, "FLASHBACK_CLEANUP_PRESERVE_SEGMENTS");
         AssertContains(captureServiceSource, "purgeSegments: !preserveFlashbackSegmentsAfterFailedRecordingFinalize");
+        AssertContains(captureServiceSource, "CAPTURE_RECORDING_START_FAIL");
+        AssertDoesNotContain(captureServiceSource, "System.Diagnostics.Trace.TraceWarning($\"Suppressed exception in CaptureService.StartRecordingAsync");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_CYCLE_OK mode=preserve_rebuild");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_DEFERRED_PURGE_WARN");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_DEFERRED_PURGE_SKIP");
