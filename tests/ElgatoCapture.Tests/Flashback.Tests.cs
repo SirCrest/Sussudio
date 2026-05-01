@@ -381,6 +381,10 @@ static partial class Program
         AssertEqual(2, sourceText.Split("return Task.FromResult(CreateDisposedExportResult(outputPath));", StringSplitOptions.None).Length - 1, "Single and segment wrappers return disposed result");
         AssertContains(sourceText, "catch (ObjectDisposedException)\n        {\n            cancellationResult = CreateDisposedExportResult(outputPath);\n            return false;\n        }");
         AssertContains(sourceText, "linkedCts = CreateExportCancellationSource(ct);");
+        AssertContains(sourceText, "var segmentSnapshot = SnapshotSegments(segments);");
+        AssertContains(sourceText, "return ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token);");
+        AssertContains(sourceText, "private static IReadOnlyList<FlashbackExportSegment> SnapshotSegments(IReadOnlyList<FlashbackExportSegment>? segments)");
+        AssertContains(sourceText, "snapshot[i] = segment == null\n                ? new FlashbackExportSegment { Path = string.Empty }\n                : segment with { };");
         AssertContains(sourceText, "CancellationTokenSource.CreateLinkedTokenSource(ct, disposeCts.Token)");
         AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposed, this);");
         AssertContains(sourceText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");

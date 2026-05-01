@@ -116,6 +116,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         IProgress<ExportProgress>? progress,
         CancellationToken ct)
     {
+        var segmentSnapshot = SnapshotSegments(segments);
         CancellationTokenSource linkedCts;
         try
         {
@@ -130,13 +131,32 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             try
             {
-                return ExportSegmentsCore(segments, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token);
+                return ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token);
             }
             finally
             {
                 DisposeLinkedCtsBestEffort(linkedCts, "segment_export");
             }
         });
+    }
+
+    private static IReadOnlyList<FlashbackExportSegment> SnapshotSegments(IReadOnlyList<FlashbackExportSegment>? segments)
+    {
+        if (segments == null || segments.Count == 0)
+        {
+            return Array.Empty<FlashbackExportSegment>();
+        }
+
+        var snapshot = new FlashbackExportSegment[segments.Count];
+        for (var i = 0; i < snapshot.Length; i++)
+        {
+            var segment = segments[i];
+            snapshot[i] = segment == null
+                ? new FlashbackExportSegment { Path = string.Empty }
+                : segment with { };
+        }
+
+        return snapshot;
     }
 
     public void Dispose()
