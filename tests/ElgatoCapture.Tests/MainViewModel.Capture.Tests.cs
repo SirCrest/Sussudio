@@ -399,6 +399,17 @@ static partial class Program
             "\n            _pendingFlashbackEnableAfterRecording = false;");
         AssertContains(recordingActiveEnableBranch, "return;");
         AssertDoesNotContain(recordingActiveEnableBranch, "EnsureFlashbackPreviewBackendAsync");
+        var immediateEnableBranch = ExtractTextBetween(
+            setFlashbackEnabled,
+            "_pendingFlashbackEnableAfterRecording = false;\n            if (_unifiedVideoCapture != null && _currentSettings != null)",
+            "\n        }, cancellationToken);");
+        AssertContains(immediateEnableBranch, "try");
+        AssertContains(immediateEnableBranch, "await EnsureFlashbackPreviewBackendAsync(_unifiedVideoCapture, _currentSettings, transitionToken)");
+        AssertContains(immediateEnableBranch, "catch");
+        AssertContains(immediateEnableBranch, "_flashbackEnabled = false;");
+        AssertContains(immediateEnableBranch, "_pendingFlashbackEnableAfterRecording = false;");
+        AssertContains(immediateEnableBranch, "await DisposeFlashbackPreviewBackendAsync(CancellationToken.None, purgeSegments: true)");
+        AssertContains(immediateEnableBranch, "throw;");
 
         AssertContains(stopAndDisposeRecordingBackend, "if (_pendingFlashbackEnableAfterRecording)");
         AssertContains(stopAndDisposeRecordingBackend, "_pendingFlashbackEnableAfterRecording = false;");
