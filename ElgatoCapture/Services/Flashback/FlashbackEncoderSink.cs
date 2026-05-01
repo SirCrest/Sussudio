@@ -365,6 +365,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 return !_disposed &&
                        _started &&
                        _encodingFailure == null &&
+                       Volatile.Read(ref _recordingActive) == 0 &&
                        !IsForceRotateActive &&
                        _encodingTask?.IsCompleted != true;
             }
@@ -417,11 +418,16 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 throw new InvalidOperationException("Cannot begin recording: flashback export rotation is still draining.");
             }
-        }
 
-        _recordingOutputPath = outputPath ?? string.Empty;
-        Volatile.Write(ref _recordingActive, 1);
-        _bufferManager.PauseEviction();
+            if (Volatile.Read(ref _recordingActive) != 0)
+            {
+                throw new InvalidOperationException("Cannot begin recording: flashback recording is already active.");
+            }
+
+            _recordingOutputPath = outputPath ?? string.Empty;
+            _bufferManager.PauseEviction();
+            Volatile.Write(ref _recordingActive, 1);
+        }
         Logger.Log($"FLASHBACK_RECORDING_ACTIVE output='{_recordingOutputPath}'");
     }
 

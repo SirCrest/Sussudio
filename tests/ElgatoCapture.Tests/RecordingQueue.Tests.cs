@@ -80,6 +80,10 @@ static partial class Program
         AssertContains(flashbackSource, "public string? EncodingFailureMessage");
         AssertContains(flashbackSource, "public bool CanBeginRecording");
         AssertContains(flashbackSource, "public bool IsRecordingActive");
+        AssertContains(flashbackSource, "Volatile.Read(ref _recordingActive) == 0");
+        AssertContains(flashbackSource, "Cannot begin recording: flashback recording is already active.");
+        AssertOccursBefore(flashbackSource, "Cannot begin recording: flashback recording is already active.", "_bufferManager.PauseEviction();");
+        AssertOccursBefore(flashbackSource, "_bufferManager.PauseEviction();", "Volatile.Write(ref _recordingActive, 1);");
         AssertContains(flashbackSource, "public bool IsForceRotateActive");
         AssertContains(flashbackSource, "WaitForForceRotateIdle");
         AssertContains(flashbackSource, "CompletePendingForceRotateWithEmptyResult");
