@@ -350,6 +350,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         Logger.Log($"FLASHBACK_PLAYBACK_DISPOSE_REQUEST state={_state} initialized={_initialized}");
         StopPlaybackThread();
+        _initialized = false;
         Logger.Log("FLASHBACK_PLAYBACK_DISPOSED");
     }
 
