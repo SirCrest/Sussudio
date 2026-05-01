@@ -145,7 +145,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             var t = Interlocked.Read(ref _inPointTicks);
             return t == long.MinValue ? null : TimeSpan.FromTicks(t);
         }
-        set => Interlocked.Exchange(ref _inPointTicks, value?.Ticks ?? long.MinValue);
+        set => Interlocked.Exchange(ref _inPointTicks, value.HasValue ? NormalizeMarkerPosition(value.Value).Ticks : long.MinValue);
     }
 
     public TimeSpan? OutPoint
@@ -155,7 +155,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             var t = Interlocked.Read(ref _outPointTicks);
             return t == long.MinValue ? null : TimeSpan.FromTicks(t);
         }
-        set => Interlocked.Exchange(ref _outPointTicks, value?.Ticks ?? long.MinValue);
+        set => Interlocked.Exchange(ref _outPointTicks, value.HasValue ? NormalizeMarkerPosition(value.Value).Ticks : long.MinValue);
     }
 
     // --- Playback thread ---
@@ -1752,6 +1752,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (position < min) return min;
         if (position > max) return max;
         return position;
+    }
+
+    private TimeSpan NormalizeMarkerPosition(TimeSpan position)
+    {
+        if (position <= TimeSpan.Zero)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var bufferDuration = _bufferManager.BufferedDuration;
+        return position > bufferDuration ? bufferDuration : position;
     }
 
     private static TimeSpan SaturatingAdd(TimeSpan left, TimeSpan right)
