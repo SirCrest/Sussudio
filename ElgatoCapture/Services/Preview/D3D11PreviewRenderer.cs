@@ -327,6 +327,17 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         CpuStageTimingMetrics PresentCall,
         CpuStageTimingMetrics TotalFrame);
 
+    public readonly record struct FrameLatencyWaitMetrics(
+        bool Enabled,
+        bool HandleActive,
+        long CallCount,
+        long SignaledCount,
+        long TimeoutCount,
+        long UnexpectedResultCount,
+        uint LastResult,
+        double LastWaitMs,
+        CpuStageTimingMetrics Timing);
+
     public readonly record struct FrameOwnershipMetrics(
         long LastSubmittedPreviewPresentId,
         long LastSubmittedSourceSequenceNumber,
@@ -422,6 +433,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private double[] _renderTotalCpuTimingWindowMs = new double[1200];
     private int _renderCpuTimingCount;
     private int _renderCpuTimingIndex;
+    private readonly object _frameLatencyWaitTimingLock = new();
+    private double[] _frameLatencyWaitTimingWindowMs = new double[1200];
+    private int _frameLatencyWaitTimingCount;
+    private int _frameLatencyWaitTimingIndex;
+    private long _frameLatencyWaitCallCount;
+    private long _frameLatencyWaitSignaledCount;
+    private long _frameLatencyWaitTimeoutCount;
+    private long _frameLatencyWaitUnexpectedResultCount;
+    private long _frameLatencyWaitLastResult;
+    private long _frameLatencyWaitLastTicks;
     private readonly object _slowFrameDiagnosticsLock = new();
     private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];
     private int _slowFrameDiagnosticsCount;
@@ -1356,6 +1377,31 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
+    public FrameLatencyWaitMetrics GetFrameLatencyWaitMetrics()
+    {
+        CpuStageTimingMetrics timing;
+        lock (_frameLatencyWaitTimingLock)
+        {
+            timing = SummarizeCpuStageTiming(CopyRecentRing(
+                _frameLatencyWaitTimingWindowMs,
+                _frameLatencyWaitTimingCount,
+                _frameLatencyWaitTimingIndex,
+                _frameLatencyWaitTimingWindowMs.Length));
+        }
+
+        var lastTicks = Interlocked.Read(ref _frameLatencyWaitLastTicks);
+        return new FrameLatencyWaitMetrics(
+            Enabled: _waitableSwapChainEnabled,
+            HandleActive: _frameLatencyWaitHandle != IntPtr.Zero,
+            CallCount: Interlocked.Read(ref _frameLatencyWaitCallCount),
+            SignaledCount: Interlocked.Read(ref _frameLatencyWaitSignaledCount),
+            TimeoutCount: Interlocked.Read(ref _frameLatencyWaitTimeoutCount),
+            UnexpectedResultCount: Interlocked.Read(ref _frameLatencyWaitUnexpectedResultCount),
+            LastResult: unchecked((uint)Interlocked.Read(ref _frameLatencyWaitLastResult)),
+            LastWaitMs: lastTicks > 0 ? TicksToMs(lastTicks) : 0,
+            Timing: timing);
+    }
+
     private void TrackFrameSubmitted(PendingFrame frame)
     {
         Interlocked.Exchange(ref _lastSubmittedPreviewPresentId, frame.PreviewPresentId);
@@ -1572,6 +1618,41 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
+    private void TrackFrameLatencyWait(uint result, long waitTicks)
+    {
+        Interlocked.Increment(ref _frameLatencyWaitCallCount);
+        Interlocked.Exchange(ref _frameLatencyWaitLastResult, result);
+        Interlocked.Exchange(ref _frameLatencyWaitLastTicks, waitTicks);
+        if (result == WaitObject0)
+        {
+            Interlocked.Increment(ref _frameLatencyWaitSignaledCount);
+        }
+        else if (result == WaitTimeout)
+        {
+            Interlocked.Increment(ref _frameLatencyWaitTimeoutCount);
+        }
+        else
+        {
+            Interlocked.Increment(ref _frameLatencyWaitUnexpectedResultCount);
+        }
+
+        var waitMs = TicksToMs(waitTicks);
+        if (!IsValidRenderCpuStageMs(waitMs))
+        {
+            return;
+        }
+
+        lock (_frameLatencyWaitTimingLock)
+        {
+            _frameLatencyWaitTimingWindowMs[_frameLatencyWaitTimingIndex] = waitMs;
+            _frameLatencyWaitTimingIndex = (_frameLatencyWaitTimingIndex + 1) % _frameLatencyWaitTimingWindowMs.Length;
+            if (_frameLatencyWaitTimingCount < _frameLatencyWaitTimingWindowMs.Length)
+            {
+                _frameLatencyWaitTimingCount++;
+            }
+        }
+    }
+
     private void RecordSlowFrameDiagnostic(
         PendingFrame frame,
         double presentIntervalMs,
@@ -1731,6 +1812,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 _renderCpuTimingIndex = 0;
             }
         }
+
+        lock (_frameLatencyWaitTimingLock)
+        {
+            if (_frameLatencyWaitTimingWindowMs.Length != targetSize)
+            {
+                _frameLatencyWaitTimingWindowMs = new double[targetSize];
+                _frameLatencyWaitTimingCount = 0;
+                _frameLatencyWaitTimingIndex = 0;
+            }
+        }
     }
 
     public bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot)
@@ -1783,6 +1874,20 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             _renderCpuTimingCount = 0;
             _renderCpuTimingIndex = 0;
         }
+
+        lock (_frameLatencyWaitTimingLock)
+        {
+            Array.Clear(_frameLatencyWaitTimingWindowMs, 0, _frameLatencyWaitTimingWindowMs.Length);
+            _frameLatencyWaitTimingCount = 0;
+            _frameLatencyWaitTimingIndex = 0;
+        }
+
+        Interlocked.Exchange(ref _frameLatencyWaitCallCount, 0);
+        Interlocked.Exchange(ref _frameLatencyWaitSignaledCount, 0);
+        Interlocked.Exchange(ref _frameLatencyWaitTimeoutCount, 0);
+        Interlocked.Exchange(ref _frameLatencyWaitUnexpectedResultCount, 0);
+        Interlocked.Exchange(ref _frameLatencyWaitLastResult, 0);
+        Interlocked.Exchange(ref _frameLatencyWaitLastTicks, 0);
 
         lock (_slowFrameDiagnosticsLock)
         {

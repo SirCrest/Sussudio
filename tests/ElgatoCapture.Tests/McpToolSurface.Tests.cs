@@ -686,6 +686,9 @@ static partial class Program
         AssertContains(source, "PreviewD3DRenderSubmitCpuP99Ms");
         AssertContains(source, "PreviewD3DPresentCallP99Ms");
         AssertContains(source, "PreviewD3DTotalFrameCpuP99Ms");
+        AssertContains(source, "PreviewD3DFrameLatencyWaitTimeoutCount");
+        AssertContains(source, "PreviewD3DFrameLatencyWaitP95Ms");
+        AssertContains(source, "PreviewD3DFrameLatencyWaitMaxMs");
         AssertContains(source, "InP99 | RsP99 | PrP99 | TotP99");
         AssertContains(source, "FlashbackPlaybackP99FrameMs");
         AssertContains(source, "FlashbackPlaybackDecodeP99Ms");

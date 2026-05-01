@@ -181,6 +181,7 @@ public sealed partial class MainWindow
         var d3dRenderCpuTiming = d3d?.GetRenderCpuTimingMetrics();
         var d3dFrameOwnership = d3d?.GetFrameOwnershipMetrics();
         var d3dFrameStats = d3d?.GetDxgiFrameStatisticsMetrics();
+        var d3dFrameLatencyWait = d3d?.GetFrameLatencyWaitMetrics();
         var d3dSlowFrames = d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>();
         if (gpuActive)
         {
@@ -294,6 +295,19 @@ public sealed partial class MainWindow
             D3DTotalFrameCpuP95Ms = d3dRenderCpuTiming?.TotalFrame.P95Ms ?? 0,
             D3DTotalFrameCpuP99Ms = d3dRenderCpuTiming?.TotalFrame.P99Ms ?? 0,
             D3DTotalFrameCpuMaxMs = d3dRenderCpuTiming?.TotalFrame.MaxMs ?? 0,
+            D3DFrameLatencyWaitEnabled = d3dFrameLatencyWait?.Enabled ?? false,
+            D3DFrameLatencyWaitHandleActive = d3dFrameLatencyWait?.HandleActive ?? false,
+            D3DFrameLatencyWaitCallCount = d3dFrameLatencyWait?.CallCount ?? 0,
+            D3DFrameLatencyWaitSignaledCount = d3dFrameLatencyWait?.SignaledCount ?? 0,
+            D3DFrameLatencyWaitTimeoutCount = d3dFrameLatencyWait?.TimeoutCount ?? 0,
+            D3DFrameLatencyWaitUnexpectedResultCount = d3dFrameLatencyWait?.UnexpectedResultCount ?? 0,
+            D3DFrameLatencyWaitLastResult = d3dFrameLatencyWait?.LastResult ?? 0,
+            D3DFrameLatencyWaitLastMs = d3dFrameLatencyWait?.LastWaitMs ?? 0,
+            D3DFrameLatencyWaitSampleCount = d3dFrameLatencyWait?.Timing.SampleCount ?? 0,
+            D3DFrameLatencyWaitAvgMs = d3dFrameLatencyWait?.Timing.AverageMs ?? 0,
+            D3DFrameLatencyWaitP95Ms = d3dFrameLatencyWait?.Timing.P95Ms ?? 0,
+            D3DFrameLatencyWaitP99Ms = d3dFrameLatencyWait?.Timing.P99Ms ?? 0,
+            D3DFrameLatencyWaitMaxMs = d3dFrameLatencyWait?.Timing.MaxMs ?? 0,
             D3DFrameStatsSampleCount = d3dFrameStats?.SampleCount ?? 0,
             D3DFrameStatsSuccessCount = d3dFrameStats?.SuccessCount ?? 0,
             D3DFrameStatsFailureCount = d3dFrameStats?.FailureCount ?? 0,

@@ -504,6 +504,19 @@ public sealed class AutomationSnapshot
     public double PreviewD3DTotalFrameCpuP95Ms { get; init; }
     public double PreviewD3DTotalFrameCpuP99Ms { get; init; }
     public double PreviewD3DTotalFrameCpuMaxMs { get; init; }
+    public bool PreviewD3DFrameLatencyWaitEnabled { get; init; }
+    public bool PreviewD3DFrameLatencyWaitHandleActive { get; init; }
+    public long PreviewD3DFrameLatencyWaitCallCount { get; init; }
+    public long PreviewD3DFrameLatencyWaitSignaledCount { get; init; }
+    public long PreviewD3DFrameLatencyWaitTimeoutCount { get; init; }
+    public long PreviewD3DFrameLatencyWaitUnexpectedResultCount { get; init; }
+    public uint PreviewD3DFrameLatencyWaitLastResult { get; init; }
+    public double PreviewD3DFrameLatencyWaitLastMs { get; init; }
+    public int PreviewD3DFrameLatencyWaitSampleCount { get; init; }
+    public double PreviewD3DFrameLatencyWaitAvgMs { get; init; }
+    public double PreviewD3DFrameLatencyWaitP95Ms { get; init; }
+    public double PreviewD3DFrameLatencyWaitP99Ms { get; init; }
+    public double PreviewD3DFrameLatencyWaitMaxMs { get; init; }
     public long PreviewD3DFrameStatsSampleCount { get; init; }
     public long PreviewD3DFrameStatsSuccessCount { get; init; }
     public long PreviewD3DFrameStatsFailureCount { get; init; }
@@ -924,6 +937,9 @@ public sealed class PerformanceTimelineEntry
     public double PreviewD3DRenderSubmitCpuP99Ms { get; init; }
     public double PreviewD3DPresentCallP99Ms { get; init; }
     public double PreviewD3DTotalFrameCpuP99Ms { get; init; }
+    public long PreviewD3DFrameLatencyWaitTimeoutCount { get; init; }
+    public double PreviewD3DFrameLatencyWaitP95Ms { get; init; }
+    public double PreviewD3DFrameLatencyWaitMaxMs { get; init; }
     public long PreviewD3DFrameStatsRecentMissedRefreshCount { get; init; }
     public long PreviewD3DFrameStatsRecentFailureCount { get; init; }
     public double PreviewD3DLastRenderedSchedulerToPresentMs { get; init; }
@@ -1149,6 +1165,19 @@ public sealed class PreviewRuntimeSnapshot
     public double D3DTotalFrameCpuP95Ms { get; init; }
     public double D3DTotalFrameCpuP99Ms { get; init; }
     public double D3DTotalFrameCpuMaxMs { get; init; }
+    public bool D3DFrameLatencyWaitEnabled { get; init; }
+    public bool D3DFrameLatencyWaitHandleActive { get; init; }
+    public long D3DFrameLatencyWaitCallCount { get; init; }
+    public long D3DFrameLatencyWaitSignaledCount { get; init; }
+    public long D3DFrameLatencyWaitTimeoutCount { get; init; }
+    public long D3DFrameLatencyWaitUnexpectedResultCount { get; init; }
+    public uint D3DFrameLatencyWaitLastResult { get; init; }
+    public double D3DFrameLatencyWaitLastMs { get; init; }
+    public int D3DFrameLatencyWaitSampleCount { get; init; }
+    public double D3DFrameLatencyWaitAvgMs { get; init; }
+    public double D3DFrameLatencyWaitP95Ms { get; init; }
+    public double D3DFrameLatencyWaitP99Ms { get; init; }
+    public double D3DFrameLatencyWaitMaxMs { get; init; }
     public long D3DFrameStatsSampleCount { get; init; }
     public long D3DFrameStatsSuccessCount { get; init; }
     public long D3DFrameStatsFailureCount { get; init; }

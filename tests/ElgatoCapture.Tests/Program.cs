@@ -1359,6 +1359,9 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedSourceLatencyMs"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedSourceLatencyMs");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastDroppedSourceSequenceNumber"), "AutomationSnapshot.MjpegPreviewJitterLastDroppedSourceSequenceNumber");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastDropReason"), "AutomationSnapshot.MjpegPreviewJitterLastDropReason");
+        AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameLatencyWaitTimeoutCount"), "AutomationSnapshot.PreviewD3DFrameLatencyWaitTimeoutCount");
+        AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameLatencyWaitP95Ms"), "AutomationSnapshot.PreviewD3DFrameLatencyWaitP95Ms");
+        AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameLatencyWaitMaxMs"), "AutomationSnapshot.PreviewD3DFrameLatencyWaitMaxMs");
         AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameStatsRecentMissedRefreshCount"), "AutomationSnapshot.PreviewD3DFrameStatsRecentMissedRefreshCount");
         AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameStatsRecentFailureCount"), "AutomationSnapshot.PreviewD3DFrameStatsRecentFailureCount");
         AssertNotNull(snapshotType.GetProperty("DiagnosticHealthStatus"), "AutomationSnapshot.DiagnosticHealthStatus");

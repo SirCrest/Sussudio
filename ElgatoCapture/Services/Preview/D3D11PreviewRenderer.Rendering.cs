@@ -1756,7 +1756,9 @@ internal sealed partial class D3D11PreviewRenderer
             return;
         }
 
+        var waitStart = Stopwatch.GetTimestamp();
         var result = WaitForSingleObject(_frameLatencyWaitHandle, 8);
+        TrackFrameLatencyWait(result, Stopwatch.GetTimestamp() - waitStart);
         if (result != WaitObject0 && result != WaitTimeout)
         {
             Logger.Log($"D3D11 preview waitable swap chain wait returned {result}.");
