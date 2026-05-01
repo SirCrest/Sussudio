@@ -325,6 +325,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (_disposedFlag != 0)
         {
+            SetLastCommandFailure("disposed:SetInPoint");
             Logger.Log("FLASHBACK_PLAYBACK_SET_IN_SKIP reason=disposed");
             return PlaybackPosition;
         }
@@ -346,6 +347,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (_disposedFlag != 0)
         {
+            SetLastCommandFailure("disposed:SetOutPoint");
             Logger.Log("FLASHBACK_PLAYBACK_SET_OUT_SKIP reason=disposed");
             return PlaybackPosition;
         }
@@ -367,6 +369,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (_disposedFlag != 0)
         {
+            SetLastCommandFailure("disposed:ClearInOutPoints");
             Logger.Log("FLASHBACK_PLAYBACK_CLEAR_INOUT_SKIP reason=disposed");
             return;
         }

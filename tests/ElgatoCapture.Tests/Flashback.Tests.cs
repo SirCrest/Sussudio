@@ -1281,8 +1281,11 @@ static partial class Program
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SET_IN_SKIP reason=disposed");
+        AssertContains(sourceText, "SetLastCommandFailure(\"disposed:SetInPoint\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SET_OUT_SKIP reason=disposed");
+        AssertContains(sourceText, "SetLastCommandFailure(\"disposed:SetOutPoint\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_CLEAR_INOUT_SKIP reason=disposed");
+        AssertContains(sourceText, "SetLastCommandFailure(\"disposed:ClearInOutPoints\");");
 
         return Task.CompletedTask;
     }
