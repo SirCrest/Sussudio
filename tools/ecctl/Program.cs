@@ -53,7 +53,7 @@ internal static class Program
         Console.WriteLine("  timeline [--max N] [--json]");
         Console.WriteLine("  memory [--json]");
         Console.WriteLine("  presentmon [--seconds N] [--pid PID|--process NAME] [--swapchain HEX] [--app-present-id N] [--app-source-seq N] [--app-present-utc-ms N] [--capture-start-utc-ms N] [--presentmon PATH] [--output PATH] [--keep-csv] [--json]");
-        Console.WriteLine("  diagnostic-session [--scenario observe|preview-only|recording-only|flashback|flashback-stress|flashback-scrub-stress|flashback-restart-cycle|flashback-export-playback|flashback-lifecycle|flashback-export-concurrent|flashback-recording|flashback-export-rejected|combined] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
+        Console.WriteLine("  diagnostic-session [--scenario observe|preview-only|recording-only|flashback|flashback-stress|flashback-scrub-stress|flashback-restart-cycle|flashback-export-playback|flashback-lifecycle|flashback-export-concurrent|flashback-disable-during-export|flashback-recording|flashback-export-rejected|combined] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
         Console.WriteLine();
         Console.WriteLine("Control:");
         Console.WriteLine("  preview start|stop");

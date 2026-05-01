@@ -101,6 +101,7 @@ public static class DiagnosticSessionRunner
         var runFlashbackExportPlayback = scenario == "flashback-export-playback";
         var runFlashbackLifecycle = scenario == "flashback-lifecycle";
         var runFlashbackExportConcurrent = scenario == "flashback-export-concurrent";
+        var runFlashbackDisableDuringExport = scenario == "flashback-disable-during-export";
         var runFlashbackRecording = scenario == "flashback-recording";
         var runFlashbackExportRejected = scenario == "flashback-export-rejected";
         using var commandSendGate = new SemaphoreSlim(1, 1);
@@ -240,6 +241,18 @@ public static class DiagnosticSessionRunner
                 actions.Add("flashback concurrent export started");
             }
 
+            Task? flashbackDisableDuringExportTask = null;
+            if (runFlashbackDisableDuringExport)
+            {
+                flashbackDisableDuringExportTask = RunFlashbackDisableDuringExportAsync(
+                    outputDirectory,
+                    actions,
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken);
+                actions.Add("flashback disable during export started");
+            }
+
             await SampleLoopAsync(
                     durationSeconds,
                     sampleIntervalMs,
@@ -276,6 +289,11 @@ public static class DiagnosticSessionRunner
             if (flashbackExportConcurrentTask is not null)
             {
                 await flashbackExportConcurrentTask.ConfigureAwait(false);
+            }
+
+            if (flashbackDisableDuringExportTask is not null)
+            {
+                await flashbackDisableDuringExportTask.ConfigureAwait(false);
             }
 
             if (runFlashbackExportRejected)
@@ -393,7 +411,7 @@ public static class DiagnosticSessionRunner
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackExportPlayback || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0),
+                      (!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackExportPlayback || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -761,6 +779,166 @@ public static class DiagnosticSessionRunner
         }
 
         actions.Add("flashback concurrent exports verified");
+    }
+
+    private static async Task RunFlashbackDisableDuringExportAsync(
+        string outputDirectory,
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        {
+            warnings.Add("flashback disable during export: Flashback buffer did not become export-ready within 30s");
+            return;
+        }
+
+        var exportPath = Path.Combine(outputDirectory, "flashback-disable-during-export.mp4");
+        var exportTask = sendCommandAsync(
+            "FlashbackExport",
+            new Dictionary<string, object?> { ["seconds"] = 3, ["outputPath"] = exportPath },
+            60_000);
+
+        await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+        var disableTask = sendCommandAsync(
+            "SetFlashbackEnabled",
+            new Dictionary<string, object?> { ["enabled"] = false },
+            305_000);
+        actions.Add("flashback disable/export requests issued");
+
+        var exportResponse = await exportTask.ConfigureAwait(false);
+        var disableResponse = await disableTask.ConfigureAwait(false);
+        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
+        {
+            warnings.Add(
+                $"flashback disable during export: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
+        }
+
+        if (!AutomationSnapshotFormatter.IsSuccess(disableResponse))
+        {
+            warnings.Add(
+                $"flashback disable during export: disable failed - {AutomationSnapshotFormatter.Get(disableResponse, "Message", "unknown error")}");
+        }
+
+        if (AutomationSnapshotFormatter.IsSuccess(exportResponse))
+        {
+            var verifyResponse = await sendCommandAsync(
+                    "VerifyFile",
+                    new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                    60_000)
+                .ConfigureAwait(false);
+            if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
+            {
+                warnings.Add(
+                    $"flashback disable during export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
+            }
+        }
+
+        if (AutomationSnapshotFormatter.IsSuccess(disableResponse))
+        {
+            var inactiveSnapshot = await WaitForFlashbackActiveAsync(
+                    sendCommandAsync,
+                    expectedActive: false,
+                    timeout: TimeSpan.FromSeconds(20),
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (inactiveSnapshot?.ValueKind != JsonValueKind.Object)
+            {
+                warnings.Add("flashback disable during export: Flashback did not report inactive after disable");
+            }
+            else
+            {
+                if (GetBool(inactiveSnapshot.Value, "FlashbackPlaybackThreadAlive"))
+                {
+                    warnings.Add("flashback disable during export: playback worker still alive after disable");
+                }
+
+                if (GetInt(inactiveSnapshot.Value, "FlashbackPlaybackPendingCommands") > 0)
+                {
+                    warnings.Add(
+                        "flashback disable during export: pending playback commands remained after disable " +
+                        $"pending={GetInt(inactiveSnapshot.Value, "FlashbackPlaybackPendingCommands")}");
+                }
+
+                actions.Add("flashback disable during export verified");
+            }
+        }
+
+        var enableResponse = await SendCommandWithConnectRetryAsync(
+                sendCommandAsync,
+                "SetFlashbackEnabled",
+                new Dictionary<string, object?> { ["enabled"] = true },
+                305_000,
+                TimeSpan.FromSeconds(30),
+                cancellationToken)
+            .ConfigureAwait(false);
+        actions.Add("flashback re-enabled after disable/export");
+        if (enableResponse is null || !AutomationSnapshotFormatter.IsSuccess(enableResponse.Value))
+        {
+            var message = enableResponse is null
+                ? "no response"
+                : AutomationSnapshotFormatter.Get(enableResponse.Value, "Message", "unknown error");
+            warnings.Add(
+                $"flashback disable during export: re-enable failed - {message}");
+            return;
+        }
+
+        var activeSnapshot = await WaitForFlashbackActiveAsync(
+                sendCommandAsync,
+                expectedActive: true,
+                timeout: TimeSpan.FromSeconds(30),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (activeSnapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add("flashback disable during export: Flashback did not report active after re-enable");
+        }
+    }
+
+    private static async Task<JsonElement?> SendCommandWithConnectRetryAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        string command,
+        Dictionary<string, object?>? payload,
+        int? responseTimeoutMs,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.GetTimestamp();
+        AutomationPipeConnectException? lastConnectException = null;
+        while (Stopwatch.GetElapsedTime(started) < timeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            try
+            {
+                return (await sendCommandAsync(command, payload, responseTimeoutMs).ConfigureAwait(false)).Clone();
+            }
+            catch (AutomationPipeConnectException ex)
+            {
+                lastConnectException = ex;
+                await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
+        if (lastConnectException is not null)
+        {
+            return BuildLocalFailureResponse(command, lastConnectException.Message);
+        }
+
+        return BuildLocalFailureResponse(command, "command was not attempted before retry timeout elapsed");
+    }
+
+    private static JsonElement BuildLocalFailureResponse(string command, string message)
+    {
+        using var document = JsonDocument.Parse(
+            JsonSerializer.Serialize(new Dictionary<string, object?>
+            {
+                ["Success"] = false,
+                ["Status"] = "failed",
+                ["CommandLifecycle"] = "failed",
+                ["Message"] = $"{command}: {message}"
+            }));
+        return document.RootElement.Clone();
     }
 
     private static async Task RunFlashbackScrubStressAsync(
@@ -1424,18 +1602,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "flashback-export-rejected" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-recording" or "flashback-export-rejected" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-recording" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
         => scenario is "recording-only" or "flashback-recording" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "combined";
+        => scenario is "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-recording" or "combined";
 
 }
