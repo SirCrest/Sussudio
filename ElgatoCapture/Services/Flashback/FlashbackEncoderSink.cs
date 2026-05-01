@@ -987,7 +987,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
             catch (Exception ex)
             {
-                _encodingFailure = ex;
+                _encodingFailure ??= ex;
             }
         }
 

@@ -1397,6 +1397,7 @@ static partial class Program
         AssertContains(sourceText, "Interlocked.Exchange(ref queueDepth, 0);");
         AssertContains(sourceText, "var timeoutFailure = new TimeoutException(\"Flashback encode drain timed out while stopping.\");");
         AssertContains(sourceText, "_encodingFailure ??= timeoutFailure;");
+        AssertContains(sourceText, "_encodingFailure ??= ex;");
         AssertContains(sourceText, "CancelEncodingCts(\"dispose\");");
         AssertContains(sourceText, "CancelEncodingCts(\"stop_timeout\");");
         AssertContains(sourceText, "private void CancelEncodingCts(string operation)");
