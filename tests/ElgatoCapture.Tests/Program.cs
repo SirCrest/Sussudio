@@ -2750,8 +2750,14 @@ static partial class Program
         resumeMethod.Invoke(manager, null);
         AssertEqual(false, GetBoolProperty(manager, "EvictionPaused"), "After unbalanced resume");
 
-        var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "ElgatoCapture", "Services", "Flashback", "FlashbackBufferManager.cs"));
+        var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "ElgatoCapture", "Services", "Flashback", "FlashbackBufferManager.cs"))
+            .Replace("\r\n", "\n");
         AssertContains(source, "FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED");
+        AssertContains(source, "var unbalancedEndPts = ClampEndPtsToStart(_recordingStartPts, _recordingEndPts);");
+        AssertContains(source, "_recordingEndPts = ClampEndPtsToStart(\n                    _recordingStartPts,\n                    TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks)));");
+        AssertContains(source, "var rangeSeconds = TimeSpan.FromTicks(NonNegativeDeltaTicks(_recordingEndPts.Ticks, _recordingStartPts.Ticks)).TotalSeconds;");
+        AssertContains(source, "private static TimeSpan ClampEndPtsToStart(TimeSpan startPts, TimeSpan endPts)");
+        AssertDoesNotContain(source, "range_s={(_recordingEndPts - _recordingStartPts).TotalSeconds:F1}");
 
         return Task.CompletedTask;
     }

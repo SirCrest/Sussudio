@@ -290,8 +290,9 @@ internal sealed class FlashbackBufferManager : IDisposable
                     Interlocked.Exchange(ref _evictionPauseCount, 0);
                 }
 
-                Logger.Log($"FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED count={currentCount} start_pts_ms={(long)_recordingStartPts.TotalMilliseconds} end_pts_ms={(long)_recordingEndPts.TotalMilliseconds}");
-                return (_recordingStartPts, _recordingEndPts);
+                var unbalancedEndPts = ClampEndPtsToStart(_recordingStartPts, _recordingEndPts);
+                Logger.Log($"FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED count={currentCount} start_pts_ms={(long)_recordingStartPts.TotalMilliseconds} end_pts_ms={(long)unbalancedEndPts.TotalMilliseconds}");
+                return (_recordingStartPts, unbalancedEndPts);
             }
 
             var newCount = Interlocked.Decrement(ref _evictionPauseCount);
@@ -300,9 +301,12 @@ internal sealed class FlashbackBufferManager : IDisposable
             // not overwrite the end PTS — the outermost resume captures the true range.
             if (newCount == 0)
             {
-                _recordingEndPts = TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks));
+                _recordingEndPts = ClampEndPtsToStart(
+                    _recordingStartPts,
+                    TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks)));
             }
-            Logger.Log($"FLASHBACK_BUFFER_EVICTION_RESUMED count={Volatile.Read(ref _evictionPauseCount)} start_pts_ms={(long)_recordingStartPts.TotalMilliseconds} end_pts_ms={(long)_recordingEndPts.TotalMilliseconds} range_s={(_recordingEndPts - _recordingStartPts).TotalSeconds:F1}");
+            var rangeSeconds = TimeSpan.FromTicks(NonNegativeDeltaTicks(_recordingEndPts.Ticks, _recordingStartPts.Ticks)).TotalSeconds;
+            Logger.Log($"FLASHBACK_BUFFER_EVICTION_RESUMED count={Volatile.Read(ref _evictionPauseCount)} start_pts_ms={(long)_recordingStartPts.TotalMilliseconds} end_pts_ms={(long)_recordingEndPts.TotalMilliseconds} range_s={rangeSeconds:F1}");
             return (_recordingStartPts, _recordingEndPts);
         }
     }
@@ -1254,6 +1258,9 @@ internal sealed class FlashbackBufferManager : IDisposable
 
         return latestTicks - startTicks;
     }
+
+    private static TimeSpan ClampEndPtsToStart(TimeSpan startPts, TimeSpan endPts)
+        => endPts < startPts ? startPts : endPts;
 
     private static long ToNonNegativeLongSaturated(double value)
     {
