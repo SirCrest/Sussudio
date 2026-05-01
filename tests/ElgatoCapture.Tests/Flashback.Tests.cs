@@ -28,6 +28,15 @@ static partial class Program
         // Linear scaling: 5 min = 5 × 1 min
         AssertEqual(maxBytes, oneMinBytes * 5, "MaxDiskBytes linear scaling");
 
+        SetPropertyBackingField(options, "BufferDuration", TimeSpan.Zero);
+        AssertEqual(0L, (long)GetPropertyValue(options, "MaxDiskBytes")!, "MaxDiskBytes for zero duration");
+
+        SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromTicks(-1));
+        AssertEqual(0L, (long)GetPropertyValue(options, "MaxDiskBytes")!, "MaxDiskBytes for negative duration");
+
+        SetPropertyBackingField(options, "BufferDuration", TimeSpan.MaxValue);
+        AssertEqual(long.MaxValue, (long)GetPropertyValue(options, "MaxDiskBytes")!, "MaxDiskBytes saturates huge duration");
+
         return Task.CompletedTask;
     }
 

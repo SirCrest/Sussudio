@@ -1024,7 +1024,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         // Advance valid start if buffer exceeds max duration (skip while recording).
         if (!(Volatile.Read(ref _evictionPauseCount) > 0))
         {
-            var maxTicks = _options.BufferDuration.Ticks;
+            var maxTicks = Math.Max(0, _options.BufferDuration.Ticks);
             var startTicks = Interlocked.Read(ref _validStartPtsTicks);
             var duration = ptsTicks - startTicks;
             if (duration > maxTicks)
@@ -1036,7 +1036,8 @@ internal sealed class FlashbackBufferManager : IDisposable
                     if (!(Volatile.Read(ref _evictionPauseCount) > 0))
                     {
                         startTicks = Interlocked.Read(ref _validStartPtsTicks);
-                        Interlocked.CompareExchange(ref _validStartPtsTicks, ptsTicks - maxTicks, startTicks);
+                        var newStartTicks = Math.Max(0, ptsTicks - maxTicks);
+                        Interlocked.CompareExchange(ref _validStartPtsTicks, newStartTicks, startTicks);
 
                         // Only run segment eviction if there are segments that might be evictable.
                         // This avoids taking the eviction path on every frame at 120fps.

@@ -20,7 +20,20 @@ internal sealed record FlashbackBufferOptions
     /// Safety cap derived from BufferDuration. Not user-configurable — just a guardrail
     /// against bugs in PTS-based eviction.
     /// </summary>
-    public long MaxDiskBytes => (long)(BufferDuration.TotalSeconds * SafetyBytesPerSecond);
+    public long MaxDiskBytes
+    {
+        get
+        {
+            if (BufferDuration <= TimeSpan.Zero)
+                return 0;
+
+            var maxSeconds = long.MaxValue / (double)SafetyBytesPerSecond;
+            if (BufferDuration.TotalSeconds >= maxSeconds)
+                return long.MaxValue;
+
+            return (long)(BufferDuration.TotalSeconds * SafetyBytesPerSecond);
+        }
+    }
 }
 
 internal sealed record FlashbackSessionContext

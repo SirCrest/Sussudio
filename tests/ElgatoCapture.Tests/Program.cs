@@ -436,6 +436,9 @@ static partial class Program
                 "FlashbackBufferManager segment diagnostics clamp active counters",
                 FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters),
             await RunCheckAsync(
+                "FlashbackBufferManager latest PTS clamps invalid buffer duration",
+                FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration),
+            await RunCheckAsync(
                 "FlashbackBufferManager segment rotation keeps total bytes written monotonic",
                 FlashbackBufferManager_SegmentRotationKeepsTotalBytesWrittenMonotonic),
             await RunCheckAsync(
@@ -2417,6 +2420,18 @@ static partial class Program
         AssertContains(source, "_completedSegmentBytes = Math.Max(0, _completedSegmentBytes - freedBytes);");
         AssertContains(source, "_totalDiskBytes = Math.Max(0, _totalDiskBytes - freedBytes);");
         AssertContains(source, "FLASHBACK_BUFFER_DELETE_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration()
+    {
+        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(source, "var maxTicks = Math.Max(0, _options.BufferDuration.Ticks);");
+        AssertContains(source, "var newStartTicks = Math.Max(0, ptsTicks - maxTicks);");
+        AssertContains(source, "Interlocked.CompareExchange(ref _validStartPtsTicks, newStartTicks, startTicks);");
 
         return Task.CompletedTask;
     }
