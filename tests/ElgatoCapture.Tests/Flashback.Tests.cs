@@ -1643,6 +1643,11 @@ static partial class Program
         AssertContains(sourceText, "DisposeEncoderBestEffort(\"encoding_loop_fatal\");");
         AssertContains(sourceText, "FLASHBACK_SINK_CTS_DISPOSE_WARN");
         AssertContains(sourceText, "FLASHBACK_SINK_WORK_SIGNAL_DISPOSE_WARN");
+        AssertContains(sourceText, "private void SignalWork(string operation)");
+        AssertContains(sourceText, "FLASHBACK_SINK_WORK_SIGNAL_SKIPPED");
+        AssertContains(sourceText, "SignalWork(\"force_rotate_idle\");");
+        AssertContains(sourceText, "SignalWork(\"force_rotate_request\");");
+        AssertEqual(1, sourceText.Split("_workAvailable.Set();", StringSplitOptions.None).Length - 1, "All work-signal wakeups go through SignalWork");
         AssertContains(sourceText, "FLASHBACK_SINK_ENCODER_DISPOSE_WARN");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_SINK_BUFFER_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_RECORDING_FAIL type={failure.GetType().Name} error='{failure.Message}'\");");

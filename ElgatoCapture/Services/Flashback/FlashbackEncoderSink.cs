@@ -415,7 +415,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 return false;
             }
 
-            _workAvailable.Set();
+            SignalWork("force_rotate_idle");
             if (WaitForCancellation(TimeSpan.FromMilliseconds(10)))
             {
                 return false;
@@ -1614,7 +1614,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             supersededTcs.TrySetResult(Array.Empty<string>());
         }
 
-        _workAvailable.Set();
+        SignalWork("force_rotate_request");
 
         // AV1 encoding is significantly slower than H.264/HEVC — drain can take
         // much longer at 4K@120fps with a deep queue. Use a longer timeout for AV1.
@@ -1728,12 +1728,19 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private void CompleteWriter<TPacket>(Channel<TPacket>? channel)
     {
         channel?.Writer.TryComplete();
-        SignalWork();
+        SignalWork("complete_writer");
     }
 
-    private void SignalWork()
+    private void SignalWork(string operation)
     {
-        _workAvailable.Set();
+        try
+        {
+            _workAvailable.Set();
+        }
+        catch (ObjectDisposedException)
+        {
+            Logger.Log($"FLASHBACK_SINK_WORK_SIGNAL_SKIPPED op={operation} reason=disposed");
+        }
     }
 
     private static void UpdateMaxDepth(ref int target, int depth)
@@ -1946,7 +1953,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
                     TrackQueuedVideoTick(packet.EnqueueTick);
                     Interlocked.Increment(ref _videoFramesEnqueued);
-                    SignalWork();
+                    SignalWork("video_enqueue");
                     return VideoEnqueueResult.Accepted;
                 }
 
@@ -1979,7 +1986,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 return VideoEnqueueResult.Overloaded;
             }
 
-            SignalWork();
+            SignalWork("video_backpressure_retry");
             if (WaitForBackpressureRetryCancellation())
             {
                 continue;
@@ -2008,7 +2015,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 {
                     RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
                     Interlocked.Increment(ref _gpuFramesEnqueued);
-                    SignalWork();
+                    SignalWork("gpu_enqueue");
                     return VideoEnqueueResult.Accepted;
                 }
 
@@ -2040,7 +2047,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 return VideoEnqueueResult.Overloaded;
             }
 
-            SignalWork();
+            SignalWork("gpu_backpressure_retry");
             if (WaitForBackpressureRetryCancellation())
             {
                 continue;
@@ -2237,7 +2244,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         if (TryWriteAudioPacket(queue, packet, ref queueDepth, "audio"))
         {
-            SignalWork();
+            SignalWork("audio_enqueue");
             return true;
         }
 
@@ -2257,7 +2264,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             ReturnBuffer(evictedPacket.Buffer);
             if (TryWriteAudioPacket(queue, packet, ref queueDepth, "audio_after_evict"))
             {
-                SignalWork();
+                SignalWork("audio_after_evict");
                 return true;
             }
         }
