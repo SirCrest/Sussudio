@@ -698,10 +698,18 @@ static partial class Program
         AssertContains(source, "FlashbackExportPercent");
         AssertContains(source, "FlashbackExportThroughputBytesPerSec");
         AssertContains(source, "FlashbackExportLastProgressAgeMs");
+        AssertContains(source, "MjpegPreviewJitterLatencyP95Ms");
+        AssertContains(source, "MjpegPreviewJitterDeadlineDropCount");
+        AssertContains(source, "MjpegPreviewJitterLastDropReason");
+        AssertContains(source, "JitD  | JitLat | JitDrop | JitUF | JitWhy");
         AssertContains(source, "FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail");
         AssertContains(source, "Cln | ExStat");
         AssertContains(source, "ExStat  | ExKind | Ex%");
+        AssertContains(source, "FormatJitterDepthCell");
         AssertContains(source, "FormatExportFailureKind");
+        AssertContains(source, "Jitter Depth:");
+        AssertContains(source, "Jitter Latency:");
+        AssertContains(source, "Jitter Drops:");
         AssertContains(source, "D3D Input P99:");
         AssertContains(source, "D3D Render P99:");
         AssertContains(source, "D3D Present P99:");

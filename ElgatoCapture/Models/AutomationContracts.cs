@@ -901,6 +901,16 @@ public sealed class PerformanceTimelineEntry
     public double PreviewCadenceMaxMs { get; init; }
     public double PreviewCadenceOnePercentLowFps { get; init; }
     public double PreviewCadenceSlowFramePercent { get; init; }
+    public bool MjpegPreviewJitterEnabled { get; init; }
+    public int MjpegPreviewJitterTargetDepth { get; init; }
+    public int MjpegPreviewJitterMaxDepth { get; init; }
+    public int MjpegPreviewJitterQueueDepth { get; init; }
+    public long MjpegPreviewJitterTotalDropped { get; init; }
+    public long MjpegPreviewJitterDeadlineDropCount { get; init; }
+    public long MjpegPreviewJitterUnderflowCount { get; init; }
+    public double MjpegPreviewJitterLatencyP95Ms { get; init; }
+    public double MjpegPreviewJitterLatencyMaxMs { get; init; }
+    public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;
     public int PreviewD3DPendingFrameCount { get; init; }
     public double PreviewD3DPresentCallP95Ms { get; init; }
     public double PreviewD3DTotalFrameCpuP95Ms { get; init; }

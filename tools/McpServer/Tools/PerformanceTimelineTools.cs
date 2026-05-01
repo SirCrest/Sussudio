@@ -51,6 +51,16 @@ public static class PerformanceTimelineTools
                 PreviewMaxMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceMaxMs"),
                 PreviewOnePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceOnePercentLowFps"),
                 PreviewSlowPct = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceSlowFramePercent"),
+                MjpegPreviewJitterEnabled = AutomationSnapshotFormatter.GetBool(item, "MjpegPreviewJitterEnabled"),
+                MjpegPreviewJitterTargetDepth = AutomationSnapshotFormatter.GetInt(item, "MjpegPreviewJitterTargetDepth"),
+                MjpegPreviewJitterMaxDepth = AutomationSnapshotFormatter.GetInt(item, "MjpegPreviewJitterMaxDepth"),
+                MjpegPreviewJitterQueueDepth = AutomationSnapshotFormatter.GetInt(item, "MjpegPreviewJitterQueueDepth"),
+                MjpegPreviewJitterTotalDropped = AutomationSnapshotFormatter.GetLong(item, "MjpegPreviewJitterTotalDropped"),
+                MjpegPreviewJitterDeadlineDropCount = AutomationSnapshotFormatter.GetLong(item, "MjpegPreviewJitterDeadlineDropCount"),
+                MjpegPreviewJitterUnderflowCount = AutomationSnapshotFormatter.GetLong(item, "MjpegPreviewJitterUnderflowCount"),
+                MjpegPreviewJitterLatencyP95Ms = AutomationSnapshotFormatter.GetDouble(item, "MjpegPreviewJitterLatencyP95Ms"),
+                MjpegPreviewJitterLatencyMaxMs = AutomationSnapshotFormatter.GetDouble(item, "MjpegPreviewJitterLatencyMaxMs"),
+                MjpegPreviewJitterLastDropReason = AutomationSnapshotFormatter.Get(item, "MjpegPreviewJitterLastDropReason"),
                 PreviewD3DPending = AutomationSnapshotFormatter.GetInt(item, "PreviewD3DPendingFrameCount"),
                 PreviewD3DPresentP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DPresentCallP95Ms"),
                 PreviewD3DTotalP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DTotalFrameCpuP95Ms"),
@@ -109,14 +119,14 @@ public static class PerformanceTimelineTools
         var builder = new StringBuilder();
         builder.AppendLine($"Performance Timeline ({entries.Count} samples)");
         builder.AppendLine();
-        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | D3DQ | D3DPrs | D3DTot | InP99 | RsP99 | PrP99 | TotP99 | D3DSch | D3DMiss | D3DDrop      | FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail | Cln | ExStat  | ExKind | Ex%   | ExMBps | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
-        builder.AppendLine(new string('-', 343));
+        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | JitD  | JitLat | JitDrop | JitUF | JitWhy       | D3DQ | D3DPrs | D3DTot | InP99 | RsP99 | PrP99 | TotP99 | D3DSch | D3DMiss | D3DDrop      | FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail | Cln | ExStat  | ExKind | Ex%   | ExMBps | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
+        builder.AppendLine(new string('-', 393));
 
         foreach (var e in entries)
         {
             builder.AppendLine(string.Format(
                 CultureInfo.InvariantCulture,
-                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,4} | {9,6:F1} | {10,6:F1} | {11,5:F1} | {12,5:F1} | {13,5:F1} | {14,6:F1} | {15,6:F1} | {16,7} | {17,-12} | {18,-7} | {19,5:F1} | {20,5:F1} | {21,5:F1} | {22,5} | {23,6} | {24,-3} | {25,-7} | {26,-6} | {27,5:F1} | {28,6:F1} | {29,4} | {30,7} | {31,5} | {32,6:F1} | {33,6:F1} | {34,4} | {35,4} | {36,4} | {37,4:F1} | {38,4} | {39,4}",
+                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,-5} | {9,6:F1} | {10,7} | {11,5} | {12,-12} | {13,4} | {14,6:F1} | {15,6:F1} | {16,5:F1} | {17,5:F1} | {18,5:F1} | {19,6:F1} | {20,6:F1} | {21,7} | {22,-12} | {23,-7} | {24,5:F1} | {25,5:F1} | {26,5:F1} | {27,5} | {28,6} | {29,-3} | {30,-7} | {31,-6} | {32,5:F1} | {33,6:F1} | {34,4} | {35,7} | {36,5} | {37,6:F1} | {38,6:F1} | {39,4} | {40,4} | {41,4} | {42,4:F1} | {43,4} | {44,4}",
                 e.Timestamp,
                 e.CaptureAvgMs,
                 e.CaptureP95Ms,
@@ -125,6 +135,11 @@ public static class PerformanceTimelineTools
                 e.PreviewAvgMs,
                 e.PreviewP95Ms,
                 e.PreviewSlowPct,
+                FormatJitterDepthCell(e),
+                e.MjpegPreviewJitterLatencyP95Ms,
+                e.MjpegPreviewJitterTotalDropped,
+                e.MjpegPreviewJitterUnderflowCount,
+                CompactCell(e.MjpegPreviewJitterLastDropReason, 12),
                 e.PreviewD3DPending,
                 e.PreviewD3DPresentP95Ms,
                 e.PreviewD3DTotalP95Ms,
@@ -174,6 +189,9 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Preview Max:    {first.PreviewMaxMs:F1}ms -> {last.PreviewMaxMs:F1}ms (delta: {last.PreviewMaxMs - first.PreviewMaxMs:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview 1% Low: {first.PreviewOnePercentLowFps:F1}fps -> {last.PreviewOnePercentLowFps:F1}fps");
             builder.AppendLine($"Preview Slow%:  {first.PreviewSlowPct:F1}% -> {last.PreviewSlowPct:F1}% (delta: {last.PreviewSlowPct - first.PreviewSlowPct:+0.0;-0.0;0.0}%)");
+            builder.AppendLine($"Jitter Depth:   {FormatJitterDepthCell(first)} -> {FormatJitterDepthCell(last)} enabled={last.MjpegPreviewJitterEnabled}");
+            builder.AppendLine($"Jitter Latency: P95 {first.MjpegPreviewJitterLatencyP95Ms:F1}ms -> {last.MjpegPreviewJitterLatencyP95Ms:F1}ms, max latest={last.MjpegPreviewJitterLatencyMaxMs:F1}ms");
+            builder.AppendLine($"Jitter Drops:   total {first.MjpegPreviewJitterTotalDropped} -> {last.MjpegPreviewJitterTotalDropped}, deadline {first.MjpegPreviewJitterDeadlineDropCount} -> {last.MjpegPreviewJitterDeadlineDropCount}, underflows {first.MjpegPreviewJitterUnderflowCount} -> {last.MjpegPreviewJitterUnderflowCount}, lastReason={FormatOptional(last.MjpegPreviewJitterLastDropReason)}");
             builder.AppendLine($"D3D Present P95:{first.PreviewD3DPresentP95Ms:F1}ms -> {last.PreviewD3DPresentP95Ms:F1}ms (delta: {last.PreviewD3DPresentP95Ms - first.PreviewD3DPresentP95Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"D3D Total P95:  {first.PreviewD3DTotalP95Ms:F1}ms -> {last.PreviewD3DTotalP95Ms:F1}ms (delta: {last.PreviewD3DTotalP95Ms - first.PreviewD3DTotalP95Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"D3D Input P99:  {first.PreviewD3DInputUploadP99Ms:F1}ms -> {last.PreviewD3DInputUploadP99Ms:F1}ms (delta: {last.PreviewD3DInputUploadP99Ms - first.PreviewD3DInputUploadP99Ms:+0.0;-0.0;0.0}ms)");
@@ -230,6 +248,11 @@ public static class PerformanceTimelineTools
     private static string FormatCleanupCell(bool fatalCleanup, bool flashbackCleanup)
         => fatalCleanup ? "F" : flashbackCleanup ? "B" : "-";
 
+    private static string FormatJitterDepthCell(TimelineRow row)
+        => row.MjpegPreviewJitterEnabled
+            ? $"{row.MjpegPreviewJitterQueueDepth}/{row.MjpegPreviewJitterTargetDepth}/{row.MjpegPreviewJitterMaxDepth}"
+            : "-";
+
     private static string FormatExportFailureKind(string failureKind)
         => CompactCell(string.IsNullOrWhiteSpace(failureKind) ? "-" : failureKind, 6);
 
@@ -264,6 +287,16 @@ public static class PerformanceTimelineTools
         public double PreviewMaxMs { get; init; }
         public double PreviewOnePercentLowFps { get; init; }
         public double PreviewSlowPct { get; init; }
+        public bool MjpegPreviewJitterEnabled { get; init; }
+        public int MjpegPreviewJitterTargetDepth { get; init; }
+        public int MjpegPreviewJitterMaxDepth { get; init; }
+        public int MjpegPreviewJitterQueueDepth { get; init; }
+        public long MjpegPreviewJitterTotalDropped { get; init; }
+        public long MjpegPreviewJitterDeadlineDropCount { get; init; }
+        public long MjpegPreviewJitterUnderflowCount { get; init; }
+        public double MjpegPreviewJitterLatencyP95Ms { get; init; }
+        public double MjpegPreviewJitterLatencyMaxMs { get; init; }
+        public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;
         public int PreviewD3DPending { get; init; }
         public double PreviewD3DPresentP95Ms { get; init; }
         public double PreviewD3DTotalP95Ms { get; init; }
