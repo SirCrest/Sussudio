@@ -480,6 +480,15 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 var (startPts, _) = _bufferManager.ResumeEviction();
                 LastRecordingStartPts = startPts;
+                if (LastRecordingEndPts < LastRecordingStartPts)
+                {
+                    LastRecordingEndPts = _bufferManager.LatestPts;
+                    if (LastRecordingEndPts < LastRecordingStartPts)
+                    {
+                        LastRecordingEndPts = LastRecordingStartPts;
+                    }
+                }
+
                 Logger.Log(
                     $"FLASHBACK_RECORDING_READY output='{_recordingOutputPath}' " +
                     $"start_pts_ms={(long)LastRecordingStartPts.TotalMilliseconds} " +

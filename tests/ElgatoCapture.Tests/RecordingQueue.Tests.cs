@@ -99,6 +99,7 @@ static partial class Program
         AssertContains(flashbackSource, "var wasRecording = Interlocked.Exchange(ref _recordingActive, 0) != 0");
         AssertContains(flashbackSource, "finally");
         AssertContains(flashbackSource, "_bufferManager.ResumeEviction()");
+        AssertContains(flashbackSource, "if (LastRecordingEndPts < LastRecordingStartPts)\n                {\n                    LastRecordingEndPts = _bufferManager.LatestPts;\n                    if (LastRecordingEndPts < LastRecordingStartPts)\n                    {\n                        LastRecordingEndPts = LastRecordingStartPts;\n                    }\n                }");
         AssertContains(flashbackSource, "Cannot begin recording: flashback encoder is not running.");
         AssertContains(flashbackSource, "public int VideoQueueMaxDepth");
         AssertContains(flashbackSource, "public long VideoFramesSubmittedToEncoder");
