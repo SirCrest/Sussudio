@@ -1244,60 +1244,69 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     {
         var inputSamples = _audioFrame->nb_samples;
         var pts = DecodePtsToTimeSpan(_audioFrame->pts, _audioTimeBase);
-        if (inputSamples <= 0)
+        byte[]? result = null;
+        var returnResultToPool = true;
+
+        try
+        {
+            if (inputSamples <= 0)
+            {
+                return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
+            }
+
+            var maxOutputSamples = ffmpeg.swr_get_out_samples(_swrCtx, inputSamples);
+            if (maxOutputSamples < 0)
+            {
+                maxOutputSamples = ToBoundedAudioSampleCount((long)inputSamples * 2);
+            }
+
+            if (!TryCalculateAudioBufferBytes(maxOutputSamples, out var outputBytesNeeded))
+            {
+                Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN reason=invalid_output_size input_samples={inputSamples} max_output_samples={maxOutputSamples}");
+                return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
+            }
+
+            result = ArrayPool<byte>.Shared.Rent(outputBytesNeeded);
+
+            int outputSamplesProduced;
+            fixed (byte* outputPtr = result)
+            {
+                var outputPlanes = stackalloc byte*[1];
+                outputPlanes[0] = outputPtr;
+
+                outputSamplesProduced = ffmpeg.swr_convert(
+                    _swrCtx,
+                    outputPlanes, maxOutputSamples,
+                    _audioFrame->extended_data, inputSamples);
+            }
+
+            if (outputSamplesProduced <= 0)
+            {
+                return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
+            }
+
+            if (!TryCalculateAudioBufferBytes(outputSamplesProduced, out var validBytes) || validBytes > result.Length)
+            {
+                Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN reason=invalid_converted_size output_samples={outputSamplesProduced} buffer_bytes={result.Length}");
+                return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
+            }
+
+            returnResultToPool = false;
+            return new DecodedAudioChunk
+            {
+                Samples = result,
+                ValidLength = validBytes,
+                Pts = pts
+            };
+        }
+        finally
         {
             ffmpeg.av_frame_unref(_audioFrame);
-            return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
+            if (returnResultToPool && result is { Length: > 0 })
+            {
+                ArrayPool<byte>.Shared.Return(result);
+            }
         }
-
-        var maxOutputSamples = ffmpeg.swr_get_out_samples(_swrCtx, inputSamples);
-        if (maxOutputSamples < 0)
-        {
-            maxOutputSamples = ToBoundedAudioSampleCount((long)inputSamples * 2);
-        }
-
-        if (!TryCalculateAudioBufferBytes(maxOutputSamples, out var outputBytesNeeded))
-        {
-            Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN reason=invalid_output_size input_samples={inputSamples} max_output_samples={maxOutputSamples}");
-            ffmpeg.av_frame_unref(_audioFrame);
-            return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
-        }
-
-        var result = ArrayPool<byte>.Shared.Rent(outputBytesNeeded);
-
-        int outputSamplesProduced;
-        fixed (byte* outputPtr = result)
-        {
-            var outputPlanes = stackalloc byte*[1];
-            outputPlanes[0] = outputPtr;
-
-            outputSamplesProduced = ffmpeg.swr_convert(
-                _swrCtx,
-                outputPlanes, maxOutputSamples,
-                _audioFrame->extended_data, inputSamples);
-        }
-
-        ffmpeg.av_frame_unref(_audioFrame);
-
-        if (outputSamplesProduced <= 0)
-        {
-            ArrayPool<byte>.Shared.Return(result);
-            return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
-        }
-
-        if (!TryCalculateAudioBufferBytes(outputSamplesProduced, out var validBytes) || validBytes > result.Length)
-        {
-            Logger.Log($"FLASHBACK_DECODER_AUDIO_WARN reason=invalid_converted_size output_samples={outputSamplesProduced} buffer_bytes={result.Length}");
-            ArrayPool<byte>.Shared.Return(result);
-            return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };
-        }
-
-        return new DecodedAudioChunk
-        {
-            Samples = result,
-            ValidLength = validBytes,
-            Pts = pts
-        };
     }
 
     private static int ToBoundedAudioSampleCount(long sampleCount)

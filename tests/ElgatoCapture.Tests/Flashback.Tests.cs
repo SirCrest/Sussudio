@@ -2068,12 +2068,16 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private const int MaxDecodedAudioFrameBytes = 16 * 1024 * 1024;");
-        AssertContains(sourceText, "if (inputSamples <= 0)\n        {\n            ffmpeg.av_frame_unref(_audioFrame);");
+        AssertContains(sourceText, "byte[]? result = null;\n        var returnResultToPool = true;");
+        AssertContains(sourceText, "if (inputSamples <= 0)\n            {\n                return new DecodedAudioChunk { Samples = Array.Empty<byte>(), ValidLength = 0, Pts = pts };\n            }");
         AssertContains(sourceText, "maxOutputSamples = ToBoundedAudioSampleCount((long)inputSamples * 2);");
         AssertContains(sourceText, "if (!TryCalculateAudioBufferBytes(maxOutputSamples, out var outputBytesNeeded))");
         AssertContains(sourceText, "FLASHBACK_DECODER_AUDIO_WARN reason=invalid_output_size");
         AssertContains(sourceText, "if (!TryCalculateAudioBufferBytes(outputSamplesProduced, out var validBytes) || validBytes > result.Length)");
         AssertContains(sourceText, "FLASHBACK_DECODER_AUDIO_WARN reason=invalid_converted_size");
+        AssertContains(sourceText, "returnResultToPool = false;");
+        AssertContains(sourceText, "finally\n        {\n            ffmpeg.av_frame_unref(_audioFrame);\n            if (returnResultToPool && result is { Length: > 0 })");
+        AssertContains(sourceText, "ArrayPool<byte>.Shared.Return(result);");
         AssertContains(sourceText, "private static int ToBoundedAudioSampleCount(long sampleCount)");
         AssertContains(sourceText, "private static bool TryCalculateAudioBufferBytes(int sampleCount, out int bytes)");
         AssertContains(sourceText, "var calculated = (long)sampleCount * OutputAudioChannels * sizeof(float);");
