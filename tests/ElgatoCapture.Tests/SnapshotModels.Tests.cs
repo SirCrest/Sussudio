@@ -225,6 +225,7 @@ static partial class Program
                 new("EncoderFrameRate", typeof(double)),
                 new("FlashbackVideoQueueDepth", typeof(int)),
                 new("FlashbackAudioQueueDepth", typeof(int)),
+                new("FlashbackAudioQueueCapacity", typeof(int)),
                 NonNullString("FlashbackPlaybackState"),
                 new("FlashbackPlaybackPositionMs", typeof(long)),
                 NonNullString("FlashbackDecoderHwAccel"),

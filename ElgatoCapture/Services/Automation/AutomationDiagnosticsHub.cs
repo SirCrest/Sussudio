@@ -74,6 +74,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;
     private const long FlashbackRecordingBackpressureWarningMs = 100;
     private const double FlashbackRecordingQueueDepthWarningRatio = 0.75;
+    private const double FlashbackAudioQueueDepthWarningRatio = 0.90;
     private const long FlashbackRecordingQueueAgeWarningMs = 500;
 
     private readonly double _perfectionCaptureDropPercentThreshold;
@@ -1168,6 +1169,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             EncoderFrameRate = health.EncoderFrameRate,
             FlashbackVideoQueueDepth = health.FlashbackVideoQueueDepth,
             FlashbackAudioQueueDepth = health.FlashbackAudioQueueDepth,
+            FlashbackAudioQueueCapacity = health.FlashbackAudioQueueCapacity,
             FlashbackPlaybackState = health.FlashbackPlaybackState,
             FlashbackPlaybackPositionMs = health.FlashbackPlaybackPositionMs,
             FlashbackDecoderHwAccel = health.FlashbackDecoderHwAccel,
@@ -1515,6 +1517,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 snapshot.FlashbackVideoQueueDepth,
                 snapshot.FlashbackVideoQueueCapacity,
                 snapshot.FlashbackVideoQueueOldestFrameAgeMs);
+        var flashbackAudioQueueBacklog =
+            IsFlashbackAudioQueueBackedUp(
+                snapshot.FlashbackAudioQueueDepth,
+                snapshot.FlashbackAudioQueueCapacity);
         var flashbackRecordingRecentForceRotateGap =
             snapshot.FlashbackActive &&
             flashbackRecordingRecent.SequenceGaps > 0 &&
@@ -1672,7 +1678,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
              (flashbackRecordingRecent.SequenceGaps > 0 && !flashbackRecordingRecentForceRotateGap) ||
              flashbackRecordingRecent.GpuFramesDropped > 0 ||
              flashbackRecordingRecentBackpressure ||
-             flashbackRecordingQueueBacklog),
+             flashbackRecordingQueueBacklog ||
+             flashbackAudioQueueBacklog),
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Flashback,
             $"Flashback recording path degraded: recentDropped={flashbackRecordingRecent.DroppedFrames} recentEncoderDrops={flashbackRecordingRecent.EncoderDroppedFrames} " +
@@ -1681,6 +1688,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"totals=dropped:{snapshot.FlashbackDroppedFrames},encoderDrops:{snapshot.FlashbackVideoEncoderDroppedFrames},seqGaps:{snapshot.FlashbackVideoSequenceGaps},gpuOverloads:{snapshot.FlashbackGpuFramesDropped} " +
             $"forceRotate={snapshot.FlashbackForceRotateActive} requested={snapshot.FlashbackForceRotateRequested} draining={snapshot.FlashbackForceRotateDraining} " +
             $"queue={snapshot.FlashbackVideoQueueDepth}/{snapshot.FlashbackVideoQueueCapacity} maxQueue={snapshot.FlashbackVideoQueueMaxDepth} " +
+            $"audioQueue={snapshot.FlashbackAudioQueueDepth}/{snapshot.FlashbackAudioQueueCapacity} " +
             $"backpressure={snapshot.FlashbackVideoBackpressureWaitMs}ms/{snapshot.FlashbackVideoBackpressureEvents} last={snapshot.FlashbackVideoBackpressureLastWaitMs}ms max={snapshot.FlashbackVideoBackpressureMaxWaitMs}ms.",
             "Flashback recording path returned to healthy range.",
             throttleMs: 5000);
@@ -1855,6 +1863,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             queueDepth >= Math.Ceiling(queueCapacity * FlashbackRecordingQueueDepthWarningRatio) &&
             oldestFrameAgeMs >= FlashbackRecordingQueueAgeWarningMs;
 
+    private static bool IsFlashbackAudioQueueBackedUp(int queueDepth, int queueCapacity)
+        =>
+            queueCapacity > 0 &&
+            queueDepth >= Math.Ceiling(queueCapacity * FlashbackAudioQueueDepthWarningRatio);
+
     private static bool IsFlashbackForceRotateRejectReason(string? reason)
         =>
             string.Equals(reason, "force_rotate_draining", StringComparison.OrdinalIgnoreCase) ||
@@ -1934,6 +1947,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"dropped={health.FlashbackDroppedFrames} encoderDrops={health.FlashbackVideoEncoderDroppedFrames} seqGaps={health.FlashbackVideoSequenceGaps} " +
             $"queueRejects={health.FlashbackVideoQueueRejectedFrames} lastReject={health.FlashbackVideoQueueLastRejectReason ?? "None"} " +
             $"gpuOverloads={health.FlashbackGpuFramesDropped} forceRotate={health.FlashbackForceRotateActive} requested={health.FlashbackForceRotateRequested} draining={health.FlashbackForceRotateDraining} queue={health.FlashbackVideoQueueDepth}/{health.FlashbackVideoQueueCapacity} maxQueue={health.FlashbackVideoQueueMaxDepth} " +
+            $"audioQueue={health.FlashbackAudioQueueDepth}/{health.FlashbackAudioQueueCapacity} " +
             $"queueAgeMs={health.FlashbackVideoQueueOldestFrameAgeMs} backpressure={health.FlashbackVideoBackpressureWaitMs}ms/{health.FlashbackVideoBackpressureEvents} maxBackpressure={health.FlashbackVideoBackpressureMaxWaitMs}ms " +
             $"fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}";
         var exportFailureKind = string.IsNullOrWhiteSpace(health.FlashbackExportFailureKind)
@@ -1987,7 +2001,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
              IsFlashbackRecordingQueueBackedUp(
                  health.FlashbackVideoQueueDepth,
                  health.FlashbackVideoQueueCapacity,
-                 health.FlashbackVideoQueueOldestFrameAgeMs));
+                 health.FlashbackVideoQueueOldestFrameAgeMs) ||
+             IsFlashbackAudioQueueBackedUp(
+                 health.FlashbackAudioQueueDepth,
+                 health.FlashbackAudioQueueCapacity));
         var flashbackExportRotationGap =
             health.FlashbackActive &&
             health.FlashbackVideoSequenceGaps > 0 &&

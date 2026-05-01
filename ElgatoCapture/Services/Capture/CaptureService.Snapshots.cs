@@ -1403,6 +1403,7 @@ public partial class CaptureService
             EncoderFrameRate = fbSink?.EncoderFrameRate ?? 0,
             FlashbackVideoQueueDepth = fbSink?.VideoQueueCount ?? 0,
             FlashbackAudioQueueDepth = fbSink?.AudioQueueCount ?? 0,
+            FlashbackAudioQueueCapacity = fbSink?.AudioQueueCapacityPackets ?? 0,
             FlashbackPlaybackState = fbPlayback?.State.ToString() ?? "N/A",
             FlashbackPlaybackPositionMs = (long)(fbPlayback?.PlaybackPosition.TotalMilliseconds ?? 0),
             FlashbackDecoderHwAccel = fbPlayback?.DecoderHwAccel ?? "N/A",

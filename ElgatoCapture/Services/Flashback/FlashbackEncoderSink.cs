@@ -141,6 +141,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public int VideoQueueMaxDepth => Volatile.Read(ref _videoQueueMaxDepth);
 
     public int AudioQueueCount => Volatile.Read(ref _audioQueueDepth);
+    public int AudioQueueCapacityPackets => AudioQueueCapacity;
 
     public long VideoFramesEnqueuedCount => Interlocked.Read(ref _videoFramesEnqueued);
     public long VideoFramesSubmittedToEncoder => Interlocked.Read(ref _videoFramesSubmittedToEncoder);

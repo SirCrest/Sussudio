@@ -29,6 +29,7 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public double EncoderFrameRate { get; init; }
     public int FlashbackVideoQueueDepth { get; init; }
     public int FlashbackAudioQueueDepth { get; init; }
+    public int FlashbackAudioQueueCapacity { get; init; }
     public string FlashbackPlaybackState { get; init; } = "N/A";
     public long FlashbackPlaybackPositionMs { get; init; }
     public string FlashbackDecoderHwAccel { get; init; } = "N/A";

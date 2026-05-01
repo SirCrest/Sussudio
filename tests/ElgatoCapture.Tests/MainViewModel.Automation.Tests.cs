@@ -285,6 +285,7 @@ static partial class Program
         AssertContains(diagnosticsText, "private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;");
         AssertContains(diagnosticsText, "private const long FlashbackRecordingBackpressureWarningMs = 100;");
         AssertContains(diagnosticsText, "private const double FlashbackRecordingQueueDepthWarningRatio = 0.75;");
+        AssertContains(diagnosticsText, "private const double FlashbackAudioQueueDepthWarningRatio = 0.90;");
         AssertContains(diagnosticsText, "private const long FlashbackRecordingQueueAgeWarningMs = 500;");
         AssertContains(diagnosticsText, "\"flashback-temp-cache-pressure\"");
         AssertContains(diagnosticsText, "snapshot.FlashbackStartupCacheOverBudget");
@@ -301,7 +302,9 @@ static partial class Program
         AssertContains(diagnosticsText, "Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents)");
         AssertContains(diagnosticsText, "var flashbackRecordingRecent = UpdateFlashbackRecordingRecentCounters(snapshot, Stopwatch.GetTimestamp());");
         AssertContains(diagnosticsText, "var flashbackRecordingQueueBacklog =");
+        AssertContains(diagnosticsText, "var flashbackAudioQueueBacklog =");
         AssertContains(diagnosticsText, "IsFlashbackRecordingQueueBackedUp(");
+        AssertContains(diagnosticsText, "IsFlashbackAudioQueueBackedUp(");
         AssertContains(diagnosticsText, "flashbackRecordingRecentForceRotateGap");
         AssertContains(diagnosticsText, "IsFlashbackForceRotateRejectReason(snapshot.FlashbackVideoQueueLastRejectReason)");
         AssertContains(diagnosticsText, "flashbackRecordingRecent.SequenceGaps > 0");
@@ -309,6 +312,7 @@ static partial class Program
         AssertContains(diagnosticsText, "flashbackRecordingRecent.GpuFramesDropped > 0");
         AssertContains(diagnosticsText, "flashbackRecordingRecentBackpressure");
         AssertContains(diagnosticsText, "flashbackRecordingQueueBacklog");
+        AssertContains(diagnosticsText, "flashbackAudioQueueBacklog");
         AssertContains(diagnosticsText, "snapshot.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs");
         AssertContains(diagnosticsText, "Flashback recording path degraded:");
         AssertContains(diagnosticsText, "\"flashback-export-rotation-gap\"");
@@ -330,6 +334,8 @@ static partial class Program
         AssertContains(diagnosticsText, "private static bool IsFlashbackRecordingQueueBackedUp(");
         AssertContains(diagnosticsText, "queueDepth >= Math.Ceiling(queueCapacity * FlashbackRecordingQueueDepthWarningRatio)");
         AssertContains(diagnosticsText, "oldestFrameAgeMs >= FlashbackRecordingQueueAgeWarningMs");
+        AssertContains(diagnosticsText, "private static bool IsFlashbackAudioQueueBackedUp(int queueDepth, int queueCapacity)");
+        AssertContains(diagnosticsText, "queueDepth >= Math.Ceiling(queueCapacity * FlashbackAudioQueueDepthWarningRatio)");
         AssertContains(diagnosticsText, "private static bool IsFlashbackForceRotateRejectReason(string? reason)");
         AssertContains(diagnosticsText, "string.Equals(reason, \"force_rotate_queue_guard\"");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackOnePercentLowFps");
@@ -353,6 +359,7 @@ static partial class Program
         AssertContains(diagnosticsText, "health.FlashbackVideoQueueDepth,\n                 health.FlashbackVideoQueueCapacity,\n                 health.FlashbackVideoQueueOldestFrameAgeMs");
         AssertContains(diagnosticsText, "forceRotate={health.FlashbackForceRotateActive}");
         AssertContains(diagnosticsText, "queueRejects={health.FlashbackVideoQueueRejectedFrames}");
+        AssertContains(diagnosticsText, "audioQueue={health.FlashbackAudioQueueDepth}/{health.FlashbackAudioQueueCapacity}");
         AssertContains(diagnosticsText, "lastReject={health.FlashbackVideoQueueLastRejectReason ?? \"None\"}");
         AssertContains(diagnosticsText, "flashbackExportRotationGap");
         AssertContains(diagnosticsText, "\"Flashback export rotation skipped live-edge frames.\"");
