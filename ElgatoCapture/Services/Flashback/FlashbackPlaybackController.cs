@@ -689,29 +689,34 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     case CommandKind.Nudge:
                         var nudgedPos = PlaybackPosition + cmd.Delta;
                         nudgedPos = ClampPosition(nudgedPos);
-                        if (decoder != null)
+                        decoder ??= CreateDecoder();
+                        EnsureFileOpen(decoder, ref fileOpen, nudgedPos + frozenValidStart);
+                        if (!decoder.IsOpen)
                         {
-                            EnsureFileOpen(decoder, ref fileOpen, nudgedPos + frozenValidStart);
-                            // F7 fix: forward nudge decodes next frame for frame-accuracy;
-                            // backward nudge requires full seek (keyframe snap acceptable)
-                            if (cmd.Delta.Ticks > 0 && decoder.IsOpen)
-                            {
-                                var got = decoder.TryDecodeNextVideoFrame(out var nudgeFrame);
-                                if (got)
-                                {
-                                    ReleasePreviousHeldFrame();
-                                    SubmitFrame(nudgeFrame);
-                                    _previousHeldFrame = nudgeFrame;
-                                    _hasPreviousHeldFrame = true;
-                                    var actualPos = nudgeFrame.Pts - frozenValidStart;
-                                    if (actualPos < TimeSpan.Zero) actualPos = TimeSpan.Zero;
-                                    PlaybackPosition = actualPos;
-                                    break;
-                                }
-                                // Forward decode failed (EOF) — fall through to full seek
-                            }
-                            SeekAndDisplayKeyframe(decoder, nudgedPos, frozenValidStart);
+                            PlaybackPosition = nudgedPos;
+                            Logger.Log($"FLASHBACK_PLAYBACK_NUDGE_NO_FILE pos_ms={(long)nudgedPos.TotalMilliseconds}");
+                            break;
                         }
+
+                        // F7 fix: forward nudge decodes next frame for frame-accuracy;
+                        // backward nudge requires full seek (keyframe snap acceptable)
+                        if (cmd.Delta.Ticks > 0)
+                        {
+                            var got = decoder.TryDecodeNextVideoFrame(out var nudgeFrame);
+                            if (got)
+                            {
+                                ReleasePreviousHeldFrame();
+                                SubmitFrame(nudgeFrame);
+                                _previousHeldFrame = nudgeFrame;
+                                _hasPreviousHeldFrame = true;
+                                var actualPos = nudgeFrame.Pts - frozenValidStart;
+                                if (actualPos < TimeSpan.Zero) actualPos = TimeSpan.Zero;
+                                PlaybackPosition = actualPos;
+                                break;
+                            }
+                            // Forward decode failed (EOF) — fall through to full seek
+                        }
+                        SeekAndDisplayKeyframe(decoder, nudgedPos, frozenValidStart);
                         break;
                 }
             }

@@ -527,6 +527,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        var nudgeBlock = ExtractTextBetween(
+            sourceText,
+            "case CommandKind.Nudge:",
+            "                        break;\n                }");
+
+        AssertContains(nudgeBlock, "decoder ??= CreateDecoder();");
+        AssertContains(nudgeBlock, "EnsureFileOpen(decoder, ref fileOpen, nudgedPos + frozenValidStart);");
+        AssertContains(nudgeBlock, "if (!decoder.IsOpen)");
+        AssertContains(nudgeBlock, "FLASHBACK_PLAYBACK_NUDGE_NO_FILE");
+        AssertContains(nudgeBlock, "SeekAndDisplayKeyframe(decoder, nudgedPos, frozenValidStart);");
+        AssertDoesNotContain(nudgeBlock, "if (decoder != null)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
