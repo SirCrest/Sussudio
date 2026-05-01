@@ -1077,6 +1077,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                             continue;
                         }
 
+                        if (localTcs.Task.IsCompleted)
+                        {
+                            Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed");
+                            madeProgress = true;
+                            continue;
+                        }
+
                         // Drain all remaining queued packets into the current segment before rotating.
                         // This ensures no data is lost at the live edge.
                         var inFlightCount = 0;
@@ -1550,6 +1557,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         if (!tcs.Task.Wait(TimeSpan.FromSeconds(timeoutSeconds)))
         {
             var clearedPending = TryCancelPendingForceRotate(tcs);
+            tcs.TrySetResult(Array.Empty<string>());
             Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT codec={codecName} timeout_s={timeoutSeconds} cleared_pending={clearedPending} vq={Volatile.Read(ref _videoQueueDepth)} aq={Volatile.Read(ref _audioQueueDepth)}");
             return Array.Empty<string>();
         }

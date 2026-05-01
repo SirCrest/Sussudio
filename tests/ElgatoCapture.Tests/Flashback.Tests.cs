@@ -1966,7 +1966,7 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackEncoderSink_ForceRotateSkipsClearedPendingRequest()
+    private static Task FlashbackEncoderSink_ForceRotateSkipsCompletedPendingRequest()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
@@ -1979,7 +1979,15 @@ static partial class Program
         AssertContains(loopBlock, "localTcs = _forceRotateTcs;\n                        _forceRotateTcs = null;");
         AssertContains(loopBlock, "if (localTcs == null)\n                        {\n                            Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request\");\n                            madeProgress = true;\n                            continue;\n                        }");
         AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request", "while (DrainAudioPackets(audioQueue.Reader))");
+        AssertContains(loopBlock, "if (localTcs.Task.IsCompleted)\n                        {\n                            Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed\");\n                            madeProgress = true;\n                            continue;\n                        }");
+        AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=request_completed", "while (DrainAudioPackets(audioQueue.Reader))");
         AssertContains(loopBlock, "finally\n                    {\n                        lock (_videoQueueSync)\n                        {\n                            Volatile.Write(ref _forceRotateDraining, false);\n                        }\n                    }");
+
+        var forceRotateBlock = ExtractTextBetween(
+            sourceText,
+            "public IReadOnlyList<string> ForceRotateForExport",
+            "    private bool TryCancelPendingForceRotate");
+        AssertContains(forceRotateBlock, "var clearedPending = TryCancelPendingForceRotate(tcs);\n            tcs.TrySetResult(Array.Empty<string>());");
 
         return Task.CompletedTask;
     }
