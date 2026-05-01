@@ -55,6 +55,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const int VerificationPerfectionMinSamples = 120;
     private const int TimelineCapacity = 240;
     private const int FlashbackPlaybackCommandStallThresholdMs = 1000;
+    private const double FlashbackPlaybackSlowFpsRatio = 0.75;
+    private const int FlashbackPlaybackMinFramesForPerfAlert = 60;
 
     private readonly double _perfectionCaptureDropPercentThreshold;
     private readonly double _perfectionCaptureP95MultiplierThreshold;
@@ -1092,6 +1094,15 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackDecoderHwAccel = health.FlashbackDecoderHwAccel,
             FlashbackPlaybackFrameCount = health.FlashbackPlaybackFrameCount,
             FlashbackPlaybackLateFrames = health.FlashbackPlaybackLateFrames,
+            FlashbackPlaybackDroppedFrames = health.FlashbackPlaybackDroppedFrames,
+            FlashbackPlaybackSegmentSwitches = health.FlashbackPlaybackSegmentSwitches,
+            FlashbackPlaybackFmp4Reopens = health.FlashbackPlaybackFmp4Reopens,
+            FlashbackPlaybackWriteHeadWaits = health.FlashbackPlaybackWriteHeadWaits,
+            FlashbackPlaybackNearLiveSnaps = health.FlashbackPlaybackNearLiveSnaps,
+            FlashbackPlaybackDecodeErrorSnaps = health.FlashbackPlaybackDecodeErrorSnaps,
+            FlashbackPlaybackLastSegmentSwitchUtcUnixMs = health.FlashbackPlaybackLastSegmentSwitchUtcUnixMs,
+            FlashbackPlaybackLastFmp4ReopenUtcUnixMs = health.FlashbackPlaybackLastFmp4ReopenUtcUnixMs,
+            FlashbackPlaybackLastWriteHeadWaitGapMs = health.FlashbackPlaybackLastWriteHeadWaitGapMs,
             FlashbackPlaybackObservedFps = health.FlashbackPlaybackObservedFps,
             FlashbackPlaybackAvgFrameMs = health.FlashbackPlaybackAvgFrameMs,
             FlashbackAvDriftMs = health.FlashbackAvDriftMs,
@@ -1246,6 +1257,12 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > snapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs
                 ? Math.Max(0, nowUnixMs - snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs)
                 : 0;
+        var playbackSlow =
+            string.Equals(snapshot.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
+            snapshot.SelectedFrameRate > 0 &&
+            snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
+            snapshot.FlashbackPlaybackObservedFps > 0 &&
+            snapshot.FlashbackPlaybackObservedFps < snapshot.SelectedFrameRate * FlashbackPlaybackSlowFpsRatio;
 
         SetAlertState(
             "preview-blank",
@@ -1350,6 +1367,17 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             throttleMs: 1000);
 
         SetAlertState(
+            "flashback-playback-slow",
+            playbackSlow,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback playback is below target rate: observed={snapshot.FlashbackPlaybackObservedFps:0.##}fps target={snapshot.SelectedFrameRate:0.##}fps " +
+            $"frames={snapshot.FlashbackPlaybackFrameCount} late={snapshot.FlashbackPlaybackLateFrames} dropped={snapshot.FlashbackPlaybackDroppedFrames} " +
+            $"switches={snapshot.FlashbackPlaybackSegmentSwitches} fmp4Reopens={snapshot.FlashbackPlaybackFmp4Reopens} writeHeadWaits={snapshot.FlashbackPlaybackWriteHeadWaits}.",
+            "Flashback playback returned to target rate.",
+            throttleMs: 5000);
+
+        SetAlertState(
             "hdr-parity-mismatch",
             snapshot.LastVerification?.HdrParity is { Requested: true, Verified: false },
             DiagnosticsSeverity.Warning,
@@ -1450,6 +1478,14 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 : 0;
         var playbackCommandLane =
             $"playback commands pending={health.FlashbackPlaybackPendingCommands} maxPending={health.FlashbackPlaybackMaxPendingCommands} lastLatency={health.FlashbackPlaybackLastCommandQueueLatencyMs}ms maxLatency={health.FlashbackPlaybackMaxCommandQueueLatencyMs}ms lastQueued={health.FlashbackPlaybackLastCommandQueued} lastProcessed={health.FlashbackPlaybackLastCommandProcessed} queuedAge={playbackCommandQueueAgeMs}ms threadAlive={health.FlashbackPlaybackThreadAlive}";
+        var playbackPerfLane =
+            $"playback perf state={health.FlashbackPlaybackState} fps={health.FlashbackPlaybackObservedFps:0.##}/{health.ExpectedFrameRate:0.##} frames={health.FlashbackPlaybackFrameCount} late={health.FlashbackPlaybackLateFrames} dropped={health.FlashbackPlaybackDroppedFrames} switches={health.FlashbackPlaybackSegmentSwitches} fmp4Reopens={health.FlashbackPlaybackFmp4Reopens} writeHeadWaits={health.FlashbackPlaybackWriteHeadWaits} nearLiveSnaps={health.FlashbackPlaybackNearLiveSnaps} decodeErrorSnaps={health.FlashbackPlaybackDecodeErrorSnaps}";
+        var playbackSlow =
+            string.Equals(health.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
+            health.ExpectedFrameRate > 0 &&
+            health.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
+            health.FlashbackPlaybackObservedFps > 0 &&
+            health.FlashbackPlaybackObservedFps < health.ExpectedFrameRate * FlashbackPlaybackSlowFpsRatio;
 
         if (health.FlashbackExportActive)
         {
@@ -1474,6 +1510,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 "flashback_playback",
                 "Flashback playback command queue is stalled.",
                 playbackCommandLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (playbackSlow)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "flashback_playback",
+                "Flashback playback is below target rate.",
+                playbackPerfLane,
                 sourceLane,
                 decodeLane,
                 previewLane,

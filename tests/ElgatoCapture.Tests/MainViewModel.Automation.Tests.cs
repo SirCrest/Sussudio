@@ -230,12 +230,18 @@ static partial class Program
         AssertContains(diagnosticsText, "health.FlashbackExportActive");
         AssertContains(diagnosticsText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackCommandStallThresholdMs = 1000;");
+        AssertContains(diagnosticsText, "private const double FlashbackPlaybackSlowFpsRatio = 0.75;");
+        AssertContains(diagnosticsText, "\"flashback-playback-slow\"");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackPendingCommands > 0");
+        AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackObservedFps < snapshot.SelectedFrameRate * FlashbackPlaybackSlowFpsRatio");
+        AssertContains(diagnosticsText, "Flashback playback is below target rate");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > snapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs");
         AssertContains(diagnosticsText, "Flashback playback command queue has not drained");
         AssertContains(diagnosticsText, "\"flashback_playback\"");
         AssertContains(diagnosticsText, "\"Flashback playback command queue is stalled.\"");
+        AssertContains(diagnosticsText, "\"Flashback playback is below target rate.\"");
         AssertContains(diagnosticsText, "queuedAge={playbackCommandQueueAgeMs}ms");
+        AssertContains(diagnosticsText, "playback perf state={health.FlashbackPlaybackState}");
         AssertContains(diagnosticsText, "\"flashback_export\"");
         AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
         AssertContains(diagnosticsText, "recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows}");

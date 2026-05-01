@@ -67,6 +67,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
     // --- Playback cadence metrics (written on playback thread, read from UI/diag) ---
     private long _playbackFrameCount;
     private long _playbackLateFrames;
+    private long _playbackSegmentSwitches;
+    private long _playbackFmp4Reopens;
+    private long _playbackWriteHeadWaits;
+    private long _playbackNearLiveSnaps;
+    private long _playbackDecodeErrorSnaps;
+    private long _lastSegmentSwitchUtcUnixMs;
+    private long _lastFmp4ReopenUtcUnixMs;
+    private long _lastWriteHeadWaitGapMs;
     private double _playbackObservedFps;
     private double _playbackAvgFrameMs;
     private readonly Stopwatch _playbackFpsClock = new();
@@ -1068,6 +1076,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 : null;
             if (nextFile != null && nextFile != currentOpenFilePath)
             {
+                Interlocked.Increment(ref _playbackSegmentSwitches);
+                Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                 Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH pos_ms={(long)pos.TotalMilliseconds} next='{System.IO.Path.GetFileName(nextFile)}'");
                 decoder.CloseFile();
                 decoder.OpenFile(nextFile);
@@ -1093,6 +1103,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             // Only for fMP4; .ts handles appended data via eof_reached reset.
             if (IsActiveFmp4Segment(currentOpenFilePath) && currentOpenFilePath != null)
             {
+                Interlocked.Increment(ref _playbackFmp4Reopens);
+                Interlocked.Exchange(ref _lastFmp4ReopenUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                 var resumeTarget = lastFrameAbsPts;
                 var currentSegmentStart = _bufferManager.GetSegmentStartPts(currentOpenFilePath);
                 if (currentSegmentStart.HasValue && resumeTarget < currentSegmentStart.Value)
@@ -1115,6 +1127,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             return true;
         }
 
+        Interlocked.Increment(ref _playbackWriteHeadWaits);
+        Interlocked.Exchange(ref _lastWriteHeadWaitGapMs, Math.Max(0, (long)gapFromLive));
         Logger.Log($"FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT gapFromLive_ms={gapFromLive:F0} pos_ms={(long)pos.TotalMilliseconds} lastFrameAbsPts_ms={(long)lastFrameAbsPts.TotalMilliseconds} latestPts_ms={(long)latestAbsPts.TotalMilliseconds}");
         Thread.Sleep(50);
         pacingStopwatch.Restart();
@@ -1145,6 +1159,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (Interlocked.Read(ref _playbackFrameCount) > 60 &&
             absoluteLatestPts - absoluteFramePts <= TimeSpan.FromMilliseconds(2000))
         {
+            Interlocked.Increment(ref _playbackNearLiveSnaps);
             var gapMs = (absoluteLatestPts - absoluteFramePts).TotalMilliseconds;
             Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)bufferPosition.TotalMilliseconds} framePts_ms={(long)absoluteFramePts.TotalMilliseconds} latestPts_ms={(long)absoluteLatestPts.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
             if (decoder.IsOpen) decoder.CloseFile();
@@ -1286,6 +1301,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private void SnapToLiveOnError(FlashbackDecoder decoder, Exception ex, ref bool fileOpen)
     {
+        Interlocked.Increment(ref _playbackDecodeErrorSnaps);
         var pos = PlaybackPosition;
         var bufDur = _bufferManager.BufferedDuration;
         var gapMs = (bufDur - pos).TotalMilliseconds;
@@ -1363,6 +1379,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long PlaybackFrameCount => Interlocked.Read(ref _playbackFrameCount);
     public long PlaybackLateFrames => Interlocked.Read(ref _playbackLateFrames);
     public long PlaybackDroppedFrames => Interlocked.Read(ref _playbackDroppedFrames);
+    public long PlaybackSegmentSwitches => Interlocked.Read(ref _playbackSegmentSwitches);
+    public long PlaybackFmp4Reopens => Interlocked.Read(ref _playbackFmp4Reopens);
+    public long PlaybackWriteHeadWaits => Interlocked.Read(ref _playbackWriteHeadWaits);
+    public long PlaybackNearLiveSnaps => Interlocked.Read(ref _playbackNearLiveSnaps);
+    public long PlaybackDecodeErrorSnaps => Interlocked.Read(ref _playbackDecodeErrorSnaps);
+    public long LastSegmentSwitchUtcUnixMs => Interlocked.Read(ref _lastSegmentSwitchUtcUnixMs);
+    public long LastFmp4ReopenUtcUnixMs => Interlocked.Read(ref _lastFmp4ReopenUtcUnixMs);
+    public long LastWriteHeadWaitGapMs => Interlocked.Read(ref _lastWriteHeadWaitGapMs);
     public double PlaybackObservedFps => _playbackObservedFps;
     public double PlaybackAvgFrameMs => _playbackAvgFrameMs;
     public long CommandsEnqueued => Interlocked.Read(ref _commandsEnqueued);

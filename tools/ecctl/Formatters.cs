@@ -136,7 +136,8 @@ internal static class Formatters
             var pbFps = double.TryParse(AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackObservedFps", "0"), out var fps) ? fps : 0;
             var pbAvgMs = double.TryParse(AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackAvgFrameMs", "0"), out var avgMs) ? avgMs : 0;
             var avDrift = double.TryParse(AutomationSnapshotFormatter.Get(snapshot, "FlashbackAvDriftMs", "0"), out var drift) ? drift : 0;
-            builder.AppendLine($"Playback Frame Time: avg={pbAvgMs:F2}ms | Average Rate: {pbFps:F1} fps | Frames: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackFrameCount")} | Late: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackLateFrames")}");
+            builder.AppendLine($"Playback Frame Time: avg={pbAvgMs:F2}ms | Average Rate: {pbFps:F1} fps | Frames: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackFrameCount")} | Late: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackLateFrames")} | Dropped: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackDroppedFrames")}");
+            builder.AppendLine($"Playback Stages: switches={AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackSegmentSwitches")} fmp4Reopens={AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackFmp4Reopens")} writeHeadWaits={AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackWriteHeadWaits")} nearLiveSnaps={AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackNearLiveSnaps")} decodeErrorSnaps={AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackDecodeErrorSnaps")} lastWriteHeadGap={AutomationSnapshotFormatter.Get(snapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs")}ms");
             builder.AppendLine($"A/V Drift: {avDrift:+0.0;-0.0;0.0}ms (+ = audio ahead) | File: {AutomationSnapshotFormatter.Get(snapshot, "FlashbackFilePath")}");
             builder.AppendLine();
         }

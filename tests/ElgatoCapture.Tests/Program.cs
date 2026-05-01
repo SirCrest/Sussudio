@@ -1174,6 +1174,15 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoBackpressureWaitMs"), "AutomationSnapshot.FlashbackVideoBackpressureWaitMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoBackpressureEvents"), "AutomationSnapshot.FlashbackVideoBackpressureEvents");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackThreadAlive"), "AutomationSnapshot.FlashbackPlaybackThreadAlive");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDroppedFrames"), "AutomationSnapshot.FlashbackPlaybackDroppedFrames");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSegmentSwitches"), "AutomationSnapshot.FlashbackPlaybackSegmentSwitches");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackFmp4Reopens"), "AutomationSnapshot.FlashbackPlaybackFmp4Reopens");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackWriteHeadWaits"), "AutomationSnapshot.FlashbackPlaybackWriteHeadWaits");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackNearLiveSnaps"), "AutomationSnapshot.FlashbackPlaybackNearLiveSnaps");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeErrorSnaps"), "AutomationSnapshot.FlashbackPlaybackDecodeErrorSnaps");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastSegmentSwitchUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastSegmentSwitchUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastFmp4ReopenUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastFmp4ReopenUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastWriteHeadWaitGapMs"), "AutomationSnapshot.FlashbackPlaybackLastWriteHeadWaitGapMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsEnqueued"), "AutomationSnapshot.FlashbackPlaybackCommandsEnqueued");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsProcessed"), "AutomationSnapshot.FlashbackPlaybackCommandsProcessed");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsDropped"), "AutomationSnapshot.FlashbackPlaybackCommandsDropped");

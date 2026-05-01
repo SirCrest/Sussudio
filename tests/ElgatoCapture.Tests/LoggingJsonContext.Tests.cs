@@ -97,6 +97,9 @@ static partial class Program
                 ?? throw new InvalidOperationException("Failed to create isolated CaptureHealthSnapshot.");
             SetPropertyOrBackingField(health, "RecordingBackend", "FFmpeg");
             SetPropertyOrBackingField(health, "FlashbackPlaybackState", "Paused");
+            SetPropertyOrBackingField(health, "FlashbackPlaybackSegmentSwitches", 2L);
+            SetPropertyOrBackingField(health, "FlashbackPlaybackFmp4Reopens", 1L);
+            SetPropertyOrBackingField(health, "FlashbackPlaybackDroppedFrames", 6L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackCommandsEnqueued", 4L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackMaxPendingCommands", 3);
             SetPropertyOrBackingField(health, "FlashbackPlaybackMaxCommandQueueLatencyMs", 41L);
@@ -116,6 +119,9 @@ static partial class Program
             var healthRoot = healthDocument.RootElement;
             AssertJsonString(healthRoot, "RecordingBackend", "FFmpeg", "CaptureHealthSnapshot source-gen JSON inherited RecordingBackend");
             AssertJsonString(healthRoot, "FlashbackPlaybackState", "Paused", "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackState");
+            AssertJsonInt64(healthRoot, "FlashbackPlaybackSegmentSwitches", 2L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackSegmentSwitches");
+            AssertJsonInt64(healthRoot, "FlashbackPlaybackFmp4Reopens", 1L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackFmp4Reopens");
+            AssertJsonInt64(healthRoot, "FlashbackPlaybackDroppedFrames", 6L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackDroppedFrames");
             AssertJsonInt64(healthRoot, "FlashbackPlaybackCommandsEnqueued", 4L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackCommandsEnqueued");
             AssertJsonInt32(healthRoot, "FlashbackPlaybackMaxPendingCommands", 3, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackMaxPendingCommands");
             AssertJsonInt64(healthRoot, "FlashbackPlaybackMaxCommandQueueLatencyMs", 41L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackMaxCommandQueueLatencyMs");

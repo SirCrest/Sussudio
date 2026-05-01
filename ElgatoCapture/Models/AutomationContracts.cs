@@ -786,6 +786,15 @@ public sealed class AutomationSnapshot
     public string FlashbackDecoderHwAccel { get; init; } = "N/A";
     public long FlashbackPlaybackFrameCount { get; init; }
     public long FlashbackPlaybackLateFrames { get; init; }
+    public long FlashbackPlaybackDroppedFrames { get; init; }
+    public long FlashbackPlaybackSegmentSwitches { get; init; }
+    public long FlashbackPlaybackFmp4Reopens { get; init; }
+    public long FlashbackPlaybackWriteHeadWaits { get; init; }
+    public long FlashbackPlaybackNearLiveSnaps { get; init; }
+    public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
+    public long FlashbackPlaybackLastSegmentSwitchUtcUnixMs { get; init; }
+    public long FlashbackPlaybackLastFmp4ReopenUtcUnixMs { get; init; }
+    public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
     public double FlashbackPlaybackObservedFps { get; init; }
     public double FlashbackPlaybackAvgFrameMs { get; init; }
     public double FlashbackAvDriftMs { get; init; }
