@@ -579,7 +579,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                         cmd = cmd with { Position = ClampPosition(cmd.Position) };
                         decoder ??= CreateDecoder();
-                        EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
+                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
                         if (!decoder.IsOpen)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_SEEK_NO_FILE - restoring live");
@@ -596,7 +596,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             ResetPlaybackMetrics();
                             pacingStopwatch.Restart();
-                            var coalescedSeekTarget = PlaybackPosition + frozenValidStart;
+                            var coalescedSeekTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
                             decoder.AudioChunkCallback = null;
                             if (!decoder.SeekTo(coalescedSeekTarget) && IsActiveFmp4Segment(_currentOpenFilePath))
                             {
@@ -623,7 +623,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                         cmd = cmd with { Position = ClampPosition(cmd.Position) };
                         decoder ??= CreateDecoder();
-                        EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
+                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
                         if (!decoder.IsOpen)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_SCRUB_NO_FILE — restoring live");
@@ -658,7 +658,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         }
                         cmd = cmd with { Position = ClampPosition(cmd.Position) };
                         decoder ??= CreateDecoder();
-                        EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
+                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
                         if (!decoder.IsOpen)
                         {
                             isScrubbing = false;
@@ -685,7 +685,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             // SeekTo forward-decodes from keyframe to target, which advances
                             // BOTH the video and audio codecs to the same PTS. Without this,
                             // the audio codec is stuck at the keyframe (~1s behind video).
-                            var endScrubTarget = PlaybackPosition + frozenValidStart;
+                            var endScrubTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
                             if (decoder is { IsOpen: true })
                             {
                                 decoder.AudioChunkCallback = null; // null during forward-decode
@@ -721,7 +721,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             frozenValidStart = _bufferManager.ValidStartPts;
                         decoder ??= CreateDecoder();
                         var prevFile = _currentOpenFilePath;
-                        EnsureFileOpen(decoder, ref fileOpen, PlaybackPosition + frozenValidStart);
+                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(PlaybackPosition, frozenValidStart));
                         if (!decoder.IsOpen)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE — restoring live");
@@ -732,7 +732,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             SetState(FlashbackPlaybackState.Live);
                             break;
                         }
-                        var seekTarget = PlaybackPosition + frozenValidStart;
+                        var seekTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
                         if (State == FlashbackPlaybackState.Paused && prevFile == _currentOpenFilePath)
                         {
                             // Resume from Paused — decoder is already positioned at the
@@ -811,10 +811,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         return;
 
                     case CommandKind.Nudge:
-                        var nudgedPos = PlaybackPosition + cmd.Delta;
+                        var nudgedPos = SaturatingAdd(PlaybackPosition, cmd.Delta);
                         nudgedPos = ClampPosition(nudgedPos);
                         decoder ??= CreateDecoder();
-                        EnsureFileOpen(decoder, ref fileOpen, nudgedPos + frozenValidStart);
+                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));
                         if (!decoder.IsOpen)
                         {
                             PlaybackPosition = nudgedPos;
@@ -1129,7 +1129,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         try
         {
             // Map buffer position to file PTS (offset by frozen valid start)
-            var filePts = bufferPosition + validStartPts;
+            var filePts = SaturatingAdd(bufferPosition, validStartPts);
 
             // Clamp to current valid range: if eviction advanced ValidStartPts past
             // frozenValidStart, positions near the left edge map to evicted data.
@@ -1316,7 +1316,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var lastFrameAbsPts = TimeSpan.FromTicks(Interlocked.Read(ref _lastVideoPtsTicks));
         // Fallback: if no frame was decoded yet, estimate from PlaybackPosition
         if (lastFrameAbsPts == TimeSpan.Zero)
-            lastFrameAbsPts = PlaybackPosition + frozenValidStart;
+            lastFrameAbsPts = SaturatingAdd(PlaybackPosition, frozenValidStart);
         var gapFromLive = (latestAbsPts - lastFrameAbsPts).TotalMilliseconds;
         var pos = PlaybackPosition;
 
@@ -1343,7 +1343,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     // causing an audible gap at segment boundaries.
                     var audioGate = Interlocked.Read(ref _lastAudioPtsTicks);
                     decoder.AudioChunkCallback = null;
-                    var segSwitchTarget = pos + frozenValidStart;
+                    var segSwitchTarget = SaturatingAdd(pos, frozenValidStart);
                     var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
                     if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)
                         segSwitchTarget = nextSegmentStart.Value;
@@ -1675,6 +1675,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (position < min) return min;
         if (position > max) return max;
         return position;
+    }
+
+    private static TimeSpan SaturatingAdd(TimeSpan left, TimeSpan right)
+    {
+        var leftTicks = left.Ticks;
+        var rightTicks = right.Ticks;
+        if (rightTicks > 0 && leftTicks > long.MaxValue - rightTicks)
+            return TimeSpan.MaxValue;
+        if (rightTicks < 0 && leftTicks < long.MinValue - rightTicks)
+            return TimeSpan.MinValue;
+        return TimeSpan.FromTicks(leftTicks + rightTicks);
     }
 
     // --- State management ---

@@ -577,6 +577,9 @@ static partial class Program
                 "Flashback command positions clamp before file lookup",
                 FlashbackPlaybackController_ClampsCommandPositionsBeforeFileLookup),
             await RunCheckAsync(
+                "Flashback playback timestamp additions are saturating",
+                FlashbackPlaybackController_TimestampAdditionsAreSaturating),
+            await RunCheckAsync(
                 "Flashback end-of-segment open failures snap live",
                 FlashbackPlaybackController_EndOfSegmentOpenFailuresSnapLive),
             await RunCheckAsync(

@@ -762,9 +762,26 @@ static partial class Program
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        const string clampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position) };\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);";
+        const string clampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position) };\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
 
         AssertEqual(3, sourceText.Split(clampBeforeOpen, StringSplitOptions.None).Length - 1, "Seek, BeginScrub, and UpdateScrub clamp before file lookup");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackPlaybackController_TimestampAdditionsAreSaturating()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private static TimeSpan SaturatingAdd(TimeSpan left, TimeSpan right)");
+        AssertContains(sourceText, "if (rightTicks > 0 && leftTicks > long.MaxValue - rightTicks)");
+        AssertContains(sourceText, "if (rightTicks < 0 && leftTicks < long.MinValue - rightTicks)");
+        AssertDoesNotContain(sourceText, "cmd.Position + frozenValidStart");
+        AssertDoesNotContain(sourceText, "PlaybackPosition + frozenValidStart");
+        AssertDoesNotContain(sourceText, "PlaybackPosition + cmd.Delta");
+        AssertDoesNotContain(sourceText, "bufferPosition + validStartPts");
+        AssertDoesNotContain(sourceText, "pos + frozenValidStart");
 
         return Task.CompletedTask;
     }
@@ -977,7 +994,7 @@ static partial class Program
             "                        break;\n                }");
 
         AssertContains(nudgeBlock, "decoder ??= CreateDecoder();");
-        AssertContains(nudgeBlock, "EnsureFileOpen(decoder, ref fileOpen, nudgedPos + frozenValidStart);");
+        AssertContains(nudgeBlock, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));");
         AssertContains(nudgeBlock, "if (!decoder.IsOpen)");
         AssertContains(nudgeBlock, "FLASHBACK_PLAYBACK_NUDGE_NO_FILE");
         AssertContains(nudgeBlock, "RestoreLiveAudio();");
