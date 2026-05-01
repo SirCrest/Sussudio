@@ -482,14 +482,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             finally
             {
                 // Free any buffered packets not yet flushed (early EOF, error, or cancellation)
-                foreach (var pktPtr in bufferedPackets)
-                {
-                    if (pktPtr != IntPtr.Zero)
-                    {
-                        var p = (AVPacket*)pktPtr;
-                        ffmpeg.av_packet_free(&p);
-                    }
-                }
+                FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);
                 var packetToFree = packet;
                 ffmpeg.av_packet_free(&packetToFree);
             }
@@ -1272,28 +1265,34 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         long[] packetCounts)
     {
         long flushed = 0;
-        for (int bi = 0; bi < bufferedPackets.Count; bi++)
+        try
         {
-            var buffPkt = (AVPacket*)bufferedPackets[bi];
-            var si = bufferedStreamIndices[bi];
-            var oi = streamMap[si];
-            var outStr = _activeOutputContext->streams[oi];
-            var bTs = ffmpeg.av_rescale_q(globalMinBaseUs, usTimeBase, outStr->time_base);
-            if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
-                buffPkt->pts -= bTs;
-            if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
-                buffPkt->dts -= bTs;
-            NormalizePacketTimestampsBeforeWrite(buffPkt);
-            buffPkt->pos = -1;
-            buffPkt->stream_index = oi;
-            ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
-            packetCounts[si]++;
-            flushed++;
-            ffmpeg.av_packet_free(&buffPkt);
-            bufferedPackets[bi] = IntPtr.Zero;
+            for (int bi = 0; bi < bufferedPackets.Count; bi++)
+            {
+                var buffPkt = (AVPacket*)bufferedPackets[bi];
+                var si = bufferedStreamIndices[bi];
+                var oi = streamMap[si];
+                var outStr = _activeOutputContext->streams[oi];
+                var bTs = ffmpeg.av_rescale_q(globalMinBaseUs, usTimeBase, outStr->time_base);
+                if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
+                    buffPkt->pts -= bTs;
+                if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
+                    buffPkt->dts -= bTs;
+                NormalizePacketTimestampsBeforeWrite(buffPkt);
+                buffPkt->pos = -1;
+                buffPkt->stream_index = oi;
+                ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
+                packetCounts[si]++;
+                flushed++;
+                ffmpeg.av_packet_free(&buffPkt);
+                bufferedPackets[bi] = IntPtr.Zero;
+            }
         }
-        bufferedPackets.Clear();
-        bufferedStreamIndices.Clear();
+        finally
+        {
+            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);
+        }
+
         return flushed;
     }
 

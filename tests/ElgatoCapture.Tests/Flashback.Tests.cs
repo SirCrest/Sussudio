@@ -857,6 +857,7 @@ static partial class Program
 
         AssertContains(sourceText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
         AssertContains(sourceText, "FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
+        AssertContains(sourceText, "FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);");
         AssertContains(sourceText, "bufferedStreamIndices?.Clear();");
 
         var segmentLoopBlock = ExtractTextBetween(
@@ -869,6 +870,16 @@ static partial class Program
             segmentLoopBlock,
             "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), \"av_interleaved_write_frame\");",
             "finally\n                                    {\n                                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                                    }");
+
+        var sharedFlushBlock = ExtractTextBetween(
+            sourceText,
+            "private long FlushBufferedPackets(",
+            "private static void FreeBufferedPackets(");
+        AssertContains(sharedFlushBlock, "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
+        AssertOccursBefore(
+            sharedFlushBlock,
+            "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), \"av_interleaved_write_frame\");",
+            "finally\n        {\n            FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);\n        }");
 
         return Task.CompletedTask;
     }
