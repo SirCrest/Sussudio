@@ -544,7 +544,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 if (!string.IsNullOrWhiteSpace(segment.Path) && File.Exists(segment.Path))
                 {
                     readableSegmentCount++;
-                    totalEstimatedBytes += new FileInfo(segment.Path).Length;
+                    totalEstimatedBytes = AddNonNegativeSaturated(totalEstimatedBytes, new FileInfo(segment.Path).Length);
                 }
             }
             catch (Exception ex)
@@ -607,10 +607,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     var segPath = segment.Path;
                     var useSegmentTimeline = segment.StartPts.HasValue;
                     var segmentInOffsetUs = useSegmentTimeline
-                        ? ToMicrosecondsSaturated(inPoint - segment.StartPts!.Value)
+                        ? ToMicrosecondsSaturated(SaturatingSubtract(inPoint, segment.StartPts!.Value))
                         : 0;
                     var segmentOutDelta = useSegmentTimeline
-                        ? ((segment.EndPts.HasValue && segment.EndPts.Value < outPoint) ? segment.EndPts.Value : outPoint) - segment.StartPts!.Value
+                        ? SaturatingSubtract(
+                            (segment.EndPts.HasValue && segment.EndPts.Value < outPoint) ? segment.EndPts.Value : outPoint,
+                            segment.StartPts!.Value)
                         : TimeSpan.Zero;
                     var segmentOutOffsetUs = useSegmentTimeline
                         ? ToMicrosecondsSaturated(segmentOutDelta)
@@ -1021,7 +1023,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     }
 
                     // Track bytes for progress
-                    try { if (File.Exists(segPath)) bytesProcessed += new FileInfo(segPath).Length; }
+                    try { if (File.Exists(segPath)) bytesProcessed = AddNonNegativeSaturated(bytesProcessed, new FileInfo(segPath).Length); }
                     catch (Exception ex)
                     {
                         Logger.Log($"FLASHBACK_EXPORT_PROGRESS_UPDATE_WARN path='{segPath}' type={ex.GetType().Name} msg='{ex.Message}'");
@@ -1453,6 +1455,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
     }
 
+    private static long AddNonNegativeSaturated(long left, long right)
+    {
+        left = Math.Max(0, left);
+        right = Math.Max(0, right);
+        return left > long.MaxValue - right ? long.MaxValue : left + right;
+    }
+
     private static bool IsSamePath(string? left, string? right)
     {
         if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
@@ -1667,6 +1676,23 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         return (long)microseconds;
+    }
+
+    private static TimeSpan SaturatingSubtract(TimeSpan left, TimeSpan right)
+    {
+        if (left <= right)
+        {
+            return TimeSpan.Zero;
+        }
+
+        var leftTicks = left.Ticks;
+        var rightTicks = right.Ticks;
+        if (rightTicks < 0 && leftTicks > long.MaxValue + rightTicks)
+        {
+            return TimeSpan.MaxValue;
+        }
+
+        return TimeSpan.FromTicks(leftTicks - rightTicks);
     }
 
     internal static void CleanupOrphanedTempFiles(string directory)
