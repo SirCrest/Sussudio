@@ -363,6 +363,9 @@ static partial class Program
             cycleFlashbackBuffer,
             "oldPlaybackController.Dispose();",
             "unifiedVideoCapture.SetFlashbackSink(null);");
+        AssertContains(cycleFlashbackBuffer, "FLASHBACK_CYCLE_DETACH_WARN target=microphone");
+        AssertContains(cycleFlashbackBuffer, "FLASHBACK_CYCLE_DETACH_WARN target=audio");
+        AssertContains(cycleFlashbackBuffer, "FLASHBACK_CYCLE_DETACH_WARN target=video");
         var cycleNewSinkStart = ExtractSourceBlock(
             cycleFlashbackBuffer,
             "var newSink = new FlashbackEncoderSink(bufferManager);",
@@ -397,6 +400,9 @@ static partial class Program
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_CANCELLED");
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_INIT_FAIL");
         AssertContains(captureServiceSource, "Logger.Log($\"{failureToken} type={ex.GetType().Name} error='{ex.Message}'\")");
+        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=video");
+        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=audio");
+        AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=microphone");
         AssertContains(captureServiceSource, "VIDEO_DIAG flashback_recording_pipeline");
         AssertContains(captureServiceSource, "BeginFlashbackBackendCleanup");
         AssertContains(captureServiceSource, "detachMicrophoneWriter: !preserveDedicatedRecordingMic");

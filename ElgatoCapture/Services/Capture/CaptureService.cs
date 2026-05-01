@@ -1758,9 +1758,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 : "FLASHBACK_PREVIEW_INIT_FAIL";
             Logger.Log($"{failureToken} type={ex.GetType().Name} error='{ex.Message}'");
             flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;
-            unifiedVideoCapture.SetFlashbackSink(null);
-            _wasapiAudioCapture?.DetachFlashbackSink();
-            _microphoneCapture?.SetAudioWriter(null);
+            try { unifiedVideoCapture.SetFlashbackSink(null); }
+            catch (Exception detachEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=video type={detachEx.GetType().Name} msg={detachEx.Message}"); }
+            try { _wasapiAudioCapture?.DetachFlashbackSink(); }
+            catch (Exception detachEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=audio type={detachEx.GetType().Name} msg={detachEx.Message}"); }
+            try { _microphoneCapture?.SetAudioWriter(null); }
+            catch (Exception detachEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=microphone type={detachEx.GetType().Name} msg={detachEx.Message}"); }
             try { (playbackController ?? _flashbackPlaybackController)?.Dispose(); }
             catch (Exception disposeEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_PLAYBACK_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
             try { await flashbackSink.DisposeAsync().ConfigureAwait(false); }
@@ -1999,9 +2002,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
 
         // Detach audio/video feeds from the old sink
-        _microphoneCapture?.SetAudioWriter(null);
-        _wasapiAudioCapture?.DetachFlashbackSink();
-        unifiedVideoCapture.SetFlashbackSink(null);
+        try { _microphoneCapture?.SetAudioWriter(null); }
+        catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_DETACH_WARN target=microphone type={detachEx.GetType().Name} msg={detachEx.Message}"); }
+        try { _wasapiAudioCapture?.DetachFlashbackSink(); }
+        catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_DETACH_WARN target=audio type={detachEx.GetType().Name} msg={detachEx.Message}"); }
+        try { unifiedVideoCapture.SetFlashbackSink(null); }
+        catch (Exception detachEx) { Logger.Log($"FLASHBACK_CYCLE_DETACH_WARN target=video type={detachEx.GetType().Name} msg={detachEx.Message}"); }
         oldSink.FrameEncoded -= OnFlashbackFrameEncoded;
         var committedCycleToken = CancellationToken.None;
 
