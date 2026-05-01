@@ -45,6 +45,7 @@ static partial class Program
         AssertContains(libAvSource, "public long VideoSequenceGaps");
         AssertContains(libAvSource, "public long VideoQueueOldestFrameAgeMs");
         AssertContains(libAvSource, "public double VideoQueueLatencyP95Ms");
+        AssertContains(libAvSource, "public double VideoQueueLatencyP99Ms");
         AssertContains(libAvSource, "public long VideoBackpressureWaitMs");
         AssertContains(libAvSource, "public long VideoBackpressureEvents");
         AssertContains(libAvSource, "RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64)");
@@ -131,6 +132,7 @@ static partial class Program
         AssertContains(flashbackSource, "public long VideoSequenceGaps");
         AssertContains(flashbackSource, "public long VideoQueueOldestFrameAgeMs");
         AssertContains(flashbackSource, "public double VideoQueueLatencyP95Ms");
+        AssertContains(flashbackSource, "public double VideoQueueLatencyP99Ms");
         AssertContains(flashbackSource, "public long VideoBackpressureWaitMs");
         AssertContains(flashbackSource, "public long VideoBackpressureEvents");
         AssertContains(flashbackSource, "RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64)");
@@ -415,11 +417,13 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "RecordingEncodingFailureMessage");
         AssertContains(captureSnapshotsSource, "RecordingVideoFramesSubmittedToEncoder = activeRecordingVideoFramesSubmitted");
         AssertContains(captureSnapshotsSource, "RecordingVideoQueueLatencyP95Ms = activeRecordingVideoQueueLatencyP95Ms");
+        AssertContains(captureSnapshotsSource, "RecordingVideoQueueLatencyP99Ms = activeRecordingVideoQueueLatencyP99Ms");
         AssertContains(captureSnapshotsSource, "RecordingVideoQueueOldestFrameAgeMs = activeRecordingVideoQueueOldestFrameAgeMs");
         AssertContains(captureSnapshotsSource, "RecordingVideoBackpressureWaitMs = activeRecordingVideoBackpressureWaitMs");
         AssertContains(captureSnapshotsSource, "FlashbackVideoEncoderPacketsWritten = fbSink?.VideoEncoderPacketsWritten");
         AssertContains(captureSnapshotsSource, "FlashbackVideoSequenceGaps = fbSink?.VideoSequenceGaps");
         AssertContains(captureSnapshotsSource, "FlashbackVideoQueueOldestFrameAgeMs = fbSink?.VideoQueueOldestFrameAgeMs");
+        AssertContains(captureSnapshotsSource, "FlashbackVideoQueueLatencyP99Ms = fbSink?.VideoQueueLatencyP99Ms");
         AssertContains(captureSnapshotsSource, "FlashbackVideoBackpressureWaitMs = fbSink?.VideoBackpressureWaitMs");
         AssertContains(captureSnapshotsSource, "FatalCleanupInProgress = fatalCleanupInProgress");
         AssertContains(captureSnapshotsSource, "FlashbackCleanupInProgress = flashbackCleanupInProgress");

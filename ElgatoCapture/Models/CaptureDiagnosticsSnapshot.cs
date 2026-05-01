@@ -215,6 +215,7 @@ public class CaptureDiagnosticsSnapshot
     public int RecordingVideoQueueLatencySampleCount { get; init; }
     public double RecordingVideoQueueLatencyAvgMs { get; init; }
     public double RecordingVideoQueueLatencyP95Ms { get; init; }
+    public double RecordingVideoQueueLatencyP99Ms { get; init; }
     public double RecordingVideoQueueLatencyMaxMs { get; init; }
     public long RecordingVideoBackpressureWaitMs { get; init; }
     public long RecordingVideoBackpressureEvents { get; init; }
@@ -252,6 +253,7 @@ public class CaptureDiagnosticsSnapshot
     public int FlashbackVideoQueueLatencySampleCount { get; init; }
     public double FlashbackVideoQueueLatencyAvgMs { get; init; }
     public double FlashbackVideoQueueLatencyP95Ms { get; init; }
+    public double FlashbackVideoQueueLatencyP99Ms { get; init; }
     public double FlashbackVideoQueueLatencyMaxMs { get; init; }
     public long FlashbackVideoBackpressureWaitMs { get; init; }
     public long FlashbackVideoBackpressureEvents { get; init; }

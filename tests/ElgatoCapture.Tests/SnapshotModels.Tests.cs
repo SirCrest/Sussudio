@@ -83,6 +83,7 @@ static partial class Program
         SetPropertyOrBackingField(snapshot, "RecordingVideoSequenceGaps", 2L);
         SetPropertyOrBackingField(snapshot, "RecordingVideoQueueOldestFrameAgeMs", 8L);
         SetPropertyOrBackingField(snapshot, "RecordingVideoQueueLatencyP95Ms", 4.5);
+        SetPropertyOrBackingField(snapshot, "RecordingVideoQueueLatencyP99Ms", 6.5);
         SetPropertyOrBackingField(snapshot, "RecordingVideoBackpressureWaitMs", 20L);
         SetPropertyOrBackingField(snapshot, "RecordingVideoBackpressureEvents", 2L);
         SetPropertyOrBackingField(snapshot, "RecordingVideoBackpressureLastWaitMs", 6L);
@@ -108,6 +109,7 @@ static partial class Program
         SetPropertyOrBackingField(snapshot, "FlashbackVideoSequenceGaps", 3L);
         SetPropertyOrBackingField(snapshot, "FlashbackVideoQueueOldestFrameAgeMs", 9L);
         SetPropertyOrBackingField(snapshot, "FlashbackVideoQueueLatencyP95Ms", 5.5);
+        SetPropertyOrBackingField(snapshot, "FlashbackVideoQueueLatencyP99Ms", 7.5);
         SetPropertyOrBackingField(snapshot, "FlashbackVideoBackpressureWaitMs", 30L);
         SetPropertyOrBackingField(snapshot, "FlashbackVideoBackpressureEvents", 3L);
         SetPropertyOrBackingField(snapshot, "FlashbackVideoBackpressureLastWaitMs", 7L);
@@ -139,6 +141,7 @@ static partial class Program
         AssertEqual(2L, GetLongProperty(snapshot, "RecordingVideoSequenceGaps"), "CaptureDiagnosticsSnapshot.RecordingVideoSequenceGaps round-trip");
         AssertEqual(8L, GetLongProperty(snapshot, "RecordingVideoQueueOldestFrameAgeMs"), "CaptureDiagnosticsSnapshot.RecordingVideoQueueOldestFrameAgeMs round-trip");
         AssertEqual(4.5, GetDoubleProperty(snapshot, "RecordingVideoQueueLatencyP95Ms"), "CaptureDiagnosticsSnapshot.RecordingVideoQueueLatencyP95Ms round-trip");
+        AssertEqual(6.5, GetDoubleProperty(snapshot, "RecordingVideoQueueLatencyP99Ms"), "CaptureDiagnosticsSnapshot.RecordingVideoQueueLatencyP99Ms round-trip");
         AssertEqual(20L, GetLongProperty(snapshot, "RecordingVideoBackpressureWaitMs"), "CaptureDiagnosticsSnapshot.RecordingVideoBackpressureWaitMs round-trip");
         AssertEqual(2L, GetLongProperty(snapshot, "RecordingVideoBackpressureEvents"), "CaptureDiagnosticsSnapshot.RecordingVideoBackpressureEvents round-trip");
         AssertEqual(6L, GetLongProperty(snapshot, "RecordingVideoBackpressureLastWaitMs"), "CaptureDiagnosticsSnapshot.RecordingVideoBackpressureLastWaitMs round-trip");
@@ -164,6 +167,7 @@ static partial class Program
         AssertEqual(3L, GetLongProperty(snapshot, "FlashbackVideoSequenceGaps"), "CaptureDiagnosticsSnapshot.FlashbackVideoSequenceGaps round-trip");
         AssertEqual(9L, GetLongProperty(snapshot, "FlashbackVideoQueueOldestFrameAgeMs"), "CaptureDiagnosticsSnapshot.FlashbackVideoQueueOldestFrameAgeMs round-trip");
         AssertEqual(5.5, GetDoubleProperty(snapshot, "FlashbackVideoQueueLatencyP95Ms"), "CaptureDiagnosticsSnapshot.FlashbackVideoQueueLatencyP95Ms round-trip");
+        AssertEqual(7.5, GetDoubleProperty(snapshot, "FlashbackVideoQueueLatencyP99Ms"), "CaptureDiagnosticsSnapshot.FlashbackVideoQueueLatencyP99Ms round-trip");
         AssertEqual(30L, GetLongProperty(snapshot, "FlashbackVideoBackpressureWaitMs"), "CaptureDiagnosticsSnapshot.FlashbackVideoBackpressureWaitMs round-trip");
         AssertEqual(3L, GetLongProperty(snapshot, "FlashbackVideoBackpressureEvents"), "CaptureDiagnosticsSnapshot.FlashbackVideoBackpressureEvents round-trip");
         AssertEqual(7L, GetLongProperty(snapshot, "FlashbackVideoBackpressureLastWaitMs"), "CaptureDiagnosticsSnapshot.FlashbackVideoBackpressureLastWaitMs round-trip");
@@ -886,6 +890,7 @@ static partial class Program
                 new("RecordingVideoQueueLatencySampleCount", typeof(int)),
                 new("RecordingVideoQueueLatencyAvgMs", typeof(double)),
                 new("RecordingVideoQueueLatencyP95Ms", typeof(double)),
+                new("RecordingVideoQueueLatencyP99Ms", typeof(double)),
                 new("RecordingVideoQueueLatencyMaxMs", typeof(double)),
                 new("RecordingVideoBackpressureWaitMs", typeof(long)),
                 new("RecordingVideoBackpressureEvents", typeof(long)),
@@ -923,6 +928,7 @@ static partial class Program
                 new("FlashbackVideoQueueLatencySampleCount", typeof(int)),
                 new("FlashbackVideoQueueLatencyAvgMs", typeof(double)),
                 new("FlashbackVideoQueueLatencyP95Ms", typeof(double)),
+                new("FlashbackVideoQueueLatencyP99Ms", typeof(double)),
                 new("FlashbackVideoQueueLatencyMaxMs", typeof(double)),
                 new("FlashbackVideoBackpressureWaitMs", typeof(long)),
                 new("FlashbackVideoBackpressureEvents", typeof(long)),

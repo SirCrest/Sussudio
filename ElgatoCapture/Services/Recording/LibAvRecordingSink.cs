@@ -127,6 +127,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     public int VideoQueueLatencySampleCount => GetVideoQueueLatencyMetrics().SampleCount;
     public double VideoQueueLatencyAvgMs => GetVideoQueueLatencyMetrics().AverageMs;
     public double VideoQueueLatencyP95Ms => GetVideoQueueLatencyMetrics().P95Ms;
+    public double VideoQueueLatencyP99Ms => GetVideoQueueLatencyMetrics().P99Ms;
     public double VideoQueueLatencyMaxMs => GetVideoQueueLatencyMetrics().MaxMs;
     public long VideoBackpressureWaitMs => Interlocked.Read(ref _videoBackpressureWaitMs);
     public long VideoBackpressureEvents => Interlocked.Read(ref _videoBackpressureEvents);
@@ -1230,7 +1231,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
     }
 
-    private (int SampleCount, double AverageMs, double P95Ms, double MaxMs) GetVideoQueueLatencyMetrics()
+    private (int SampleCount, double AverageMs, double P95Ms, double P99Ms, double MaxMs) GetVideoQueueLatencyMetrics()
     {
         double[] copy;
         int count;
@@ -1239,7 +1240,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             count = _videoQueueLatencySampleCount;
             if (count <= 0)
             {
-                return (0, 0, 0, 0);
+                return (0, 0, 0, 0, 0);
             }
 
             copy = new double[count];
@@ -1254,7 +1255,8 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         }
 
         var p95Index = Math.Clamp((int)Math.Ceiling(copy.Length * 0.95) - 1, 0, copy.Length - 1);
-        return (copy.Length, total / copy.Length, copy[p95Index], copy[^1]);
+        var p99Index = Math.Clamp((int)Math.Ceiling(copy.Length * 0.99) - 1, 0, copy.Length - 1);
+        return (copy.Length, total / copy.Length, copy[p95Index], copy[p99Index], copy[^1]);
     }
 
     private VideoEnqueueResult TryEnqueueVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)

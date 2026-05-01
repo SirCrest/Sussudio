@@ -1297,6 +1297,8 @@ public partial class CaptureService
                                                     (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyAvgMs ?? 0 : 0);
         var activeRecordingVideoQueueLatencyP95Ms = sink?.VideoQueueLatencyP95Ms ??
                                                     (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyP95Ms ?? 0 : 0);
+        var activeRecordingVideoQueueLatencyP99Ms = sink?.VideoQueueLatencyP99Ms ??
+                                                    (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyP99Ms ?? 0 : 0);
         var activeRecordingVideoQueueLatencyMaxMs = sink?.VideoQueueLatencyMaxMs ??
                                                     (flashbackIsRecordingBackend ? fbSink?.VideoQueueLatencyMaxMs ?? 0 : 0);
         var activeRecordingVideoBackpressureWaitMs = sink?.VideoBackpressureWaitMs ??
@@ -1552,6 +1554,7 @@ public partial class CaptureService
             RecordingVideoQueueLatencySampleCount = activeRecordingVideoQueueLatencySampleCount,
             RecordingVideoQueueLatencyAvgMs = activeRecordingVideoQueueLatencyAvgMs,
             RecordingVideoQueueLatencyP95Ms = activeRecordingVideoQueueLatencyP95Ms,
+            RecordingVideoQueueLatencyP99Ms = activeRecordingVideoQueueLatencyP99Ms,
             RecordingVideoQueueLatencyMaxMs = activeRecordingVideoQueueLatencyMaxMs,
             RecordingVideoBackpressureWaitMs = activeRecordingVideoBackpressureWaitMs,
             RecordingVideoBackpressureEvents = activeRecordingVideoBackpressureEvents,
@@ -1589,6 +1592,7 @@ public partial class CaptureService
             FlashbackVideoQueueLatencySampleCount = fbSink?.VideoQueueLatencySampleCount ?? 0,
             FlashbackVideoQueueLatencyAvgMs = fbSink?.VideoQueueLatencyAvgMs ?? 0,
             FlashbackVideoQueueLatencyP95Ms = fbSink?.VideoQueueLatencyP95Ms ?? 0,
+            FlashbackVideoQueueLatencyP99Ms = fbSink?.VideoQueueLatencyP99Ms ?? 0,
             FlashbackVideoQueueLatencyMaxMs = fbSink?.VideoQueueLatencyMaxMs ?? 0,
             FlashbackVideoBackpressureWaitMs = fbSink?.VideoBackpressureWaitMs ?? 0,
             FlashbackVideoBackpressureEvents = fbSink?.VideoBackpressureEvents ?? 0,
