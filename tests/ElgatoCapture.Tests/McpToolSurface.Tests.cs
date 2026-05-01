@@ -618,7 +618,7 @@ static partial class Program
                                  "PreviewD3DFrameStatsFailureCount": 2,
                                  "PreviewD3DRecentSlowFrames": [
                                    {
-                                     "Reason": "present_interval",
+                                     "SlowReason": "present_interval",
                                      "WorstOverBudgetMs": 1.5,
                                      "PresentIntervalMs": 9.8,
                                      "TotalFrameCpuMs": 4.2,

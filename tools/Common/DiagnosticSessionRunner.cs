@@ -3212,7 +3212,7 @@ public static class DiagnosticSessionRunner
                 CountArrayItems(sample.Snapshot, "PreviewD3DRecentSlowFrames"));
             if (TryGetLatestSlowFrame(sample.Snapshot, out var slowFrame))
             {
-                metrics.LatestSlowFrameReason = GetString(slowFrame, "Reason") ?? string.Empty;
+                metrics.LatestSlowFrameReason = GetSlowFrameReason(slowFrame);
                 metrics.LatestSlowFrameOverBudgetMs = GetDouble(slowFrame, "WorstOverBudgetMs");
                 metrics.LatestSlowFramePresentIntervalMs = GetDouble(slowFrame, "PresentIntervalMs");
                 metrics.LatestSlowFrameTotalFrameCpuMs = GetDouble(slowFrame, "TotalFrameCpuMs");
@@ -3227,7 +3227,7 @@ public static class DiagnosticSessionRunner
         ObservePreviewD3DCpuTiming(metrics, lastSnapshot);
         if (TryGetLatestSlowFrame(lastSnapshot, out var lastSlowFrame))
         {
-            metrics.LatestSlowFrameReason = GetString(lastSlowFrame, "Reason") ?? string.Empty;
+            metrics.LatestSlowFrameReason = GetSlowFrameReason(lastSlowFrame);
             metrics.LatestSlowFrameOverBudgetMs = GetDouble(lastSlowFrame, "WorstOverBudgetMs");
             metrics.LatestSlowFramePresentIntervalMs = GetDouble(lastSlowFrame, "PresentIntervalMs");
             metrics.LatestSlowFrameTotalFrameCpuMs = GetDouble(lastSlowFrame, "TotalFrameCpuMs");
@@ -3237,6 +3237,9 @@ public static class DiagnosticSessionRunner
 
         return metrics;
     }
+
+    private static string GetSlowFrameReason(JsonElement slowFrame)
+        => GetString(slowFrame, "SlowReason") ?? GetString(slowFrame, "Reason") ?? string.Empty;
 
     private sealed class PreviewD3DMetrics
     {
