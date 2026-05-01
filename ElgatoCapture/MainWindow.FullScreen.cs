@@ -67,11 +67,17 @@ public sealed partial class MainWindow
                     e.Handled = true;
                     return;
                 case Windows.System.VirtualKey.Left:
-                    ViewModel.FlashbackNudge(TimeSpan.FromSeconds(-1));
+                    if (!ViewModel.FlashbackNudge(TimeSpan.FromSeconds(-1)))
+                    {
+                        Logger.Log("FLASHBACK_UI_NUDGE_REJECTED direction=left");
+                    }
                     e.Handled = true;
                     return;
                 case Windows.System.VirtualKey.Right:
-                    ViewModel.FlashbackNudge(TimeSpan.FromSeconds(1));
+                    if (!ViewModel.FlashbackNudge(TimeSpan.FromSeconds(1)))
+                    {
+                        Logger.Log("FLASHBACK_UI_NUDGE_REJECTED direction=right");
+                    }
                     e.Handled = true;
                     return;
             }
@@ -123,7 +129,10 @@ public sealed partial class MainWindow
         if (_isFlashbackScrubbing)
         {
             _isFlashbackScrubbing = false;
-            ViewModel?.FlashbackEndScrub();
+            if (ViewModel?.FlashbackEndScrub() == false)
+            {
+                Logger.Log("FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter");
+            }
         }
 
         // Move controls to the fullscreen overlay for VLC-style slide-up behavior.

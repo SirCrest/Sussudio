@@ -201,6 +201,8 @@ static partial class Program
     {
         var flashbackWindowText = ReadRepoFile("ElgatoCapture/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
+        var fullScreenWindowText = ReadRepoFile("ElgatoCapture/MainWindow.FullScreen.cs")
+            .Replace("\r\n", "\n");
         var xamlText = ReadRepoFile("ElgatoCapture/MainWindow.xaml")
             .Replace("\r\n", "\n");
 
@@ -220,6 +222,9 @@ static partial class Program
         AssertContains(flashbackWindowText, "FLASHBACK_UI_SCRUB_END");
         AssertContains(flashbackWindowText, "FlashbackScrubArea_PointerCanceled");
         AssertContains(flashbackWindowText, "FlashbackScrubArea_PointerCaptureLost");
+        AssertContains(fullScreenWindowText, "Logger.Log(\"FLASHBACK_UI_NUDGE_REJECTED direction=left\");");
+        AssertContains(fullScreenWindowText, "Logger.Log(\"FLASHBACK_UI_NUDGE_REJECTED direction=right\");");
+        AssertContains(fullScreenWindowText, "Logger.Log(\"FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter\");");
 
         return Task.CompletedTask;
     }
