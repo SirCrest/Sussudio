@@ -33,6 +33,12 @@ static partial class Program
         AssertContains(output, "== Source ==");
         AssertContains(output, "Written: 150 MB");
         AssertContains(output, "A/V Drift: -1.5ms");
+        var ecctlFormatterSource = ReadRepoFile("tools/ecctl/Formatters.cs");
+        AssertContains(ecctlFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
+        AssertContains(ecctlFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
+        var sharedFormatterSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
+        AssertContains(sharedFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
+        AssertContains(sharedFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
 
         const string failedFlashbackJson = """
                                           {"Snapshot":{"SessionState":"Error","StatusText":"Flashback failed","SelectedDeviceName":"Synthetic","SelectedDeviceId":"device-1","IsInitialized":true,"IsPreviewing":false,"IsRecording":false,"FlashbackActive":false,"FlashbackEncodingFailed":true,"FlashbackEncodingFailureType":"InvalidOperationException","FlashbackEncodingFailureMessage":"Flashback queue overloaded"}}

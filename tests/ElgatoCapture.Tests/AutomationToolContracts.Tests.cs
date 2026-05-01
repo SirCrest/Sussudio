@@ -222,6 +222,23 @@ static partial class Program
                   { "WorkerIndex": 0, "AvgMs": 2.1, "P95Ms": 3.1, "MaxMs": 4.1, "SampleCount": 5 }
                 ],
                 "PreviewRendererMode": "D3D11VideoProcessor",
+                "PreviewD3DCpuTimingSampleCount": 120,
+                "PreviewD3DInputUploadCpuAvgMs": 0.1,
+                "PreviewD3DInputUploadCpuP95Ms": 0.2,
+                "PreviewD3DInputUploadCpuP99Ms": 0.3,
+                "PreviewD3DInputUploadCpuMaxMs": 0.4,
+                "PreviewD3DRenderSubmitCpuAvgMs": 0.5,
+                "PreviewD3DRenderSubmitCpuP95Ms": 0.6,
+                "PreviewD3DRenderSubmitCpuP99Ms": 0.7,
+                "PreviewD3DRenderSubmitCpuMaxMs": 0.8,
+                "PreviewD3DPresentCallAvgMs": 0.9,
+                "PreviewD3DPresentCallP95Ms": 1.0,
+                "PreviewD3DPresentCallP99Ms": 1.1,
+                "PreviewD3DPresentCallMaxMs": 1.2,
+                "PreviewD3DTotalFrameCpuAvgMs": 1.3,
+                "PreviewD3DTotalFrameCpuP95Ms": 1.4,
+                "PreviewD3DTotalFrameCpuP99Ms": 1.5,
+                "PreviewD3DTotalFrameCpuMaxMs": 1.6,
                 "PreviewD3DFrameStatsSampleCount": 120,
                 "PreviewD3DFrameStatsSuccessCount": 119,
                 "PreviewD3DFrameStatsFailureCount": 1,
@@ -269,6 +286,7 @@ static partial class Program
         AssertContains(formatted, "== MJPEG Pipeline Timing ==");
         AssertContains(formatted, "Decoder[0]: avg=2.1ms");
         AssertContains(formatted, "== Preview ==");
+        AssertContains(formatted, "D3D CPU timing: input/upload avg=0.1ms P95=0.2ms P99=0.3ms max=0.4ms | render-submit avg=0.5ms P95=0.6ms P99=0.7ms max=0.8ms | present-call avg=0.9ms P95=1.0ms P99=1.1ms max=1.2ms | total-frame avg=1.3ms P95=1.4ms P99=1.5ms max=1.6ms samples=120");
         AssertContains(formatted, "D3D DXGI stats: ok=119/120 failures=1 recentFailures=1 missedRefresh=4 recentMissed=2 lastError=DXGI_ERROR_WAS_STILL_DRAWING");
         AssertContains(formatted, "D3D Slow Frames: present=42 srcSeq=9001 reason=present_interval target=8.33ms over=0.87ms interval=9.20ms");
         AssertContains(formatted, "== Source ==");
