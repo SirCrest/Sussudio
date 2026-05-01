@@ -1112,7 +1112,10 @@ static partial class Program
         AssertContains(sourceText, "frameDuration = ResolveFrameDuration(decoder);");
         AssertContains(sourceText, "private TimeSpan ResolveFrameDuration(FlashbackDecoder decoder)");
         AssertContains(sourceText, "if (!double.IsFinite(fps) || fps <= 0)\n        {\n            fps = decoder.FrameRate;\n        }");
-        AssertContains(sourceText, "if (!double.IsFinite(fps) || fps <= 0)\n        {\n            fps = 60.0;\n        }");
+        AssertContains(sourceText, "if (!double.IsFinite(fps) || fps <= 0)\n        {\n            fps = FallbackPlaybackFrameRate;\n        }");
+        AssertContains(sourceText, "private const double FallbackPlaybackFrameRate = 60.0;");
+        AssertContains(sourceText, "private const double MaxPlaybackFrameRate = 1000.0;");
+        AssertContains(sourceText, "fps = Math.Min(fps, MaxPlaybackFrameRate);");
         AssertContains(sourceText, "return TimeSpan.FromSeconds(1.0 / fps);");
 
         return Task.CompletedTask;

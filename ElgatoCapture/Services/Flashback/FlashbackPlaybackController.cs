@@ -160,6 +160,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- Playback thread ---
     private const int CommandQueueCapacity = 256;
+    private const double FallbackPlaybackFrameRate = 60.0;
+    private const double MaxPlaybackFrameRate = 1000.0;
     private Thread? _playbackThread;
     private int _playbackThreadStarted;
     private CancellationTokenSource? _playCts;
@@ -1537,9 +1539,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         if (!double.IsFinite(fps) || fps <= 0)
         {
-            fps = 60.0;
+            fps = FallbackPlaybackFrameRate;
         }
 
+        fps = Math.Min(fps, MaxPlaybackFrameRate);
         return TimeSpan.FromSeconds(1.0 / fps);
     }
 
