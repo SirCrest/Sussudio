@@ -68,7 +68,11 @@ internal readonly record struct FlashbackPlaybackSnapshot(
     TimeSpan PlaybackPosition,
     TimeSpan GapFromLive,
     TimeSpan? InPoint,
-    TimeSpan? OutPoint)
+    TimeSpan? OutPoint,
+    bool ThreadAlive,
+    int PendingCommands,
+    string LastCommandFailure,
+    long LastCommandFailureUtcUnixMs)
 {
     public static FlashbackPlaybackSnapshot Disabled { get; } = new(
         false,
@@ -76,7 +80,11 @@ internal readonly record struct FlashbackPlaybackSnapshot(
         TimeSpan.Zero,
         TimeSpan.Zero,
         null,
-        null);
+        null,
+        false,
+        0,
+        string.Empty,
+        0);
 }
 
 internal readonly record struct FlashbackBufferStatus(
@@ -319,7 +327,11 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                 controller.PlaybackPosition,
                 controller.GapFromLive,
                 controller.InPoint,
-                controller.OutPoint);
+                controller.OutPoint,
+                controller.PlaybackThreadAlive,
+                controller.PendingCommands,
+                controller.LastCommandFailure,
+                controller.LastCommandFailureUtcUnixMs);
     }
 
     internal bool FlashbackBeginScrub(TimeSpan position)

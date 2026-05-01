@@ -202,7 +202,7 @@ public sealed partial class MainWindow
         var targetPosition = ComputeFlashbackScrubPosition(e);
         if (!ViewModel.FlashbackBeginScrub(targetPosition))
         {
-            Logger.Log("FLASHBACK_UI_SCRUB_BEGIN_REJECTED");
+            ViewModel.ReportFlashbackPlaybackRejection("scrub begin", "FLASHBACK_UI_SCRUB_BEGIN_REJECTED");
             return;
         }
 
@@ -222,7 +222,7 @@ public sealed partial class MainWindow
         var targetPosition = ComputeFlashbackScrubPosition(e);
         if (!ViewModel.FlashbackUpdateScrub(targetPosition))
         {
-            Logger.Log("FLASHBACK_UI_SCRUB_UPDATE_REJECTED");
+            ViewModel.ReportFlashbackPlaybackRejection("scrub update", "FLASHBACK_UI_SCRUB_UPDATE_REJECTED");
             EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "update_rejected");
             return;
         }
@@ -248,7 +248,7 @@ public sealed partial class MainWindow
         element?.ReleasePointerCapture(pointer);
         if (!ViewModel.FlashbackEndScrub())
         {
-            Logger.Log($"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}");
+            ViewModel.ReportFlashbackPlaybackRejection($"scrub end ({reason})", $"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}");
         }
         Logger.Log($"FLASHBACK_UI_SCRUB_END reason={reason}");
     }
@@ -278,6 +278,7 @@ public sealed partial class MainWindow
         else
         {
             Logger.Log("FLASHBACK_UI_SET_IN_REJECTED");
+            ViewModel.ReportFlashbackPlaybackRejection("set in point", "FLASHBACK_UI_SET_IN_REJECTED");
         }
     }
     private void FlashbackOutButton_Click(object sender, RoutedEventArgs e)
@@ -291,13 +292,14 @@ public sealed partial class MainWindow
         else
         {
             Logger.Log("FLASHBACK_UI_SET_OUT_REJECTED");
+            ViewModel.ReportFlashbackPlaybackRejection("set out point", "FLASHBACK_UI_SET_OUT_REJECTED");
         }
     }
     private void FlashbackClearButton_Click(object sender, RoutedEventArgs e)
     {
         if (!ViewModel.FlashbackClearInOutPoints())
         {
-            Logger.Log("FLASHBACK_UI_CLEAR_INOUT_REJECTED");
+            ViewModel.ReportFlashbackPlaybackRejection("clear in/out", "FLASHBACK_UI_CLEAR_INOUT_REJECTED");
             return;
         }
         ViewModel.FlashbackInPoint = null;
@@ -311,7 +313,7 @@ public sealed partial class MainWindow
         {
             if (!ViewModel.FlashbackPause())
             {
-                Logger.Log("FLASHBACK_UI_PAUSE_REJECTED");
+                ViewModel.ReportFlashbackPlaybackRejection("pause", "FLASHBACK_UI_PAUSE_REJECTED");
             }
             else
             {
@@ -322,7 +324,7 @@ public sealed partial class MainWindow
         {
             if (!ViewModel.FlashbackPlay())
             {
-                Logger.Log("FLASHBACK_UI_PLAY_REJECTED");
+                ViewModel.ReportFlashbackPlaybackRejection("play", "FLASHBACK_UI_PLAY_REJECTED");
             }
             else
             {
@@ -334,7 +336,7 @@ public sealed partial class MainWindow
     {
         if (!ViewModel.FlashbackGoLive())
         {
-            Logger.Log("FLASHBACK_UI_GOLIVE_REJECTED");
+            ViewModel.ReportFlashbackPlaybackRejection("go live", "FLASHBACK_UI_GOLIVE_REJECTED");
         }
         else
         {

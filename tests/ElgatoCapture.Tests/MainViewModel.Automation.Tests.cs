@@ -133,6 +133,9 @@ static partial class Program
         AssertContains(dispatcherText, "await _viewModel.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false)");
         AssertDoesNotContain(dispatcherText, "_viewModel.IsMicrophoneEnabled =");
         AssertContains(automationText, "public Task<bool> ExecuteFlashbackActionAsync(");
+        AssertContains(automationText, "public void ReportFlashbackPlaybackRejection(string action, string logToken)");
+        AssertContains(automationText, "lastFailure={lastFailure}");
+        AssertContains(automationText, "StatusText = message;");
         AssertContains(automationText, "case AutomationFlashbackAction.SetInPoint:");
         AssertContains(automationText, "case AutomationFlashbackAction.SetOutPoint:");
         AssertContains(automationText, "case AutomationFlashbackAction.ClearInOutPoints:");
