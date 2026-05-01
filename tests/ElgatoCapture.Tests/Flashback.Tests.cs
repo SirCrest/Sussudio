@@ -1318,6 +1318,83 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_RejectsBlockedTempOutputPathBeforeNativeExport()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_temp_blocked_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var inputPath = Path.Combine(tempDir, "input.ts");
+            File.WriteAllBytes(inputPath, new byte[] { 0x47 });
+
+            var exporter = Activator.CreateInstance(exporterType)!;
+            try
+            {
+                var exportCore = exporterType.GetMethod("ExportCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FlashbackExporter.ExportCore not found.");
+                var singleOutputPath = Path.Combine(tempDir, "single-blocked.mp4");
+                Directory.CreateDirectory(singleOutputPath + ".tmp");
+
+                var singleResult = exportCore.Invoke(exporter, new object?[]
+                {
+                    inputPath,
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    singleOutputPath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(singleResult, "Succeeded"), "Single export rejects blocked temp output");
+                AssertContains(GetStringProperty(singleResult, "StatusMessage"), "temporary output path is a directory");
+                AssertEqual(false, File.Exists(singleOutputPath), "Single blocked temp export does not create output");
+                AssertEqual(true, Directory.Exists(singleOutputPath + ".tmp"), "Single blocked temp directory is preserved");
+
+                var segment = Activator.CreateInstance(segmentType)!;
+                SetPropertyBackingField(segment, "Path", inputPath);
+                var segments = Array.CreateInstance(segmentType, 1);
+                segments.SetValue(segment, 0);
+                var exportSegmentsCore = exporterType.GetMethod("ExportSegmentsCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FlashbackExporter.ExportSegmentsCore not found.");
+                var segmentOutputPath = Path.Combine(tempDir, "segment-blocked.mp4");
+                Directory.CreateDirectory(segmentOutputPath + ".tmp");
+
+                var segmentResult = exportSegmentsCore.Invoke(exporter, new object?[]
+                {
+                    segments,
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    segmentOutputPath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(segmentResult, "Succeeded"), "Segment export rejects blocked temp output");
+                AssertContains(GetStringProperty(segmentResult, "StatusMessage"), "temporary output path is a directory");
+                AssertEqual(false, File.Exists(segmentOutputPath), "Segment blocked temp export does not create output");
+                AssertEqual(true, Directory.Exists(segmentOutputPath + ".tmp"), "Segment blocked temp directory is preserved");
+            }
+            finally
+            {
+                if (exporter is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_InOutPoints_DefaultToUnset()
     {
         var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");

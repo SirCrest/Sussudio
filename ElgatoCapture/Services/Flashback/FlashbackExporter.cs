@@ -282,7 +282,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         try
         {
-            DeleteTempFileIfPresent(tmpPath);
+            if (!TryPrepareTempOutputFile(tmpPath, outputPath, out var tempOutputFailure))
+            {
+                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{tempOutputFailure}'");
+                return FinalizeResult.Failure(outputPath, tempOutputFailure);
+            }
+
             LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
             Logger.Log($"FLASHBACK_EXPORT_START input='{inputTsPath}' in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
@@ -653,7 +658,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         try
         {
-            DeleteTempFileIfPresent(tmpPath);
+            if (!TryPrepareTempOutputFile(tmpPath, outputPath, out var tempOutputFailure))
+            {
+                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{tempOutputFailure}'");
+                return FinalizeResult.Failure(outputPath, tempOutputFailure);
+            }
+
             LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
             Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_START segments={segments.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
@@ -1936,6 +1946,38 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'");
         }
+    }
+
+    private static bool TryPrepareTempOutputFile(string tmpPath, string outputPath, out string failureMessage)
+    {
+        if (Directory.Exists(tmpPath))
+        {
+            failureMessage = $"Flashback export failed: temporary output path is a directory '{tmpPath}'.";
+            return false;
+        }
+
+        try
+        {
+            if (File.Exists(tmpPath))
+            {
+                File.Delete(tmpPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            failureMessage = $"Flashback export failed: could not remove stale temporary output file before replacing '{outputPath}'.";
+            Logger.Log($"FLASHBACK_EXPORT_TMP_PREPARE_WARN path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            return false;
+        }
+
+        if (File.Exists(tmpPath) || Directory.Exists(tmpPath))
+        {
+            failureMessage = $"Flashback export failed: stale temporary output path could not be cleared '{tmpPath}'.";
+            return false;
+        }
+
+        failureMessage = string.Empty;
+        return true;
     }
 
     private void CloseActiveInput()

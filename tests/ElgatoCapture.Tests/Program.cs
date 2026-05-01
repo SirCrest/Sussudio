@@ -1002,6 +1002,9 @@ static partial class Program
             await RunCheckAsync(
                 "Flashback exporter invalid temp output preserves existing exports",
                 FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport),
+            await RunCheckAsync(
+                "Flashback exporter rejects blocked temp output paths before native export",
+                FlashbackExporter_RejectsBlockedTempOutputPathBeforeNativeExport),
 
             // --- RecordingPipelineOptions ---
             await RunCheckAsync(
