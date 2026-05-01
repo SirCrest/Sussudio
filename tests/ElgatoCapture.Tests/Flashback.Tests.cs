@@ -1272,6 +1272,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_SoftwareFramePlanesAreValidated()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "if (actualFormat != AVPixelFormat.AV_PIX_FMT_NONE && actualFormat != _decodedPixelFormat)");
+        AssertContains(sourceText, "if (!TryValidateSoftwareVideoFrame(_videoFrame, _decodedPixelFormat, _videoWidth, _videoHeight, _isHdr, out var frameFailure))");
+        AssertContains(sourceText, "FLASHBACK_DECODER_VIDEO_WARN reason=invalid_software_frame");
+        AssertContains(sourceText, "ffmpeg.av_frame_unref(_videoFrame);\n            return default;");
+        AssertContains(sourceText, "private static bool TryValidateSoftwareVideoFrame(");
+        AssertContains(sourceText, "width_mismatch frame={frame->width} expected={width}");
+        AssertContains(sourceText, "height_mismatch frame={frame->height} expected={height}");
+        AssertContains(sourceText, "format == AVPixelFormat.AV_PIX_FMT_YUV420P");
+        AssertContains(sourceText, "format == AVPixelFormat.AV_PIX_FMT_YUV420P10LE");
+        AssertContains(sourceText, "failure = $\"unsupported_format:{format}\";");
+        AssertContains(sourceText, "private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)");
+        AssertContains(sourceText, "var plane = (uint)planeIndex;");
+        AssertContains(sourceText, "failure = $\"plane_{planeIndex}_null\";");
+        AssertContains(sourceText, "failure = $\"plane_{planeIndex}_linesize:{frame->linesize[plane]}<{minLineSize}\";");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackDecoder_HeldFrameCleanupIsBestEffort()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")

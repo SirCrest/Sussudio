@@ -932,6 +932,20 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
 
         // Software decode path
+        if (actualFormat != AVPixelFormat.AV_PIX_FMT_NONE && actualFormat != _decodedPixelFormat)
+        {
+            _decodedPixelFormat = actualFormat;
+            var targetFmt = _isHdr ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
+            _needsConvert = _decodedPixelFormat != targetFmt;
+        }
+
+        if (!TryValidateSoftwareVideoFrame(_videoFrame, _decodedPixelFormat, _videoWidth, _videoHeight, _isHdr, out var frameFailure))
+        {
+            Logger.Log($"FLASHBACK_DECODER_VIDEO_WARN reason=invalid_software_frame detail='{frameFailure}' fmt={_decodedPixelFormat} w={_videoWidth} h={_videoHeight}");
+            ffmpeg.av_frame_unref(_videoFrame);
+            return default;
+        }
+
         var targetFormat = _isHdr ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
         var outputSize = CalculateFrameBufferSize(_videoWidth, _videoHeight, _isHdr);
 
@@ -1005,6 +1019,79 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             CopyPlane(_videoFrame->data[1], _videoFrame->linesize[1],
                       dest + yPlaneSize, _videoWidth, _videoHeight / 2);
         }
+    }
+
+    private static bool TryValidateSoftwareVideoFrame(
+        AVFrame* frame,
+        AVPixelFormat format,
+        int width,
+        int height,
+        bool isHdr,
+        out string failure)
+    {
+        failure = string.Empty;
+        if (frame == null)
+        {
+            failure = "frame_null";
+            return false;
+        }
+
+        if (frame->width > 0 && frame->width != width)
+        {
+            failure = $"width_mismatch frame={frame->width} expected={width}";
+            return false;
+        }
+
+        if (frame->height > 0 && frame->height != height)
+        {
+            failure = $"height_mismatch frame={frame->height} expected={height}";
+            return false;
+        }
+
+        var targetFormat = isHdr ? AVPixelFormat.AV_PIX_FMT_P010LE : AVPixelFormat.AV_PIX_FMT_NV12;
+        if (format == targetFormat)
+        {
+            var lumaBytes = isHdr ? width * 2 : width;
+            var chromaBytes = isHdr ? width * 2 : width;
+            return TryValidatePlane(frame, 0, lumaBytes, out failure) &&
+                   TryValidatePlane(frame, 1, chromaBytes, out failure);
+        }
+
+        if (!isHdr && format == AVPixelFormat.AV_PIX_FMT_YUV420P)
+        {
+            return TryValidatePlane(frame, 0, width, out failure) &&
+                   TryValidatePlane(frame, 1, width / 2, out failure) &&
+                   TryValidatePlane(frame, 2, width / 2, out failure);
+        }
+
+        if (isHdr && format == AVPixelFormat.AV_PIX_FMT_YUV420P10LE)
+        {
+            return TryValidatePlane(frame, 0, width * 2, out failure) &&
+                   TryValidatePlane(frame, 1, width, out failure) &&
+                   TryValidatePlane(frame, 2, width, out failure);
+        }
+
+        failure = $"unsupported_format:{format}";
+        return false;
+    }
+
+    private static bool TryValidatePlane(AVFrame* frame, int planeIndex, int minLineSize, out string failure)
+    {
+        var plane = (uint)planeIndex;
+        if (frame->data[plane] == null)
+        {
+            failure = $"plane_{planeIndex}_null";
+            return false;
+        }
+
+        if (frame->linesize[plane] < minLineSize)
+        {
+            failure = $"plane_{planeIndex}_linesize:{frame->linesize[plane]}<{minLineSize}";
+            return false;
+        }
+
+        failure = string.Empty;
+        return true;
     }
 
     private static void CopyPlane(byte* src, int srcLinesize, byte* dst, int dstLinesize, int height)
