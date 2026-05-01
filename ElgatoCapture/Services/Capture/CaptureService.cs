@@ -820,6 +820,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private static TimeSpan ClampFlashbackBufferPosition(TimeSpan position, TimeSpan bufferedDuration)
     {
+        if (bufferedDuration <= TimeSpan.Zero)
+        {
+            return TimeSpan.Zero;
+        }
+
         if (position < TimeSpan.Zero)
         {
             return TimeSpan.Zero;
@@ -833,6 +838,16 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         if (position == TimeSpan.MaxValue || offset == TimeSpan.MaxValue)
         {
             return TimeSpan.MaxValue;
+        }
+
+        if (position < TimeSpan.Zero)
+        {
+            position = TimeSpan.Zero;
+        }
+
+        if (offset <= TimeSpan.Zero)
+        {
+            return position;
         }
 
         return position > TimeSpan.MaxValue - offset
