@@ -1212,7 +1212,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_BUFFER_DELETE_WARN path='{filePath}' msg='{ex.Message}'");
+            Logger.Log($"FLASHBACK_BUFFER_DELETE_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
             return false;
         }
     }

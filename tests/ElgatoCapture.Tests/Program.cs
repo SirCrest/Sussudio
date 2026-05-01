@@ -2400,6 +2400,7 @@ static partial class Program
         AssertContains(source, "_totalDiskBytes = Math.Max(0, _completedSegmentBytes + safeActiveSegmentBytes);");
         AssertContains(source, "_completedSegmentBytes = Math.Max(0, _completedSegmentBytes - freedBytes);");
         AssertContains(source, "_totalDiskBytes = Math.Max(0, _totalDiskBytes - freedBytes);");
+        AssertContains(source, "FLASHBACK_BUFFER_DELETE_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
 
         return Task.CompletedTask;
     }
