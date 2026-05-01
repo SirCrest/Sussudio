@@ -198,6 +198,21 @@ static partial class Program
                 "UI automation commands are not blocked on device readiness",
                 UiAutomationCommands_AreNotBlockedOnDeviceReadiness),
             await RunCheckAsync(
+                "Automation dispatcher extracts string payload fields",
+                AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload),
+            await RunCheckAsync(
+                "Automation dispatcher extracts bool payload fields",
+                AutomationCommandDispatcher_GetBool_ExtractsFromJsonPayload),
+            await RunCheckAsync(
+                "Automation dispatcher extracts int payload fields",
+                AutomationCommandDispatcher_GetInt_ExtractsFromJsonPayload),
+            await RunCheckAsync(
+                "Automation dispatcher extracts double payload fields",
+                AutomationCommandDispatcher_GetDouble_ExtractsFromJsonPayload),
+            await RunCheckAsync(
+                "Automation dispatcher requires missing string fields",
+                AutomationCommandDispatcher_RequireString_ThrowsOnMissing),
+            await RunCheckAsync(
                 "Automation dispatcher ready-device gate classifies commands",
                 AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands),
             await RunCheckAsync(
