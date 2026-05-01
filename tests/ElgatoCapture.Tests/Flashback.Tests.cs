@@ -275,6 +275,7 @@ static partial class Program
     private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathEmpty()
     {
         var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var requestType = RequireType("ElgatoCapture.Models.FlashbackExportRequest");
         var exporter = Activator.CreateInstance(exporterType)!;
         var exportMethod = exporterType.GetMethod("ExportAsync", BindingFlags.Public | BindingFlags.Instance)!;
 
@@ -301,6 +302,46 @@ static partial class Program
         finally
         {
             try { File.Delete(tempInput); } catch { }
+        }
+    }
+
+    private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathIsDirectory()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var requestType = RequireType("ElgatoCapture.Models.FlashbackExportRequest");
+        var exporter = Activator.CreateInstance(exporterType)!;
+        var exportMethod = exporterType.GetMethod("ExportAsync", BindingFlags.Public | BindingFlags.Instance)!;
+
+        var tempInput = Path.Combine(Path.GetTempPath(), $"fb_input_{Guid.NewGuid():N}.ts");
+        var outputDirectory = Path.Combine(Path.GetTempPath(), $"fb_export_dir_{Guid.NewGuid():N}");
+        File.WriteAllBytes(tempInput, new byte[] { 0x47 });
+        Directory.CreateDirectory(outputDirectory);
+        try
+        {
+            var request = Activator.CreateInstance(requestType)!;
+            SetPropertyBackingField(request, "InputTsPath", tempInput);
+            SetPropertyBackingField(request, "InPoint", TimeSpan.Zero);
+            SetPropertyBackingField(request, "OutPoint", TimeSpan.FromSeconds(10));
+            SetPropertyBackingField(request, "OutputPath", outputDirectory);
+            SetPropertyBackingField(request, "FastStart", true);
+
+            var task = exportMethod.Invoke(exporter, new object?[]
+            {
+                request,
+                null,
+                CancellationToken.None
+            }) as Task ?? throw new InvalidOperationException("ExportAsync did not return Task.");
+
+            await task.ConfigureAwait(false);
+            var result = task.GetType().GetProperty("Result")!.GetValue(task)!;
+            AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Export fails when output path is a directory");
+            AssertContains(GetStringProperty(result, "StatusMessage"), "output path is a directory");
+            AssertEqual(false, File.Exists(outputDirectory + ".tmp"), "Directory-target export does not create temp output");
+        }
+        finally
+        {
+            try { File.Delete(tempInput); } catch { }
+            try { Directory.Delete(outputDirectory, recursive: true); } catch { }
         }
     }
 
