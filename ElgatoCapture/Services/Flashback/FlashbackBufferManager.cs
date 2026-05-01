@@ -213,8 +213,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             else
             {
                 // Partial purge — adjust byte counters for what we freed
-                _completedSegmentBytes -= freedBytes;
-                _totalDiskBytes -= freedBytes;
+                _completedSegmentBytes = Math.Max(0, _completedSegmentBytes - freedBytes);
+                _totalDiskBytes = Math.Max(0, _totalDiskBytes - freedBytes);
                 Logger.Log($"FLASHBACK_PURGE_PARTIAL freed={freedBytes} remaining_segments={_completedSegments.Count}");
             }
         }
@@ -956,13 +956,15 @@ internal sealed class FlashbackBufferManager : IDisposable
                 var activeStartPts = _completedSegments.Count > 0
                     ? _completedSegments[^1].EndPts
                     : _recordingStartPts;
+                var activeEndPts = TimeSpan.FromTicks(Math.Max(activeStartPts.Ticks, Interlocked.Read(ref _latestPtsTicks)));
+                var activeSizeBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);
                 result.Add(new FlashbackSegmentInfo
                 {
                     Path = _activeSegmentPath,
                     SequenceNumber = _nextSegmentIndex,
                     StartPtsMs = (long)activeStartPts.TotalMilliseconds,
-                    EndPtsMs = (long)TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks)).TotalMilliseconds,
-                    SizeBytes = _totalDiskBytes - _completedSegmentBytes,
+                    EndPtsMs = (long)activeEndPts.TotalMilliseconds,
+                    SizeBytes = activeSizeBytes,
                     IsActive = true
                 });
             }
@@ -1023,15 +1025,16 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
+            var safeActiveSegmentBytes = Math.Max(0, activeSegmentBytes);
             // Track monotonic bytes written: when active segment grows, add the delta.
             // On rotation activeSegmentBytes resets to 0 — the completed segment's bytes
             // were already added to _completedSegmentBytes via CompleteSegment, so we just
             // reset the previous-active tracker.
-            if (activeSegmentBytes >= _previousActiveSegmentBytes)
-                Interlocked.Add(ref _totalBytesWritten, activeSegmentBytes - _previousActiveSegmentBytes);
-            _previousActiveSegmentBytes = activeSegmentBytes;
+            if (safeActiveSegmentBytes >= _previousActiveSegmentBytes)
+                Interlocked.Add(ref _totalBytesWritten, safeActiveSegmentBytes - _previousActiveSegmentBytes);
+            _previousActiveSegmentBytes = safeActiveSegmentBytes;
 
-            _totalDiskBytes = _completedSegmentBytes + activeSegmentBytes;
+            _totalDiskBytes = Math.Max(0, _completedSegmentBytes + safeActiveSegmentBytes);
 
             if (!(Volatile.Read(ref _evictionPauseCount) > 0) && _totalDiskBytes > _options.MaxDiskBytes)
             {

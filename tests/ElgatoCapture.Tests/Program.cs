@@ -433,6 +433,9 @@ static partial class Program
                 "FlashbackBufferManager segment completion rejects invalid metadata",
                 FlashbackBufferManager_SegmentCompletionRejectsInvalidMetadata),
             await RunCheckAsync(
+                "FlashbackBufferManager segment diagnostics clamp active counters",
+                FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters),
+            await RunCheckAsync(
                 "FlashbackBufferManager valid segment lookup skips missing files",
                 FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles),
             await RunCheckAsync(
@@ -2344,6 +2347,23 @@ static partial class Program
         AssertContains(source, "var safeSizeBytes = Math.Max(0, sizeBytes);");
         AssertContains(source, "_completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes));");
         AssertContains(source, "_completedSegmentBytes += safeSizeBytes;");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters()
+    {
+        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(source, "var activeEndPts = TimeSpan.FromTicks(Math.Max(activeStartPts.Ticks, Interlocked.Read(ref _latestPtsTicks)));");
+        AssertContains(source, "var activeSizeBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);");
+        AssertContains(source, "EndPtsMs = (long)activeEndPts.TotalMilliseconds,");
+        AssertContains(source, "SizeBytes = activeSizeBytes,");
+        AssertContains(source, "var safeActiveSegmentBytes = Math.Max(0, activeSegmentBytes);");
+        AssertContains(source, "_totalDiskBytes = Math.Max(0, _completedSegmentBytes + safeActiveSegmentBytes);");
+        AssertContains(source, "_completedSegmentBytes = Math.Max(0, _completedSegmentBytes - freedBytes);");
+        AssertContains(source, "_totalDiskBytes = Math.Max(0, _totalDiskBytes - freedBytes);");
 
         return Task.CompletedTask;
     }
