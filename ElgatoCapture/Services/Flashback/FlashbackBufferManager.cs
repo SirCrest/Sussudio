@@ -877,6 +877,12 @@ internal sealed class FlashbackBufferManager : IDisposable
                 return;
             }
 
+            if (!File.Exists(path))
+            {
+                Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=missing_file path='{Path.GetFileName(path)}'");
+                return;
+            }
+
             if (_completedSegments.Count > 0 && startPts < _completedSegments[^1].EndPts)
             {
                 var previous = _completedSegments[^1];
