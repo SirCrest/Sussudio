@@ -1941,11 +1941,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     return VideoEnqueueResult.Rejected;
                 }
 
-                if (queue.Writer.TryWrite(packet))
+                if (TryWriteVideoPacket(queue, packet))
                 {
                     RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
                     TrackQueuedVideoTick(packet.EnqueueTick);
-                    UpdateMaxDepth(ref _videoQueueMaxDepth, Interlocked.Increment(ref _videoQueueDepth));
                     Interlocked.Increment(ref _videoFramesEnqueued);
                     SignalWork();
                     return VideoEnqueueResult.Accepted;
@@ -2005,10 +2004,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     return VideoEnqueueResult.Rejected;
                 }
 
-                if (queue.Writer.TryWrite(packet))
+                if (TryWriteGpuPacket(queue, packet))
                 {
                     RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
-                    UpdateMaxDepth(ref _gpuQueueMaxDepth, Interlocked.Increment(ref _gpuQueueDepth));
                     Interlocked.Increment(ref _gpuFramesEnqueued);
                     SignalWork();
                     return VideoEnqueueResult.Accepted;
@@ -2076,6 +2074,32 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         return failure != null
             ? $"encoding_failed:{failure.GetType().Name}"
             : null;
+    }
+
+    private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)
+    {
+        var depth = Interlocked.Increment(ref _videoQueueDepth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            UpdateMaxDepth(ref _videoQueueMaxDepth, depth);
+            return true;
+        }
+
+        DecrementQueueDepth(ref _videoQueueDepth, "video_write_failed");
+        return false;
+    }
+
+    private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)
+    {
+        var depth = Interlocked.Increment(ref _gpuQueueDepth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            UpdateMaxDepth(ref _gpuQueueMaxDepth, depth);
+            return true;
+        }
+
+        DecrementQueueDepth(ref _gpuQueueDepth, "gpu_write_failed");
+        return false;
     }
 
     private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)
@@ -2211,9 +2235,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             return false;
         }
 
-        if (queue.Writer.TryWrite(packet))
+        if (TryWriteAudioPacket(queue, packet, ref queueDepth, "audio"))
         {
-            Interlocked.Increment(ref queueDepth);
             SignalWork();
             return true;
         }
@@ -2232,9 +2255,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     $"drift_ms={totalDropped * 1000.0 / 48_000:F1}");
             }
             ReturnBuffer(evictedPacket.Buffer);
-            if (queue.Writer.TryWrite(packet))
+            if (TryWriteAudioPacket(queue, packet, ref queueDepth, "audio_after_evict"))
             {
-                Interlocked.Increment(ref queueDepth);
                 SignalWork();
                 return true;
             }
@@ -2246,6 +2268,22 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         ReturnBuffer(packet.Buffer);
         return false;
         }
+    }
+
+    private static bool TryWriteAudioPacket(
+        Channel<AudioSamplePacket> queue,
+        AudioSamplePacket packet,
+        ref int queueDepth,
+        string queueName)
+    {
+        Interlocked.Increment(ref queueDepth);
+        if (queue.Writer.TryWrite(packet))
+        {
+            return true;
+        }
+
+        DecrementQueueDepth(ref queueDepth, $"{queueName}_write_failed");
+        return false;
     }
 
     private void ReturnAllRemainingQueuedBuffers()

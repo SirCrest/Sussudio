@@ -1675,6 +1675,19 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_SINK_VIDEO_QUEUE_REJECT");
         AssertContains(sourceText, "FLASHBACK_SINK_GPU_QUEUE_REJECT");
         AssertContains(sourceText, "total == 1 || total % 30 == 0");
+        AssertContains(sourceText, "private bool TryWriteVideoPacket(Channel<VideoFramePacket> queue, VideoFramePacket packet)");
+        AssertContains(sourceText, "var depth = Interlocked.Increment(ref _videoQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
+        AssertContains(sourceText, "UpdateMaxDepth(ref _videoQueueMaxDepth, depth);");
+        AssertContains(sourceText, "DecrementQueueDepth(ref _videoQueueDepth, \"video_write_failed\");");
+        AssertContains(sourceText, "private bool TryWriteGpuPacket(Channel<GpuFramePacket> queue, GpuFramePacket packet)");
+        AssertContains(sourceText, "var depth = Interlocked.Increment(ref _gpuQueueDepth);\n        if (queue.Writer.TryWrite(packet))");
+        AssertContains(sourceText, "UpdateMaxDepth(ref _gpuQueueMaxDepth, depth);");
+        AssertContains(sourceText, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu_write_failed\");");
+        AssertContains(sourceText, "private static bool TryWriteAudioPacket(");
+        AssertContains(sourceText, "Interlocked.Increment(ref queueDepth);\n        if (queue.Writer.TryWrite(packet))");
+        AssertContains(sourceText, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
+        AssertContains(sourceText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
+        AssertContains(sourceText, "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio_after_evict\")");
         AssertContains(sourceText, "private static void DecrementQueueDepth(ref int target, string queueName)");
         AssertContains(sourceText, "var current = Volatile.Read(ref target);");
         AssertContains(sourceText, "if (current <= 0)");
@@ -1695,6 +1708,9 @@ static partial class Program
         AssertDoesNotContain(sourceText, "Interlocked.Exchange(ref target, 0);\n        Logger.Log($\"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW");
         AssertDoesNotContain(sourceText, "Interlocked.Decrement(ref _videoQueueDepth)");
         AssertDoesNotContain(sourceText, "Interlocked.Decrement(ref _gpuQueueDepth)");
+        AssertDoesNotContain(sourceText, "UpdateMaxDepth(ref _videoQueueMaxDepth, Interlocked.Increment(ref _videoQueueDepth))");
+        AssertDoesNotContain(sourceText, "UpdateMaxDepth(ref _gpuQueueMaxDepth, Interlocked.Increment(ref _gpuQueueDepth))");
+        AssertDoesNotContain(sourceText, "queue.Writer.TryWrite(packet))\n        {\n            Interlocked.Increment(ref queueDepth);");
         AssertDoesNotContain(sourceText, "Marshal.Release(packet.Texture);");
 
         return Task.CompletedTask;

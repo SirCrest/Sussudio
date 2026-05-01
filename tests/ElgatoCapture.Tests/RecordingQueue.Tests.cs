@@ -178,9 +178,9 @@ static partial class Program
             flashbackSource,
             "private bool TryEnqueueAudioPacket",
             "private static void ReturnRemainingBuffers");
-        AssertOccursBefore(flashbackVideoEnqueue, "GetVideoEnqueueRejectReason()", "queue.Writer.TryWrite(packet)");
-        AssertOccursBefore(flashbackGpuEnqueue, "GetVideoEnqueueRejectReason()", "queue.Writer.TryWrite(packet)");
-        AssertOccursBefore(flashbackAudioEnqueue, "Volatile.Read(ref _forceRotateDraining)", "queue.Writer.TryWrite(packet)");
+        AssertOccursBefore(flashbackVideoEnqueue, "GetVideoEnqueueRejectReason()", "TryWriteVideoPacket(queue, packet)");
+        AssertOccursBefore(flashbackGpuEnqueue, "GetVideoEnqueueRejectReason()", "TryWriteGpuPacket(queue, packet)");
+        AssertOccursBefore(flashbackAudioEnqueue, "Volatile.Read(ref _forceRotateDraining)", "TryWriteAudioPacket(queue, packet, ref queueDepth, \"audio\")");
         AssertContains(flashbackVideoEnqueue, "var rejectReason = GetVideoEnqueueRejectReason();");
         AssertContains(flashbackVideoEnqueue, "TrackVideoQueueRejected(rejectReason);");
         AssertContains(flashbackGpuEnqueue, "var rejectReason = GetVideoEnqueueRejectReason();");
