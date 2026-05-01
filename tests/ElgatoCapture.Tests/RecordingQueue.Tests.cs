@@ -119,6 +119,7 @@ static partial class Program
         AssertContains(flashbackSource, "ResumeEvictionBestEffort(_bufferManager, \"recording_end\")");
         AssertContains(flashbackSource, "ResumeEvictionBestEffort(_bufferManager, \"recording_start_rollback\")");
         AssertContains(flashbackSource, "if (Interlocked.Exchange(ref _recordingActive, 0) != 0)\n        {\n            ResumeEvictionBestEffort(_bufferManager, \"dispose\");\n        }");
+        AssertContains(flashbackSource, "_gpuEncodingEnabled = false;\n        _audioEnabled = false;\n        _microphoneEnabled = false;");
         AssertContains(flashbackSource, "FLASHBACK_SINK_EVICTION_RESUME_WARN");
         AssertContains(flashbackSource, "if (LastRecordingEndPts < LastRecordingStartPts)\n                {\n                    LastRecordingEndPts = _bufferManager.LatestPts;\n                    if (LastRecordingEndPts < LastRecordingStartPts)\n                    {\n                        LastRecordingEndPts = LastRecordingStartPts;\n                    }\n                }");
         AssertContains(flashbackSource, "Cannot begin recording: flashback encoder is not running.");
