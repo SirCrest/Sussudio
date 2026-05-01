@@ -1398,6 +1398,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         var flashbackSink = new FlashbackEncoderSink(bufferManager);
         flashbackSink.SetFatalErrorCallback(OnFlashbackBackendFatalError);
         var flashbackExporter = new FlashbackExporter();
+        FlashbackPlaybackController? playbackController = null;
 
         try
         {
@@ -1435,7 +1436,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
 
             // Create playback controller for timeline scrubbing/playback
-            var playbackController = new FlashbackPlaybackController(bufferManager);
+            playbackController = new FlashbackPlaybackController(bufferManager);
             playbackController.GpuDecodeEnabled = settings.FlashbackGpuDecode;
             if (_previewFrameSink != null && unifiedVideoCapture != null)
             {
@@ -1454,7 +1455,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             unifiedVideoCapture.SetFlashbackSink(null);
             _wasapiAudioCapture?.DetachFlashbackSink();
             _microphoneCapture?.SetAudioWriter(null);
-            try { _flashbackPlaybackController?.Dispose(); }
+            try { (playbackController ?? _flashbackPlaybackController)?.Dispose(); }
             catch (Exception disposeEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_PLAYBACK_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }
             try { await flashbackSink.DisposeAsync().ConfigureAwait(false); }
             catch (Exception disposeEx) { Logger.Log($"FLASHBACK_PREVIEW_ROLLBACK_SINK_WARN type={disposeEx.GetType().Name} msg={disposeEx.Message}"); }

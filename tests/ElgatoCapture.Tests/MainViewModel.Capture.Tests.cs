@@ -301,6 +301,8 @@ static partial class Program
         AssertContains(captureServiceText, "_flashbackBackendSettings = CloneCaptureSettings(settings)");
         AssertContains(captureServiceText, "_flashbackBackendSettings = CloneCaptureSettings(_currentSettings)");
         AssertContains(captureServiceText, "_flashbackBackendSettings = null");
+        AssertContains(captureServiceText, "FlashbackPlaybackController? playbackController = null;");
+        AssertContains(captureServiceText, "(playbackController ?? _flashbackPlaybackController)?.Dispose();");
         AssertContains(captureServiceText, "!CanReuseFlashbackBackend(_flashbackBackendSettings, settings)");
         AssertContains(captureServiceText, "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,");
         var stopVideoPreviewCore = ExtractTextBetween(
