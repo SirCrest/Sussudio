@@ -782,8 +782,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         _microphoneEnabled = false;
         _encodingTask = null;
         _workAvailable.Dispose();
-        _forceRotateTcs?.TrySetResult(Array.Empty<string>());
-        _forceRotateTcs = null;
+        CompletePendingForceRotateWithEmptyResult();
 
         try
         {
@@ -1040,14 +1039,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             Logger.Log("FLASHBACK_SINK_ENCODING_LOOP_CANCELLED");
-            _forceRotateTcs?.TrySetResult(Array.Empty<string>());
+            CompletePendingForceRotateWithEmptyResult();
             ReturnAllRemainingQueuedBuffers();
         }
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_SINK_ENCODING_LOOP_FATAL type={ex.GetType().Name} msg={ex.Message}");
             _encodingFailure = ex;
-            _forceRotateTcs?.TrySetResult(Array.Empty<string>());
+            CompletePendingForceRotateWithEmptyResult();
             lock (_sync) { _started = false; }
 
             // Notify the owning service so it can surface the failure
@@ -1270,6 +1269,24 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
 
         return tcs.Task.Result;
+    }
+
+    private void CompletePendingForceRotateWithEmptyResult()
+    {
+        TaskCompletionSource<IReadOnlyList<string>>? pendingTcs;
+        lock (_sync)
+        {
+            _forceRotateRequested = false;
+            pendingTcs = _forceRotateTcs;
+            _forceRotateTcs = null;
+        }
+
+        lock (_videoQueueSync)
+        {
+            Volatile.Write(ref _forceRotateDraining, false);
+        }
+
+        pendingTcs?.TrySetResult(Array.Empty<string>());
     }
 
     private bool DrainAudioPackets(ChannelReader<AudioSamplePacket> reader)

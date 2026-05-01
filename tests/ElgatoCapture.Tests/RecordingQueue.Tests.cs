@@ -82,6 +82,9 @@ static partial class Program
         AssertContains(flashbackSource, "public bool IsRecordingActive");
         AssertContains(flashbackSource, "public bool IsForceRotateActive");
         AssertContains(flashbackSource, "WaitForForceRotateIdle");
+        AssertContains(flashbackSource, "CompletePendingForceRotateWithEmptyResult");
+        AssertContains(flashbackSource, "_forceRotateRequested = false;");
+        AssertContains(flashbackSource, "Volatile.Write(ref _forceRotateDraining, false);");
         AssertContains(flashbackSource, "Cannot begin recording: flashback export rotation is still draining.");
         AssertContains(flashbackSource, "if (_ownsBufferManager)");
         AssertOccursBefore(flashbackSource, "if (_ownsBufferManager)\n            {\n                _bufferManager.PurgeAllSegments();", "_encoder.Dispose();");
