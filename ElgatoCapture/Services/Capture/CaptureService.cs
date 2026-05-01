@@ -1929,7 +1929,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             await _flashbackBackendLeaseLock.WaitAsync(cancellationToken).ConfigureAwait(false);
             backendLeaseHeld = true;
             bufferManager?.PauseEviction();
-            outerPauseApplied = true;
+            outerPauseApplied = bufferManager != null;
 
             var endResult = await flashbackSink.EndRecordingAsync(cancellationToken).ConfigureAwait(false);
             if (!endResult.Succeeded)
@@ -1961,8 +1961,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             if (outerPauseApplied)
                 bufferManager?.ResumeEviction();
-            if (backendLeaseHeld)
-                _flashbackBackendLeaseLock.Release();
+            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
         }
     }
 
