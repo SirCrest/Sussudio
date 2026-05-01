@@ -327,6 +327,7 @@ static partial class Program
         AssertContains(captureServiceText, "if (exportOperationLockHeld)");
         AssertContains(captureServiceText, "_flashbackExportOperationLock.Release();");
         AssertContains(captureServiceText, "_flashbackExportOperationLock.Dispose();");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_ACTIVE_FILE_FALLBACK");
         AssertContains(captureServiceText, "Segments = BuildFlashbackExportSegments(bufferManager, segmentPaths)");
         AssertContains(captureServiceText, "StartPts = TimeSpan.FromMilliseconds(info.StartPtsMs)");
         AssertContains(captureServiceText, "private static TimeSpan ClampFlashbackBufferPosition(TimeSpan position, TimeSpan bufferedDuration)");

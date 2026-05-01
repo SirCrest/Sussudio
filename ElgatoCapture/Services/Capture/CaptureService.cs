@@ -733,6 +733,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     CompleteFlashbackExportDiagnostics(exportId, result);
                     return result;
                 }
+
+                Logger.Log(
+                    "FLASHBACK_EXPORT_ACTIVE_FILE_FALLBACK " +
+                    $"path='{tsPath}' in_ms={(long)inPoint.TotalMilliseconds} " +
+                    $"out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)}");
             }
 
             var request = new FlashbackExportRequest
