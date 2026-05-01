@@ -544,7 +544,8 @@ static partial class Program
             "else if (State == FlashbackPlaybackState.Live)",
             "                        break;\n\n                    case CommandKind.GoLive:");
 
-        AssertContains(pauseFromLiveBlock, "_videoCapture?.SuppressPreviewSubmission();");
+        AssertContains(pauseFromLiveBlock, "SafeSuppressPreviewSubmission(\"pause_from_live\");");
+        AssertContains(pauseFromLiveBlock, "SafePauseRendering(\"pause_from_live\");");
         AssertContains(pauseFromLiveBlock, "PlaybackPosition = pausePos;");
         AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused);");
         AssertContains(pauseFromLiveBlock, "frozen_preview=true");
@@ -600,6 +601,28 @@ static partial class Program
         AssertContains(updateScrubBlock, "cmd = newer;");
         AssertDoesNotContain(updateScrubBlock, "SendCommand(newer)");
         AssertDoesNotContain(updateScrubBlock, "Non-scrub command consumed");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackPlaybackController_PlaybackTransitions_UseBestEffortAudioPreviewGuards()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private void SafeSuppressPreviewSubmission(string operation)");
+        AssertContains(sourceText, "private void SafeResumePreviewSubmission(string operation)");
+        AssertContains(sourceText, "private void SafePauseRendering(string operation)");
+        AssertContains(sourceText, "private void SafeResumeRendering(string operation)");
+        AssertContains(sourceText, "private void SafeFlushPlayback(string operation)");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_WARN");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_WARN");
+        AssertContains(sourceText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
+        AssertContains(sourceText, "SafeResumePreviewSubmission(\"scrub_no_file\")");
+        AssertContains(sourceText, "SafeResumePreviewSubmission(\"go_live\")");
+        AssertContains(sourceText, "SafeResumePreviewSubmission(\"decode_error\")");
+        AssertContains(sourceText, "SafeFlushPlayback(\"restore_live_audio\")");
+        AssertDoesNotContain(sourceText, "_videoCapture?.SuppressPreviewSubmission();\n                        SuppressLiveAudio();\n                        _audioPlayback?.PauseRendering();");
 
         return Task.CompletedTask;
     }

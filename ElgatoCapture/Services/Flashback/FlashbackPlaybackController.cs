@@ -463,9 +463,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         isPlaying = false;
                         isScrubbing = false;
                         frozenValidStart = _bufferManager.ValidStartPts;
-                        _videoCapture?.SuppressPreviewSubmission();
+                        SafeSuppressPreviewSubmission("seek");
                         SuppressLiveAudio();
-                        _audioPlayback?.PauseRendering();
+                        SafePauseRendering("seek");
 
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
@@ -473,8 +473,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_SEEK_NO_FILE - restoring live");
                             RestoreLiveAudio();
-                            _videoCapture?.ResumePreviewSubmission();
-                            _audioPlayback?.ResumeRendering();
+                            SafeResumePreviewSubmission("seek_no_file");
+                            SafeResumeRendering("seek_no_file");
                             SetState(FlashbackPlaybackState.Live);
                             break;
                         }
@@ -496,8 +496,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             }
                             frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
                             RestoreAudioCallback(decoder, coalescedSeekTarget.Ticks);
-                            _audioPlayback?.Flush();
-                            _audioPlayback?.ResumeRendering();
+                            SafeFlushPlayback("seek_resume");
+                            SafeResumeRendering("seek_resume");
                         }
                         SetState(isPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused);
                         Logger.Log($"FLASHBACK_PLAYBACK_SEEK pos_ms={(long)PlaybackPosition.TotalMilliseconds} resumePlay={isPlaying}");
@@ -508,9 +508,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         isPlaying = false;
                         isScrubbing = true;
                         frozenValidStart = _bufferManager.ValidStartPts;
-                        _videoCapture?.SuppressPreviewSubmission();
+                        SafeSuppressPreviewSubmission("begin_scrub");
                         SuppressLiveAudio();
-                        _audioPlayback?.PauseRendering();
+                        SafePauseRendering("begin_scrub");
                         SetState(FlashbackPlaybackState.Scrubbing);
 
                         decoder ??= CreateDecoder();
@@ -520,8 +520,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             Logger.Log("FLASHBACK_PLAYBACK_SCRUB_NO_FILE — restoring live");
                             isScrubbing = false;
                             RestoreLiveAudio();
-                            _videoCapture?.ResumePreviewSubmission();
-                            _audioPlayback?.ResumeRendering();
+                            SafeResumePreviewSubmission("scrub_no_file");
+                            SafeResumeRendering("scrub_no_file");
                             SetState(FlashbackPlaybackState.Live);
                             break;
                         }
@@ -578,8 +578,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             {
                                 RestoreAudioCallback(decoder, endScrubTarget.Ticks);
                             }
-                            _audioPlayback?.Flush();
-                            _audioPlayback?.ResumeRendering();
+                            SafeFlushPlayback("end_scrub_resume");
+                            SafeResumeRendering("end_scrub_resume");
                         }
                         SetState(isPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused);
                         var endScrubBufDur = _bufferManager.BufferedDuration;
@@ -590,9 +590,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (isPlaying) break;
                         isScrubbing = false;
                         isPlaying = true;
-                        _videoCapture?.SuppressPreviewSubmission();
+                        SafeSuppressPreviewSubmission("play");
                         SuppressLiveAudio();
-                        _audioPlayback?.PauseRendering();
+                        SafePauseRendering("play");
                         ResetPlaybackMetrics();
                         pacingStopwatch.Restart();
 
@@ -606,7 +606,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE — restoring live");
                             isPlaying = false;
                             RestoreLiveAudio();
-                            _videoCapture?.ResumePreviewSubmission();
+                            SafeResumePreviewSubmission("play_no_file");
                             SetState(FlashbackPlaybackState.Live);
                             break;
                         }
@@ -643,8 +643,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         }
                         frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
                         RestoreAudioCallback(decoder, seekTarget.Ticks);
-                        _audioPlayback?.Flush();
-                        _audioPlayback?.ResumeRendering();
+                        SafeFlushPlayback("play");
+                        SafeResumeRendering("play");
 
                         SetState(FlashbackPlaybackState.Playing);
                         Logger.Log($"FLASHBACK_PLAYBACK_PLAY pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
@@ -657,7 +657,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             // and held via _previousHeldFrame. PlaybackPosition is already set
                             // to the last decoded frame's PTS. No seek needed.
                             isPlaying = false;
-                            _audioPlayback?.PauseRendering();
+                            SafePauseRendering("pause");
                             pacingStopwatch.Stop();
                             SetState(FlashbackPlaybackState.Paused);
                             Logger.Log($"FLASHBACK_PLAYBACK_PAUSE pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
@@ -665,9 +665,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         else if (State == FlashbackPlaybackState.Live)
                         {
                             // Pause from Live state — freeze at current buffer edge
-                            _videoCapture?.SuppressPreviewSubmission();
+                            SafeSuppressPreviewSubmission("pause_from_live");
                             SuppressLiveAudio();
-                            _audioPlayback?.PauseRendering();
+                            SafePauseRendering("pause_from_live");
 
                             frozenValidStart = _bufferManager.ValidStartPts;
                             var pausePos = _bufferManager.BufferedDuration;
@@ -686,7 +686,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
                         Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0); // F8 fix: clear stale suppression
                         RestoreLiveAudio();
-                        _videoCapture?.ResumePreviewSubmission();
+                        SafeResumePreviewSubmission("go_live");
                         SetState(FlashbackPlaybackState.Live);
                         Logger.Log("FLASHBACK_PLAYBACK_GO_LIVE");
                         return;
@@ -730,8 +730,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             Logger.Log("FLASHBACK_PLAYBACK_THREAD_CANCELLED");
             CleanupDecoder(ref decoder, ref fileOpen);
-            try { RestoreLiveAudio(); } catch { /* Best-effort: restore audio during cancellation cleanup */ }
-            try { _videoCapture?.ResumePreviewSubmission(); } catch { /* Best-effort: resume preview during cancellation cleanup */ }
+            RestoreLiveAudio();
+            SafeResumePreviewSubmission("thread_cancelled");
             SetState(FlashbackPlaybackState.Live);
         }
         catch (Exception ex)
@@ -739,8 +739,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _lastCommandFailure = ex.GetType().Name + ":" + ex.Message;
             Logger.Log($"FLASHBACK_PLAYBACK_FATAL error='{ex.Message}'");
             CleanupDecoder(ref decoder, ref fileOpen);
-            try { RestoreLiveAudio(); } catch { /* Best-effort: restore audio during fatal error recovery — already logged above */ }
-            try { _videoCapture?.ResumePreviewSubmission(); } catch { /* Best-effort: resume preview during fatal error recovery — already logged above */ }
+            RestoreLiveAudio();
+            SafeResumePreviewSubmission("thread_fatal");
             SetState(FlashbackPlaybackState.Live);
         }
         finally
@@ -876,7 +876,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         // Suppress audio delivery during scrub — prevents audio accumulation
         // in the WASAPI queue. Audio callback is re-enabled on Play/EndScrub.
         decoder.AudioChunkCallback = null;
-        _audioPlayback?.Flush();
+        SafeFlushPlayback("seek_display_keyframe");
 
         bufferPosition = ClampPosition(bufferPosition);
 
@@ -1156,7 +1156,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (outTicks != long.MinValue && position >= TimeSpan.FromTicks(outTicks))
         {
             Logger.Log($"FLASHBACK_PLAYBACK_HIT_OUTPOINT pos_ms={(long)position.TotalMilliseconds}");
-            _audioPlayback?.PauseRendering();
+            SafePauseRendering("out_point");
             pacingStopwatch.Stop();
             SetState(FlashbackPlaybackState.Paused);
             return true;
@@ -1183,7 +1183,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
             Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
             RestoreLiveAudio();
-            _videoCapture?.ResumePreviewSubmission();
+            SafeResumePreviewSubmission("near_live");
             SetState(FlashbackPlaybackState.Live);
             return true;
         }
@@ -1328,7 +1328,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
         Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
         RestoreLiveAudio();
-        _videoCapture?.ResumePreviewSubmission();
+        SafeResumePreviewSubmission("decode_error");
         SetState(FlashbackPlaybackState.Live);
     }
 
@@ -1582,17 +1582,93 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private void SuppressLiveAudio()
     {
-        _audioCapture?.SetPlayback(null);
-        _audioPlayback?.Flush();
+        try
+        {
+            _audioCapture?.SetPlayback(null);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=suppress_live_set_playback msg='{ex.Message}'");
+        }
+
+        SafeFlushPlayback("suppress_live_audio");
     }
 
     private void RestoreLiveAudio()
     {
-        _audioPlayback?.Flush();
+        SafeFlushPlayback("restore_live_audio");
         // F4 fix: reconnect audio feed BEFORE starting rendering to avoid silence/stutter
-        if (_audioCapture != null && _audioPlayback != null)
-            _audioCapture.SetPlayback(_audioPlayback);
-        _audioPlayback?.ResumeRendering();
+        try
+        {
+            if (_audioCapture != null && _audioPlayback != null)
+                _audioCapture.SetPlayback(_audioPlayback);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=restore_live_set_playback msg='{ex.Message}'");
+        }
+
+        SafeResumeRendering("restore_live_audio");
+    }
+
+    private void SafeSuppressPreviewSubmission(string operation)
+    {
+        try
+        {
+            _videoCapture?.SuppressPreviewSubmission();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_WARN op=suppress operation={operation} msg='{ex.Message}'");
+        }
+    }
+
+    private void SafeResumePreviewSubmission(string operation)
+    {
+        try
+        {
+            _videoCapture?.ResumePreviewSubmission();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_WARN op=resume operation={operation} msg='{ex.Message}'");
+        }
+    }
+
+    private void SafePauseRendering(string operation)
+    {
+        try
+        {
+            _audioPlayback?.PauseRendering();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=pause operation={operation} msg='{ex.Message}'");
+        }
+    }
+
+    private void SafeResumeRendering(string operation)
+    {
+        try
+        {
+            _audioPlayback?.ResumeRendering();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=resume operation={operation} msg='{ex.Message}'");
+        }
+    }
+
+    private void SafeFlushPlayback(string operation)
+    {
+        try
+        {
+            _audioPlayback?.Flush();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_WARN op=flush operation={operation} msg='{ex.Message}'");
+        }
     }
 
     // --- Timer resolution P/Invoke (1ms sleep granularity for 120fps pacing) ---
