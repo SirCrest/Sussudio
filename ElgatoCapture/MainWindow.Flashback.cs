@@ -207,6 +207,7 @@ public sealed partial class MainWindow
         }
 
         _isFlashbackScrubbing = true;
+        _lastScrubUpdateTick = 0;
         (sender as UIElement)?.CapturePointer(e.Pointer);
         UpdateFlashbackScrubVisual(e);
     }
@@ -260,6 +261,7 @@ public sealed partial class MainWindow
         }
 
         _isFlashbackScrubbing = false;
+        _lastScrubUpdateTick = 0;
         element?.ReleasePointerCapture(pointer);
         if (!ViewModel.FlashbackEndScrub())
         {
