@@ -576,6 +576,23 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackPlaybackController_SubmitFailuresReleaseDecodedFrames()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
+        AssertContains(sourceText, "FlashbackDecoder.ReleaseHeldFrame(frame);");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_SUBMIT_FAIL");
+        AssertContains(sourceText, "TrySubmitAndHoldFrame(nudgeFrame, \"nudge\")");
+        AssertContains(sourceText, "TrySubmitAndHoldFrame(frame, \"seek\")");
+        AssertContains(sourceText, "TrySubmitAndHoldFrame(videoFrame, \"playback\")");
+        AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n                SubmitFrame(frame);");
+        AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n            SubmitFrame(videoFrame);");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")

@@ -710,10 +710,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             var got = decoder.TryDecodeNextVideoFrame(out var nudgeFrame);
                             if (got)
                             {
-                                ReleasePreviousHeldFrame();
-                                SubmitFrame(nudgeFrame);
-                                _previousHeldFrame = nudgeFrame;
-                                _hasPreviousHeldFrame = true;
+                                if (!TrySubmitAndHoldFrame(nudgeFrame, "nudge"))
+                                {
+                                    break;
+                                }
                                 var actualPos = nudgeFrame.Pts - frozenValidStart;
                                 if (actualPos < TimeSpan.Zero) actualPos = TimeSpan.Zero;
                                 PlaybackPosition = actualPos;
@@ -871,6 +871,31 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
+    private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)
+    {
+        if (frame.IsD3D11Texture && frame.TexturePtr == IntPtr.Zero)
+        {
+            FlashbackDecoder.ReleaseHeldFrame(frame);
+            Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_SKIP op={operation} reason=null_texture");
+            return false;
+        }
+
+        ReleasePreviousHeldFrame();
+        try
+        {
+            SubmitFrame(frame);
+            _previousHeldFrame = frame;
+            _hasPreviousHeldFrame = true;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            FlashbackDecoder.ReleaseHeldFrame(frame);
+            Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_FAIL op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+            return false;
+        }
+    }
+
     private void SeekAndDisplayKeyframe(FlashbackDecoder decoder, TimeSpan bufferPosition, TimeSpan validStartPts)
     {
         // Suppress audio delivery during scrub — prevents audio accumulation
@@ -926,12 +951,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
             var gotFrame = decoder.TryDecodeNextVideoFrame(out var frame);
             if (gotFrame)
             {
-                // Release the PREVIOUS held frame (renderer has had time to copy it)
-                ReleasePreviousHeldFrame();
-                SubmitFrame(frame);
-                // Stash this frame — don't release yet, renderer needs time to copy the texture
-                _previousHeldFrame = frame;
-                _hasPreviousHeldFrame = true;
+                if (!TrySubmitAndHoldFrame(frame, "seek"))
+                {
+                    PlaybackPosition = bufferPosition;
+                    return;
+                }
                 Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
 
                 // Set position to actual decoded frame PTS mapped back to buffer position
@@ -1019,10 +1043,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 }
             }
 
-            ReleasePreviousHeldFrame();
-            SubmitFrame(videoFrame);
-            _previousHeldFrame = videoFrame;
-            _hasPreviousHeldFrame = true;
+            if (!TrySubmitAndHoldFrame(videoFrame, "playback"))
+            {
+                return false;
+            }
             Interlocked.Exchange(ref _lastVideoPtsTicks, videoFrame.Pts.Ticks);
 
             var newPosition = videoFrame.Pts - frozenValidStart;
