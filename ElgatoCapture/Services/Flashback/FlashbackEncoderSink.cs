@@ -399,7 +399,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
 
             _workAvailable.Set();
-            Thread.Sleep(10);
+            if (WaitForCancellation(TimeSpan.FromMilliseconds(10)))
+            {
+                return false;
+            }
         }
 
         return true;
@@ -1962,17 +1965,20 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     }
 
     private bool WaitForBackpressureRetryCancellation()
+        => WaitForCancellation(TimeSpan.FromMilliseconds(1));
+
+    private bool WaitForCancellation(TimeSpan timeout)
     {
         var cts = _cts;
         if (cts == null)
         {
-            Thread.Sleep(1);
+            Thread.Sleep(timeout);
             return false;
         }
 
         try
         {
-            return cts.Token.WaitHandle.WaitOne(1);
+            return cts.Token.WaitHandle.WaitOne(timeout);
         }
         catch (ObjectDisposedException)
         {

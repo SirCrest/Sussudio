@@ -68,7 +68,8 @@ static partial class Program
         AssertContains(libAvSource, "Volatile.Read(ref _encodingFailure) != null");
         AssertContains(flashbackSource, "Flashback recording video queue overloaded");
         AssertContains(flashbackSource, "QueueBackpressureTimeoutMs = 250");
-        AssertContains(flashbackSource, "Thread.Sleep(1)");
+        AssertContains(flashbackSource, "WaitForBackpressureRetryCancellation()");
+        AssertContains(flashbackSource, "=> WaitForCancellation(TimeSpan.FromMilliseconds(1));");
         AssertContains(flashbackSource, "after {QueueBackpressureTimeoutMs}ms backpressure");
         AssertContains(flashbackSource, "var p010FrameSize = MfSourceReaderVideoCapture.GetFrameSizeBytes(_width, _height, isP010: true)");
         AssertContains(flashbackSource, "VideoFramePacket.Frame(buffer, expectedSize, enqueueTick, isP010)");
