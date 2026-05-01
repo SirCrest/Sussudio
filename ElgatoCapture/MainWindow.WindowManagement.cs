@@ -120,11 +120,13 @@ public sealed partial class MainWindow
         if (Volatile.Read(ref _windowCloseCleanupStarted) != 0 ||
             Volatile.Read(ref _windowCloseAllowedAfterRecordingStop) != 0)
         {
+            CompleteWindowCloseRequest();
             return;
         }
 
         if (!ViewModel.IsRecording && !ViewModel.IsRecordingTransitioning)
         {
+            CompleteWindowCloseRequest();
             return;
         }
 
@@ -142,11 +144,13 @@ public sealed partial class MainWindow
             var stopped = await TryStopRecordingBeforeCloseAsync();
             if (!stopped)
             {
+                CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));
                 return;
             }
 
             Interlocked.Exchange(ref _windowCloseAllowedAfterRecordingStop, 1);
             Interlocked.Exchange(ref _windowCloseRequested, 0);
+            CompleteWindowCloseRequest();
             RequestWindowClose();
         }
         finally
@@ -210,6 +214,7 @@ public sealed partial class MainWindow
             return;
         }
 
+        CompleteWindowCloseRequest();
         _isWindowClosing = true;
         ViewModel.AudioMeterActivated -= EnsureAudioMeterTimerRunning;
         ViewModel.MicrophoneMeterActivated -= EnsureAudioMeterTimerRunning;
@@ -339,6 +344,7 @@ public sealed partial class MainWindow
             {
                 if (cancellationToken.IsCancellationRequested)
                 {
+                    CompleteWindowCloseRequest(new OperationCanceledException(cancellationToken));
                     completion.TrySetCanceled(cancellationToken);
                     return;
                 }
@@ -452,10 +458,12 @@ public sealed partial class MainWindow
             return Task.CompletedTask;
         }
 
+        var closeCompletionTask = GetWindowCloseCompletionTask(cancellationToken);
+
         if (_dispatcherQueue.HasThreadAccess)
         {
             RequestWindowClose();
-            return Task.CompletedTask;
+            return closeCompletionTask;
         }
 
         var completion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -497,16 +505,68 @@ public sealed partial class MainWindow
             }
             else
             {
-                completion.TrySetException(new InvalidOperationException("Failed to enqueue window close action on the UI thread."));
+                var enqueueFailure = new InvalidOperationException("Failed to enqueue window close action on the UI thread.");
+                CompleteWindowCloseRequest(enqueueFailure);
+                completion.TrySetException(enqueueFailure);
             }
         }
 
-        return completion.Task;
+        return AwaitWindowCloseRequestAsync(completion.Task, closeCompletionTask);
     }
+
+    private Task GetWindowCloseCompletionTask(CancellationToken cancellationToken)
+    {
+        TaskCompletionSource<object?> completion;
+        lock (_windowCloseCompletionLock)
+        {
+            if (_windowCloseCompletion == null || _windowCloseCompletion.Task.IsCompleted)
+            {
+                _windowCloseCompletion = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            }
+
+            completion = _windowCloseCompletion;
+        }
+
+        return cancellationToken.CanBeCanceled
+            ? completion.Task.WaitAsync(cancellationToken)
+            : completion.Task;
+    }
+
+    private static async Task AwaitWindowCloseRequestAsync(Task enqueueTask, Task closeCompletionTask)
+    {
+        await enqueueTask.ConfigureAwait(false);
+        await closeCompletionTask.ConfigureAwait(false);
+    }
+
+    private void CompleteWindowCloseRequest(Exception? exception = null)
+    {
+        TaskCompletionSource<object?>? completion;
+        lock (_windowCloseCompletionLock)
+        {
+            completion = _windowCloseCompletion;
+            _windowCloseCompletion = null;
+        }
+
+        if (completion == null)
+        {
+            return;
+        }
+
+        if (exception == null)
+        {
+            completion.TrySetResult(null);
+        }
+        else
+        {
+            completion.TrySetException(exception);
+        }
+    }
+
     private void RequestWindowClose()
     {
         if (Volatile.Read(ref _windowCloseCleanupStarted) != 0)
         {
+            CompleteWindowCloseRequest();
             return;
         }
 
@@ -518,20 +578,29 @@ public sealed partial class MainWindow
         try
         {
             Close();
+            if (Volatile.Read(ref _windowCloseRecordingStopInProgress) == 0 &&
+                !ViewModel.IsRecording &&
+                !ViewModel.IsRecordingTransitioning)
+            {
+                CompleteWindowCloseRequest();
+            }
         }
         catch (Exception ex) when (IsCloseAlreadyInProgressException(ex))
         {
             Logger.Log($"Window close already in progress ({ex.GetType().Name}); treating close request as successful.");
+            CompleteWindowCloseRequest();
         }
         catch (System.Runtime.InteropServices.COMException ex)
         {
             Logger.Log($"Window.Close COMException (0x{ex.HResult:X8}); using Application.Current.Exit() fallback.");
+            CompleteWindowCloseRequest();
             Application.Current.Exit();
         }
         catch (Exception ex)
         {
             System.Diagnostics.Trace.TraceWarning($"Suppressed exception in MainWindow.RequestWindowClose: {ex.Message}");
             Interlocked.Exchange(ref _windowCloseRequested, 0);
+            CompleteWindowCloseRequest(ex);
             throw;
         }
     }

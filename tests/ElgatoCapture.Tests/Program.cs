@@ -246,6 +246,9 @@ static partial class Program
                 "Automation dispatcher ready-device gate classifies commands",
                 AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands),
             await RunCheckAsync(
+                "Automation dispatcher window close waits for completion",
+                AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion),
+            await RunCheckAsync(
                 "Automation dispatcher authorization contract is token-gated",
                 AutomationCommandDispatcher_AuthorizesConfiguredTokens),
             await RunCheckAsync(

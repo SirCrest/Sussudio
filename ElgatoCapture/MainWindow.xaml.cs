@@ -80,6 +80,8 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private int _windowCloseCleanupStarted;
     private int _windowCloseRecordingStopInProgress;
     private int _windowCloseAllowedAfterRecordingStop;
+    private readonly object _windowCloseCompletionLock = new();
+    private TaskCompletionSource<object?>? _windowCloseCompletion;
     private double _previewMinPresentationIntervalMs;
     private readonly IAutomationDiagnosticsHub _automationDiagnosticsHub;
     private readonly NamedPipeAutomationServer _automationPipeServer;

@@ -452,24 +452,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                                 status: "error");
                         }
 
-                        _ = ExecuteWindowActionAsync(action, CancellationToken.None).ContinueWith(
-                            closeTask =>
-                            {
-                                if (closeTask.Exception == null)
-                                {
-                                    return;
-                                }
-
-                                var closeException = closeTask.Exception.Flatten().InnerException ?? closeTask.Exception;
-                                Logger.Log(
-                                    $"Window close task failed asynchronously [correlationId={correlationId}] type={closeException.GetType().Name}: {closeException.Message}");
-                                Logger.LogException(closeException);
-                            },
-                            CancellationToken.None,
-                            TaskContinuationOptions.OnlyOnFaulted,
-                            TaskScheduler.Default);
-
-                        return CreateAcknowledgedResponse(correlationId, "Window close requested.");
+                        await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);
+                        return CreateAcknowledgedResponse(correlationId, "Window close completed.");
                     }
 
                     await ExecuteWindowActionAsync(action, cancellationToken, payload).ConfigureAwait(false);
@@ -825,7 +809,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 await _windowControl.RestoreAsync(cancellationToken).ConfigureAwait(false);
                 break;
             case AutomationWindowAction.Close:
-                await _windowControl.CloseAsync(CancellationToken.None).ConfigureAwait(false);
+                await _windowControl.CloseAsync(cancellationToken).ConfigureAwait(false);
                 break;
             case AutomationWindowAction.Move:
                 var mx = GetInt(payload, "x") ?? throw new InvalidOperationException("Move requires 'x' parameter.");

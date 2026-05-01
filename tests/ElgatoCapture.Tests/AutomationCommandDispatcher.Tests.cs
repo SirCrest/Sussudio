@@ -146,6 +146,27 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationCommandDispatcher.cs")
+            .Replace("\r\n", "\n");
+        var windowActionBlock = ExtractTextBetween(
+            sourceText,
+            "case AutomationCommandKind.WindowAction:",
+            "case AutomationCommandKind.WaitForCondition:");
+        var closeBlock = ExtractTextBetween(
+            windowActionBlock,
+            "if (action == AutomationWindowAction.Close)",
+            "await ExecuteWindowActionAsync(action, cancellationToken, payload).ConfigureAwait(false);");
+
+        AssertContains(closeBlock, "await ExecuteWindowActionAsync(action, cancellationToken).ConfigureAwait(false);");
+        AssertContains(closeBlock, "Window close completed.");
+        AssertDoesNotContain(closeBlock, "ContinueWith(");
+        AssertDoesNotContain(closeBlock, "CancellationToken.None");
+
+        return Task.CompletedTask;
+    }
+
     private static async Task AutomationCommandDispatcher_AuthorizesConfiguredTokens()
     {
         var noTokenDispatcher = CreateAutomationCommandDispatcher(authToken: null);

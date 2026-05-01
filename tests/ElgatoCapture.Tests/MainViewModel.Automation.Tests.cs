@@ -808,6 +808,9 @@ static partial class Program
         AssertContains(windowManagementText, "const int StopBudgetMs = 120_000;");
         AssertContains(windowManagementText, "close cancelled to protect recording");
         AssertContains(windowManagementText, "RequestWindowClose();");
+        AssertContains(windowManagementText, "GetWindowCloseCompletionTask(cancellationToken)");
+        AssertContains(windowManagementText, "CompleteWindowCloseRequest(new InvalidOperationException(ViewModel.StatusText));");
+        AssertContains(windowManagementText, "CompleteWindowCloseRequest();");
         AssertDoesNotContain(windowManagementText, "MP4 may be truncated.");
 
         return Task.CompletedTask;
