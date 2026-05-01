@@ -1552,7 +1552,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         lock (_sync)
         {
             if (!_started || _disposed)
+            {
+                Logger.Log(
+                    $"FLASHBACK_SINK_FORCE_ROTATE_REJECTED_INACTIVE started={_started} disposed={_disposed}");
                 return Array.Empty<string>();
+            }
 
             if (_encodingFailure != null || _encodingTask?.IsCompleted == true)
             {
