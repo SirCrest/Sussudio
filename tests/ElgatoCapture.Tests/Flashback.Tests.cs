@@ -793,6 +793,7 @@ static partial class Program
         AssertContains(sourceText, "_playbackThread = null;");
         AssertContains(sourceText, "if (ReferenceEquals(cts, _playCts))\n            {\n                _playCts = null;\n            }\n            cts.Dispose();");
         AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);");
+        AssertContains(sourceText, "_lastCommandQueued = command.Kind.ToString();\n        _lastCommandFailure = string.Empty;\n        return true;");
 
         return Task.CompletedTask;
     }

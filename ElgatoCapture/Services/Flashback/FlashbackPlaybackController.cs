@@ -361,6 +361,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         UpdateMaxPendingCommands(Interlocked.Increment(ref _pendingCommands));
         Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         _lastCommandQueued = command.Kind.ToString();
+        _lastCommandFailure = string.Empty;
         return true;
     }
 
