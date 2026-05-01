@@ -1954,8 +1954,12 @@ static partial class Program
         AssertContains(sourceText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
         AssertContains(sourceText, "reason = \"invalid_dimensions\";");
         AssertContains(sourceText, "reason = \"null_texture\";");
+        AssertContains(sourceText, "reason = \"invalid_subresource\";");
         AssertContains(sourceText, "reason = \"null_data\";");
         AssertContains(sourceText, "reason = \"invalid_data_length\";");
+        AssertContains(sourceText, "reason = \"short_data_length\";");
+        AssertContains(sourceText, "private static bool TryCalculatePreviewFrameBytes(int width, int height, bool isHdr, out int bytes)");
+        AssertContains(sourceText, "var calculated = isHdr\n            ? pixels * 3\n            : pixels + width * (long)(height / 2);");
         AssertContains(sourceText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_RELEASE_HELD_FRAME_WARN");
         AssertContains(sourceText, "SetLastSubmitFailure($\"{operation}:submit_fail:{ex.GetType().Name}\");");
