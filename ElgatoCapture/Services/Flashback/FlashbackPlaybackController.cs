@@ -403,6 +403,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _playCts?.Dispose();
             _playCts = null;
             _playbackThread = null;
+            Interlocked.Exchange(ref _pendingCommands, 0);
+            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
             Volatile.Write(ref _playbackThreadStarted, 0);
         }
     }
