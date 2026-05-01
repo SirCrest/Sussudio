@@ -651,6 +651,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
                         if (!decoder.IsOpen)
                         {
+                            SetNoFileFailure(CommandKind.Seek, cmd.Position);
                             Logger.Log("FLASHBACK_PLAYBACK_SEEK_NO_FILE - restoring live");
                             ReleasePlaybackFrameForLive("seek_no_file");
                             RestoreLiveAudio();
@@ -698,6 +699,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_SCRUB_NO_FILE — restoring live");
                             isScrubbing = false;
+                            SetNoFileFailure(CommandKind.BeginScrub, cmd.Position);
                             ReleasePlaybackFrameForLive("scrub_no_file");
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("scrub_no_file");
@@ -732,6 +734,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
                         if (!decoder.IsOpen)
                         {
+                            SetNoFileFailure(CommandKind.UpdateScrub, cmd.Position);
                             isScrubbing = false;
                             ReleasePlaybackFrameForLive("scrub_update_no_file");
                             RestoreLiveAudio();
@@ -797,6 +800,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!decoder.IsOpen)
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE — restoring live");
+                            SetNoFileFailure(CommandKind.Play, PlaybackPosition);
                             isPlaying = false;
                             ReleasePlaybackFrameForLive("play_no_file");
                             RestoreLiveAudio();
@@ -890,6 +894,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));
                         if (!decoder.IsOpen)
                         {
+                            SetNoFileFailure(CommandKind.Nudge, nudgedPos);
                             PlaybackPosition = nudgedPos;
                             isPlaying = false;
                             isScrubbing = false;
@@ -2068,6 +2073,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
         SetLastCommandFailure($"{failure}:{kind}{detail}");
         Logger.Log($"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}{detail}");
         return returnValue;
+    }
+
+    private void SetNoFileFailure(CommandKind kind, TimeSpan position)
+    {
+        SetLastCommandFailure($"no_file:{kind}{FormatCommandDetail(position: position)}");
     }
 
     private static string FormatCommandDetail(PlaybackCommand command)

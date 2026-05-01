@@ -1674,10 +1674,15 @@ static partial class Program
         AssertContains(sourceText, "private void ReleasePlaybackFrameForLive(string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_RELEASE_HELD_FOR_LIVE op={operation}");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"seek_no_file\");");
+        AssertContains(sourceText, "SetNoFileFailure(CommandKind.Seek, cmd.Position);");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"scrub_no_file\");");
+        AssertContains(sourceText, "SetNoFileFailure(CommandKind.BeginScrub, cmd.Position);");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"scrub_update_no_file\");");
+        AssertContains(sourceText, "SetNoFileFailure(CommandKind.UpdateScrub, cmd.Position);");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"play_no_file\");");
+        AssertContains(sourceText, "SetNoFileFailure(CommandKind.Play, PlaybackPosition);");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"nudge_no_file\");");
+        AssertContains(sourceText, "SetNoFileFailure(CommandKind.Nudge, nudgedPos);");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"near_live\");");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"decode_error\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SUBMIT_FAIL");
@@ -1774,6 +1779,8 @@ static partial class Program
         AssertContains(sourceText, "private bool RejectCommand(\n        CommandKind kind,\n        string failure,\n        string reason,\n        bool returnValue,\n        TimeSpan? position = null)");
         AssertContains(sourceText, "SetLastCommandFailure($\"{failure}:{kind}{detail}\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}{detail}\");");
+        AssertContains(sourceText, "private void SetNoFileFailure(CommandKind kind, TimeSpan position)");
+        AssertContains(sourceText, "SetLastCommandFailure($\"no_file:{kind}{FormatCommandDetail(position: position)}\");");
         AssertContains(sourceText, "private static string FormatCommandDetail(PlaybackCommand command)");
         AssertContains(sourceText, "return $\" pos_ms={position.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "return $\" delta_ms={delta.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
