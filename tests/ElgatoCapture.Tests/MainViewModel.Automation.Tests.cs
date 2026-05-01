@@ -254,6 +254,14 @@ static partial class Program
         AssertContains(diagnosticsText, "exportLastProgressAgeMs >= FlashbackExportStallThresholdMs");
         AssertContains(diagnosticsText, "\"Flashback export progress is stalled.\"");
         AssertContains(diagnosticsText, "$\"{exportLane} progressAgeMs={exportLastProgressAgeMs}\"");
+        AssertContains(diagnosticsText, "private long _lastFlashbackExportCompletionEventId;");
+        AssertContains(diagnosticsText, "ObserveFlashbackExportCompletion(snapshot);");
+        AssertContains(diagnosticsText, "private void ObserveFlashbackExportCompletion(AutomationSnapshot snapshot)");
+        AssertContains(diagnosticsText, "snapshot.FlashbackExportCompletedUtcUnixMs <= 0");
+        AssertContains(diagnosticsText, "Interlocked.CompareExchange(\n                ref _lastFlashbackExportCompletionEventId");
+        AssertContains(diagnosticsText, "status.Equals(\"Succeeded\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(diagnosticsText, "status.Equals(\"Cancelled\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(diagnosticsText, "Flashback export completed: status={status}");
         AssertContains(diagnosticsText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackCommandStallThresholdMs = 1000;");
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackSlowFpsRatio = 0.75;");

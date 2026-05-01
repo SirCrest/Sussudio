@@ -46,6 +46,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private long _lastFlashbackGpuFramesDropped;
     private long _lastFlashbackVideoBackpressureEvents;
     private long _lastFlashbackRecordingEvalTick;
+    private long _lastFlashbackExportCompletionEventId;
     private Task? _autoVerificationTask;
     private int _verificationInProgress;
     private int _autoVerificationScheduled;
@@ -1392,6 +1393,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var flashbackRecordingRecentBackpressure =
             flashbackRecordingRecent.BackpressureEvents > 0 &&
             snapshot.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs;
+        ObserveFlashbackExportCompletion(snapshot);
         var exportLastProgressAgeMs = snapshot.FlashbackExportActive
             ? Math.Max(0, snapshot.FlashbackExportLastProgressAgeMs)
             : 0;
@@ -1609,6 +1611,46 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"Performance below perfection threshold (score={snapshot.PerformanceScore:0.##}): {snapshot.PerformanceSummary}",
             "Performance returned to perfection threshold.",
             throttleMs: 5000);
+    }
+
+    private void ObserveFlashbackExportCompletion(AutomationSnapshot snapshot)
+    {
+        if (snapshot.FlashbackExportActive ||
+            snapshot.FlashbackExportId <= 0 ||
+            snapshot.FlashbackExportCompletedUtcUnixMs <= 0)
+        {
+            return;
+        }
+
+        var previousId = Interlocked.Read(ref _lastFlashbackExportCompletionEventId);
+        if (snapshot.FlashbackExportId <= previousId ||
+            Interlocked.CompareExchange(
+                ref _lastFlashbackExportCompletionEventId,
+                snapshot.FlashbackExportId,
+                previousId) != previousId)
+        {
+            return;
+        }
+
+        var status = string.IsNullOrWhiteSpace(snapshot.FlashbackExportStatus)
+            ? "Unknown"
+            : snapshot.FlashbackExportStatus;
+        var severity = status.Equals("Succeeded", StringComparison.OrdinalIgnoreCase)
+            ? DiagnosticsSeverity.Info
+            : status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)
+                ? DiagnosticsSeverity.Warning
+                : DiagnosticsSeverity.Error;
+        var message = string.IsNullOrWhiteSpace(snapshot.FlashbackExportMessage)
+            ? status
+            : snapshot.FlashbackExportMessage;
+
+        AddEvent(
+            severity,
+            DiagnosticsCategory.Flashback,
+            $"Flashback export completed: status={status} id={snapshot.FlashbackExportId} " +
+            $"elapsed={snapshot.FlashbackExportElapsedMs}ms progress={snapshot.FlashbackExportPercent:0.##}% " +
+            $"segments={snapshot.FlashbackExportSegmentsProcessed}/{snapshot.FlashbackExportTotalSegments} " +
+            $"bytes={snapshot.FlashbackExportOutputBytes} path={snapshot.FlashbackExportOutputPath} message={message}");
     }
 
     private static string FormatPreviewSlowFrameAlertDetail(AutomationSnapshot snapshot)
