@@ -377,7 +377,12 @@ public partial class MainViewModel
                 StatusText = $"Failed to apply format: {ex.Message}";
                 return;
             }
-            catch { /* cycle errors don't block reinit */ }
+            catch (Exception ex)
+            {
+                Logger.Log($"REINIT_WAIT_FLASHBACK_CYCLE_FAULT reason={reason} type={ex.GetType().Name} msg='{ex.Message}'");
+                // Cycle errors don't block reinit; the reinitialize path should still
+                // converge the live preview to the current UI settings.
+            }
             if (ReferenceEquals(_pendingFlashbackCycleTask, pendingCycle) && pendingCycle.IsCompleted)
             {
                 _pendingFlashbackCycleTask = null;
