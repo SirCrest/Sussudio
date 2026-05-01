@@ -1092,10 +1092,17 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
+        AssertContains(sourceText, "if (!TryValidatePreviewFrame(frame, out var skipReason))");
+        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_{skipReason}\");");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_SUBMIT_SKIP op={operation} reason={skipReason}");
+        AssertContains(sourceText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
+        AssertContains(sourceText, "reason = \"invalid_dimensions\";");
+        AssertContains(sourceText, "reason = \"null_texture\";");
+        AssertContains(sourceText, "reason = \"null_data\";");
+        AssertContains(sourceText, "reason = \"invalid_data_length\";");
         AssertContains(sourceText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_RELEASE_HELD_FRAME_WARN");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_submit_fail\");");
-        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_null_texture\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_previousHeldFrame, \"previous_frame\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SUBMIT_FAIL");

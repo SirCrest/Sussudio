@@ -1074,10 +1074,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)
     {
-        if (frame.IsD3D11Texture && frame.TexturePtr == IntPtr.Zero)
+        if (!TryValidatePreviewFrame(frame, out var skipReason))
         {
-            ReleaseHeldFrameBestEffort(frame, $"{operation}_null_texture");
-            Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_SKIP op={operation} reason=null_texture");
+            ReleaseHeldFrameBestEffort(frame, $"{operation}_{skipReason}");
+            Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_SKIP op={operation} reason={skipReason}");
             return false;
         }
 
@@ -1095,6 +1095,42 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_FAIL op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
             return false;
         }
+    }
+
+    private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)
+    {
+        if (frame.Width <= 0 || frame.Height <= 0)
+        {
+            reason = "invalid_dimensions";
+            return false;
+        }
+
+        if (frame.IsD3D11Texture)
+        {
+            if (frame.TexturePtr == IntPtr.Zero)
+            {
+                reason = "null_texture";
+                return false;
+            }
+
+            reason = string.Empty;
+            return true;
+        }
+
+        if (frame.Data == IntPtr.Zero)
+        {
+            reason = "null_data";
+            return false;
+        }
+
+        if (frame.DataLength <= 0)
+        {
+            reason = "invalid_data_length";
+            return false;
+        }
+
+        reason = string.Empty;
+        return true;
     }
 
     private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)
