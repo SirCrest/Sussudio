@@ -1078,6 +1078,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 var audioGate = Interlocked.Read(ref _lastAudioPtsTicks);
                 decoder.AudioChunkCallback = null;
                 var segSwitchTarget = pos + frozenValidStart;
+                var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
+                if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)
+                    segSwitchTarget = nextSegmentStart.Value;
                 decoder.SeekTo(segSwitchTarget);
                 RestoreAudioCallback(decoder, audioGate);
                 pacingStopwatch.Restart();
@@ -1091,6 +1094,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
             if (IsActiveFmp4Segment(currentOpenFilePath) && currentOpenFilePath != null)
             {
                 var resumeTarget = lastFrameAbsPts;
+                var currentSegmentStart = _bufferManager.GetSegmentStartPts(currentOpenFilePath);
+                if (currentSegmentStart.HasValue && resumeTarget < currentSegmentStart.Value)
+                    resumeTarget = currentSegmentStart.Value;
                 Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN pos_ms={(long)pos.TotalMilliseconds} resumePts_ms={(long)resumeTarget.TotalMilliseconds}");
                 decoder.CloseFile();
                 decoder.OpenFile(currentOpenFilePath);

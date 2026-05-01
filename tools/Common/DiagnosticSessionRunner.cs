@@ -67,6 +67,12 @@ public static class DiagnosticSessionRunner
     private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;
     private const int FlashbackScrubStressMaxPlaybackPendingCommands = 20;
 
+    private readonly record struct FlashbackSegmentProbe(
+        int SequenceNumber,
+        long StartPtsMs,
+        long EndPtsMs,
+        bool IsActive);
+
     public static async Task<DiagnosticSessionResult> RunAsync(
         DiagnosticSessionOptions options,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
@@ -100,6 +106,7 @@ public static class DiagnosticSessionRunner
         var runFlashbackRestartCycle = scenario == "flashback-restart-cycle";
         var runFlashbackEncoderCycle = scenario == "flashback-encoder-cycle";
         var runFlashbackExportPlayback = scenario == "flashback-export-playback";
+        var runFlashbackSegmentPlayback = scenario == "flashback-segment-playback";
         var runFlashbackRangeExport = scenario == "flashback-range-export";
         var runFlashbackLifecycle = scenario == "flashback-lifecycle";
         var runFlashbackExportConcurrent = scenario == "flashback-export-concurrent";
@@ -238,6 +245,17 @@ public static class DiagnosticSessionRunner
                 actions.Add("flashback export playback started");
             }
 
+            Task? flashbackSegmentPlaybackTask = null;
+            if (runFlashbackSegmentPlayback)
+            {
+                flashbackSegmentPlaybackTask = RunFlashbackSegmentPlaybackAsync(
+                    actions,
+                    warnings,
+                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                    cancellationToken);
+                actions.Add("flashback segment playback started");
+            }
+
             Task? flashbackRangeExportTask = null;
             if (runFlashbackRangeExport)
             {
@@ -354,6 +372,11 @@ public static class DiagnosticSessionRunner
             if (flashbackExportPlaybackTask is not null)
             {
                 await flashbackExportPlaybackTask.ConfigureAwait(false);
+            }
+
+            if (flashbackSegmentPlaybackTask is not null)
+            {
+                await flashbackSegmentPlaybackTask.ConfigureAwait(false);
             }
 
             if (flashbackRangeExportTask is not null)
@@ -523,7 +546,7 @@ public static class DiagnosticSessionRunner
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0),
+                      (!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -1976,6 +1999,285 @@ public static class DiagnosticSessionRunner
         }
     }
 
+    private static async Task RunFlashbackSegmentPlaybackAsync(
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        {
+            warnings.Add("flashback segment playback: Flashback buffer did not become playback-ready within 30s");
+            return;
+        }
+
+        var completedSegment = await WaitForFlashbackCompletedSegmentAsync(
+                sendCommandAsync,
+                TimeSpan.FromSeconds(5),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        if (completedSegment is null)
+        {
+            var rotationOk = await CreateFlashbackCompletedSegmentViaRecordingAsync(
+                    actions,
+                    warnings,
+                    sendCommandAsync,
+                    cancellationToken)
+                .ConfigureAwait(false);
+            if (!rotationOk)
+            {
+                return;
+            }
+
+            completedSegment = await WaitForFlashbackCompletedSegmentAsync(
+                    sendCommandAsync,
+                    TimeSpan.FromSeconds(20),
+                    cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        if (completedSegment is null)
+        {
+            warnings.Add("flashback segment playback: no completed segment became available after recording-assisted rotation");
+            return;
+        }
+
+        var seekPositionMs = Math.Max(0, completedSegment.Value.EndPtsMs - 500);
+        await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "pause" },
+                null)
+            .ConfigureAwait(false);
+        await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = seekPositionMs },
+                null)
+            .ConfigureAwait(false);
+        await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "play" },
+                null)
+            .ConfigureAwait(false);
+        actions.Add(
+            "flashback segment playback started near boundary " +
+            $"segment={completedSegment.Value.SequenceNumber} seekMs={seekPositionMs} endMs={completedSegment.Value.EndPtsMs}");
+
+        var playbackSnapshot = await WaitForFlashbackPlaybackBoundaryCrossAsync(
+                sendCommandAsync,
+                completedSegment.Value.EndPtsMs,
+                TimeSpan.FromSeconds(35),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (playbackSnapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add("flashback segment playback: no playback snapshot returned");
+            return;
+        }
+
+        var state = GetString(playbackSnapshot.Value, "FlashbackPlaybackState") ?? "Unknown";
+        var positionMs = GetNullableLong(playbackSnapshot.Value, "FlashbackPlaybackPositionMs") ?? 0;
+        var frameCount = GetNullableLong(playbackSnapshot.Value, "FlashbackPlaybackFrameCount") ?? 0;
+        var observedFps = GetDouble(playbackSnapshot.Value, "FlashbackPlaybackObservedFps");
+        var lateFrames = GetNullableLong(playbackSnapshot.Value, "FlashbackPlaybackLateFrames") ?? 0;
+        var dropped = GetNullableLong(playbackSnapshot.Value, "FlashbackPlaybackCommandsDropped") ?? 0;
+        var skipped = GetNullableLong(playbackSnapshot.Value, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0;
+        var pending = GetInt(playbackSnapshot.Value, "FlashbackPlaybackPendingCommands");
+        actions.Add(
+            "flashback segment playback observed " +
+            $"positionMs={positionMs} frames={frameCount} late={lateFrames} fps={observedFps:0.##}");
+
+        if (!string.Equals(state, "Playing", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add($"flashback segment playback: expected Playing after boundary playback, got {state}");
+        }
+
+        if (positionMs < completedSegment.Value.EndPtsMs + 250)
+        {
+            warnings.Add(
+                "flashback segment playback: playback position did not cross completed segment boundary " +
+                $"positionMs={positionMs} boundaryMs={completedSegment.Value.EndPtsMs}");
+        }
+
+        if (frameCount <= 0 || observedFps <= 1)
+        {
+            warnings.Add(
+                "flashback segment playback: playback frames did not advance " +
+                $"frames={frameCount} observedFps={observedFps:0.##}");
+        }
+
+        if (dropped > 0 || skipped > 0 || pending > 0)
+        {
+            warnings.Add(
+                "flashback segment playback: command queue unhealthy " +
+                $"dropped={dropped} skipped={skipped} pending={pending}");
+        }
+
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
+            .ConfigureAwait(false);
+        actions.Add("flashback segment playback go-live requested");
+
+        var finalSnapshot = await WaitForFlashbackPlaybackStateAsync(
+                sendCommandAsync,
+                "Live",
+                TimeSpan.FromSeconds(3),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (finalSnapshot?.ValueKind == JsonValueKind.Object)
+        {
+            var finalState = GetString(finalSnapshot.Value, "FlashbackPlaybackState") ?? "Unknown";
+            if (!string.Equals(finalState, "Live", StringComparison.OrdinalIgnoreCase))
+            {
+                warnings.Add($"flashback segment playback: playback ended in state {finalState}");
+            }
+        }
+    }
+
+    private static async Task<JsonElement?> WaitForFlashbackPlaybackBoundaryCrossAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        long boundaryMs,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        JsonElement? lastSnapshot = null;
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started) < timeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(response, out var snapshot))
+            {
+                lastSnapshot = snapshot;
+                var positionMs = GetNullableLong(snapshot, "FlashbackPlaybackPositionMs") ?? 0;
+                var frameCount = GetNullableLong(snapshot, "FlashbackPlaybackFrameCount") ?? 0;
+                var pending = GetInt(snapshot, "FlashbackPlaybackPendingCommands");
+                var state = GetString(snapshot, "FlashbackPlaybackState") ?? "Unknown";
+                if (positionMs >= boundaryMs + 250 &&
+                    frameCount > 0 &&
+                    pending == 0 &&
+                    string.Equals(state, "Playing", StringComparison.OrdinalIgnoreCase))
+                {
+                    return snapshot;
+                }
+            }
+
+            await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+        }
+
+        return lastSnapshot;
+    }
+
+    private static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        string expectedState,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        JsonElement? lastSnapshot = null;
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started) < timeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(response, out var snapshot))
+            {
+                lastSnapshot = snapshot;
+                var state = GetString(snapshot, "FlashbackPlaybackState") ?? "Unknown";
+                if (string.Equals(state, expectedState, StringComparison.OrdinalIgnoreCase))
+                {
+                    return snapshot;
+                }
+            }
+
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        }
+
+        return lastSnapshot;
+    }
+
+    private static async Task<bool> CreateFlashbackCompletedSegmentViaRecordingAsync(
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        var startResponse = await sendCommandAsync(
+                "SetRecordingEnabled",
+                new Dictionary<string, object?> { ["enabled"] = true },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback segment playback recording-assisted rotation started");
+        if (!AutomationSnapshotFormatter.IsSuccess(startResponse))
+        {
+            warnings.Add(
+                $"flashback segment playback: recording-assisted start failed - {AutomationSnapshotFormatter.Get(startResponse, "Message", "unknown error")}");
+            return false;
+        }
+
+        var readySnapshot = await WaitForFlashbackRecordingReadyAsync(
+                sendCommandAsync,
+                TimeSpan.FromSeconds(20),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (readySnapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add("flashback segment playback: recording-assisted Flashback backend did not become ready");
+            await TryStopRecordingAsync(sendCommandAsync).ConfigureAwait(false);
+            return false;
+        }
+
+        await Task.Delay(2_000, cancellationToken).ConfigureAwait(false);
+
+        var stopResponse = await sendCommandAsync(
+                "SetRecordingEnabled",
+                new Dictionary<string, object?> { ["enabled"] = false },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback segment playback recording-assisted rotation stopped");
+        if (!AutomationSnapshotFormatter.IsSuccess(stopResponse))
+        {
+            warnings.Add(
+                $"flashback segment playback: recording-assisted stop failed - {AutomationSnapshotFormatter.Get(stopResponse, "Message", "unknown error")}");
+            return false;
+        }
+
+        var stoppedResponse = await sendCommandAsync(
+                "WaitForCondition",
+                new Dictionary<string, object?>
+                {
+                    ["condition"] = "RecordingStopped",
+                    ["timeoutMs"] = 30_000,
+                    ["pollMs"] = 250
+                },
+                32_000)
+            .ConfigureAwait(false);
+        if (!AutomationSnapshotFormatter.IsSuccess(stoppedResponse))
+        {
+            warnings.Add(
+                $"flashback segment playback: recording-assisted stop did not settle - {AutomationSnapshotFormatter.Get(stoppedResponse, "Message", "not met")}");
+            return false;
+        }
+
+        return true;
+    }
+
+    private static async Task TryStopRecordingAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync)
+    {
+        try
+        {
+            await sendCommandAsync(
+                    "SetRecordingEnabled",
+                    new Dictionary<string, object?> { ["enabled"] = false },
+                    null)
+                .ConfigureAwait(false);
+        }
+        catch
+        {
+            // Best-effort cleanup for diagnostics; the caller records the primary warning.
+        }
+    }
+
     private static async Task RunFlashbackRangeExportAsync(
         string outputDirectory,
         List<string> actions,
@@ -2325,6 +2627,61 @@ public static class DiagnosticSessionRunner
         return false;
     }
 
+    private static async Task<FlashbackSegmentProbe?> WaitForFlashbackCompletedSegmentAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started) < timeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await sendCommandAsync("FlashbackGetSegments", null, null).ConfigureAwait(false);
+            if (TryGetFlashbackSegments(response, out var segments))
+            {
+                var completed = segments
+                    .Where(segment => !segment.IsActive && segment.EndPtsMs > segment.StartPtsMs)
+                    .OrderBy(segment => segment.EndPtsMs)
+                    .FirstOrDefault();
+                if (completed.EndPtsMs > completed.StartPtsMs)
+                {
+                    return completed;
+                }
+            }
+
+            await Task.Delay(1_000, cancellationToken).ConfigureAwait(false);
+        }
+
+        return null;
+    }
+
+    private static bool TryGetFlashbackSegments(JsonElement response, out List<FlashbackSegmentProbe> segments)
+    {
+        segments = new List<FlashbackSegmentProbe>();
+        if (!response.TryGetProperty("Data", out var data) ||
+            !data.TryGetProperty("Segments", out var segmentsElement) ||
+            segmentsElement.ValueKind != JsonValueKind.Array)
+        {
+            return false;
+        }
+
+        foreach (var segment in segmentsElement.EnumerateArray())
+        {
+            if (segment.ValueKind != JsonValueKind.Object)
+            {
+                continue;
+            }
+
+            segments.Add(new FlashbackSegmentProbe(
+                SequenceNumber: GetInt(segment, "SequenceNumber"),
+                StartPtsMs: GetNullableLong(segment, "StartPtsMs") ?? 0,
+                EndPtsMs: GetNullableLong(segment, "EndPtsMs") ?? 0,
+                IsActive: GetBool(segment, "IsActive")));
+        }
+
+        return true;
+    }
+
     private static void ValidateFlashbackRecordingSession(
         IReadOnlyList<DiagnosticSessionSample> samples,
         List<string> warnings)
@@ -2538,18 +2895,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "flashback-export-rejected" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "flashback-export-rejected" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
         => scenario is "recording-only" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
+        => scenario is "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
 }

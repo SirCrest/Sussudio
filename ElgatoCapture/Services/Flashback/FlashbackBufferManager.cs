@@ -615,11 +615,34 @@ internal sealed class FlashbackBufferManager : IDisposable
                     return _activeSegmentPath;
                 }
             }
+            if (string.Equals(_activeSegmentPath, currentPath, StringComparison.OrdinalIgnoreCase))
+                return _activeSegmentPath;
             // currentPath not found (evicted or unknown)
             // Return the oldest available segment, or active if none
             if (_completedSegments.Count > 0)
                 return _completedSegments[0].Path;
             return _activeSegmentPath;
+        }
+    }
+
+    public TimeSpan? GetSegmentStartPts(string path)
+    {
+        lock (_indexLock)
+        {
+            foreach (var seg in _completedSegments)
+            {
+                if (string.Equals(seg.Path, path, StringComparison.OrdinalIgnoreCase))
+                    return seg.StartPts;
+            }
+
+            if (string.Equals(_activeSegmentPath, path, StringComparison.OrdinalIgnoreCase))
+            {
+                return _completedSegments.Count > 0
+                    ? _completedSegments[^1].EndPts
+                    : _recordingStartPts;
+            }
+
+            return null;
         }
     }
 
