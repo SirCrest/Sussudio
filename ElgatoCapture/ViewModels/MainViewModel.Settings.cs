@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using ElgatoCapture.Models;
 using ElgatoCapture.Services.Audio;
@@ -335,7 +336,8 @@ public partial class MainViewModel
         // Restart the flashback backend so the new duration takes effect immediately.
         if (IsPreviewing && !IsRecording && _isLoadingSettings is false)
         {
-            _ = RestartFlashbackAfterSettingsUpdateAsync(updateTask);
+            var restartGeneration = Interlocked.Increment(ref _flashbackSettingsRestartGeneration);
+            _ = RestartFlashbackAfterSettingsUpdateAsync(updateTask, restartGeneration);
         }
         else
         {
@@ -353,11 +355,27 @@ public partial class MainViewModel
         SaveSettings();
     }
 
-    private async Task RestartFlashbackAfterSettingsUpdateAsync(Task settingsUpdateTask)
+    private async Task RestartFlashbackAfterSettingsUpdateAsync(Task settingsUpdateTask, int restartGeneration)
     {
         try
         {
             await settingsUpdateTask.ConfigureAwait(false);
+            if (restartGeneration != Volatile.Read(ref _flashbackSettingsRestartGeneration))
+            {
+                Logger.Log($"RestartFlashbackAfterSettingsUpdate skipped stale generation {restartGeneration}");
+                return;
+            }
+
+            var shouldRestart = await InvokeOnUiThreadAsync(
+                    () => IsPreviewing && !IsRecording && _isLoadingSettings is false,
+                    CancellationToken.None)
+                .ConfigureAwait(false);
+            if (shouldRestart is false)
+            {
+                Logger.Log($"RestartFlashbackAfterSettingsUpdate skipped inactive generation {restartGeneration}");
+                return;
+            }
+
             await RestartFlashbackAsync().ConfigureAwait(false);
         }
         catch (Exception ex)

@@ -109,6 +109,13 @@ static partial class Program
         AssertMemberContains(settingsText, "OnCustomBitrateMbpsChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(settingsText, "OnFlashbackBufferMinutesChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
         AssertMemberContains(settingsText, "OnFlashbackGpuDecodeChanged", "_sessionCoordinator.UpdateFlashbackSettingsAsync(FlashbackBufferMinutes, FlashbackGpuDecode)");
+        AssertMemberContains(settingsText, "OnFlashbackBufferMinutesChanged", "Interlocked.Increment(ref _flashbackSettingsRestartGeneration)");
+        AssertMemberContains(settingsText, "OnFlashbackBufferMinutesChanged", "RestartFlashbackAfterSettingsUpdateAsync(updateTask, restartGeneration)");
+        AssertMemberContains(settingsText, "RestartFlashbackAfterSettingsUpdateAsync", "Volatile.Read(ref _flashbackSettingsRestartGeneration)");
+        AssertMemberContains(settingsText, "RestartFlashbackAfterSettingsUpdateAsync", "restartGeneration != Volatile.Read(ref _flashbackSettingsRestartGeneration)");
+        AssertMemberContains(settingsText, "RestartFlashbackAfterSettingsUpdateAsync", "InvokeOnUiThreadAsync(");
+        AssertMemberContains(settingsText, "RestartFlashbackAfterSettingsUpdateAsync", "IsPreviewing && !IsRecording && _isLoadingSettings is false");
+        AssertMemberContains(settingsText, "RestartFlashbackAfterSettingsUpdateAsync", "shouldRestart is false");
         AssertMemberContains(settingsText, "RestartFlashbackAfterSettingsUpdateAsync", "await RestartFlashbackAsync().ConfigureAwait(false)");
         AssertMemberContains(settingsText, "OnSelectedQualityChanged", "TrackFlashbackEncoderSettingsCycle(");
         AssertMemberContains(settingsText, "OnSelectedPresetChanged", "TrackFlashbackEncoderSettingsCycle(");
@@ -116,6 +123,7 @@ static partial class Program
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "customBitrateMbps: CustomBitrateMbps");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "nvencPreset: SelectedPreset");
         AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "_sessionCoordinator.RestartFlashbackAsync(BuildCaptureSettings())");
+        AssertContains(viewModelFiles["MainViewModel.cs"], "private int _flashbackSettingsRestartGeneration;");
 
         foreach (var memberName in new[]
         {
