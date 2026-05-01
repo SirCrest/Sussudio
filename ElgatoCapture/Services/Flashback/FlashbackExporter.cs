@@ -181,7 +181,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
-        _exportLock.Wait(ct);
+        if (!TryWaitForExportLock(outputPath, ct, out var cancellationResult))
+        {
+            return cancellationResult;
+        }
+
         try
         {
         var tmpPath = outputPath + ".tmp";
@@ -494,7 +498,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             catch { /* Best-effort: segment may be deleted mid-scan; progress estimate is non-critical */ }
         }
 
-        _exportLock.Wait(ct);
+        if (!TryWaitForExportLock(outputPath, ct, out var cancellationResult))
+        {
+            return cancellationResult;
+        }
+
         try
         {
         var tmpPath = outputPath + ".tmp";
@@ -1262,6 +1270,23 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         File.Move(tmpPath, outputPath, overwrite: true);
+    }
+
+    private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)
+    {
+        try
+        {
+            _exportLock.Wait(ct);
+            cancellationResult = null!;
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            const string message = "Flashback export cancelled.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            cancellationResult = FinalizeResult.Failure(outputPath, message);
+            return false;
+        }
     }
 
     private static void DeleteTempFileIfPresent(string tmpPath)

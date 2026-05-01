@@ -540,6 +540,9 @@ static partial class Program
             await RunCheckAsync(
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
+            await RunCheckAsync(
+                "Flashback exporter returns cancellation result while waiting for export lock",
+                FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled),
 
             // --- RecordingPipelineOptions ---
             await RunCheckAsync(
