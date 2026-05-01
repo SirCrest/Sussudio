@@ -964,9 +964,25 @@ internal sealed class FlashbackPlaybackController : IDisposable
         ReleasePreviousHeldFrame();
         if (decoder != null)
         {
-            if (decoder.IsOpen) decoder.CloseFile();
-            decoder.Dispose();
+            var decoderToDispose = decoder;
             decoder = null;
+            try
+            {
+                if (decoderToDispose.IsOpen) decoderToDispose.CloseFile();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=close type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+
+            try
+            {
+                decoderToDispose.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=dispose type={ex.GetType().Name} msg='{ex.Message}'");
+            }
         }
         fileOpen = false;
         _currentOpenFilePath = null;
