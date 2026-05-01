@@ -91,6 +91,14 @@ public sealed class DiagnosticSessionResult
     public double PreviewD3DLatestSlowFrameTotalFrameCpuMs { get; init; }
     public double PreviewD3DLatestSlowFramePresentCallMs { get; init; }
     public int PreviewD3DLatestSlowFramePendingFrameCount { get; init; }
+    public double PreviewD3DInputUploadCpuP99MsAtEnd { get; init; }
+    public double PreviewD3DInputUploadCpuMaxMsObserved { get; init; }
+    public double PreviewD3DRenderSubmitCpuP99MsAtEnd { get; init; }
+    public double PreviewD3DRenderSubmitCpuMaxMsObserved { get; init; }
+    public double PreviewD3DPresentCallP99MsAtEnd { get; init; }
+    public double PreviewD3DPresentCallMaxMsObserved { get; init; }
+    public double PreviewD3DTotalFrameCpuP99MsAtEnd { get; init; }
+    public double PreviewD3DTotalFrameCpuMaxMsObserved { get; init; }
     public bool RecordingVerificationRun { get; init; }
     public bool? RecordingVerificationSucceeded { get; init; }
     public string? RecordingVerificationMessage { get; init; }
@@ -685,6 +693,14 @@ public static class DiagnosticSessionRunner
             PreviewD3DLatestSlowFrameTotalFrameCpuMs = previewD3DMetrics.LatestSlowFrameTotalFrameCpuMs,
             PreviewD3DLatestSlowFramePresentCallMs = previewD3DMetrics.LatestSlowFramePresentCallMs,
             PreviewD3DLatestSlowFramePendingFrameCount = previewD3DMetrics.LatestSlowFramePendingFrameCount,
+            PreviewD3DInputUploadCpuP99MsAtEnd = previewD3DMetrics.InputUploadCpuP99MsAtEnd,
+            PreviewD3DInputUploadCpuMaxMsObserved = previewD3DMetrics.InputUploadCpuMaxMsObserved,
+            PreviewD3DRenderSubmitCpuP99MsAtEnd = previewD3DMetrics.RenderSubmitCpuP99MsAtEnd,
+            PreviewD3DRenderSubmitCpuMaxMsObserved = previewD3DMetrics.RenderSubmitCpuMaxMsObserved,
+            PreviewD3DPresentCallP99MsAtEnd = previewD3DMetrics.PresentCallP99MsAtEnd,
+            PreviewD3DPresentCallMaxMsObserved = previewD3DMetrics.PresentCallMaxMsObserved,
+            PreviewD3DTotalFrameCpuP99MsAtEnd = previewD3DMetrics.TotalFrameCpuP99MsAtEnd,
+            PreviewD3DTotalFrameCpuMaxMsObserved = previewD3DMetrics.TotalFrameCpuMaxMsObserved,
             RecordingVerificationRun = verification.HasValue,
             RecordingVerificationSucceeded = verificationSucceeded,
             RecordingVerificationMessage = verification.HasValue
@@ -838,6 +854,16 @@ public static class DiagnosticSessionRunner
             $"totalFrameCpuMs={result.PreviewD3DLatestSlowFrameTotalFrameCpuMs:0.##} " +
             $"presentCallMs={result.PreviewD3DLatestSlowFramePresentCallMs:0.##} " +
             $"pending={result.PreviewD3DLatestSlowFramePendingFrameCount}");
+        builder.AppendLine(
+            "Preview D3D CPU Timing: " +
+            $"inputUploadP99End={result.PreviewD3DInputUploadCpuP99MsAtEnd:0.##} " +
+            $"inputUploadMaxObserved={result.PreviewD3DInputUploadCpuMaxMsObserved:0.##} " +
+            $"renderSubmitP99End={result.PreviewD3DRenderSubmitCpuP99MsAtEnd:0.##} " +
+            $"renderSubmitMaxObserved={result.PreviewD3DRenderSubmitCpuMaxMsObserved:0.##} " +
+            $"presentCallP99End={result.PreviewD3DPresentCallP99MsAtEnd:0.##} " +
+            $"presentCallMaxObserved={result.PreviewD3DPresentCallMaxMsObserved:0.##} " +
+            $"totalFrameP99End={result.PreviewD3DTotalFrameCpuP99MsAtEnd:0.##} " +
+            $"totalFrameMaxObserved={result.PreviewD3DTotalFrameCpuMaxMsObserved:0.##}");
 
         builder.AppendLine($"Artifacts: {result.OutputDirectory}");
         builder.AppendLine($"  Summary: {result.SummaryPath}");
@@ -3085,11 +3111,16 @@ public static class DiagnosticSessionRunner
         var metrics = new PreviewD3DMetrics
         {
             MissedRefreshDelta = Math.Max(0, missedRefreshEnd - missedRefreshStart),
-            StatsFailureDelta = Math.Max(0, failureEnd - failureStart)
+            StatsFailureDelta = Math.Max(0, failureEnd - failureStart),
+            InputUploadCpuP99MsAtEnd = GetDouble(lastSnapshot, "PreviewD3DInputUploadCpuP99Ms"),
+            RenderSubmitCpuP99MsAtEnd = GetDouble(lastSnapshot, "PreviewD3DRenderSubmitCpuP99Ms"),
+            PresentCallP99MsAtEnd = GetDouble(lastSnapshot, "PreviewD3DPresentCallP99Ms"),
+            TotalFrameCpuP99MsAtEnd = GetDouble(lastSnapshot, "PreviewD3DTotalFrameCpuP99Ms")
         };
 
         foreach (var sample in samples)
         {
+            ObservePreviewD3DCpuTiming(metrics, sample.Snapshot);
             metrics.MaxRecentSlowFramesObserved = Math.Max(
                 metrics.MaxRecentSlowFramesObserved,
                 CountArrayItems(sample.Snapshot, "PreviewD3DRecentSlowFrames"));
@@ -3107,6 +3138,7 @@ public static class DiagnosticSessionRunner
         metrics.MaxRecentSlowFramesObserved = Math.Max(
             metrics.MaxRecentSlowFramesObserved,
             CountArrayItems(lastSnapshot, "PreviewD3DRecentSlowFrames"));
+        ObservePreviewD3DCpuTiming(metrics, lastSnapshot);
         if (TryGetLatestSlowFrame(lastSnapshot, out var lastSlowFrame))
         {
             metrics.LatestSlowFrameReason = GetString(lastSlowFrame, "Reason") ?? string.Empty;
@@ -3131,6 +3163,30 @@ public static class DiagnosticSessionRunner
         public double LatestSlowFrameTotalFrameCpuMs { get; set; }
         public double LatestSlowFramePresentCallMs { get; set; }
         public int LatestSlowFramePendingFrameCount { get; set; }
+        public double InputUploadCpuP99MsAtEnd { get; init; }
+        public double InputUploadCpuMaxMsObserved { get; set; }
+        public double RenderSubmitCpuP99MsAtEnd { get; init; }
+        public double RenderSubmitCpuMaxMsObserved { get; set; }
+        public double PresentCallP99MsAtEnd { get; init; }
+        public double PresentCallMaxMsObserved { get; set; }
+        public double TotalFrameCpuP99MsAtEnd { get; init; }
+        public double TotalFrameCpuMaxMsObserved { get; set; }
+    }
+
+    private static void ObservePreviewD3DCpuTiming(PreviewD3DMetrics metrics, JsonElement snapshot)
+    {
+        metrics.InputUploadCpuMaxMsObserved = Math.Max(
+            metrics.InputUploadCpuMaxMsObserved,
+            GetDouble(snapshot, "PreviewD3DInputUploadCpuMaxMs"));
+        metrics.RenderSubmitCpuMaxMsObserved = Math.Max(
+            metrics.RenderSubmitCpuMaxMsObserved,
+            GetDouble(snapshot, "PreviewD3DRenderSubmitCpuMaxMs"));
+        metrics.PresentCallMaxMsObserved = Math.Max(
+            metrics.PresentCallMaxMsObserved,
+            GetDouble(snapshot, "PreviewD3DPresentCallMaxMs"));
+        metrics.TotalFrameCpuMaxMsObserved = Math.Max(
+            metrics.TotalFrameCpuMaxMsObserved,
+            GetDouble(snapshot, "PreviewD3DTotalFrameCpuMaxMs"));
     }
 
     private static int CountArrayItems(JsonElement snapshot, string propertyName)
