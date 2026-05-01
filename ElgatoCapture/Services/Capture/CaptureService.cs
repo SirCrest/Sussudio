@@ -538,6 +538,16 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         double seconds, string outputPath,
         IProgress<ExportProgress>? progress, CancellationToken ct)
     {
+        if (ct.IsCancellationRequested)
+        {
+            return FailFlashbackExport(outputPath, "Flashback export cancelled.");
+        }
+
+        if (!double.IsFinite(seconds) || seconds <= 0)
+        {
+            return FailFlashbackExport(outputPath, "Flashback export duration must be greater than zero.");
+        }
+
         // Same pattern: snapshot under lock, export outside it.
         FlashbackBufferManager? bufferManager;
         FlashbackEncoderSink? flashbackSink;

@@ -295,6 +295,7 @@ static partial class Program
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\");");
         AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export range is empty or invalid.\");");
+        AssertContains(captureServiceText, "if (ct.IsCancellationRequested)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export cancelled.\");\n        }\n\n        if (!double.IsFinite(seconds) || seconds <= 0)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export duration must be greater than zero.\");\n        }");
         AssertContains(captureServiceText, "? \"Cancelled\"");
         AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
         AssertContains(captureServiceText, "if (exportOperationLockHeld)");
