@@ -136,15 +136,22 @@ static partial class Program
         Directory.CreateDirectory(tempDir);
         try
         {
-            // Create some temp files that match the cleanup pattern
-            File.WriteAllText(Path.Combine(tempDir, "fb_export_temp_001.ts"), "data");
-            File.WriteAllText(Path.Combine(tempDir, "fb_export_temp_002.ts"), "data");
-            File.WriteAllText(Path.Combine(tempDir, "unrelated.mp4"), "keep");
+            var orphan1 = Path.Combine(tempDir, "clip_a.mp4.tmp");
+            var orphan2 = Path.Combine(tempDir, "clip_b.mp4.tmp");
+            var unrelated = Path.Combine(tempDir, "unrelated.mp4");
+            var legacyTemp = Path.Combine(tempDir, "fb_export_temp_001.ts");
+
+            File.WriteAllText(orphan1, "data");
+            File.WriteAllText(orphan2, "data");
+            File.WriteAllText(unrelated, "keep");
+            File.WriteAllText(legacyTemp, "keep");
 
             cleanup.Invoke(null, new object[] { tempDir });
 
-            // Unrelated file should survive
-            AssertEqual(true, File.Exists(Path.Combine(tempDir, "unrelated.mp4")), "Unrelated file preserved");
+            AssertEqual(false, File.Exists(orphan1), "First mp4 temp deleted");
+            AssertEqual(false, File.Exists(orphan2), "Second mp4 temp deleted");
+            AssertEqual(true, File.Exists(unrelated), "Unrelated file preserved");
+            AssertEqual(true, File.Exists(legacyTemp), "Legacy TS temp preserved by mp4 cleanup");
         }
         finally
         {
