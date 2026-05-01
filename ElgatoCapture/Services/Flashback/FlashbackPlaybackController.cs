@@ -287,6 +287,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         var pos = PlaybackPosition;
         InPoint = pos;
+        var outTicks = Interlocked.Read(ref _outPointTicks);
+        if (outTicks != long.MinValue && outTicks <= pos.Ticks)
+        {
+            OutPoint = null;
+            Logger.Log("FLASHBACK_PLAYBACK_CLEAR_OUT invalid_range");
+        }
+
         Logger.Log($"FLASHBACK_PLAYBACK_SET_IN pos_ms={(long)pos.TotalMilliseconds}");
         return pos;
     }
@@ -295,6 +302,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         var pos = PlaybackPosition;
         OutPoint = pos;
+        var inTicks = Interlocked.Read(ref _inPointTicks);
+        if (inTicks != long.MinValue && inTicks >= pos.Ticks)
+        {
+            InPoint = null;
+            Logger.Log("FLASHBACK_PLAYBACK_CLEAR_IN invalid_range");
+        }
+
         Logger.Log($"FLASHBACK_PLAYBACK_SET_OUT pos_ms={(long)pos.TotalMilliseconds}");
         return pos;
     }

@@ -541,6 +541,9 @@ static partial class Program
                 "Flashback playback worker exit rearms future commands",
                 FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart),
             await RunCheckAsync(
+                "Flashback in/out points clear invalid counterpart",
+                FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart),
+            await RunCheckAsync(
                 "Flashback pause from live does not block on exact seek",
                 FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek),
             await RunCheckAsync(
