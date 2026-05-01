@@ -333,6 +333,7 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "FlashbackVideoSequenceGaps = fbSink?.VideoSequenceGaps");
         AssertContains(captureSnapshotsSource, "FlashbackVideoQueueOldestFrameAgeMs = fbSink?.VideoQueueOldestFrameAgeMs");
         AssertContains(captureSnapshotsSource, "FlashbackVideoBackpressureWaitMs = fbSink?.VideoBackpressureWaitMs");
+        AssertContains(captureSnapshotsSource, "FlashbackForceRotateActive = fbSink?.IsForceRotateActive");
         AssertContains(captureSnapshotsSource, "FlashbackEncodingFailureMessage");
         AssertContains(captureSnapshotsSource, "FlashbackStartupCacheBytes = bufMgr?.StartupCacheBytes");
         AssertContains(captureSnapshotsSource, "FlashbackTempDriveFreeBytes = bufMgr?.TempDriveAvailableFreeBytes");
@@ -341,8 +342,10 @@ static partial class Program
         var mcpAppStateSource = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
         AssertContains(sharedFormatterSource, "FlashbackEncodingFailed");
         AssertContains(sharedFormatterSource, "FlashbackStartupCacheBytes");
+        AssertContains(sharedFormatterSource, "FlashbackForceRotateActive");
         AssertContains(ecctlFormatterSource, "FlashbackEncodingFailed");
         AssertContains(ecctlFormatterSource, "FlashbackStartupCacheBytes");
+        AssertContains(ecctlFormatterSource, "FlashbackForceRotateActive");
         AssertContains(mcpAppStateSource, "FormatSnapshot(response, includeFlashback: true)");
         AssertOccursBefore(
             sharedFormatterSource,

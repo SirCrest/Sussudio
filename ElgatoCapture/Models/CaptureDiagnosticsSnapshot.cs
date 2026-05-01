@@ -233,6 +233,7 @@ public class CaptureDiagnosticsSnapshot
     public bool FlashbackEncodingFailed { get; init; }
     public string? FlashbackEncodingFailureType { get; init; }
     public string? FlashbackEncodingFailureMessage { get; init; }
+    public bool FlashbackForceRotateActive { get; init; }
     public int FlashbackVideoQueueCapacity { get; init; }
     public int FlashbackVideoQueueMaxDepth { get; init; }
     public long FlashbackVideoFramesSubmittedToEncoder { get; init; }

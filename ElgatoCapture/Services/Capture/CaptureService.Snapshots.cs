@@ -1560,6 +1560,7 @@ public partial class CaptureService
             FlashbackEncodingFailed = flashbackEncodingFailed,
             FlashbackEncodingFailureType = flashbackFailureType,
             FlashbackEncodingFailureMessage = flashbackFailureMessage,
+            FlashbackForceRotateActive = fbSink?.IsForceRotateActive ?? false,
             FlashbackVideoQueueCapacity = fbSink?.VideoQueueCapacityFrames ?? 0,
             FlashbackVideoQueueMaxDepth = fbSink?.VideoQueueMaxDepth ?? 0,
             FlashbackVideoFramesSubmittedToEncoder = fbSink?.VideoFramesSubmittedToEncoder ?? 0,

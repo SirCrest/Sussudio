@@ -305,12 +305,14 @@ static partial class Program
                 "FlashbackActive": false,
                 "FlashbackEncodingFailed": true,
                 "FlashbackEncodingFailureType": "InvalidOperationException",
-                "FlashbackEncodingFailureMessage": "Flashback queue overloaded"
+                "FlashbackEncodingFailureMessage": "Flashback queue overloaded",
+                "FlashbackForceRotateActive": true
               }
             }
             """);
         var failedFlashbackFormatted = (string)formatSnapshot.Invoke(null, new object[] { failedFlashbackDoc.RootElement, true })!;
         AssertContains(failedFlashbackFormatted, "== Flashback ==");
+        AssertContains(failedFlashbackFormatted, "forceRotate=true");
         AssertContains(failedFlashbackFormatted, "Flashback Failure: active=true type=InvalidOperationException msg=Flashback queue overloaded");
 
         return Task.CompletedTask;

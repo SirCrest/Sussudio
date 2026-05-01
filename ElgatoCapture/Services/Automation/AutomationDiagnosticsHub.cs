@@ -911,6 +911,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackEncodingFailed = health.FlashbackEncodingFailed,
             FlashbackEncodingFailureType = health.FlashbackEncodingFailureType,
             FlashbackEncodingFailureMessage = health.FlashbackEncodingFailureMessage,
+            FlashbackForceRotateActive = health.FlashbackForceRotateActive,
             FlashbackTempDriveFreeBytes = health.FlashbackTempDriveFreeBytes,
             FlashbackStartupCacheBudgetBytes = health.FlashbackStartupCacheBudgetBytes,
             FlashbackStartupCacheBytes = health.FlashbackStartupCacheBytes,
@@ -1538,6 +1539,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"recentSeqGaps={flashbackRecordingRecent.SequenceGaps} recentGpuOverloads={flashbackRecordingRecent.GpuFramesDropped} " +
             $"recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents} " +
             $"totals=dropped:{snapshot.FlashbackDroppedFrames},encoderDrops:{snapshot.FlashbackVideoEncoderDroppedFrames},seqGaps:{snapshot.FlashbackVideoSequenceGaps},gpuOverloads:{snapshot.FlashbackGpuFramesDropped} " +
+            $"forceRotate={snapshot.FlashbackForceRotateActive} " +
             $"queue={snapshot.FlashbackVideoQueueDepth}/{snapshot.FlashbackVideoQueueCapacity} maxQueue={snapshot.FlashbackVideoQueueMaxDepth} " +
             $"backpressure={snapshot.FlashbackVideoBackpressureWaitMs}ms/{snapshot.FlashbackVideoBackpressureEvents} last={snapshot.FlashbackVideoBackpressureLastWaitMs}ms max={snapshot.FlashbackVideoBackpressureMaxWaitMs}ms.",
             "Flashback recording path returned to healthy range.",
@@ -1737,7 +1739,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var flashbackRecordingLane =
             $"flashback recording active={health.FlashbackActive} failed={health.FlashbackEncodingFailed} type={health.FlashbackEncodingFailureType ?? "None"} " +
             $"dropped={health.FlashbackDroppedFrames} encoderDrops={health.FlashbackVideoEncoderDroppedFrames} seqGaps={health.FlashbackVideoSequenceGaps} " +
-            $"gpuOverloads={health.FlashbackGpuFramesDropped} queue={health.FlashbackVideoQueueDepth}/{health.FlashbackVideoQueueCapacity} maxQueue={health.FlashbackVideoQueueMaxDepth} " +
+            $"gpuOverloads={health.FlashbackGpuFramesDropped} forceRotate={health.FlashbackForceRotateActive} queue={health.FlashbackVideoQueueDepth}/{health.FlashbackVideoQueueCapacity} maxQueue={health.FlashbackVideoQueueMaxDepth} " +
             $"queueAgeMs={health.FlashbackVideoQueueOldestFrameAgeMs} backpressure={health.FlashbackVideoBackpressureWaitMs}ms/{health.FlashbackVideoBackpressureEvents} maxBackpressure={health.FlashbackVideoBackpressureMaxWaitMs}ms";
         var exportLane =
             $"export active={health.FlashbackExportActive} status={health.FlashbackExportStatus} id={health.FlashbackExportId} progress={health.FlashbackExportPercent:0.##}% segments={health.FlashbackExportSegmentsProcessed}/{health.FlashbackExportTotalSegments} elapsedMs={health.FlashbackExportElapsedMs} progressAgeMs={health.FlashbackExportLastProgressAgeMs} bytes={health.FlashbackExportOutputBytes} throughputBps={health.FlashbackExportThroughputBytesPerSec:0.##} lastProgressUtc={health.FlashbackExportLastProgressUtcUnixMs} completedUtc={health.FlashbackExportCompletedUtcUnixMs}";
