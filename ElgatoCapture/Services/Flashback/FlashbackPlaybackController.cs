@@ -943,7 +943,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         try
         {
-            if (decoder.IsOpen) decoder.CloseFile();
+            if (decoder.IsOpen)
+            {
+                CloseDecoderFileBestEffort(decoder, "ensure_file_open");
+                fileOpen = false;
+                _currentOpenFilePath = null;
+                _decoderHwAccel = "N/A";
+            }
+
             decoder.OpenFile(filePath);
             fileOpen = true;
             _currentOpenFilePath = filePath;
