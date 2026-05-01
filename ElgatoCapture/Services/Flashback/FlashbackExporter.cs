@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -20,6 +21,7 @@ namespace ElgatoCapture.Services.Flashback;
 internal sealed unsafe class FlashbackExporter : IDisposable
 {
     private const int MaxSupportedInputStreams = 64;
+    private const int ProgressHeartbeatIntervalMs = 1_000;
 
     private readonly SemaphoreSlim _exportLock = new(1, 1);
     private readonly object _lifetimeSync = new();
@@ -280,6 +282,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
             Logger.Log($"FLASHBACK_EXPORT_START input='{inputTsPath}' in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
+            ReportProgress(progress, new ExportProgress(0, 1, 0), "single_start");
 
             // Open input .ts file
             OpenInput(inputTsPath);
@@ -321,6 +324,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             var bufferedPackets = new List<IntPtr>();
             var bufferedStreamIndices = new List<int>();
             var allBasesDiscovered = false;
+            var lastProgressHeartbeatTick = 0L;
 
             var packet = ffmpeg.av_packet_alloc();
             if (packet == null)
@@ -340,6 +344,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         break;
                     }
                     ThrowIfError(readResult, "av_read_frame");
+                    if (ShouldReportProgressHeartbeat(ref lastProgressHeartbeatTick))
+                    {
+                        ReportProgress(progress, new ExportProgress(0, 1, 0), "single_heartbeat");
+                    }
 
                     try
                     {
@@ -642,6 +650,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             LibAvEncoder.InitializeFFmpeg(requireNativeRuntime: true);
 
             Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_START segments={segments.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)} output='{outputPath}'");
+            ReportProgress(progress, new ExportProgress(0, segments.Count, 0), "segments_start");
 
             var usTimeBase = new AVRational { num = 1, den = 1_000_000 };
             var outPtsLimitUs = ToAvTimeBaseTimestampOrMax(outPoint);
@@ -803,6 +812,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     var segBufferedPackets = new List<IntPtr>();
                     var segBufferedStreamIndices = new List<int>();
                     var segAllBasesDiscovered = false;
+                    var lastProgressHeartbeatTick = 0L;
                     long segMaxPtsUs = 0; // track highest rebased PTS in this segment for offset calculation
                     long segAbsMaxPtsUs = 0; // track highest absolute PTS for outPoint check
                     long segmentVideoTimestampRepairUs = 0;
@@ -823,6 +833,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         if (readResult == ffmpeg.AVERROR_EOF)
                             break;
                         ThrowIfError(readResult, "av_read_frame");
+                        if (ShouldReportProgressHeartbeat(ref lastProgressHeartbeatTick))
+                        {
+                            ReportProgress(
+                                progress,
+                                new ExportProgress(
+                                    segIdx,
+                                    segments.Count,
+                                    totalEstimatedBytes > 0
+                                        ? 100.0 * bytesProcessed / totalEstimatedBytes
+                                        : 100.0 * segIdx / segments.Count),
+                                "segment_heartbeat");
+                        }
 
                         try
                         {
@@ -1599,6 +1621,20 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         return new ExportProgress(segmentsProcessed, totalSegments, percent);
+    }
+
+    private static bool ShouldReportProgressHeartbeat(ref long lastHeartbeatTick)
+    {
+        var now = Stopwatch.GetTimestamp();
+        var last = lastHeartbeatTick;
+        if (last != 0 &&
+            (now - last) * 1000.0 / Stopwatch.Frequency < ProgressHeartbeatIntervalMs)
+        {
+            return false;
+        }
+
+        lastHeartbeatTick = now;
+        return true;
     }
 
     private static long GetFileLengthBestEffort(string path)
