@@ -1315,6 +1315,15 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         TaskCompletionSource<IReadOnlyList<string>>? supersededTcs;
         lock (_sync)
         {
+            if (!_started || _disposed || _encodingFailure != null || _encodingTask?.IsCompleted == true)
+            {
+                Logger.Log(
+                    $"FLASHBACK_SINK_FORCE_ROTATE_REJECTED_AFTER_LOCK started={_started} disposed={_disposed} " +
+                    $"failed={_encodingFailure != null} completed={_encodingTask?.IsCompleted == true} " +
+                    $"type={_encodingFailure?.GetType().Name ?? "None"}");
+                return Array.Empty<string>();
+            }
+
             supersededTcs = _forceRotateTcs;
             _forceRotateInPoint = inPoint;
             _forceRotateOutPoint = outPoint;
