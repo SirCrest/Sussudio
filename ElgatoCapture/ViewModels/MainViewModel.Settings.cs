@@ -50,7 +50,9 @@ public partial class MainViewModel
                 "AV1" => RecordingFormat.Av1Mp4,
                 _ => RecordingFormat.H264Mp4
             };
-            _pendingFlashbackCycleTask = _sessionCoordinator.UpdateRecordingFormatAsync(format);
+            TrackPendingFlashbackCycleTask(
+                _sessionCoordinator.UpdateRecordingFormatAsync(format),
+                "recording format");
         }
     }
 
@@ -397,6 +399,11 @@ public partial class MainViewModel
             quality: ParseVideoQuality(SelectedQuality),
             customBitrateMbps: CustomBitrateMbps,
             nvencPreset: SelectedPreset);
+        TrackPendingFlashbackCycleTask(task, description);
+    }
+
+    private void TrackPendingFlashbackCycleTask(Task task, string description)
+    {
         _pendingFlashbackCycleTask = task;
         _ = task.ContinueWith(
             t => Logger.Log($"CycleFlashbackEncoder({description}) failed: {t.Exception!.InnerException?.Message}"),
