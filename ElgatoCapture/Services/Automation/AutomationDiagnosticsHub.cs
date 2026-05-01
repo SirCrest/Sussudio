@@ -64,6 +64,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const double FlashbackPlaybackSlowFpsRatio = 0.75;
     private const int FlashbackPlaybackMinFramesForPerfAlert = 60;
     private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;
+    private const long FlashbackRecordingBackpressureWarningMs = 100;
 
     private readonly double _perfectionCaptureDropPercentThreshold;
     private readonly double _perfectionCaptureP95MultiplierThreshold;
@@ -1471,6 +1472,34 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             throttleMs: 10000);
 
         SetAlertState(
+            "flashback-encoding-failed",
+            snapshot.FlashbackEncodingFailed,
+            DiagnosticsSeverity.Error,
+            DiagnosticsCategory.Flashback,
+            string.IsNullOrWhiteSpace(snapshot.FlashbackEncodingFailureMessage)
+                ? $"Flashback encoder failed: type={snapshot.FlashbackEncodingFailureType ?? "Unknown"}."
+                : $"Flashback encoder failed: type={snapshot.FlashbackEncodingFailureType ?? "Unknown"} message={snapshot.FlashbackEncodingFailureMessage}.",
+            "Flashback encoder failure cleared.",
+            throttleMs: 5000);
+
+        SetAlertState(
+            "flashback-recording-degraded",
+            snapshot.FlashbackActive &&
+            (snapshot.FlashbackDroppedFrames > 0 ||
+             snapshot.FlashbackVideoEncoderDroppedFrames > 0 ||
+             snapshot.FlashbackVideoSequenceGaps > 0 ||
+             snapshot.FlashbackGpuFramesDropped > 0 ||
+             snapshot.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs),
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback recording path degraded: dropped={snapshot.FlashbackDroppedFrames} encoderDrops={snapshot.FlashbackVideoEncoderDroppedFrames} " +
+            $"seqGaps={snapshot.FlashbackVideoSequenceGaps} gpuOverloads={snapshot.FlashbackGpuFramesDropped} " +
+            $"queue={snapshot.FlashbackVideoQueueDepth}/{snapshot.FlashbackVideoQueueCapacity} maxQueue={snapshot.FlashbackVideoQueueMaxDepth} " +
+            $"backpressure={snapshot.FlashbackVideoBackpressureWaitMs}ms/{snapshot.FlashbackVideoBackpressureEvents} max={snapshot.FlashbackVideoBackpressureMaxWaitMs}ms.",
+            "Flashback recording path returned to healthy range.",
+            throttleMs: 5000);
+
+        SetAlertState(
             "flashback-playback-command-stalled",
             playbackCommandQueueAgeMs >= FlashbackPlaybackCommandStallThresholdMs,
             DiagnosticsSeverity.Warning,
@@ -1611,6 +1640,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"recording integrity={captureRuntime.RecordingIntegrityStatus} complete={captureRuntime.RecordingIntegrityComplete} seqGaps={captureRuntime.RecordingIntegritySequenceGaps} queueDrops={captureRuntime.RecordingIntegrityQueueDroppedFrames}";
         var audioLane =
             $"audio integrity={captureRuntime.RecordingIntegrityAudioStatus} drops={captureRuntime.RecordingIntegrityAudioDropEvents} disc={captureRuntime.RecordingIntegrityAudioDiscontinuities} gaps={captureRuntime.RecordingIntegrityAudioCallbackGaps}";
+        var flashbackRecordingLane =
+            $"flashback recording active={health.FlashbackActive} failed={health.FlashbackEncodingFailed} type={health.FlashbackEncodingFailureType ?? "None"} " +
+            $"dropped={health.FlashbackDroppedFrames} encoderDrops={health.FlashbackVideoEncoderDroppedFrames} seqGaps={health.FlashbackVideoSequenceGaps} " +
+            $"gpuOverloads={health.FlashbackGpuFramesDropped} queue={health.FlashbackVideoQueueDepth}/{health.FlashbackVideoQueueCapacity} maxQueue={health.FlashbackVideoQueueMaxDepth} " +
+            $"queueAgeMs={health.FlashbackVideoQueueOldestFrameAgeMs} backpressure={health.FlashbackVideoBackpressureWaitMs}ms/{health.FlashbackVideoBackpressureEvents} maxBackpressure={health.FlashbackVideoBackpressureMaxWaitMs}ms";
         var exportLane =
             $"export active={health.FlashbackExportActive} status={health.FlashbackExportStatus} id={health.FlashbackExportId} progress={health.FlashbackExportPercent:0.##}% segments={health.FlashbackExportSegmentsProcessed}/{health.FlashbackExportTotalSegments} elapsedMs={health.FlashbackExportElapsedMs} progressAgeMs={health.FlashbackExportLastProgressAgeMs} bytes={health.FlashbackExportOutputBytes} throughputBps={health.FlashbackExportThroughputBytesPerSec:0.##} lastProgressUtc={health.FlashbackExportLastProgressUtcUnixMs} completedUtc={health.FlashbackExportCompletedUtcUnixMs}";
         var tempCacheLane =
@@ -1636,6 +1670,13 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             health.FlashbackActive &&
             (health.FlashbackStartupCacheOverBudget ||
              (health.FlashbackTempDriveFreeBytes >= 0 && health.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes));
+        var flashbackRecordingDegraded =
+            health.FlashbackActive &&
+            (health.FlashbackDroppedFrames > 0 ||
+             health.FlashbackVideoEncoderDroppedFrames > 0 ||
+             health.FlashbackVideoSequenceGaps > 0 ||
+             health.FlashbackGpuFramesDropped > 0 ||
+             health.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs);
         var exportLastProgressAgeMs = health.FlashbackExportActive
             ? Math.Max(0, health.FlashbackExportLastProgressAgeMs)
             : 0;
@@ -1647,6 +1688,38 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 "flashback_storage",
                 "Flashback temp storage is under pressure.",
                 tempCacheLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (health.FlashbackEncodingFailed)
+        {
+            return new DiagnosticEvaluation(
+                "Critical",
+                "flashback_recording",
+                "Flashback encoder has failed.",
+                flashbackRecordingLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (flashbackRecordingDegraded)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "flashback_recording",
+                "Flashback recording path is dropping or backing up.",
+                flashbackRecordingLane,
                 sourceLane,
                 decodeLane,
                 previewLane,
