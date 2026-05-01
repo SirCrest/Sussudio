@@ -1264,11 +1264,33 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var timeoutSeconds = isSlowCodec ? 10 : 3;
         if (!tcs.Task.Wait(TimeSpan.FromSeconds(timeoutSeconds)))
         {
-            Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT codec={codecName} timeout_s={timeoutSeconds} vq={Volatile.Read(ref _videoQueueDepth)} aq={Volatile.Read(ref _audioQueueDepth)}");
+            var clearedPending = TryCancelPendingForceRotate(tcs);
+            Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT codec={codecName} timeout_s={timeoutSeconds} cleared_pending={clearedPending} vq={Volatile.Read(ref _videoQueueDepth)} aq={Volatile.Read(ref _audioQueueDepth)}");
             return Array.Empty<string>();
         }
 
         return tcs.Task.Result;
+    }
+
+    private bool TryCancelPendingForceRotate(TaskCompletionSource<IReadOnlyList<string>> requestTcs)
+    {
+        var cleared = false;
+        lock (_sync)
+        {
+            if (ReferenceEquals(_forceRotateTcs, requestTcs))
+            {
+                _forceRotateRequested = false;
+                _forceRotateTcs = null;
+                cleared = true;
+            }
+        }
+
+        if (cleared)
+        {
+            requestTcs.TrySetResult(Array.Empty<string>());
+        }
+
+        return cleared;
     }
 
     private void CompletePendingForceRotateWithEmptyResult()
