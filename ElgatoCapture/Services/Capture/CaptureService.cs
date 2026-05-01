@@ -1597,10 +1597,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // Detach feeds first — stops new frames from entering the sink
         if (detachMicrophoneWriter)
         {
-            _microphoneCapture?.SetAudioWriter(null);
+            try { _microphoneCapture?.SetAudioWriter(null); }
+            catch (Exception ex) { Logger.Log($"FLASHBACK_PREVIEW_DETACH_WARN target=microphone type={ex.GetType().Name} msg={ex.Message}"); }
         }
-        _wasapiAudioCapture?.DetachFlashbackSink();
-        _unifiedVideoCapture?.SetFlashbackSink(null);
+        try { _wasapiAudioCapture?.DetachFlashbackSink(); }
+        catch (Exception ex) { Logger.Log($"FLASHBACK_PREVIEW_DETACH_WARN target=audio type={ex.GetType().Name} msg={ex.Message}"); }
+        try { _unifiedVideoCapture?.SetFlashbackSink(null); }
+        catch (Exception ex) { Logger.Log($"FLASHBACK_PREVIEW_DETACH_WARN target=video type={ex.GetType().Name} msg={ex.Message}"); }
 
         Task sinkCompletionTask = Task.CompletedTask;
         if (flashbackSink != null)
