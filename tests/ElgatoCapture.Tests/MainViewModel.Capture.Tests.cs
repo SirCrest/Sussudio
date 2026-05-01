@@ -168,6 +168,7 @@ static partial class Program
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "quality: ParseVideoQuality(SelectedQuality)");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "customBitrateMbps: CustomBitrateMbps");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "nvencPreset: SelectedPreset");
+        AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "_pendingFlashbackCycleTask = task;");
         AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "_sessionCoordinator.RestartFlashbackAsync(BuildCaptureSettings())");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _flashbackSettingsRestartGeneration;");
 

@@ -393,13 +393,14 @@ public partial class MainViewModel
 
     private void TrackFlashbackEncoderSettingsCycle(string description)
     {
-        _ = _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
-                quality: ParseVideoQuality(SelectedQuality),
-                customBitrateMbps: CustomBitrateMbps,
-                nvencPreset: SelectedPreset)
-            .ContinueWith(
-                t => Logger.Log($"CycleFlashbackEncoder({description}) failed: {t.Exception!.InnerException?.Message}"),
-                TaskContinuationOptions.OnlyOnFaulted);
+        var task = _sessionCoordinator.CycleFlashbackEncoderSettingsAsync(
+            quality: ParseVideoQuality(SelectedQuality),
+            customBitrateMbps: CustomBitrateMbps,
+            nvencPreset: SelectedPreset);
+        _pendingFlashbackCycleTask = task;
+        _ = task.ContinueWith(
+            t => Logger.Log($"CycleFlashbackEncoder({description}) failed: {t.Exception!.InnerException?.Message}"),
+            TaskContinuationOptions.OnlyOnFaulted);
     }
 
     private static VideoQuality ParseVideoQuality(string value)
