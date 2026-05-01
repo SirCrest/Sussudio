@@ -789,6 +789,12 @@ static partial class Program
 
         AssertContains(captureText, "Logger.LogException(ex);");
         AssertContains(captureText, "IsRecording = _sessionCoordinator.Snapshot.IsRecording;");
+        AssertContains(
+            captureText,
+            "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            IsRecording = _sessionCoordinator.Snapshot.IsRecording;\n            StatusText = \"Recording start canceled\";\n            throw;\n        }");
+        AssertContains(
+            captureText,
+            "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            IsRecording = _sessionCoordinator.Snapshot.IsRecording;\n            StatusText = \"Stop recording canceled\";\n            throw;\n        }");
         AssertContains(captureText, "StatusText = $\"Recording failed: {ex.Message}\";");
         AssertContains(captureText, "StatusText = $\"Stop recording failed: {ex.Message}\";");
         AssertContains(captureText, "throw;");

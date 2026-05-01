@@ -299,6 +299,12 @@ public partial class MainViewModel
             RecordingBitrateInfo = "--";
             StatusText = "Recording...";
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            IsRecording = _sessionCoordinator.Snapshot.IsRecording;
+            StatusText = "Recording start canceled";
+            throw;
+        }
         catch (Exception ex)
         {
             Logger.LogException(ex);
@@ -319,6 +325,12 @@ public partial class MainViewModel
             await _sessionCoordinator.StopRecordingAsync(cancellationToken);
             IsRecording = false;
             StatusText = $"Recording saved ({RecordingTime})";
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            IsRecording = _sessionCoordinator.Snapshot.IsRecording;
+            StatusText = "Stop recording canceled";
+            throw;
         }
         catch (Exception ex)
         {
