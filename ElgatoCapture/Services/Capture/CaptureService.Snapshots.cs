@@ -1437,6 +1437,7 @@ public partial class CaptureService
             FlashbackPlaybackCommandsDropped = fbPlayback?.CommandsDropped ?? 0,
             FlashbackPlaybackCommandsSkippedNotReady = fbPlayback?.CommandsSkippedNotReady ?? 0,
             FlashbackPlaybackScrubUpdatesCoalesced = fbPlayback?.ScrubUpdatesCoalesced ?? 0,
+            FlashbackPlaybackCommandQueueCapacity = fbPlayback?.CommandQueueCapacityCommands ?? 0,
             FlashbackPlaybackPendingCommands = fbPlayback?.PendingCommands ?? 0,
             FlashbackPlaybackMaxPendingCommands = fbPlayback?.MaxPendingCommands ?? 0,
             FlashbackPlaybackLastCommandQueueLatencyMs = fbPlayback?.LastCommandQueueLatencyMs ?? 0,

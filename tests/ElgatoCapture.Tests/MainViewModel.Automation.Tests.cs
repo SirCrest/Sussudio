@@ -265,6 +265,7 @@ static partial class Program
         AssertContains(diagnosticsText, "\"Flashback temp storage is under pressure.\"");
         AssertContains(diagnosticsText, "\"flashback-playback-slow\"");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackPendingCommands > 0");
+        AssertContains(diagnosticsText, "FlashbackPlaybackCommandQueueCapacity");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackObservedFps < snapshot.SelectedFrameRate * FlashbackPlaybackSlowFpsRatio");
         AssertContains(diagnosticsText, "Flashback playback is below target rate");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > snapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs");

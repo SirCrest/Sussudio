@@ -1179,6 +1179,7 @@ static partial class Program
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!EnsurePlaybackThread()) return false;\n        return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
         AssertContains(sourceText, "private bool EnsurePlaybackThread()");
         AssertContains(sourceText, "private const int CommandQueueCapacity = 256;");
+        AssertContains(sourceText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
         AssertContains(sourceText, "private Channel<PlaybackCommand> _commandChannel = CreateCommandChannel();");
         AssertContains(sourceText, "_commandChannel = CreateCommandChannel();");
         AssertContains(sourceText, "private static Channel<PlaybackCommand> CreateCommandChannel()");

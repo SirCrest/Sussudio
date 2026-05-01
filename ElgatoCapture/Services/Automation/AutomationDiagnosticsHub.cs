@@ -1144,6 +1144,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackPlaybackCommandsDropped = health.FlashbackPlaybackCommandsDropped,
             FlashbackPlaybackCommandsSkippedNotReady = health.FlashbackPlaybackCommandsSkippedNotReady,
             FlashbackPlaybackScrubUpdatesCoalesced = health.FlashbackPlaybackScrubUpdatesCoalesced,
+            FlashbackPlaybackCommandQueueCapacity = health.FlashbackPlaybackCommandQueueCapacity,
             FlashbackPlaybackPendingCommands = health.FlashbackPlaybackPendingCommands,
             FlashbackPlaybackMaxPendingCommands = health.FlashbackPlaybackMaxPendingCommands,
             FlashbackPlaybackLastCommandQueueLatencyMs = health.FlashbackPlaybackLastCommandQueueLatencyMs,
@@ -1440,7 +1441,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Flashback,
             $"Flashback playback command queue has not drained for {playbackCommandQueueAgeMs}ms " +
-            $"(pending={snapshot.FlashbackPlaybackPendingCommands}, maxPending={snapshot.FlashbackPlaybackMaxPendingCommands}, " +
+            $"(pending={snapshot.FlashbackPlaybackPendingCommands}/{snapshot.FlashbackPlaybackCommandQueueCapacity}, maxPending={snapshot.FlashbackPlaybackMaxPendingCommands}, " +
             $"lastLatency={snapshot.FlashbackPlaybackLastCommandQueueLatencyMs}ms, maxLatency={snapshot.FlashbackPlaybackMaxCommandQueueLatencyMs}ms, " +
             $"lastQueued={snapshot.FlashbackPlaybackLastCommandQueued}, lastProcessed={snapshot.FlashbackPlaybackLastCommandProcessed}, " +
             $"threadAlive={snapshot.FlashbackPlaybackThreadAlive}).",
@@ -1574,7 +1575,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 ? Math.Max(0, nowUnixMs - health.FlashbackPlaybackLastCommandQueuedUtcUnixMs)
                 : 0;
         var playbackCommandLane =
-            $"playback commands pending={health.FlashbackPlaybackPendingCommands} maxPending={health.FlashbackPlaybackMaxPendingCommands} lastLatency={health.FlashbackPlaybackLastCommandQueueLatencyMs}ms maxLatency={health.FlashbackPlaybackMaxCommandQueueLatencyMs}ms lastQueued={health.FlashbackPlaybackLastCommandQueued} lastProcessed={health.FlashbackPlaybackLastCommandProcessed} queuedAge={playbackCommandQueueAgeMs}ms threadAlive={health.FlashbackPlaybackThreadAlive}";
+            $"playback commands pending={health.FlashbackPlaybackPendingCommands}/{health.FlashbackPlaybackCommandQueueCapacity} maxPending={health.FlashbackPlaybackMaxPendingCommands} lastLatency={health.FlashbackPlaybackLastCommandQueueLatencyMs}ms maxLatency={health.FlashbackPlaybackMaxCommandQueueLatencyMs}ms lastQueued={health.FlashbackPlaybackLastCommandQueued} lastProcessed={health.FlashbackPlaybackLastCommandProcessed} queuedAge={playbackCommandQueueAgeMs}ms threadAlive={health.FlashbackPlaybackThreadAlive}";
         var playbackPerfLane =
             $"playback perf state={health.FlashbackPlaybackState} fps={health.FlashbackPlaybackObservedFps:0.##}/{health.ExpectedFrameRate:0.##} frames={health.FlashbackPlaybackFrameCount} late={health.FlashbackPlaybackLateFrames} dropped={health.FlashbackPlaybackDroppedFrames} switches={health.FlashbackPlaybackSegmentSwitches} fmp4Reopens={health.FlashbackPlaybackFmp4Reopens} writeHeadWaits={health.FlashbackPlaybackWriteHeadWaits} nearLiveSnaps={health.FlashbackPlaybackNearLiveSnaps} decodeErrorSnaps={health.FlashbackPlaybackDecodeErrorSnaps}";
         var playbackSlow =

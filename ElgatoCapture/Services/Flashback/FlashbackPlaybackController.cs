@@ -1845,6 +1845,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long CommandsDropped => Interlocked.Read(ref _commandsDropped);
     public long CommandsSkippedNotReady => Interlocked.Read(ref _commandsSkippedNotReady);
     public long ScrubUpdatesCoalesced => Interlocked.Read(ref _scrubUpdatesCoalesced);
+    public int CommandQueueCapacityCommands => CommandQueueCapacity;
     public int PendingCommands => Volatile.Read(ref _pendingCommands);
     public int MaxPendingCommands => Volatile.Read(ref _maxPendingCommands);
     public long LastCommandQueueLatencyMs => Interlocked.Read(ref _lastCommandQueueLatencyMs);
