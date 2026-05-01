@@ -302,7 +302,10 @@ static partial class Program
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackObservedFps < snapshot.SelectedFrameRate * FlashbackPlaybackSlowFpsRatio");
         AssertContains(diagnosticsText, "Flashback playback is below target rate");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > snapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs");
+        AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs > 0");
         AssertContains(diagnosticsText, "Flashback playback command queue has not drained");
+        AssertContains(diagnosticsText, "var playbackCommandFailure = string.IsNullOrWhiteSpace(snapshot.FlashbackPlaybackLastCommandFailure)");
+        AssertContains(diagnosticsText, "lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs}");
         AssertContains(diagnosticsText, "\"flashback_playback\"");
         AssertContains(diagnosticsText, "\"Flashback playback command queue is stalled.\"");
         AssertContains(diagnosticsText, "\"Flashback playback is below target rate.\"");
@@ -317,6 +320,8 @@ static partial class Program
         AssertContains(diagnosticsText, "\"Flashback encoder has failed.\"");
         AssertContains(diagnosticsText, "\"Flashback recording path is dropping or backing up.\"");
         AssertContains(diagnosticsText, "queuedAge={playbackCommandQueueAgeMs}ms");
+        AssertContains(diagnosticsText, "var playbackCommandFailure = string.IsNullOrWhiteSpace(health.FlashbackPlaybackLastCommandFailure)");
+        AssertContains(diagnosticsText, "lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs}");
         AssertContains(diagnosticsText, "playback perf state={health.FlashbackPlaybackState}");
         AssertContains(diagnosticsText, "health.FlashbackPlaybackSubmitFailures > 0");
         AssertContains(diagnosticsText, "\"flashback_export\"");
