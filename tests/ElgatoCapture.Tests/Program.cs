@@ -984,6 +984,9 @@ static partial class Program
             await RunCheckAsync(
                 "Flashback exporter rejects output paths that overwrite source segments",
                 FlashbackExporter_RejectsOutputPathThatOverwritesSource),
+            await RunCheckAsync(
+                "Flashback exporter invalid temp output preserves existing exports",
+                FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport),
 
             // --- RecordingPipelineOptions ---
             await RunCheckAsync(

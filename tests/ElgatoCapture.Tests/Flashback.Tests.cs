@@ -810,9 +810,8 @@ static partial class Program
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(0, 1, 0), \"single_heartbeat\");");
         AssertContains(sourceText, "ReportProgress(\n                                progress,\n                                new ExportProgress(\n                                    segIdx,\n                                    segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(1, 1, 100.0), \"single_complete\")");
-        AssertContains(sourceText, "if (!TryValidateCompletedOutputFile(outputPath, out var outputBytes, out var outputFailure))");
+        AssertContains(sourceText, "if (!TryFinalizeTempOutputFile(tmpPath, outputPath, out var outputBytes, out var outputFailure))");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'\");");
-        AssertContains(sourceText, "DeleteFailedOutputFileIfPresent(outputPath, outputFailure);");
         AssertContains(sourceText, "return FinalizeResult.Failure(outputPath, outputFailure);");
         AssertContains(sourceText, "ReportProgress(\n                        progress,\n                        new ExportProgress(\n                            segIdx + 1,\n                            segments.Count,");
         AssertContains(sourceText, "ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), \"segments_complete\")");
@@ -830,10 +829,11 @@ static partial class Program
         AssertContains(sourceText, "outputBytes > 0");
         AssertContains(sourceText, "Flashback export failed: output file is empty");
         AssertContains(sourceText, "Flashback export failed: output file length unavailable");
+        AssertContains(sourceText, "private static bool TryFinalizeTempOutputFile(");
+        AssertContains(sourceText, "Flashback export failed: temporary output file is empty before replacing");
+        AssertContains(sourceText, "AtomicMoveTempFile(tmpPath, outputPath);");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_FINAL_OUTPUT_VALIDATE_WARN");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'\");");
-        AssertContains(sourceText, "private static void DeleteFailedOutputFileIfPresent(string outputPath, string reason)");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_FAILED_OUTPUT_DELETE path='{outputPath}' reason='{reason}'");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_FAILED_OUTPUT_DELETE_WARN path='{outputPath}' reason='{reason}'");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_ORPHAN_CLEANUP_FAIL path='{Path.GetFileName(tmpFile)}' type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_ORPHAN_SCAN_FAIL dir='{directory}' type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(sourceText, "FLASHBACK_EXPORT_CLEANUP_WARN op=close_input");
@@ -1231,6 +1231,41 @@ static partial class Program
                     disposable.Dispose();
                 }
             }
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("TryFinalizeTempOutputFile not found.");
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_finalize_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "existing-export.mp4");
+            var tmpPath = outputPath + ".tmp";
+            var existingBytes = new byte[] { 0x65, 0x78, 0x70, 0x6f, 0x72, 0x74 };
+            File.WriteAllBytes(outputPath, existingBytes);
+            File.WriteAllBytes(tmpPath, Array.Empty<byte>());
+
+            var args = new object?[] { tmpPath, outputPath, 0L, string.Empty };
+            var finalized = (bool)(finalizeTemp.Invoke(null, args)
+                ?? throw new InvalidOperationException("TryFinalizeTempOutputFile returned null."));
+
+            AssertEqual(false, finalized, "Invalid temp output is rejected");
+            AssertContains((string)args[3]!, "temporary output file is empty before replacing");
+            AssertEqual(true, File.Exists(outputPath), "Existing export remains present");
+            AssertEqual(existingBytes.Length, new FileInfo(outputPath).Length, "Existing export length is preserved");
+            AssertEqual(false, File.Exists(tmpPath), "Invalid temp output is deleted");
         }
         finally
         {

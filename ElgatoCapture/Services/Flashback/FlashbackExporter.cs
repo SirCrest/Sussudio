@@ -523,15 +523,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer");
             CloseOutputIo();
 
-            AtomicMoveTempFile(tmpPath, outputPath);
-            _activeTempPath = null;
-
-            if (!TryValidateCompletedOutputFile(outputPath, out var outputBytes, out var outputFailure))
+            if (!TryFinalizeTempOutputFile(tmpPath, outputPath, out var outputBytes, out var outputFailure))
             {
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'");
-                DeleteFailedOutputFileIfPresent(outputPath, outputFailure);
                 return FinalizeResult.Failure(outputPath, outputFailure);
             }
+            _activeTempPath = null;
 
             Logger.Log(
                 $"FLASHBACK_EXPORT_OK output='{outputPath}' packets={totalPackets} bytes={outputBytes}");
@@ -1192,15 +1189,12 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             ThrowIfError(ffmpeg.av_write_trailer(_activeOutputContext), "av_write_trailer");
             CloseOutputIo();
 
-            AtomicMoveTempFile(tmpPath, outputPath);
-            _activeTempPath = null;
-
-            if (!TryValidateCompletedOutputFile(outputPath, out var outputBytes, out var outputFailure))
+            if (!TryFinalizeTempOutputFile(tmpPath, outputPath, out var outputBytes, out var outputFailure))
             {
                 Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputFailure}'");
-                DeleteFailedOutputFileIfPresent(outputPath, outputFailure);
                 return FinalizeResult.Failure(outputPath, outputFailure);
             }
+            _activeTempPath = null;
 
             Logger.Log($"FLASHBACK_EXPORT_SEGMENTS_OK output='{outputPath}' segments={segments.Count} packets={totalPackets} bytes={outputBytes}");
             ReportProgress(progress, new ExportProgress(segments.Count, segments.Count, 100.0), "segments_complete");
@@ -1634,6 +1628,32 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         File.Move(tmpPath, outputPath, overwrite: true);
     }
 
+    private static bool TryFinalizeTempOutputFile(
+        string tmpPath,
+        string outputPath,
+        out long outputBytes,
+        out string failureMessage)
+    {
+        if (!TryValidateCompletedOutputFile(tmpPath, out outputBytes, out _))
+        {
+            failureMessage = outputBytes == 0
+                ? $"Flashback export failed: temporary output file is empty before replacing '{outputPath}'."
+                : $"Flashback export failed: temporary output file length unavailable before replacing '{outputPath}'.";
+            DeleteTempFileIfPresent(tmpPath);
+            return false;
+        }
+
+        AtomicMoveTempFile(tmpPath, outputPath);
+
+        if (!TryValidateCompletedOutputFile(outputPath, out outputBytes, out failureMessage))
+        {
+            Logger.Log($"FLASHBACK_EXPORT_FINAL_OUTPUT_VALIDATE_WARN path='{outputPath}' reason='{failureMessage}'");
+            return false;
+        }
+
+        return true;
+    }
+
     private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)
     {
         try
@@ -1907,22 +1927,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-    }
-
-    private static void DeleteFailedOutputFileIfPresent(string outputPath, string reason)
-    {
-        try
-        {
-            if (File.Exists(outputPath))
-            {
-                File.Delete(outputPath);
-                Logger.Log($"FLASHBACK_EXPORT_FAILED_OUTPUT_DELETE path='{outputPath}' reason='{reason}'");
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_EXPORT_FAILED_OUTPUT_DELETE_WARN path='{outputPath}' reason='{reason}' type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 
