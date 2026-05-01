@@ -78,6 +78,7 @@ public sealed class DiagnosticSessionResult
     public bool FlashbackExportActiveAtEnd { get; init; }
     public string FlashbackExportStatusAtEnd { get; init; } = string.Empty;
     public string FlashbackExportMessageAtEnd { get; init; } = string.Empty;
+    public string FlashbackExportFailureKindAtEnd { get; init; } = string.Empty;
     public string FlashbackExportOutputPathAtEnd { get; init; } = string.Empty;
     public string LastExportSuccessAtEnd { get; init; } = string.Empty;
     public string LastExportMessageAtEnd { get; init; } = string.Empty;
@@ -704,6 +705,7 @@ public static class DiagnosticSessionRunner
             FlashbackExportActiveAtEnd = exportMetrics.ActiveAtEnd,
             FlashbackExportStatusAtEnd = exportMetrics.StatusAtEnd,
             FlashbackExportMessageAtEnd = exportMetrics.MessageAtEnd,
+            FlashbackExportFailureKindAtEnd = exportMetrics.FailureKindAtEnd,
             FlashbackExportOutputPathAtEnd = exportMetrics.OutputPathAtEnd,
             LastExportSuccessAtEnd = exportMetrics.LastSuccessAtEnd,
             LastExportMessageAtEnd = exportMetrics.LastMessageAtEnd,
@@ -873,6 +875,7 @@ public static class DiagnosticSessionRunner
             $"observed={result.FlashbackExportObserved} " +
             $"activeEnd={result.FlashbackExportActiveAtEnd} " +
             $"statusEnd={FormatOptional(result.FlashbackExportStatusAtEnd)} " +
+            $"failureKindEnd={FormatOptional(result.FlashbackExportFailureKindAtEnd)} " +
             $"messageEnd={FormatOptional(result.FlashbackExportMessageAtEnd)} " +
             $"lastSuccessEnd={FormatOptional(result.LastExportSuccessAtEnd)} " +
             $"lastMessageEnd={FormatOptional(result.LastExportMessageAtEnd)} " +
@@ -3093,6 +3096,7 @@ public static class DiagnosticSessionRunner
             ActiveAtEnd = GetBool(lastSnapshot, "FlashbackExportActive"),
             StatusAtEnd = GetString(lastSnapshot, "FlashbackExportStatus") ?? string.Empty,
             MessageAtEnd = GetString(lastSnapshot, "FlashbackExportMessage") ?? string.Empty,
+            FailureKindAtEnd = GetString(lastSnapshot, "FlashbackExportFailureKind") ?? string.Empty,
             OutputPathAtEnd = GetString(lastSnapshot, "FlashbackExportOutputPath") ?? string.Empty,
             LastSuccessAtEnd = GetString(lastSnapshot, "LastExportSuccess") ?? string.Empty,
             LastMessageAtEnd = GetString(lastSnapshot, "LastExportMessage") ?? string.Empty
@@ -3139,6 +3143,7 @@ public static class DiagnosticSessionRunner
         public bool ActiveAtEnd { get; init; }
         public string StatusAtEnd { get; init; } = string.Empty;
         public string MessageAtEnd { get; init; } = string.Empty;
+        public string FailureKindAtEnd { get; init; } = string.Empty;
         public string OutputPathAtEnd { get; init; } = string.Empty;
         public string LastSuccessAtEnd { get; init; } = string.Empty;
         public string LastMessageAtEnd { get; init; } = string.Empty;

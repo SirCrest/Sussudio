@@ -250,6 +250,7 @@ static partial class Program
         AssertContains(diagnosticsText, "Math.Max(0, health.FlashbackExportLastProgressAgeMs)");
         AssertContains(diagnosticsText, "elapsedMs={health.FlashbackExportElapsedMs}");
         AssertContains(diagnosticsText, "throughputBps={health.FlashbackExportThroughputBytesPerSec:0.##}");
+        AssertContains(diagnosticsText, "kind={exportFailureKind}");
         AssertContains(diagnosticsText, "private const int FlashbackExportStallThresholdMs = 30000;");
         AssertContains(diagnosticsText, "exportLastProgressAgeMs >= FlashbackExportStallThresholdMs");
         AssertContains(diagnosticsText, "\"Flashback export progress is stalled.\"");
@@ -261,6 +262,8 @@ static partial class Program
         AssertContains(diagnosticsText, "Interlocked.CompareExchange(\n                ref _lastFlashbackExportCompletionEventId");
         AssertContains(diagnosticsText, "status.Equals(\"Succeeded\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnosticsText, "status.Equals(\"Cancelled\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(diagnosticsText, "snapshot.FlashbackExportFailureKind");
+        AssertContains(diagnosticsText, "kind={failureKind}");
         AssertContains(diagnosticsText, "Flashback export completed: status={status}");
         AssertContains(diagnosticsText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackCommandStallThresholdMs = 1000;");
@@ -378,6 +381,9 @@ static partial class Program
         AssertContains(captureServiceText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
         AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;");
         AssertContains(captureServiceText, "_flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;");
+        AssertContains(captureServiceText, "ClassifyFlashbackExportFailure(result.StatusMessage)");
+        AssertContains(captureServiceText, "return \"InvalidOutputPath\";");
+        AssertContains(captureServiceText, "return \"NoMediaWritten\";");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\");");
         AssertContains(captureServiceText, "var bufferedDuration = bufferManager.BufferedDuration;\n                var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);\n                var bufferOutPoint = outPoint.HasValue\n                    ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)\n                    : TimeSpan.MaxValue;\n                fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);\n                fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);");
         AssertContains(captureServiceText, ".Select(segment => (Key: TryGetFullPath(segment.Path), Segment: segment))");
@@ -561,6 +567,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "Flashback Recording:");
         AssertContains(diagnosticSessionText, "FlashbackExportMaxElapsedMsObserved");
         AssertContains(diagnosticSessionText, "FlashbackExportMessageAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackExportFailureKindAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackExportOutputPathAtEnd");
         AssertContains(diagnosticSessionText, "LastExportSuccessAtEnd");
         AssertContains(diagnosticSessionText, "LastExportMessageAtEnd");
@@ -569,6 +576,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackExportMaxThroughputBytesPerSecObserved");
         AssertContains(diagnosticSessionText, "BuildFlashbackExportSessionMetrics(samples, lastSnapshot)");
         AssertContains(diagnosticSessionText, "Flashback Export:");
+        AssertContains(diagnosticSessionText, "failureKindEnd={FormatOptional(result.FlashbackExportFailureKindAtEnd)}");
         AssertContains(diagnosticSessionText, "messageEnd={FormatOptional(result.FlashbackExportMessageAtEnd)}");
         AssertContains(diagnosticSessionText, "lastSuccessEnd={FormatOptional(result.LastExportSuccessAtEnd)}");
         AssertContains(diagnosticSessionText, "lastMessageEnd={FormatOptional(result.LastExportMessageAtEnd)}");

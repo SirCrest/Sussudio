@@ -102,6 +102,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private long _flashbackExportInPointMs;
     private long _flashbackExportOutPointMs;
     private string _flashbackExportMessage = string.Empty;
+    private string _flashbackExportFailureKind = string.Empty;
     private string? _audioDeviceId;
     private string? _audioDeviceName;
     private bool _mfConvertersDisabled;
@@ -918,6 +919,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _flashbackExportInPointMs = (long)inPoint.TotalMilliseconds;
             _flashbackExportOutPointMs = outPoint == TimeSpan.MaxValue ? -1 : (long)outPoint.TotalMilliseconds;
             _flashbackExportMessage = string.Empty;
+            _flashbackExportFailureKind = string.Empty;
 
             return exportId;
         }
@@ -947,6 +949,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _flashbackExportInPointMs = 0;
             _flashbackExportOutPointMs = 0;
             _flashbackExportMessage = result.StatusMessage;
+            _flashbackExportFailureKind = ClassifyFlashbackExportFailure(result.StatusMessage);
         }
     }
 
@@ -1038,6 +1041,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;
             _flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;
             _flashbackExportMessage = result.StatusMessage;
+            _flashbackExportFailureKind = result.Succeeded
+                ? string.Empty
+                : ClassifyFlashbackExportFailure(result.StatusMessage);
             if (result.Succeeded && _flashbackExportPercent < 100)
             {
                 _flashbackExportPercent = 100;
@@ -1047,6 +1053,86 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private static bool IsFlashbackExportCancelled(string? statusMessage)
         => statusMessage?.Contains("cancel", StringComparison.OrdinalIgnoreCase) == true;
+
+    private static string ClassifyFlashbackExportFailure(string? statusMessage)
+    {
+        if (string.IsNullOrWhiteSpace(statusMessage))
+        {
+            return string.Empty;
+        }
+
+        if (IsFlashbackExportCancelled(statusMessage))
+        {
+            return "Cancelled";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "request is required"))
+        {
+            return "InvalidRequest";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "in point") ||
+            ContainsFlashbackExportFailureText(statusMessage, "export range"))
+        {
+            return "InvalidRange";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "output path") ||
+            ContainsFlashbackExportFailureText(statusMessage, "output directory") ||
+            ContainsFlashbackExportFailureText(statusMessage, "overwrite source"))
+        {
+            return "InvalidOutputPath";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "live-edge segment"))
+        {
+            return "IncompleteLiveEdge";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "no segment paths") ||
+            ContainsFlashbackExportFailureText(statusMessage, "segment path") ||
+            ContainsFlashbackExportFailureText(statusMessage, "segment files") ||
+            ContainsFlashbackExportFailureText(statusMessage, "readable segment"))
+        {
+            return "SegmentUnavailable";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "input file not found"))
+        {
+            return "InputUnavailable";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "input context") ||
+            ContainsFlashbackExportFailureText(statusMessage, "input had no streams") ||
+            ContainsFlashbackExportFailureText(statusMessage, "stream count"))
+        {
+            return "InvalidInputStream";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "no usable video stream") ||
+            ContainsFlashbackExportFailureText(statusMessage, "no segment had complete video parameters") ||
+            ContainsFlashbackExportFailureText(statusMessage, "no video packets") ||
+            ContainsFlashbackExportFailureText(statusMessage, "no packets"))
+        {
+            return "NoMediaWritten";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "disposed"))
+        {
+            return "Disposed";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "timeout") ||
+            ContainsFlashbackExportFailureText(statusMessage, "timed out"))
+        {
+            return "Timeout";
+        }
+
+        return "Failed";
+    }
+
+    private static bool ContainsFlashbackExportFailureText(string statusMessage, string value)
+        => statusMessage.Contains(value, StringComparison.OrdinalIgnoreCase);
 
     private sealed class FlashbackExportProgressForwarder : IProgress<ExportProgress>
     {

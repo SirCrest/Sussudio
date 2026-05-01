@@ -1336,6 +1336,7 @@ public partial class CaptureService
         long flashbackExportInPointMs;
         long flashbackExportOutPointMs;
         string flashbackExportMessage;
+        string flashbackExportFailureKind;
         lock (_flashbackExportDiagnosticsLock)
         {
             flashbackExportActive = _flashbackExportActive;
@@ -1351,6 +1352,7 @@ public partial class CaptureService
             flashbackExportInPointMs = _flashbackExportInPointMs;
             flashbackExportOutPointMs = _flashbackExportOutPointMs;
             flashbackExportMessage = _flashbackExportMessage;
+            flashbackExportFailureKind = _flashbackExportFailureKind;
         }
 
         var snapshotUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -1467,6 +1469,7 @@ public partial class CaptureService
             FlashbackExportInPointMs = flashbackExportInPointMs,
             FlashbackExportOutPointMs = flashbackExportOutPointMs,
             FlashbackExportMessage = flashbackExportMessage,
+            FlashbackExportFailureKind = flashbackExportFailureKind,
             LastExportPath = _lastExportResult?.OutputPath,
             LastExportSuccess = _lastExportResult?.Succeeded,
             LastExportMessage = _lastExportResult?.StatusMessage,

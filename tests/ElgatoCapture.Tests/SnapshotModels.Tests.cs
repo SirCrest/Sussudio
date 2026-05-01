@@ -278,6 +278,7 @@ static partial class Program
                 new("FlashbackExportInPointMs", typeof(long)),
                 new("FlashbackExportOutPointMs", typeof(long)),
                 NonNullString("FlashbackExportMessage"),
+                NonNullString("FlashbackExportFailureKind"),
                 NullableString("LastExportPath"),
                 new("LastExportSuccess", typeof(bool?)),
                 NullableString("LastExportMessage"),
@@ -320,6 +321,7 @@ static partial class Program
         AssertNonNullStringValue(health, "FlashbackPlaybackLastCommandQueued", "None", "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueued default");
         AssertNonNullStringValue(health, "FlashbackPlaybackLastCommandProcessed", "None", "CaptureHealthSnapshot.FlashbackPlaybackLastCommandProcessed default");
         AssertNonNullStringValue(health, "FlashbackExportStatus", "NotStarted", "CaptureHealthSnapshot.FlashbackExportStatus default");
+        AssertNonNullStringValue(health, "FlashbackExportFailureKind", string.Empty, "CaptureHealthSnapshot.FlashbackExportFailureKind default");
         AssertEqual(0, GetCountProperty(GetPropertyValue(health, "SourceTelemetryDetails")!), "CaptureHealthSnapshot.SourceTelemetryDetails default count");
 
         var detailEntry = Activator.CreateInstance(detailType, "Signal", "Colorimetry", "BT.2020", "bt2020")
@@ -360,6 +362,7 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastCommandQueued", "UpdateScrub");
         SetPropertyOrBackingField(health, "FlashbackExportActive", true);
         SetPropertyOrBackingField(health, "FlashbackExportStatus", "Running");
+        SetPropertyOrBackingField(health, "FlashbackExportFailureKind", "NoMediaWritten");
         SetPropertyOrBackingField(health, "FlashbackExportPercent", 37.5d);
         SetPropertyOrBackingField(health, "FlashbackExportElapsedMs", 2000L);
         SetPropertyOrBackingField(health, "FlashbackExportLastProgressAgeMs", 100L);
@@ -404,6 +407,7 @@ static partial class Program
         AssertEqual("UpdateScrub", GetStringProperty(health, "FlashbackPlaybackLastCommandQueued"), "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueued round-trip");
         AssertEqual(true, GetBoolProperty(health, "FlashbackExportActive"), "CaptureHealthSnapshot.FlashbackExportActive round-trip");
         AssertEqual("Running", GetStringProperty(health, "FlashbackExportStatus"), "CaptureHealthSnapshot.FlashbackExportStatus round-trip");
+        AssertEqual("NoMediaWritten", GetStringProperty(health, "FlashbackExportFailureKind"), "CaptureHealthSnapshot.FlashbackExportFailureKind round-trip");
         AssertEqual(37.5d, GetDoubleProperty(health, "FlashbackExportPercent"), "CaptureHealthSnapshot.FlashbackExportPercent round-trip");
         AssertEqual(2000L, GetLongProperty(health, "FlashbackExportElapsedMs"), "CaptureHealthSnapshot.FlashbackExportElapsedMs round-trip");
         AssertEqual(100L, GetLongProperty(health, "FlashbackExportLastProgressAgeMs"), "CaptureHealthSnapshot.FlashbackExportLastProgressAgeMs round-trip");
@@ -428,6 +432,7 @@ static partial class Program
         AssertEqual(9L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackCommandsEnqueued"), "CaptureHealthSnapshot JSON FlashbackPlaybackCommandsEnqueued");
         AssertEqual(256, GetIntProperty(jsonRoundTrip, "FlashbackPlaybackCommandQueueCapacity"), "CaptureHealthSnapshot JSON FlashbackPlaybackCommandQueueCapacity");
         AssertEqual("Running", GetStringProperty(jsonRoundTrip, "FlashbackExportStatus"), "CaptureHealthSnapshot JSON FlashbackExportStatus");
+        AssertEqual("NoMediaWritten", GetStringProperty(jsonRoundTrip, "FlashbackExportFailureKind"), "CaptureHealthSnapshot JSON FlashbackExportFailureKind");
         AssertEqual(1048576L, GetLongProperty(jsonRoundTrip, "FlashbackExportOutputBytes"), "CaptureHealthSnapshot JSON FlashbackExportOutputBytes");
         AssertEqual("YCbCr422", GetStringProperty(jsonRoundTrip, "SourceVideoFormat"), "CaptureHealthSnapshot JSON SourceVideoFormat");
         AssertEqual(1, GetCountProperty(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!), "CaptureHealthSnapshot JSON SourceTelemetryDetails count");

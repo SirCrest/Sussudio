@@ -866,6 +866,7 @@ public sealed class AutomationSnapshot
     public long FlashbackExportInPointMs { get; init; }
     public long FlashbackExportOutPointMs { get; init; }
     public string FlashbackExportMessage { get; init; } = string.Empty;
+    public string FlashbackExportFailureKind { get; init; } = string.Empty;
     public string? LastExportPath { get; init; }
     public bool? LastExportSuccess { get; init; }
     public string? LastExportMessage { get; init; }

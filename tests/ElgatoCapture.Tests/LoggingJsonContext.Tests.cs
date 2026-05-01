@@ -116,6 +116,7 @@ static partial class Program
             SetPropertyOrBackingField(health, "FlashbackPlaybackMaxCommandQueueLatencyMs", 41L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackLastCommandQueued", "Pause");
             SetPropertyOrBackingField(health, "FlashbackExportStatus", "Running");
+            SetPropertyOrBackingField(health, "FlashbackExportFailureKind", "NoMediaWritten");
             SetPropertyOrBackingField(health, "FlashbackExportPercent", 37.5d);
             SetPropertyOrBackingField(health, "FlashbackExportElapsedMs", 2500L);
             SetPropertyOrBackingField(health, "FlashbackExportOutputBytes", 1048576L);
@@ -143,6 +144,7 @@ static partial class Program
             AssertJsonInt64(healthRoot, "FlashbackPlaybackMaxCommandQueueLatencyMs", 41L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackMaxCommandQueueLatencyMs");
             AssertJsonString(healthRoot, "FlashbackPlaybackLastCommandQueued", "Pause", "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackLastCommandQueued");
             AssertJsonString(healthRoot, "FlashbackExportStatus", "Running", "CaptureHealthSnapshot source-gen JSON FlashbackExportStatus");
+            AssertJsonString(healthRoot, "FlashbackExportFailureKind", "NoMediaWritten", "CaptureHealthSnapshot source-gen JSON FlashbackExportFailureKind");
             AssertJsonDouble(healthRoot, "FlashbackExportPercent", 37.5d, "CaptureHealthSnapshot source-gen JSON FlashbackExportPercent");
             AssertJsonInt64(healthRoot, "FlashbackExportElapsedMs", 2500L, "CaptureHealthSnapshot source-gen JSON FlashbackExportElapsedMs");
             AssertJsonInt64(healthRoot, "FlashbackExportOutputBytes", 1048576L, "CaptureHealthSnapshot source-gen JSON FlashbackExportOutputBytes");
