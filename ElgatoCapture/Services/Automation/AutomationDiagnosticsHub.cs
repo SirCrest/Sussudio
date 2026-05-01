@@ -1506,7 +1506,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         var frame = snapshot.PreviewD3DRecentSlowFrames[^1];
         var reason = string.IsNullOrWhiteSpace(frame.SlowReason) ? "unknown" : frame.SlowReason;
-        return $" latestSlowFrameReason={reason} over={frame.WorstOverBudgetMs:0.##}ms interval={frame.PresentIntervalMs:0.##}ms total={frame.TotalFrameCpuMs:0.##}ms presentCall={frame.PresentCallMs:0.##}ms pending={frame.PendingFrameCount}";
+        return $" latestSlowFrameReason={reason} over={frame.WorstOverBudgetMs:0.##}ms interval={frame.PresentIntervalMs:0.##}ms inputUpload={frame.InputUploadCpuMs:0.##}ms renderSubmit={frame.RenderSubmitCpuMs:0.##}ms total={frame.TotalFrameCpuMs:0.##}ms presentCall={frame.PresentCallMs:0.##}ms pending={frame.PendingFrameCount}";
     }
 
     private readonly record struct DiagnosticEvaluation(

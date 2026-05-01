@@ -284,6 +284,8 @@ static partial class Program
         AssertContains(diagnosticsText, "var presentCadenceOverBudget =\n            previewRuntime.DisplayCadenceExpectedIntervalMs > 0 &&\n            previewRuntime.DisplayCadenceP95IntervalMs > previewRuntime.DisplayCadenceExpectedIntervalMs * 1.5;");
         AssertContains(diagnosticsText, "var previewSlowFrameDetail = FormatPreviewSlowFrameAlertDetail(snapshot);");
         AssertContains(diagnosticsText, "latestSlowFrameReason={reason} over={frame.WorstOverBudgetMs:0.##}ms");
+        AssertContains(diagnosticsText, "inputUpload={frame.InputUploadCpuMs:0.##}ms");
+        AssertContains(diagnosticsText, "renderSubmit={frame.RenderSubmitCpuMs:0.##}ms");
         AssertContains(diagnosticsText, "var unsyncedPresentCallSlow =\n            previewRuntime.D3DPresentSyncInterval == 0 &&\n            previewRuntime.D3DPresentCallP95Ms > 4.0;");
         AssertContains(diagnosticsText, "if (presentCadenceOverBudget ||\n            unsyncedPresentCallSlow)");
         AssertContains(diagnosticsText, "if (rendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&\n            rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)");
