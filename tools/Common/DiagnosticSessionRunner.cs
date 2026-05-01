@@ -79,6 +79,8 @@ public static class DiagnosticSessionRunner
         var startedPreview = false;
         var startedRecording = false;
         var enabledFlashback = false;
+        var runFlashbackStress = scenario == "flashback-stress";
+        using var commandSendGate = new SemaphoreSlim(1, 1);
 
         var initialResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
         var initialSnapshot = TryGetSnapshot(initialResponse, out var initial)
@@ -130,7 +132,24 @@ public static class DiagnosticSessionRunner
                 actions.Add("presentmon capture started");
             }
 
+            Task? flashbackStressTask = null;
+            if (runFlashbackStress)
+            {
+                flashbackStressTask = RunFlashbackStressAsync(
+                    outputDirectory,
+                    actions,
+                    warnings,
+                    SendAsync,
+                    cancellationToken);
+                actions.Add("flashback stress started");
+            }
+
             await SampleLoopAsync(durationSeconds, sampleIntervalMs, samples, SendAsync, cancellationToken).ConfigureAwait(false);
+
+            if (flashbackStressTask is not null)
+            {
+                await flashbackStressTask.ConfigureAwait(false);
+            }
 
             if (presentMonTask is not null)
             {
@@ -246,14 +265,22 @@ public static class DiagnosticSessionRunner
 
         async Task<JsonElement> SendAsync(string command, Dictionary<string, object?>? payload, int? responseTimeoutMs)
         {
-            var response = await sendCommandAsync(command, payload, responseTimeoutMs).ConfigureAwait(false);
-            if (!AutomationSnapshotFormatter.IsSuccess(response))
+            await commandSendGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            try
             {
-                commandFailureCount++;
-                warnings.Add($"{command}: {AutomationSnapshotFormatter.Get(response, "Message", "command failed")}");
-            }
+                var response = await sendCommandAsync(command, payload, responseTimeoutMs).ConfigureAwait(false);
+                if (!AutomationSnapshotFormatter.IsSuccess(response))
+                {
+                    commandFailureCount++;
+                    warnings.Add($"{command}: {AutomationSnapshotFormatter.Get(response, "Message", "command failed")}");
+                }
 
-            return response.Clone();
+                return response.Clone();
+            }
+            finally
+            {
+                commandSendGate.Release();
+            }
         }
 
         async Task TryWaitAsync(string condition, int timeoutMs)
@@ -323,6 +350,100 @@ public static class DiagnosticSessionRunner
         }
 
         return builder.ToString().TrimEnd();
+    }
+
+    private static async Task RunFlashbackStressAsync(
+        string outputDirectory,
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken).ConfigureAwait(false);
+
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
+            .ConfigureAwait(false);
+        actions.Add("flashback pause requested");
+
+        await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+        await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 500 },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback seek requested");
+
+        await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "play" }, null)
+            .ConfigureAwait(false);
+        actions.Add("flashback play requested");
+
+        await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+        await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
+            .ConfigureAwait(false);
+        actions.Add("flashback go-live requested");
+
+        var exportPath = Path.Combine(outputDirectory, "flashback-stress-export.mp4");
+        var exportResponse = await sendCommandAsync(
+                "FlashbackExport",
+                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                60_000)
+            .ConfigureAwait(false);
+        actions.Add("flashback stress export requested");
+
+        if (AutomationSnapshotFormatter.IsSuccess(exportResponse))
+        {
+            await sendCommandAsync(
+                    "VerifyFile",
+                    new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                    60_000)
+                .ConfigureAwait(false);
+            actions.Add("flashback stress export verified");
+        }
+
+        var drained = false;
+        JsonElement lastSnapshot = default;
+        var waitStarted = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(waitStarted) < TimeSpan.FromSeconds(10))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(snapshotResponse, out lastSnapshot) &&
+                GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands") == 0)
+            {
+                drained = true;
+                break;
+            }
+
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (!drained)
+        {
+            warnings.Add("flashback stress: playback command queue did not drain within 10s");
+        }
+
+        if (lastSnapshot.ValueKind == JsonValueKind.Object)
+        {
+            var dropped = GetInt(lastSnapshot, "FlashbackPlaybackCommandsDropped");
+            var skipped = GetInt(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady");
+            var state = GetString(lastSnapshot, "FlashbackPlaybackState") ?? "Unknown";
+            var threadAlive = GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive");
+            if (dropped > 0 || skipped > 0)
+            {
+                warnings.Add($"flashback stress: dropped={dropped} skipped={skipped}");
+            }
+
+            if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))
+            {
+                warnings.Add($"flashback stress: playback ended in state {state}");
+            }
+
+            if (threadAlive)
+            {
+                warnings.Add("flashback stress: playback worker still alive after drain wait");
+            }
+        }
     }
 
     private static async Task SampleLoopAsync(
@@ -440,18 +561,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-stress" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
         => scenario is "recording-only" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "combined";
+        => scenario is "flashback" or "flashback-stress" or "combined";
 
 }

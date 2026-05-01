@@ -245,6 +245,17 @@ static partial class Program
         AssertContains(captureServiceText, "_flashbackExportOperationLock.Release();");
         AssertContains(captureServiceText, "_flashbackExportOperationLock.Dispose();");
 
+        var diagnosticSessionText = ReadRepoFile("tools/Common/DiagnosticSessionRunner.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(diagnosticSessionText, "var runFlashbackStress = scenario == \"flashback-stress\";");
+        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");
+        AssertContains(diagnosticSessionText, "\"FlashbackAction\", new Dictionary<string, object?> { [\"action\"] = \"pause\" }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"seek\", [\"positionMs\"] = 500 }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"seconds\"] = 1, [\"outputPath\"] = exportPath }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"filePath\"] = exportPath, [\"strict\"] = true }");
+        AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s\"");
+        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"combined\"");
+
         return Task.CompletedTask;
     }
 
