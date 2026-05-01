@@ -2514,7 +2514,15 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             try
             {
-                mic.SetAudioWriter(null);
+                try
+                {
+                    mic.SetAudioWriter(null);
+                }
+                catch (Exception detachEx)
+                {
+                    Logger.Log($"MIC_MONITOR_WRITER_DETACH_WARN type={detachEx.GetType().Name} msg={detachEx.Message}");
+                }
+
                 mic.AudioLevelUpdated -= OnMicrophoneAudioLevelUpdated;
                 mic.CaptureFailed -= OnWasapiCaptureFailed;
                 await mic.DisposeAsync().ConfigureAwait(false);

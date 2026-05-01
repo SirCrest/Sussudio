@@ -403,6 +403,8 @@ static partial class Program
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=video");
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=audio");
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_DETACH_WARN target=microphone");
+        AssertContains(captureServiceSource, "MIC_MONITOR_WRITER_DETACH_WARN");
+        AssertOccursBefore(captureServiceSource, "MIC_MONITOR_WRITER_DETACH_WARN", "await mic.DisposeAsync().ConfigureAwait(false);");
         AssertContains(captureServiceSource, "VIDEO_DIAG flashback_recording_pipeline");
         AssertContains(captureServiceSource, "BeginFlashbackBackendCleanup");
         AssertContains(captureServiceSource, "detachMicrophoneWriter: !preserveDedicatedRecordingMic");
