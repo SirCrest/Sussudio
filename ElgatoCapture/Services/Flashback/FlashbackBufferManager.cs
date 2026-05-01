@@ -220,8 +220,11 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
 
             // Also delete the active segment file (it has stale data)
-            if (_activeSegmentPath != null && TryDeleteFile(_activeSegmentPath))
+            if (_activeSegmentPath != null)
+            {
+                TryDeleteFile(_activeSegmentPath);
                 _activeSegmentPath = null; // Force new path generation on next GetFilePath()
+            }
 
             if (_completedSegments.Count == 0)
             {

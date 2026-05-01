@@ -487,6 +487,9 @@ static partial class Program
                 "FlashbackBufferManager eviction pause and resume are balanced",
                 FlashbackBufferManager_EvictionPauseResume_Balanced),
             await RunCheckAsync(
+                "FlashbackBufferManager purge forgets active segment path",
+                FlashbackBufferManager_PurgeCompletedSegments_ForgetsActivePath),
+            await RunCheckAsync(
                 "FlashbackBufferManager removes stale legacy root segments",
                 FlashbackBufferManager_RemovesStaleLegacyRootSegments),
             await RunCheckAsync(
@@ -3173,6 +3176,23 @@ static partial class Program
 
             try { Directory.Delete(tempDir, recursive: true); } catch { }
         }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_PurgeCompletedSegments_ForgetsActivePath()
+    {
+        var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "ElgatoCapture", "Services", "Flashback", "FlashbackBufferManager.cs"))
+            .Replace("\r\n", "\n");
+        var purgeBlock = ExtractTextBetween(
+            source,
+            "public void PurgeCompletedSegments()",
+            "    public long MaxDiskBytes");
+
+        AssertContains(
+            purgeBlock,
+            "if (_activeSegmentPath != null)\n            {\n                TryDeleteFile(_activeSegmentPath);\n                _activeSegmentPath = null; // Force new path generation on next GetFilePath()\n            }");
+        AssertDoesNotContain(purgeBlock, "if (_activeSegmentPath != null && TryDeleteFile(_activeSegmentPath))");
 
         return Task.CompletedTask;
     }
