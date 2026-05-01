@@ -859,6 +859,10 @@ static partial class Program
         AssertContains(sourceText, "FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
         AssertContains(sourceText, "FreeBufferedPackets(bufferedPackets, bufferedStreamIndices);");
         AssertContains(sourceText, "bufferedStreamIndices?.Clear();");
+        AssertContains(sourceText, "private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_PACKET_CLONE_FAIL operation={operation}");
+        AssertContains(sourceText, "var clone = ClonePacketOrThrow(packet, \"single_buffer\");");
+        AssertContains(sourceText, "var clone = ClonePacketOrThrow(packet, \"segment_buffer\");");
 
         var segmentLoopBlock = ExtractTextBetween(
             sourceText,

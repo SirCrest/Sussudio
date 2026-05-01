@@ -411,12 +411,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         const int MaxBufferedPackets = 600;
                         if (!allBasesDiscovered)
                         {
-                            var clone = ffmpeg.av_packet_clone(packet);
-                            if (clone != null)
-                            {
-                                bufferedPackets.Add((IntPtr)clone);
-                                bufferedStreamIndices.Add(streamIndex);
-                            }
+                            var clone = ClonePacketOrThrow(packet, "single_buffer");
+                            bufferedPackets.Add((IntPtr)clone);
+                            bufferedStreamIndices.Add(streamIndex);
 
                             // Check if all mapped streams have bases discovered,
                             // OR we've buffered enough packets that missing streams are assumed empty
@@ -906,12 +903,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             const int MaxBufferedPackets = 600;
                             if (!segAllBasesDiscovered)
                             {
-                                var clone = ffmpeg.av_packet_clone(packet);
-                                if (clone != null)
-                                {
-                                    segBufferedPackets.Add((IntPtr)clone);
-                                    segBufferedStreamIndices.Add(streamIndex);
-                                }
+                                var clone = ClonePacketOrThrow(packet, "segment_buffer");
+                                segBufferedPackets.Add((IntPtr)clone);
+                                segBufferedStreamIndices.Add(streamIndex);
 
                                 segAllBasesDiscovered = true;
                                 for (int i = 0; i < streamCount; i++)
@@ -1309,6 +1303,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         bufferedPackets.Clear();
         bufferedStreamIndices?.Clear();
+    }
+
+    private static AVPacket* ClonePacketOrThrow(AVPacket* packet, string operation)
+    {
+        var clone = ffmpeg.av_packet_clone(packet);
+        if (clone != null)
+        {
+            return clone;
+        }
+
+        Logger.Log($"FLASHBACK_EXPORT_PACKET_CLONE_FAIL operation={operation}");
+        throw new InvalidOperationException($"FLASHBACK_EXPORT_PACKET_CLONE_FAIL operation={operation}");
     }
 
     private static bool TryResolveTimestampBase(AVPacket* packet, out long timestampBase)
