@@ -1440,7 +1440,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 var support = await FfmpegRuntimeLocator.GetEncoderSupportAsync().ConfigureAwait(false);
                 _hasAv1Nvenc = support.HasAv1Nvenc;
             }
-            catch { /* Assume unavailable — will fall back to HEVC */ }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_ENCODER_SUPPORT_PROBE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                // Assume unavailable — will fall back to HEVC.
+            }
         }
 
         var bufferMinutes = settings.FlashbackBufferMinutes > 0 ? settings.FlashbackBufferMinutes : 5;

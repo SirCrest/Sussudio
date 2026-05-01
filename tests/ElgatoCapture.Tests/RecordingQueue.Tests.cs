@@ -27,6 +27,8 @@ static partial class Program
         AssertDoesNotContain(flashbackSource, "_encoder.SkipVideoFrame");
         AssertDoesNotContain(libAvSource, "Interlocked.Add(ref _videoDropsBacklogEviction");
         AssertDoesNotContain(flashbackSource, "Interlocked.Add(ref _videoDropsBacklogEviction");
+        AssertContains(captureServiceSource, "FLASHBACK_ENCODER_SUPPORT_PROBE_WARN");
+        AssertDoesNotContain(captureServiceSource, "catch { /* Assume unavailable");
 
         AssertContains(libAvSource, "LibAv recording video queue overloaded");
         AssertContains(libAvSource, "QueueBackpressureTimeoutMs = 250");
