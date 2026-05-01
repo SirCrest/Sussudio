@@ -1307,6 +1307,7 @@ public partial class CaptureService
             FlashbackBufferedDurationMs = (long)(bufMgr?.BufferedDuration.TotalMilliseconds ?? 0),
             FlashbackSegmentCount = bufMgr?.SegmentCount ?? 0,
             FlashbackDiskBytes = bufMgr?.TotalDiskBytes ?? 0,
+            FlashbackTotalBytesWritten = bufMgr?.TotalBytesWritten ?? 0,
             FlashbackTempDriveFreeBytes = bufMgr?.TempDriveAvailableFreeBytes ?? 0,
             FlashbackStartupCacheBudgetBytes = bufMgr?.StartupCacheBudgetBytes ?? 0,
             FlashbackStartupCacheBytes = bufMgr?.StartupCacheBytes ?? 0,

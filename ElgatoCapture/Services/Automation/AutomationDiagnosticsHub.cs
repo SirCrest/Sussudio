@@ -1096,6 +1096,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackActive = health.FlashbackActive,
             FlashbackBufferedDurationMs = health.FlashbackBufferedDurationMs,
             FlashbackDiskBytes = health.FlashbackDiskBytes,
+            FlashbackTotalBytesWritten = health.FlashbackTotalBytesWritten,
             FlashbackOutputBytes = health.FlashbackOutputBytes,
             FlashbackFilePath = health.FlashbackFilePath,
             FlashbackEncodedFrames = health.FlashbackEncodedFrames,

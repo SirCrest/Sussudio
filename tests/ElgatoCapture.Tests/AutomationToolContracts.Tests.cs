@@ -173,6 +173,7 @@ static partial class Program
                 "EncoderCodecName": "hevc_nvenc",
                 "FlashbackBufferedDurationMs": 120000,
                 "FlashbackDiskBytes": 1048576,
+                "FlashbackTotalBytesWritten": 2097152,
                 "FlashbackTempDriveFreeBytes": 2147483648,
                 "FlashbackStartupCacheBudgetBytes": 104857600,
                 "FlashbackStartupCacheBytes": 52428800,
@@ -253,6 +254,7 @@ static partial class Program
         AssertContains(formatted, "Frame Rate: 59.94 fps (59.940 fps, 60000/1001)");
         AssertContains(formatted, "== Flashback ==");
         AssertContains(formatted, "Encoder: hevc_nvenc");
+        AssertContains(formatted, "Written: 2 MB");
         AssertContains(formatted, "Temp Cache: cache=50 MB budget=100 MB free=2 GB sessions=2 deleted=1 freed=25 MB overBudget=false");
         AssertContains(formatted, "Playback Commands: pending=1 maxPending=4 lastLatency=12ms maxLatency=87ms enq=12 proc=11 drop=0 skip=2 threadAlive=true lastQueued=UpdateScrub lastProcessed=BeginScrub failure=not_ready:Pause");
         AssertContains(formatted, "Playback Decode: avg=1.25ms P95=2.5ms P99=3.5ms max=4.5ms samples=120");

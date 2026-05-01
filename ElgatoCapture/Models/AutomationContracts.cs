@@ -777,6 +777,7 @@ public sealed class AutomationSnapshot
     public bool FlashbackActive { get; init; }
     public long FlashbackBufferedDurationMs { get; init; }
     public long FlashbackDiskBytes { get; init; }
+    public long FlashbackTotalBytesWritten { get; init; }
     public long FlashbackTempDriveFreeBytes { get; init; }
     public long FlashbackStartupCacheBudgetBytes { get; init; }
     public long FlashbackStartupCacheBytes { get; init; }

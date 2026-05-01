@@ -1258,6 +1258,7 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("RecordingVideoQueueLatencyP95Ms"), "AutomationSnapshot.RecordingVideoQueueLatencyP95Ms");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoBackpressureWaitMs"), "AutomationSnapshot.RecordingVideoBackpressureWaitMs");
         AssertNotNull(snapshotType.GetProperty("RecordingVideoBackpressureEvents"), "AutomationSnapshot.RecordingVideoBackpressureEvents");
+        AssertNotNull(snapshotType.GetProperty("FlashbackTotalBytesWritten"), "AutomationSnapshot.FlashbackTotalBytesWritten");
         AssertNotNull(snapshotType.GetProperty("FlashbackTempDriveFreeBytes"), "AutomationSnapshot.FlashbackTempDriveFreeBytes");
         AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheBudgetBytes"), "AutomationSnapshot.FlashbackStartupCacheBudgetBytes");
         AssertNotNull(snapshotType.GetProperty("FlashbackStartupCacheBytes"), "AutomationSnapshot.FlashbackStartupCacheBytes");
