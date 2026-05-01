@@ -72,11 +72,26 @@ public sealed class RecordingArtifactManager
 
         if (!context.UsePostMuxAudio)
         {
+            if (!TryValidateFinalOutput(context.FinalOutputPath, out var directOutputFailure))
+            {
+                return FinalizeResult.Failure(
+                    context.FinalOutputPath,
+                    $"Stopped (final output invalid: {directOutputFailure})");
+            }
+
             return FinalizeResult.Success(context.FinalOutputPath, "Stopped");
         }
 
         if (muxSucceeded)
         {
+            if (!TryValidateFinalOutput(context.FinalOutputPath, out var muxedOutputFailure))
+            {
+                return FinalizeResult.Failure(
+                    context.FinalOutputPath,
+                    $"Stopped (final output invalid: {muxedOutputFailure})",
+                    GetExistingTempArtifacts(context));
+            }
+
             TryDelete(context.VideoOutputPath);
             TryDelete(context.AudioTempPath);
             return FinalizeResult.Success(context.FinalOutputPath, "Stopped");
@@ -162,5 +177,54 @@ public sealed class RecordingArtifactManager
         {
             Logger.Log($"Failed to cleanup empty final output '{path}': {ex.Message}");
         }
+    }
+
+    private static bool TryValidateFinalOutput(string path, out string failureMessage)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            failureMessage = "output path is empty";
+            return false;
+        }
+
+        try
+        {
+            if (!File.Exists(path))
+            {
+                failureMessage = "output file is missing";
+                return false;
+            }
+
+            var info = new FileInfo(path);
+            if (info.Length <= 0)
+            {
+                failureMessage = "output file is empty";
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            failureMessage = $"output file length unavailable: {ex.Message}";
+            Logger.Log($"Recording final output validation failed for '{path}': {ex.Message}");
+            return false;
+        }
+
+        failureMessage = string.Empty;
+        return true;
+    }
+
+    private static IReadOnlyList<string> GetExistingTempArtifacts(RecordingContext context)
+    {
+        var preserved = new List<string>();
+        if (File.Exists(context.VideoOutputPath))
+        {
+            preserved.Add(context.VideoOutputPath);
+        }
+        if (!string.IsNullOrWhiteSpace(context.AudioTempPath) && File.Exists(context.AudioTempPath))
+        {
+            preserved.Add(context.AudioTempPath);
+        }
+
+        return preserved;
     }
 }

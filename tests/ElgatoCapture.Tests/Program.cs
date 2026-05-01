@@ -574,6 +574,9 @@ static partial class Program
                 "FinalizeContext preserves temp artifacts when mux fails",
                 ArtifactManager_FinalizeContext_PreservesTempArtifacts_WhenMuxFails),
             await RunCheckAsync(
+                "FinalizeContext rejects invalid final output",
+                ArtifactManager_FinalizeContext_RejectsInvalidFinalOutput),
+            await RunCheckAsync(
                 "RollbackAsync deletes all artifacts when post-mux enabled",
                 ArtifactManager_RollbackAsync_DeletesAllArtifacts_WhenPostMuxEnabled),
             await RunCheckAsync(
@@ -2470,17 +2473,29 @@ static partial class Program
 
     private static Task ArtifactManager_FinalizeContext_ReturnsSuccess_WhenPostMuxDisabled()
     {
-        var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
-        var context = BuildRecordingContext(usePostMuxAudio: false, finalPath: "/out/video.mp4");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var finalPath = Path.Combine(tempDir, "video.mp4");
+            File.WriteAllText(finalPath, "video-data");
 
-        var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
-            ?? throw new InvalidOperationException("FinalizeContext not found");
-        var result = finalizeMethod.Invoke(manager, new object?[] { context, true, null })!;
+            var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
+            var context = BuildRecordingContext(usePostMuxAudio: false, finalPath: finalPath);
 
-        AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
-        AssertEqual("/out/video.mp4", GetStringProperty(result, "OutputPath"), "OutputPath");
+            var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
+                ?? throw new InvalidOperationException("FinalizeContext not found");
+            var result = finalizeMethod.Invoke(manager, new object?[] { context, true, null })!;
 
-        return Task.CompletedTask;
+            AssertEqual(true, GetBoolProperty(result, "Succeeded"), "Succeeded");
+            AssertEqual(finalPath, GetStringProperty(result, "OutputPath"), "OutputPath");
+
+            return Task.CompletedTask;
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { /* best-effort cleanup */ }
+        }
     }
 
     private static Task ArtifactManager_FinalizeContext_PreservesTempArtifacts_WhenMuxFails()
@@ -2514,6 +2529,51 @@ static partial class Program
             // Empty final file should have been deleted
             if (File.Exists(finalPath))
                 throw new InvalidOperationException("Expected empty final file to be deleted");
+
+            return Task.CompletedTask;
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { /* best-effort cleanup */ }
+        }
+    }
+
+    private static Task ArtifactManager_FinalizeContext_RejectsInvalidFinalOutput()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"elgtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var videoPath = Path.Combine(tempDir, "vid.mp4");
+            var audioPath = Path.Combine(tempDir, "aud.m4a");
+            var emptyFinalPath = Path.Combine(tempDir, "empty-final.mp4");
+            var missingFinalPath = Path.Combine(tempDir, "missing-final.mp4");
+            File.WriteAllText(videoPath, "video-data");
+            File.WriteAllText(audioPath, "audio-data");
+            File.WriteAllBytes(emptyFinalPath, Array.Empty<byte>());
+
+            var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
+            var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
+                ?? throw new InvalidOperationException("FinalizeContext not found");
+
+            var directContext = BuildRecordingContext(usePostMuxAudio: false, finalPath: emptyFinalPath);
+            var directResult = finalizeMethod.Invoke(manager, new object?[] { directContext, true, null })!;
+            AssertEqual(false, GetBoolProperty(directResult, "Succeeded"), "Direct empty output finalize fails");
+            AssertContains(GetStringProperty(directResult, "StatusMessage"), "final output invalid");
+            AssertContains(GetStringProperty(directResult, "StatusMessage"), "output file is empty");
+
+            var muxContext = BuildRecordingContext(
+                usePostMuxAudio: true,
+                videoPath: videoPath,
+                audioTempPath: audioPath,
+                finalPath: missingFinalPath);
+            var muxResult = finalizeMethod.Invoke(manager, new object?[] { muxContext, true, null })!;
+            AssertEqual(false, GetBoolProperty(muxResult, "Succeeded"), "Mux success with missing final output fails");
+            AssertContains(GetStringProperty(muxResult, "StatusMessage"), "output file is missing");
+            var preserved = GetPropertyValue(muxResult, "PreservedArtifacts");
+            AssertEqual(2, GetCountProperty(preserved), "Invalid mux final preserves temp artifacts");
+            AssertEqual(true, File.Exists(videoPath), "Invalid mux final preserves video temp");
+            AssertEqual(true, File.Exists(audioPath), "Invalid mux final preserves audio temp");
 
             return Task.CompletedTask;
         }
