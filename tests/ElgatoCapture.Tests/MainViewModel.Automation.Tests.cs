@@ -303,6 +303,7 @@ static partial class Program
         AssertContains(captureServiceText, "if (evictionPaused)");
         AssertContains(captureServiceText, "_lastExportResult = failure;");
         AssertContains(captureServiceText, "private FinalizeResult FailFlashbackExport(string outputPath, string statusMessage)");
+        AssertContains(captureServiceText, "Logger.Log($\"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'\");");
         AssertContains(captureServiceText, "_lastExportResult = result;");
         AssertContains(captureServiceText, "RecordRejectedFlashbackExportDiagnostics(outputPath, result);");
         AssertContains(captureServiceText, "private void RecordRejectedFlashbackExportDiagnostics(string outputPath, FinalizeResult result)");

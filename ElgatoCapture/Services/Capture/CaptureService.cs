@@ -634,6 +634,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private FinalizeResult FailFlashbackExport(string outputPath, string statusMessage)
     {
         var result = FinalizeResult.Failure(outputPath, statusMessage);
+        Logger.Log($"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'");
         _lastExportResult = result;
         RecordRejectedFlashbackExportDiagnostics(outputPath, result);
         return result;
