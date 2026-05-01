@@ -1348,8 +1348,10 @@ static partial class Program
         AssertContains(sourceText, "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_PLAYBACK_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'\");\n        }");
         AssertContains(sourceText, "finally\n        {\n            timeEndPeriod(1);");
         AssertContains(sourceText, "var threadExited = true;");
-        AssertContains(sourceText, "if (ReferenceEquals(Thread.CurrentThread, thread))\n            {\n                Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self\");\n                threadExited = false;\n            }");
-        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT\");\n                threadExited = false;");
+        AssertContains(sourceText, "if (ReferenceEquals(Thread.CurrentThread, thread))\n            {\n                Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self\");\n                _lastCommandFailure = \"thread_join_skipped:self\";\n                threadExited = false;\n            }");
+        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT\");\n                _lastCommandFailure = \"thread_join_timeout\";\n                threadExited = false;");
+        AssertContains(sourceText, "_lastCommandFailure = \"thread_join_skipped:self\";");
+        AssertContains(sourceText, "_lastCommandFailure = \"thread_join_timeout\";");
         AssertContains(sourceText, "if (threadExited)\n        {\n            DisposePlaybackCtsBestEffort(_playCts, \"stop_thread\");");
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);\n            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);\n            Volatile.Write(ref _playbackThreadStarted, 0);");
         AssertContains(sourceText, "if (cts.IsCancellationRequested)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");");

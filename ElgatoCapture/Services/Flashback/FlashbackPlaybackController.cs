@@ -486,11 +486,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
             if (ReferenceEquals(Thread.CurrentThread, thread))
             {
                 Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self");
+                _lastCommandFailure = "thread_join_skipped:self";
                 threadExited = false;
             }
             else if (!thread.Join(TimeSpan.FromSeconds(3)))
             {
                 Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT");
+                _lastCommandFailure = "thread_join_timeout";
                 threadExited = false;
             }
         }
