@@ -991,6 +991,7 @@ static partial class Program
             "        try\n        {\n            CleanupNativeState();");
 
         AssertContains(timeoutBlock, "FLASHBACK_EXPORT_DISPOSE: timed out waiting for export lock");
+        AssertContains(timeoutBlock, "DisposeLinkedCtsBestEffort(disposeCts, \"dispose_timeout\");");
         AssertContains(timeoutBlock, "ClearDisposeCtsReference(disposeCts);");
         AssertContains(timeoutBlock, "return;");
         AssertDoesNotContain(timeoutBlock, "CleanupNativeState()");
