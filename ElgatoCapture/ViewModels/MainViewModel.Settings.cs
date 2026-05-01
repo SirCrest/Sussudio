@@ -412,8 +412,22 @@ public partial class MainViewModel
     {
         _pendingFlashbackCycleTask = task;
         _ = task.ContinueWith(
-            t => Logger.Log($"CycleFlashbackEncoder({description}) failed: {t.Exception!.InnerException?.Message}"),
-            TaskContinuationOptions.OnlyOnFaulted);
+            t =>
+            {
+                if (ReferenceEquals(_pendingFlashbackCycleTask, t))
+                {
+                    _pendingFlashbackCycleTask = null;
+                }
+
+                if (t.IsFaulted)
+                {
+                    Logger.Log($"CycleFlashbackEncoder({description}) failed: {t.Exception!.InnerException?.Message}");
+                }
+                else if (t.IsCanceled)
+                {
+                    Logger.Log($"CycleFlashbackEncoder({description}) canceled");
+                }
+            });
     }
 
     private static VideoQuality ParseVideoQuality(string value)

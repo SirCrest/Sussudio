@@ -185,7 +185,12 @@ static partial class Program
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "nvencPreset: SelectedPreset");
         AssertMemberContains(settingsText, "TrackFlashbackEncoderSettingsCycle", "TrackPendingFlashbackCycleTask(task, description);");
         AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "_pendingFlashbackCycleTask = task;");
+        AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "if (ReferenceEquals(_pendingFlashbackCycleTask, t))");
+        AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "_pendingFlashbackCycleTask = null;");
+        AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "if (t.IsFaulted)");
+        AssertMemberContains(settingsText, "TrackPendingFlashbackCycleTask", "else if (t.IsCanceled)");
         AssertContains(rawSettingsText, "CycleFlashbackEncoder({description}) failed");
+        AssertContains(rawSettingsText, "CycleFlashbackEncoder({description}) canceled");
         AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "_sessionCoordinator.RestartFlashbackAsync(BuildCaptureSettings())");
         AssertContains(viewModelFiles["MainViewModel.cs"], "private int _audioEnabledChangeGeneration;");
         AssertMemberContains(viewModelFiles["MainViewModel.cs"], "OnIsAudioEnabledChanged", "var changeGeneration = Interlocked.Increment(ref _audioEnabledChangeGeneration);");
