@@ -280,6 +280,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(diagnosticSessionText, "var runFlashbackStress = scenario == \"flashback-stress\";");
         AssertContains(diagnosticSessionText, "var runFlashbackScrubStress = scenario == \"flashback-scrub-stress\";");
+        AssertContains(diagnosticSessionText, "var runFlashbackRestartCycle = scenario == \"flashback-restart-cycle\";");
         AssertContains(diagnosticSessionText, "var runFlashbackLifecycle = scenario == \"flashback-lifecycle\";");
         AssertContains(diagnosticSessionText, "var runFlashbackExportConcurrent = scenario == \"flashback-export-concurrent\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRecording = scenario == \"flashback-recording\";");
@@ -303,6 +304,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackScrubStressAsync(");
         AssertContains(diagnosticSessionText, "flashback scrub stress seek burst requested");
+        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRestartCycleAsync(");
+        AssertContains(diagnosticSessionText, "flashback restart cycle export verified");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackLifecycleAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportConcurrentAsync(");
         AssertContains(diagnosticSessionText, "var exportTaskA = sendCommandAsync(\"FlashbackExport\", exportPayloadA, 60_000);");
@@ -339,8 +342,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback-rejected-export.mp4\"");
         AssertContains(diagnosticSessionText, "$\"flashback export rejected: expected Failed status, got {status}\"");
         AssertContains(diagnosticSessionText, "message.Contains(\"Flashback buffer not active\", StringComparison.OrdinalIgnoreCase)");
-        AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackScrubStress || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0)");
-        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-recording\" or \"flashback-export-rejected\" or \"combined\"");
+        AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0)");
+        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-recording\" or \"flashback-export-rejected\" or \"combined\"");
 
         var ecctlProgramText = ReadRepoFile("tools/ecctl/Program.cs")
             .Replace("\r\n", "\n");
@@ -348,9 +351,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         var mcpDiagnosticSessionText = ReadRepoFile("tools/McpServer/Tools/DiagnosticSessionTools.cs")
             .Replace("\r\n", "\n");
-        AssertContains(ecctlProgramText, "flashback-scrub-stress");
-        AssertContains(ecctlCommandHandlersText, "flashback-scrub-stress");
-        AssertContains(mcpDiagnosticSessionText, "flashback-scrub-stress");
+        AssertContains(ecctlProgramText, "flashback-restart-cycle");
+        AssertContains(ecctlCommandHandlersText, "flashback-restart-cycle");
+        AssertContains(mcpDiagnosticSessionText, "flashback-restart-cycle");
 
         return Task.CompletedTask;
     }

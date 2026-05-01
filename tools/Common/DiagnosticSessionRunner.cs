@@ -97,6 +97,7 @@ public static class DiagnosticSessionRunner
         var disabledFlashback = false;
         var runFlashbackStress = scenario == "flashback-stress";
         var runFlashbackScrubStress = scenario == "flashback-scrub-stress";
+        var runFlashbackRestartCycle = scenario == "flashback-restart-cycle";
         var runFlashbackLifecycle = scenario == "flashback-lifecycle";
         var runFlashbackExportConcurrent = scenario == "flashback-export-concurrent";
         var runFlashbackRecording = scenario == "flashback-recording";
@@ -182,6 +183,7 @@ public static class DiagnosticSessionRunner
 
             Task? flashbackLifecycleTask = null;
             Task? flashbackScrubStressTask = null;
+            Task? flashbackRestartCycleTask = null;
             if (runFlashbackScrubStress)
             {
                 flashbackScrubStressTask = RunFlashbackScrubStressAsync(
@@ -190,6 +192,17 @@ public static class DiagnosticSessionRunner
                     sendCommandAsync,
                     cancellationToken);
                 actions.Add("flashback scrub stress started");
+            }
+
+            if (runFlashbackRestartCycle)
+            {
+                flashbackRestartCycleTask = RunFlashbackRestartCycleAsync(
+                    outputDirectory,
+                    actions,
+                    warnings,
+                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                    cancellationToken);
+                actions.Add("flashback restart cycle started");
             }
 
             if (runFlashbackLifecycle)
@@ -235,6 +248,11 @@ public static class DiagnosticSessionRunner
             if (flashbackScrubStressTask is not null)
             {
                 await flashbackScrubStressTask.ConfigureAwait(false);
+            }
+
+            if (flashbackRestartCycleTask is not null)
+            {
+                await flashbackRestartCycleTask.ConfigureAwait(false);
             }
 
             if (flashbackExportConcurrentTask is not null)
@@ -357,7 +375,7 @@ public static class DiagnosticSessionRunner
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!(runFlashbackStress || runFlashbackScrubStress || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0),
+                      (!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -842,6 +860,97 @@ public static class DiagnosticSessionRunner
         }
     }
 
+    private static async Task RunFlashbackRestartCycleAsync(
+        string outputDirectory,
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        {
+            warnings.Add("flashback restart cycle: Flashback buffer did not become ready before restart");
+            return;
+        }
+
+        await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "pause" },
+                null)
+            .ConfigureAwait(false);
+        await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 750 },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback restart cycle playback primed");
+
+        var restartResponse = await sendCommandAsync("RestartFlashback", null, 305_000).ConfigureAwait(false);
+        actions.Add("flashback restart requested");
+        if (!AutomationSnapshotFormatter.IsSuccess(restartResponse))
+        {
+            warnings.Add($"flashback restart cycle: restart failed - {AutomationSnapshotFormatter.Get(restartResponse, "Message", "unknown error")}");
+            return;
+        }
+
+        var activeSnapshot = await WaitForFlashbackActiveAsync(
+                sendCommandAsync,
+                expectedActive: true,
+                timeout: TimeSpan.FromSeconds(30),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (activeSnapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add("flashback restart cycle: Flashback did not report active after restart");
+            return;
+        }
+
+        if (GetBool(activeSnapshot.Value, "FlashbackPlaybackThreadAlive"))
+        {
+            warnings.Add("flashback restart cycle: playback worker still alive after restart");
+        }
+
+        if (GetInt(activeSnapshot.Value, "FlashbackPlaybackPendingCommands") > 0)
+        {
+            warnings.Add(
+                "flashback restart cycle: pending playback commands remained after restart " +
+                $"pending={GetInt(activeSnapshot.Value, "FlashbackPlaybackPendingCommands")}");
+        }
+
+        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        {
+            warnings.Add("flashback restart cycle: Flashback buffer did not refill after restart");
+            return;
+        }
+
+        var exportPath = Path.Combine(outputDirectory, "flashback-restart-cycle-export.mp4");
+        var exportResponse = await sendCommandAsync(
+                "FlashbackExport",
+                new Dictionary<string, object?> { ["seconds"] = 1, ["outputPath"] = exportPath },
+                60_000)
+            .ConfigureAwait(false);
+        actions.Add("flashback restart cycle export requested");
+        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
+        {
+            warnings.Add($"flashback restart cycle: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
+            return;
+        }
+
+        var verifyResponse = await sendCommandAsync(
+                "VerifyFile",
+                new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                60_000)
+            .ConfigureAwait(false);
+        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
+        {
+            warnings.Add(
+                $"flashback restart cycle export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
+            return;
+        }
+
+        actions.Add("flashback restart cycle export verified");
+    }
+
     private static async Task RunFlashbackLifecycleAsync(
         List<string> actions,
         List<string> warnings,
@@ -1188,18 +1297,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "flashback-export-rejected" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "flashback-export-rejected" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
         => scenario is "recording-only" or "flashback-recording" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "combined";
+        => scenario is "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-recording" or "combined";
 
 }
