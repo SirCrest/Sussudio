@@ -133,6 +133,14 @@ static partial class Program
             "catch\n        {\n            /* Cleanup must not throw",
             "            throw;\n        }");
 
+        AssertContains(sourceText, "ValidateSessionContext(context);");
+        AssertContains(sourceText, "if (ptsBaseOffset < TimeSpan.Zero)\n        {\n            throw new ArgumentOutOfRangeException(nameof(ptsBaseOffset), \"PTS base offset must not be negative.\");\n        }");
+        AssertOccursBefore(sourceText, "ValidateSessionContext(context);", "_started = true;");
+        AssertOccursBefore(sourceText, "PTS base offset must not be negative.", "_started = true;");
+        AssertContains(sourceText, "private static void ValidateSessionContext(FlashbackSessionContext context)");
+        AssertContains(sourceText, "Flashback session width must be positive.");
+        AssertContains(sourceText, "Flashback session height must be positive.");
+        AssertContains(sourceText, "Flashback session codec name is required.");
         AssertContains(startCatchBlock, "lock (_sync)\n            {\n                _started = false;\n            }");
         AssertOccursBefore(startCatchBlock, "_started = false;", "throw;");
 

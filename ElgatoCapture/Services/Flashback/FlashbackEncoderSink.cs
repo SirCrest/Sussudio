@@ -197,6 +197,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         ArgumentNullException.ThrowIfNull(context);
+        ValidateSessionContext(context);
+        if (ptsBaseOffset < TimeSpan.Zero)
+        {
+            throw new ArgumentOutOfRangeException(nameof(ptsBaseOffset), "PTS base offset must not be negative.");
+        }
         cancellationToken.ThrowIfCancellationRequested();
 
         lock (_sync)
@@ -1359,6 +1364,24 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
 
         return Math.Min(frameRate, MaxSessionFrameRate);
+    }
+
+    private static void ValidateSessionContext(FlashbackSessionContext context)
+    {
+        if (context.Width <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(context), context.Width, "Flashback session width must be positive.");
+        }
+
+        if (context.Height <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(context), context.Height, "Flashback session height must be positive.");
+        }
+
+        if (string.IsNullOrWhiteSpace(context.CodecName))
+        {
+            throw new ArgumentException("Flashback session codec name is required.", nameof(context));
+        }
     }
 
     private static long ToNonNegativeLongSaturated(double value)
