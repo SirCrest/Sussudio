@@ -1119,6 +1119,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var currentPath = _currentOpenFilePath;
         if (string.IsNullOrWhiteSpace(currentPath))
         {
+            SetReopenFailure(reason, "no_current_file", seekTarget);
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SKIP reason={reason} detail=no_current_file");
             return false;
         }
@@ -1140,6 +1141,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         catch (Exception ex)
         {
+            SetReopenFailure(reason, ex.GetType().Name, seekTarget);
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'");
             _decoderHwAccel = "N/A";
             fileOpen = false;
@@ -1153,6 +1155,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var currentPath = _currentOpenFilePath;
         if (string.IsNullOrWhiteSpace(currentPath))
         {
+            SetReopenFailure(reason, "no_current_file", seekTarget);
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SKIP reason={reason} detail=no_current_file");
             return false;
         }
@@ -1174,6 +1177,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         catch (Exception ex)
         {
+            SetReopenFailure(reason, ex.GetType().Name, seekTarget);
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'");
             _decoderHwAccel = "N/A";
             fileOpen = false;
@@ -2078,6 +2082,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private void SetNoFileFailure(CommandKind kind, TimeSpan position)
     {
         SetLastCommandFailure($"no_file:{kind}{FormatCommandDetail(position: position)}");
+    }
+
+    private void SetReopenFailure(string reason, string detail, TimeSpan position)
+    {
+        SetLastCommandFailure($"reopen_failed:{reason}:{detail}{FormatCommandDetail(position: position)}");
     }
 
     private static string FormatCommandDetail(PlaybackCommand command)
