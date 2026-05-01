@@ -3638,6 +3638,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             catch (Exception ex)
             {
                 Logger.Log($"CAPTURE_RECORDING_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
+                RecordLastRecordingFailure(ex);
 
                 if (flashbackRecordingStartedSink != null)
                 {
@@ -3676,11 +3677,26 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     DetachUnifiedVideoCapture(ownedUnifiedVideoCapture);
                 }
 
-                await _artifactManager.RollbackAsync(recordingContext).ConfigureAwait(false);
-                await DisposeTransientRecordingBackendAsync(
-                    recordingSink,
-                    ownedWasapiAudioCapture,
-                    ownedUnifiedVideoCapture).ConfigureAwait(false);
+                try
+                {
+                    await _artifactManager.RollbackAsync(recordingContext).ConfigureAwait(false);
+                }
+                catch (Exception rollbackEx)
+                {
+                    Logger.Log($"Recording start rollback cleanup failed: {rollbackEx.Message}");
+                }
+
+                try
+                {
+                    await DisposeTransientRecordingBackendAsync(
+                        recordingSink,
+                        ownedWasapiAudioCapture,
+                        ownedUnifiedVideoCapture).ConfigureAwait(false);
+                }
+                catch (Exception disposeEx)
+                {
+                    Logger.Log($"Transient recording backend cleanup failed during start rollback: {disposeEx.Message}");
+                }
 
                 if (ownedWasapiAudioCapture != null && ReferenceEquals(_wasapiAudioCapture, ownedWasapiAudioCapture))
                 {

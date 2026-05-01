@@ -249,6 +249,17 @@ static partial class Program
         AssertDoesNotContain(captureServiceSource, "_wasapiAudioCapture?.SetPlayback(null);");
         AssertDoesNotContain(captureServiceSource, "capture.SetPlayback(null);\n        StopWasapiPlayback();");
         AssertContains(captureServiceSource, "CAPTURE_RECORDING_START_FAIL");
+        var startRecordingFailure = ExtractSourceBlock(
+            captureServiceSource,
+            "Logger.Log($\"CAPTURE_RECORDING_START_FAIL",
+            "public Task StopRecordingAsync");
+        AssertContains(startRecordingFailure, "RecordLastRecordingFailure(ex);");
+        AssertContains(startRecordingFailure, "Recording start rollback cleanup failed");
+        AssertContains(startRecordingFailure, "Transient recording backend cleanup failed during start rollback");
+        AssertOccursBefore(
+            startRecordingFailure,
+            "RecordLastRecordingFailure(ex);",
+            "await _artifactManager.RollbackAsync(recordingContext)");
         AssertDoesNotContain(captureServiceSource, "System.Diagnostics.Trace.TraceWarning($\"Suppressed exception in CaptureService.StartRecordingAsync");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_CYCLE_OK mode=preserve_rebuild");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_DEFERRED_PURGE_WARN");
