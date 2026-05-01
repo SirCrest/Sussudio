@@ -1665,8 +1665,10 @@ static partial class Program
             bufferText,
             "public void AbandonGeneratedSegmentPath",
             "    private static void CleanupStaleSessionDirectories");
+        AssertContains(abandonBlock, "if (IsSameSegmentPath(_activeSegmentPath, generatedPath))");
         AssertContains(abandonBlock, "_activeSegmentPath = restoreActivePath;");
         AssertContains(abandonBlock, "_nextSegmentIndex--;");
+        AssertContains(abandonBlock, "if (!IsSameSegmentPath(generatedPath, restoreActivePath))");
         AssertContains(abandonBlock, "TryDeleteFile(generatedPath);");
 
         return Task.CompletedTask;

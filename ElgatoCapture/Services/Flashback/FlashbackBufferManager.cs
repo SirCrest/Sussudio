@@ -446,7 +446,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
         lock (_indexLock)
         {
-            if (string.Equals(_activeSegmentPath, generatedPath, StringComparison.OrdinalIgnoreCase))
+            if (IsSameSegmentPath(_activeSegmentPath, generatedPath))
             {
                 _activeSegmentPath = restoreActivePath;
                 if (_nextSegmentIndex > 0)
@@ -455,7 +455,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 }
             }
 
-            if (!string.Equals(generatedPath, restoreActivePath, StringComparison.OrdinalIgnoreCase))
+            if (!IsSameSegmentPath(generatedPath, restoreActivePath))
             {
                 TryDeleteFile(generatedPath);
             }
