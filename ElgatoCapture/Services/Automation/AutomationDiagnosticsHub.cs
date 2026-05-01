@@ -54,6 +54,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const int PreviewPerfectionMinSamples = 120;
     private const int VerificationPerfectionMinSamples = 120;
     private const int TimelineCapacity = 240;
+    private const int FlashbackPlaybackCommandStallThresholdMs = 1000;
 
     private readonly double _perfectionCaptureDropPercentThreshold;
     private readonly double _perfectionCaptureP95MultiplierThreshold;
@@ -1243,7 +1244,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             snapshot.FlashbackPlaybackPendingCommands > 0 &&
             snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > 0 &&
             snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > snapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs
-                ? nowUnixMs - snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs
+                ? Math.Max(0, nowUnixMs - snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs)
                 : 0;
 
         SetAlertState(
@@ -1337,7 +1338,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         SetAlertState(
             "flashback-playback-command-stalled",
-            playbackCommandQueueAgeMs >= 1000,
+            playbackCommandQueueAgeMs >= FlashbackPlaybackCommandStallThresholdMs,
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Flashback,
             $"Flashback playback command queue has not drained for {playbackCommandQueueAgeMs}ms " +
@@ -1440,6 +1441,15 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"audio integrity={captureRuntime.RecordingIntegrityAudioStatus} drops={captureRuntime.RecordingIntegrityAudioDropEvents} disc={captureRuntime.RecordingIntegrityAudioDiscontinuities} gaps={captureRuntime.RecordingIntegrityAudioCallbackGaps}";
         var exportLane =
             $"export active={health.FlashbackExportActive} status={health.FlashbackExportStatus} id={health.FlashbackExportId} progress={health.FlashbackExportPercent:0.##}% segments={health.FlashbackExportSegmentsProcessed}/{health.FlashbackExportTotalSegments} lastProgressUtc={health.FlashbackExportLastProgressUtcUnixMs} completedUtc={health.FlashbackExportCompletedUtcUnixMs}";
+        var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var playbackCommandQueueAgeMs =
+            health.FlashbackPlaybackPendingCommands > 0 &&
+            health.FlashbackPlaybackLastCommandQueuedUtcUnixMs > 0 &&
+            health.FlashbackPlaybackLastCommandQueuedUtcUnixMs > health.FlashbackPlaybackLastCommandProcessedUtcUnixMs
+                ? Math.Max(0, nowUnixMs - health.FlashbackPlaybackLastCommandQueuedUtcUnixMs)
+                : 0;
+        var playbackCommandLane =
+            $"playback commands pending={health.FlashbackPlaybackPendingCommands} maxPending={health.FlashbackPlaybackMaxPendingCommands} lastLatency={health.FlashbackPlaybackLastCommandQueueLatencyMs}ms maxLatency={health.FlashbackPlaybackMaxCommandQueueLatencyMs}ms lastQueued={health.FlashbackPlaybackLastCommandQueued} lastProcessed={health.FlashbackPlaybackLastCommandProcessed} queuedAge={playbackCommandQueueAgeMs}ms threadAlive={health.FlashbackPlaybackThreadAlive}";
 
         if (health.FlashbackExportActive)
         {
@@ -1448,6 +1458,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 "flashback_export",
                 "Flashback export is running.",
                 exportLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (playbackCommandQueueAgeMs >= FlashbackPlaybackCommandStallThresholdMs)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "flashback_playback",
+                "Flashback playback command queue is stalled.",
+                playbackCommandLane,
                 sourceLane,
                 decodeLane,
                 previewLane,
