@@ -2199,6 +2199,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
             : Interlocked.Read(ref _lastVideoPtsTicks);
         Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
 
+        if (_audioPlayback == null)
+        {
+            decoder.AudioChunkCallback = null;
+            return;
+        }
+
         if (_audioPlayback != null)
         {
             decoder.AudioChunkCallback = chunk =>
