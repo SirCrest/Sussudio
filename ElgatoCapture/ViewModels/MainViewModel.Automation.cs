@@ -473,7 +473,7 @@ public partial class MainViewModel
                 _flashbackBitrateSamples.Clear();
                 return true;
             },
-            CancellationToken.None).ConfigureAwait(false);
+            cancellationToken).ConfigureAwait(false);
     }
 
     // ── ViewModel runtime snapshot ───────────────────────────────────────
@@ -1124,7 +1124,7 @@ public partial class MainViewModel
 
                 return true;
             },
-            CancellationToken.None).ConfigureAwait(false);
+            cancellationToken).ConfigureAwait(false);
     }
 
     private CaptureDevice? ResolveDevice(string? deviceId, string? deviceName)

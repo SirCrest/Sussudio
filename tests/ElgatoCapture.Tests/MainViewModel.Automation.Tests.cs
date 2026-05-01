@@ -154,8 +154,7 @@ static partial class Program
         AssertContains(automationText, "public Task<CaptureRuntimeSnapshot> GetCaptureRuntimeSnapshotAsync(CancellationToken cancellationToken = default)\n        => FromSynchronousSnapshot(_captureService.GetRuntimeSnapshot, cancellationToken);");
         AssertContains(automationText, "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
         AssertContains(automationText, "await _sessionCoordinator.RestartFlashbackAsync(settings, cancellationToken).ConfigureAwait(false)");
-        AssertContains(automationText, "CancellationToken.None).ConfigureAwait(false);");
-        AssertContains(automationText, "_flashbackBitrateSamples.Clear();");
+        AssertContains(automationText, "_flashbackBitrateSamples.Clear();\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
         AssertContains(automationText, "=> InvokeOnUiThreadAsync(() => RefreshDevicesAsync(cancellationToken), cancellationToken);");
         AssertContains(automationText, "await StartPreviewAsync(userInitiated: true, cancellationToken);");
         AssertContains(automationText, "await StopPreviewAsync(userInitiated: true, teardownPipeline: false, cancellationToken);");
@@ -167,6 +166,7 @@ static partial class Program
         AssertContains(automationText, "_suppressMicrophoneMonitorUpdate = true;");
         AssertContains(automationText, "await _sessionCoordinator.UpdateMicrophoneMonitorAsync(");
         AssertContains(automationText, "cancellationToken).ConfigureAwait(false);");
+        AssertContains(automationText, "IsMicrophoneEnabled = enabled;\n                }\n                finally\n                {\n                    _suppressMicrophoneMonitorUpdate = false;\n                }\n\n                return true;\n            },\n            cancellationToken).ConfigureAwait(false);");
         AssertContains(captureServiceText, "var previousEnabled = _micMonitorEnabled;");
         AssertContains(captureServiceText, "await DisposeMicrophoneCaptureAsync().ConfigureAwait(false);\n\n                _micMonitorEnabled = enabled;");
         var microphoneUpdateIndex = automationText.IndexOf(
