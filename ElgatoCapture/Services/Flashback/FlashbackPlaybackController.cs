@@ -81,6 +81,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private long _audioClockPtsTicks;       // Last sampled audio rendering PTS
     private long _audioClockWallTicks;      // Stopwatch.GetTimestamp() when _audioClockPtsTicks was sampled
     private long _playbackDroppedFrames;    // Frames dropped because video was too far behind audio
+    private long _playbackAudioMasterDelayDoubles;
+    private long _playbackAudioMasterDelayShrinks;
+    private long _playbackAudioMasterFallbacks;
 
     // --- Playback cadence metrics (written on playback thread, read from UI/diag) ---
     private long _playbackFrameCount;
@@ -1979,6 +1982,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 // WASAPI render PTS can lag decoded video by the endpoint buffer/device
                 // latency after resume. Do not let that stale clock halve video cadence.
+                Interlocked.Increment(ref _playbackAudioMasterFallbacks);
                 WallClockPace(pacingStopwatch, frameDuration);
                 return;
             }
@@ -1987,11 +1991,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
             if (diffMs > syncThresholdMs)
             {
                 // Video ahead — double delay to let audio catch up
+                Interlocked.Increment(ref _playbackAudioMasterDelayDoubles);
                 adjustedDelayMs = nominalDelayMs * 2;
             }
             else if (diffMs < -syncThresholdMs)
             {
                 // Video behind — shrink delay to catch up
+                Interlocked.Increment(ref _playbackAudioMasterDelayShrinks);
                 adjustedDelayMs = Math.Max(0, nominalDelayMs + diffMs);
                 if (adjustedDelayMs <= 0)
                     Interlocked.Increment(ref _playbackLateFrames);
@@ -2022,6 +2028,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         // Fallback: no audio clock available — pure wall-clock pacing
+        Interlocked.Increment(ref _playbackAudioMasterFallbacks);
         WallClockPace(pacingStopwatch, frameDuration);
     }
 
@@ -2223,6 +2230,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long PlaybackFrameCount => Interlocked.Read(ref _playbackFrameCount);
     public long PlaybackLateFrames => Interlocked.Read(ref _playbackLateFrames);
     public long PlaybackDroppedFrames => Interlocked.Read(ref _playbackDroppedFrames);
+    public long PlaybackAudioMasterDelayDoubles => Interlocked.Read(ref _playbackAudioMasterDelayDoubles);
+    public long PlaybackAudioMasterDelayShrinks => Interlocked.Read(ref _playbackAudioMasterDelayShrinks);
+    public long PlaybackAudioMasterFallbacks => Interlocked.Read(ref _playbackAudioMasterFallbacks);
     public long PlaybackSegmentSwitches => Interlocked.Read(ref _playbackSegmentSwitches);
     public long PlaybackFmp4Reopens => Interlocked.Read(ref _playbackFmp4Reopens);
     public long PlaybackWriteHeadWaits => Interlocked.Read(ref _playbackWriteHeadWaits);
@@ -2593,6 +2603,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Exchange(ref _playbackFrameCount, 0);
         Interlocked.Exchange(ref _playbackLateFrames, 0);
         Interlocked.Exchange(ref _playbackDroppedFrames, 0);
+        Interlocked.Exchange(ref _playbackAudioMasterDelayDoubles, 0);
+        Interlocked.Exchange(ref _playbackAudioMasterDelayShrinks, 0);
+        Interlocked.Exchange(ref _playbackAudioMasterFallbacks, 0);
         Volatile.Write(ref _lastPlaybackDropReason, string.Empty);
         Interlocked.Exchange(ref _lastPlaybackDropUtcUnixMs, 0);
         Interlocked.Exchange(ref _playbackSubmitFailures, 0);

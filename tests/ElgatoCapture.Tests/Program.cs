@@ -1684,6 +1684,9 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoBackpressureEvents"), "AutomationSnapshot.FlashbackVideoBackpressureEvents");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackThreadAlive"), "AutomationSnapshot.FlashbackPlaybackThreadAlive");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDroppedFrames"), "AutomationSnapshot.FlashbackPlaybackDroppedFrames");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackAudioMasterDelayDoubles"), "AutomationSnapshot.FlashbackPlaybackAudioMasterDelayDoubles");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackAudioMasterDelayShrinks"), "AutomationSnapshot.FlashbackPlaybackAudioMasterDelayShrinks");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackAudioMasterFallbacks"), "AutomationSnapshot.FlashbackPlaybackAudioMasterFallbacks");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSegmentSwitches"), "AutomationSnapshot.FlashbackPlaybackSegmentSwitches");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackFmp4Reopens"), "AutomationSnapshot.FlashbackPlaybackFmp4Reopens");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackWriteHeadWaits"), "AutomationSnapshot.FlashbackPlaybackWriteHeadWaits");

@@ -849,6 +849,9 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackFrameCount { get; init; }
     public long FlashbackPlaybackLateFrames { get; init; }
     public long FlashbackPlaybackDroppedFrames { get; init; }
+    public long FlashbackPlaybackAudioMasterDelayDoubles { get; init; }
+    public long FlashbackPlaybackAudioMasterDelayShrinks { get; init; }
+    public long FlashbackPlaybackAudioMasterFallbacks { get; init; }
     public long FlashbackPlaybackSegmentSwitches { get; init; }
     public long FlashbackPlaybackFmp4Reopens { get; init; }
     public long FlashbackPlaybackWriteHeadWaits { get; init; }
@@ -990,6 +993,9 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackLastSubmitFailureUtcUnixMs { get; init; }
     public string FlashbackPlaybackLastSubmitFailure { get; init; } = string.Empty;
     public long FlashbackPlaybackDroppedFrames { get; init; }
+    public long FlashbackPlaybackAudioMasterDelayDoubles { get; init; }
+    public long FlashbackPlaybackAudioMasterDelayShrinks { get; init; }
+    public long FlashbackPlaybackAudioMasterFallbacks { get; init; }
     public long FlashbackPlaybackSegmentSwitches { get; init; }
     public long FlashbackPlaybackFmp4Reopens { get; init; }
     public long FlashbackPlaybackWriteHeadWaits { get; init; }

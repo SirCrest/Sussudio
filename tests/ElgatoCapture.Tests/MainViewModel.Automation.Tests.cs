@@ -373,6 +373,8 @@ static partial class Program
         AssertContains(diagnosticsText, "playback perf state={health.FlashbackPlaybackState}");
         AssertContains(diagnosticsText, "1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps");
         AssertContains(diagnosticsText, "decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms");
+        AssertContains(diagnosticsText, "audioMasterDouble={health.FlashbackPlaybackAudioMasterDelayDoubles}");
+        AssertContains(diagnosticsText, "audioMasterDouble={snapshot.FlashbackPlaybackAudioMasterDelayDoubles}");
         AssertContains(diagnosticsText, "health.FlashbackPlaybackSubmitFailures > 0");
         AssertContains(diagnosticsText, "\"flashback_export\"");
         AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");

@@ -1176,6 +1176,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackPlaybackFrameCount = health.FlashbackPlaybackFrameCount,
             FlashbackPlaybackLateFrames = health.FlashbackPlaybackLateFrames,
             FlashbackPlaybackDroppedFrames = health.FlashbackPlaybackDroppedFrames,
+            FlashbackPlaybackAudioMasterDelayDoubles = health.FlashbackPlaybackAudioMasterDelayDoubles,
+            FlashbackPlaybackAudioMasterDelayShrinks = health.FlashbackPlaybackAudioMasterDelayShrinks,
+            FlashbackPlaybackAudioMasterFallbacks = health.FlashbackPlaybackAudioMasterFallbacks,
             FlashbackPlaybackSegmentSwitches = health.FlashbackPlaybackSegmentSwitches,
             FlashbackPlaybackFmp4Reopens = health.FlashbackPlaybackFmp4Reopens,
             FlashbackPlaybackWriteHeadWaits = health.FlashbackPlaybackWriteHeadWaits,
@@ -1320,6 +1323,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 FlashbackPlaybackLastSubmitFailureUtcUnixMs = snapshot.FlashbackPlaybackLastSubmitFailureUtcUnixMs,
                 FlashbackPlaybackLastSubmitFailure = snapshot.FlashbackPlaybackLastSubmitFailure,
                 FlashbackPlaybackDroppedFrames = snapshot.FlashbackPlaybackDroppedFrames,
+                FlashbackPlaybackAudioMasterDelayDoubles = snapshot.FlashbackPlaybackAudioMasterDelayDoubles,
+                FlashbackPlaybackAudioMasterDelayShrinks = snapshot.FlashbackPlaybackAudioMasterDelayShrinks,
+                FlashbackPlaybackAudioMasterFallbacks = snapshot.FlashbackPlaybackAudioMasterFallbacks,
                 FlashbackPlaybackSegmentSwitches = snapshot.FlashbackPlaybackSegmentSwitches,
                 FlashbackPlaybackFmp4Reopens = snapshot.FlashbackPlaybackFmp4Reopens,
                 FlashbackPlaybackWriteHeadWaits = snapshot.FlashbackPlaybackWriteHeadWaits,
@@ -1724,6 +1730,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             DiagnosticsCategory.Flashback,
             $"Flashback playback is below target rate: observed={snapshot.FlashbackPlaybackObservedFps:0.##}fps target={snapshot.SelectedFrameRate:0.##}fps " +
             $"frames={snapshot.FlashbackPlaybackFrameCount} late={snapshot.FlashbackPlaybackLateFrames} dropped={snapshot.FlashbackPlaybackDroppedFrames} submitFailures={snapshot.FlashbackPlaybackSubmitFailures} " +
+            $"audioMasterDouble={snapshot.FlashbackPlaybackAudioMasterDelayDoubles} audioMasterShrink={snapshot.FlashbackPlaybackAudioMasterDelayShrinks} audioMasterFallback={snapshot.FlashbackPlaybackAudioMasterFallbacks} " +
             $"switches={snapshot.FlashbackPlaybackSegmentSwitches} fmp4Reopens={snapshot.FlashbackPlaybackFmp4Reopens} writeHeadWaits={snapshot.FlashbackPlaybackWriteHeadWaits}.",
             "Flashback playback returned to target rate.",
             throttleMs: 5000);
@@ -1735,7 +1742,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             DiagnosticsCategory.Flashback,
             $"Flashback playback frametime degraded: onePercentLow={snapshot.FlashbackPlaybackOnePercentLowFps:0.##}fps target={snapshot.SelectedFrameRate:0.##}fps " +
             $"p99={snapshot.FlashbackPlaybackP99FrameMs:0.##}ms max={snapshot.FlashbackPlaybackMaxFrameMs:0.##}ms slow={snapshot.FlashbackPlaybackSlowFramePercent:0.##}% " +
-            $"decodeP99={snapshot.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={snapshot.FlashbackPlaybackDecodeMaxMs:0.##}ms samples={snapshot.FlashbackPlaybackCadenceSampleCount}.",
+            $"decodeP99={snapshot.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={snapshot.FlashbackPlaybackDecodeMaxMs:0.##}ms samples={snapshot.FlashbackPlaybackCadenceSampleCount} " +
+            $"audioMasterDouble={snapshot.FlashbackPlaybackAudioMasterDelayDoubles} audioMasterShrink={snapshot.FlashbackPlaybackAudioMasterDelayShrinks} audioMasterFallback={snapshot.FlashbackPlaybackAudioMasterFallbacks}.",
             "Flashback playback frametime returned to target range.",
             throttleMs: 5000);
 
@@ -1973,7 +1981,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var playbackCommandLane =
             $"playback commands pending={health.FlashbackPlaybackPendingCommands}/{health.FlashbackPlaybackCommandQueueCapacity} maxPending={health.FlashbackPlaybackMaxPendingCommands} lastLatency={health.FlashbackPlaybackLastCommandQueueLatencyMs}ms maxLatency={health.FlashbackPlaybackMaxCommandQueueLatencyMs}ms lastQueued={health.FlashbackPlaybackLastCommandQueued} lastProcessed={health.FlashbackPlaybackLastCommandProcessed} queuedAge={playbackCommandQueueAgeMs}ms lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs} threadAlive={health.FlashbackPlaybackThreadAlive}";
         var playbackPerfLane =
-            $"playback perf state={health.FlashbackPlaybackState} fps={health.FlashbackPlaybackObservedFps:0.##}/{health.ExpectedFrameRate:0.##} 1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps p99={health.FlashbackPlaybackP99FrameMs:0.##}ms max={health.FlashbackPlaybackMaxFrameMs:0.##}ms slow={health.FlashbackPlaybackSlowFramePercent:0.##}% decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={health.FlashbackPlaybackDecodeMaxMs:0.##}ms samples={health.FlashbackPlaybackCadenceSampleCount} frames={health.FlashbackPlaybackFrameCount} late={health.FlashbackPlaybackLateFrames} dropped={health.FlashbackPlaybackDroppedFrames} submitFailures={health.FlashbackPlaybackSubmitFailures} switches={health.FlashbackPlaybackSegmentSwitches} fmp4Reopens={health.FlashbackPlaybackFmp4Reopens} writeHeadWaits={health.FlashbackPlaybackWriteHeadWaits} nearLiveSnaps={health.FlashbackPlaybackNearLiveSnaps} decodeErrorSnaps={health.FlashbackPlaybackDecodeErrorSnaps}";
+            $"playback perf state={health.FlashbackPlaybackState} fps={health.FlashbackPlaybackObservedFps:0.##}/{health.ExpectedFrameRate:0.##} 1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps p99={health.FlashbackPlaybackP99FrameMs:0.##}ms max={health.FlashbackPlaybackMaxFrameMs:0.##}ms slow={health.FlashbackPlaybackSlowFramePercent:0.##}% decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={health.FlashbackPlaybackDecodeMaxMs:0.##}ms samples={health.FlashbackPlaybackCadenceSampleCount} frames={health.FlashbackPlaybackFrameCount} late={health.FlashbackPlaybackLateFrames} dropped={health.FlashbackPlaybackDroppedFrames} audioMasterDouble={health.FlashbackPlaybackAudioMasterDelayDoubles} audioMasterShrink={health.FlashbackPlaybackAudioMasterDelayShrinks} audioMasterFallback={health.FlashbackPlaybackAudioMasterFallbacks} submitFailures={health.FlashbackPlaybackSubmitFailures} switches={health.FlashbackPlaybackSegmentSwitches} fmp4Reopens={health.FlashbackPlaybackFmp4Reopens} writeHeadWaits={health.FlashbackPlaybackWriteHeadWaits} nearLiveSnaps={health.FlashbackPlaybackNearLiveSnaps} decodeErrorSnaps={health.FlashbackPlaybackDecodeErrorSnaps}";
         var playbackSlow =
             string.Equals(health.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
             health.ExpectedFrameRate > 0 &&
