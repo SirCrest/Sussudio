@@ -176,18 +176,30 @@ static partial class Program
         {
             var orphan1 = Path.Combine(tempDir, "clip_a.mp4.tmp");
             var orphan2 = Path.Combine(tempDir, "clip_b.mp4.tmp");
+            var recentTemp = Path.Combine(tempDir, "clip_recent.mp4.tmp");
+            var lockedTemp = Path.Combine(tempDir, "clip_locked.mp4.tmp");
             var unrelated = Path.Combine(tempDir, "unrelated.mp4");
             var legacyTemp = Path.Combine(tempDir, "fb_export_temp_001.ts");
 
             File.WriteAllText(orphan1, "data");
             File.WriteAllText(orphan2, "data");
+            File.WriteAllText(recentTemp, "keep");
+            File.WriteAllText(lockedTemp, "keep");
             File.WriteAllText(unrelated, "keep");
             File.WriteAllText(legacyTemp, "keep");
+            var oldEnough = DateTime.UtcNow - TimeSpan.FromMinutes(30);
+            File.SetLastWriteTimeUtc(orphan1, oldEnough);
+            File.SetLastWriteTimeUtc(orphan2, oldEnough);
+            File.SetLastWriteTimeUtc(lockedTemp, oldEnough);
+
+            using var lockedStream = new FileStream(lockedTemp, FileMode.Open, FileAccess.Read, FileShare.None);
 
             cleanup.Invoke(null, new object[] { tempDir });
 
             AssertEqual(false, File.Exists(orphan1), "First mp4 temp deleted");
             AssertEqual(false, File.Exists(orphan2), "Second mp4 temp deleted");
+            AssertEqual(true, File.Exists(recentTemp), "Recent mp4 temp preserved");
+            AssertEqual(true, File.Exists(lockedTemp), "Locked mp4 temp preserved");
             AssertEqual(true, File.Exists(unrelated), "Unrelated file preserved");
             AssertEqual(true, File.Exists(legacyTemp), "Legacy TS temp preserved by mp4 cleanup");
         }

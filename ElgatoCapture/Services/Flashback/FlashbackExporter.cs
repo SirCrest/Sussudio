@@ -23,6 +23,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     private const int MaxSupportedInputStreams = 64;
     private const int ProgressHeartbeatIntervalMs = 1_000;
     private const int ExportLockWaitTimeoutSeconds = 30;
+    private static readonly TimeSpan OrphanTempFileMinimumAge = TimeSpan.FromMinutes(15);
 
     private readonly SemaphoreSlim _exportLock = new(1, 1);
     private readonly object _lifetimeSync = new();
@@ -2013,10 +2014,17 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         try
         {
+            var nowUtc = DateTime.UtcNow;
             foreach (var tmpFile in Directory.EnumerateFiles(directory, "*.mp4.tmp"))
             {
                 try
                 {
+                    if (!CanDeleteOrphanedTempFile(tmpFile, nowUtc))
+                    {
+                        Logger.Log($"FLASHBACK_EXPORT_ORPHAN_CLEANUP_SKIP file='{Path.GetFileName(tmpFile)}' reason=active_or_recent");
+                        continue;
+                    }
+
                     File.Delete(tmpFile);
                     Logger.Log($"FLASHBACK_EXPORT_ORPHAN_CLEANUP deleted='{Path.GetFileName(tmpFile)}'");
                 }
@@ -2029,6 +2037,25 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_EXPORT_ORPHAN_SCAN_FAIL dir='{directory}' type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private static bool CanDeleteOrphanedTempFile(string tmpFile, DateTime nowUtc)
+    {
+        var lastWriteUtc = File.GetLastWriteTimeUtc(tmpFile);
+        if (lastWriteUtc == DateTime.MinValue || nowUtc - lastWriteUtc < OrphanTempFileMinimumAge)
+        {
+            return false;
+        }
+
+        try
+        {
+            using var stream = new FileStream(tmpFile, FileMode.Open, FileAccess.Read, FileShare.None);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return false;
         }
     }
 }
