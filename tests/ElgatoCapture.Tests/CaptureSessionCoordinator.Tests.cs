@@ -160,7 +160,7 @@ static partial class Program
         AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackGoLive), out var controller)");
         AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackClearInOutPoints), out var controller)");
         AssertContains(coordinatorText, "private bool TryGetActiveFlashback(\n        string command,");
-        AssertContains(coordinatorText, "var reason = controller == null\n            ? \"missing_controller\"\n            : !controller.IsInitialized\n                ? \"not_initialized\"\n                : $\"state_{controller.State}\";");
+        AssertContains(coordinatorText, "var reason = controller == null\n            ? \"missing_controller\"\n            : controller.IsDisposed\n                ? \"disposed\"\n                : !controller.IsInitialized\n                ? \"not_initialized\"\n                : $\"state_{controller.State}\";");
         AssertContains(coordinatorText, "Logger.Log($\"FLASHBACK_COORD_COMMAND_REJECTED command={command} reason={reason}\");");
 
         return Task.CompletedTask;

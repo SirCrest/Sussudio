@@ -284,7 +284,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     {
         ThrowIfDisposed();
         var controller = _captureService.FlashbackPlaybackController;
-        return controller == null
+        return controller == null || controller.IsDisposed
             ? FlashbackPlaybackSnapshot.Disabled
             : new FlashbackPlaybackSnapshot(
                 true,
@@ -400,14 +400,16 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     {
         ThrowIfDisposed();
         controller = _captureService.FlashbackPlaybackController;
-        if (controller is { IsInitialized: true, State: not FlashbackPlaybackState.Disabled })
+        if (controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled })
         {
             return true;
         }
 
         var reason = controller == null
             ? "missing_controller"
-            : !controller.IsInitialized
+            : controller.IsDisposed
+                ? "disposed"
+                : !controller.IsInitialized
                 ? "not_initialized"
                 : $"state_{controller.State}";
         Logger.Log($"FLASHBACK_COORD_COMMAND_REJECTED command={command} reason={reason}");

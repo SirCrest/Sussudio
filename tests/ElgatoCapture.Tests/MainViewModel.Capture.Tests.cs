@@ -76,7 +76,7 @@ static partial class Program
         var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(coordinatorText, "if (controller is { IsInitialized: true, State: not FlashbackPlaybackState.Disabled })\n        {\n            return true;\n        }");
+        AssertContains(coordinatorText, "if (controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled })\n        {\n            return true;\n        }");
         AssertMemberContains(automationText, "GetFlashbackPlaybackSnapshot", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(automationText, "FlashbackBeginScrub", "_sessionCoordinator.FlashbackBeginScrub(position)");
         AssertMemberContains(automationText, "FlashbackUpdateScrub", "return _sessionCoordinator.FlashbackUpdateScrub(position)");
@@ -254,6 +254,8 @@ static partial class Program
     private static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
     {
         var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("ElgatoCapture/Services/Capture/CaptureService.cs");
+        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+            .Replace("\r\n", "\n");
         var startVideoPreview = ExtractTextBetween(
             captureServiceText,
             "public Task StartVideoPreviewAsync",
@@ -317,6 +319,9 @@ static partial class Program
         AssertContains(captureServiceText, "_flashbackBackendSettings = null");
         AssertContains(captureServiceText, "FlashbackPlaybackController? playbackController = null;");
         AssertContains(captureServiceText, "(playbackController ?? _flashbackPlaybackController)?.Dispose();");
+        AssertContains(coordinatorText, "controller == null || controller.IsDisposed");
+        AssertContains(coordinatorText, "controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled }");
+        AssertContains(coordinatorText, "? \"disposed\"");
         AssertContains(captureServiceText, "!CanReuseFlashbackBackend(_flashbackBackendSettings, settings)");
         AssertContains(captureServiceText, "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,");
         var stopVideoPreviewCore = ExtractTextBetween(

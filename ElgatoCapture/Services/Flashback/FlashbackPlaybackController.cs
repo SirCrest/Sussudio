@@ -1629,6 +1629,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     }
 
     public bool IsInitialized => _initialized;
+    public bool IsDisposed => _disposedFlag != 0;
     public string DecoderHwAccel => _decoderHwAccel;
     public long PlaybackFrameCount => Interlocked.Read(ref _playbackFrameCount);
     public long PlaybackLateFrames => Interlocked.Read(ref _playbackLateFrames);
