@@ -62,6 +62,15 @@ public sealed class DiagnosticSessionResult
     public long FlashbackRecordingVideoEncoderPacketsWrittenDelta { get; init; }
     public long FlashbackRecordingIntegritySequenceGapsAtEnd { get; init; }
     public long FlashbackRecordingIntegrityQueueDroppedFramesAtEnd { get; init; }
+    public long PreviewD3DFrameStatsMissedRefreshDelta { get; init; }
+    public long PreviewD3DFrameStatsFailureDelta { get; init; }
+    public int PreviewD3DMaxRecentSlowFramesObserved { get; init; }
+    public string PreviewD3DLatestSlowFrameReason { get; init; } = string.Empty;
+    public double PreviewD3DLatestSlowFrameOverBudgetMs { get; init; }
+    public double PreviewD3DLatestSlowFramePresentIntervalMs { get; init; }
+    public double PreviewD3DLatestSlowFrameTotalFrameCpuMs { get; init; }
+    public double PreviewD3DLatestSlowFramePresentCallMs { get; init; }
+    public int PreviewD3DLatestSlowFramePendingFrameCount { get; init; }
     public bool RecordingVerificationRun { get; init; }
     public bool? RecordingVerificationSucceeded { get; init; }
     public string? RecordingVerificationMessage { get; init; }
@@ -558,6 +567,7 @@ public static class DiagnosticSessionRunner
         var playbackDecodeErrorSnapsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackDecodeErrorSnaps") ?? 0;
         var playbackLastWriteHeadWaitGapMsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs") ?? 0;
         var recordingMetrics = BuildFlashbackRecordingMetrics(samples);
+        var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
 
         var samplesPath = Path.Combine(outputDirectory, "samples.json");
         var frameLedgerPath = Path.Combine(outputDirectory, "frame-ledger.json");
@@ -618,6 +628,15 @@ public static class DiagnosticSessionRunner
             FlashbackRecordingVideoEncoderPacketsWrittenDelta = recordingMetrics.VideoEncoderPacketsWrittenDelta,
             FlashbackRecordingIntegritySequenceGapsAtEnd = recordingMetrics.IntegritySequenceGapsAtEnd,
             FlashbackRecordingIntegrityQueueDroppedFramesAtEnd = recordingMetrics.IntegrityQueueDroppedFramesAtEnd,
+            PreviewD3DFrameStatsMissedRefreshDelta = previewD3DMetrics.MissedRefreshDelta,
+            PreviewD3DFrameStatsFailureDelta = previewD3DMetrics.StatsFailureDelta,
+            PreviewD3DMaxRecentSlowFramesObserved = previewD3DMetrics.MaxRecentSlowFramesObserved,
+            PreviewD3DLatestSlowFrameReason = previewD3DMetrics.LatestSlowFrameReason,
+            PreviewD3DLatestSlowFrameOverBudgetMs = previewD3DMetrics.LatestSlowFrameOverBudgetMs,
+            PreviewD3DLatestSlowFramePresentIntervalMs = previewD3DMetrics.LatestSlowFramePresentIntervalMs,
+            PreviewD3DLatestSlowFrameTotalFrameCpuMs = previewD3DMetrics.LatestSlowFrameTotalFrameCpuMs,
+            PreviewD3DLatestSlowFramePresentCallMs = previewD3DMetrics.LatestSlowFramePresentCallMs,
+            PreviewD3DLatestSlowFramePendingFrameCount = previewD3DMetrics.LatestSlowFramePendingFrameCount,
             RecordingVerificationRun = verification.HasValue,
             RecordingVerificationSucceeded = verificationSucceeded,
             RecordingVerificationMessage = verification.HasValue
@@ -736,6 +755,17 @@ public static class DiagnosticSessionRunner
             $"packetsDelta={result.FlashbackRecordingVideoEncoderPacketsWrittenDelta} " +
             $"seqGapsEnd={result.FlashbackRecordingIntegritySequenceGapsAtEnd} " +
             $"queueDropsEnd={result.FlashbackRecordingIntegrityQueueDroppedFramesAtEnd}");
+        builder.AppendLine(
+            "Preview D3D Perf: " +
+            $"missedRefreshDelta={result.PreviewD3DFrameStatsMissedRefreshDelta} " +
+            $"statsFailureDelta={result.PreviewD3DFrameStatsFailureDelta} " +
+            $"maxRecentSlowFrames={result.PreviewD3DMaxRecentSlowFramesObserved} " +
+            $"latestSlowReason={FormatOptional(result.PreviewD3DLatestSlowFrameReason)} " +
+            $"overBudgetMs={result.PreviewD3DLatestSlowFrameOverBudgetMs:0.##} " +
+            $"presentIntervalMs={result.PreviewD3DLatestSlowFramePresentIntervalMs:0.##} " +
+            $"totalFrameCpuMs={result.PreviewD3DLatestSlowFrameTotalFrameCpuMs:0.##} " +
+            $"presentCallMs={result.PreviewD3DLatestSlowFramePresentCallMs:0.##} " +
+            $"pending={result.PreviewD3DLatestSlowFramePendingFrameCount}");
 
         builder.AppendLine($"Artifacts: {result.OutputDirectory}");
         builder.AppendLine($"  Summary: {result.SummaryPath}");
@@ -2832,6 +2862,92 @@ public static class DiagnosticSessionRunner
         public long VideoEncoderPacketsWrittenDelta { get; init; }
         public long IntegritySequenceGapsAtEnd { get; init; }
         public long IntegrityQueueDroppedFramesAtEnd { get; init; }
+    }
+
+    private static PreviewD3DMetrics BuildPreviewD3DMetrics(
+        JsonElement initialSnapshot,
+        JsonElement lastSnapshot,
+        IReadOnlyList<DiagnosticSessionSample> samples)
+    {
+        var missedRefreshStart = GetNullableLong(initialSnapshot, "PreviewD3DFrameStatsMissedRefreshCount") ?? 0;
+        var missedRefreshEnd = GetNullableLong(lastSnapshot, "PreviewD3DFrameStatsMissedRefreshCount") ?? 0;
+        var failureStart = GetNullableLong(initialSnapshot, "PreviewD3DFrameStatsFailureCount") ?? 0;
+        var failureEnd = GetNullableLong(lastSnapshot, "PreviewD3DFrameStatsFailureCount") ?? 0;
+        var metrics = new PreviewD3DMetrics
+        {
+            MissedRefreshDelta = Math.Max(0, missedRefreshEnd - missedRefreshStart),
+            StatsFailureDelta = Math.Max(0, failureEnd - failureStart)
+        };
+
+        foreach (var sample in samples)
+        {
+            metrics.MaxRecentSlowFramesObserved = Math.Max(
+                metrics.MaxRecentSlowFramesObserved,
+                CountArrayItems(sample.Snapshot, "PreviewD3DRecentSlowFrames"));
+            if (TryGetLatestSlowFrame(sample.Snapshot, out var slowFrame))
+            {
+                metrics.LatestSlowFrameReason = GetString(slowFrame, "Reason") ?? string.Empty;
+                metrics.LatestSlowFrameOverBudgetMs = GetDouble(slowFrame, "WorstOverBudgetMs");
+                metrics.LatestSlowFramePresentIntervalMs = GetDouble(slowFrame, "PresentIntervalMs");
+                metrics.LatestSlowFrameTotalFrameCpuMs = GetDouble(slowFrame, "TotalFrameCpuMs");
+                metrics.LatestSlowFramePresentCallMs = GetDouble(slowFrame, "PresentCallMs");
+                metrics.LatestSlowFramePendingFrameCount = GetInt(slowFrame, "PendingFrameCount");
+            }
+        }
+
+        metrics.MaxRecentSlowFramesObserved = Math.Max(
+            metrics.MaxRecentSlowFramesObserved,
+            CountArrayItems(lastSnapshot, "PreviewD3DRecentSlowFrames"));
+        if (TryGetLatestSlowFrame(lastSnapshot, out var lastSlowFrame))
+        {
+            metrics.LatestSlowFrameReason = GetString(lastSlowFrame, "Reason") ?? string.Empty;
+            metrics.LatestSlowFrameOverBudgetMs = GetDouble(lastSlowFrame, "WorstOverBudgetMs");
+            metrics.LatestSlowFramePresentIntervalMs = GetDouble(lastSlowFrame, "PresentIntervalMs");
+            metrics.LatestSlowFrameTotalFrameCpuMs = GetDouble(lastSlowFrame, "TotalFrameCpuMs");
+            metrics.LatestSlowFramePresentCallMs = GetDouble(lastSlowFrame, "PresentCallMs");
+            metrics.LatestSlowFramePendingFrameCount = GetInt(lastSlowFrame, "PendingFrameCount");
+        }
+
+        return metrics;
+    }
+
+    private sealed class PreviewD3DMetrics
+    {
+        public long MissedRefreshDelta { get; init; }
+        public long StatsFailureDelta { get; init; }
+        public int MaxRecentSlowFramesObserved { get; set; }
+        public string LatestSlowFrameReason { get; set; } = string.Empty;
+        public double LatestSlowFrameOverBudgetMs { get; set; }
+        public double LatestSlowFramePresentIntervalMs { get; set; }
+        public double LatestSlowFrameTotalFrameCpuMs { get; set; }
+        public double LatestSlowFramePresentCallMs { get; set; }
+        public int LatestSlowFramePendingFrameCount { get; set; }
+    }
+
+    private static int CountArrayItems(JsonElement snapshot, string propertyName)
+    {
+        return snapshot.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.Array
+            ? value.GetArrayLength()
+            : 0;
+    }
+
+    private static bool TryGetLatestSlowFrame(JsonElement snapshot, out JsonElement slowFrame)
+    {
+        if (snapshot.TryGetProperty("PreviewD3DRecentSlowFrames", out var frames) &&
+            frames.ValueKind == JsonValueKind.Array &&
+            frames.GetArrayLength() > 0)
+        {
+            slowFrame = frames.EnumerateArray().Last().Clone();
+            return true;
+        }
+
+        slowFrame = default;
+        return false;
+    }
+
+    private static string FormatOptional(string value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "none" : value;
     }
 
     private static async Task SampleLoopAsync(

@@ -600,6 +600,8 @@ static partial class Program
                                  "DiagnosticLikelyStage": "diagnostic_unavailable",
                                  "DiagnosticSummary": "Preview and recording are idle.",
                                  "DiagnosticEvidence": "Start preview or recording to collect live frame-lane diagnostics.",
+                                 "PreviewD3DFrameStatsMissedRefreshCount": 4,
+                                 "PreviewD3DFrameStatsFailureCount": 1,
                                  "FrameLedgerRecentEvents": []
                                }
                              }
@@ -612,6 +614,18 @@ static partial class Program
                                  "DiagnosticLikelyStage": "none",
                                  "DiagnosticSummary": "No degraded frame lane detected.",
                                  "DiagnosticEvidence": "All monitored frame lanes are within current thresholds.",
+                                 "PreviewD3DFrameStatsMissedRefreshCount": 7,
+                                 "PreviewD3DFrameStatsFailureCount": 2,
+                                 "PreviewD3DRecentSlowFrames": [
+                                   {
+                                     "Reason": "present_interval",
+                                     "WorstOverBudgetMs": 1.5,
+                                     "PresentIntervalMs": 9.8,
+                                     "TotalFrameCpuMs": 4.2,
+                                     "PresentCallMs": 0.7,
+                                     "PendingFrameCount": 1
+                                   }
+                                 ],
                                  "FrameLedgerRecentEvents": [
                                    {
                                      "SourceSequence": 7,
@@ -642,6 +656,7 @@ static partial class Program
             AssertCommandRequest(requests[2], "GetPerformanceTimeline", ("maxEntries", 240));
             AssertContains(result, "== Diagnostic Session: PASS ==");
             AssertContains(result, "Health: Healthy | Stage: none");
+            AssertContains(result, "Preview D3D Perf: missedRefreshDelta=3 statsFailureDelta=1 maxRecentSlowFrames=1 latestSlowReason=present_interval overBudgetMs=1.5 presentIntervalMs=9.8 totalFrameCpuMs=4.2 presentCallMs=0.7 pending=1");
             AssertContains(result, "Frame Ledger:");
 
             var summaryPath = Path.Combine(outputDirectory, "summary.json");

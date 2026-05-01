@@ -373,6 +373,11 @@ static partial class Program
         AssertContains(diagnosticSessionText, "Flashback Playback Perf:");
         AssertContains(diagnosticSessionText, "Flashback Playback Stages:");
         AssertContains(diagnosticSessionText, "FlashbackRecordingBackendObserved");
+        AssertContains(diagnosticSessionText, "PreviewD3DFrameStatsMissedRefreshDelta");
+        AssertContains(diagnosticSessionText, "PreviewD3DFrameStatsFailureDelta");
+        AssertContains(diagnosticSessionText, "PreviewD3DLatestSlowFrameReason");
+        AssertContains(diagnosticSessionText, "Preview D3D Perf:");
+        AssertContains(diagnosticSessionText, "latestSlowReason={FormatOptional(result.PreviewD3DLatestSlowFrameReason)}");
         AssertContains(diagnosticSessionText, "FlashbackRecordingFileGrowthObserved");
         AssertContains(diagnosticSessionText, "FlashbackRecordingVideoFramesSubmittedDelta");
         AssertContains(diagnosticSessionText, "FlashbackRecordingVideoEncoderPacketsWrittenDelta");
