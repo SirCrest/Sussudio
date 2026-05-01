@@ -974,7 +974,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         lock (_flashbackExportDiagnosticsLock)
         {
-            if (_flashbackExportId != exportId)
+            if (_flashbackExportId != exportId || !_flashbackExportActive)
             {
                 return;
             }
