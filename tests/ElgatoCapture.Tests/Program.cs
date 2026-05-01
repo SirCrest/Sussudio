@@ -57,6 +57,36 @@ static partial class Program
                 "Thread health probes default cleanly when inactive",
                 GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive),
             await RunCheckAsync(
+                "CaptureService encoder codec names map recording formats",
+                CaptureService_ResolveEncoderCodecName_MapsFormats),
+            await RunCheckAsync(
+                "CaptureService encoder output pixel format distinguishes HDR",
+                CaptureService_ResolveEncoderOutputPixelFormat_DistinguishesHdr),
+            await RunCheckAsync(
+                "CaptureService telemetry age computes bounded seconds",
+                CaptureService_ResolveTelemetryAgeSeconds_ComputesCorrectly),
+            await RunCheckAsync(
+                "CaptureService HDR warmup state resolves expected states",
+                CaptureService_ResolveHdrWarmupState_ReturnsCorrectStates),
+            await RunCheckAsync(
+                "CaptureService observed pixel format normalization is stable",
+                CaptureService_NormalizeObservedPixelFormat_NormalizesCorrectly),
+            await RunCheckAsync(
+                "CaptureService source telemetry backend maps origins",
+                CaptureService_ResolveSourceTelemetryBackend_MapsOrigins),
+            await RunCheckAsync(
+                "CaptureService encoder video profile maps formats and HDR",
+                CaptureService_ResolveEncoderVideoProfile_MapsFormatsAndHdr),
+            await RunCheckAsync(
+                "CaptureService tick age uses empty-tick sentinel",
+                CaptureService_ComputeTickAge_ReturnsCorrectValues),
+            await RunCheckAsync(
+                "CaptureService telemetry alignment detects mismatches",
+                CaptureService_ResolveTelemetryAlignment_DetectsMismatches),
+            await RunCheckAsync(
+                "CaptureService telemetry circuit state resolves open and closed",
+                CaptureService_ResolveSourceTelemetryCircuitState_ReturnsCorrectState),
+            await RunCheckAsync(
                 "Health snapshot uses cached MJPEG timing metrics when capture is gone",
                 GetHealthSnapshot_UsesCachedMjpegTimingMetricsWhenCaptureIsGone),
             await RunCheckAsync(
@@ -95,6 +125,42 @@ static partial class Program
             await RunCheckAsync(
                 "Recording verification result exposes expected properties",
                 RecordingVerificationResult_HasExpectedProperties),
+            await RunCheckAsync(
+                "LibAv encoder HDR bitstream filters map codecs",
+                LibAvEncoder_GetHdrBitstreamFilterName_MapsCodecs),
+            await RunCheckAsync(
+                "LibAv encoder expected frame sizes match pixel formats",
+                LibAvEncoder_GetExpectedFrameSizeBytes_CalculatesCorrectly),
+            await RunCheckAsync(
+                "LibAv encoder NVENC presets map correctly",
+                LibAvEncoder_MapNvencPreset_MapsCorrectly),
+            await RunCheckAsync(
+                "LibAv encoder throws on negative native errors",
+                LibAvEncoder_ThrowIfError_ThrowsOnNegative),
+            await RunCheckAsync(
+                "LibAv encoder rational inversion swaps numerator and denominator",
+                LibAvEncoder_Invert_SwapsNumeratorDenominator),
+            await RunCheckAsync(
+                "LibAv encoder HDR rationals parse correctly",
+                LibAvEncoder_ChromaticityAndLuminanceRationals_ParseCorrectly),
+            await RunCheckAsync(
+                "LibAv encoder accepts valid options",
+                LibAvEncoder_ValidateOptions_AcceptsValidOptions),
+            await RunCheckAsync(
+                "LibAv encoder rejects empty output path",
+                LibAvEncoder_ValidateOptions_RejectsEmptyOutputPath),
+            await RunCheckAsync(
+                "LibAv encoder rejects zero dimensions",
+                LibAvEncoder_ValidateOptions_RejectsZeroDimensions),
+            await RunCheckAsync(
+                "LibAv encoder rejects HDR with H264",
+                LibAvEncoder_ValidateOptions_RejectsHdrWithH264),
+            await RunCheckAsync(
+                "LibAv encoder rejects HDR without P010",
+                LibAvEncoder_ValidateOptions_RejectsHdrWithoutP010),
+            await RunCheckAsync(
+                "LibAv encoder rejects mismatched frame-rate parts",
+                LibAvEncoder_ValidateOptions_RejectsMismatchedFrameRateParts),
             await RunCheckAsync(
                 "Flashback integrity uses recording-scoped sequence gaps",
                 FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps),
