@@ -81,6 +81,21 @@ static partial class Program
                 "Recording integrity flags audio discontinuity and drift",
                 RecordingIntegritySummary_FlagsAudioDiscontinuityAndDrift),
             await RunCheckAsync(
+                "Recording verifier fails when output file is missing",
+                RecordingVerifier_ReturnsFailure_WhenFileDoesNotExist),
+            await RunCheckAsync(
+                "Recording verifier fails when output file is empty",
+                RecordingVerifier_ReturnsFailure_WhenFileIsEmpty),
+            await RunCheckAsync(
+                "Recording verifier fails when output path is null",
+                RecordingVerifier_ReturnsFailure_WhenOutputPathIsNull),
+            await RunCheckAsync(
+                "Recording verifier implements verification interface",
+                RecordingVerifier_ImplementsIRecordingVerifier),
+            await RunCheckAsync(
+                "Recording verification result exposes expected properties",
+                RecordingVerificationResult_HasExpectedProperties),
+            await RunCheckAsync(
                 "Flashback integrity uses recording-scoped sequence gaps",
                 FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps),
             await RunCheckAsync(
@@ -338,6 +353,27 @@ static partial class Program
             await RunCheckAsync(
                 "Unified video capture retains MJPEG pipeline on stop failure",
                 UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails),
+            await RunCheckAsync(
+                "MJPEG pipeline timing metrics calculate uniform samples",
+                ParallelMjpegDecodePipeline_ComputeTimingMetrics_CalculatesCorrectly),
+            await RunCheckAsync(
+                "MJPEG pipeline timing metrics calculate P95 samples",
+                ParallelMjpegDecodePipeline_ComputeTimingMetrics_P95Calculation),
+            await RunCheckAsync(
+                "MJPEG pipeline copy ring extracts insertion-order window",
+                ParallelMjpegDecodePipeline_CopyRing_ExtractsCorrectWindow),
+            await RunCheckAsync(
+                "MJPEG pipeline elapsed milliseconds uses stopwatch ticks",
+                ParallelMjpegDecodePipeline_GetElapsedMilliseconds_ComputesCorrectly),
+            await RunCheckAsync(
+                "MJPEG pipeline remaining timeout clamps past deadlines",
+                ParallelMjpegDecodePipeline_GetRemainingTimeout_ReturnsCorrectTimeSpan),
+            await RunCheckAsync(
+                "MJPEG pipeline timing metrics expose expected properties",
+                ParallelMjpegDecodePipeline_PipelineTimingMetrics_HasExpectedProperties),
+            await RunCheckAsync(
+                "Software MJPEG decoder exposes dimensions and NV12 size",
+                SoftwareMjpegDecoder_Properties_ExposeCorrectDimensions),
             await RunCheckAsync(
                 "Pooled video frame leases return buffer after final release",
                 PooledVideoFrame_LeaseLifecycle_ReturnsBufferAfterLastRelease),
@@ -702,6 +738,18 @@ static partial class Program
             await RunCheckAsync(
                 "Flashback playback metric reset clears decode timings",
                 FlashbackPlaybackController_ResetClearsDecodeMetrics),
+            await RunCheckAsync(
+                "Flashback decoder calculates NV12 frame buffer sizes",
+                FlashbackDecoder_CalculateFrameBufferSize_Nv12),
+            await RunCheckAsync(
+                "Flashback decoder calculates P010 frame buffer sizes",
+                FlashbackDecoder_CalculateFrameBufferSize_P010),
+            await RunCheckAsync(
+                "Flashback decoder defaults to closed state",
+                FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized),
+            await RunCheckAsync(
+                "Flashback decoder dispose before initialize is safe",
+                FlashbackDecoder_DisposeBeforeInitialize_DoesNotThrow),
             await RunCheckAsync(
                 "Flashback decoder unreferences discarded audio frames",
                 FlashbackDecoder_DiscardedAudioFramesAreUnreffed),
