@@ -201,7 +201,7 @@ public partial class MainViewModel
                 FlashbackPlaybackPosition = playback.PlaybackPosition;
             FlashbackGapFromLive = playback.GapFromLive;
         }
-        else if (FlashbackState == FlashbackPlaybackState.Disabled)
+        else if (FlashbackState != FlashbackPlaybackState.Live)
         {
             FlashbackState = FlashbackPlaybackState.Live;
         }
