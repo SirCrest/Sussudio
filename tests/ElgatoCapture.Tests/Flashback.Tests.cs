@@ -879,6 +879,14 @@ static partial class Program
         AssertContains(sourceText, "Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);\n                        RestoreLiveAudio();\n                        SafeResumePreviewSubmission(\"thread_stop\");\n                        SetState(FlashbackPlaybackState.Live);");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!EnsurePlaybackThread()) return false;\n        return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
         AssertContains(sourceText, "private bool EnsurePlaybackThread()");
+        AssertContains(sourceText, "private const int CommandQueueCapacity = 256;");
+        AssertContains(sourceText, "private Channel<PlaybackCommand> _commandChannel = CreateCommandChannel();");
+        AssertContains(sourceText, "_commandChannel = CreateCommandChannel();");
+        AssertContains(sourceText, "private static Channel<PlaybackCommand> CreateCommandChannel()");
+        AssertContains(sourceText, "Channel.CreateBounded<PlaybackCommand>");
+        AssertContains(sourceText, "new BoundedChannelOptions(CommandQueueCapacity)");
+        AssertContains(sourceText, "FullMode = BoundedChannelFullMode.Wait");
+        AssertDoesNotContain(sourceText, "Channel.CreateUnbounded<PlaybackCommand>");
         AssertContains(sourceText, "catch (Exception ex)\n        {\n            _lastCommandFailure = $\"thread_start_failed:{ex.GetType().Name}:{ex.Message}\";\n            Logger.Log($\"FLASHBACK_PLAYBACK_THREAD_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(sourceText, "DisposePlaybackCtsBestEffort(_playCts, \"thread_start_fail\");");
         AssertContains(sourceText, "_playbackThread = null;\n            Interlocked.Exchange(ref _playbackThreadStarted, 0);\n            return false;");

@@ -159,11 +159,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
     }
 
     // --- Playback thread ---
+    private const int CommandQueueCapacity = 256;
     private Thread? _playbackThread;
     private int _playbackThreadStarted;
     private CancellationTokenSource? _playCts;
-    private Channel<PlaybackCommand> _commandChannel =
-        Channel.CreateUnbounded<PlaybackCommand>(new UnboundedChannelOptions { SingleReader = true });
+    private Channel<PlaybackCommand> _commandChannel = CreateCommandChannel();
 
     public FlashbackPlaybackController(FlashbackBufferManager bufferManager)
     {
@@ -385,7 +385,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         // Recreate the command channel — the previous one was completed by StopPlaybackThread.
         // A completed channel silently drops all TryWrite calls.
-        _commandChannel = Channel.CreateUnbounded<PlaybackCommand>(new UnboundedChannelOptions { SingleReader = true });
+        _commandChannel = CreateCommandChannel();
         _playCts = new CancellationTokenSource();
         var threadCts = _playCts;
         _playbackThread = new Thread(() => PlaybackThreadEntry(threadCts))
@@ -1992,6 +1992,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
             }
         }
     }
+
+    private static Channel<PlaybackCommand> CreateCommandChannel()
+        => Channel.CreateBounded<PlaybackCommand>(
+            new BoundedChannelOptions(CommandQueueCapacity)
+            {
+                SingleReader = true,
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
+            });
 
     private void ResetPlaybackMetrics()
     {
