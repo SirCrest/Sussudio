@@ -349,7 +349,9 @@ static partial class Program
                      "PreviewD3DPresentCallP95Ms",
                      "PreviewD3DTotalFrameCpuP95Ms",
                      "PreviewD3DFrameStatsRecentMissedRefreshCount",
-                     "PreviewD3DFrameStatsRecentFailureCount"
+                     "PreviewD3DFrameStatsRecentFailureCount",
+                     "PreviewD3DLastRenderedSchedulerToPresentMs",
+                     "PreviewD3DLastDropReason"
                  })
         {
             AssertNotNull(performanceTimelineEntryType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PerformanceTimelineEntry.{prop}");

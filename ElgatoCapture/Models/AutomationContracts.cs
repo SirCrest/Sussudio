@@ -894,6 +894,8 @@ public sealed class PerformanceTimelineEntry
     public double PreviewD3DTotalFrameCpuP95Ms { get; init; }
     public long PreviewD3DFrameStatsRecentMissedRefreshCount { get; init; }
     public long PreviewD3DFrameStatsRecentFailureCount { get; init; }
+    public double PreviewD3DLastRenderedSchedulerToPresentMs { get; init; }
+    public string PreviewD3DLastDropReason { get; init; } = string.Empty;
     public long PipelineLatencyMs { get; init; }
     public double MemoryWorkingSetMb { get; init; }
     public double MemoryManagedHeapMb { get; init; }

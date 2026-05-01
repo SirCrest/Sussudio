@@ -55,6 +55,8 @@ public static class PerformanceTimelineTools
                 PreviewD3DTotalP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DTotalFrameCpuP95Ms"),
                 PreviewD3DRecentMissed = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentMissedRefreshCount"),
                 PreviewD3DRecentFailures = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentFailureCount"),
+                PreviewD3DSchedulerToPresentMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DLastRenderedSchedulerToPresentMs"),
+                PreviewD3DLastDropReason = AutomationSnapshotFormatter.Get(item, "PreviewD3DLastDropReason"),
                 LatencyMs = AutomationSnapshotFormatter.GetLong(item, "PipelineLatencyMs"),
                 WorkingMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryWorkingSetMb"),
                 ManagedMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryManagedHeapMb"),
@@ -75,14 +77,14 @@ public static class PerformanceTimelineTools
         var builder = new StringBuilder();
         builder.AppendLine($"Performance Timeline ({entries.Count} samples)");
         builder.AppendLine();
-        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | D3DQ | D3DPrs | D3DTot | D3DMiss | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
-        builder.AppendLine(new string('-', 200));
+        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | D3DQ | D3DPrs | D3DTot | D3DSch | D3DMiss | D3DDrop      | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
+        builder.AppendLine(new string('-', 225));
 
         foreach (var e in entries)
         {
             builder.AppendLine(string.Format(
                 CultureInfo.InvariantCulture,
-                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,4} | {9,6:F1} | {10,6:F1} | {11,7} | {12,4} | {13,7} | {14,5} | {15,6:F1} | {16,6:F1} | {17,4} | {18,4} | {19,4} | {20,4:F1} | {21,4} | {22,4}",
+                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,4} | {9,6:F1} | {10,6:F1} | {11,6:F1} | {12,7} | {13,-12} | {14,4} | {15,7} | {16,5} | {17,6:F1} | {18,6:F1} | {19,4} | {20,4} | {21,4} | {22,4:F1} | {23,4} | {24,4}",
                 e.Timestamp,
                 e.CaptureAvgMs,
                 e.CaptureP95Ms,
@@ -94,7 +96,9 @@ public static class PerformanceTimelineTools
                 e.PreviewD3DPending,
                 e.PreviewD3DPresentP95Ms,
                 e.PreviewD3DTotalP95Ms,
+                e.PreviewD3DSchedulerToPresentMs,
                 e.PreviewD3DRecentMissed,
+                CompactCell(e.PreviewD3DLastDropReason, 12),
                 e.VidQueue,
                 e.VidDrops,
                 e.LatencyMs,
@@ -124,8 +128,10 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Preview Slow%:  {first.PreviewSlowPct:F1}% -> {last.PreviewSlowPct:F1}% (delta: {last.PreviewSlowPct - first.PreviewSlowPct:+0.0;-0.0;0.0}%)");
             builder.AppendLine($"D3D Present P95:{first.PreviewD3DPresentP95Ms:F1}ms -> {last.PreviewD3DPresentP95Ms:F1}ms (delta: {last.PreviewD3DPresentP95Ms - first.PreviewD3DPresentP95Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"D3D Total P95:  {first.PreviewD3DTotalP95Ms:F1}ms -> {last.PreviewD3DTotalP95Ms:F1}ms (delta: {last.PreviewD3DTotalP95Ms - first.PreviewD3DTotalP95Ms:+0.0;-0.0;0.0}ms)");
+            builder.AppendLine($"D3D Sched->Prs: {first.PreviewD3DSchedulerToPresentMs:F1}ms -> {last.PreviewD3DSchedulerToPresentMs:F1}ms (latest rendered frame)");
             builder.AppendLine($"D3D Missed:     {first.PreviewD3DRecentMissed} -> {last.PreviewD3DRecentMissed} (latest-window delta: {last.PreviewD3DRecentMissed - first.PreviewD3DRecentMissed:+0;-0;0})");
             builder.AppendLine($"D3D Stat Fails: {first.PreviewD3DRecentFailures} -> {last.PreviewD3DRecentFailures} (latest-window delta: {last.PreviewD3DRecentFailures - first.PreviewD3DRecentFailures:+0;-0;0})");
+            builder.AppendLine($"D3D Last Drop:  {FormatOptional(last.PreviewD3DLastDropReason)}");
             builder.AppendLine($"Capture Rate:   {first.CaptureFps:F1}fps -> {last.CaptureFps:F1}fps (derived avg)");
             builder.AppendLine($"Capture 1% Low: {first.CaptureOnePercentLowFps:F1}fps -> {last.CaptureOnePercentLowFps:F1}fps");
             builder.AppendLine($"Preview Rate:   {first.PreviewFps:F1}fps -> {last.PreviewFps:F1}fps (derived avg)");
@@ -143,6 +149,19 @@ public static class PerformanceTimelineTools
     private static string GetMessage(JsonElement response)
     {
         return AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
+    }
+
+    private static string FormatOptional(string value)
+        => string.IsNullOrWhiteSpace(value) ? "none" : value.Trim();
+
+    private static string CompactCell(string value, int maxLength)
+    {
+        var compact = FormatOptional(value)
+            .Replace('\r', ' ')
+            .Replace('\n', ' ')
+            .Replace('|', '/');
+
+        return compact.Length <= maxLength ? compact : compact[..Math.Max(0, maxLength - 1)] + "~";
     }
 
     private sealed class TimelineRow
@@ -166,6 +185,8 @@ public static class PerformanceTimelineTools
         public double PreviewD3DTotalP95Ms { get; init; }
         public long PreviewD3DRecentMissed { get; init; }
         public long PreviewD3DRecentFailures { get; init; }
+        public double PreviewD3DSchedulerToPresentMs { get; init; }
+        public string PreviewD3DLastDropReason { get; init; } = string.Empty;
         public long LatencyMs { get; init; }
         public double WorkingMb { get; init; }
         public double ManagedMb { get; init; }

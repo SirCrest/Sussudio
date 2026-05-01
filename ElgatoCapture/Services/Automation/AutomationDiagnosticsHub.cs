@@ -1209,6 +1209,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 PreviewD3DTotalFrameCpuP95Ms = snapshot.PreviewD3DTotalFrameCpuP95Ms,
                 PreviewD3DFrameStatsRecentMissedRefreshCount = snapshot.PreviewD3DFrameStatsRecentMissedRefreshCount,
                 PreviewD3DFrameStatsRecentFailureCount = snapshot.PreviewD3DFrameStatsRecentFailureCount,
+                PreviewD3DLastRenderedSchedulerToPresentMs = snapshot.PreviewD3DLastRenderedSchedulerToPresentMs,
+                PreviewD3DLastDropReason = snapshot.PreviewD3DLastDropReason,
                 PipelineLatencyMs = snapshot.EstimatedPipelineLatencyMs,
                 MemoryWorkingSetMb = snapshot.MemoryWorkingSetMb,
                 MemoryManagedHeapMb = snapshot.MemoryManagedHeapMb,
