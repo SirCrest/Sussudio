@@ -691,6 +691,9 @@ static partial class Program
         AssertContains(source, "FlashbackPlaybackDecodeP99Ms");
         AssertContains(source, "FlashbackPlaybackPendingCommands");
         AssertContains(source, "FlashbackPlaybackSubmitFailures");
+        AssertContains(source, "FlashbackPlaybackLastSubmitFailureUtcUnixMs");
+        AssertContains(source, "FlashbackPlaybackLastSubmitFailure");
+        AssertContains(source, "lastSubmitFailure");
         AssertContains(source, "FlashbackPlaybackSegmentSwitches");
         AssertContains(source, "FlashbackPlaybackFmp4Reopens");
         AssertContains(source, "FlashbackPlaybackWriteHeadWaits");

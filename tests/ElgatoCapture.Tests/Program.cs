@@ -1407,6 +1407,8 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackNearLiveSnaps"), "AutomationSnapshot.FlashbackPlaybackNearLiveSnaps");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeErrorSnaps"), "AutomationSnapshot.FlashbackPlaybackDecodeErrorSnaps");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSubmitFailures"), "AutomationSnapshot.FlashbackPlaybackSubmitFailures");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastSubmitFailureUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastSubmitFailureUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastSubmitFailure"), "AutomationSnapshot.FlashbackPlaybackLastSubmitFailure");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastSegmentSwitchUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastSegmentSwitchUtcUnixMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastFmp4ReopenUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastFmp4ReopenUtcUnixMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastWriteHeadWaitGapMs"), "AutomationSnapshot.FlashbackPlaybackLastWriteHeadWaitGapMs");

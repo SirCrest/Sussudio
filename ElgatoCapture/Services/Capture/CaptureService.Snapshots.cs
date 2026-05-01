@@ -1418,6 +1418,8 @@ public partial class CaptureService
             FlashbackPlaybackNearLiveSnaps = fbPlayback?.PlaybackNearLiveSnaps ?? 0,
             FlashbackPlaybackDecodeErrorSnaps = fbPlayback?.PlaybackDecodeErrorSnaps ?? 0,
             FlashbackPlaybackSubmitFailures = fbPlayback?.PlaybackSubmitFailures ?? 0,
+            FlashbackPlaybackLastSubmitFailureUtcUnixMs = fbPlayback?.LastSubmitFailureUtcUnixMs ?? 0,
+            FlashbackPlaybackLastSubmitFailure = fbPlayback?.LastSubmitFailure ?? string.Empty,
             FlashbackPlaybackLastSegmentSwitchUtcUnixMs = fbPlayback?.LastSegmentSwitchUtcUnixMs ?? 0,
             FlashbackPlaybackLastFmp4ReopenUtcUnixMs = fbPlayback?.LastFmp4ReopenUtcUnixMs ?? 0,
             FlashbackPlaybackLastWriteHeadWaitGapMs = fbPlayback?.LastWriteHeadWaitGapMs ?? 0,

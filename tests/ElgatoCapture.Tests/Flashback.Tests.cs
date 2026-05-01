@@ -1679,10 +1679,14 @@ static partial class Program
         AssertContains(sourceText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
         AssertContains(sourceText, "if (!TryValidatePreviewFrame(frame, out var skipReason))");
         AssertContains(sourceText, "Interlocked.Increment(ref _playbackSubmitFailures);");
+        AssertContains(sourceText, "SetLastSubmitFailure($\"{operation}:{skipReason}\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_{skipReason}\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SUBMIT_SKIP op={operation} reason={skipReason}");
         AssertContains(sourceText, "public long PlaybackSubmitFailures => Interlocked.Read(ref _playbackSubmitFailures);");
+        AssertContains(sourceText, "public long LastSubmitFailureUtcUnixMs => Interlocked.Read(ref _lastSubmitFailureUtcUnixMs);");
+        AssertContains(sourceText, "public string LastSubmitFailure => _lastSubmitFailure;");
         AssertContains(sourceText, "Interlocked.Exchange(ref _playbackSubmitFailures, 0);");
+        AssertContains(sourceText, "ClearLastSubmitFailure();");
         AssertContains(sourceText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
         AssertContains(sourceText, "reason = \"invalid_dimensions\";");
         AssertContains(sourceText, "reason = \"null_texture\";");
@@ -1690,6 +1694,7 @@ static partial class Program
         AssertContains(sourceText, "reason = \"invalid_data_length\";");
         AssertContains(sourceText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_RELEASE_HELD_FRAME_WARN");
+        AssertContains(sourceText, "SetLastSubmitFailure($\"{operation}:submit_fail:{ex.GetType().Name}\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_submit_fail\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_previousHeldFrame, \"previous_frame\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip\");");

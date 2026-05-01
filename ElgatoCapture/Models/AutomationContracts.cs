@@ -819,6 +819,8 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackNearLiveSnaps { get; init; }
     public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
     public long FlashbackPlaybackSubmitFailures { get; init; }
+    public long FlashbackPlaybackLastSubmitFailureUtcUnixMs { get; init; }
+    public string FlashbackPlaybackLastSubmitFailure { get; init; } = string.Empty;
     public long FlashbackPlaybackLastSegmentSwitchUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastFmp4ReopenUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
@@ -938,6 +940,8 @@ public sealed class PerformanceTimelineEntry
     public int FlashbackPlaybackMaxPendingCommands { get; init; }
     public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }
     public long FlashbackPlaybackSubmitFailures { get; init; }
+    public long FlashbackPlaybackLastSubmitFailureUtcUnixMs { get; init; }
+    public string FlashbackPlaybackLastSubmitFailure { get; init; } = string.Empty;
     public long FlashbackPlaybackDroppedFrames { get; init; }
     public long FlashbackPlaybackSegmentSwitches { get; init; }
     public long FlashbackPlaybackFmp4Reopens { get; init; }
