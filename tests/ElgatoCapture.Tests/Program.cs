@@ -619,6 +619,9 @@ static partial class Program
                 "Flashback decoder input streams and frame sizes are bounded",
                 FlashbackDecoder_InputStreamsAndFrameSizesAreBounded),
             await RunCheckAsync(
+                "Flashback decoder audio output buffers are bounded",
+                FlashbackDecoder_AudioOutputBuffersAreBounded),
+            await RunCheckAsync(
                 "Flashback decoder held-frame cleanup is best effort",
                 FlashbackDecoder_HeldFrameCleanupIsBestEffort),
             await RunCheckAsync(
