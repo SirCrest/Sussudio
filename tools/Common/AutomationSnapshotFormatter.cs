@@ -91,6 +91,11 @@ internal static class AutomationSnapshotFormatter
             $"WASAPI Playback: callbacks={Get(snapshot, "WasapiPlaybackRenderCallbackCount")} " +
             $"silence={Get(snapshot, "WasapiPlaybackRenderSilenceCount")} " +
             $"queueDepth={Get(snapshot, "WasapiPlaybackQueueDepth")} " +
+            $"queueMs={Get(snapshot, "WasapiPlaybackQueueDurationMs")} " +
+            $"activeMs={Get(snapshot, "WasapiPlaybackActiveChunkDurationMs")} " +
+            $"endpointMs={Get(snapshot, "WasapiPlaybackEndpointQueuedDurationMs")} " +
+            $"bufferedMs={Get(snapshot, "WasapiPlaybackBufferedDurationMs")} " +
+            $"streamLatencyMs={Get(snapshot, "WasapiPlaybackStreamLatencyMs")} " +
             $"drops={Get(snapshot, "WasapiPlaybackQueueDropCount")} " +
             $"lastCallback={wasapiPlaybackLastRenderAgeMs}ms ago");
         builder.AppendLine();
@@ -370,7 +375,7 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine($"Playback Decode: avg={Get(snapshot, "FlashbackPlaybackDecodeAvgMs")}ms P95={Get(snapshot, "FlashbackPlaybackDecodeP95Ms")}ms P99={Get(snapshot, "FlashbackPlaybackDecodeP99Ms")}ms max={Get(snapshot, "FlashbackPlaybackDecodeMaxMs")}ms samples={Get(snapshot, "FlashbackPlaybackDecodeSampleCount")}");
         builder.AppendLine($"Playback Frames: total={Get(snapshot, "FlashbackPlaybackFrameCount")} late={Get(snapshot, "FlashbackPlaybackLateFrames")} slow={Get(snapshot, "FlashbackPlaybackSlowFrames")} ({Get(snapshot, "FlashbackPlaybackSlowFramePercent")}%) dropped={Get(snapshot, "FlashbackPlaybackDroppedFrames")} audioMasterDouble={Get(snapshot, "FlashbackPlaybackAudioMasterDelayDoubles")} audioMasterShrink={Get(snapshot, "FlashbackPlaybackAudioMasterDelayShrinks")} audioMasterFallback={Get(snapshot, "FlashbackPlaybackAudioMasterFallbacks")} lastDrop={Get(snapshot, "FlashbackPlaybackLastDropReason", "")} lastDropUtc={Get(snapshot, "FlashbackPlaybackLastDropUtcUnixMs")} submitFailures={Get(snapshot, "FlashbackPlaybackSubmitFailures")} lastSubmitFailure={Get(snapshot, "FlashbackPlaybackLastSubmitFailure", "")} lastSubmitFailureUtc={Get(snapshot, "FlashbackPlaybackLastSubmitFailureUtcUnixMs")}");
         builder.AppendLine($"Playback Stages: switches={Get(snapshot, "FlashbackPlaybackSegmentSwitches")} fmp4Reopens={Get(snapshot, "FlashbackPlaybackFmp4Reopens")} writeHeadWaits={Get(snapshot, "FlashbackPlaybackWriteHeadWaits")} nearLiveSnaps={Get(snapshot, "FlashbackPlaybackNearLiveSnaps")} decodeErrorSnaps={Get(snapshot, "FlashbackPlaybackDecodeErrorSnaps")} lastWriteHeadGap={Get(snapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs")}ms");
-        builder.AppendLine($"A/V Drift: {avDrift:+0.0;-0.0;0.0}ms (+ = audio ahead) | File: {Get(snapshot, "FlashbackFilePath")}");
+        builder.AppendLine($"A/V Drift: {avDrift:+0.0;-0.0;0.0}ms (+ = audio ahead) | Audio buffered={Get(snapshot, "WasapiPlaybackBufferedDurationMs")}ms queue={Get(snapshot, "WasapiPlaybackQueueDurationMs")}ms active={Get(snapshot, "WasapiPlaybackActiveChunkDurationMs")}ms endpoint={Get(snapshot, "WasapiPlaybackEndpointQueuedDurationMs")}ms streamLatency={Get(snapshot, "WasapiPlaybackStreamLatencyMs")}ms | File: {Get(snapshot, "FlashbackFilePath")}");
         builder.AppendLine();
     }
 

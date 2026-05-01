@@ -33,6 +33,12 @@ sample snapshots, export recent frame-ledger events, capture the performance
 timeline, optionally capture PresentMon, and verify recordings when the
 scenario records.
 
+Do not treat a single live snapshot as proof of cadence, 1% lows, 5% lows, or
+steady-state A/V sync. Use at least a 30-second run for 4K120 preview/playback
+smoke validation, prefer 60 seconds when making optimization decisions from
+1%/5% lows, and include the run duration plus sample interval in any reported
+result.
+
 CLI:
 
 ```powershell

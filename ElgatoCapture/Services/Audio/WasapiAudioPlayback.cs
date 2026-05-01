@@ -51,8 +51,12 @@ internal sealed class WasapiAudioPlayback : IDisposable
     private int _renderSilenceCount;
     private int _playbackQueueDropCount;
     private int _playbackQueueDepth;
+    private int _playbackQueueFrames;
+    private int _activeChunkRemainingFrames;
+    private int _endpointQueuedFrames;
     private long _lastRenderCallbackTickMs;
     private long _renderingPtsTicks; // PTS of chunk currently being rendered
+    private long _streamLatencyHundredNs;
 
     public long RenderCallbackCount => Interlocked.Read(ref _renderCallbackCount);
 
@@ -61,6 +65,17 @@ internal sealed class WasapiAudioPlayback : IDisposable
     public int PlaybackQueueDepth => Math.Max(0, Volatile.Read(ref _playbackQueueDepth));
 
     public int PlaybackQueueDropCount => Volatile.Read(ref _playbackQueueDropCount);
+
+    public double PlaybackQueueDurationMs => FramesToMilliseconds(Volatile.Read(ref _playbackQueueFrames));
+
+    public double PlaybackActiveChunkDurationMs => FramesToMilliseconds(Volatile.Read(ref _activeChunkRemainingFrames));
+
+    public double PlaybackEndpointQueuedDurationMs => FramesToMilliseconds(Volatile.Read(ref _endpointQueuedFrames));
+
+    public double PlaybackStreamLatencyMs => Interlocked.Read(ref _streamLatencyHundredNs) / 10_000.0;
+
+    public double PlaybackBufferedDurationMs =>
+        PlaybackQueueDurationMs + PlaybackActiveChunkDurationMs + PlaybackEndpointQueuedDurationMs;
 
     public long LastRenderCallbackTickMs => Interlocked.Read(ref _lastRenderCallbackTickMs);
 
@@ -125,6 +140,10 @@ internal sealed class WasapiAudioPlayback : IDisposable
             WasapiComInterop.ThrowIfFailed(
                 audioClient.GetBufferSize(out _bufferFrameCount),
                 "IAudioClient.GetBufferSize(render)");
+            if (audioClient.GetStreamLatency(out var streamLatencyHundredNs) >= 0)
+            {
+                Interlocked.Exchange(ref _streamLatencyHundredNs, streamLatencyHundredNs);
+            }
 
             renderEvent = new AutoResetEvent(false);
             WasapiComInterop.ThrowIfFailed(
@@ -147,6 +166,9 @@ internal sealed class WasapiAudioPlayback : IDisposable
             Volatile.Write(ref _renderSilenceCount, 0);
             Volatile.Write(ref _playbackQueueDropCount, 0);
             Volatile.Write(ref _playbackQueueDepth, 0);
+            Volatile.Write(ref _playbackQueueFrames, 0);
+            Volatile.Write(ref _activeChunkRemainingFrames, 0);
+            Volatile.Write(ref _endpointQueuedFrames, 0);
             Interlocked.Exchange(ref _lastRenderCallbackTickMs, 0);
             Interlocked.Exchange(ref _initialized, 1);
             Logger.Log("WASAPI playback initialized (f32le 48kHz stereo).");
@@ -271,6 +293,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 ReturnChunk(queuedChunk);
             }
             _activeChunkOffset = 0;
+            Volatile.Write(ref _activeChunkRemainingFrames, 0);
         }
         Interlocked.Exchange(ref _renderingPtsTicks, 0);
     }
@@ -357,6 +380,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
         Interlocked.Increment(ref _playbackQueueDepth);
         if (_sampleQueue.Writer.TryWrite(chunk))
         {
+            Interlocked.Add(ref _playbackQueueFrames, GetFrameCount(chunk));
             return true;
         }
 
@@ -478,6 +502,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 FillRenderBuffer(destinationSpan);
             }
             ApplyVolume(destinationSpan);
+            Volatile.Write(ref _endpointQueuedFrames, checked((int)Math.Min(int.MaxValue, paddingFrames + framesToWrite)));
         }
         finally
         {
@@ -498,6 +523,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
                 if (!TryDequeueChunk(out _activeChunk))
                 {
                     Interlocked.Increment(ref _renderSilenceCount);
+                    Volatile.Write(ref _activeChunkRemainingFrames, 0);
                     destination[written..].Clear();
                     return;
                 }
@@ -513,6 +539,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             {
                 destination[written..].Clear();
                 ReturnActiveChunk();
+                Volatile.Write(ref _activeChunkRemainingFrames, 0);
                 return;
             }
 
@@ -521,6 +548,7 @@ internal sealed class WasapiAudioPlayback : IDisposable
             activeBuffer.AsSpan(_activeChunkOffset, copyLength).CopyTo(destination[written..]);
             _activeChunkOffset += copyLength;
             UpdateRenderingPtsForActiveChunk();
+            UpdateActiveChunkRemainingFrames();
             written += copyLength;
         }
     }
@@ -539,11 +567,29 @@ internal sealed class WasapiAudioPlayback : IDisposable
         if (_sampleQueue.Reader.TryRead(out chunk))
         {
             DecrementPlaybackQueueDepth();
+            DecrementPlaybackQueueFrames(GetFrameCount(chunk));
             return true;
         }
 
         return false;
     }
+
+    private void UpdateActiveChunkRemainingFrames()
+    {
+        if (!_hasActiveChunk)
+        {
+            Volatile.Write(ref _activeChunkRemainingFrames, 0);
+            return;
+        }
+
+        var remainingBytes = Math.Max(0, _activeChunk.Length - _activeChunkOffset);
+        Volatile.Write(ref _activeChunkRemainingFrames, remainingBytes / OutputBlockAlign);
+    }
+
+    private static int GetFrameCount(PlaybackChunk chunk) => Math.Max(0, chunk.Length) / OutputBlockAlign;
+
+    private static double FramesToMilliseconds(int frames) =>
+        frames <= 0 ? 0 : frames * 1000.0 / OutputSampleRate;
 
     private void DecrementPlaybackQueueDepth()
     {
@@ -556,6 +602,29 @@ internal sealed class WasapiAudioPlayback : IDisposable
             }
 
             if (Interlocked.CompareExchange(ref _playbackQueueDepth, current - 1, current) == current)
+            {
+                return;
+            }
+        }
+    }
+
+    private void DecrementPlaybackQueueFrames(int frames)
+    {
+        if (frames <= 0)
+        {
+            return;
+        }
+
+        while (true)
+        {
+            var current = Volatile.Read(ref _playbackQueueFrames);
+            if (current <= 0)
+            {
+                return;
+            }
+
+            var next = Math.Max(0, current - frames);
+            if (Interlocked.CompareExchange(ref _playbackQueueFrames, next, current) == current)
             {
                 return;
             }

@@ -333,6 +333,11 @@ public sealed class AutomationSnapshot
     public int WasapiPlaybackRenderSilenceCount { get; init; }
     public int WasapiPlaybackQueueDepth { get; init; }
     public int WasapiPlaybackQueueDropCount { get; init; }
+    public double WasapiPlaybackQueueDurationMs { get; init; }
+    public double WasapiPlaybackActiveChunkDurationMs { get; init; }
+    public double WasapiPlaybackEndpointQueuedDurationMs { get; init; }
+    public double WasapiPlaybackBufferedDurationMs { get; init; }
+    public double WasapiPlaybackStreamLatencyMs { get; init; }
     public long WasapiPlaybackLastRenderTickMs { get; init; }
 
     public string RecordingBackend { get; init; } = "None";
@@ -1310,6 +1315,11 @@ public sealed class CaptureRuntimeSnapshot
     public int WasapiPlaybackRenderSilenceCount { get; init; }
     public int WasapiPlaybackQueueDepth { get; init; }
     public int WasapiPlaybackQueueDropCount { get; init; }
+    public double WasapiPlaybackQueueDurationMs { get; init; }
+    public double WasapiPlaybackActiveChunkDurationMs { get; init; }
+    public double WasapiPlaybackEndpointQueuedDurationMs { get; init; }
+    public double WasapiPlaybackBufferedDurationMs { get; init; }
+    public double WasapiPlaybackStreamLatencyMs { get; init; }
     public long WasapiPlaybackLastRenderTickMs { get; init; }
 
     public string? CurrentDeviceId { get; init; }

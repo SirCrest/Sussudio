@@ -738,6 +738,10 @@ Every substantial phase should finish with:
 - `git diff --check`.
 - Live app smoke test when the phase touches runtime behavior.
 - CLI/MCP snapshot check when diagnostics changed.
+- Live performance conclusions must come from a long-enough timed sample, not a single
+  instantaneous snapshot. For 4K120 preview/playback cadence, use at least a 30-second
+  steady-state sample, prefer 60 seconds when judging 1%/5% lows, and record the sample
+  duration plus sample interval beside the result.
 - Independent adversarial review before moving to the next feature area.
 - Commit with a clear rollback point.
 
