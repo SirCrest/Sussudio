@@ -457,6 +457,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             captureCadenceSampleCount: health.CaptureCadenceSampleCount,
             captureCadenceExpectedIntervalMs: health.CaptureCadenceExpectedIntervalMs,
             captureCadenceP95IntervalMs: health.CaptureCadenceP95IntervalMs,
+            captureCadenceExpectedFrameRate: health.ExpectedFrameRate,
+            captureCadenceOnePercentLowFps: health.CaptureCadenceOnePercentLowFps,
+            previewCadenceExpectedIntervalMs: previewRuntime.DisplayCadenceExpectedIntervalMs,
+            previewCadenceOnePercentLowFps: previewRuntime.DisplayCadenceOnePercentLowFps,
             captureCadenceDropPercent: health.CaptureCadenceEstimatedDropPercent,
             lastVerification: lastVerification);
         var (recentPreviewUnderflows, recentPreviewDeadlineDrops) = UpdatePreviewJitterRecentCounters(health, nowTick);
@@ -2490,6 +2494,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         int captureCadenceSampleCount,
         double captureCadenceExpectedIntervalMs,
         double captureCadenceP95IntervalMs,
+        double captureCadenceExpectedFrameRate,
+        double captureCadenceOnePercentLowFps,
+        double previewCadenceExpectedIntervalMs,
+        double previewCadenceOnePercentLowFps,
         double captureCadenceDropPercent,
         RecordingVerificationResult? lastVerification)
     {
@@ -2526,6 +2534,17 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                     reasons.Add($"capture p95 ratio {p95Ratio:0.###}x");
                 }
             }
+
+            if (IsCaptureOnePercentLowDegraded(
+                    captureCadenceExpectedFrameRate,
+                    captureCadenceSampleCount,
+                    captureCadenceOnePercentLowFps))
+            {
+                var target = captureCadenceExpectedFrameRate * CaptureOnePercentLowWarningRatio;
+                var deficit = Math.Max(0.0, target - captureCadenceOnePercentLowFps);
+                penalty += Math.Min(25, deficit * 1.5);
+                reasons.Add($"capture 1% low {captureCadenceOnePercentLowFps:0.##}fps");
+            }
         }
         else if (isRecording)
         {
@@ -2541,6 +2560,18 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 penalty += Math.Min(20, over * 2.0);
                 reasons.Add($"preview slow frames {previewCadenceSlowFramePercent:0.###}%");
             }
+        }
+
+        if (isPreviewing &&
+            IsPreviewOnePercentLowDegraded(
+                previewCadenceExpectedIntervalMs,
+                previewCadenceSampleCount,
+                previewCadenceOnePercentLowFps))
+        {
+            var target = 1000.0 / previewCadenceExpectedIntervalMs * PreviewOnePercentLowWarningRatio;
+            var deficit = Math.Max(0.0, target - previewCadenceOnePercentLowFps);
+            penalty += Math.Min(20, deficit * 1.25);
+            reasons.Add($"preview 1% low {previewCadenceOnePercentLowFps:0.##}fps");
         }
 
         if (lastVerification is { CadenceSampleCount: >= VerificationPerfectionMinSamples } verification &&

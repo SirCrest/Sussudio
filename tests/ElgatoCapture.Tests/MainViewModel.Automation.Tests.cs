@@ -335,6 +335,12 @@ static partial class Program
         AssertContains(diagnosticsText, "IsFlashbackPlaybackFrametimeDegraded(\n                snapshot.FlashbackPlaybackState");
         AssertContains(diagnosticsText, "IsCaptureOnePercentLowDegraded(\n                snapshot.ExpectedCaptureFrameRate");
         AssertContains(diagnosticsText, "IsPreviewOnePercentLowDegraded(\n                snapshot.PreviewCadenceExpectedIntervalMs");
+        AssertContains(diagnosticsText, "captureCadenceExpectedFrameRate: health.ExpectedFrameRate");
+        AssertContains(diagnosticsText, "captureCadenceOnePercentLowFps: health.CaptureCadenceOnePercentLowFps");
+        AssertContains(diagnosticsText, "previewCadenceExpectedIntervalMs: previewRuntime.DisplayCadenceExpectedIntervalMs");
+        AssertContains(diagnosticsText, "previewCadenceOnePercentLowFps: previewRuntime.DisplayCadenceOnePercentLowFps");
+        AssertContains(diagnosticsText, "reasons.Add($\"capture 1% low {captureCadenceOnePercentLowFps:0.##}fps\")");
+        AssertContains(diagnosticsText, "reasons.Add($\"preview 1% low {previewCadenceOnePercentLowFps:0.##}fps\")");
         AssertContains(diagnosticsText, "private static bool IsFlashbackRecordingQueueBackedUp(");
         AssertContains(diagnosticsText, "queueDepth >= Math.Ceiling(queueCapacity * FlashbackRecordingQueueDepthWarningRatio)");
         AssertContains(diagnosticsText, "oldestFrameAgeMs >= FlashbackRecordingQueueAgeWarningMs");
