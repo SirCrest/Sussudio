@@ -420,6 +420,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackCommandsDroppedAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackCommandsSkippedNotReadyAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackScrubUpdatesCoalescedAtEnd");
+        AssertContains(diagnosticSessionText, "private readonly record struct PlaybackCommandHealth");
+        AssertContains(diagnosticSessionText, "BuildPlaybackCommandHealth");
+        AssertContains(diagnosticSessionText, "nonCoalescedDropped={commandHealth.NonCoalescedDropped}");
+        AssertContains(diagnosticSessionText, "GetCounterDelta(snapshot, baselineSnapshot, \"FlashbackPlaybackCommandsDropped\")");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackObservedFpsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackAvgFrameMsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackP99FrameMsAtEnd");

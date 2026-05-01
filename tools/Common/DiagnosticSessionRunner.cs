@@ -128,6 +128,12 @@ public static class DiagnosticSessionRunner
         long EndPtsMs,
         bool IsActive);
 
+    private readonly record struct PlaybackCommandHealth(
+        long Dropped,
+        long Skipped,
+        long CoalescedScrub,
+        long NonCoalescedDropped);
+
     public static async Task<DiagnosticSessionResult> RunAsync(
         DiagnosticSessionOptions options,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
@@ -914,6 +920,9 @@ public static class DiagnosticSessionRunner
             return;
         }
 
+        var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
+
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback pause requested");
@@ -994,15 +1003,17 @@ public static class DiagnosticSessionRunner
 
         if (lastSnapshot.ValueKind == JsonValueKind.Object)
         {
-            var dropped = GetInt(lastSnapshot, "FlashbackPlaybackCommandsDropped");
-            var skipped = GetInt(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady");
+            var commandHealth = BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot);
             var state = GetString(lastSnapshot, "FlashbackPlaybackState") ?? "Unknown";
             var threadAlive = GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive");
             var maxPending = GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
             var maxLatencyMs = GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
-            if (dropped > 0 || skipped > 0)
+            if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0)
             {
-                warnings.Add($"flashback stress: dropped={dropped} skipped={skipped}");
+                warnings.Add(
+                    "flashback stress: " +
+                    $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
+                    $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped}");
             }
 
             if (maxPending > FlashbackStressMaxPlaybackPendingCommands ||
@@ -1787,6 +1798,9 @@ public static class DiagnosticSessionRunner
             return;
         }
 
+        var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
+
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback scrub stress pause requested");
@@ -1858,16 +1872,18 @@ public static class DiagnosticSessionRunner
             return;
         }
 
-        var dropped = GetInt(lastSnapshot, "FlashbackPlaybackCommandsDropped");
-        var skipped = GetInt(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady");
+        var commandHealth = BuildPlaybackCommandHealth(lastSnapshot, baselineSnapshot);
         var state = GetString(lastSnapshot, "FlashbackPlaybackState") ?? "Unknown";
         var threadAlive = GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive");
         var maxPending = GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
         var maxLatencyMs = GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
 
-        if (dropped > 0 || skipped > 0)
+        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0)
         {
-            warnings.Add($"flashback scrub stress: dropped={dropped} skipped={skipped}");
+            warnings.Add(
+                "flashback scrub stress: " +
+                $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
+                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped}");
         }
 
         if (maxPending > FlashbackScrubStressMaxPlaybackPendingCommands ||
@@ -2112,6 +2128,9 @@ public static class DiagnosticSessionRunner
             return;
         }
 
+        var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
+
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
             .ConfigureAwait(false);
         await sendCommandAsync(
@@ -2188,13 +2207,15 @@ public static class DiagnosticSessionRunner
             return;
         }
 
-        var dropped = GetInt(finalSnapshot, "FlashbackPlaybackCommandsDropped");
-        var skipped = GetInt(finalSnapshot, "FlashbackPlaybackCommandsSkippedNotReady");
+        var commandHealth = BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot);
         var pending = GetInt(finalSnapshot, "FlashbackPlaybackPendingCommands");
         var state = GetString(finalSnapshot, "FlashbackPlaybackState") ?? "Unknown";
-        if (dropped > 0 || skipped > 0)
+        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0)
         {
-            warnings.Add($"flashback export playback: dropped={dropped} skipped={skipped}");
+            warnings.Add(
+                "flashback export playback: " +
+                $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
+                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped}");
         }
 
         if (pending > 0)
@@ -2219,6 +2240,9 @@ public static class DiagnosticSessionRunner
             warnings.Add("flashback segment playback: Flashback buffer did not become playback-ready within 30s");
             return;
         }
+
+        var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
 
         var completedSegment = await WaitForFlashbackCompletedSegmentAsync(
                 sendCommandAsync,
@@ -2289,8 +2313,7 @@ public static class DiagnosticSessionRunner
         var frameCount = GetNullableLong(playbackSnapshot.Value, "FlashbackPlaybackFrameCount") ?? 0;
         var observedFps = GetDouble(playbackSnapshot.Value, "FlashbackPlaybackObservedFps");
         var lateFrames = GetNullableLong(playbackSnapshot.Value, "FlashbackPlaybackLateFrames") ?? 0;
-        var dropped = GetNullableLong(playbackSnapshot.Value, "FlashbackPlaybackCommandsDropped") ?? 0;
-        var skipped = GetNullableLong(playbackSnapshot.Value, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0;
+        var commandHealth = BuildPlaybackCommandHealth(playbackSnapshot.Value, baselineSnapshot);
         var pending = GetInt(playbackSnapshot.Value, "FlashbackPlaybackPendingCommands");
         actions.Add(
             "flashback segment playback observed " +
@@ -2315,11 +2338,12 @@ public static class DiagnosticSessionRunner
                 $"frames={frameCount} observedFps={observedFps:0.##}");
         }
 
-        if (dropped > 0 || skipped > 0 || pending > 0)
+        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || pending > 0)
         {
             warnings.Add(
                 "flashback segment playback: command queue unhealthy " +
-                $"dropped={dropped} skipped={skipped} pending={pending}");
+                $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
+                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} pending={pending}");
         }
 
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
@@ -2500,6 +2524,9 @@ public static class DiagnosticSessionRunner
             return;
         }
 
+        var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
+
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, null)
             .ConfigureAwait(false);
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "pause" }, null)
@@ -2602,17 +2629,19 @@ public static class DiagnosticSessionRunner
         }
 
         var pending = GetInt(finalSnapshot, "FlashbackPlaybackPendingCommands");
-        var dropped = GetInt(finalSnapshot, "FlashbackPlaybackCommandsDropped");
-        var skipped = GetInt(finalSnapshot, "FlashbackPlaybackCommandsSkippedNotReady");
+        var commandHealth = BuildPlaybackCommandHealth(finalSnapshot, baselineSnapshot);
         var state = GetString(finalSnapshot, "FlashbackPlaybackState") ?? "Unknown";
         if (pending > 0)
         {
             warnings.Add($"flashback range export: pending commands remained after go-live pending={pending}");
         }
 
-        if (dropped > 0 || skipped > 0)
+        if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0)
         {
-            warnings.Add($"flashback range export: dropped={dropped} skipped={skipped}");
+            warnings.Add(
+                "flashback range export: " +
+                $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
+                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped}");
         }
 
         if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))
@@ -3221,6 +3250,27 @@ public static class DiagnosticSessionRunner
 
         slowFrame = default;
         return false;
+    }
+
+    private static PlaybackCommandHealth BuildPlaybackCommandHealth(JsonElement snapshot, JsonElement baselineSnapshot)
+    {
+        var dropped = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackCommandsDropped");
+        var skipped = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackCommandsSkippedNotReady");
+        var coalescedScrub = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackScrubUpdatesCoalesced");
+        return new PlaybackCommandHealth(
+            dropped,
+            skipped,
+            coalescedScrub,
+            Math.Max(0, dropped - coalescedScrub));
+    }
+
+    private static long GetCounterDelta(JsonElement snapshot, JsonElement baselineSnapshot, string propertyName)
+    {
+        var current = GetNullableLong(snapshot, propertyName) ?? 0;
+        var baseline = baselineSnapshot.ValueKind == JsonValueKind.Object
+            ? GetNullableLong(baselineSnapshot, propertyName) ?? 0
+            : 0;
+        return Math.Max(0, current - baseline);
     }
 
     private static string FormatOptional(string value)
