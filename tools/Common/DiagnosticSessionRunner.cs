@@ -52,7 +52,7 @@ public sealed class DiagnosticSessionSample
 
 public static class DiagnosticSessionRunner
 {
-    private const int FlashbackStressMaxPlaybackPendingCommands = 2;
+    private const int FlashbackStressMaxPlaybackPendingCommands = 3;
     private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;
 
     public static async Task<DiagnosticSessionResult> RunAsync(
@@ -392,6 +392,17 @@ public static class DiagnosticSessionRunner
                 null)
             .ConfigureAwait(false);
         actions.Add("flashback seek requested");
+
+        foreach (var positionMs in new[] { 750, 1_250, 2_000, 3_250, 1_500 })
+        {
+            await Task.Delay(100, cancellationToken).ConfigureAwait(false);
+            await sendCommandAsync(
+                    "FlashbackAction",
+                    new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = positionMs },
+                    null)
+                .ConfigureAwait(false);
+        }
+        actions.Add("flashback scrub burst requested");
 
         await Task.Delay(500, cancellationToken).ConfigureAwait(false);
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "play" }, null)

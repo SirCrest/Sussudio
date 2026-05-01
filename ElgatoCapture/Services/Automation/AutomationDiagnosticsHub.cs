@@ -1559,9 +1559,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 audioLane);
         }
 
-        if ((rendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&
-             rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||
-            previewRuntime.DisplayCadenceSlowFramePercent > 1.0)
+        if (rendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&
+            rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)
         {
             return new DiagnosticEvaluation(
                 "Warning",
