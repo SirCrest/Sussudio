@@ -236,6 +236,8 @@ public class CaptureDiagnosticsSnapshot
     public bool FatalCleanupInProgress { get; init; }
     public bool FlashbackCleanupInProgress { get; init; }
     public bool FlashbackForceRotateActive { get; init; }
+    public bool FlashbackForceRotateRequested { get; init; }
+    public bool FlashbackForceRotateDraining { get; init; }
     public int FlashbackVideoQueueCapacity { get; init; }
     public int FlashbackVideoQueueMaxDepth { get; init; }
     public long FlashbackVideoFramesSubmittedToEncoder { get; init; }

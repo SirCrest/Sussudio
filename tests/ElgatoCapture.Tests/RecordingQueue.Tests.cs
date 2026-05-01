@@ -92,6 +92,8 @@ static partial class Program
         AssertOccursBefore(flashbackSource, "Cannot begin recording: flashback recording is already active.", "_bufferManager.PauseEviction();");
         AssertOccursBefore(flashbackSource, "_bufferManager.PauseEviction();", "Volatile.Write(ref _recordingActive, 1);");
         AssertContains(flashbackSource, "public bool IsForceRotateActive");
+        AssertContains(flashbackSource, "public bool IsForceRotateRequested");
+        AssertContains(flashbackSource, "public bool IsForceRotateDraining");
         AssertContains(flashbackSource, "WaitForForceRotateIdle");
         AssertContains(flashbackSource, "CompletePendingForceRotateWithEmptyResult");
         AssertContains(flashbackSource, "TaskCompletionSource<IReadOnlyList<string>>? supersededTcs;");
@@ -350,6 +352,8 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "FatalCleanupInProgress = fatalCleanupInProgress");
         AssertContains(captureSnapshotsSource, "FlashbackCleanupInProgress = flashbackCleanupInProgress");
         AssertContains(captureSnapshotsSource, "FlashbackForceRotateActive = fbSink?.IsForceRotateActive");
+        AssertContains(captureSnapshotsSource, "FlashbackForceRotateRequested = fbSink?.IsForceRotateRequested");
+        AssertContains(captureSnapshotsSource, "FlashbackForceRotateDraining = fbSink?.IsForceRotateDraining");
         AssertContains(captureSnapshotsSource, "FlashbackEncodingFailureMessage");
         AssertContains(captureSnapshotsSource, "FlashbackStartupCacheBytes = bufMgr?.StartupCacheBytes");
         AssertContains(captureSnapshotsSource, "FlashbackTempDriveFreeBytes = bufMgr?.TempDriveAvailableFreeBytes");
@@ -360,10 +364,14 @@ static partial class Program
         AssertContains(sharedFormatterSource, "FlashbackStartupCacheBytes");
         AssertContains(sharedFormatterSource, "FlashbackCleanupInProgress");
         AssertContains(sharedFormatterSource, "FlashbackForceRotateActive");
+        AssertContains(sharedFormatterSource, "FlashbackForceRotateRequested");
+        AssertContains(sharedFormatterSource, "FlashbackForceRotateDraining");
         AssertContains(ecctlFormatterSource, "FlashbackEncodingFailed");
         AssertContains(ecctlFormatterSource, "FlashbackStartupCacheBytes");
         AssertContains(ecctlFormatterSource, "FlashbackCleanupInProgress");
         AssertContains(ecctlFormatterSource, "FlashbackForceRotateActive");
+        AssertContains(ecctlFormatterSource, "FlashbackForceRotateRequested");
+        AssertContains(ecctlFormatterSource, "FlashbackForceRotateDraining");
         AssertContains(mcpAppStateSource, "FormatSnapshot(response, includeFlashback: true)");
         AssertOccursBefore(
             sharedFormatterSource,

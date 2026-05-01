@@ -100,6 +100,8 @@ static partial class Program
         SetPropertyOrBackingField(snapshot, "FatalCleanupInProgress", true);
         SetPropertyOrBackingField(snapshot, "FlashbackCleanupInProgress", true);
         SetPropertyOrBackingField(snapshot, "FlashbackForceRotateActive", true);
+        SetPropertyOrBackingField(snapshot, "FlashbackForceRotateRequested", true);
+        SetPropertyOrBackingField(snapshot, "FlashbackForceRotateDraining", true);
         SetPropertyOrBackingField(snapshot, "FlashbackVideoQueueCapacity", 180);
         SetPropertyOrBackingField(snapshot, "FlashbackVideoFramesSubmittedToEncoder", 21L);
         SetPropertyOrBackingField(snapshot, "FlashbackVideoEncoderPacketsWritten", 20L);
@@ -154,6 +156,8 @@ static partial class Program
         AssertEqual(true, GetBoolProperty(snapshot, "FatalCleanupInProgress"), "CaptureDiagnosticsSnapshot.FatalCleanupInProgress round-trip");
         AssertEqual(true, GetBoolProperty(snapshot, "FlashbackCleanupInProgress"), "CaptureDiagnosticsSnapshot.FlashbackCleanupInProgress round-trip");
         AssertEqual(true, GetBoolProperty(snapshot, "FlashbackForceRotateActive"), "CaptureDiagnosticsSnapshot.FlashbackForceRotateActive round-trip");
+        AssertEqual(true, GetBoolProperty(snapshot, "FlashbackForceRotateRequested"), "CaptureDiagnosticsSnapshot.FlashbackForceRotateRequested round-trip");
+        AssertEqual(true, GetBoolProperty(snapshot, "FlashbackForceRotateDraining"), "CaptureDiagnosticsSnapshot.FlashbackForceRotateDraining round-trip");
         AssertEqual(180, GetIntProperty(snapshot, "FlashbackVideoQueueCapacity"), "CaptureDiagnosticsSnapshot.FlashbackVideoQueueCapacity round-trip");
         AssertEqual(21L, GetLongProperty(snapshot, "FlashbackVideoFramesSubmittedToEncoder"), "CaptureDiagnosticsSnapshot.FlashbackVideoFramesSubmittedToEncoder round-trip");
         AssertEqual(20L, GetLongProperty(snapshot, "FlashbackVideoEncoderPacketsWritten"), "CaptureDiagnosticsSnapshot.FlashbackVideoEncoderPacketsWritten round-trip");
@@ -176,6 +180,8 @@ static partial class Program
         AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FatalCleanupInProgress"), "CaptureDiagnosticsSnapshot JSON FatalCleanupInProgress");
         AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FlashbackCleanupInProgress"), "CaptureDiagnosticsSnapshot JSON FlashbackCleanupInProgress");
         AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FlashbackForceRotateActive"), "CaptureDiagnosticsSnapshot JSON FlashbackForceRotateActive");
+        AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FlashbackForceRotateRequested"), "CaptureDiagnosticsSnapshot JSON FlashbackForceRotateRequested");
+        AssertEqual(true, GetBoolProperty(jsonRoundTrip, "FlashbackForceRotateDraining"), "CaptureDiagnosticsSnapshot JSON FlashbackForceRotateDraining");
         AssertEqual(180, GetIntProperty(jsonRoundTrip, "FlashbackVideoQueueCapacity"), "CaptureDiagnosticsSnapshot JSON FlashbackVideoQueueCapacity");
         AssertEqual(1, GetCountProperty(GetPropertyValue(jsonRoundTrip, "MjpegPerDecoder")!), "CaptureDiagnosticsSnapshot JSON MjpegPerDecoder count");
         AssertEqual(1, GetIntProperty(GetSingleEnumerableItem(GetPropertyValue(jsonRoundTrip, "MjpegPerDecoder")!), "WorkerIndex"), "CaptureDiagnosticsSnapshot JSON MjpegPerDecoder WorkerIndex");
@@ -901,6 +907,8 @@ static partial class Program
                 new("FatalCleanupInProgress", typeof(bool)),
                 new("FlashbackCleanupInProgress", typeof(bool)),
                 new("FlashbackForceRotateActive", typeof(bool)),
+                new("FlashbackForceRotateRequested", typeof(bool)),
+                new("FlashbackForceRotateDraining", typeof(bool)),
                 new("FlashbackVideoQueueCapacity", typeof(int)),
                 new("FlashbackVideoQueueMaxDepth", typeof(int)),
                 new("FlashbackVideoFramesSubmittedToEncoder", typeof(long)),

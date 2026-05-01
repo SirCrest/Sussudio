@@ -115,6 +115,8 @@ public static class PerformanceTimelineTools
                 FlashbackGpuQueueLastRejectReason = AutomationSnapshotFormatter.Get(item, "FlashbackGpuQueueLastRejectReason"),
                 FatalCleanupInProgress = AutomationSnapshotFormatter.GetBool(item, "FatalCleanupInProgress"),
                 FlashbackCleanupInProgress = AutomationSnapshotFormatter.GetBool(item, "FlashbackCleanupInProgress"),
+                FlashbackForceRotateRequested = AutomationSnapshotFormatter.GetBool(item, "FlashbackForceRotateRequested"),
+                FlashbackForceRotateDraining = AutomationSnapshotFormatter.GetBool(item, "FlashbackForceRotateDraining"),
                 FlashbackExportActive = AutomationSnapshotFormatter.GetBool(item, "FlashbackExportActive"),
                 FlashbackExportStatus = AutomationSnapshotFormatter.Get(item, "FlashbackExportStatus"),
                 FlashbackExportFailureKind = AutomationSnapshotFormatter.Get(item, "FlashbackExportFailureKind"),
@@ -186,7 +188,7 @@ public static class PerformanceTimelineTools
                 e.FlashbackPlaybackPendingCommands,
                 e.FlashbackPlaybackSubmitFailures,
                 FormatFlashbackStageCell(e),
-                FormatCleanupCell(e.FatalCleanupInProgress, e.FlashbackCleanupInProgress),
+                FormatCleanupCell(e.FatalCleanupInProgress, e.FlashbackCleanupInProgress, e.FlashbackForceRotateRequested, e.FlashbackForceRotateDraining),
                 CompactCell(e.FlashbackExportStatus, 7),
                 FormatExportFailureKind(e.FlashbackExportFailureKind),
                 e.FlashbackExportPercent,
@@ -249,7 +251,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Flashback Drops: submitFailures {first.FlashbackPlaybackSubmitFailures} -> {last.FlashbackPlaybackSubmitFailures}, lastSubmitFailure={FormatOptional(last.FlashbackPlaybackLastSubmitFailure)} failureUtc latest={last.FlashbackPlaybackLastSubmitFailureUtcUnixMs}, droppedFrames {first.FlashbackPlaybackDroppedFrames} -> {last.FlashbackPlaybackDroppedFrames}, lastDrop={FormatOptional(last.FlashbackPlaybackLastDropReason)} dropUtc latest={last.FlashbackPlaybackLastDropUtcUnixMs}, decodeSnaps {first.FlashbackPlaybackDecodeErrorSnaps} -> {last.FlashbackPlaybackDecodeErrorSnaps}");
             builder.AppendLine($"Flashback Enqueue Rejects: video {first.FlashbackVideoQueueRejectedFrames} -> {last.FlashbackVideoQueueRejectedFrames} last={FormatOptional(last.FlashbackVideoQueueLastRejectReason)}, gpu {first.FlashbackGpuQueueRejectedFrames} -> {last.FlashbackGpuQueueRejectedFrames} last={FormatOptional(last.FlashbackGpuQueueLastRejectReason)}");
             builder.AppendLine($"Flashback Stages: switches {first.FlashbackPlaybackSegmentSwitches} -> {last.FlashbackPlaybackSegmentSwitches}, fmp4Reopens {first.FlashbackPlaybackFmp4Reopens} -> {last.FlashbackPlaybackFmp4Reopens}, writeHeadWaits {first.FlashbackPlaybackWriteHeadWaits} -> {last.FlashbackPlaybackWriteHeadWaits}, nearLiveSnaps {first.FlashbackPlaybackNearLiveSnaps} -> {last.FlashbackPlaybackNearLiveSnaps}, lastWriteHeadGap latest={last.FlashbackPlaybackLastWriteHeadWaitGapMs}ms");
-            builder.AppendLine($"Cleanup State:  fatal={last.FatalCleanupInProgress} flashback={last.FlashbackCleanupInProgress}");
+            builder.AppendLine($"Cleanup State:  fatal={last.FatalCleanupInProgress} flashback={last.FlashbackCleanupInProgress} forceRotateRequested={last.FlashbackForceRotateRequested} forceRotateDraining={last.FlashbackForceRotateDraining}");
             builder.AppendLine($"Export State:    {FormatOptional(first.FlashbackExportStatus)} -> {FormatOptional(last.FlashbackExportStatus)} active={last.FlashbackExportActive} kind={FormatOptional(last.FlashbackExportFailureKind)}");
             builder.AppendLine($"Export Message:  {FormatOptional(last.FlashbackExportMessage)}");
             builder.AppendLine($"Export Progress: {first.FlashbackExportPercent:F1}% -> {last.FlashbackExportPercent:F1}% segments={last.FlashbackExportSegmentsProcessed}/{last.FlashbackExportTotalSegments}");
@@ -294,8 +296,8 @@ public static class PerformanceTimelineTools
         return compact.Length <= maxLength ? compact : compact[..Math.Max(0, maxLength - 1)] + "~";
     }
 
-    private static string FormatCleanupCell(bool fatalCleanup, bool flashbackCleanup)
-        => fatalCleanup ? "F" : flashbackCleanup ? "B" : "-";
+    private static string FormatCleanupCell(bool fatalCleanup, bool flashbackCleanup, bool forceRotateRequested, bool forceRotateDraining)
+        => fatalCleanup ? "F" : flashbackCleanup ? "B" : forceRotateDraining ? "D" : forceRotateRequested ? "R" : "-";
 
     private static string FormatJitterDepthCell(TimelineRow row)
         => row.MjpegPreviewJitterEnabled
@@ -510,6 +512,8 @@ public static class PerformanceTimelineTools
         public string FlashbackGpuQueueLastRejectReason { get; init; } = string.Empty;
         public bool FatalCleanupInProgress { get; init; }
         public bool FlashbackCleanupInProgress { get; init; }
+        public bool FlashbackForceRotateRequested { get; init; }
+        public bool FlashbackForceRotateDraining { get; init; }
         public bool FlashbackExportActive { get; init; }
         public string FlashbackExportStatus { get; init; } = string.Empty;
         public string FlashbackExportFailureKind { get; init; } = string.Empty;

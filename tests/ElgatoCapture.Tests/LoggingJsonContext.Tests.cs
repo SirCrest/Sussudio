@@ -71,6 +71,8 @@ static partial class Program
             SetPropertyOrBackingField(diagnostics, "FatalCleanupInProgress", true);
             SetPropertyOrBackingField(diagnostics, "FlashbackCleanupInProgress", true);
             SetPropertyOrBackingField(diagnostics, "FlashbackForceRotateActive", true);
+            SetPropertyOrBackingField(diagnostics, "FlashbackForceRotateRequested", true);
+            SetPropertyOrBackingField(diagnostics, "FlashbackForceRotateDraining", true);
             SetPropertyOrBackingField(diagnostics, "FlashbackGpuFramesDropped", 3L);
 
             var diagnosticsJson = SerializeWithLoggingJsonContext(
@@ -89,6 +91,8 @@ static partial class Program
                 AssertJsonBool(root, "FatalCleanupInProgress", true, "CaptureDiagnosticsSnapshot source-gen JSON FatalCleanupInProgress");
                 AssertJsonBool(root, "FlashbackCleanupInProgress", true, "CaptureDiagnosticsSnapshot source-gen JSON FlashbackCleanupInProgress");
                 AssertJsonBool(root, "FlashbackForceRotateActive", true, "CaptureDiagnosticsSnapshot source-gen JSON FlashbackForceRotateActive");
+                AssertJsonBool(root, "FlashbackForceRotateRequested", true, "CaptureDiagnosticsSnapshot source-gen JSON FlashbackForceRotateRequested");
+                AssertJsonBool(root, "FlashbackForceRotateDraining", true, "CaptureDiagnosticsSnapshot source-gen JSON FlashbackForceRotateDraining");
                 AssertJsonInt64(root, "FlashbackGpuFramesDropped", 3L, "CaptureDiagnosticsSnapshot source-gen JSON FlashbackGpuFramesDropped");
                 var decoderJson = AssertSingleJsonArrayItem(root, "MjpegPerDecoder");
                 AssertJsonInt32(decoderJson, "WorkerIndex", 7, "MjpegDecoderHealthSnapshot source-gen JSON WorkerIndex");

@@ -383,6 +383,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public bool IsForceRotateActive =>
         Volatile.Read(ref _forceRotateRequested) ||
         Volatile.Read(ref _forceRotateDraining);
+    public bool IsForceRotateRequested => Volatile.Read(ref _forceRotateRequested);
+    public bool IsForceRotateDraining => Volatile.Read(ref _forceRotateDraining);
 
     public bool CanBeginRecording
     {

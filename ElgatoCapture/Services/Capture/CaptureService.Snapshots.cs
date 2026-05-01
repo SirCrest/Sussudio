@@ -1573,6 +1573,8 @@ public partial class CaptureService
             FatalCleanupInProgress = fatalCleanupInProgress,
             FlashbackCleanupInProgress = flashbackCleanupInProgress,
             FlashbackForceRotateActive = fbSink?.IsForceRotateActive ?? false,
+            FlashbackForceRotateRequested = fbSink?.IsForceRotateRequested ?? false,
+            FlashbackForceRotateDraining = fbSink?.IsForceRotateDraining ?? false,
             FlashbackVideoQueueCapacity = fbSink?.VideoQueueCapacityFrames ?? 0,
             FlashbackVideoQueueMaxDepth = fbSink?.VideoQueueMaxDepth ?? 0,
             FlashbackVideoFramesSubmittedToEncoder = fbSink?.VideoFramesSubmittedToEncoder ?? 0,

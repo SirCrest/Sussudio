@@ -726,6 +726,8 @@ static partial class Program
         AssertContains(source, "Flashback Enqueue Rejects");
         AssertContains(source, "FatalCleanupInProgress");
         AssertContains(source, "FlashbackCleanupInProgress");
+        AssertContains(source, "FlashbackForceRotateRequested");
+        AssertContains(source, "FlashbackForceRotateDraining");
         AssertContains(source, "FlashbackExportFailureKind");
         AssertContains(source, "FlashbackExportPercent");
         AssertContains(source, "FlashbackExportInPointMs");
@@ -762,6 +764,8 @@ static partial class Program
         AssertContains(source, "Flashback Stages:");
         AssertContains(source, "failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
         AssertContains(source, "Cleanup State:");
+        AssertContains(source, "forceRotateRequested={last.FlashbackForceRotateRequested}");
+        AssertContains(source, "forceRotateDraining={last.FlashbackForceRotateDraining}");
         AssertContains(source, "kind={FormatOptional(last.FlashbackExportFailureKind)}");
         AssertContains(source, "Export Message:");
         AssertContains(source, "Export Progress:");

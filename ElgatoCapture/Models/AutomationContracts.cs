@@ -614,6 +614,8 @@ public sealed class AutomationSnapshot
     public bool FatalCleanupInProgress { get; init; }
     public bool FlashbackCleanupInProgress { get; init; }
     public bool FlashbackForceRotateActive { get; init; }
+    public bool FlashbackForceRotateRequested { get; init; }
+    public bool FlashbackForceRotateDraining { get; init; }
     public int FlashbackVideoQueueCapacity { get; init; }
     public int FlashbackVideoQueueMaxDepth { get; init; }
     public long FlashbackVideoFramesSubmittedToEncoder { get; init; }
@@ -988,6 +990,8 @@ public sealed class PerformanceTimelineEntry
     public string FlashbackGpuQueueLastRejectReason { get; init; } = string.Empty;
     public bool FatalCleanupInProgress { get; init; }
     public bool FlashbackCleanupInProgress { get; init; }
+    public bool FlashbackForceRotateRequested { get; init; }
+    public bool FlashbackForceRotateDraining { get; init; }
     public bool FlashbackExportActive { get; init; }
     public string FlashbackExportStatus { get; init; } = "NotStarted";
     public string FlashbackExportFailureKind { get; init; } = string.Empty;

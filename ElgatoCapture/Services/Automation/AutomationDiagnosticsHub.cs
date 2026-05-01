@@ -938,6 +938,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FatalCleanupInProgress = health.FatalCleanupInProgress,
             FlashbackCleanupInProgress = health.FlashbackCleanupInProgress,
             FlashbackForceRotateActive = health.FlashbackForceRotateActive,
+            FlashbackForceRotateRequested = health.FlashbackForceRotateRequested,
+            FlashbackForceRotateDraining = health.FlashbackForceRotateDraining,
             FlashbackTempDriveFreeBytes = health.FlashbackTempDriveFreeBytes,
             FlashbackStartupCacheBudgetBytes = health.FlashbackStartupCacheBudgetBytes,
             FlashbackStartupCacheBytes = health.FlashbackStartupCacheBytes,
@@ -1315,6 +1317,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 FlashbackGpuQueueLastRejectReason = snapshot.FlashbackGpuQueueLastRejectReason,
                 FatalCleanupInProgress = snapshot.FatalCleanupInProgress,
                 FlashbackCleanupInProgress = snapshot.FlashbackCleanupInProgress,
+                FlashbackForceRotateRequested = snapshot.FlashbackForceRotateRequested,
+                FlashbackForceRotateDraining = snapshot.FlashbackForceRotateDraining,
                 FlashbackExportActive = snapshot.FlashbackExportActive,
                 FlashbackExportStatus = snapshot.FlashbackExportStatus,
                 FlashbackExportFailureKind = snapshot.FlashbackExportFailureKind,
@@ -1642,7 +1646,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"recentSeqGaps={flashbackRecordingRecent.SequenceGaps} recentGpuOverloads={flashbackRecordingRecent.GpuFramesDropped} " +
             $"recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents} " +
             $"totals=dropped:{snapshot.FlashbackDroppedFrames},encoderDrops:{snapshot.FlashbackVideoEncoderDroppedFrames},seqGaps:{snapshot.FlashbackVideoSequenceGaps},gpuOverloads:{snapshot.FlashbackGpuFramesDropped} " +
-            $"forceRotate={snapshot.FlashbackForceRotateActive} " +
+            $"forceRotate={snapshot.FlashbackForceRotateActive} requested={snapshot.FlashbackForceRotateRequested} draining={snapshot.FlashbackForceRotateDraining} " +
             $"queue={snapshot.FlashbackVideoQueueDepth}/{snapshot.FlashbackVideoQueueCapacity} maxQueue={snapshot.FlashbackVideoQueueMaxDepth} " +
             $"backpressure={snapshot.FlashbackVideoBackpressureWaitMs}ms/{snapshot.FlashbackVideoBackpressureEvents} last={snapshot.FlashbackVideoBackpressureLastWaitMs}ms max={snapshot.FlashbackVideoBackpressureMaxWaitMs}ms.",
             "Flashback recording path returned to healthy range.",
@@ -1845,7 +1849,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var flashbackRecordingLane =
             $"flashback recording active={health.FlashbackActive} failed={health.FlashbackEncodingFailed} type={health.FlashbackEncodingFailureType ?? "None"} " +
             $"dropped={health.FlashbackDroppedFrames} encoderDrops={health.FlashbackVideoEncoderDroppedFrames} seqGaps={health.FlashbackVideoSequenceGaps} " +
-            $"gpuOverloads={health.FlashbackGpuFramesDropped} forceRotate={health.FlashbackForceRotateActive} queue={health.FlashbackVideoQueueDepth}/{health.FlashbackVideoQueueCapacity} maxQueue={health.FlashbackVideoQueueMaxDepth} " +
+            $"gpuOverloads={health.FlashbackGpuFramesDropped} forceRotate={health.FlashbackForceRotateActive} requested={health.FlashbackForceRotateRequested} draining={health.FlashbackForceRotateDraining} queue={health.FlashbackVideoQueueDepth}/{health.FlashbackVideoQueueCapacity} maxQueue={health.FlashbackVideoQueueMaxDepth} " +
             $"queueAgeMs={health.FlashbackVideoQueueOldestFrameAgeMs} backpressure={health.FlashbackVideoBackpressureWaitMs}ms/{health.FlashbackVideoBackpressureEvents} maxBackpressure={health.FlashbackVideoBackpressureMaxWaitMs}ms " +
             $"fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}";
         var exportFailureKind = string.IsNullOrWhiteSpace(health.FlashbackExportFailureKind)
