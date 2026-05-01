@@ -800,6 +800,9 @@ static partial class Program
         AssertContains(bufferText, "private static string BuildSessionDirectory(string tempDirectory, string sessionId)");
         AssertContains(bufferText, "Session id must be a simple file-name component.");
         AssertContains(bufferText, "Session id must resolve inside the flashback temp directory.");
+        AssertContains(bufferText, "var normalizedExtension = NormalizeSegmentExtension(extension);");
+        AssertContains(bufferText, "private static string NormalizeSegmentExtension(string extension)");
+        AssertContains(bufferText, "Flashback segment extension must be .ts or .mp4.");
         AssertContains(bufferText, "public long TempDriveAvailableFreeBytes => TryGetTempDriveAvailableFreeBytes(_options.TempDirectory);");
         AssertContains(bufferText, "private static bool IsPathUnderDirectory(string fullPath, string fullDirectoryRoot)");
         AssertContains(bufferText, "private static bool IsReparsePoint(FileSystemInfo info)");

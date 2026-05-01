@@ -333,7 +333,15 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     /// <summary>Sets the file extension for new segments (e.g. ".ts" or ".mp4").</summary>
-    public void SetSegmentExtension(string extension) => _segmentExtension = extension;
+    public void SetSegmentExtension(string extension)
+    {
+        var normalizedExtension = NormalizeSegmentExtension(extension);
+        lock (_indexLock)
+        {
+            ThrowIfDisposed();
+            _segmentExtension = normalizedExtension;
+        }
+    }
 
     public void Initialize(string sessionId)
     {
@@ -804,6 +812,21 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
 
         return sessionDirectory;
+    }
+
+    private static string NormalizeSegmentExtension(string extension)
+    {
+        if (string.Equals(extension, ".ts", StringComparison.OrdinalIgnoreCase))
+        {
+            return ".ts";
+        }
+
+        if (string.Equals(extension, ".mp4", StringComparison.OrdinalIgnoreCase))
+        {
+            return ".mp4";
+        }
+
+        throw new ArgumentException("Flashback segment extension must be .ts or .mp4.", nameof(extension));
     }
 
     private static string EnsureTrailingDirectorySeparator(string path)
