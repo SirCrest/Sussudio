@@ -280,6 +280,18 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         lock (_indexLock)
         {
+            var currentCount = Volatile.Read(ref _evictionPauseCount);
+            if (currentCount <= 0)
+            {
+                if (currentCount < 0)
+                {
+                    Interlocked.Exchange(ref _evictionPauseCount, 0);
+                }
+
+                Logger.Log($"FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED count={currentCount} start_pts_ms={(long)_recordingStartPts.TotalMilliseconds} end_pts_ms={(long)_recordingEndPts.TotalMilliseconds}");
+                return (_recordingStartPts, _recordingEndPts);
+            }
+
             var newCount = Interlocked.Decrement(ref _evictionPauseCount);
             // Only capture end PTS on the final resume (outermost pause/resume pair).
             // With nested pauses (e.g. export during recording), an inner resume must
@@ -287,11 +299,6 @@ internal sealed class FlashbackBufferManager : IDisposable
             if (newCount == 0)
             {
                 _recordingEndPts = TimeSpan.FromTicks(Interlocked.Read(ref _latestPtsTicks));
-            }
-            if (newCount < 0)
-            {
-                Interlocked.CompareExchange(ref _evictionPauseCount, 0, newCount);
-                System.Diagnostics.Debug.WriteLine($"FLASHBACK_BUFFER: WARNING — eviction pause count underflowed to {newCount}, clamped to 0");
             }
             Logger.Log($"FLASHBACK_BUFFER_EVICTION_RESUMED count={Volatile.Read(ref _evictionPauseCount)} start_pts_ms={(long)_recordingStartPts.TotalMilliseconds} end_pts_ms={(long)_recordingEndPts.TotalMilliseconds} range_s={(_recordingEndPts - _recordingStartPts).TotalSeconds:F1}");
             return (_recordingStartPts, _recordingEndPts);

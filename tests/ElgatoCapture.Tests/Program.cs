@@ -2359,6 +2359,13 @@ static partial class Program
         resumeMethod.Invoke(manager, null);
         AssertEqual(false, GetBoolProperty(manager, "EvictionPaused"), "After 2 resumes (count=0)");
 
+        // Extra resume → remains unpaused and must not underflow the pause counter.
+        resumeMethod.Invoke(manager, null);
+        AssertEqual(false, GetBoolProperty(manager, "EvictionPaused"), "After unbalanced resume");
+
+        var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "ElgatoCapture", "Services", "Flashback", "FlashbackBufferManager.cs"));
+        AssertContains(source, "FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED");
+
         return Task.CompletedTask;
     }
 
