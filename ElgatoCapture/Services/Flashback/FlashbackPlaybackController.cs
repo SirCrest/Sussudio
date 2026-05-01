@@ -331,6 +331,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         var pos = PlaybackPosition;
+        ClearLastCommandFailure();
         InPoint = pos;
         var outTicks = Interlocked.Read(ref _outPointTicks);
         if (outTicks != long.MinValue && outTicks <= pos.Ticks)
@@ -353,6 +354,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         var pos = PlaybackPosition;
+        ClearLastCommandFailure();
         OutPoint = pos;
         var inTicks = Interlocked.Read(ref _inPointTicks);
         if (inTicks != long.MinValue && inTicks >= pos.Ticks)
@@ -376,6 +378,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         InPoint = null;
         OutPoint = null;
+        ClearLastCommandFailure();
         Logger.Log("FLASHBACK_PLAYBACK_CLEAR_INOUT");
     }
 

@@ -1239,6 +1239,9 @@ static partial class Program
 
         AssertContains(sourceText, "var outTicks = Interlocked.Read(ref _outPointTicks);\n        if (outTicks != long.MinValue && outTicks <= pos.Ticks)\n        {\n            OutPoint = null;\n            Logger.Log(\"FLASHBACK_PLAYBACK_CLEAR_OUT invalid_range\");\n        }");
         AssertContains(sourceText, "var inTicks = Interlocked.Read(ref _inPointTicks);\n        if (inTicks != long.MinValue && inTicks >= pos.Ticks)\n        {\n            InPoint = null;\n            Logger.Log(\"FLASHBACK_PLAYBACK_CLEAR_IN invalid_range\");\n        }");
+        AssertContains(sourceText, "var pos = PlaybackPosition;\n        ClearLastCommandFailure();\n        InPoint = pos;");
+        AssertContains(sourceText, "var pos = PlaybackPosition;\n        ClearLastCommandFailure();\n        OutPoint = pos;");
+        AssertContains(sourceText, "InPoint = null;\n        OutPoint = null;\n        ClearLastCommandFailure();");
 
         return Task.CompletedTask;
     }
