@@ -823,7 +823,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         if (_ownsBufferManager)
         {
-            _bufferManager.Dispose();
+            try
+            {
+                _bufferManager.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_SINK_BUFFER_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+            }
         }
     }
 
