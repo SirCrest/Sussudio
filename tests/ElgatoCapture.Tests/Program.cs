@@ -667,6 +667,9 @@ static partial class Program
                 "FlashbackBufferManager segment count skips missing files",
                 FlashbackBufferManager_SegmentCount_SkipsMissingFiles),
             await RunCheckAsync(
+                "FlashbackBufferManager eviction updates disk byte totals",
+                FlashbackBufferManager_EvictOldestSegments_UpdatesTotalDiskBytes),
+            await RunCheckAsync(
                 "FlashbackBufferManager eviction pause and resume are balanced",
                 FlashbackBufferManager_EvictionPauseResume_Balanced),
             await RunCheckAsync(
@@ -3367,6 +3370,63 @@ static partial class Program
         File.Delete(active);
 
         AssertEqual(1, GetIntProperty(manager, "SegmentCount"), "Segment count should omit missing active file");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_EvictOldestSegments_UpdatesTotalDiskBytes()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_evict_bytes_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        try
+        {
+            var firstSegment = Path.Combine(tempDir, "seg0.ts");
+            var secondSegment = Path.Combine(tempDir, "seg1.ts");
+            File.WriteAllBytes(firstSegment, new byte[100]);
+            File.WriteAllBytes(secondSegment, new byte[200]);
+
+            var onSegmentCompleted = manager.GetType().GetMethod("OnSegmentCompleted")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.OnSegmentCompleted not found.");
+            var updateDiskBytes = manager.GetType().GetMethod("UpdateDiskBytes")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.UpdateDiskBytes not found.");
+
+            onSegmentCompleted.Invoke(manager, new object[]
+            {
+                firstSegment,
+                TimeSpan.Zero,
+                TimeSpan.FromSeconds(1),
+                100L
+            });
+            onSegmentCompleted.Invoke(manager, new object[]
+            {
+                secondSegment,
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(2),
+                200L
+            });
+            updateDiskBytes.Invoke(manager, new object[] { 50L });
+
+            AssertEqual(350L, GetLongProperty(manager, "TotalDiskBytes"), "Setup should track completed and active bytes");
+
+            SetPrivateField(manager, "_validStartPtsTicks", TimeSpan.FromSeconds(1).Ticks);
+            InvokeNonPublicInstanceMethod(manager, "EvictOldestSegments", null);
+
+            AssertEqual(false, File.Exists(firstSegment), "Eviction should delete the expired completed segment");
+            AssertEqual(true, File.Exists(secondSegment), "Eviction should retain overlapping completed segment");
+            AssertEqual(250L, GetLongProperty(manager, "TotalDiskBytes"), "Eviction subtracts deleted completed segment bytes");
+            AssertEqual(200L, (long)GetPrivateField(manager, "_completedSegmentBytes")!, "Completed byte cache matches retained segment");
+        }
+        finally
+        {
+            if (manager is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
 
         return Task.CompletedTask;
     }

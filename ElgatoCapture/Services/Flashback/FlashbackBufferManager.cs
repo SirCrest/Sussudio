@@ -1484,6 +1484,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
         if (evictedCount > 0)
         {
+            _totalDiskBytes = SubtractNonNegative(_totalDiskBytes, evictedBytes);
             Logger.Log($"FLASHBACK_BUFFER_SEGMENT_EVICT count={evictedCount} evicted_bytes={evictedBytes} remaining_segments={_completedSegments.Count}");
         }
     }
