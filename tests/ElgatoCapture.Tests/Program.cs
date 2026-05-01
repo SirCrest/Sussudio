@@ -562,6 +562,9 @@ static partial class Program
                 "Flashback encoder dispose resets GPU queue depth",
                 FlashbackEncoderSink_DisposeResetsGpuQueueDepth),
             await RunCheckAsync(
+                "Flashback encoder PTS guards invalid frame rates",
+                FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate),
+            await RunCheckAsync(
                 "Flashback in/out points clear invalid counterpart",
                 FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart),
             await RunCheckAsync(

@@ -283,10 +283,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _segmentStartPts = ptsBaseOffset;
             _segmentDuration = _bufferManager.Options.SegmentDuration;
 
-            if (ptsBaseOffset > TimeSpan.Zero && context.FrameRate > 0)
+            var sessionFrameRate = ResolveSessionFrameRate(context.FrameRate);
+            if (ptsBaseOffset > TimeSpan.Zero)
             {
-                var initialVideoPts = (long)(ptsBaseOffset.TotalSeconds * context.FrameRate);
-                var initialAudioPts = (long)(ptsBaseOffset.TotalSeconds * 48_000);
+                var initialVideoPts = ToNonNegativeLongSaturated(ptsBaseOffset.TotalSeconds * sessionFrameRate);
+                var initialAudioPts = ToNonNegativeLongSaturated(ptsBaseOffset.TotalSeconds * 48_000);
                 _encoder.SetInitialPts(initialVideoPts, initialAudioPts);
                 Logger.Log($"FLASHBACK_SINK_PTS_CONTINUE v_pts={initialVideoPts} a_pts={initialAudioPts} offset_s={ptsBaseOffset.TotalSeconds:F1}");
             }
@@ -294,7 +295,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Logger.Log($"FLASHBACK_SINK_INIT_COMPLETE session='{sessionId}' gpu_encoding={_gpuEncodingEnabled} segment_duration_s={_segmentDuration.TotalSeconds:F0}");
 
             // Publish the encoder's frame rate as ground truth for playback pacing.
-            _bufferManager.EncodeFrameRate = context.FrameRate;
+            _bufferManager.EncodeFrameRate = sessionFrameRate;
 
             _encodingTask = Task.Factory.StartNew(
                 () => EncodingLoop(_cts.Token),
@@ -1035,10 +1036,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                             Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_DRAIN in_flight_rounds={inFlightCount}");
                         }
 
-                        var frameRate = _sessionContext?.FrameRate ?? 30.0;
-                        var currentPts = frameRate > 0
-                            ? _ptsBaseOffset + TimeSpan.FromSeconds(_encoder.NextVideoPts / frameRate)
-                            : TimeSpan.Zero;
+                        var currentPts = ResolveEncoderPts();
 
                         if (currentPts > _segmentStartPts)
                         {
@@ -1107,10 +1105,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _encoder.FlushAndClose();
 
             // Register the final active segment
-            var finalFrameRate = _sessionContext?.FrameRate ?? 30.0;
-            if (finalFrameRate > 0)
+            var finalPts = ResolveEncoderPts();
+            if (finalPts > TimeSpan.Zero)
             {
-                var finalPts = _ptsBaseOffset + TimeSpan.FromSeconds(_encoder.NextVideoPts / finalFrameRate);
                 if (_tsFilePath != null && finalPts > _segmentStartPts)
                 {
                     var finalSegmentBytes = _encoder.TotalBytesWritten - Interlocked.Read(ref _segmentStartBytes);
@@ -1143,10 +1140,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 try
                 {
-                    var frameRate = _sessionContext?.FrameRate ?? 30.0;
-                    var crashPts = frameRate > 0
-                        ? _ptsBaseOffset + TimeSpan.FromSeconds(_encoder.NextVideoPts / frameRate)
-                        : TimeSpan.Zero;
+                    var crashPts = ResolveEncoderPts();
                     if (crashPts > _segmentStartPts)
                     {
                         var crashSegmentBytes = _encoder.TotalBytesWritten - Interlocked.Read(ref _segmentStartBytes);
@@ -1250,10 +1244,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         var encoded = Interlocked.Increment(ref _encodedVideoFrames);
 
         // Notify buffer manager of PTS progress
-        var frameRate = _sessionContext?.FrameRate ?? 30.0;
-        if (frameRate > 0)
+        var pts = ResolveEncoderPts();
+        if (pts > TimeSpan.Zero)
         {
-            var pts = _ptsBaseOffset + TimeSpan.FromSeconds(_encoder.NextVideoPts / frameRate);
             _bufferManager.UpdateLatestPts(pts);
 
             // Check if current segment duration exceeded — trigger rotation
@@ -1283,6 +1276,39 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 Logger.Log($"FLASHBACK_SINK_FRAME_EVENT_FAIL type={ex.GetType().Name} msg={ex.Message}");
             }
         }
+    }
+
+    private TimeSpan ResolveEncoderPts()
+    {
+        var frameRate = ResolveSessionFrameRate(_sessionContext?.FrameRate ?? 30.0);
+        var seconds = _encoder.NextVideoPts / frameRate;
+        if (!double.IsFinite(seconds) || seconds <= 0)
+        {
+            return _ptsBaseOffset;
+        }
+
+        if (seconds >= TimeSpan.MaxValue.TotalSeconds)
+        {
+            return TimeSpan.MaxValue;
+        }
+
+        var delta = TimeSpan.FromSeconds(seconds);
+        return _ptsBaseOffset > TimeSpan.MaxValue - delta
+            ? TimeSpan.MaxValue
+            : _ptsBaseOffset + delta;
+    }
+
+    private static double ResolveSessionFrameRate(double frameRate)
+        => double.IsFinite(frameRate) && frameRate > 0 ? frameRate : 30.0;
+
+    private static long ToNonNegativeLongSaturated(double value)
+    {
+        if (!double.IsFinite(value) || value <= 0)
+        {
+            return 0;
+        }
+
+        return value >= long.MaxValue ? long.MaxValue : (long)value;
     }
 
     private bool RotateSegment(TimeSpan currentPts)

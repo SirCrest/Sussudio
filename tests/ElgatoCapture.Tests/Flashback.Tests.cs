@@ -897,6 +897,29 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+
+        AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(_encoder.NextVideoPts / frameRate)");
+        AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(_encoder.NextVideoPts / finalFrameRate)");
+        AssertDoesNotContain(sourceText, "ptsBaseOffset.TotalSeconds * context.FrameRate");
+        AssertContains(sourceText, "var sessionFrameRate = ResolveSessionFrameRate(context.FrameRate);");
+        AssertContains(sourceText, "_bufferManager.EncodeFrameRate = sessionFrameRate;");
+        AssertContains(sourceText, "var currentPts = ResolveEncoderPts();");
+        AssertContains(sourceText, "var finalPts = ResolveEncoderPts();");
+        AssertContains(sourceText, "var crashPts = ResolveEncoderPts();");
+        AssertContains(sourceText, "var pts = ResolveEncoderPts();");
+        AssertContains(sourceText, "private TimeSpan ResolveEncoderPts()");
+        AssertContains(sourceText, "var frameRate = ResolveSessionFrameRate(_sessionContext?.FrameRate ?? 30.0);");
+        AssertContains(sourceText, "if (!double.IsFinite(seconds) || seconds <= 0)");
+        AssertContains(sourceText, "private static double ResolveSessionFrameRate(double frameRate)\n        => double.IsFinite(frameRate) && frameRate > 0 ? frameRate : 30.0;");
+        AssertContains(sourceText, "private static long ToNonNegativeLongSaturated(double value)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
