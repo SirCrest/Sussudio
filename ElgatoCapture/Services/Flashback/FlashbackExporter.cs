@@ -1126,18 +1126,21 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
     private static long ResolveFrameDurationUs(AVStream* videoStream)
     {
-        if (videoStream != null && videoStream->avg_frame_rate.num > 0)
+        if (videoStream != null && IsValidPositiveRational(videoStream->avg_frame_rate))
         {
             return Math.Max(1, 1_000_000L * videoStream->avg_frame_rate.den / videoStream->avg_frame_rate.num);
         }
 
-        if (videoStream != null && videoStream->r_frame_rate.num > 0)
+        if (videoStream != null && IsValidPositiveRational(videoStream->r_frame_rate))
         {
             return Math.Max(1, 1_000_000L * videoStream->r_frame_rate.den / videoStream->r_frame_rate.num);
         }
 
         return 33333; // fallback ~30fps
     }
+
+    private static bool IsValidPositiveRational(AVRational value)
+        => value.num > 0 && value.den > 0;
 
     private static long ResolveSegmentBoundaryTimestampRepairUs(
         long ptsUs,

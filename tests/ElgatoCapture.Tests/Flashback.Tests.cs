@@ -409,6 +409,11 @@ static partial class Program
         AssertContains(sourceText, "private static long ToAvTimeBaseTimestampOrMax(TimeSpan value)\n        => value == TimeSpan.MaxValue ? long.MaxValue : ToAvTimeBaseTimestamp(value);");
         AssertContains(sourceText, "private static long ToMicrosecondsSaturated(TimeSpan value)");
         AssertContains(sourceText, "if (!double.IsFinite(microseconds) || microseconds >= long.MaxValue)\n        {\n            return long.MaxValue;\n        }");
+        AssertContains(sourceText, "if (videoStream != null && IsValidPositiveRational(videoStream->avg_frame_rate))");
+        AssertContains(sourceText, "if (videoStream != null && IsValidPositiveRational(videoStream->r_frame_rate))");
+        AssertContains(sourceText, "private static bool IsValidPositiveRational(AVRational value)\n        => value.num > 0 && value.den > 0;");
+        AssertDoesNotContain(sourceText, "videoStream->avg_frame_rate.num > 0)");
+        AssertDoesNotContain(sourceText, "videoStream->r_frame_rate.num > 0)");
         AssertContains(sourceText, "private static void NormalizePacketTimestampsBeforeWrite(AVPacket* packet)");
         AssertContains(sourceText, "if (packet->pts != ffmpeg.AV_NOPTS_VALUE && packet->pts < 0)");
         AssertContains(sourceText, "if (packet->dts != ffmpeg.AV_NOPTS_VALUE && packet->dts < 0)");
