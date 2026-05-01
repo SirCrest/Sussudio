@@ -473,7 +473,7 @@ internal static class CommandHandlers
             {
                 var playPayload = new Dictionary<string, object?> { ["action"] = "play" };
                 if (context.Rest.Count >= 2)
-                    playPayload["positionMs"] = ParseDouble(context.Rest[1]);
+                    playPayload["positionMs"] = ParseFlashbackPositionMs(context.Rest[1]);
                 return HandleSimpleCommandAsync(context, "FlashbackAction", playPayload, includeData: false);
             }
             case "pause":
@@ -487,7 +487,7 @@ internal static class CommandHandlers
                     new Dictionary<string, object?>
                     {
                         ["action"] = "seek",
-                        ["positionMs"] = ParseDouble(RequireWord(context.Rest, 1, "flashback seek <ms>"))
+                        ["positionMs"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback seek <ms>"))
                     }, includeData: false);
             case "set-in":
             case "set-in-point":
@@ -508,7 +508,7 @@ internal static class CommandHandlers
             {
                 var useSelectionRange = ConsumeFlag(context.Rest, "--range");
                 var seconds = context.Rest.Count >= 2
-                    ? ParseDouble(context.Rest[1])
+                    ? ParseFlashbackExportSeconds(context.Rest[1])
                     : 300;
                 var outputPath = context.Rest.Count >= 3
                     ? JoinRemaining(context.Rest, 2)
@@ -708,6 +708,28 @@ internal static class CommandHandlers
         if (!double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
         {
             throw new UsageException($"Invalid numeric value '{value}'.");
+        }
+
+        return parsed;
+    }
+
+    private static double ParseFlashbackPositionMs(string value)
+    {
+        var parsed = ParseDouble(value);
+        if (!double.IsFinite(parsed) || parsed < 0 || parsed > TimeSpan.MaxValue.TotalMilliseconds)
+        {
+            throw new UsageException("Flashback position must be finite, non-negative, and within TimeSpan range.");
+        }
+
+        return parsed;
+    }
+
+    private static double ParseFlashbackExportSeconds(string value)
+    {
+        var parsed = ParseDouble(value);
+        if (!double.IsFinite(parsed) || parsed <= 0 || parsed > TimeSpan.MaxValue.TotalSeconds)
+        {
+            throw new UsageException("Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
         }
 
         return parsed;

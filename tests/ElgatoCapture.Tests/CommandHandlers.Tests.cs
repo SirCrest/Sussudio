@@ -69,5 +69,15 @@ static partial class Program
         AssertEqual(0, flashbackExitCode, "flashback off exit code");
         AssertEqual(47, flashbackRequest.GetProperty("command").GetInt32(), "flashback off command id");
         AssertEqual(false, flashbackRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(), "flashback off payload enabled");
+
+        var commandHandlersSource = ReadRepoFile("tools/ecctl/CommandHandlers.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(commandHandlersSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
+        AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback seek <ms>\"))");
+        AssertContains(commandHandlersSource, "? ParseFlashbackExportSeconds(context.Rest[1])");
+        AssertContains(commandHandlersSource, "private static double ParseFlashbackPositionMs(string value)");
+        AssertContains(commandHandlersSource, "Flashback position must be finite, non-negative, and within TimeSpan range.");
+        AssertContains(commandHandlersSource, "private static double ParseFlashbackExportSeconds(string value)");
+        AssertContains(commandHandlersSource, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
     }
 }
