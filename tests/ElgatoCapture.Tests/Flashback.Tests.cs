@@ -1025,6 +1025,9 @@ static partial class Program
         AssertContains(sourceText, "private void SafeFlushPlayback(string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_WARN");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_WARN");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_WARN op=suppress operation={operation} type={ex.GetType().Name}");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_WARN op=pause operation={operation} type={ex.GetType().Name}");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_WARN op=flush operation={operation} type={ex.GetType().Name}");
         AssertContains(sourceText, "SafeSuppressPreviewSubmission(\"begin_scrub\")");
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"scrub_no_file\")");
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"go_live\")");
