@@ -219,7 +219,8 @@ static partial class Program
         {
             if (method?.Name == "ExecuteFlashbackActionAsync")
             {
-                AssertEqual(Enum.Parse(actionType, "Pause"), args![0], "dispatcher forwards pause action");
+                AssertEqual(Enum.Parse(actionType, "Seek"), args![0], "dispatcher forwards seek action");
+                AssertEqual(TimeSpan.FromMilliseconds(1234.5), args[1], "dispatcher forwards requested seek position");
                 return Task.FromResult(false);
             }
 
@@ -236,19 +237,21 @@ static partial class Program
             authToken: null);
         var response = await ExecuteAutomationCommandAsync(
             dispatcher,
-            CreateAutomationCommandRequest("FlashbackAction", authToken: null, payloadJson: "{\"action\":\"pause\"}"))
+            CreateAutomationCommandRequest("FlashbackAction", authToken: null, payloadJson: "{\"action\":\"seek\",\"positionMs\":1234.5}"))
             .ConfigureAwait(false);
 
         AssertAutomationResponse(response, success: false, errorCode: "flashback-action-failed", status: "error", "failed flashback action includes structured error");
         var message = (string)GetPublicProperty(response, "Message")!;
-        AssertContains(message, "Flashback action 'Pause' was rejected");
+        AssertContains(message, "Flashback action 'Seek' was rejected");
         AssertContains(message, "state=Paused");
         AssertContains(message, "threadAlive=False");
         AssertContains(message, "lastFailure=thread_not_running:Pause");
+        AssertContains(message, "requestedPositionMs=1234.5");
 
         var data = GetPublicProperty(response, "Data")
                    ?? throw new InvalidOperationException("Flashback failure response data was missing.");
-        AssertEqual("Pause", (string)GetPublicProperty(data, "Action")!, "flashback failure data action");
+        AssertEqual("Seek", (string)GetPublicProperty(data, "Action")!, "flashback failure data action");
+        AssertEqual(1234.5, (double)GetPublicProperty(data, "RequestedPositionMs")!, "flashback failure data requested position");
         AssertEqual("Paused", (string)GetPublicProperty(data, "PlaybackState")!, "flashback failure data playback state");
         AssertEqual(false, (bool)GetPublicProperty(data, "PlaybackThreadAlive")!, "flashback failure data thread alive");
         AssertEqual(2, (int)GetPublicProperty(data, "PendingCommands")!, "flashback failure data pending commands");

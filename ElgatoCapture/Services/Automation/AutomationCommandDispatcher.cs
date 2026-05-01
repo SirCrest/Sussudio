@@ -260,6 +260,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         return CreateFlashbackActionRejectedResponse(
                             correlationId,
                             action,
+                            positionMs,
                             _diagnosticsHub.GetLatestSnapshot());
                     }
 
@@ -703,17 +704,22 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
     private AutomationCommandResponse CreateFlashbackActionRejectedResponse(
         string correlationId,
         AutomationFlashbackAction action,
+        double? requestedPositionMs,
         AutomationSnapshot snapshot)
     {
         var lastFailure = string.IsNullOrWhiteSpace(snapshot.FlashbackPlaybackLastCommandFailure)
             ? "none"
             : snapshot.FlashbackPlaybackLastCommandFailure;
+        var requestedPositionDetail = requestedPositionMs.HasValue
+            ? $", requestedPositionMs={requestedPositionMs.Value.ToString("0.###", CultureInfo.InvariantCulture)}"
+            : string.Empty;
         return CreateResponse(
             correlationId,
-            $"Flashback action '{action}' was rejected (state={snapshot.FlashbackPlaybackState}, threadAlive={snapshot.FlashbackPlaybackThreadAlive}, pending={snapshot.FlashbackPlaybackPendingCommands}, lastFailure={lastFailure}, failureUtc={snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs}).",
+            $"Flashback action '{action}' was rejected (state={snapshot.FlashbackPlaybackState}, threadAlive={snapshot.FlashbackPlaybackThreadAlive}, pending={snapshot.FlashbackPlaybackPendingCommands}, lastFailure={lastFailure}, failureUtc={snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs}{requestedPositionDetail}).",
             data: new
             {
                 Action = action.ToString(),
+                RequestedPositionMs = requestedPositionMs,
                 PlaybackState = snapshot.FlashbackPlaybackState,
                 PlaybackThreadAlive = snapshot.FlashbackPlaybackThreadAlive,
                 PendingCommands = snapshot.FlashbackPlaybackPendingCommands,

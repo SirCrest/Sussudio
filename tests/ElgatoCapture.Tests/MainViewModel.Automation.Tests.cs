@@ -115,6 +115,7 @@ static partial class Program
         AssertContains(dispatcherText, "await _viewModel.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "return CreateFlashbackActionRejectedResponse(");
         AssertContains(dispatcherText, "errorCode: \"flashback-action-failed\"");
+        AssertContains(dispatcherText, "RequestedPositionMs = requestedPositionMs");
         AssertContains(dispatcherText, "LastCommandFailureUtcUnixMs = snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs");
         AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
         AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
