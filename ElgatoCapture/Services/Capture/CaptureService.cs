@@ -3525,6 +3525,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             // Don't null _flashbackSink — it continues for the buffer
 
             FinalizeResult fbResult;
+            OperationCanceledException? flashbackCancellationException = null;
             try
             {
                 try
@@ -3538,7 +3539,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                throw;
+                flashbackCancellationException = new OperationCanceledException(cancellationToken);
+                fbResult = FinalizeResult.Failure(fbOutputPath, "Flashback recording finalize cancelled.");
             }
             catch (Exception ex)
             {
@@ -3606,7 +3608,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
-                throw;
+                flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
             }
             catch (Exception ex)
             {
@@ -3655,6 +3657,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 Logger.Log($"FLASHBACK_UNIFIED_RECORDING_STOP_FAIL output='{fbResult.OutputPath}'");
             }
+            if (flashbackCancellationException != null)
+            {
+                throw flashbackCancellationException;
+            }
+
             return fbResult;
         }
 

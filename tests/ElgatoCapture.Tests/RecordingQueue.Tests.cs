@@ -182,14 +182,25 @@ static partial class Program
             captureServiceSource,
             "private async Task<FinalizeResult> StopAndDisposeRecordingBackendAsync",
             "private async Task DisposeTransientRecordingBackendAsync");
+        AssertContains(stopRecordingBackend, "OperationCanceledException? flashbackCancellationException = null;");
+        AssertContains(stopRecordingBackend, "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");");
         AssertOccursBefore(
             stopRecordingBackend,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
             "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
+        AssertOccursBefore(
+            stopRecordingBackend,
+            "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");",
+            "_recordingStopwatch.Stop();");
+        AssertOccursBefore(
+            stopRecordingBackend,
+            "_lastPreservedArtifacts = fbResult.PreservedArtifacts;",
+            "throw flashbackCancellationException;");
         var postFinalizeCycle = ExtractSourceBlock(
             stopRecordingBackend,
             "// If settings changed during recording (format, buffer duration, etc.),",
             "_recordingStopwatch.Stop();");
+        AssertContains(postFinalizeCycle, "flashbackCancellationException ??= new OperationCanceledException(cancellationToken);");
         AssertOccursBefore(
             postFinalizeCycle,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
