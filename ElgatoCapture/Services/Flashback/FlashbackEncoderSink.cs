@@ -1091,7 +1091,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             // Notify the owning service so it can surface the failure
             try { _onFatalError?.Invoke(ex); }
-            catch { /* Callback must not mask the original error */ }
+            catch (Exception callbackEx)
+            {
+                Logger.Log($"FLASHBACK_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}");
+            }
 
             // Register the active segment so PurgeAllSegments can clean it up
             if (_tsFilePath != null)

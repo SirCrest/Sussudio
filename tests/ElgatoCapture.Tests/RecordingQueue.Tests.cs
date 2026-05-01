@@ -76,6 +76,8 @@ static partial class Program
         AssertContains(flashbackSource, "FLASHBACK_SINK_VIDEO_OVERLOAD");
         AssertContains(flashbackSource, "FLASHBACK_SINK_FATAL");
         AssertContains(flashbackSource, "_onFatalError?.Invoke");
+        AssertDoesNotContain(flashbackSource, "catch { /* Callback must not mask the original error */ }");
+        AssertContains(flashbackSource, "Logger.Log($\"FLASHBACK_SINK_FATAL_CALLBACK_FAIL type={callbackEx.GetType().Name} msg={callbackEx.Message}\");");
         AssertContains(flashbackSource, "public bool EncodingFailed");
         AssertContains(flashbackSource, "public string? EncodingFailureMessage");
         AssertContains(flashbackSource, "public bool CanBeginRecording");
