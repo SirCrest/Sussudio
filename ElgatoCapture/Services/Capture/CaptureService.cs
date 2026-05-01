@@ -1071,6 +1071,16 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             return "InvalidRequest";
         }
 
+        if (ContainsFlashbackExportFailureText(statusMessage, "active recording backend"))
+        {
+            return "UnavailableDuringRecording";
+        }
+
+        if (ContainsFlashbackExportFailureText(statusMessage, "buffer not active"))
+        {
+            return "BufferInactive";
+        }
+
         if (ContainsFlashbackExportFailureText(statusMessage, "in point") ||
             ContainsFlashbackExportFailureText(statusMessage, "export range"))
         {
@@ -1097,7 +1107,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             return "SegmentUnavailable";
         }
 
-        if (ContainsFlashbackExportFailureText(statusMessage, "input file not found"))
+        if (ContainsFlashbackExportFailureText(statusMessage, "input file not found") ||
+            ContainsFlashbackExportFailureText(statusMessage, "buffer has no active file"))
         {
             return "InputUnavailable";
         }

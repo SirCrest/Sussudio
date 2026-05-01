@@ -382,6 +382,9 @@ static partial class Program
         AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;");
         AssertContains(captureServiceText, "_flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;");
         AssertContains(captureServiceText, "ClassifyFlashbackExportFailure(result.StatusMessage)");
+        AssertContains(captureServiceText, "return \"UnavailableDuringRecording\";");
+        AssertContains(captureServiceText, "return \"BufferInactive\";");
+        AssertContains(captureServiceText, "ContainsFlashbackExportFailureText(statusMessage, \"buffer has no active file\")");
         AssertContains(captureServiceText, "return \"InvalidOutputPath\";");
         AssertContains(captureServiceText, "return \"NoMediaWritten\";");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\");");
@@ -575,6 +578,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackExportMaxOutputBytesObserved");
         AssertContains(diagnosticSessionText, "FlashbackExportMaxThroughputBytesPerSecObserved");
         AssertContains(diagnosticSessionText, "BuildFlashbackExportSessionMetrics(samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "expected BufferInactive failure kind");
+        AssertContains(diagnosticSessionText, "expected UnavailableDuringRecording failure kind");
         AssertContains(diagnosticSessionText, "Flashback Export:");
         AssertContains(diagnosticSessionText, "failureKindEnd={FormatOptional(result.FlashbackExportFailureKindAtEnd)}");
         AssertContains(diagnosticSessionText, "messageEnd={FormatOptional(result.FlashbackExportMessageAtEnd)}");

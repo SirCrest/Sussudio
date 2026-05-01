@@ -1103,10 +1103,16 @@ public static class DiagnosticSessionRunner
 
         var status = GetString(snapshot, "FlashbackExportStatus") ?? string.Empty;
         var message = GetString(snapshot, "FlashbackExportMessage") ?? string.Empty;
+        var failureKind = GetString(snapshot, "FlashbackExportFailureKind") ?? string.Empty;
         var lastSuccess = GetString(snapshot, "LastExportSuccess") ?? string.Empty;
         if (!string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase))
         {
             warnings.Add($"flashback export rejected: expected Failed status, got {status}");
+        }
+
+        if (!string.Equals(failureKind, "BufferInactive", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add($"flashback export rejected: expected BufferInactive failure kind, got {failureKind}");
         }
 
         if (!message.Contains("Flashback buffer not active", StringComparison.OrdinalIgnoreCase))
@@ -1162,10 +1168,16 @@ public static class DiagnosticSessionRunner
 
         var status = GetString(snapshot, "FlashbackExportStatus") ?? string.Empty;
         var message = GetString(snapshot, "FlashbackExportMessage") ?? string.Empty;
+        var failureKind = GetString(snapshot, "FlashbackExportFailureKind") ?? string.Empty;
         var lastSuccess = GetString(snapshot, "LastExportSuccess") ?? string.Empty;
         if (!string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase))
         {
             warnings.Add($"flashback recording export rejected: expected Failed status, got {status}");
+        }
+
+        if (!string.Equals(failureKind, "UnavailableDuringRecording", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add($"flashback recording export rejected: expected UnavailableDuringRecording failure kind, got {failureKind}");
         }
 
         if (!message.Contains("Flashback export is unavailable while Flashback is the active recording backend", StringComparison.OrdinalIgnoreCase))
