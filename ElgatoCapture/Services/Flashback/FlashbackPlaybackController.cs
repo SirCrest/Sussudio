@@ -864,7 +864,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         catch (Exception ex)
         {
             _lastCommandFailure = ex.GetType().Name + ":" + ex.Message;
-            Logger.Log($"FLASHBACK_PLAYBACK_FATAL error='{ex.Message}'");
+            Logger.Log($"FLASHBACK_PLAYBACK_FATAL type={ex.GetType().Name} error='{ex.Message}'");
             CleanupDecoder(ref decoder, ref fileOpen);
             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
@@ -993,7 +993,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' error='{ex.Message}'");
+            Logger.Log($"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' type={ex.GetType().Name} error='{ex.Message}'");
             fileOpen = false;
             _currentOpenFilePath = null;
         }
@@ -1188,7 +1188,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             // On error, use requested position as fallback
             PlaybackPosition = bufferPosition;
-            Logger.Log($"FLASHBACK_PLAYBACK_SEEK_ERROR error='{ex.Message}'");
+            Logger.Log($"FLASHBACK_PLAYBACK_SEEK_ERROR type={ex.GetType().Name} error='{ex.Message}'");
         }
     }
 
@@ -1587,7 +1587,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var pos = PlaybackPosition;
         var bufDur = _bufferManager.BufferedDuration;
         var gapMs = (bufDur - pos).TotalMilliseconds;
-        Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE error='{ex.Message}' pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
+        Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE type={ex.GetType().Name} error='{ex.Message}' pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
         Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
         CloseDecoderFileBestEffort(decoder, "decode_error");
         fileOpen = false;

@@ -765,6 +765,9 @@ static partial class Program
             sourceText,
             "Logger.Log($\"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK",
             "SetState(FlashbackPlaybackState.Live);");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' type={ex.GetType().Name} error='{ex.Message}'\");");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_SEEK_ERROR type={ex.GetType().Name} error='{ex.Message}'\");");
         AssertContains(decodeErrorBlock, "CloseDecoderFileBestEffort(decoder, \"decode_error\");");
         AssertContains(decodeErrorBlock, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
         AssertContains(sourceText, "private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)\n    {\n        try\n        {\n            if (decoder.IsOpen) decoder.CloseFile();\n        }\n        catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_PLAYBACK_DECODER_CLOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'\");\n        }\n    }");
@@ -810,7 +813,7 @@ static partial class Program
         AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n                    {\n                        cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"thread_cancelled\");");
         AssertContains(sourceText, "catch (OperationCanceledException)\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_CANCELLED\");\n            CleanupDecoder(ref decoder, ref fileOpen);\n            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
-        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_FATAL error='{ex.Message}'\");\n            CleanupDecoder(ref decoder, ref fileOpen);\n            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_FATAL type={ex.GetType().Name} error='{ex.Message}'\");\n            CleanupDecoder(ref decoder, ref fileOpen);\n            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
         AssertContains(sourceText, "var decoderToDispose = decoder;\n            decoder = null;");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=close");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=dispose");
