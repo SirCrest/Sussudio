@@ -202,6 +202,9 @@ static partial class Program
                 new("FlashbackPlaybackCommandsDropped", typeof(long)),
                 new("FlashbackPlaybackCommandsSkippedNotReady", typeof(long)),
                 new("FlashbackPlaybackPendingCommands", typeof(int)),
+                new("FlashbackPlaybackMaxPendingCommands", typeof(int)),
+                new("FlashbackPlaybackLastCommandQueueLatencyMs", typeof(long)),
+                new("FlashbackPlaybackMaxCommandQueueLatencyMs", typeof(long)),
                 NonNullString("FlashbackPlaybackLastCommandQueued"),
                 NonNullString("FlashbackPlaybackLastCommandProcessed"),
                 new("FlashbackPlaybackLastCommandQueuedUtcUnixMs", typeof(long)),
@@ -279,6 +282,9 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackDecoderHwAccel", "D3D11");
         SetPropertyOrBackingField(health, "FlashbackPlaybackCommandsEnqueued", 9L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackPendingCommands", 2);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackMaxPendingCommands", 5);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackLastCommandQueueLatencyMs", 14L);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackMaxCommandQueueLatencyMs", 88L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastCommandQueued", "UpdateScrub");
         SetPropertyOrBackingField(health, "FlashbackExportActive", true);
         SetPropertyOrBackingField(health, "FlashbackExportStatus", "Running");
@@ -299,6 +305,9 @@ static partial class Program
         AssertEqual("D3D11", GetStringProperty(health, "FlashbackDecoderHwAccel"), "CaptureHealthSnapshot.FlashbackDecoderHwAccel round-trip");
         AssertEqual(9L, GetLongProperty(health, "FlashbackPlaybackCommandsEnqueued"), "CaptureHealthSnapshot.FlashbackPlaybackCommandsEnqueued round-trip");
         AssertEqual(2, GetIntProperty(health, "FlashbackPlaybackPendingCommands"), "CaptureHealthSnapshot.FlashbackPlaybackPendingCommands round-trip");
+        AssertEqual(5, GetIntProperty(health, "FlashbackPlaybackMaxPendingCommands"), "CaptureHealthSnapshot.FlashbackPlaybackMaxPendingCommands round-trip");
+        AssertEqual(14L, GetLongProperty(health, "FlashbackPlaybackLastCommandQueueLatencyMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueueLatencyMs round-trip");
+        AssertEqual(88L, GetLongProperty(health, "FlashbackPlaybackMaxCommandQueueLatencyMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxCommandQueueLatencyMs round-trip");
         AssertEqual("UpdateScrub", GetStringProperty(health, "FlashbackPlaybackLastCommandQueued"), "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueued round-trip");
         AssertEqual(true, GetBoolProperty(health, "FlashbackExportActive"), "CaptureHealthSnapshot.FlashbackExportActive round-trip");
         AssertEqual("Running", GetStringProperty(health, "FlashbackExportStatus"), "CaptureHealthSnapshot.FlashbackExportStatus round-trip");

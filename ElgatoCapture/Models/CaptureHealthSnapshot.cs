@@ -43,6 +43,9 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackPlaybackCommandsDropped { get; init; }
     public long FlashbackPlaybackCommandsSkippedNotReady { get; init; }
     public int FlashbackPlaybackPendingCommands { get; init; }
+    public int FlashbackPlaybackMaxPendingCommands { get; init; }
+    public long FlashbackPlaybackLastCommandQueueLatencyMs { get; init; }
+    public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }
     public string FlashbackPlaybackLastCommandQueued { get; init; } = "None";
     public string FlashbackPlaybackLastCommandProcessed { get; init; } = "None";
     public long FlashbackPlaybackLastCommandQueuedUtcUnixMs { get; init; }

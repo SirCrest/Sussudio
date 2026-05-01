@@ -271,7 +271,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"seek\", [\"positionMs\"] = 500 }");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"seconds\"] = 1, [\"outputPath\"] = exportPath }");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"filePath\"] = exportPath, [\"strict\"] = true }");
-        AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s\"");
+        AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s \"");
+        AssertContains(diagnosticSessionText, "$\"maxPending={GetInt(lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")} \"");
+        AssertContains(diagnosticSessionText, "$\"maxLatencyMs={GetInt(lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")}\"");
         AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackRecording) || warnings.Count == 0)");
         AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-recording\" or \"combined\"");
 

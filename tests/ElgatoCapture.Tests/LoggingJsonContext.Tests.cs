@@ -98,6 +98,8 @@ static partial class Program
             SetPropertyOrBackingField(health, "RecordingBackend", "FFmpeg");
             SetPropertyOrBackingField(health, "FlashbackPlaybackState", "Paused");
             SetPropertyOrBackingField(health, "FlashbackPlaybackCommandsEnqueued", 4L);
+            SetPropertyOrBackingField(health, "FlashbackPlaybackMaxPendingCommands", 3);
+            SetPropertyOrBackingField(health, "FlashbackPlaybackMaxCommandQueueLatencyMs", 41L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackLastCommandQueued", "Pause");
             SetPropertyOrBackingField(health, "FlashbackExportStatus", "Running");
             SetPropertyOrBackingField(health, "FlashbackExportPercent", 37.5d);
@@ -115,6 +117,8 @@ static partial class Program
             AssertJsonString(healthRoot, "RecordingBackend", "FFmpeg", "CaptureHealthSnapshot source-gen JSON inherited RecordingBackend");
             AssertJsonString(healthRoot, "FlashbackPlaybackState", "Paused", "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackState");
             AssertJsonInt64(healthRoot, "FlashbackPlaybackCommandsEnqueued", 4L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackCommandsEnqueued");
+            AssertJsonInt32(healthRoot, "FlashbackPlaybackMaxPendingCommands", 3, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackMaxPendingCommands");
+            AssertJsonInt64(healthRoot, "FlashbackPlaybackMaxCommandQueueLatencyMs", 41L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackMaxCommandQueueLatencyMs");
             AssertJsonString(healthRoot, "FlashbackPlaybackLastCommandQueued", "Pause", "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackLastCommandQueued");
             AssertJsonString(healthRoot, "FlashbackExportStatus", "Running", "CaptureHealthSnapshot source-gen JSON FlashbackExportStatus");
             AssertJsonDouble(healthRoot, "FlashbackExportPercent", 37.5d, "CaptureHealthSnapshot source-gen JSON FlashbackExportPercent");

@@ -437,7 +437,12 @@ public static class DiagnosticSessionRunner
 
         if (!drained)
         {
-            warnings.Add("flashback stress: playback command queue did not drain within 10s");
+            warnings.Add(
+                "flashback stress: playback command queue did not drain within 10s " +
+                $"pending={GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands")} " +
+                $"maxPending={GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands")} " +
+                $"lastLatencyMs={GetInt(lastSnapshot, "FlashbackPlaybackLastCommandQueueLatencyMs")} " +
+                $"maxLatencyMs={GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs")}");
         }
 
         if (lastSnapshot.ValueKind == JsonValueKind.Object)

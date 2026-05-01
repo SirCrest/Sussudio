@@ -174,6 +174,9 @@ static partial class Program
                 "FlashbackBufferedDurationMs": 120000,
                 "FlashbackDiskBytes": 1048576,
                 "FlashbackPlaybackPendingCommands": 1,
+                "FlashbackPlaybackMaxPendingCommands": 4,
+                "FlashbackPlaybackLastCommandQueueLatencyMs": 12,
+                "FlashbackPlaybackMaxCommandQueueLatencyMs": 87,
                 "FlashbackPlaybackCommandsEnqueued": 12,
                 "FlashbackPlaybackCommandsProcessed": 11,
                 "FlashbackPlaybackCommandsDropped": 0,
@@ -227,7 +230,7 @@ static partial class Program
         AssertContains(formatted, "Frame Rate: 59.94 fps (59.940 fps, 60000/1001)");
         AssertContains(formatted, "== Flashback ==");
         AssertContains(formatted, "Encoder: hevc_nvenc");
-        AssertContains(formatted, "Playback Commands: pending=1 enq=12 proc=11 drop=0 skip=2 threadAlive=true lastQueued=UpdateScrub lastProcessed=BeginScrub failure=not_ready:Pause");
+        AssertContains(formatted, "Playback Commands: pending=1 maxPending=4 lastLatency=12ms maxLatency=87ms enq=12 proc=11 drop=0 skip=2 threadAlive=true lastQueued=UpdateScrub lastProcessed=BeginScrub failure=not_ready:Pause");
         AssertContains(formatted, "Export: active=true status=Running id=7 progress=37.5% segments=3/8");
         AssertContains(formatted, "== MJPEG Pipeline Timing ==");
         AssertContains(formatted, "Decoder[0]: avg=2.1ms");

@@ -31,6 +31,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         public CommandKind Kind { get; init; }
         public TimeSpan Position { get; init; }
         public TimeSpan Delta { get; init; }
+        public long QueuedTimestamp { get; init; }
     }
 
     // --- Dependencies ---
@@ -73,6 +74,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private long _commandsDropped;
     private long _commandsSkippedNotReady;
     private int _pendingCommands;
+    private int _maxPendingCommands;
+    private long _lastCommandQueueLatencyMs;
+    private long _maxCommandQueueLatencyMs;
     private long _lastCommandQueuedUtcUnixMs;
     private long _lastCommandProcessedUtcUnixMs;
     private string _lastCommandQueued = "None";
@@ -274,7 +278,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private void SendCommand(PlaybackCommand command)
     {
-        if (!_commandChannel.Writer.TryWrite(command))
+        var queuedCommand = new PlaybackCommand
+        {
+            Kind = command.Kind,
+            Position = command.Position,
+            Delta = command.Delta,
+            QueuedTimestamp = Stopwatch.GetTimestamp()
+        };
+
+        if (!_commandChannel.Writer.TryWrite(queuedCommand))
         {
             Interlocked.Increment(ref _commandsDropped);
             _lastCommandFailure = $"write_failed:{command.Kind}";
@@ -283,7 +295,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         Interlocked.Increment(ref _commandsEnqueued);
-        Interlocked.Increment(ref _pendingCommands);
+        UpdateMaxPendingCommands(Interlocked.Increment(ref _pendingCommands));
         Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         _lastCommandQueued = command.Kind.ToString();
     }
@@ -1354,6 +1366,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long CommandsDropped => Interlocked.Read(ref _commandsDropped);
     public long CommandsSkippedNotReady => Interlocked.Read(ref _commandsSkippedNotReady);
     public int PendingCommands => Volatile.Read(ref _pendingCommands);
+    public int MaxPendingCommands => Volatile.Read(ref _maxPendingCommands);
+    public long LastCommandQueueLatencyMs => Interlocked.Read(ref _lastCommandQueueLatencyMs);
+    public long MaxCommandQueueLatencyMs => Interlocked.Read(ref _maxCommandQueueLatencyMs);
     public long LastCommandQueuedUtcUnixMs => Interlocked.Read(ref _lastCommandQueuedUtcUnixMs);
     public long LastCommandProcessedUtcUnixMs => Interlocked.Read(ref _lastCommandProcessedUtcUnixMs);
     public string LastCommandQueued => _lastCommandQueued;
@@ -1394,8 +1409,59 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         Interlocked.Increment(ref _commandsProcessed);
         DecrementPendingCommands();
+        TrackCommandQueueLatency(command);
         Interlocked.Exchange(ref _lastCommandProcessedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         _lastCommandProcessed = command.Kind.ToString();
+    }
+
+    private void TrackCommandQueueLatency(PlaybackCommand command)
+    {
+        if (command.QueuedTimestamp <= 0)
+        {
+            return;
+        }
+
+        var elapsedTicks = Stopwatch.GetTimestamp() - command.QueuedTimestamp;
+        var latencyMs = Math.Max(0, (long)(elapsedTicks * 1000.0 / Stopwatch.Frequency));
+        Interlocked.Exchange(ref _lastCommandQueueLatencyMs, latencyMs);
+        UpdateMaxLong(ref _maxCommandQueueLatencyMs, latencyMs);
+    }
+
+    private void UpdateMaxPendingCommands(int value)
+        => UpdateMaxInt(ref _maxPendingCommands, value);
+
+    private static void UpdateMaxInt(ref int target, int value)
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref target);
+            if (value <= current)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref target, value, current) == current)
+            {
+                return;
+            }
+        }
+    }
+
+    private static void UpdateMaxLong(ref long target, long value)
+    {
+        while (true)
+        {
+            var current = Interlocked.Read(ref target);
+            if (value <= current)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref target, value, current) == current)
+            {
+                return;
+            }
+        }
     }
 
     private void DecrementPendingCommands()
