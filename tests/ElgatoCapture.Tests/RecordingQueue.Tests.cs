@@ -87,6 +87,10 @@ static partial class Program
         AssertContains(flashbackSource, "supersededTcs = _forceRotateTcs;");
         AssertContains(flashbackSource, "FLASHBACK_SINK_FORCE_ROTATE_SUPERSEDED");
         AssertContains(flashbackSource, "supersededTcs.TrySetResult(Array.Empty<string>())");
+        AssertContains(flashbackSource, "if (!RotateSegment(currentPts))\n                            {\n                                localTcs?.TrySetResult(Array.Empty<string>());\n                                madeProgress = true;\n                                continue;\n                            }");
+        AssertContains(flashbackSource, "private bool RotateSegment(TimeSpan currentPts)");
+        AssertContains(flashbackSource, "return true;\n        }\n        catch (Exception ex)");
+        AssertContains(flashbackSource, "Logger.Log($\"FLASHBACK_SINK_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}\");\n            return false;");
         AssertContains(flashbackSource, "TryCancelPendingForceRotate(tcs)");
         AssertContains(flashbackSource, "ReferenceEquals(_forceRotateTcs, requestTcs)");
         AssertContains(flashbackSource, "cleared_pending={clearedPending}");

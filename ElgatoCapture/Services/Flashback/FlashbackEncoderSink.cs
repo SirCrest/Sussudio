@@ -974,7 +974,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
                         if (currentPts > _segmentStartPts)
                         {
-                            RotateSegment(currentPts);
+                            if (!RotateSegment(currentPts))
+                            {
+                                localTcs?.TrySetResult(Array.Empty<string>());
+                                madeProgress = true;
+                                continue;
+                            }
                         }
 
                         localTcs?.TrySetResult(_bufferManager.GetValidSegmentPaths(localIn, localOut));
@@ -1187,7 +1192,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             // All rotation now happens on the encoding thread, no lock needed
             if (_segmentDuration > TimeSpan.Zero && pts - _segmentStartPts >= _segmentDuration)
             {
-                RotateSegment(pts);
+                _ = RotateSegment(pts);
             }
         }
 
@@ -1212,7 +1217,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    private void RotateSegment(TimeSpan currentPts)
+    private bool RotateSegment(TimeSpan currentPts)
     {
         try
         {
@@ -1238,12 +1243,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 $"FLASHBACK_SINK_ROTATE new_segment='{Path.GetFileName(newPath)}' " +
                 $"prev_bytes={segmentBytes} " +
                 $"segment_start_ms={(long)currentPts.TotalMilliseconds}");
+            return true;
         }
         catch (Exception ex)
         {
             // Advance _segmentStartPts to prevent infinite retry on every frame
             _segmentStartPts = currentPts;
             Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}");
+            return false;
         }
     }
 
