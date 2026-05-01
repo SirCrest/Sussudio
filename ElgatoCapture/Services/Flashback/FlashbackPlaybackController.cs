@@ -584,6 +584,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         }
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, cmd.Position + frozenValidStart);
+                        if (!decoder.IsOpen)
+                        {
+                            isScrubbing = false;
+                            RestoreLiveAudio();
+                            SafeResumePreviewSubmission("scrub_update_no_file");
+                            SafeResumeRendering("scrub_update_no_file");
+                            SetState(FlashbackPlaybackState.Live);
+                            Logger.Log($"FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE pos_ms={(long)cmd.Position.TotalMilliseconds}");
+                            break;
+                        }
                         SeekAndDisplayKeyframe(decoder, cmd.Position, frozenValidStart);
                         break;
 

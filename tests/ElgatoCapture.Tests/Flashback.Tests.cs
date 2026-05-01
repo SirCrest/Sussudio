@@ -729,6 +729,9 @@ static partial class Program
         AssertContains(updateScrubBlock, "if (!_commandChannel.Reader.TryRead(out newer))");
         AssertContains(updateScrubBlock, "TrackCommandDequeued(newer);");
         AssertContains(updateScrubBlock, "cmd = newer;");
+        AssertContains(updateScrubBlock, "FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE");
+        AssertContains(updateScrubBlock, "SafeResumePreviewSubmission(\"scrub_update_no_file\")");
+        AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live)");
         AssertContains(drainAbandonedCommands, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
         AssertDoesNotContain(updateScrubBlock, "SendCommand(newer)");
         AssertDoesNotContain(updateScrubBlock, "Non-scrub command consumed");
