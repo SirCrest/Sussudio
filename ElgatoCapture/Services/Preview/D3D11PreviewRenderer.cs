@@ -1316,12 +1316,11 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
 
         var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
-        var sorted = (double[])samples.Clone();
-        Array.Sort(sorted);
-        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
-        var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
-        var p99Index = (int)Math.Ceiling((sorted.Length - 1) * 0.99);
-        var p99IntervalMs = sorted[Math.Clamp(p99Index, 0, sorted.Length - 1)];
+        Array.Sort(samples);
+        var p95Index = (int)Math.Ceiling((samples.Length - 1) * 0.95);
+        var p95IntervalMs = samples[Math.Clamp(p95Index, 0, samples.Length - 1)];
+        var p99Index = (int)Math.Ceiling((samples.Length - 1) * 0.99);
+        var p99IntervalMs = samples[Math.Clamp(p99Index, 0, samples.Length - 1)];
         var onePercentLowFps = p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0;
         var slowPercent = slowFrameCount <= 0
             ? 0
@@ -2032,26 +2031,25 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             return new CpuStageTimingMetrics(0, 0, 0, 0, 0);
         }
 
-        var sorted = (double[])samples.Clone();
-        Array.Sort(sorted);
+        Array.Sort(samples);
         var sum = 0.0;
         var max = 0.0;
-        for (var i = 0; i < sorted.Length; i++)
+        for (var i = 0; i < samples.Length; i++)
         {
-            sum += sorted[i];
-            if (sorted[i] > max)
+            sum += samples[i];
+            if (samples[i] > max)
             {
-                max = sorted[i];
+                max = samples[i];
             }
         }
 
-        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
-        var p99Index = (int)Math.Ceiling((sorted.Length - 1) * 0.99);
+        var p95Index = (int)Math.Ceiling((samples.Length - 1) * 0.95);
+        var p99Index = (int)Math.Ceiling((samples.Length - 1) * 0.99);
         return new CpuStageTimingMetrics(
-            sorted.Length,
-            sum / sorted.Length,
-            sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)],
-            sorted[Math.Clamp(p99Index, 0, sorted.Length - 1)],
+            samples.Length,
+            sum / samples.Length,
+            samples[Math.Clamp(p95Index, 0, samples.Length - 1)],
+            samples[Math.Clamp(p99Index, 0, samples.Length - 1)],
             max);
     }
 
