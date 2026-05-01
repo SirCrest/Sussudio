@@ -2568,16 +2568,38 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         var playback = _wasapiAudioPlayback;
         if (playback == null)
         {
-            playback = new WasapiAudioPlayback();
-            await playback.InitializeAsync(cancellationToken).ConfigureAwait(false);
-            playback.SetVolume(0);
-            playback.Start();
-            _wasapiAudioPlayback = playback;
-            Logger.Log("WASAPI audio playback started.");
-            playback.SetVolume(_isMonitoringMuted ? 0f : _previewVolume);
+            var newPlayback = new WasapiAudioPlayback();
+            try
+            {
+                await newPlayback.InitializeAsync(cancellationToken).ConfigureAwait(false);
+                newPlayback.SetVolume(0);
+                newPlayback.Start();
+                _wasapiAudioPlayback = newPlayback;
+                Logger.Log("WASAPI audio playback started.");
+                newPlayback.SetVolume(_isMonitoringMuted ? 0f : _previewVolume);
+                playback = newPlayback;
+            }
+            catch
+            {
+                if (ReferenceEquals(_wasapiAudioPlayback, newPlayback))
+                {
+                    _wasapiAudioPlayback = null;
+                }
+                StopWasapiPlaybackBestEffort(newPlayback, "start_fail");
+                DisposeWasapiPlaybackBestEffort(newPlayback);
+                throw;
+            }
         }
 
-        capture.SetPlayback(playback);
+        try
+        {
+            capture.SetPlayback(playback);
+        }
+        catch
+        {
+            StopWasapiPlayback();
+            throw;
+        }
 
         // Update flashback controller with audio components (they weren't available
         // during flashback init because WASAPI starts after flashback).
@@ -2594,15 +2616,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         SafeClearWasapiCapturePlayback(_wasapiAudioCapture, "stop_playback");
         if (playback != null)
         {
-            try
-            {
-                playback.Stop();
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"WASAPI audio playback stop warning: {ex.Message}");
-            }
-
+            StopWasapiPlaybackBestEffort(playback, "stop_playback");
             DisposeWasapiPlaybackBestEffort(playback);
         }
     }
@@ -2648,6 +2662,18 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             Logger.Log($"WASAPI audio playback dispose warning: {ex.Message}");
+        }
+    }
+
+    private static void StopWasapiPlaybackBestEffort(WasapiAudioPlayback playback, string operation)
+    {
+        try
+        {
+            playback.Stop();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"WASAPI audio playback stop warning op={operation}: {ex.Message}");
         }
     }
 
