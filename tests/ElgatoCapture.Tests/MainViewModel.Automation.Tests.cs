@@ -311,7 +311,7 @@ static partial class Program
         AssertContains(captureServiceText, "private void RecordRejectedFlashbackExportDiagnostics(string outputPath, FinalizeResult result)");
         AssertContains(captureServiceText, "if (_flashbackExportActive)");
         AssertContains(captureServiceText, "var statusMessage = ex is OperationCanceledException && ct.IsCancellationRequested\n                ? \"Flashback export cancelled.\"\n                : ex.Message;\n            var failure = FinalizeResult.Failure(outputPath, statusMessage);");
-        AssertContains(captureServiceText, "CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            return failure;");
+        AssertContains(captureServiceText, "CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            else\n            {\n                RecordRejectedFlashbackExportDiagnostics(outputPath, failure);\n            }\n            return failure;");
         AssertContains(captureServiceText, "_flashbackExportStartedUtcUnixMs = now;");
         AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = now;");
         AssertContains(captureServiceText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");

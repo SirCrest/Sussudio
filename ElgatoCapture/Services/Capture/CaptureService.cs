@@ -765,6 +765,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 CompleteFlashbackExportDiagnostics(exportId, failure);
             }
+            else
+            {
+                RecordRejectedFlashbackExportDiagnostics(outputPath, failure);
+            }
             return failure;
         }
         finally
