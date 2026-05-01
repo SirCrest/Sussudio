@@ -1237,6 +1237,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private void ReleasePlaybackFrameForLive(string operation)
     {
+        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
+        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
+        Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
+
         if (_hasPreviousHeldFrame)
         {
             Logger.Log($"FLASHBACK_PLAYBACK_RELEASE_HELD_FOR_LIVE op={operation}");

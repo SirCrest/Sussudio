@@ -1850,6 +1850,7 @@ static partial class Program
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_previousHeldFrame, \"previous_frame\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip\");");
         AssertContains(sourceText, "private void ReleasePlaybackFrameForLive(string operation)");
+        AssertContains(sourceText, "private void ReleasePlaybackFrameForLive(string operation)\n    {\n        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n        Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_RELEASE_HELD_FOR_LIVE op={operation}");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"seek_no_file\");");
         AssertContains(sourceText, "SetNoFileFailure(CommandKind.Seek, cmd.Position);");
