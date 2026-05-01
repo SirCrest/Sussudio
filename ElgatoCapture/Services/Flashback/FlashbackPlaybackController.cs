@@ -401,7 +401,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             _lastCommandFailure = $"thread_start_failed:{ex.GetType().Name}:{ex.Message}";
             Logger.Log($"FLASHBACK_PLAYBACK_THREAD_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'");
-            _playCts.Dispose();
+            DisposePlaybackCtsBestEffort(_playCts, "thread_start_fail");
             _playCts = null;
             _playbackThread = null;
             Interlocked.Exchange(ref _playbackThreadStarted, 0);
@@ -442,7 +442,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         if (threadExited)
         {
-            _playCts?.Dispose();
+            DisposePlaybackCtsBestEffort(_playCts, "stop_thread");
             _playCts = null;
             _playbackThread = null;
             Interlocked.Exchange(ref _pendingCommands, 0);
@@ -884,11 +884,25 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 _playCts = null;
             }
-            cts.Dispose();
+            DisposePlaybackCtsBestEffort(cts, "thread_exit");
             Volatile.Write(ref _playbackThreadStarted, 0);
         }
 
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
+    }
+
+    private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)
+    {
+        if (cts == null) return;
+
+        try
+        {
+            cts.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_CTS_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 
     private void DrainAbandonedCommandsOnThreadExit()
