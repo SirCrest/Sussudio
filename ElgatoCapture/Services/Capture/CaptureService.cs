@@ -2242,6 +2242,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     requireCompleteLiveEdge: true)
                 .ConfigureAwait(false);
 
+            exportResult = PreserveFlashbackEndArtifactsOnFailure(exportResult, endResult);
             if (exportResult.Succeeded)
             {
                 Logger.Log($"FLASHBACK_RECORDING_EXPORT_OK output='{outputPath}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} status='{exportResult.StatusMessage}'");
@@ -2258,6 +2259,21 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 ResumeFlashbackEvictionBestEffort(bufferManager, "flashback_recording_finalize");
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
         }
+    }
+
+    private static FinalizeResult PreserveFlashbackEndArtifactsOnFailure(
+        FinalizeResult exportResult,
+        FinalizeResult endResult)
+    {
+        if (exportResult.Succeeded || endResult.PreservedArtifacts.Count == 0)
+        {
+            return exportResult;
+        }
+
+        return FinalizeResult.Failure(
+            exportResult.OutputPath,
+            exportResult.StatusMessage,
+            exportResult.PreservedArtifacts.Concat(endResult.PreservedArtifacts));
     }
 
     private void OnUnifiedVideoCaptureFatalError(object? sender, Exception ex)

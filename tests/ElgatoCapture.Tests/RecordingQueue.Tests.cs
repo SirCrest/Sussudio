@@ -263,6 +263,10 @@ static partial class Program
         AssertContains(captureServiceSource, "requireCompleteLiveEdge: true");
         AssertContains(captureServiceSource, "FLASHBACK_RECORDING_EXPORT_INCOMPLETE_FAIL");
         AssertContains(captureServiceSource, "live-edge segment was not closed before timeout");
+        AssertContains(captureServiceSource, "PreserveFlashbackEndArtifactsOnFailure(exportResult, endResult);");
+        AssertContains(captureServiceSource, "private static FinalizeResult PreserveFlashbackEndArtifactsOnFailure(");
+        AssertContains(captureServiceSource, "exportResult.PreservedArtifacts.Concat(endResult.PreservedArtifacts)");
+        AssertOccursBefore(captureServiceSource, "PreserveFlashbackEndArtifactsOnFailure(exportResult, endResult);", "FLASHBACK_RECORDING_EXPORT_OK");
         AssertContains(captureServiceSource, "FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING_DEFERRED");
         AssertOccursBefore(captureServiceSource, "if (!fbResult.Succeeded)", "else if (_pendingFlashbackSettingsChange)");
         AssertContains(captureServiceSource, "preserveFlashbackSegmentsAfterFailedRecordingFinalize");
