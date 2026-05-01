@@ -652,7 +652,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     {
         var flashbackSink = snapshotSink ?? _flashbackSink;
         var bufferManager = snapshotBufferManager ?? _flashbackBufferManager;
-        var exporter = _flashbackExporter ??= new FlashbackExporter();
 
         var exportId = 0L;
         var evictionPaused = false;
@@ -669,6 +668,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 return FailFlashbackExport(outputPath, "Flashback export cancelled.");
             }
 
+            var exporter = _flashbackExporter ??= new FlashbackExporter();
             exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);
             var diagnosticProgress = CreateFlashbackExportProgressSink(exportId, progress);
 
