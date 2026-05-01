@@ -223,6 +223,9 @@ static partial class Program
         AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
         AssertContains(diagnosticsText, "recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows}");
         AssertContains(diagnosticsText, "if (recentPreviewDeadlineDrops > 0 ||\n            recentPreviewUnderflows > 3)");
+        AssertContains(diagnosticsText, "var presentCadenceOverBudget =\n            previewRuntime.DisplayCadenceExpectedIntervalMs > 0 &&\n            previewRuntime.DisplayCadenceP95IntervalMs > previewRuntime.DisplayCadenceExpectedIntervalMs * 1.5;");
+        AssertContains(diagnosticsText, "var unsyncedPresentCallSlow =\n            previewRuntime.D3DPresentSyncInterval == 0 &&\n            previewRuntime.D3DPresentCallP95Ms > 4.0;");
+        AssertContains(diagnosticsText, "if (presentCadenceOverBudget ||\n            unsyncedPresentCallSlow)");
 
         var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");

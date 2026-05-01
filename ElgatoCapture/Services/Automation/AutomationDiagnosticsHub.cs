@@ -1574,9 +1574,14 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 audioLane);
         }
 
-        if (previewRuntime.D3DPresentCallP95Ms > 4.0 ||
-            (previewRuntime.DisplayCadenceExpectedIntervalMs > 0 &&
-             previewRuntime.DisplayCadenceP95IntervalMs > previewRuntime.DisplayCadenceExpectedIntervalMs * 1.5))
+        var presentCadenceOverBudget =
+            previewRuntime.DisplayCadenceExpectedIntervalMs > 0 &&
+            previewRuntime.DisplayCadenceP95IntervalMs > previewRuntime.DisplayCadenceExpectedIntervalMs * 1.5;
+        var unsyncedPresentCallSlow =
+            previewRuntime.D3DPresentSyncInterval == 0 &&
+            previewRuntime.D3DPresentCallP95Ms > 4.0;
+        if (presentCadenceOverBudget ||
+            unsyncedPresentCallSlow)
         {
             return new DiagnosticEvaluation(
                 "Warning",
