@@ -288,6 +288,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var runFlashbackPreviewCycle = scenario == \"flashback-preview-cycle\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRecording = scenario == \"flashback-recording\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRecordingPreviewCycle = scenario == \"flashback-recording-preview-cycle\";");
+        AssertContains(diagnosticSessionText, "var runFlashbackRecordingExportRejected = scenario == \"flashback-recording-export-rejected\";");
         AssertContains(diagnosticSessionText, "var runFlashbackExportRejected = scenario == \"flashback-export-rejected\";");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackPendingCommandsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxPendingCommandsObserved");
@@ -328,6 +329,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
         AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
+        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRecordingExportRejectedAsync(");
+        AssertContains(diagnosticSessionText, "\"flashback-recording-rejected-export.mp4\"");
+        AssertContains(diagnosticSessionText, "Flashback export is unavailable while Flashback is the active recording backend");
         AssertContains(diagnosticSessionText, "flashback lifecycle disabled during playback");
         AssertContains(diagnosticSessionText, "flashback lifecycle: playback worker still alive after disable");
         AssertContains(diagnosticSessionText, "flashback lifecycle: pending commands remained after disable");
@@ -359,8 +363,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback-rejected-export.mp4\"");
         AssertContains(diagnosticSessionText, "$\"flashback export rejected: expected Failed status, got {status}\"");
         AssertContains(diagnosticSessionText, "message.Contains(\"Flashback buffer not active\", StringComparison.OrdinalIgnoreCase)");
-        AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackExportPlayback || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackExportRejected) || warnings.Count == 0)");
-        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-export-playback\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-export-rejected\" or \"combined\"");
+        AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackExportPlayback || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0)");
+        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-export-playback\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
 
         var ecctlProgramText = ReadRepoFile("tools/ecctl/Program.cs")
             .Replace("\r\n", "\n");
@@ -380,6 +384,9 @@ static partial class Program
         AssertContains(ecctlProgramText, "flashback-recording-preview-cycle");
         AssertContains(ecctlCommandHandlersText, "flashback-recording-preview-cycle");
         AssertContains(mcpDiagnosticSessionText, "flashback-recording-preview-cycle");
+        AssertContains(ecctlProgramText, "flashback-recording-export-rejected");
+        AssertContains(ecctlCommandHandlersText, "flashback-recording-export-rejected");
+        AssertContains(mcpDiagnosticSessionText, "flashback-recording-export-rejected");
 
         return Task.CompletedTask;
     }
