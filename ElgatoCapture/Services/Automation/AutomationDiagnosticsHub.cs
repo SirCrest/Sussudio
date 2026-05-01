@@ -69,6 +69,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const int FlashbackPlaybackCommandStallThresholdMs = 1000;
     private const int FlashbackExportStallThresholdMs = 30000;
     private const double FlashbackPlaybackSlowFpsRatio = 0.75;
+    private const double FlashbackPlaybackOnePercentLowWarningRatio = 0.98;
     private const int FlashbackPlaybackMinFramesForPerfAlert = 60;
     private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;
     private const long FlashbackRecordingBackpressureWarningMs = 100;
@@ -1529,6 +1530,13 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
             snapshot.FlashbackPlaybackObservedFps > 0 &&
             snapshot.FlashbackPlaybackObservedFps < snapshot.SelectedFrameRate * FlashbackPlaybackSlowFpsRatio;
+        var playbackFrametimeDegraded =
+            IsFlashbackPlaybackFrametimeDegraded(
+                snapshot.FlashbackPlaybackState,
+                snapshot.SelectedFrameRate,
+                snapshot.FlashbackPlaybackFrameCount,
+                snapshot.FlashbackPlaybackCadenceSampleCount,
+                snapshot.FlashbackPlaybackOnePercentLowFps);
         var previewSlowFrameDetail = FormatPreviewSlowFrameAlertDetail(snapshot);
 
         SetAlertState(
@@ -1689,6 +1697,17 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             throttleMs: 5000);
 
         SetAlertState(
+            "flashback-playback-frametime-degraded",
+            playbackFrametimeDegraded,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback playback frametime degraded: onePercentLow={snapshot.FlashbackPlaybackOnePercentLowFps:0.##}fps target={snapshot.SelectedFrameRate:0.##}fps " +
+            $"p99={snapshot.FlashbackPlaybackP99FrameMs:0.##}ms max={snapshot.FlashbackPlaybackMaxFrameMs:0.##}ms slow={snapshot.FlashbackPlaybackSlowFramePercent:0.##}% " +
+            $"decodeP99={snapshot.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={snapshot.FlashbackPlaybackDecodeMaxMs:0.##}ms samples={snapshot.FlashbackPlaybackCadenceSampleCount}.",
+            "Flashback playback frametime returned to target range.",
+            throttleMs: 5000);
+
+        SetAlertState(
             "flashback-playback-submit-failures",
             snapshot.FlashbackPlaybackSubmitFailures > 0,
             DiagnosticsSeverity.Warning,
@@ -1789,6 +1808,20 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         return $" latestSlowFrameReason={reason} over={frame.WorstOverBudgetMs:0.##}ms interval={frame.PresentIntervalMs:0.##}ms inputUpload={frame.InputUploadCpuMs:0.##}ms renderSubmit={frame.RenderSubmitCpuMs:0.##}ms total={frame.TotalFrameCpuMs:0.##}ms presentCall={frame.PresentCallMs:0.##}ms pipeline={frame.PipelineLatencyMs:0.##}ms pending={frame.PendingFrameCount}";
     }
 
+    private static bool IsFlashbackPlaybackFrametimeDegraded(
+        string state,
+        double targetFrameRate,
+        long frameCount,
+        int cadenceSampleCount,
+        double onePercentLowFps)
+        =>
+            string.Equals(state, "Playing", StringComparison.OrdinalIgnoreCase) &&
+            targetFrameRate > 0 &&
+            frameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
+            cadenceSampleCount >= FlashbackPlaybackMinFramesForPerfAlert &&
+            onePercentLowFps > 0 &&
+            onePercentLowFps < targetFrameRate * FlashbackPlaybackOnePercentLowWarningRatio;
+
     private readonly record struct DiagnosticEvaluation(
         string HealthStatus,
         string LikelyStage,
@@ -1887,13 +1920,20 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var playbackCommandLane =
             $"playback commands pending={health.FlashbackPlaybackPendingCommands}/{health.FlashbackPlaybackCommandQueueCapacity} maxPending={health.FlashbackPlaybackMaxPendingCommands} lastLatency={health.FlashbackPlaybackLastCommandQueueLatencyMs}ms maxLatency={health.FlashbackPlaybackMaxCommandQueueLatencyMs}ms lastQueued={health.FlashbackPlaybackLastCommandQueued} lastProcessed={health.FlashbackPlaybackLastCommandProcessed} queuedAge={playbackCommandQueueAgeMs}ms lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs} threadAlive={health.FlashbackPlaybackThreadAlive}";
         var playbackPerfLane =
-            $"playback perf state={health.FlashbackPlaybackState} fps={health.FlashbackPlaybackObservedFps:0.##}/{health.ExpectedFrameRate:0.##} frames={health.FlashbackPlaybackFrameCount} late={health.FlashbackPlaybackLateFrames} dropped={health.FlashbackPlaybackDroppedFrames} submitFailures={health.FlashbackPlaybackSubmitFailures} switches={health.FlashbackPlaybackSegmentSwitches} fmp4Reopens={health.FlashbackPlaybackFmp4Reopens} writeHeadWaits={health.FlashbackPlaybackWriteHeadWaits} nearLiveSnaps={health.FlashbackPlaybackNearLiveSnaps} decodeErrorSnaps={health.FlashbackPlaybackDecodeErrorSnaps}";
+            $"playback perf state={health.FlashbackPlaybackState} fps={health.FlashbackPlaybackObservedFps:0.##}/{health.ExpectedFrameRate:0.##} 1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps p99={health.FlashbackPlaybackP99FrameMs:0.##}ms max={health.FlashbackPlaybackMaxFrameMs:0.##}ms slow={health.FlashbackPlaybackSlowFramePercent:0.##}% decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={health.FlashbackPlaybackDecodeMaxMs:0.##}ms samples={health.FlashbackPlaybackCadenceSampleCount} frames={health.FlashbackPlaybackFrameCount} late={health.FlashbackPlaybackLateFrames} dropped={health.FlashbackPlaybackDroppedFrames} submitFailures={health.FlashbackPlaybackSubmitFailures} switches={health.FlashbackPlaybackSegmentSwitches} fmp4Reopens={health.FlashbackPlaybackFmp4Reopens} writeHeadWaits={health.FlashbackPlaybackWriteHeadWaits} nearLiveSnaps={health.FlashbackPlaybackNearLiveSnaps} decodeErrorSnaps={health.FlashbackPlaybackDecodeErrorSnaps}";
         var playbackSlow =
             string.Equals(health.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
             health.ExpectedFrameRate > 0 &&
             health.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
             health.FlashbackPlaybackObservedFps > 0 &&
             health.FlashbackPlaybackObservedFps < health.ExpectedFrameRate * FlashbackPlaybackSlowFpsRatio;
+        var playbackFrametimeDegraded =
+            IsFlashbackPlaybackFrametimeDegraded(
+                health.FlashbackPlaybackState,
+                health.ExpectedFrameRate,
+                health.FlashbackPlaybackFrameCount,
+                health.FlashbackPlaybackCadenceSampleCount,
+                health.FlashbackPlaybackOnePercentLowFps);
         var flashbackTempPressure =
             health.FlashbackActive &&
             (health.FlashbackStartupCacheOverBudget ||
@@ -2011,6 +2051,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 "Warning",
                 "flashback_playback",
                 "Flashback playback is below target rate.",
+                playbackPerfLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (playbackFrametimeDegraded)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "flashback_playback",
+                "Flashback playback frametime is below target.",
                 playbackPerfLane,
                 sourceLane,
                 decodeLane,

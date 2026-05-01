@@ -281,6 +281,7 @@ static partial class Program
         AssertContains(diagnosticsText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackCommandStallThresholdMs = 1000;");
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackSlowFpsRatio = 0.75;");
+        AssertContains(diagnosticsText, "private const double FlashbackPlaybackOnePercentLowWarningRatio = 0.98;");
         AssertContains(diagnosticsText, "private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;");
         AssertContains(diagnosticsText, "private const long FlashbackRecordingBackpressureWarningMs = 100;");
         AssertContains(diagnosticsText, "\"flashback-temp-cache-pressure\"");
@@ -308,13 +309,17 @@ static partial class Program
         AssertContains(diagnosticsText, "FlashbackCleanupInProgress = health.FlashbackCleanupInProgress");
         AssertContains(diagnosticsText, "recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents}");
         AssertContains(diagnosticsText, "\"flashback-playback-slow\"");
+        AssertContains(diagnosticsText, "\"flashback-playback-frametime-degraded\"");
         AssertContains(diagnosticsText, "\"flashback-playback-submit-failures\"");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackSubmitFailures > 0");
         AssertContains(diagnosticsText, "Flashback playback frame submission failed");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackPendingCommands > 0");
         AssertContains(diagnosticsText, "FlashbackPlaybackCommandQueueCapacity");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackObservedFps < snapshot.SelectedFrameRate * FlashbackPlaybackSlowFpsRatio");
+        AssertContains(diagnosticsText, "IsFlashbackPlaybackFrametimeDegraded(\n                snapshot.FlashbackPlaybackState");
+        AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackOnePercentLowFps");
         AssertContains(diagnosticsText, "Flashback playback is below target rate");
+        AssertContains(diagnosticsText, "Flashback playback frametime degraded");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > snapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs > 0");
         AssertContains(diagnosticsText, "Flashback playback command queue has not drained");
@@ -323,6 +328,7 @@ static partial class Program
         AssertContains(diagnosticsText, "\"flashback_playback\"");
         AssertContains(diagnosticsText, "\"Flashback playback command queue is stalled.\"");
         AssertContains(diagnosticsText, "\"Flashback playback is below target rate.\"");
+        AssertContains(diagnosticsText, "\"Flashback playback frametime is below target.\"");
         AssertContains(diagnosticsText, "\"Flashback playback frame submission failed.\"");
         AssertContains(diagnosticsText, "flashback recording active={health.FlashbackActive}");
         AssertContains(diagnosticsText, "fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}");
@@ -338,6 +344,8 @@ static partial class Program
         AssertContains(diagnosticsText, "var playbackCommandFailure = string.IsNullOrWhiteSpace(health.FlashbackPlaybackLastCommandFailure)");
         AssertContains(diagnosticsText, "lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs}");
         AssertContains(diagnosticsText, "playback perf state={health.FlashbackPlaybackState}");
+        AssertContains(diagnosticsText, "1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps");
+        AssertContains(diagnosticsText, "decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms");
         AssertContains(diagnosticsText, "health.FlashbackPlaybackSubmitFailures > 0");
         AssertContains(diagnosticsText, "\"flashback_export\"");
         AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
