@@ -173,6 +173,9 @@ static partial class Program
         AssertOccursBefore(flashbackVideoEnqueue, "Volatile.Read(ref _forceRotateDraining)", "queue.Writer.TryWrite(packet)");
         AssertOccursBefore(flashbackGpuEnqueue, "Volatile.Read(ref _forceRotateDraining)", "queue.Writer.TryWrite(packet)");
         AssertOccursBefore(flashbackAudioEnqueue, "Volatile.Read(ref _forceRotateDraining)", "queue.Writer.TryWrite(packet)");
+        AssertContains(flashbackVideoEnqueue, "if (_disposed ||\n                    !_started ||");
+        AssertContains(flashbackGpuEnqueue, "if (_disposed ||\n                    !_started ||");
+        AssertContains(flashbackAudioEnqueue, "if (_disposed ||\n            !_started ||");
         AssertContains(flashbackGpuEnqueue, "lock (_videoQueueSync)");
         AssertContains(flashbackAudioEnqueue, "lock (_videoQueueSync)");
         AssertContains(captureServiceSource, "libAvSink.OnEncodingFailed = OnRecordingBackendFatalError");

@@ -1840,7 +1840,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Exception? overloadFailure = null;
             lock (_videoQueueSync)
             {
-                if (!_started ||
+                if (_disposed ||
+                    !_started ||
                     _cts?.IsCancellationRequested == true ||
                     Volatile.Read(ref _forceRotateDraining) ||
                     Volatile.Read(ref _encodingFailure) != null)
@@ -1859,7 +1860,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     return VideoEnqueueResult.Accepted;
                 }
 
-                if (!_started ||
+                if (_disposed ||
+                    !_started ||
                     _cts?.IsCancellationRequested == true ||
                     Volatile.Read(ref _forceRotateDraining) ||
                     Volatile.Read(ref _encodingFailure) != null)
@@ -1906,7 +1908,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Exception? overloadFailure = null;
             lock (_videoQueueSync)
             {
-                if (!_started ||
+                if (_disposed ||
+                    !_started ||
                     _cts?.IsCancellationRequested == true ||
                     Volatile.Read(ref _forceRotateDraining) ||
                     Volatile.Read(ref _encodingFailure) != null)
@@ -1924,7 +1927,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     return VideoEnqueueResult.Accepted;
                 }
 
-                if (!_started ||
+                if (_disposed ||
+                    !_started ||
                     _cts?.IsCancellationRequested == true ||
                     Volatile.Read(ref _forceRotateDraining) ||
                     Volatile.Read(ref _encodingFailure) != null)
@@ -2025,7 +2029,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     {
         lock (_videoQueueSync)
         {
-        if (!_started ||
+        if (_disposed ||
+            !_started ||
             _cts?.IsCancellationRequested == true ||
             Volatile.Read(ref _forceRotateDraining) ||
             Volatile.Read(ref _encodingFailure) != null)
