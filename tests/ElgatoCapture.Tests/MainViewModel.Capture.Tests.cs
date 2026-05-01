@@ -503,6 +503,8 @@ static partial class Program
             "FLASHBACK_EXPORT_SEGMENTS_OK",
             "FLASHBACK_CYCLE_NEW_SINK_EVENT_DETACH_WARN",
             "FLASHBACK_CYCLE_NEW_SINK_DISPOSE_WARN",
+            "FLASHBACK_FORMAT_CHANGE_CYCLE_CANCELLED",
+            "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED",
             "FLASHBACK_PLAYBACK_DISPOSE_REQUEST"
         })
         {
@@ -516,6 +518,8 @@ static partial class Program
         AssertContains(encoderSettingsChange, "var cycleFailed = false;");
         AssertContains(encoderSettingsChange, "cycleFailed = true;");
         AssertContains(encoderSettingsChange, "if (!cycleFailed)");
+        AssertContains(encoderSettingsChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
+        AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED");
         AssertContains(
             encoderSettingsChange,
             "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_FAIL quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} type={ex.GetType().Name} error='{ex.Message}'");
@@ -527,6 +531,8 @@ static partial class Program
         AssertContains(formatChange, "var cycleFailed = false;");
         AssertContains(formatChange, "cycleFailed = true;");
         AssertContains(formatChange, "if (!cycleFailed)");
+        AssertContains(formatChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
+        AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_CANCELLED");
         AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format} type={ex.GetType().Name} error='{ex.Message}'");
 
         var cycleBuffer = ExtractTextBetween(

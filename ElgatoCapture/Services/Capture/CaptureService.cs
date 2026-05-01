@@ -374,6 +374,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 {
                     await CycleFlashbackBufferAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
                 }
+                catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
+                {
+                    Logger.Log($"FLASHBACK_FORMAT_CHANGE_CYCLE_CANCELLED format={format} type={ex.GetType().Name} error='{ex.Message}'");
+                    throw;
+                }
                 catch (Exception ex)
                 {
                     cycleFailed = true;
@@ -436,6 +441,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 try
                 {
                     await CycleFlashbackBufferAsync(transitionToken, purgeSegments: true).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)
+                {
+                    Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} type={ex.GetType().Name} error='{ex.Message}'");
+                    throw;
                 }
                 catch (Exception ex)
                 {
