@@ -1643,7 +1643,7 @@ static partial class Program
         AssertContains(nudgeBlock, "SafeResumePreviewSubmission(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "SafeResumeRendering(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "SetState(FlashbackPlaybackState.Live);");
-        AssertContains(nudgeBlock, "SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart);");
+        AssertContains(nudgeBlock, "SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge);");
         AssertDoesNotContain(nudgeBlock, "if (decoder != null)");
 
         return Task.CompletedTask;
@@ -1722,6 +1722,16 @@ static partial class Program
         AssertContains(sourceText, "SetReopenFailure(reason, ex.GetType().Name, seekTarget);");
         AssertContains(sourceText, "private void SetReopenFailure(string reason, string detail, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"reopen_failed:{reason}:{detail}{FormatCommandDetail(position: position)}\");");
+        AssertContains(sourceText, "SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.Seek);");
+        AssertContains(sourceText, "SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub);");
+        AssertContains(sourceText, "SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub);");
+        AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"no_file\", bufferPosition);");
+        AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"seek_failed\", bufferPosition);");
+        AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"submit_failed\", bufferPosition);");
+        AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"no_frame\", bufferPosition);");
+        AssertContains(sourceText, "SetSeekDisplayFailure(kind, ex.GetType().Name, bufferPosition);");
+        AssertContains(sourceText, "private void SetSeekDisplayFailure(CommandKind kind, string detail, TimeSpan position)");
+        AssertContains(sourceText, "SetLastCommandFailure($\"seek_display_failed:{kind}:{detail}{FormatCommandDetail(position: position)}\");");
         AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, coalescedSeekTarget, \"seek\")");
         AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, endScrubTarget, \"end_scrub\")");
         AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, \"play\")");
