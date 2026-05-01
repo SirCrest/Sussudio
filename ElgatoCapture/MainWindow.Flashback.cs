@@ -229,7 +229,22 @@ public sealed partial class MainWindow
         UpdateFlashbackScrubVisual(e);
     }
     private void FlashbackScrubArea_PointerReleased(object sender, PointerRoutedEventArgs e)
-        => EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "released");
+    {
+        if (_isFlashbackScrubbing)
+        {
+            var targetPosition = ComputeFlashbackScrubPosition(e);
+            if (!ViewModel.FlashbackUpdateScrub(targetPosition))
+            {
+                ViewModel.ReportFlashbackPlaybackRejection("scrub release update", "FLASHBACK_UI_SCRUB_RELEASE_UPDATE_REJECTED");
+            }
+            else
+            {
+                UpdateFlashbackScrubVisual(e);
+            }
+        }
+
+        EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "released");
+    }
 
     private void FlashbackScrubArea_PointerCanceled(object sender, PointerRoutedEventArgs e)
         => EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "cancelled");
