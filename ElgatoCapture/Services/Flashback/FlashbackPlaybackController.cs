@@ -1768,6 +1768,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var pos = PlaybackPosition;
         var bufDur = _bufferManager.BufferedDuration;
         var gapMs = SaturatingSubtract(bufDur, pos).TotalMilliseconds;
+        SetLastCommandFailure($"decode_error:{ex.GetType().Name}{FormatCommandDetail(position: pos)}");
         Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE type={ex.GetType().Name} error='{ex.Message}' pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
         Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
         CloseDecoderFileBestEffort(decoder, "decode_error");

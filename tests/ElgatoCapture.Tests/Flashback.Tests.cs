@@ -1353,6 +1353,7 @@ static partial class Program
             "Logger.Log($\"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK",
             "SetState(FlashbackPlaybackState.Live);");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE type={ex.GetType().Name} error='{ex.Message}'");
+        AssertContains(sourceText, "SetLastCommandFailure($\"decode_error:{ex.GetType().Name}{FormatCommandDetail(position: pos)}\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' type={ex.GetType().Name} error='{ex.Message}'\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_SEEK_ERROR type={ex.GetType().Name} error='{ex.Message}'\");");
         AssertContains(decodeErrorBlock, "CloseDecoderFileBestEffort(decoder, \"decode_error\");");
