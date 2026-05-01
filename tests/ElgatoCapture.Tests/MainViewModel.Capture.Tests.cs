@@ -443,6 +443,8 @@ static partial class Program
         AssertContains(coordinatorText, "? \"disposed\"");
         AssertContains(captureServiceText, "!CanReuseFlashbackBackend(_flashbackBackendSettings, settings)");
         AssertContains(captureServiceText, "await EnsureFlashbackAudioInputsAsync(settings, transitionToken,");
+        AssertContains(startVideoPreview, "var previewStartRollbackToken = CancellationToken.None;");
+        AssertContains(startVideoPreview, "await DisposeFlashbackPreviewBackendAsync(previewStartRollbackToken)");
         var stopVideoPreviewCore = ExtractTextBetween(
             captureServiceText,
             "private Task StopVideoPreviewCoreAsync",

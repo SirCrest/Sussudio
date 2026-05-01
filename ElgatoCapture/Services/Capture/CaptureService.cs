@@ -3062,7 +3062,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             catch (Exception ex)
             {
                 Logger.Log($"Unified preview start failed: {ex.Message}");
-                await DisposeFlashbackPreviewBackendAsync(transitionToken).ConfigureAwait(false);
+                var previewStartRollbackToken = CancellationToken.None;
+                await DisposeFlashbackPreviewBackendAsync(previewStartRollbackToken).ConfigureAwait(false);
                 _unifiedVideoCapture = null;
                 if (unifiedVideoCapture != null)
                 {
