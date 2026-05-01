@@ -96,7 +96,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             }
             finally
             {
-                linkedCts.Dispose();
+                DisposeLinkedCtsBestEffort(linkedCts, "single_export");
             }
         });
     }
@@ -132,7 +132,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             }
             finally
             {
-                linkedCts.Dispose();
+                DisposeLinkedCtsBestEffort(linkedCts, "segment_export");
             }
         });
     }
@@ -1565,6 +1565,20 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             ObjectDisposedException.ThrowIf(_disposed, this);
             var disposeCts = _disposeCts ?? throw new ObjectDisposedException(nameof(FlashbackExporter));
             return CancellationTokenSource.CreateLinkedTokenSource(ct, disposeCts.Token);
+        }
+    }
+
+    private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)
+    {
+        if (cts == null) return;
+
+        try
+        {
+            cts.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_LINKED_CTS_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 

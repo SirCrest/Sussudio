@@ -319,7 +319,10 @@ static partial class Program
         AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposed, this);");
         AssertContains(sourceText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
         AssertContains(sourceText, "const string message = \"Flashback exporter is disposed.\";");
-        AssertContains(sourceText, "finally\n            {\n                linkedCts.Dispose();\n            }\n        });");
+        AssertContains(sourceText, "finally\n            {\n                DisposeLinkedCtsBestEffort(linkedCts, \"single_export\");\n            }\n        });");
+        AssertContains(sourceText, "finally\n            {\n                DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\");\n            }\n        });");
+        AssertContains(sourceText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_LINKED_CTS_DISPOSE_WARN");
         AssertDoesNotContain(sourceText, "}, linkedCts.Token);");
         AssertDoesNotContain(sourceText, "_disposeCts!.Token");
 
