@@ -1174,8 +1174,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 return;
             }
 
-            _pendingFrames.Enqueue(frame);
             var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);
+            _pendingFrames.Enqueue(frame);
             TrackFrameSubmitted(frame);
 
             // Trim oldest frames if the queue exceeds the elastic limit.

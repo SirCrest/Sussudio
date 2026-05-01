@@ -158,9 +158,11 @@ static partial class Program
         AssertContains(source, "ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
         AssertContains(source, "private int _pendingFrameCount;");
         AssertContains(source, "public int PendingFrameCount => Math.Max(0, Volatile.Read(ref _pendingFrameCount));");
+        AssertContains(source, "var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);\n            _pendingFrames.Enqueue(frame);");
         AssertContains(source, "private bool TryDequeuePendingFrame(out PendingFrame frame)");
         AssertContains(source, "DecrementPendingFrameCount();");
         AssertDoesNotContain(source, "_pendingFrames.Count");
+        AssertDoesNotContain(source, "_pendingFrames.Enqueue(frame);\n            var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);");
         AssertContains(source, "private void TrackFrameDropped(PendingFrame frame, string reason)\n    {\n        Interlocked.Increment(ref _framesDropped);");
         AssertDoesNotContain(source, "TrackFrameDropped(frame, \"renderer-stopped\");\n                frame.Dispose();\n                Interlocked.Increment(ref _framesDropped);");
         AssertDoesNotContain(source, "TrackFrameDropped(oldest, \"renderer-backlog\");\n                    oldest.Dispose();\n                    Interlocked.Increment(ref _framesDropped);");
