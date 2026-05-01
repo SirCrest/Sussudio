@@ -2480,6 +2480,7 @@ static partial class Program
         AssertContains(source, "if (endPts <= startPts)\n        {\n            Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=invalid_range path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}\");\n            return;\n        }");
         AssertContains(source, "if (!IsPathInSessionDirectory(path))\n            {\n                Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=outside_session path='{Path.GetFileName(path)}'\");\n                return;\n            }");
         AssertContains(source, "if (!File.Exists(path))\n            {\n                Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=missing_file path='{Path.GetFileName(path)}'\");\n                return;\n            }");
+        AssertContains(source, "if (_completedSegments.Any(seg => IsSameSegmentPath(seg.Path, path)))\n            {\n                Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=duplicate_path path='{Path.GetFileName(path)}'\");\n                return;\n            }");
         AssertContains(source, "if (_completedSegments.Count > 0 && startPts < _completedSegments[^1].EndPts)");
         AssertContains(source, "FLASHBACK_BUFFER_SEGMENT_SKIP reason=non_monotonic");
         AssertContains(source, "private bool IsPathInSessionDirectory(string path)");
@@ -2522,6 +2523,17 @@ static partial class Program
             });
             var overlappingSegmentPath = Path.Combine(tempDir, "segment-overlap.ts");
             File.WriteAllBytes(overlappingSegmentPath, new byte[] { 0x47 });
+            onSegmentCompleted.Invoke(manager, new object[]
+            {
+                Path.Combine(tempDir, ".", "segment-0.ts"),
+                TimeSpan.FromSeconds(5),
+                TimeSpan.FromSeconds(6),
+                1000L
+            });
+
+            AssertEqual(1, (int)GetPrivateField(manager, "_completedSegmentSequence")!, "Duplicate segment path should not allocate sequence");
+            AssertEqual(1000L, GetLongProperty(manager, "TotalBytesWritten"), "Duplicate segment path should not update bytes");
+
             onSegmentCompleted.Invoke(manager, new object[]
             {
                 overlappingSegmentPath,

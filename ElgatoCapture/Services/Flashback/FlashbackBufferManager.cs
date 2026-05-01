@@ -886,6 +886,12 @@ internal sealed class FlashbackBufferManager : IDisposable
                 return;
             }
 
+            if (_completedSegments.Any(seg => IsSameSegmentPath(seg.Path, path)))
+            {
+                Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=duplicate_path path='{Path.GetFileName(path)}'");
+                return;
+            }
+
             if (_completedSegments.Count > 0 && startPts < _completedSegments[^1].EndPts)
             {
                 var previous = _completedSegments[^1];
