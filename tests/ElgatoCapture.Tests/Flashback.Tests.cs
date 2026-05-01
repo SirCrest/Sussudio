@@ -1028,6 +1028,21 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_HeldFrameCleanupIsBestEffort()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
+        AssertContains(sourceText, "FLASHBACK_DECODER_RELEASE_HELD_FRAME_WARN");
+        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_pendingVideoFrame, \"seek_keyframe_pending\");");
+        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(bestFrame.Value, \"seek_replace_best\");");
+        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(bestFrame.Value, \"seek_best_superseded\");");
+        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_pendingVideoFrame, \"close_pending\");");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackEncoderSink_RotateFailureRestoresActiveSegment()
     {
         var sinkText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")

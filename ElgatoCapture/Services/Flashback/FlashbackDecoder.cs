@@ -307,7 +307,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         // Clear any stashed pending frame — it's from before the seek point
         if (_hasPendingVideoFrame)
         {
-            ReleaseHeldFrame(_pendingVideoFrame);
+            ReleaseHeldFrameBestEffort(_pendingVideoFrame, "seek_keyframe_pending");
             _pendingVideoFrame = default;
             _hasPendingVideoFrame = false;
         }
@@ -356,12 +356,12 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
                 _currentPosition = frame.Pts;
                 _pendingVideoFrame = frame;
                 _hasPendingVideoFrame = true;
-                if (bestFrame != null) ReleaseHeldFrame(bestFrame.Value);
+                if (bestFrame != null) ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_replace_best");
                 return true;
             }
 
             // Keep the closest frame in case we hit the limit
-            if (bestFrame != null) ReleaseHeldFrame(bestFrame.Value);
+            if (bestFrame != null) ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_best_superseded");
             bestFrame = frame;
         }
 
@@ -1167,7 +1167,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         // Clear any stashed pending frame (free held D3D11VA surface if present)
         if (_hasPendingVideoFrame)
         {
-            ReleaseHeldFrame(_pendingVideoFrame);
+            ReleaseHeldFrameBestEffort(_pendingVideoFrame, "close_pending");
             _pendingVideoFrame = default;
             _hasPendingVideoFrame = false;
         }
@@ -1328,6 +1328,18 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         {
             var heldFrame = (AVFrame*)frame.HeldFrame;
             ffmpeg.av_frame_free(&heldFrame);
+        }
+    }
+
+    private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)
+    {
+        try
+        {
+            ReleaseHeldFrame(frame);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_DECODER_RELEASE_HELD_FRAME_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 }
