@@ -73,6 +73,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const int FlashbackPlaybackMinFramesForPerfAlert = 60;
     private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;
     private const long FlashbackRecordingBackpressureWarningMs = 100;
+    private const double FlashbackRecordingQueueDepthWarningRatio = 0.75;
+    private const long FlashbackRecordingQueueAgeWarningMs = 500;
 
     private readonly double _perfectionCaptureDropPercentThreshold;
     private readonly double _perfectionCaptureP95MultiplierThreshold;
@@ -1508,6 +1510,16 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var flashbackRecordingRecentBackpressure =
             flashbackRecordingRecent.BackpressureEvents > 0 &&
             snapshot.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs;
+        var flashbackRecordingQueueBacklog =
+            IsFlashbackRecordingQueueBackedUp(
+                snapshot.FlashbackVideoQueueDepth,
+                snapshot.FlashbackVideoQueueCapacity,
+                snapshot.FlashbackVideoQueueOldestFrameAgeMs);
+        var flashbackRecordingRecentForceRotateGap =
+            snapshot.FlashbackActive &&
+            flashbackRecordingRecent.SequenceGaps > 0 &&
+            snapshot.FlashbackVideoQueueRejectedFrames > 0 &&
+            string.Equals(snapshot.FlashbackVideoQueueLastRejectReason, "force_rotate_draining", StringComparison.OrdinalIgnoreCase);
         ObserveFlashbackExportCompletion(snapshot);
         var exportLastProgressAgeMs = snapshot.FlashbackExportActive
             ? Math.Max(0, snapshot.FlashbackExportLastProgressAgeMs)
@@ -1657,9 +1669,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             snapshot.FlashbackActive &&
             (flashbackRecordingRecent.DroppedFrames > 0 ||
              flashbackRecordingRecent.EncoderDroppedFrames > 0 ||
-             flashbackRecordingRecent.SequenceGaps > 0 ||
+             (flashbackRecordingRecent.SequenceGaps > 0 && !flashbackRecordingRecentForceRotateGap) ||
              flashbackRecordingRecent.GpuFramesDropped > 0 ||
-             flashbackRecordingRecentBackpressure),
+             flashbackRecordingRecentBackpressure ||
+             flashbackRecordingQueueBacklog),
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Flashback,
             $"Flashback recording path degraded: recentDropped={flashbackRecordingRecent.DroppedFrames} recentEncoderDrops={flashbackRecordingRecent.EncoderDroppedFrames} " +
@@ -1670,6 +1683,17 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"queue={snapshot.FlashbackVideoQueueDepth}/{snapshot.FlashbackVideoQueueCapacity} maxQueue={snapshot.FlashbackVideoQueueMaxDepth} " +
             $"backpressure={snapshot.FlashbackVideoBackpressureWaitMs}ms/{snapshot.FlashbackVideoBackpressureEvents} last={snapshot.FlashbackVideoBackpressureLastWaitMs}ms max={snapshot.FlashbackVideoBackpressureMaxWaitMs}ms.",
             "Flashback recording path returned to healthy range.",
+            throttleMs: 5000);
+
+        SetAlertState(
+            "flashback-export-rotation-gap",
+            flashbackRecordingRecentForceRotateGap,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback export rotation skipped live-edge frames: recentSeqGaps={flashbackRecordingRecent.SequenceGaps} " +
+            $"queueRejects={snapshot.FlashbackVideoQueueRejectedFrames} lastReject={snapshot.FlashbackVideoQueueLastRejectReason} " +
+            $"exportStatus={snapshot.FlashbackExportStatus} exportId={snapshot.FlashbackExportId}.",
+            "Flashback export rotation is no longer skipping live-edge frames.",
             throttleMs: 5000);
 
         SetAlertState(
@@ -1822,6 +1846,15 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             onePercentLowFps > 0 &&
             onePercentLowFps < targetFrameRate * FlashbackPlaybackOnePercentLowWarningRatio;
 
+    private static bool IsFlashbackRecordingQueueBackedUp(
+        int queueDepth,
+        int queueCapacity,
+        long oldestFrameAgeMs)
+        =>
+            queueCapacity > 0 &&
+            queueDepth >= Math.Ceiling(queueCapacity * FlashbackRecordingQueueDepthWarningRatio) &&
+            oldestFrameAgeMs >= FlashbackRecordingQueueAgeWarningMs;
+
     private readonly record struct DiagnosticEvaluation(
         string HealthStatus,
         string LikelyStage,
@@ -1894,6 +1927,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var flashbackRecordingLane =
             $"flashback recording active={health.FlashbackActive} failed={health.FlashbackEncodingFailed} type={health.FlashbackEncodingFailureType ?? "None"} " +
             $"dropped={health.FlashbackDroppedFrames} encoderDrops={health.FlashbackVideoEncoderDroppedFrames} seqGaps={health.FlashbackVideoSequenceGaps} " +
+            $"queueRejects={health.FlashbackVideoQueueRejectedFrames} lastReject={health.FlashbackVideoQueueLastRejectReason ?? "None"} " +
             $"gpuOverloads={health.FlashbackGpuFramesDropped} forceRotate={health.FlashbackForceRotateActive} requested={health.FlashbackForceRotateRequested} draining={health.FlashbackForceRotateDraining} queue={health.FlashbackVideoQueueDepth}/{health.FlashbackVideoQueueCapacity} maxQueue={health.FlashbackVideoQueueMaxDepth} " +
             $"queueAgeMs={health.FlashbackVideoQueueOldestFrameAgeMs} backpressure={health.FlashbackVideoBackpressureWaitMs}ms/{health.FlashbackVideoBackpressureEvents} maxBackpressure={health.FlashbackVideoBackpressureMaxWaitMs}ms " +
             $"fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}";
@@ -1944,7 +1978,24 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
              health.FlashbackVideoEncoderDroppedFrames > 0 ||
              health.FlashbackVideoSequenceGaps > 0 ||
              health.FlashbackGpuFramesDropped > 0 ||
-             health.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs);
+             health.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs ||
+             IsFlashbackRecordingQueueBackedUp(
+                 health.FlashbackVideoQueueDepth,
+                 health.FlashbackVideoQueueCapacity,
+                 health.FlashbackVideoQueueOldestFrameAgeMs));
+        var flashbackExportRotationGap =
+            health.FlashbackActive &&
+            health.FlashbackVideoSequenceGaps > 0 &&
+            health.FlashbackVideoQueueRejectedFrames > 0 &&
+            health.FlashbackDroppedFrames <= 0 &&
+            health.FlashbackVideoEncoderDroppedFrames <= 0 &&
+            health.FlashbackGpuFramesDropped <= 0 &&
+            health.FlashbackVideoBackpressureMaxWaitMs < FlashbackRecordingBackpressureWarningMs &&
+            !IsFlashbackRecordingQueueBackedUp(
+                health.FlashbackVideoQueueDepth,
+                health.FlashbackVideoQueueCapacity,
+                health.FlashbackVideoQueueOldestFrameAgeMs) &&
+            string.Equals(health.FlashbackVideoQueueLastRejectReason, "force_rotate_draining", StringComparison.OrdinalIgnoreCase);
         var exportLastProgressAgeMs = health.FlashbackExportActive
             ? Math.Max(0, health.FlashbackExportLastProgressAgeMs)
             : 0;
@@ -1971,6 +2022,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 "Critical",
                 "flashback_recording",
                 "Flashback encoder has failed.",
+                flashbackRecordingLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (flashbackExportRotationGap)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "flashback_export",
+                "Flashback export rotation skipped live-edge frames.",
                 flashbackRecordingLane,
                 sourceLane,
                 decodeLane,
