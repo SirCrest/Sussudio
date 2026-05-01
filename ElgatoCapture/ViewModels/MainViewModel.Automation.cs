@@ -340,11 +340,11 @@ public partial class MainViewModel
                 IsFlashbackExporting = false;
                 FlashbackExportProgress = 0;
                 _exportCts = null;
-                exportCts.Dispose();
+                DisposeFlashbackExportCtsBestEffort(exportCts, "ui_current");
             }
             else
             {
-                exportCts.Dispose();
+                DisposeFlashbackExportCtsBestEffort(exportCts, "ui_stale");
             }
         }
     }
@@ -425,7 +425,7 @@ public partial class MainViewModel
                 }
                 finally
                 {
-                    exportCts.Dispose();
+                    DisposeFlashbackExportCtsBestEffort(exportCts, "automation_dispatcher_cleanup");
                 }
             }))
             {
@@ -433,8 +433,20 @@ public partial class MainViewModel
                 {
                     _exportCts = null;
                 }
-                exportCts.Dispose();
+                DisposeFlashbackExportCtsBestEffort(exportCts, "automation_inline_cleanup");
             }
+        }
+    }
+
+    private static void DisposeFlashbackExportCtsBestEffort(CancellationTokenSource cts, string operation)
+    {
+        try
+        {
+            cts.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_CTS_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 

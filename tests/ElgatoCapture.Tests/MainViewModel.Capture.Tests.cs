@@ -72,6 +72,8 @@ static partial class Program
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelText = string.Join("\n", viewModelFiles.Values);
         var automationText = viewModelFiles["MainViewModel.Automation.cs"];
+        var rawAutomationText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Automation.cs")
+            .Replace("\r\n", "\n");
         var settingsText = viewModelFiles["MainViewModel.Settings.cs"];
         var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
@@ -123,7 +125,13 @@ static partial class Program
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "_exportCts = null;");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "if (!_dispatcherQueue.TryEnqueue(");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "finally");
-        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "exportCts.Dispose();");
+        AssertContains(automationText, "private static void DisposeFlashbackExportCtsBestEffort(CancellationTokenSource cts, string operation)");
+        AssertContains(rawAutomationText, "FLASHBACK_EXPORT_CTS_DISPOSE_WARN");
+        AssertContains(rawAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"ui_current\");");
+        AssertContains(rawAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"ui_stale\");");
+        AssertContains(rawAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_dispatcher_cleanup\");");
+        AssertContains(rawAutomationText, "DisposeFlashbackExportCtsBestEffort(exportCts, \"automation_inline_cleanup\");");
+        AssertDoesNotContain(automationText, "exportCts.Dispose();");
         AssertMemberContains(automationText, "GetFlashbackSegments", "_sessionCoordinator.GetFlashbackSegments()");
         AssertMemberContains(automationText, "SetFlashbackEnabledAsync", "_sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken)");
         AssertMemberContains(automationText, "RestartFlashbackAsync", "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
