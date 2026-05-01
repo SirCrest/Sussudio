@@ -351,45 +351,62 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         const int maxForwardFrames = 960;
         var targetTicks = target.Ticks;
         DecodedVideoFrame? bestFrame = null;
-        for (var i = 0; i < maxForwardFrames; i++)
+        var bestFrameTransferred = false;
+        try
         {
-            if (!TryDecodeNextVideoFrame(out var frame))
+            for (var i = 0; i < maxForwardFrames; i++)
             {
-                // Reached EOF before target — return best frame if we have one
-                if (bestFrame != null)
+                if (!TryDecodeNextVideoFrame(out var frame))
                 {
-                    _currentPosition = bestFrame.Value.Pts;
-                    _pendingVideoFrame = bestFrame.Value;
+                    // Reached EOF before target — return best frame if we have one
+                    if (bestFrame != null)
+                    {
+                        _currentPosition = bestFrame.Value.Pts;
+                        _pendingVideoFrame = bestFrame.Value;
+                        _hasPendingVideoFrame = true;
+                        bestFrameTransferred = true;
+                        return true;
+                    }
+                    return false;
+                }
+
+                if (frame.Pts.Ticks >= targetTicks)
+                {
+                    _currentPosition = frame.Pts;
+                    _pendingVideoFrame = frame;
                     _hasPendingVideoFrame = true;
+                    if (bestFrame != null)
+                    {
+                        ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_replace_best");
+                        bestFrame = null;
+                    }
                     return true;
                 }
-                return false;
+
+                // Keep the closest frame in case we hit the limit
+                if (bestFrame != null) ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_best_superseded");
+                bestFrame = frame;
             }
 
-            if (frame.Pts.Ticks >= targetTicks)
+            // Hit frame limit — return the closest frame we decoded
+            if (bestFrame != null)
             {
-                _currentPosition = frame.Pts;
-                _pendingVideoFrame = frame;
+                Logger.Log($"FLASHBACK_DECODER_SEEK_FRAME_LIMIT target_ms={(long)target.TotalMilliseconds} best_ms={(long)bestFrame.Value.Pts.TotalMilliseconds} frames={maxForwardFrames}");
+                _currentPosition = bestFrame.Value.Pts;
+                _pendingVideoFrame = bestFrame.Value;
                 _hasPendingVideoFrame = true;
-                if (bestFrame != null) ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_replace_best");
+                bestFrameTransferred = true;
                 return true;
             }
-
-            // Keep the closest frame in case we hit the limit
-            if (bestFrame != null) ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_best_superseded");
-            bestFrame = frame;
+            return false;
         }
-
-        // Hit frame limit — return the closest frame we decoded
-        if (bestFrame != null)
+        finally
         {
-            Logger.Log($"FLASHBACK_DECODER_SEEK_FRAME_LIMIT target_ms={(long)target.TotalMilliseconds} best_ms={(long)bestFrame.Value.Pts.TotalMilliseconds} frames={maxForwardFrames}");
-            _currentPosition = bestFrame.Value.Pts;
-            _pendingVideoFrame = bestFrame.Value;
-            _hasPendingVideoFrame = true;
-            return true;
+            if (!bestFrameTransferred && bestFrame != null)
+            {
+                ReleaseHeldFrameBestEffort(bestFrame.Value, "seek_best_abandoned");
+            }
         }
-        return false;
     }
 
     /// <summary>
