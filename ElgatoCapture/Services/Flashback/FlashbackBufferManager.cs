@@ -1144,7 +1144,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 result.Add(new FlashbackSegmentInfo
                 {
                     Path = _activeSegmentPath,
-                    SequenceNumber = _nextSegmentIndex,
+                    SequenceNumber = Math.Max(0, _nextSegmentIndex - 1),
                     StartPtsMs = (long)activeStartPts.TotalMilliseconds,
                     EndPtsMs = (long)activeEndPts.TotalMilliseconds,
                     SizeBytes = activeSizeBytes,

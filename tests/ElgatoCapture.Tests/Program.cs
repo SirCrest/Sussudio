@@ -2997,6 +2997,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(source, "if (!File.Exists(seg.Path))\n                {\n                    continue;\n                }");
         AssertContains(source, "if (_activeSegmentPath != null && File.Exists(_activeSegmentPath))");
+        AssertContains(source, "SequenceNumber = Math.Max(0, _nextSegmentIndex - 1),");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
@@ -3015,6 +3016,9 @@ static partial class Program
         var result = method.Invoke(manager, null)!;
 
         AssertEqual(2, GetCountProperty(result), "Segment info should include existing completed plus active");
+        var infos = ((System.Collections.IEnumerable)result).Cast<object>().ToArray();
+        var activeInfo = infos.Single(info => GetBoolProperty(info, "IsActive"));
+        AssertEqual(3, GetIntProperty(activeInfo, "SequenceNumber"), "Active segment sequence should match current generated segment index");
 
         File.Delete(active);
         var withoutActive = method.Invoke(manager, null)!;
