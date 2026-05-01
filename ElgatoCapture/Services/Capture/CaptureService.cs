@@ -1841,12 +1841,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;
             try
             {
-                // StopAsync waits for the encoding loop to fully drain and exit
-                await flashbackSink.StopAsync(cancellationToken).ConfigureAwait(false);
-            }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-            {
-                throw;
+                // Once feeds are detached, finish the bounded sink drain even if the
+                // caller cancels so service fields never point at a half-torn backend.
+                await flashbackSink.StopAsync(CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -1876,7 +1873,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         if (!sinkCompletionTask.IsCompleted)
         {
-            cancellationToken.ThrowIfCancellationRequested();
             ScheduleDeferredFlashbackBackendCleanup(
                 sinkCompletionTask,
                 flashbackBufferManager,
@@ -1886,6 +1882,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 cancellationToken: cancellationToken);
             flashbackBufferManager = null;
             flashbackExporter = null;
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
         if (flashbackBufferManager != null)
