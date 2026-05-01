@@ -317,6 +317,30 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+
+        var missingVideoBlock = ExtractTextBetween(
+            sourceText,
+            "if (videoStreamIndex < 0)",
+            "                        var videoStream = _activeInputContext->streams[videoStreamIndex];");
+        var incompleteVideoParamsBlock = ExtractTextBetween(
+            sourceText,
+            "var videoStream = _activeInputContext->streams[videoStreamIndex];",
+            "                        CreateOutputContext(tmpPath, fastStart);");
+
+        AssertDoesNotContain(missingVideoBlock, "streams[videoStreamIndex]");
+        AssertContains(missingVideoBlock, "FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing'");
+        AssertContains(missingVideoBlock, "no usable video stream was found in any segment");
+        AssertContains(incompleteVideoParamsBlock, "var videoStream = _activeInputContext->streams[videoStreamIndex];");
+        AssertContains(incompleteVideoParamsBlock, "var videoHasValidParams = videoWidth > 0 && videoHeight > 0;");
+        AssertContains(incompleteVideoParamsBlock, "no segment had complete video parameters");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled()
     {
         var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");

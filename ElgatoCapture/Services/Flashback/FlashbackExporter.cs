@@ -604,19 +604,42 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         // the TS segment likely started mid-stream without SPS/PPS (H.264
                         // from RotateOutput with NVENC pipeline latency). Try the next
                         // segment as the template source instead.
-                        var videoHasValidParams = videoStreamIndex >= 0 &&
-                            _activeInputContext->streams[videoStreamIndex]->codecpar->width > 0 &&
-                            _activeInputContext->streams[videoStreamIndex]->codecpar->height > 0;
+                        if (videoStreamIndex < 0)
+                        {
+                            Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing' seg={segIdx} trying_next_segment={segIdx < segments.Count - 1}");
+                            CloseActiveInput();
+                            if (segIdx < segments.Count - 1)
+                            {
+                                continue;
+                            }
 
-                        if (!videoHasValidParams && segIdx < segments.Count - 1)
+                            const string message = "Flashback export failed: no usable video stream was found in any segment.";
+                            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+                            return FinalizeResult.Failure(outputPath, message);
+                        }
+
+                        var videoStream = _activeInputContext->streams[videoStreamIndex];
+                        var videoWidth = videoStream->codecpar->width;
+                        var videoHeight = videoStream->codecpar->height;
+                        var videoExtradataSize = videoStream->codecpar->extradata_size;
+                        var videoHasValidParams = videoWidth > 0 && videoHeight > 0;
+
+                        if (!videoHasValidParams)
                         {
                             Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_params_incomplete' seg={segIdx} " +
-                                $"w={_activeInputContext->streams[videoStreamIndex]->codecpar->width} " +
-                                $"h={_activeInputContext->streams[videoStreamIndex]->codecpar->height} " +
-                                $"extradata={_activeInputContext->streams[videoStreamIndex]->codecpar->extradata_size} " +
-                                $"trying_next_segment");
+                                $"w={videoWidth} " +
+                                $"h={videoHeight} " +
+                                $"extradata={videoExtradataSize} " +
+                                $"trying_next_segment={segIdx < segments.Count - 1}");
                             CloseActiveInput();
-                            continue;
+                            if (segIdx < segments.Count - 1)
+                            {
+                                continue;
+                            }
+
+                            const string message = "Flashback export failed: no segment had complete video parameters.";
+                            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+                            return FinalizeResult.Failure(outputPath, message);
                         }
 
                         CreateOutputContext(tmpPath, fastStart);
