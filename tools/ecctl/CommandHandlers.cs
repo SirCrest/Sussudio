@@ -474,36 +474,36 @@ internal static class CommandHandlers
                 var playPayload = new Dictionary<string, object?> { ["action"] = "play" };
                 if (context.Rest.Count >= 2)
                     playPayload["positionMs"] = ParseFlashbackPositionMs(context.Rest[1]);
-                return HandleSimpleCommandAsync(context, "FlashbackAction", playPayload, includeData: false);
+                return HandleSimpleCommandAsync(context, "FlashbackAction", playPayload, includeData: true);
             }
             case "pause":
                 return HandleSimpleCommandAsync(context, "FlashbackAction",
-                    new Dictionary<string, object?> { ["action"] = "pause" }, includeData: false);
+                    new Dictionary<string, object?> { ["action"] = "pause" }, includeData: true);
             case "go-live":
                 return HandleSimpleCommandAsync(context, "FlashbackAction",
-                    new Dictionary<string, object?> { ["action"] = "go-live" }, includeData: false);
+                    new Dictionary<string, object?> { ["action"] = "go-live" }, includeData: true);
             case "seek":
                 return HandleSimpleCommandAsync(context, "FlashbackAction",
                     new Dictionary<string, object?>
                     {
                         ["action"] = "seek",
                         ["positionMs"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback seek <ms>"))
-                    }, includeData: false);
+                    }, includeData: true);
             case "set-in":
             case "set-in-point":
                 EnsureArgCount(context.Rest, 1, "flashback set-in");
                 return HandleSimpleCommandAsync(context, "FlashbackAction",
-                    new Dictionary<string, object?> { ["action"] = "set-in-point" }, includeData: false);
+                    new Dictionary<string, object?> { ["action"] = "set-in-point" }, includeData: true);
             case "set-out":
             case "set-out-point":
                 EnsureArgCount(context.Rest, 1, "flashback set-out");
                 return HandleSimpleCommandAsync(context, "FlashbackAction",
-                    new Dictionary<string, object?> { ["action"] = "set-out-point" }, includeData: false);
+                    new Dictionary<string, object?> { ["action"] = "set-out-point" }, includeData: true);
             case "clear-range":
             case "clear-in-out":
                 EnsureArgCount(context.Rest, 1, "flashback clear-range");
                 return HandleSimpleCommandAsync(context, "FlashbackAction",
-                    new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, includeData: false);
+                    new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, includeData: true);
             case "export":
             {
                 var useSelectionRange = ConsumeFlag(context.Rest, "--range");

@@ -73,7 +73,9 @@ static partial class Program
         var commandHandlersSource = ReadRepoFile("tools/ecctl/CommandHandlers.cs")
             .Replace("\r\n", "\n");
         AssertContains(commandHandlersSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
+        AssertContains(commandHandlersSource, "return HandleSimpleCommandAsync(context, \"FlashbackAction\", playPayload, includeData: true);");
         AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback seek <ms>\"))");
+        AssertContains(commandHandlersSource, "}, includeData: true);\n            case \"set-in\":");
         AssertContains(commandHandlersSource, "? ParseFlashbackExportSeconds(context.Rest[1])");
         AssertContains(commandHandlersSource, "private static double ParseFlashbackPositionMs(string value)");
         AssertContains(commandHandlersSource, "Flashback position must be finite, non-negative, and within TimeSpan range.");
