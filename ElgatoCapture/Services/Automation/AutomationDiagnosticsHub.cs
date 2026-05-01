@@ -1312,11 +1312,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private void UpdateAlerts(AutomationSnapshot snapshot)
     {
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var exportProgressReferenceUtcUnixMs = snapshot.FlashbackExportLastProgressUtcUnixMs > 0
-            ? snapshot.FlashbackExportLastProgressUtcUnixMs
-            : snapshot.FlashbackExportStartedUtcUnixMs;
-        var exportLastProgressAgeMs = snapshot.FlashbackExportActive && exportProgressReferenceUtcUnixMs > 0
-            ? Math.Max(0, nowUnixMs - exportProgressReferenceUtcUnixMs)
+        var exportLastProgressAgeMs = snapshot.FlashbackExportActive
+            ? Math.Max(0, snapshot.FlashbackExportLastProgressAgeMs)
             : 0;
         var playbackCommandQueueAgeMs =
             snapshot.FlashbackPlaybackPendingCommands > 0 &&
@@ -1411,7 +1408,6 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         SetAlertState(
             "flashback-export-stalled",
             snapshot.FlashbackExportActive &&
-            exportProgressReferenceUtcUnixMs > 0 &&
             exportLastProgressAgeMs >= FlashbackExportStallThresholdMs,
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Flashback,
@@ -1564,7 +1560,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var audioLane =
             $"audio integrity={captureRuntime.RecordingIntegrityAudioStatus} drops={captureRuntime.RecordingIntegrityAudioDropEvents} disc={captureRuntime.RecordingIntegrityAudioDiscontinuities} gaps={captureRuntime.RecordingIntegrityAudioCallbackGaps}";
         var exportLane =
-            $"export active={health.FlashbackExportActive} status={health.FlashbackExportStatus} id={health.FlashbackExportId} progress={health.FlashbackExportPercent:0.##}% segments={health.FlashbackExportSegmentsProcessed}/{health.FlashbackExportTotalSegments} lastProgressUtc={health.FlashbackExportLastProgressUtcUnixMs} completedUtc={health.FlashbackExportCompletedUtcUnixMs}";
+            $"export active={health.FlashbackExportActive} status={health.FlashbackExportStatus} id={health.FlashbackExportId} progress={health.FlashbackExportPercent:0.##}% segments={health.FlashbackExportSegmentsProcessed}/{health.FlashbackExportTotalSegments} elapsedMs={health.FlashbackExportElapsedMs} progressAgeMs={health.FlashbackExportLastProgressAgeMs} bytes={health.FlashbackExportOutputBytes} throughputBps={health.FlashbackExportThroughputBytesPerSec:0.##} lastProgressUtc={health.FlashbackExportLastProgressUtcUnixMs} completedUtc={health.FlashbackExportCompletedUtcUnixMs}";
         var tempCacheLane =
             $"flashback temp freeBytes={health.FlashbackTempDriveFreeBytes} cacheBytes={health.FlashbackStartupCacheBytes} budgetBytes={health.FlashbackStartupCacheBudgetBytes} sessions={health.FlashbackStartupCacheSessionCount} deleted={health.FlashbackStartupCacheDeletedSessionCount} freedBytes={health.FlashbackStartupCacheFreedBytes} overBudget={health.FlashbackStartupCacheOverBudget}";
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -1588,11 +1584,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             health.FlashbackActive &&
             (health.FlashbackStartupCacheOverBudget ||
              (health.FlashbackTempDriveFreeBytes >= 0 && health.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes));
-        var exportProgressReferenceUtcUnixMs = health.FlashbackExportLastProgressUtcUnixMs > 0
-            ? health.FlashbackExportLastProgressUtcUnixMs
-            : health.FlashbackExportStartedUtcUnixMs;
-        var exportLastProgressAgeMs = health.FlashbackExportActive && exportProgressReferenceUtcUnixMs > 0
-            ? Math.Max(0, nowUnixMs - exportProgressReferenceUtcUnixMs)
+        var exportLastProgressAgeMs = health.FlashbackExportActive
+            ? Math.Max(0, health.FlashbackExportLastProgressAgeMs)
             : 0;
 
         if (flashbackTempPressure)

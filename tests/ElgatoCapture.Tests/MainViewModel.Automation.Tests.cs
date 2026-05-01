@@ -246,9 +246,10 @@ static partial class Program
         AssertContains(diagnosticsText, "\"flashback-export-stalled\"");
         AssertContains(diagnosticsText, "DiagnosticsCategory.Flashback");
         AssertContains(diagnosticsText, "health.FlashbackExportActive");
-        AssertContains(diagnosticsText, "var exportProgressReferenceUtcUnixMs = snapshot.FlashbackExportLastProgressUtcUnixMs > 0");
-        AssertContains(diagnosticsText, ": snapshot.FlashbackExportStartedUtcUnixMs;");
-        AssertContains(diagnosticsText, "exportProgressReferenceUtcUnixMs > 0 &&");
+        AssertContains(diagnosticsText, "Math.Max(0, snapshot.FlashbackExportLastProgressAgeMs)");
+        AssertContains(diagnosticsText, "Math.Max(0, health.FlashbackExportLastProgressAgeMs)");
+        AssertContains(diagnosticsText, "elapsedMs={health.FlashbackExportElapsedMs}");
+        AssertContains(diagnosticsText, "throughputBps={health.FlashbackExportThroughputBytesPerSec:0.##}");
         AssertContains(diagnosticsText, "private const int FlashbackExportStallThresholdMs = 30000;");
         AssertContains(diagnosticsText, "exportLastProgressAgeMs >= FlashbackExportStallThresholdMs");
         AssertContains(diagnosticsText, "\"Flashback export progress is stalled.\"");
