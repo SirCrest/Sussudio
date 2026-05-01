@@ -239,6 +239,12 @@ static partial class Program
         AssertContains(flashbackWindowText, "FLASHBACK_UI_SCRUB_END");
         AssertContains(flashbackWindowText, "FlashbackScrubArea_PointerCanceled");
         AssertContains(flashbackWindowText, "FlashbackScrubArea_PointerCaptureLost");
+        AssertContains(flashbackWindowText, "if (!TryComputeFlashbackTimelineFraction(pos.X, width, out var fraction)) return;");
+        AssertContains(flashbackWindowText, "if (!TryComputeFlashbackTimelineFraction(pos.X, width, out var fraction)) return TimeSpan.Zero;");
+        AssertContains(flashbackWindowText, "private static bool TryComputeFlashbackTimelineFraction(double x, double width, out double fraction)");
+        AssertContains(flashbackWindowText, "if (!IsUsableFlashbackTrackDimension(width) || !double.IsFinite(x))");
+        AssertContains(flashbackWindowText, "private static bool IsUsableFlashbackTrackDimension(double value)\n        => double.IsFinite(value) && value > 0;");
+        AssertContains(flashbackWindowText, "private static bool IsUsableFlashbackDuration(TimeSpan value)\n        => double.IsFinite(value.TotalSeconds) && value > TimeSpan.Zero;");
         AssertContains(fullScreenWindowText, "Logger.Log(\"FLASHBACK_UI_NUDGE_REJECTED direction=left\");");
         AssertContains(fullScreenWindowText, "Logger.Log(\"FLASHBACK_UI_NUDGE_REJECTED direction=right\");");
         AssertContains(fullScreenWindowText, "Logger.Log(\"FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter\");");

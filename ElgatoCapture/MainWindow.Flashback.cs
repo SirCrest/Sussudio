@@ -256,14 +256,16 @@ public sealed partial class MainWindow
     {
         var pos = e.GetCurrentPoint(FlashbackScrubArea).Position;
         var width = FlashbackScrubArea.ActualWidth;
-        if (width <= 0) return;
+        if (!TryComputeFlashbackTimelineFraction(pos.X, width, out var fraction)) return;
 
-        var x = Math.Clamp(pos.X, 0, width);
+        var x = Math.Clamp(fraction * width, 0, width);
         PositionFlashbackPlayhead(x, width);
 
-        var fraction = Math.Clamp(pos.X / width, 0, 1);
         var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
-        ViewModel.FlashbackPlaybackPosition = TimeSpan.FromSeconds(fraction * bufferDuration.TotalSeconds);
+        if (IsUsableFlashbackDuration(bufferDuration))
+        {
+            ViewModel.FlashbackPlaybackPosition = TimeSpan.FromSeconds(fraction * bufferDuration.TotalSeconds);
+        }
     }
     private void FlashbackInButton_Click(object sender, RoutedEventArgs e)
     {
@@ -450,11 +452,13 @@ public sealed partial class MainWindow
         // Update playhead + handle + floating label position
         // Live mode: pin to right edge. Otherwise: position fraction.
         var trackWidth = FlashbackScrubArea.ActualWidth;
+        if (!IsUsableFlashbackTrackDimension(trackWidth)) return;
+
         if (isLive)
         {
             PositionFlashbackPlayhead(trackWidth, trackWidth);
         }
-        else if (bufferDuration.TotalSeconds > 0)
+        else if (IsUsableFlashbackDuration(bufferDuration))
         {
             var fraction = pos.TotalSeconds / bufferDuration.TotalSeconds;
             var x = Math.Clamp(fraction * trackWidth, 0, trackWidth);
@@ -483,10 +487,13 @@ public sealed partial class MainWindow
         var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
         var trackWidth = FlashbackScrubArea.ActualWidth;
         var trackHeight = FlashbackScrubArea.ActualHeight;
+        var hasUsableTrack = IsUsableFlashbackTrackDimension(trackWidth) &&
+                             IsUsableFlashbackTrackDimension(trackHeight);
+        var hasUsableDuration = IsUsableFlashbackDuration(bufferDuration);
 
         TimeSpan? inPtVal = null, outPtVal = null;
 
-        if (ViewModel.FlashbackInPoint is TimeSpan inPt && bufferDuration.TotalSeconds > 0)
+        if (hasUsableTrack && hasUsableDuration && ViewModel.FlashbackInPoint is TimeSpan inPt)
         {
             inPtVal = inPt;
             var inX = Math.Clamp(inPt.TotalSeconds / bufferDuration.TotalSeconds * trackWidth, 0, trackWidth);
@@ -499,7 +506,7 @@ public sealed partial class MainWindow
             FlashbackInPointMarker.Visibility = Visibility.Collapsed;
         }
 
-        if (ViewModel.FlashbackOutPoint is TimeSpan outPt && bufferDuration.TotalSeconds > 0)
+        if (hasUsableTrack && hasUsableDuration && ViewModel.FlashbackOutPoint is TimeSpan outPt)
         {
             outPtVal = outPt;
             var outX = Math.Clamp(outPt.TotalSeconds / bufferDuration.TotalSeconds * trackWidth, 0, trackWidth);
@@ -513,7 +520,7 @@ public sealed partial class MainWindow
         }
 
         // Selection region between in/out points
-        if (inPtVal is TimeSpan inVal && outPtVal is TimeSpan outVal && bufferDuration.TotalSeconds > 0)
+        if (inPtVal is TimeSpan inVal && outPtVal is TimeSpan outVal && hasUsableTrack && hasUsableDuration)
         {
             var inFrac = inVal.TotalSeconds / bufferDuration.TotalSeconds;
             var outFrac = outVal.TotalSeconds / bufferDuration.TotalSeconds;
@@ -535,10 +542,29 @@ public sealed partial class MainWindow
     {
         var pos = e.GetCurrentPoint(FlashbackScrubArea).Position;
         var width = FlashbackScrubArea.ActualWidth;
-        if (width <= 0) return TimeSpan.Zero;
+        if (!TryComputeFlashbackTimelineFraction(pos.X, width, out var fraction)) return TimeSpan.Zero;
 
-        var fraction = Math.Clamp(pos.X / width, 0, 1);
         var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
+        if (!IsUsableFlashbackDuration(bufferDuration)) return TimeSpan.Zero;
+
         return TimeSpan.FromSeconds(fraction * bufferDuration.TotalSeconds);
     }
+
+    private static bool TryComputeFlashbackTimelineFraction(double x, double width, out double fraction)
+    {
+        fraction = 0;
+        if (!IsUsableFlashbackTrackDimension(width) || !double.IsFinite(x))
+        {
+            return false;
+        }
+
+        fraction = Math.Clamp(x / width, 0, 1);
+        return true;
+    }
+
+    private static bool IsUsableFlashbackTrackDimension(double value)
+        => double.IsFinite(value) && value > 0;
+
+    private static bool IsUsableFlashbackDuration(TimeSpan value)
+        => double.IsFinite(value.TotalSeconds) && value > TimeSpan.Zero;
 }
