@@ -130,6 +130,28 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureSessionCoordinator_DisposalAccounting_ClassifiesCanceledQueuedCommands()
+    {
+        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+            .Replace("\r\n", "\n");
+        var failPending = ExtractTextBetween(
+            coordinatorText,
+            "private void FailPendingCommands(Exception ex)",
+            "    private void TrackPendingCommandEnqueued");
+
+        AssertContains(failPending, "if (pending.Completion.Task.IsCanceled)\n            {\n                Interlocked.Increment(ref _commandsCanceled);");
+        AssertContains(failPending, "else if (pending.Completion.TrySetException(ex))\n            {\n                Interlocked.Increment(ref _commandsFailed);");
+        AssertContains(failPending, "DecrementPendingCommands(\"fail_pending\");");
+        AssertContains(coordinatorText, "DecrementPendingCommands(\"enqueue_failed\");");
+        AssertContains(coordinatorText, "DecrementPendingCommands(\"process_complete\");");
+        AssertContains(coordinatorText, "private void DecrementPendingCommands(string operation)");
+        AssertContains(coordinatorText, "CAPTURE_COORD_PENDING_UNDERFLOW");
+        AssertContains(coordinatorText, "throw new ObjectDisposedException(nameof(CaptureSessionCoordinator));");
+        AssertDoesNotContain(failPending, "pending.Completion.TrySetException(ex);\n            Interlocked.Increment(ref _commandsFailed);\n            Interlocked.Decrement(ref _pendingCommands);");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation()
     {
         var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")

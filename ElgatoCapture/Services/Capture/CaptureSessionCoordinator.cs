@@ -522,8 +522,13 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         {
             RemoveOldestPendingCommand();
             DisposeCancellationRegistrationBestEffort(cancellationRegistration, "enqueue_failed");
-            Interlocked.Decrement(ref _pendingCommands);
+            DecrementPendingCommands("enqueue_failed");
+            Interlocked.Increment(ref _commandsFailed);
             Logger.LogEvent("CAP-COORD-ENQUEUE-FAIL", $"{kind} corr={correlationId}");
+            if (Volatile.Read(ref _isDisposed))
+            {
+                throw new ObjectDisposedException(nameof(CaptureSessionCoordinator));
+            }
             throw new InvalidOperationException("Failed to enqueue capture command.");
         }
 
@@ -607,7 +612,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                 {
                     sw.Stop();
                     RemoveOldestPendingCommand();
-                    Interlocked.Decrement(ref _pendingCommands);
+                    DecrementPendingCommands("process_complete");
                 }
             }
         }
@@ -653,9 +658,42 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         {
             RemoveOldestPendingCommand();
             DisposeCancellationRegistrationBestEffort(pending.CancellationRegistration, "fail_pending");
-            pending.Completion.TrySetException(ex);
-            Interlocked.Increment(ref _commandsFailed);
-            Interlocked.Decrement(ref _pendingCommands);
+            if (pending.Completion.Task.IsCanceled)
+            {
+                Interlocked.Increment(ref _commandsCanceled);
+            }
+            else if (pending.Completion.TrySetException(ex))
+            {
+                Interlocked.Increment(ref _commandsFailed);
+            }
+            else if (pending.Completion.Task.IsCanceled)
+            {
+                Interlocked.Increment(ref _commandsCanceled);
+            }
+            else if (pending.Completion.Task.IsFaulted)
+            {
+                Interlocked.Increment(ref _commandsFailed);
+            }
+
+            DecrementPendingCommands("fail_pending");
+        }
+    }
+
+    private void DecrementPendingCommands(string operation)
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref _pendingCommands);
+            if (current <= 0)
+            {
+                Logger.Log($"CAPTURE_COORD_PENDING_UNDERFLOW op={operation}");
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _pendingCommands, current - 1, current) == current)
+            {
+                return;
+            }
         }
     }
 

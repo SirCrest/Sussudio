@@ -306,6 +306,9 @@ static partial class Program
                 "Capture session coordinator coalesces flashback encoder cycles",
                 CaptureSessionCoordinator_CoalescesFlashbackEncoderCycles),
             await RunCheckAsync(
+                "Capture session coordinator disposal accounting classifies canceled queued commands",
+                CaptureSessionCoordinator_DisposalAccounting_ClassifiesCanceledQueuedCommands),
+            await RunCheckAsync(
                 "Capture session coordinator propagates flashback mutation cancellation",
                 CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation),
             await RunCheckAsync(
