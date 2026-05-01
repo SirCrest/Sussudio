@@ -775,7 +775,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             if (evictionPaused)
             {
-                bufferManager?.ResumeEviction();
+                ResumeFlashbackEvictionBestEffort(bufferManager, "flashback_export");
             }
             if (exportOperationLockHeld)
             {
@@ -2037,7 +2037,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         finally
         {
             if (outerPauseApplied)
-                bufferManager?.ResumeEviction();
+                ResumeFlashbackEvictionBestEffort(bufferManager, "flashback_recording_finalize");
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
         }
     }
@@ -4692,6 +4692,23 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             Logger.Log($"CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private static void ResumeFlashbackEvictionBestEffort(FlashbackBufferManager? bufferManager, string operation)
+    {
+        if (bufferManager == null)
+        {
+            return;
+        }
+
+        try
+        {
+            bufferManager.ResumeEviction();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EVICTION_RESUME_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 }

@@ -112,7 +112,9 @@ static partial class Program
         AssertContains(flashbackSource, "if (!wasRecording)\n        {\n            const string message = \"Flashback recording was not active.\";");
         AssertContains(flashbackSource, "FLASHBACK_RECORDING_END_REJECTED");
         AssertContains(flashbackSource, "finally");
-        AssertContains(flashbackSource, "_bufferManager.ResumeEviction()");
+        AssertContains(flashbackSource, "ResumeEvictionBestEffort(_bufferManager, \"recording_end\")");
+        AssertContains(flashbackSource, "ResumeEvictionBestEffort(_bufferManager, \"recording_start_rollback\")");
+        AssertContains(flashbackSource, "FLASHBACK_SINK_EVICTION_RESUME_WARN");
         AssertContains(flashbackSource, "if (LastRecordingEndPts < LastRecordingStartPts)\n                {\n                    LastRecordingEndPts = _bufferManager.LatestPts;\n                    if (LastRecordingEndPts < LastRecordingStartPts)\n                    {\n                        LastRecordingEndPts = LastRecordingStartPts;\n                    }\n                }");
         AssertContains(flashbackSource, "Cannot begin recording: flashback encoder is not running.");
         AssertContains(flashbackSource, "public int VideoQueueMaxDepth");

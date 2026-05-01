@@ -311,6 +311,8 @@ static partial class Program
         AssertContains(captureServiceText, "evictionPaused = bufferManager != null;");
         AssertContains(captureServiceText, "if (exportId != 0)");
         AssertContains(captureServiceText, "if (evictionPaused)");
+        AssertContains(captureServiceText, "ResumeFlashbackEvictionBestEffort(bufferManager, \"flashback_export\");");
+        AssertContains(captureServiceText, "ResumeFlashbackEvictionBestEffort(bufferManager, \"flashback_recording_finalize\");");
         AssertContains(captureServiceText, "_lastExportResult = failure;");
         AssertContains(captureServiceText, "private FinalizeResult FailFlashbackExport(string outputPath, string statusMessage)");
         AssertContains(captureServiceText, "Logger.Log($\"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'\");");
@@ -343,6 +345,8 @@ static partial class Program
         AssertContains(captureServiceText, "CAPTURE_SERVICE_SEMAPHORE_DISPOSE_WARN");
         AssertContains(captureServiceText, "private static void ReleaseSemaphoreBestEffort(SemaphoreSlim semaphore, string operation)");
         AssertContains(captureServiceText, "CAPTURE_SERVICE_SEMAPHORE_RELEASE_WARN");
+        AssertContains(captureServiceText, "private static void ResumeFlashbackEvictionBestEffort(FlashbackBufferManager? bufferManager, string operation)");
+        AssertContains(captureServiceText, "FLASHBACK_EVICTION_RESUME_WARN");
         AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_sessionTransitionLock, \"flashback_export_snapshot_session\");");
         AssertContains(captureServiceText, "ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_preview_backend_dispose\");");
         AssertDoesNotContain(captureServiceText, "_flashbackBackendLeaseLock.Release();");

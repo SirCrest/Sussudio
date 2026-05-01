@@ -1096,6 +1096,10 @@ static partial class Program
         AssertContains(sourceText, "private static long ToNonNegativeLongSaturated(double value)");
         AssertContains(sourceText, "private static long NonNegativeByteDelta(long currentBytes, long startBytes)");
         AssertContains(sourceText, "private static TimeSpan NonNegativeDuration(TimeSpan end, TimeSpan start)");
+        AssertContains(sourceText, "private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(\n        FlashbackBufferManager bufferManager,\n        string operation)");
+        AssertContains(sourceText, "return bufferManager.ResumeEviction();");
+        AssertContains(sourceText, "FLASHBACK_SINK_EVICTION_RESUME_WARN");
+        AssertContains(sourceText, "return (bufferManager.RecordingStartPts, bufferManager.RecordingEndPts);");
         AssertContains(sourceText, "var finalSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
         AssertContains(sourceText, "var crashSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
         AssertContains(sourceText, "var segmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, Interlocked.Read(ref _segmentStartBytes));");

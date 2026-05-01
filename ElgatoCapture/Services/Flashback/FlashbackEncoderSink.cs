@@ -445,7 +445,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     {
         if (Interlocked.Exchange(ref _recordingActive, 0) != 0)
         {
-            _bufferManager.ResumeEviction();
+            ResumeEvictionBestEffort(_bufferManager, "recording_start_rollback");
             Logger.Log($"FLASHBACK_RECORDING_START_ROLLBACK reason='{reason}'");
         }
     }
@@ -507,7 +507,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             if (wasRecording)
             {
-                var (startPts, _) = _bufferManager.ResumeEviction();
+                var (startPts, _) = ResumeEvictionBestEffort(_bufferManager, "recording_end");
                 LastRecordingStartPts = startPts;
                 if (LastRecordingEndPts < LastRecordingStartPts)
                 {
@@ -1364,6 +1364,21 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
 
         return TimeSpan.FromTicks(endTicks - startTicks);
+    }
+
+    private static (TimeSpan StartPts, TimeSpan EndPts) ResumeEvictionBestEffort(
+        FlashbackBufferManager bufferManager,
+        string operation)
+    {
+        try
+        {
+            return bufferManager.ResumeEviction();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_EVICTION_RESUME_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+            return (bufferManager.RecordingStartPts, bufferManager.RecordingEndPts);
+        }
     }
 
     private bool RotateSegment(TimeSpan currentPts)
