@@ -176,6 +176,8 @@ public partial class MainViewModel
             FlashbackBufferDiskBytes = 0;
             FlashbackBitrateInfo = "";
             IsDiskWarningActive = false;
+            FlashbackInPoint = null;
+            FlashbackOutPoint = null;
             _flashbackBitrateSamples.Clear();
             return;
         }
@@ -200,10 +202,15 @@ public partial class MainViewModel
             if (playback.State != FlashbackPlaybackState.Scrubbing)
                 FlashbackPlaybackPosition = playback.PlaybackPosition;
             FlashbackGapFromLive = playback.GapFromLive;
+            FlashbackInPoint = playback.InPoint;
+            FlashbackOutPoint = playback.OutPoint;
         }
-        else if (FlashbackState != FlashbackPlaybackState.Live)
+        else
         {
-            FlashbackState = FlashbackPlaybackState.Live;
+            if (FlashbackState != FlashbackPlaybackState.Live)
+                FlashbackState = FlashbackPlaybackState.Live;
+            FlashbackInPoint = null;
+            FlashbackOutPoint = null;
         }
 
     }
