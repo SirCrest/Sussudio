@@ -866,6 +866,12 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         _sessionContext = null;
         _width = 0;
         _height = 0;
+        _tsFilePath = null;
+        _recordingOutputPath = string.Empty;
+        _segmentStartPts = TimeSpan.Zero;
+        _segmentDuration = TimeSpan.Zero;
+        _ptsBaseOffset = TimeSpan.Zero;
+        Interlocked.Exchange(ref _segmentStartBytes, 0);
         _encodingTask = null;
         DisposeWorkAvailableBestEffort("finalize_dispose");
         CompletePendingForceRotateWithEmptyResult();
