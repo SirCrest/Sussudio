@@ -745,6 +745,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
 
         _disposed = true;
+        if (Interlocked.Exchange(ref _recordingActive, 0) != 0)
+        {
+            ResumeEvictionBestEffort(_bufferManager, "dispose");
+        }
+
         lock (_sync)
         {
             _started = false;
