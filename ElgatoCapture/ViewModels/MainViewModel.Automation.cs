@@ -311,7 +311,13 @@ public partial class MainViewModel
         {
             var progress = new Progress<ExportProgress>(p =>
             {
-                _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
+                _dispatcherQueue.TryEnqueue(() =>
+                {
+                    if (IsCurrentFlashbackExport(exportId, exportCts))
+                    {
+                        FlashbackExportProgress = p.Percent;
+                    }
+                });
             });
 
             var result = await exportAction(progress, ct);
@@ -344,35 +350,55 @@ public partial class MainViewModel
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
         double seconds, string outputPath, bool useSelectionRange, CancellationToken ct)
     {
+        var exportId = Interlocked.Increment(ref _flashbackExportOperationId);
+        var oldExportCts = _exportCts;
+        oldExportCts?.Cancel();
+        _exportCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var exportCts = _exportCts;
+
         _dispatcherQueue.TryEnqueue(() =>
         {
-            IsFlashbackExporting = true;
-            FlashbackExportProgress = 0;
+            if (IsCurrentFlashbackExport(exportId, exportCts))
+            {
+                IsFlashbackExporting = true;
+                FlashbackExportProgress = 0;
+            }
         });
         try
         {
             var progress = new Progress<ExportProgress>(p =>
             {
-                _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
+                _dispatcherQueue.TryEnqueue(() =>
+                {
+                    if (IsCurrentFlashbackExport(exportId, exportCts))
+                    {
+                        FlashbackExportProgress = p.Percent;
+                    }
+                });
             });
 
             if (useSelectionRange)
             {
                 var playback = _sessionCoordinator.GetFlashbackPlaybackSnapshot();
                 return await _sessionCoordinator.ExportFlashbackRangeAsync(
-                    playback.InPoint, playback.OutPoint, outputPath, progress, ct);
+                    playback.InPoint, playback.OutPoint, outputPath, progress, exportCts.Token);
             }
 
             return await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(
-                seconds, outputPath, progress, ct);
+                seconds, outputPath, progress, exportCts.Token);
         }
         finally
         {
             _dispatcherQueue.TryEnqueue(() =>
             {
-                IsFlashbackExporting = false;
-                FlashbackExportProgress = 0;
+                if (IsCurrentFlashbackExport(exportId, exportCts))
+                {
+                    IsFlashbackExporting = false;
+                    FlashbackExportProgress = 0;
+                    _exportCts = null;
+                }
             });
+            exportCts.Dispose();
         }
     }
 

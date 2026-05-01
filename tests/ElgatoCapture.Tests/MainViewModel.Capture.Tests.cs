@@ -100,6 +100,14 @@ static partial class Program
         AssertContains(automationText, "_exportCts = null;");
         AssertContains(automationText, "ReferenceEquals(_exportCts, exportCts)");
         AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
+        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "var exportId = Interlocked.Increment(ref _flashbackExportOperationId);");
+        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "oldExportCts?.Cancel();");
+        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "CancellationTokenSource.CreateLinkedTokenSource(ct)");
+        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "IsCurrentFlashbackExport(exportId, exportCts)");
+        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "FlashbackExportProgress = p.Percent;");
+        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "exportCts.Token");
+        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "_exportCts = null;");
+        AssertMemberContains(automationText, "ExportFlashbackAutomationAsync", "exportCts.Dispose();");
         AssertMemberContains(automationText, "GetFlashbackSegments", "_sessionCoordinator.GetFlashbackSegments()");
         AssertMemberContains(automationText, "SetFlashbackEnabledAsync", "_sessionCoordinator.SetFlashbackEnabledAsync(enabled, cancellationToken)");
         AssertMemberContains(automationText, "RestartFlashbackAsync", "InvokeOnUiThreadAsync(BuildCaptureSettings, cancellationToken)");
