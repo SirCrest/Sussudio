@@ -1557,14 +1557,20 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private static void DecrementQueueDepth(ref int target, string queueName)
     {
-        var depth = Interlocked.Decrement(ref target);
-        if (depth >= 0)
+        while (true)
         {
-            return;
-        }
+            var current = Volatile.Read(ref target);
+            if (current <= 0)
+            {
+                Logger.Log($"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName} depth={current - 1}");
+                return;
+            }
 
-        Interlocked.Exchange(ref target, 0);
-        Logger.Log($"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW queue={queueName} depth={depth}");
+            if (Interlocked.CompareExchange(ref target, current - 1, current) == current)
+            {
+                return;
+            }
+        }
     }
 
     private static void UpdateMaxValue(ref long target, long value)

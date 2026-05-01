@@ -958,11 +958,16 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_SINK_RETURN_VIDEO_PACKET_WARN");
         AssertContains(sourceText, "FLASHBACK_SINK_RELEASE_GPU_PACKET_WARN");
         AssertContains(sourceText, "private static void DecrementQueueDepth(ref int target, string queueName)");
+        AssertContains(sourceText, "var current = Volatile.Read(ref target);");
+        AssertContains(sourceText, "if (current <= 0)");
+        AssertContains(sourceText, "if (Interlocked.CompareExchange(ref target, current - 1, current) == current)");
         AssertContains(sourceText, "FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW");
         AssertContains(sourceText, "DecrementQueueDepth(ref _videoQueueDepth, \"video\");");
         AssertContains(sourceText, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu\");");
         AssertContains(sourceText, "DecrementQueueDepth(ref _audioQueueDepth, \"audio\");");
         AssertContains(sourceText, "DecrementQueueDepth(ref _microphoneQueueDepth, \"microphone\");");
+        AssertDoesNotContain(sourceText, "var depth = Interlocked.Decrement(ref target);");
+        AssertDoesNotContain(sourceText, "Interlocked.Exchange(ref target, 0);\n        Logger.Log($\"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW");
         AssertDoesNotContain(sourceText, "Interlocked.Decrement(ref _videoQueueDepth)");
         AssertDoesNotContain(sourceText, "Interlocked.Decrement(ref _gpuQueueDepth)");
         AssertDoesNotContain(sourceText, "Marshal.Release(packet.Texture);");
