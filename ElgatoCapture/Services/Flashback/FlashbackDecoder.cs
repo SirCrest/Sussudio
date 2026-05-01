@@ -459,6 +459,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
 
         _disposed = true;
+        AudioChunkCallback = null;
         CloseFileCore();
 
         // Free persistent D3D11VA device context

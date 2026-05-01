@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -1860,6 +1861,34 @@ static partial class Program
             "    /// <summary>\n    /// Opens a .ts or .mp4 file for decoding.");
         AssertContains(initializeBlock, "ThrowIfDisposed();");
         AssertOccursBefore(initializeBlock, "ThrowIfDisposed();", "if (_initialized)");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackDecoder_ClearsAudioCallbackOnDispose()
+    {
+        var decoderType = RequireType("ElgatoCapture.Services.Flashback.FlashbackDecoder");
+        using var decoder = (IDisposable)Activator.CreateInstance(decoderType)!;
+        var callbackProperty = decoderType.GetProperty("AudioChunkCallback", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FlashbackDecoder.AudioChunkCallback not found.");
+
+        var callbackType = callbackProperty.PropertyType;
+        var callbackParameter = Expression.Parameter(callbackType.GetGenericArguments()[0], "chunk");
+        var callback = Expression.Lambda(callbackType, Expression.Empty(), callbackParameter).Compile();
+        callbackProperty.SetValue(decoder, callback);
+
+        decoder.Dispose();
+
+        AssertEqual(null, callbackProperty.GetValue(decoder), "Disposed decoder clears audio callback");
+
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var disposeBlock = ExtractTextBetween(
+            sourceText,
+            "public void Dispose()",
+            "    // ── Private: Initialization");
+        AssertContains(disposeBlock, "AudioChunkCallback = null;");
+        AssertOccursBefore(disposeBlock, "AudioChunkCallback = null;", "CloseFileCore();");
 
         return Task.CompletedTask;
     }

@@ -670,6 +670,9 @@ static partial class Program
                 "Flashback decoder rejects initialize after dispose",
                 FlashbackDecoder_RejectsInitializeAfterDispose),
             await RunCheckAsync(
+                "Flashback decoder clears audio callback on dispose",
+                FlashbackDecoder_ClearsAudioCallbackOnDispose),
+            await RunCheckAsync(
                 "Flashback encoder sink restores active segment after rotation failure",
                 FlashbackEncoderSink_RotateFailureRestoresActiveSegment),
             await RunCheckAsync(
