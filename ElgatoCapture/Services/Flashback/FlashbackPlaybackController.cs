@@ -452,6 +452,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested");
                             CleanupDecoder(ref decoder, ref fileOpen);
+                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
+                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
+                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("thread_cancelled");
                             SetState(FlashbackPlaybackState.Live);
@@ -822,6 +825,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             Logger.Log("FLASHBACK_PLAYBACK_THREAD_CANCELLED");
             CleanupDecoder(ref decoder, ref fileOpen);
+            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
+            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
+            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
             RestoreLiveAudio();
             SafeResumePreviewSubmission("thread_cancelled");
             SetState(FlashbackPlaybackState.Live);
@@ -831,6 +837,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _lastCommandFailure = ex.GetType().Name + ":" + ex.Message;
             Logger.Log($"FLASHBACK_PLAYBACK_FATAL error='{ex.Message}'");
             CleanupDecoder(ref decoder, ref fileOpen);
+            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
+            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
+            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
             RestoreLiveAudio();
             SafeResumePreviewSubmission("thread_fatal");
             SetState(FlashbackPlaybackState.Live);
