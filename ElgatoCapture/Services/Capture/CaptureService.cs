@@ -795,12 +795,17 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         var segmentInfo = bufferManager?.GetSegmentInfoList()
             .Where(segment => !segment.IsActive)
-            .ToDictionary(segment => segment.Path, StringComparer.OrdinalIgnoreCase);
+            .Select(segment => (Key: TryGetFullPath(segment.Path), Segment: segment))
+            .Where(entry => !string.IsNullOrWhiteSpace(entry.Key))
+            .GroupBy(entry => entry.Key!, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First().Segment, StringComparer.OrdinalIgnoreCase);
         var segments = new List<FlashbackExportSegment>(segmentPaths.Count);
         foreach (var path in segmentPaths)
         {
+            var pathKey = TryGetFullPath(path);
             if (segmentInfo != null &&
-                segmentInfo.TryGetValue(path, out var info))
+                pathKey != null &&
+                segmentInfo.TryGetValue(pathKey, out var info))
             {
                 var startPts = FromSegmentMilliseconds(info.StartPtsMs);
                 var endPts = FromSegmentMilliseconds(info.EndPtsMs);
@@ -823,6 +828,24 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
 
         return segments;
+    }
+
+    private static string? TryGetFullPath(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            return Path.GetFullPath(path);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PATH_NORMALIZE_WARN path='{path}' type={ex.GetType().Name} msg='{ex.Message}'");
+            return null;
+        }
     }
 
     private static TimeSpan FromSegmentMilliseconds(long milliseconds)

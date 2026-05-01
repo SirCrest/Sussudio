@@ -330,6 +330,11 @@ static partial class Program
         AssertContains(captureServiceText, "_flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\");");
         AssertContains(captureServiceText, "var bufferedDuration = bufferManager.BufferedDuration;\n                var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);\n                var bufferOutPoint = outPoint.HasValue\n                    ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)\n                    : TimeSpan.MaxValue;\n                fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);\n                fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);");
+        AssertContains(captureServiceText, ".Select(segment => (Key: TryGetFullPath(segment.Path), Segment: segment))");
+        AssertContains(captureServiceText, "var pathKey = TryGetFullPath(path);");
+        AssertContains(captureServiceText, "segmentInfo.TryGetValue(pathKey, out var info)");
+        AssertContains(captureServiceText, "private static string? TryGetFullPath(string? path)");
+        AssertContains(captureServiceText, "FLASHBACK_PATH_NORMALIZE_WARN");
         AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export range is empty or invalid.\");");
         AssertContains(captureServiceText, "if (ct.IsCancellationRequested)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export cancelled.\");\n        }\n\n        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)\n        {\n            return FailFlashbackExport(outputPath, \"Flashback export duration must be finite, greater than zero, and within TimeSpan range.\");\n        }");
