@@ -190,6 +190,7 @@ static partial class Program
                 "FlashbackPlaybackCommandsProcessed": 11,
                 "FlashbackPlaybackCommandsDropped": 0,
                 "FlashbackPlaybackCommandsSkippedNotReady": 2,
+                "FlashbackPlaybackSubmitFailures": 3,
                 "FlashbackPlaybackScrubUpdatesCoalesced": 9,
                 "FlashbackPlaybackThreadAlive": true,
                 "FlashbackPlaybackLastCommandQueued": "UpdateScrub",
@@ -279,6 +280,7 @@ static partial class Program
         AssertContains(formatted, "Encoder: hevc_nvenc");
         AssertContains(formatted, "Written: 2 MB");
         AssertContains(formatted, "Temp Cache: cache=50 MB budget=100 MB free=2 GB sessions=2 deleted=1 freed=25 MB overBudget=false");
+        AssertContains(formatted, "submitFailures=3");
         AssertContains(formatted, "Playback Commands: pending=1/256 maxPending=4 lastLatency=12ms maxLatency=87ms enq=12 proc=11 drop=0 skip=2 coalescedScrub=9 threadAlive=true lastQueued=UpdateScrub lastProcessed=BeginScrub failure=not_ready:Pause");
         AssertContains(formatted, "Playback Decode: avg=1.25ms P95=2.5ms P99=3.5ms max=4.5ms samples=120");
         AssertContains(formatted, "Export: active=true status=Running id=7 progress=37.5% segments=3/8");

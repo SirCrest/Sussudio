@@ -89,6 +89,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private long _playbackWriteHeadWaits;
     private long _playbackNearLiveSnaps;
     private long _playbackDecodeErrorSnaps;
+    private long _playbackSubmitFailures;
     private long _lastSegmentSwitchUtcUnixMs;
     private long _lastFmp4ReopenUtcUnixMs;
     private long _lastWriteHeadWaitGapMs;
@@ -1189,6 +1190,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (!TryValidatePreviewFrame(frame, out var skipReason))
         {
+            Interlocked.Increment(ref _playbackSubmitFailures);
             ReleaseHeldFrameBestEffort(frame, $"{operation}_{skipReason}");
             Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_SKIP op={operation} reason={skipReason}");
             return false;
@@ -1204,6 +1206,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         catch (Exception ex)
         {
+            Interlocked.Increment(ref _playbackSubmitFailures);
             ReleaseHeldFrameBestEffort(frame, $"{operation}_submit_fail");
             Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_FAIL op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
             return false;
@@ -1912,6 +1915,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long PlaybackWriteHeadWaits => Interlocked.Read(ref _playbackWriteHeadWaits);
     public long PlaybackNearLiveSnaps => Interlocked.Read(ref _playbackNearLiveSnaps);
     public long PlaybackDecodeErrorSnaps => Interlocked.Read(ref _playbackDecodeErrorSnaps);
+    public long PlaybackSubmitFailures => Interlocked.Read(ref _playbackSubmitFailures);
     public long LastSegmentSwitchUtcUnixMs => Interlocked.Read(ref _lastSegmentSwitchUtcUnixMs);
     public long LastFmp4ReopenUtcUnixMs => Interlocked.Read(ref _lastFmp4ReopenUtcUnixMs);
     public long LastWriteHeadWaitGapMs => Interlocked.Read(ref _lastWriteHeadWaitGapMs);
@@ -2200,6 +2204,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Exchange(ref _playbackFrameCount, 0);
         Interlocked.Exchange(ref _playbackLateFrames, 0);
         Interlocked.Exchange(ref _playbackDroppedFrames, 0);
+        Interlocked.Exchange(ref _playbackSubmitFailures, 0);
         // Reset audio clock extrapolation so stale PTS doesn't cause a jump
         Interlocked.Exchange(ref _audioClockPtsTicks, 0);
         Interlocked.Exchange(ref _audioClockWallTicks, 0);

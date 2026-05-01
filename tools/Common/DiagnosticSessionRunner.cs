@@ -61,6 +61,7 @@ public sealed class DiagnosticSessionResult
     public long FlashbackPlaybackSlowFramesAtEnd { get; init; }
     public double FlashbackPlaybackSlowFramePercentAtEnd { get; init; }
     public long FlashbackPlaybackDroppedFramesAtEnd { get; init; }
+    public long FlashbackPlaybackSubmitFailuresAtEnd { get; init; }
     public long FlashbackPlaybackSegmentSwitchesAtEnd { get; init; }
     public long FlashbackPlaybackFmp4ReopensAtEnd { get; init; }
     public long FlashbackPlaybackWriteHeadWaitsAtEnd { get; init; }
@@ -601,6 +602,7 @@ public static class DiagnosticSessionRunner
         var playbackSlowFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSlowFrames") ?? 0;
         var playbackSlowFramePercentAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackSlowFramePercent");
         var playbackDroppedFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackDroppedFrames") ?? 0;
+        var playbackSubmitFailuresAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSubmitFailures") ?? 0;
         var playbackSegmentSwitchesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSegmentSwitches") ?? 0;
         var playbackFmp4ReopensAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackFmp4Reopens") ?? 0;
         var playbackWriteHeadWaitsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackWriteHeadWaits") ?? 0;
@@ -676,6 +678,7 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackSlowFramesAtEnd = playbackSlowFramesAtEnd,
             FlashbackPlaybackSlowFramePercentAtEnd = playbackSlowFramePercentAtEnd,
             FlashbackPlaybackDroppedFramesAtEnd = playbackDroppedFramesAtEnd,
+            FlashbackPlaybackSubmitFailuresAtEnd = playbackSubmitFailuresAtEnd,
             FlashbackPlaybackSegmentSwitchesAtEnd = playbackSegmentSwitchesAtEnd,
             FlashbackPlaybackFmp4ReopensAtEnd = playbackFmp4ReopensAtEnd,
             FlashbackPlaybackWriteHeadWaitsAtEnd = playbackWriteHeadWaitsAtEnd,
@@ -822,7 +825,8 @@ public static class DiagnosticSessionRunner
             $"slowEnd={result.FlashbackPlaybackSlowFramesAtEnd} " +
             $"slowPctEnd={result.FlashbackPlaybackSlowFramePercentAtEnd:0.##} " +
             $"slowPctMax={result.FlashbackPlaybackMaxSlowFramePercentObserved:0.##} " +
-            $"droppedFramesEnd={result.FlashbackPlaybackDroppedFramesAtEnd}");
+            $"droppedFramesEnd={result.FlashbackPlaybackDroppedFramesAtEnd} " +
+            $"submitFailuresEnd={result.FlashbackPlaybackSubmitFailuresAtEnd}");
         builder.AppendLine(
             "Flashback Playback Decode: " +
             $"avgMsEnd={result.FlashbackPlaybackDecodeAvgMsAtEnd:0.##} " +

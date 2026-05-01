@@ -1578,8 +1578,11 @@ static partial class Program
 
         AssertContains(sourceText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
         AssertContains(sourceText, "if (!TryValidatePreviewFrame(frame, out var skipReason))");
+        AssertContains(sourceText, "Interlocked.Increment(ref _playbackSubmitFailures);");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_{skipReason}\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SUBMIT_SKIP op={operation} reason={skipReason}");
+        AssertContains(sourceText, "public long PlaybackSubmitFailures => Interlocked.Read(ref _playbackSubmitFailures);");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _playbackSubmitFailures, 0);");
         AssertContains(sourceText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
         AssertContains(sourceText, "reason = \"invalid_dimensions\";");
         AssertContains(sourceText, "reason = \"null_texture\";");

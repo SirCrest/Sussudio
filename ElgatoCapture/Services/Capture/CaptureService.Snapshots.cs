@@ -1413,6 +1413,7 @@ public partial class CaptureService
             FlashbackPlaybackWriteHeadWaits = fbPlayback?.PlaybackWriteHeadWaits ?? 0,
             FlashbackPlaybackNearLiveSnaps = fbPlayback?.PlaybackNearLiveSnaps ?? 0,
             FlashbackPlaybackDecodeErrorSnaps = fbPlayback?.PlaybackDecodeErrorSnaps ?? 0,
+            FlashbackPlaybackSubmitFailures = fbPlayback?.PlaybackSubmitFailures ?? 0,
             FlashbackPlaybackLastSegmentSwitchUtcUnixMs = fbPlayback?.LastSegmentSwitchUtcUnixMs ?? 0,
             FlashbackPlaybackLastFmp4ReopenUtcUnixMs = fbPlayback?.LastFmp4ReopenUtcUnixMs ?? 0,
             FlashbackPlaybackLastWriteHeadWaitGapMs = fbPlayback?.LastWriteHeadWaitGapMs ?? 0,

@@ -102,6 +102,7 @@ static partial class Program
             SetPropertyOrBackingField(health, "FlashbackPlaybackSegmentSwitches", 2L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackFmp4Reopens", 1L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackDroppedFrames", 6L);
+            SetPropertyOrBackingField(health, "FlashbackPlaybackSubmitFailures", 3L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackCommandsEnqueued", 4L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackScrubUpdatesCoalesced", 5L);
             SetPropertyOrBackingField(health, "FlashbackPlaybackCommandQueueCapacity", 256);
@@ -128,6 +129,7 @@ static partial class Program
             AssertJsonInt64(healthRoot, "FlashbackPlaybackSegmentSwitches", 2L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackSegmentSwitches");
             AssertJsonInt64(healthRoot, "FlashbackPlaybackFmp4Reopens", 1L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackFmp4Reopens");
             AssertJsonInt64(healthRoot, "FlashbackPlaybackDroppedFrames", 6L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackDroppedFrames");
+            AssertJsonInt64(healthRoot, "FlashbackPlaybackSubmitFailures", 3L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackSubmitFailures");
             AssertJsonInt64(healthRoot, "FlashbackPlaybackCommandsEnqueued", 4L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackCommandsEnqueued");
             AssertJsonInt64(healthRoot, "FlashbackPlaybackScrubUpdatesCoalesced", 5L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackScrubUpdatesCoalesced");
             AssertJsonInt32(healthRoot, "FlashbackPlaybackCommandQueueCapacity", 256, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackCommandQueueCapacity");

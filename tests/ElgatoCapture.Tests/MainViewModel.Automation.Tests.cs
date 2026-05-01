@@ -437,6 +437,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxDecodeP99MsObserved");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxDecodeMsObserved");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackSlowFramePercentAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackSubmitFailuresAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackSegmentSwitchesAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackFmp4ReopensAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackWriteHeadWaitsAtEnd");
@@ -447,6 +448,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "onePercentLowFpsMin={result.FlashbackPlaybackMinOnePercentLowFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "p99FrameMsMax={result.FlashbackPlaybackMaxP99FrameMsObserved:0.##}");
         AssertContains(diagnosticSessionText, "slowPctMax={result.FlashbackPlaybackMaxSlowFramePercentObserved:0.##}");
+        AssertContains(diagnosticSessionText, "submitFailuresEnd={result.FlashbackPlaybackSubmitFailuresAtEnd}");
         AssertContains(diagnosticSessionText, "Flashback Playback Decode:");
         AssertContains(diagnosticSessionText, "p99MsMax={result.FlashbackPlaybackMaxDecodeP99MsObserved:0.##}");
         AssertContains(diagnosticSessionText, "maxMsObserved={result.FlashbackPlaybackMaxDecodeMsObserved:0.##}");

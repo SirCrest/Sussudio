@@ -40,6 +40,7 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackPlaybackWriteHeadWaits { get; init; }
     public long FlashbackPlaybackNearLiveSnaps { get; init; }
     public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
+    public long FlashbackPlaybackSubmitFailures { get; init; }
     public long FlashbackPlaybackLastSegmentSwitchUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastFmp4ReopenUtcUnixMs { get; init; }
     public long FlashbackPlaybackLastWriteHeadWaitGapMs { get; init; }
