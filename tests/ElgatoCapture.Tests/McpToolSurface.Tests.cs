@@ -683,6 +683,10 @@ static partial class Program
         var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
 
         AssertContains(source, "PreviewD3DInputUploadCpuP99Ms");
+        AssertContains(source, "targetOnePercentLowFps");
+        AssertContains(source, "== 1% Low Target Summary");
+        AssertContains(source, "AppendOnePercentLowTargetSummary");
+        AssertContains(source, "misses={belowTarget}/{valid.Length}");
         AssertContains(source, "PreviewD3DRenderSubmitCpuP99Ms");
         AssertContains(source, "PreviewD3DPresentCallP99Ms");
         AssertContains(source, "PreviewD3DTotalFrameCpuP99Ms");

@@ -13,7 +13,8 @@ public static class PerformanceTimelineTools
     [McpServerTool, Description("Get a time-series performance timeline showing capture/preview frame times, D3D present CPU timing, DXGI missed refreshes, queue depths, drops, memory, GC, and thread pool metrics over the last ~2 minutes (240 samples at 500ms intervals). Use to identify trends, regressions, stutter, present-call blocking, and GC pressure.")]
     public static async Task<string> get_performance_timeline(
         PipeClient pipeClient,
-        [Description("Maximum number of timeline entries to return (default: 240, which is ~2 minutes)")] int maxEntries = 240)
+        [Description("Maximum number of timeline entries to return (default: 240, which is ~2 minutes)")] int maxEntries = 240,
+        [Description("Target 1% low FPS for preview/playback budget diagnostics (default: 118).")] double targetOnePercentLowFps = 118)
     {
         var payload = new Dictionary<string, object?>
         {
@@ -199,6 +200,9 @@ public static class PerformanceTimelineTools
         {
             var first = entries[0];
             var last = entries[^1];
+            var targetFrameBudgetMs = targetOnePercentLowFps > 0
+                ? 1000.0 / targetOnePercentLowFps
+                : 0;
             builder.AppendLine();
             builder.AppendLine("== Trend Summary (first vs last sample) ==");
             builder.AppendLine($"Capture Avg:    {first.CaptureAvgMs:F1}ms -> {last.CaptureAvgMs:F1}ms (delta: {last.CaptureAvgMs - first.CaptureAvgMs:+0.0;-0.0;0.0}ms)");
@@ -250,6 +254,13 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"GC Gen0:        {first.Gen0} -> {last.Gen0} (delta: {last.Gen0 - first.Gen0:+0;-0;0})");
             builder.AppendLine($"GC Gen2:        {first.Gen2} -> {last.Gen2} (delta: {last.Gen2 - first.Gen2:+0;-0;0})");
             builder.AppendLine($"GC Pause%:      {first.GcPause:F1}% -> {last.GcPause:F1}% (delta: {last.GcPause - first.GcPause:+0.0;-0.0;0.0}%)");
+
+            if (targetOnePercentLowFps > 0)
+            {
+                builder.AppendLine();
+                builder.AppendLine($"== 1% Low Target Summary ({targetOnePercentLowFps:0.##}fps, budget {targetFrameBudgetMs:0.###}ms) ==");
+                AppendOnePercentLowTargetSummary(builder, entries, targetOnePercentLowFps, targetFrameBudgetMs);
+            }
         }
 
         return builder.ToString().TrimEnd();
@@ -334,6 +345,80 @@ public static class PerformanceTimelineTools
         => double.IsFinite(bytesPerSecond) && bytesPerSecond > 0
             ? $"{FormatBytes((long)bytesPerSecond)}/s"
             : "N/A";
+
+    private static void AppendOnePercentLowTargetSummary(
+        StringBuilder builder,
+        IReadOnlyList<TimelineRow> entries,
+        double targetOnePercentLowFps,
+        double targetFrameBudgetMs)
+    {
+        AppendChannelTargetSummary(
+            builder,
+            "Preview",
+            entries,
+            static row => row.PreviewOnePercentLowFps,
+            static row => row.PreviewP95Ms,
+            static row => row.PreviewMaxMs,
+            static row => FormatD3DP99Bottleneck(row),
+            targetOnePercentLowFps,
+            targetFrameBudgetMs);
+        AppendChannelTargetSummary(
+            builder,
+            "Capture",
+            entries,
+            static row => row.CaptureOnePercentLowFps,
+            static row => row.CaptureP95Ms,
+            static row => row.CaptureP99Ms,
+            static row => "capture",
+            targetOnePercentLowFps,
+            targetFrameBudgetMs);
+        AppendChannelTargetSummary(
+            builder,
+            "Flashback",
+            entries,
+            static row => row.FlashbackPlaybackOnePercentLowFps,
+            static row => row.FlashbackPlaybackP99FrameMs,
+            static row => row.FlashbackPlaybackDecodeP99Ms,
+            static row => FormatFlashbackStageCell(row),
+            targetOnePercentLowFps,
+            targetFrameBudgetMs);
+    }
+
+    private static void AppendChannelTargetSummary(
+        StringBuilder builder,
+        string label,
+        IReadOnlyList<TimelineRow> entries,
+        Func<TimelineRow, double> onePercentLowSelector,
+        Func<TimelineRow, double> primaryMsSelector,
+        Func<TimelineRow, double> secondaryMsSelector,
+        Func<TimelineRow, string> clueSelector,
+        double targetOnePercentLowFps,
+        double targetFrameBudgetMs)
+    {
+        var valid = entries
+            .Where(row => IsPositiveFinite(onePercentLowSelector(row)))
+            .ToArray();
+        if (valid.Length == 0)
+        {
+            builder.AppendLine($"{label}: no 1% low samples yet.");
+            return;
+        }
+
+        var belowTarget = valid.Count(row => onePercentLowSelector(row) < targetOnePercentLowFps);
+        var worst = valid.OrderBy(onePercentLowSelector).First();
+        var latest = valid[^1];
+        var targetMissPercent = belowTarget * 100.0 / valid.Length;
+        var latestPrimaryOverBudgetMs = targetFrameBudgetMs > 0
+            ? Math.Max(0, primaryMsSelector(latest) - targetFrameBudgetMs)
+            : 0;
+
+        builder.AppendLine(string.Create(
+            CultureInfo.InvariantCulture,
+            $"{label}: latest={onePercentLowSelector(latest):0.##}fps worst={onePercentLowSelector(worst):0.##}fps misses={belowTarget}/{valid.Length} ({targetMissPercent:0.#}%) latestPrimary={primaryMsSelector(latest):0.##}ms overBudget={latestPrimaryOverBudgetMs:0.##}ms secondary={secondaryMsSelector(latest):0.##}ms clue={clueSelector(latest)} worstAt={worst.Timestamp}"));
+    }
+
+    private static bool IsPositiveFinite(double value)
+        => double.IsFinite(value) && value > 0;
 
     private sealed class TimelineRow
     {
