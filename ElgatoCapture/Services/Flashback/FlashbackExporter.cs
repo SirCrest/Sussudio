@@ -132,6 +132,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         if (!lockAcquired)
         {
             Logger.Log("FLASHBACK_EXPORT_DISPOSE: timed out waiting for export lock (10s)");
+            _disposed = true;
+            _disposeCts = null;
+            GC.SuppressFinalize(this);
+            return;
         }
         try
         {

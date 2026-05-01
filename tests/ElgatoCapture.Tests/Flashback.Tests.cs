@@ -387,6 +387,25 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_DisposeTimeoutDoesNotTearDownActiveNativeState()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+
+        var timeoutBlock = ExtractTextBetween(
+            sourceText,
+            "if (!lockAcquired)",
+            "        try\n        {\n            CleanupNativeState();");
+
+        AssertContains(timeoutBlock, "FLASHBACK_EXPORT_DISPOSE: timed out waiting for export lock");
+        AssertContains(timeoutBlock, "_disposed = true;");
+        AssertContains(timeoutBlock, "return;");
+        AssertDoesNotContain(timeoutBlock, "CleanupNativeState()");
+        AssertDoesNotContain(timeoutBlock, "_exportLock.Dispose()");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_RejectsOutputPathThatOverwritesSource()
     {
         var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
