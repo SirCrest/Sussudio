@@ -159,6 +159,25 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost()
+    {
+        var flashbackWindowText = ReadRepoFile("ElgatoCapture/MainWindow.Flashback.cs")
+            .Replace("\r\n", "\n");
+        var xamlText = ReadRepoFile("ElgatoCapture/MainWindow.xaml")
+            .Replace("\r\n", "\n");
+
+        AssertContains(xamlText, "PointerReleased=\"FlashbackScrubArea_PointerReleased\"");
+        AssertContains(xamlText, "PointerCanceled=\"FlashbackScrubArea_PointerCanceled\"");
+        AssertContains(xamlText, "PointerCaptureLost=\"FlashbackScrubArea_PointerCaptureLost\"");
+        AssertContains(flashbackWindowText, "private void EndFlashbackScrubInteraction(UIElement? element, Pointer pointer, string reason)");
+        AssertContains(flashbackWindowText, "ViewModel.FlashbackEndScrub();");
+        AssertContains(flashbackWindowText, "FLASHBACK_UI_SCRUB_END");
+        AssertContains(flashbackWindowText, "FlashbackScrubArea_PointerCanceled");
+        AssertContains(flashbackWindowText, "FlashbackScrubArea_PointerCaptureLost");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
     {
         var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("ElgatoCapture/Services/Capture/CaptureService.cs");

@@ -1268,7 +1268,9 @@
                             Canvas.Left="0" Canvas.Top="0"
                             PointerPressed="FlashbackScrubArea_PointerPressed"
                             PointerMoved="FlashbackScrubArea_PointerMoved"
-                            PointerReleased="FlashbackScrubArea_PointerReleased"/>
+                            PointerReleased="FlashbackScrubArea_PointerReleased"
+                            PointerCanceled="FlashbackScrubArea_PointerCanceled"
+                            PointerCaptureLost="FlashbackScrubArea_PointerCaptureLost"/>
                 </Canvas>
 
                 <!-- Row 2: Action Buttons -->

@@ -219,13 +219,25 @@ public sealed partial class MainWindow
         UpdateFlashbackScrubVisual(e);
     }
     private void FlashbackScrubArea_PointerReleased(object sender, PointerRoutedEventArgs e)
+        => EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "released");
+
+    private void FlashbackScrubArea_PointerCanceled(object sender, PointerRoutedEventArgs e)
+        => EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "cancelled");
+
+    private void FlashbackScrubArea_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
+        => EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "capture_lost");
+
+    private void EndFlashbackScrubInteraction(UIElement? element, Pointer pointer, string reason)
     {
-        if (_isFlashbackScrubbing)
+        if (!_isFlashbackScrubbing)
         {
-            _isFlashbackScrubbing = false;
-            (sender as UIElement)?.ReleasePointerCapture(e.Pointer);
-            ViewModel.FlashbackEndScrub();
+            return;
         }
+
+        _isFlashbackScrubbing = false;
+        element?.ReleasePointerCapture(pointer);
+        ViewModel.FlashbackEndScrub();
+        Logger.Log($"FLASHBACK_UI_SCRUB_END reason={reason}");
     }
     private void UpdateFlashbackScrubVisual(PointerRoutedEventArgs e)
     {
