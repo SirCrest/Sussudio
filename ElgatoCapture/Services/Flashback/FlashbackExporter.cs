@@ -179,19 +179,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
-        if (string.IsNullOrWhiteSpace(outputPath))
+        if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))
         {
-            const string message = "Flashback export failed: output path is required.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
-        }
-
-        var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-        if (string.IsNullOrWhiteSpace(outputDirectory) || !Directory.Exists(outputDirectory))
-        {
-            var message = $"Flashback export failed: output directory does not exist for '{outputPath}'.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'");
+            return FinalizeResult.Failure(outputPath, outputPathFailure);
         }
 
         if (IsSamePath(inputTsPath, outputPath))
@@ -500,19 +491,10 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
-        if (string.IsNullOrWhiteSpace(outputPath))
+        if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))
         {
-            const string message = "Flashback export failed: output path is required.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
-        }
-
-        var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
-        if (string.IsNullOrWhiteSpace(outputDirectory) || !Directory.Exists(outputDirectory))
-        {
-            var message = $"Flashback export failed: output directory does not exist for '{outputPath}'.";
-            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-            return FinalizeResult.Failure(outputPath, message);
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'");
+            return FinalizeResult.Failure(outputPath, outputPathFailure);
         }
 
         if (segments.Any(segment => IsSamePath(segment.Path, outputPath)))
@@ -1387,6 +1369,36 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         {
             return false;
         }
+    }
+
+    private static bool TryValidateOutputDirectory(string outputPath, out string failureMessage)
+    {
+        if (string.IsNullOrWhiteSpace(outputPath))
+        {
+            failureMessage = "Flashback export failed: output path is required.";
+            return false;
+        }
+
+        string fullOutputPath;
+        try
+        {
+            fullOutputPath = Path.GetFullPath(outputPath);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            failureMessage = $"Flashback export failed: output path is invalid '{outputPath}'.";
+            return false;
+        }
+
+        var outputDirectory = Path.GetDirectoryName(fullOutputPath);
+        if (string.IsNullOrWhiteSpace(outputDirectory) || !Directory.Exists(outputDirectory))
+        {
+            failureMessage = $"Flashback export failed: output directory does not exist for '{outputPath}'.";
+            return false;
+        }
+
+        failureMessage = string.Empty;
+        return true;
     }
 
     private static void DeleteTempFileIfPresent(string tmpPath)

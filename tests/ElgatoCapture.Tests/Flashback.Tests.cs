@@ -321,6 +321,21 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_OutputPathValidation_ReturnsFailure()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FinalizeResult.Failure(outputPath, outputPathFailure);\n        }");
+        AssertContains(sourceText, "private static bool TryValidateOutputDirectory(string outputPath, out string failureMessage)");
+        AssertContains(sourceText, "failureMessage = \"Flashback export failed: output path is required.\";");
+        AssertContains(sourceText, "catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)");
+        AssertContains(sourceText, "failureMessage = $\"Flashback export failed: output path is invalid '{outputPath}'.\";");
+        AssertContains(sourceText, "failureMessage = $\"Flashback export failed: output directory does not exist for '{outputPath}'.\";");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
