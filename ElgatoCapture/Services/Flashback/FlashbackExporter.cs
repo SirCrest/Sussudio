@@ -533,6 +533,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
+        var invalidSegmentIndex = FindInvalidSegmentPathIndex(segments);
+        if (invalidSegmentIndex >= 0)
+        {
+            var message = $"Flashback export failed: segment path at index {invalidSegmentIndex} is empty.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+
         if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'");
@@ -1593,6 +1601,19 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             Logger.Log($"FLASHBACK_EXPORT_PATH_COMPARE_WARN left='{left}' right='{right}' type={ex.GetType().Name} msg='{ex.Message}'");
             return false;
         }
+    }
+
+    private static int FindInvalidSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)
+    {
+        for (var i = 0; i < segments.Count; i++)
+        {
+            if (string.IsNullOrWhiteSpace(segments[i].Path))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private static bool TryValidateOutputDirectory(string outputPath, out string failureMessage)

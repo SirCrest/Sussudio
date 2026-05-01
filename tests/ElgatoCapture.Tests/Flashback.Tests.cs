@@ -406,6 +406,9 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FinalizeResult.Failure(outputPath, outputPathFailure);\n        }");
+        AssertContains(sourceText, "var invalidSegmentIndex = FindInvalidSegmentPathIndex(segments);");
+        AssertContains(sourceText, "Flashback export failed: segment path at index {invalidSegmentIndex} is empty.");
+        AssertContains(sourceText, "private static int FindInvalidSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
         AssertContains(sourceText, "private static bool TryValidateOutputDirectory(string outputPath, out string failureMessage)");
         AssertContains(sourceText, "failureMessage = \"Flashback export failed: output path is required.\";");
         AssertContains(sourceText, "catch (Exception ex)\n        {\n            failureMessage = $\"Flashback export failed: output path is invalid '{outputPath}'.\";\n            Logger.Log($\"FLASHBACK_EXPORT_PATH_VALIDATE_WARN path='{outputPath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            return false;\n        }");
@@ -414,6 +417,59 @@ static partial class Program
         AssertContains(sourceText, "if (Directory.Exists(fullOutputPath))\n        {\n            failureMessage = $\"Flashback export failed: output path is a directory '{outputPath}'.\";\n            return false;\n        }");
         AssertContains(sourceText, "FLASHBACK_EXPORT_PATH_COMPARE_WARN");
         AssertContains(sourceText, "FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackExporter_RejectsEmptySegmentPaths()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_empty_segment_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var exporter = Activator.CreateInstance(exporterType)!;
+            try
+            {
+                var segment = Activator.CreateInstance(segmentType)!;
+                SetPropertyBackingField(segment, "Path", " ");
+                var segments = Array.CreateInstance(segmentType, 1);
+                segments.SetValue(segment, 0);
+                var outputPath = Path.Combine(tempDir, "empty-segment-export.mp4");
+
+                var exportSegmentsCore = exporterType.GetMethod("ExportSegmentsCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FlashbackExporter.ExportSegmentsCore not found.");
+
+                var result = exportSegmentsCore.Invoke(exporter, new object?[]
+                {
+                    segments,
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    outputPath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Empty segment path export reports failure");
+                AssertContains(GetStringProperty(result, "StatusMessage"), "segment path at index 0 is empty");
+                AssertEqual(false, File.Exists(outputPath), "Empty segment path export does not create output");
+                AssertEqual(false, File.Exists(outputPath + ".tmp"), "Empty segment path export does not leave temp output");
+            }
+            finally
+            {
+                if (exporter is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
 
         return Task.CompletedTask;
     }
