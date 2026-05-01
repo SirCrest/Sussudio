@@ -1437,6 +1437,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     public IReadOnlyList<string> ForceRotateForExport(TimeSpan inPoint, TimeSpan outPoint)
     {
+        if (inPoint < TimeSpan.Zero || outPoint <= inPoint)
+        {
+            Logger.Log(
+                $"FLASHBACK_SINK_FORCE_ROTATE_REJECTED_RANGE in_ms={(long)inPoint.TotalMilliseconds} " +
+                $"out_ms={(long)outPoint.TotalMilliseconds}");
+            return Array.Empty<string>();
+        }
+
         lock (_sync)
         {
             if (!_started || _disposed)
