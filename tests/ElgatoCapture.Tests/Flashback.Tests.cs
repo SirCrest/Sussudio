@@ -363,6 +363,76 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_RejectsOutputPathThatOverwritesSource()
+    {
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_paths_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var sourcePath = Path.Combine(tempDir, "fb_source_0001.mp4");
+            File.WriteAllBytes(sourcePath, new byte[] { 0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70 });
+
+            var exporter = Activator.CreateInstance(exporterType)!;
+            try
+            {
+                var exportCore = exporterType.GetMethod("ExportCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FlashbackExporter.ExportCore not found.");
+                var singleResult = exportCore.Invoke(exporter, new object?[]
+                {
+                    sourcePath,
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    sourcePath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(singleResult, "Succeeded"), "Single-file export rejects source overwrite");
+                AssertContains(GetStringProperty(singleResult, "StatusMessage"), "must not overwrite source segment");
+                AssertEqual(8L, new FileInfo(sourcePath).Length, "Single-file rejection preserves source bytes");
+
+                var segment = Activator.CreateInstance(segmentType)!;
+                SetPropertyBackingField(segment, "Path", sourcePath);
+                var segments = Array.CreateInstance(segmentType, 1);
+                segments.SetValue(segment, 0);
+
+                var exportSegmentsCore = exporterType.GetMethod("ExportSegmentsCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FlashbackExporter.ExportSegmentsCore not found.");
+                var segmentResult = exportSegmentsCore.Invoke(exporter, new object?[]
+                {
+                    segments,
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    sourcePath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(segmentResult, "Succeeded"), "Segment export rejects source overwrite");
+                AssertContains(GetStringProperty(segmentResult, "StatusMessage"), "must not overwrite source segment");
+                AssertEqual(8L, new FileInfo(sourcePath).Length, "Segment rejection preserves source bytes");
+            }
+            finally
+            {
+                if (exporter is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_InOutPoints_DefaultToUnset()
     {
         var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");

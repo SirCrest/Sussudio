@@ -543,6 +543,9 @@ static partial class Program
             await RunCheckAsync(
                 "Flashback exporter returns cancellation result while waiting for export lock",
                 FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled),
+            await RunCheckAsync(
+                "Flashback exporter rejects output paths that overwrite source segments",
+                FlashbackExporter_RejectsOutputPathThatOverwritesSource),
 
             // --- RecordingPipelineOptions ---
             await RunCheckAsync(

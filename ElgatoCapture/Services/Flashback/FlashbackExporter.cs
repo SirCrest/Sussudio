@@ -181,6 +181,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
+        if (IsSamePath(inputTsPath, outputPath))
+        {
+            var message = $"Flashback export failed: output path must not overwrite source segment '{outputPath}'.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+
         if (!TryWaitForExportLock(outputPath, ct, out var cancellationResult))
         {
             return cancellationResult;
@@ -486,6 +493,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         if (string.IsNullOrWhiteSpace(outputDirectory) || !Directory.Exists(outputDirectory))
         {
             var message = $"Flashback export failed: output directory does not exist for '{outputPath}'.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+
+        if (segments.Any(segment => IsSamePath(segment.Path, outputPath)))
+        {
+            var message = $"Flashback export failed: output path must not overwrite source segment '{outputPath}'.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
             return FinalizeResult.Failure(outputPath, message);
         }
@@ -1285,6 +1299,26 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             const string message = "Flashback export cancelled.";
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
             cancellationResult = FinalizeResult.Failure(outputPath, message);
+            return false;
+        }
+    }
+
+    private static bool IsSamePath(string? left, string? right)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+        {
+            return false;
+        }
+
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(left),
+                Path.GetFullPath(right),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
             return false;
         }
     }
