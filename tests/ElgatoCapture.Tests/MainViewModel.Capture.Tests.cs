@@ -385,6 +385,7 @@ static partial class Program
         AssertContains(captureServiceText, "_flashbackBackendSettings = CloneCaptureSettings(_currentSettings)");
         AssertContains(captureServiceText, "_flashbackBackendSettings = null");
         AssertContains(captureServiceText, "FlashbackPlaybackController? playbackController = null;");
+        AssertContains(captureServiceText, "controller is { IsDisposed: false, IsInitialized: false }");
         AssertContains(captureServiceText, "(playbackController ?? _flashbackPlaybackController)?.Dispose();");
         AssertContains(coordinatorText, "controller == null || controller.IsDisposed");
         AssertContains(coordinatorText, "controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled }");
