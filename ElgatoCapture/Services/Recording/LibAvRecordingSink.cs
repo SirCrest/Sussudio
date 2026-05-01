@@ -725,7 +725,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
     private void CompleteWriter<TPacket>(Channel<TPacket>? channel)
     {
         channel?.Writer.TryComplete();
-        SignalWork();
+        SignalWork("complete_writer");
     }
 
     private void ReturnRemainingVideoBuffers(Channel<VideoFramePacket>? queue)
@@ -1088,10 +1088,14 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
         return drainedAny;
     }
 
-    private void SignalWork()
+    private void SignalWork(string operation)
     {
         try { _workAvailable.Release(); }
         catch (SemaphoreFullException) { /* Best-effort: semaphore already signaled — work loop will pick it up */ }
+        catch (ObjectDisposedException)
+        {
+            Logger.Log($"LIBAV_SINK_WORK_SIGNAL_SKIPPED op={operation} reason=disposed");
+        }
     }
 
     private static void UpdateMaxDepth(ref int target, int depth)
@@ -1286,7 +1290,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                     RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
                     TrackQueuedVideoTick(packet.EnqueueTick);
                     Interlocked.Increment(ref _videoFramesEnqueued);
-                    SignalWork();
+                    SignalWork("video_enqueue");
                     return VideoEnqueueResult.Accepted;
                 }
 
@@ -1319,7 +1323,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
                 return VideoEnqueueResult.Overloaded;
             }
 
-            SignalWork();
+            SignalWork("video_backpressure_retry");
             Thread.Sleep(1);
         }
     }
@@ -1342,7 +1346,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             {
                 RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
                 Interlocked.Increment(ref _gpuFramesEnqueued);
-                SignalWork();
+                SignalWork("gpu_enqueue");
                 return VideoEnqueueResult.Accepted;
             }
 
@@ -1364,7 +1368,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             }
 
             backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
-            SignalWork();
+            SignalWork("gpu_backpressure_retry");
             Thread.Sleep(1);
         }
     }
@@ -1392,7 +1396,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             {
                 RecordVideoBackpressure(backpressureStartTick, Environment.TickCount64);
                 Interlocked.Increment(ref _cudaFramesEnqueued);
-                SignalWork();
+                SignalWork("cuda_enqueue");
                 return VideoEnqueueResult.Accepted;
             }
 
@@ -1424,7 +1428,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             }
 
             backpressureStartTick = backpressureStartTick == 0 ? Environment.TickCount64 : backpressureStartTick;
-            SignalWork();
+            SignalWork("cuda_backpressure_retry");
             Thread.Sleep(1);
         }
     }
@@ -1513,7 +1517,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         if (TryWriteAudioPacket(queue, packet, ref _audioQueueDepth, "audio"))
         {
-            SignalWork();
+            SignalWork("audio_enqueue");
             return true;
         }
 
@@ -1532,7 +1536,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             ReturnBuffer(evictedPacket.Buffer);
             if (TryWriteAudioPacket(queue, packet, ref _audioQueueDepth, "audio_after_evict"))
             {
-                SignalWork();
+                SignalWork("audio_after_evict");
                 return true;
             }
         }
@@ -1551,7 +1555,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
 
         if (TryWriteAudioPacket(queue, packet, ref _microphoneQueueDepth, "microphone"))
         {
-            SignalWork();
+            SignalWork("microphone_enqueue");
             return true;
         }
 
@@ -1569,7 +1573,7 @@ public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, 
             ReturnBuffer(evictedPacket.Buffer);
             if (TryWriteAudioPacket(queue, packet, ref _microphoneQueueDepth, "microphone_after_evict"))
             {
-                SignalWork();
+                SignalWork("microphone_after_evict");
                 return true;
             }
         }

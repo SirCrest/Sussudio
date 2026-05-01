@@ -71,6 +71,11 @@ static partial class Program
         AssertContains(libAvSource, "DecrementQueueDepth(ref queueDepth, $\"{queueName}_write_failed\");");
         AssertContains(libAvSource, "private static void DecrementQueueDepth(ref int target, string queueName)");
         AssertContains(libAvSource, "LIBAV_SINK_QUEUE_DEPTH_UNDERFLOW");
+        AssertContains(libAvSource, "private void SignalWork(string operation)");
+        AssertContains(libAvSource, "LIBAV_SINK_WORK_SIGNAL_SKIPPED");
+        AssertContains(libAvSource, "SignalWork(\"complete_writer\");");
+        AssertContains(libAvSource, "SignalWork(\"video_backpressure_retry\");");
+        AssertEqual(1, libAvSource.Split("_workAvailable.Release();", StringSplitOptions.None).Length - 1, "All LibAv work-signal wakeups go through SignalWork");
         AssertContains(libAvSource, "ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);");
         AssertContains(libAvSource, "ReturnRemainingCudaFrames(_cudaQueue, ref _cudaQueueDepth);");
         AssertDoesNotContain(libAvSource, "UpdateMaxDepth(ref _videoQueueMaxDepth, Interlocked.Increment(ref _videoQueueDepth))");
