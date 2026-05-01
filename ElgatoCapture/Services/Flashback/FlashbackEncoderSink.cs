@@ -1890,7 +1890,10 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
 
             SignalWork();
-            Thread.Sleep(1);
+            if (WaitForBackpressureRetryCancellation())
+            {
+                continue;
+            }
         }
     }
 
@@ -1951,7 +1954,29 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
 
             SignalWork();
+            if (WaitForBackpressureRetryCancellation())
+            {
+                continue;
+            }
+        }
+    }
+
+    private bool WaitForBackpressureRetryCancellation()
+    {
+        var cts = _cts;
+        if (cts == null)
+        {
             Thread.Sleep(1);
+            return false;
+        }
+
+        try
+        {
+            return cts.Token.WaitHandle.WaitOne(1);
+        }
+        catch (ObjectDisposedException)
+        {
+            return true;
         }
     }
 

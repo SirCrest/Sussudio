@@ -1265,6 +1265,10 @@ static partial class Program
         AssertContains(sourceText, "DecrementQueueDepth(ref _gpuQueueDepth, \"gpu\");");
         AssertContains(sourceText, "DecrementQueueDepth(ref _audioQueueDepth, \"audio\");");
         AssertContains(sourceText, "DecrementQueueDepth(ref _microphoneQueueDepth, \"microphone\");");
+        AssertContains(sourceText, "private bool WaitForBackpressureRetryCancellation()");
+        AssertContains(sourceText, "return cts.Token.WaitHandle.WaitOne(1);");
+        AssertContains(sourceText, "catch (ObjectDisposedException)\n        {\n            return true;\n        }");
+        AssertEqual(2, sourceText.Split("if (WaitForBackpressureRetryCancellation())", StringSplitOptions.None).Length - 1, "Video and GPU enqueue backpressure waits are cancellation-aware");
         AssertDoesNotContain(sourceText, "var depth = Interlocked.Decrement(ref target);");
         AssertDoesNotContain(sourceText, "Interlocked.Exchange(ref target, 0);\n        Logger.Log($\"FLASHBACK_SINK_QUEUE_DEPTH_UNDERFLOW");
         AssertDoesNotContain(sourceText, "Interlocked.Decrement(ref _videoQueueDepth)");
