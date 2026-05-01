@@ -277,7 +277,6 @@ public sealed partial class MainWindow
         }
         else
         {
-            Logger.Log("FLASHBACK_UI_SET_IN_REJECTED");
             ViewModel.ReportFlashbackPlaybackRejection("set in point", "FLASHBACK_UI_SET_IN_REJECTED");
         }
     }
@@ -291,7 +290,6 @@ public sealed partial class MainWindow
         }
         else
         {
-            Logger.Log("FLASHBACK_UI_SET_OUT_REJECTED");
             ViewModel.ReportFlashbackPlaybackRejection("set out point", "FLASHBACK_UI_SET_OUT_REJECTED");
         }
     }

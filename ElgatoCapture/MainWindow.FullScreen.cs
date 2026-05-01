@@ -131,7 +131,7 @@ public sealed partial class MainWindow
             _isFlashbackScrubbing = false;
             if (ViewModel?.FlashbackEndScrub() == false)
             {
-                Logger.Log("FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter");
+                ViewModel.ReportFlashbackPlaybackRejection("scrub end (fullscreen_enter)", "FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter");
             }
         }
 
