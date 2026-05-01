@@ -146,7 +146,7 @@ static partial class Program
         AssertContains(startCatchBlock, "Logger.Log($\"FLASHBACK_SINK_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(startCatchBlock, "lock (_sync)\n            {\n                _started = false;\n            }");
         AssertEqual(1, startCatchBlock.Split("_started = false;", StringSplitOptions.None).Length - 1, "Start failure rollback clears started state once");
-        AssertOccursBefore(startCatchBlock, "_started = false;", "throw;");
+        AssertOccursBefore(sourceText, "_started = false;", "            throw;\n        }\n    }\n\n    Task IRecordingSink.StartAsync");
         AssertContains(startCatchBlock, "_tsFilePath = null;\n            _recordingOutputPath = string.Empty;\n            _segmentStartPts = TimeSpan.Zero;\n            _segmentDuration = TimeSpan.Zero;\n            _ptsBaseOffset = TimeSpan.Zero;\n            Interlocked.Exchange(ref _segmentStartBytes, 0);");
 
         return Task.CompletedTask;
@@ -261,20 +261,23 @@ static partial class Program
     private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenInputFileNotFound()
     {
         var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var requestType = RequireType("ElgatoCapture.Models.FlashbackExportRequest");
         var exporter = Activator.CreateInstance(exporterType)!;
         var exportMethod = exporterType.GetMethod("ExportAsync", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("ExportAsync not found.");
 
         var nonexistentInput = Path.Combine(Path.GetTempPath(), $"nonexistent_{Guid.NewGuid():N}.ts");
         var outputPath = Path.Combine(Path.GetTempPath(), $"output_{Guid.NewGuid():N}.mp4");
+        var request = Activator.CreateInstance(requestType)!;
+        SetPropertyBackingField(request, "InputTsPath", nonexistentInput);
+        SetPropertyBackingField(request, "InPoint", TimeSpan.Zero);
+        SetPropertyBackingField(request, "OutPoint", TimeSpan.FromSeconds(10));
+        SetPropertyBackingField(request, "OutputPath", outputPath);
+        SetPropertyBackingField(request, "FastStart", true);
 
         var task = exportMethod.Invoke(exporter, new object?[]
         {
-            nonexistentInput,
-            TimeSpan.Zero,
-            TimeSpan.FromSeconds(10),
-            outputPath,
-            true,
+            request,
             null,
             CancellationToken.None
         }) as Task ?? throw new InvalidOperationException("ExportAsync did not return Task.");
@@ -294,16 +297,19 @@ static partial class Program
 
         // Create a real temp file so input validation passes
         var tempInput = Path.Combine(Path.GetTempPath(), $"fb_input_{Guid.NewGuid():N}.ts");
-        File.WriteAllBytes(tempInput, new byte[] { 0x47 }); // MPEG-TS sync byte
+            File.WriteAllBytes(tempInput, new byte[] { 0x47 }); // MPEG-TS sync byte
         try
         {
+            var request = Activator.CreateInstance(requestType)!;
+            SetPropertyBackingField(request, "InputTsPath", tempInput);
+            SetPropertyBackingField(request, "InPoint", TimeSpan.Zero);
+            SetPropertyBackingField(request, "OutPoint", TimeSpan.FromSeconds(10));
+            SetPropertyBackingField(request, "OutputPath", "");
+            SetPropertyBackingField(request, "FastStart", true);
+
             var task = exportMethod.Invoke(exporter, new object?[]
             {
-                tempInput,
-                TimeSpan.Zero,
-                TimeSpan.FromSeconds(10),
-                "",  // empty output path
-                true,
+                request,
                 null,
                 CancellationToken.None
             }) as Task ?? throw new InvalidOperationException("ExportAsync did not return Task.");
@@ -361,11 +367,12 @@ static partial class Program
     private static async Task FlashbackExporter_ExportSegmentsAsync_ReturnsFailure_WhenNoSegments()
     {
         var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
         var exporter = Activator.CreateInstance(exporterType)!;
-        var exportMethod = exporterType.GetMethod("ExportSegmentsAsync", BindingFlags.Public | BindingFlags.Instance)
+        var exportMethod = exporterType.GetMethod("ExportSegmentsAsync", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("ExportSegmentsAsync not found.");
 
-        var emptySegments = Array.Empty<string>();
+        var emptySegments = Array.CreateInstance(segmentType, 0);
         var outputPath = Path.Combine(Path.GetTempPath(), $"output_{Guid.NewGuid():N}.mp4");
 
         var task = exportMethod.Invoke(exporter, new object?[]

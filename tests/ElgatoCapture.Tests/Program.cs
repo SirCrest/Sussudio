@@ -598,17 +598,41 @@ static partial class Program
                 "Flashback models preserve buffer session and export contracts",
                 FlashbackModels_PreserveBufferSessionExportContracts),
             await RunCheckAsync(
+                "Flashback buffer options max disk bytes scales with duration",
+                FlashbackBufferOptions_MaxDiskBytes_ScalesWithDuration),
+            await RunCheckAsync(
                 "FlashbackPlaybackState enum has all expected states",
                 FlashbackPlaybackState_HasAllExpectedStates),
             await RunCheckAsync(
+                "Flashback playback initial state is live",
+                FlashbackPlaybackController_InitialState_IsLive),
+            await RunCheckAsync(
+                "Flashback playback commands no-op before initialize",
+                FlashbackPlaybackController_CommandsNoOpBeforeInitialize),
+            await RunCheckAsync(
                 "Flashback playback worker exit rearms future commands",
                 FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart),
+            await RunCheckAsync(
+                "Flashback encoder resolves fractional frame rates",
+                FlashbackEncoderSink_ResolveFrameRateParts_ParsesFractionalRates),
+            await RunCheckAsync(
+                "Flashback encoder maps codec names",
+                FlashbackEncoderSink_MapCodecName_MapsFormats),
+            await RunCheckAsync(
+                "Flashback encoder counters default to zero",
+                FlashbackEncoderSink_CountersDefaultToZero),
+            await RunCheckAsync(
+                "Flashback encoder start failure rolls back started state",
+                FlashbackEncoderSink_StartFailureRollsBackStartedState),
             await RunCheckAsync(
                 "Flashback encoder dispose resets GPU queue depth",
                 FlashbackEncoderSink_DisposeResetsGpuQueueDepth),
             await RunCheckAsync(
                 "Flashback encoder PTS guards invalid frame rates",
                 FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate),
+            await RunCheckAsync(
+                "Flashback in/out points default to unset",
+                FlashbackPlaybackController_InOutPoints_DefaultToUnset),
             await RunCheckAsync(
                 "Flashback in/out points clear invalid counterpart",
                 FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart),
@@ -700,11 +724,26 @@ static partial class Program
                 "Flashback suppressed exceptions use app logs",
                 FlashbackSuppressedExceptionsUseAppLogs),
             await RunCheckAsync(
+                "Flashback exporter cleanup ignores nonexistent directories",
+                FlashbackExporter_CleanupOrphanedTempFiles_HandlesNonexistentDirectory),
+            await RunCheckAsync(
+                "Flashback exporter cleanup deletes orphaned temp files",
+                FlashbackExporter_CleanupOrphanedTempFiles_DeletesTempFiles),
+            await RunCheckAsync(
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
             await RunCheckAsync(
                 "Flashback exporter rejects null requests",
                 FlashbackExporter_RejectsNullRequests),
+            await RunCheckAsync(
+                "Flashback exporter fails when input file is missing",
+                FlashbackExporter_ExportAsync_ReturnsFailure_WhenInputFileNotFound),
+            await RunCheckAsync(
+                "Flashback exporter fails when output path is empty",
+                FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathEmpty),
+            await RunCheckAsync(
+                "Flashback exporter fails when no segment paths are provided",
+                FlashbackExporter_ExportSegmentsAsync_ReturnsFailure_WhenNoSegments),
             await RunCheckAsync(
                 "Flashback exporter output path validation returns failure",
                 FlashbackExporter_OutputPathValidation_ReturnsFailure),
