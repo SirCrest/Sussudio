@@ -1175,10 +1175,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
             return false;
         }
 
-        ReleasePreviousHeldFrame();
         try
         {
             SubmitFrame(frame);
+            ReleasePreviousHeldFrame();
             _previousHeldFrame = frame;
             _hasPreviousHeldFrame = true;
             return true;

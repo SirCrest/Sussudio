@@ -1585,7 +1585,8 @@ static partial class Program
         AssertContains(sourceText, "TrySubmitAndHoldFrame(nudgeFrame, \"nudge\")");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(frame, \"seek\")");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(videoFrame, \"playback\")");
-        AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n                SubmitFrame(frame);");
+        AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n        try\n        {\n            SubmitFrame(frame);");
+        AssertContains(sourceText, "SubmitFrame(frame);\n            ReleasePreviousHeldFrame();");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n            SubmitFrame(videoFrame);");
 
         return Task.CompletedTask;
