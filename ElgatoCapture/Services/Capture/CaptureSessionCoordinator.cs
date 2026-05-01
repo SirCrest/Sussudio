@@ -458,7 +458,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         Interlocked.Increment(ref _pendingCommands);
         if (!_queue.Writer.TryWrite(workItem))
         {
-            cancellationRegistration.Dispose();
+            DisposeCancellationRegistrationBestEffort(cancellationRegistration, "enqueue_failed");
             Interlocked.Decrement(ref _pendingCommands);
             throw new InvalidOperationException("Failed to enqueue capture command.");
         }
@@ -477,7 +477,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 
                 try
                 {
-                    workItem.CancellationRegistration.Dispose();
+                    DisposeCancellationRegistrationBestEffort(workItem.CancellationRegistration, "begin_process");
 
                     if (workItem.CoalescingGeneration is int generation &&
                         generation != Volatile.Read(ref _latestFlashbackEncoderCycleGeneration))
@@ -579,7 +579,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     {
         while (_queue.Reader.TryRead(out var pending))
         {
-            pending.CancellationRegistration.Dispose();
+            DisposeCancellationRegistrationBestEffort(pending.CancellationRegistration, "fail_pending");
             pending.Completion.TrySetException(ex);
             Interlocked.Decrement(ref _pendingCommands);
         }
@@ -612,7 +612,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     private async ValueTask CoreDisposeAsync()
     {
         _queue.Writer.TryComplete();
-        _workerCancellation.Cancel();
+        CancelWorkerBestEffort();
         var drainTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
             "ELGATOCAPTURE_COORDINATOR_DISPOSE_TIMEOUT_MS",
             DefaultDisposeDrainTimeoutMs,
@@ -645,7 +645,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     {
         if (_workerTask.IsCompleted)
         {
-            _workerCancellation.Dispose();
+            DisposeWorkerCancellationBestEffort("worker_completed");
             return;
         }
 
@@ -657,14 +657,52 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                 {
                     cancellation.Dispose();
                 }
-                catch (ObjectDisposedException)
+                catch (Exception ex)
                 {
-                    // Best-effort: CTS may already be disposed if worker completed before continuation ran
+                    Logger.Log($"CAPTURE_COORD_WORKER_CTS_DISPOSE_WARN op=worker_continuation type={ex.GetType().Name} msg='{ex.Message}'");
                 }
             },
             _workerCancellation,
             CancellationToken.None,
             TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
+    }
+
+    private static void DisposeCancellationRegistrationBestEffort(
+        CancellationTokenRegistration registration,
+        string operation)
+    {
+        try
+        {
+            registration.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"CAPTURE_COORD_CANCEL_REG_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void CancelWorkerBestEffort()
+    {
+        try
+        {
+            _workerCancellation.Cancel();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"CAPTURE_COORD_WORKER_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void DisposeWorkerCancellationBestEffort(string operation)
+    {
+        try
+        {
+            _workerCancellation.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"CAPTURE_COORD_WORKER_CTS_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 }
