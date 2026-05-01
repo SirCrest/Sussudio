@@ -446,4 +446,29 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task D3D11PreviewRenderer_FrameCaptureCancellationClearsPendingRequest()
+    {
+        var rendererText = ReadRepoFile("ElgatoCapture/Services/Preview/D3D11PreviewRenderer.cs")
+            .Replace("\r\n", "\n");
+        var captureMethod = ExtractTextBetween(
+            rendererText,
+            "public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath, CancellationToken cancellationToken)",
+            "    public void SetSharedDevice");
+        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(captureMethod, "if (cancellationToken.IsCancellationRequested)");
+        AssertContains(captureMethod, "Preview frame capture canceled.");
+        AssertContains(captureMethod, "CancellationTokenRegistration cancellationRegistration = default;");
+        AssertContains(captureMethod, "cancellationToken.Register(");
+        AssertContains(captureMethod, "Interlocked.CompareExchange(ref renderer._frameCaptureRequest, null, request)");
+        AssertContains(captureMethod, "Interlocked.Exchange(ref renderer._frameCaptureOutputPath, null);");
+        AssertContains(captureMethod, "PREVIEW_FRAME_CAPTURE_CANCELED");
+        AssertContains(captureMethod, "_ = request.Task.ContinueWith(");
+        AssertContains(captureServiceText, "return d3dSink.CaptureNextFrameAsync(outputPath, cancellationToken);");
+        AssertDoesNotContain(captureServiceText, "cancellationToken.ThrowIfCancellationRequested();\n        return d3dSink.CaptureNextFrameAsync(outputPath);");
+
+        return Task.CompletedTask;
+    }
 }

@@ -2749,8 +2749,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             });
         }
 
-        cancellationToken.ThrowIfCancellationRequested();
-        return d3dSink.CaptureNextFrameAsync(outputPath);
+        return d3dSink.CaptureNextFrameAsync(outputPath, cancellationToken);
     }
 
     public Task InitializeAsync(CaptureDevice device, CaptureSettings settings, CancellationToken cancellationToken = default)
