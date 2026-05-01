@@ -791,6 +791,12 @@ static partial class Program
         AssertContains(captureText, "IsRecording = _sessionCoordinator.Snapshot.IsRecording;");
         AssertContains(
             captureText,
+            "catch (OperationCanceledException ex)\n            {\n                transitionError = ex;\n                Logger.Log($\"Recording transition wait canceled: {ex.Message}\");\n            }");
+        AssertContains(
+            captureText,
+            "if (transitionError is OperationCanceledException transitionCanceled && inFlightTarget == (enabled ? 1 : 0))\n            {\n                throw transitionCanceled;\n            }");
+        AssertContains(
+            captureText,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            IsRecording = _sessionCoordinator.Snapshot.IsRecording;\n            StatusText = \"Recording start canceled\";\n            throw;\n        }");
         AssertContains(
             captureText,

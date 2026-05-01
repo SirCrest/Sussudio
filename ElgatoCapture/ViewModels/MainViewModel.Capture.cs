@@ -233,6 +233,11 @@ public partial class MainViewModel
             {
                 await inFlight;
             }
+            catch (OperationCanceledException ex)
+            {
+                transitionError = ex;
+                Logger.Log($"Recording transition wait canceled: {ex.Message}");
+            }
             catch (Exception ex)
             {
                 transitionError = ex;
@@ -240,6 +245,11 @@ public partial class MainViewModel
             }
 
             cancellationToken.ThrowIfCancellationRequested();
+
+            if (transitionError is OperationCanceledException transitionCanceled && inFlightTarget == (enabled ? 1 : 0))
+            {
+                throw transitionCanceled;
+            }
 
             if (transitionError != null && inFlightTarget == (enabled ? 1 : 0))
             {
