@@ -69,14 +69,14 @@ public sealed partial class MainWindow
                 case Windows.System.VirtualKey.Left:
                     if (!ViewModel.FlashbackNudge(TimeSpan.FromSeconds(-1)))
                     {
-                        Logger.Log("FLASHBACK_UI_NUDGE_REJECTED direction=left");
+                        ViewModel.ReportFlashbackPlaybackRejection("nudge left", "FLASHBACK_UI_NUDGE_REJECTED direction=left");
                     }
                     e.Handled = true;
                     return;
                 case Windows.System.VirtualKey.Right:
                     if (!ViewModel.FlashbackNudge(TimeSpan.FromSeconds(1)))
                     {
-                        Logger.Log("FLASHBACK_UI_NUDGE_REJECTED direction=right");
+                        ViewModel.ReportFlashbackPlaybackRejection("nudge right", "FLASHBACK_UI_NUDGE_REJECTED direction=right");
                     }
                     e.Handled = true;
                     return;

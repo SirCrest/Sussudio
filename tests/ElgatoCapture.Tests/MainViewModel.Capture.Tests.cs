@@ -273,8 +273,8 @@ static partial class Program
         AssertContains(flashbackWindowText, "if (!IsUsableFlashbackTrackDimension(width) || !double.IsFinite(x))");
         AssertContains(flashbackWindowText, "private static bool IsUsableFlashbackTrackDimension(double value)\n        => double.IsFinite(value) && value > 0;");
         AssertContains(flashbackWindowText, "private static bool IsUsableFlashbackDuration(TimeSpan value)\n        => double.IsFinite(value.TotalSeconds) && value > TimeSpan.Zero;");
-        AssertContains(fullScreenWindowText, "Logger.Log(\"FLASHBACK_UI_NUDGE_REJECTED direction=left\");");
-        AssertContains(fullScreenWindowText, "Logger.Log(\"FLASHBACK_UI_NUDGE_REJECTED direction=right\");");
+        AssertContains(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\")");
+        AssertContains(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
         AssertContains(fullScreenWindowText, "Logger.Log(\"FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter\");");
 
         return Task.CompletedTask;
