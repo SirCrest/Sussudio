@@ -1175,6 +1175,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     {
                         Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_FAIL type={ex.GetType().Name} msg={ex.Message}");
                         localTcs?.TrySetResult(Array.Empty<string>());
+                        throw;
                     }
                     finally
                     {
