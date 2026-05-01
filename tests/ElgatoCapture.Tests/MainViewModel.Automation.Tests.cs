@@ -314,6 +314,9 @@ static partial class Program
         AssertContains(captureServiceText, "CompleteFlashbackExportDiagnostics(exportId, failure);\n            }\n            return failure;");
         AssertContains(captureServiceText, "_flashbackExportStartedUtcUnixMs = now;");
         AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = now;");
+        AssertContains(captureServiceText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
+        AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;");
+        AssertContains(captureServiceText, "_flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\");");
         AssertContains(captureServiceText, "var bufferedDuration = bufferManager.BufferedDuration;\n                var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);\n                var bufferOutPoint = outPoint.HasValue\n                    ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)\n                    : TimeSpan.MaxValue;\n                fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);\n                fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);");
         AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");

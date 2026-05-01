@@ -949,7 +949,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 : IsFlashbackExportCancelled(result.StatusMessage)
                     ? "Cancelled"
                     : "Failed";
-            _flashbackExportCompletedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;
+            _flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;
             _flashbackExportMessage = result.StatusMessage;
             if (result.Succeeded && _flashbackExportPercent < 100)
             {
