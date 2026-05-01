@@ -404,8 +404,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             packet->pts -= baseTs;
                         if (packet->dts != ffmpeg.AV_NOPTS_VALUE)
                             packet->dts -= baseTs;
-                        if (packet->pts < 0) packet->pts = 0;
-                        if (packet->dts < 0) packet->dts = 0;
+                        NormalizePacketTimestampsBeforeWrite(packet);
 
                         packet->pos = -1;
                         packet->stream_index = outStream->index;
@@ -921,6 +920,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                         if (oi < lastDtsPerStream.Length && buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
                                             lastDtsPerStream[oi] = buffPkt->dts;
 
+                                        NormalizePacketTimestampsBeforeWrite(buffPkt);
                                         buffPkt->pos = -1;
                                         buffPkt->stream_index = oi;
                                         ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
@@ -1019,6 +1019,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             if (mappedIndex < lastDtsPerStream.Length && packet->dts != ffmpeg.AV_NOPTS_VALUE)
                                 lastDtsPerStream[mappedIndex] = packet->dts;
 
+                            NormalizePacketTimestampsBeforeWrite(packet);
                             packet->pos = -1;
                             packet->stream_index = mappedIndex;
                             ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), "av_interleaved_write_frame");
@@ -1190,8 +1191,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 buffPkt->pts -= bTs;
             if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
                 buffPkt->dts -= bTs;
-            if (buffPkt->pts < 0) buffPkt->pts = 0;
-            if (buffPkt->dts < 0) buffPkt->dts = 0;
+            NormalizePacketTimestampsBeforeWrite(buffPkt);
             buffPkt->pos = -1;
             buffPkt->stream_index = oi;
             ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
@@ -1224,6 +1224,31 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         timestampBase = hasPts ? packet->pts : packet->dts;
         return true;
+    }
+
+    private static void NormalizePacketTimestampsBeforeWrite(AVPacket* packet)
+    {
+        if (packet == null)
+        {
+            return;
+        }
+
+        if (packet->pts != ffmpeg.AV_NOPTS_VALUE && packet->pts < 0)
+        {
+            packet->pts = 0;
+        }
+
+        if (packet->dts != ffmpeg.AV_NOPTS_VALUE && packet->dts < 0)
+        {
+            packet->dts = 0;
+        }
+
+        if (packet->pts != ffmpeg.AV_NOPTS_VALUE &&
+            packet->dts != ffmpeg.AV_NOPTS_VALUE &&
+            packet->pts < packet->dts)
+        {
+            packet->pts = packet->dts;
+        }
     }
 
     private static int FindVideoStreamIndex(AVFormatContext* inputContext)
