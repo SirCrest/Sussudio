@@ -1407,6 +1407,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
             if (!TrySubmitAndHoldFrame(videoFrame, "playback"))
             {
+                SetState(FlashbackPlaybackState.Paused);
+                Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_STOP pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
                 return false;
             }
             Interlocked.Exchange(ref _lastVideoPtsTicks, videoFrame.Pts.Ticks);
