@@ -1818,7 +1818,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         while (queue.Reader.TryRead(out var packet))
         {
-            ReturnVideoPacket(packet);
+            ReturnVideoPacketBestEffort(packet);
         }
 
         lock (_videoQueueSync)
@@ -1853,7 +1853,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         while (queue.Reader.TryRead(out var packet))
         {
-            Marshal.Release(packet.Texture);
+            ReleaseGpuTextureBestEffort(packet.Texture);
         }
 
         Interlocked.Exchange(ref queueDepth, 0);
@@ -2002,6 +2002,35 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
 
         packet.Lease?.Dispose();
+    }
+
+    private static void ReturnVideoPacketBestEffort(VideoFramePacket packet)
+    {
+        try
+        {
+            ReturnVideoPacket(packet);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_RETURN_VIDEO_PACKET_WARN type={ex.GetType().Name} msg={ex.Message}");
+        }
+    }
+
+    private static void ReleaseGpuTextureBestEffort(IntPtr texture)
+    {
+        if (texture == IntPtr.Zero)
+        {
+            return;
+        }
+
+        try
+        {
+            Marshal.Release(texture);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_SINK_RELEASE_GPU_PACKET_WARN type={ex.GetType().Name} msg={ex.Message}");
+        }
     }
 
     private readonly record struct VideoFramePacket(byte[]? Buffer, PooledVideoFrameLease? Lease, int Length, long EnqueueTick, long? SequenceNumber, bool IsP010)

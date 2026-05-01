@@ -807,6 +807,10 @@ static partial class Program
         AssertContains(sourceText, "private static void ReturnRemainingGpuBuffers(Channel<GpuFramePacket>? queue, ref int queueDepth)");
         AssertContains(sourceText, "Interlocked.Exchange(ref queueDepth, 0);");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_SINK_BUFFER_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}\");");
+        AssertContains(sourceText, "ReturnVideoPacketBestEffort(packet);");
+        AssertContains(sourceText, "ReleaseGpuTextureBestEffort(packet.Texture);");
+        AssertContains(sourceText, "FLASHBACK_SINK_RETURN_VIDEO_PACKET_WARN");
+        AssertContains(sourceText, "FLASHBACK_SINK_RELEASE_GPU_PACKET_WARN");
 
         return Task.CompletedTask;
     }
