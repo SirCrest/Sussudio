@@ -1445,7 +1445,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_EXPORT_WARN reason='output_length_unavailable' path='{path}' msg='{ex.Message}'");
+            Logger.Log($"FLASHBACK_EXPORT_WARN reason='output_length_unavailable' path='{path}' type={ex.GetType().Name} msg='{ex.Message}'");
             return -1;
         }
     }
@@ -1513,7 +1513,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
         catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' msg='{ex.Message}'");
+            Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 
@@ -1660,13 +1660,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 }
                 catch (Exception ex)
                 {
-                    Logger.Log($"FLASHBACK_EXPORT_ORPHAN_CLEANUP_FAIL path='{Path.GetFileName(tmpFile)}' msg='{ex.Message}'");
+                    Logger.Log($"FLASHBACK_EXPORT_ORPHAN_CLEANUP_FAIL path='{Path.GetFileName(tmpFile)}' type={ex.GetType().Name} msg='{ex.Message}'");
                 }
             }
         }
         catch (Exception ex)
         {
-            Logger.Log($"FLASHBACK_EXPORT_ORPHAN_SCAN_FAIL dir='{directory}' msg='{ex.Message}'");
+            Logger.Log($"FLASHBACK_EXPORT_ORPHAN_SCAN_FAIL dir='{directory}' type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 }
