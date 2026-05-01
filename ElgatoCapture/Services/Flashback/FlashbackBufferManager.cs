@@ -46,6 +46,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private TimeSpan _recordingEndPts;
     private readonly List<CompletedSegment> _completedSegments = new();
     private int _nextSegmentIndex;
+    private int _completedSegmentSequence;
     private long _completedSegmentBytes; // running total — avoids iterating the list
     private long _previousActiveSegmentBytes; // for monotonic written counter
 
@@ -205,6 +206,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             {
                 // Full purge succeeded — reset all counters
                 _completedSegmentBytes = 0;
+                _completedSegmentSequence = 0;
                 Interlocked.Exchange(ref _validStartPtsTicks, 0);
                 _totalDiskBytes = 0;
                 _totalBytesWritten = 0;
@@ -360,6 +362,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             _activeSegmentPath = null;
             _completedSegments.Clear();
             _completedSegmentBytes = 0;
+            _completedSegmentSequence = 0;
             _nextSegmentIndex = 0;
             Interlocked.Exchange(ref _latestPtsTicks, 0);
             Interlocked.Exchange(ref _validStartPtsTicks, 0);
@@ -780,7 +783,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
             _previousActiveSegmentBytes = 0;
 
-            var sequenceNumber = _completedSegments.Count;
+            var sequenceNumber = _completedSegmentSequence++;
             _completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes));
             _completedSegmentBytes += safeSizeBytes;
             Logger.Log($"FLASHBACK_BUFFER_SEGMENT_COMPLETE seq={sequenceNumber} path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} size_bytes={safeSizeBytes}");
@@ -1103,6 +1106,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
             _completedSegments.Clear();
             _completedSegmentBytes = 0;
+            _completedSegmentSequence = 0;
 
             // Delete active segment
             if (_activeSegmentPath != null)
