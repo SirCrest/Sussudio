@@ -2345,12 +2345,22 @@ static partial class Program
     private static Task FlashbackBufferManager_GetValidSegmentPaths_ReturnsOverlapping()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
         var manager = CreateInitializedBufferManager(tempDir);
 
-        AddCompletedSegment(manager, "/s0.ts", TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 500);
-        AddCompletedSegment(manager, "/s1.ts", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
-        AddCompletedSegment(manager, "/s2.ts", TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 500);
-        AddCompletedSegment(manager, "/s3.ts", TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(20), 500);
+        var s0 = Path.Combine(tempDir, "s0.ts");
+        var s1 = Path.Combine(tempDir, "s1.ts");
+        var s2 = Path.Combine(tempDir, "s2.ts");
+        var s3 = Path.Combine(tempDir, "s3.ts");
+        File.WriteAllText(s0, "segment");
+        File.WriteAllText(s1, "segment");
+        File.WriteAllText(s2, "segment");
+        File.WriteAllText(s3, "segment");
+
+        AddCompletedSegment(manager, s0, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 500);
+        AddCompletedSegment(manager, s1, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+        AddCompletedSegment(manager, s2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 500);
+        AddCompletedSegment(manager, s3, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(20), 500);
 
         var method = manager.GetType().GetMethod("GetValidSegmentPaths")!;
 
@@ -2362,6 +2372,10 @@ static partial class Program
         // Range 5s-5.5s should include only s1 (5-10)
         var narrow = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5.5) })!;
         AssertEqual(1, GetCountProperty(narrow), "5s-5.5s should be 1 segment");
+
+        File.Delete(s1);
+        var missing = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(5.5) })!;
+        AssertEqual(0, GetCountProperty(missing), "Missing overlapping file should not be returned");
 
         return Task.CompletedTask;
     }

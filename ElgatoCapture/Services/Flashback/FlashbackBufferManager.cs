@@ -886,7 +886,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             foreach (var seg in _completedSegments)
             {
                 // Segment overlaps [inPoint, outPoint] if seg.Start < outPoint AND seg.End > inPoint
-                if (seg.StartPts < outPoint && seg.EndPts > inPoint)
+                if (seg.StartPts < outPoint && seg.EndPts > inPoint && File.Exists(seg.Path))
                 {
                     paths.Add(seg.Path);
                 }
