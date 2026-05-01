@@ -498,8 +498,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (bufferManager != null)
             {
                 var validStart = bufferManager.ValidStartPts;
-                fileInPoint = (inPoint ?? TimeSpan.Zero) + validStart;
-                fileOutPoint = outPoint.HasValue ? outPoint.Value + validStart : TimeSpan.MaxValue;
+                var bufferedDuration = bufferManager.BufferedDuration;
+                var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);
+                var bufferOutPoint = outPoint.HasValue
+                    ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)
+                    : TimeSpan.MaxValue;
+                fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);
+                fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -577,7 +582,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 var rangeStart = bufferedDuration.TotalSeconds > seconds
                     ? TimeSpan.FromSeconds(bufferedDuration.TotalSeconds - seconds)
                     : TimeSpan.Zero;
-                fileInPoint = rangeStart + validStart;
+                fileInPoint = AddFlashbackPtsOffsetOrMax(rangeStart, validStart);
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -784,6 +789,28 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
 
         return segments;
+    }
+
+    private static TimeSpan ClampFlashbackBufferPosition(TimeSpan position, TimeSpan bufferedDuration)
+    {
+        if (position < TimeSpan.Zero)
+        {
+            return TimeSpan.Zero;
+        }
+
+        return position > bufferedDuration ? bufferedDuration : position;
+    }
+
+    private static TimeSpan AddFlashbackPtsOffsetOrMax(TimeSpan position, TimeSpan offset)
+    {
+        if (position == TimeSpan.MaxValue || offset == TimeSpan.MaxValue)
+        {
+            return TimeSpan.MaxValue;
+        }
+
+        return position > TimeSpan.MaxValue - offset
+            ? TimeSpan.MaxValue
+            : position + offset;
     }
 
     private long BeginFlashbackExportDiagnostics(TimeSpan inPoint, TimeSpan outPoint, string outputPath)
