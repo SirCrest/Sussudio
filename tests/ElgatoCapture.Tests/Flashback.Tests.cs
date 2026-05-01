@@ -728,6 +728,8 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n        {\n            SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n        }");
+        AssertContains(sourceText, "case CommandKind.Stop:\n                        isPlaying = false;\n                        isScrubbing = false;\n                        CleanupDecoder(ref decoder, ref fileOpen);");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);\n                        RestoreLiveAudio();\n                        SafeResumePreviewSubmission(\"thread_stop\");\n                        SetState(FlashbackPlaybackState.Live);");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return;\n        EnsurePlaybackThread();\n        SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
         AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");\n                        return;");
         AssertContains(sourceText, "var canRead = _commandChannel.Reader.WaitToReadAsync(cts.Token).AsTask().GetAwaiter().GetResult();");

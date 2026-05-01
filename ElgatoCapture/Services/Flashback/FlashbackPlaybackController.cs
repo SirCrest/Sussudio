@@ -496,7 +496,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 switch (cmd.Kind)
                 {
                     case CommandKind.Stop:
+                        isPlaying = false;
+                        isScrubbing = false;
                         CleanupDecoder(ref decoder, ref fileOpen);
+                        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
+                        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
+                        Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
+                        RestoreLiveAudio();
+                        SafeResumePreviewSubmission("thread_stop");
+                        SetState(FlashbackPlaybackState.Live);
                         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
                         return;
 
