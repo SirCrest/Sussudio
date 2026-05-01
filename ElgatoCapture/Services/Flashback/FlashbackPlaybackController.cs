@@ -444,7 +444,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                         if (decoder is { IsOpen: true })
                         {
-                            if (!PaceAndDecodeFrame(decoder, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart))
+                            if (!PaceAndDecodeFrame(decoder, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token))
                             {
                                 isPlaying = false;
                             }
@@ -1036,10 +1036,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Stopwatch pacingStopwatch,
         ref TimeSpan frameDuration,
         ref bool fileOpen,
-        TimeSpan frozenValidStart)
+        TimeSpan frozenValidStart,
+        CancellationToken cancellationToken)
     {
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (!decoder.TryDecodeNextVideoFrame(out var videoFrame))
             {
                 return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart);
@@ -1065,6 +1067,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     var skipped = 0;
                     while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)
                     {
+                        cancellationToken.ThrowIfCancellationRequested();
                         // Release the frame without displaying it
                         FlashbackDecoder.ReleaseHeldFrame(videoFrame);
                         Interlocked.Increment(ref _playbackDroppedFrames);

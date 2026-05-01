@@ -546,6 +546,9 @@ static partial class Program
         AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT\");\n                threadExited = false;");
         AssertContains(sourceText, "if (threadExited)\n        {\n            _playCts?.Dispose();");
         AssertContains(sourceText, "if (cts.IsCancellationRequested)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");");
+        AssertContains(sourceText, "PaceAndDecodeFrame(decoder, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token)");
+        AssertContains(sourceText, "CancellationToken cancellationToken)\n    {\n        try\n        {\n            cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n                    {\n                        cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"thread_cancelled\");");
         AssertContains(sourceText, "DrainAbandonedCommandsOnThreadExit();");
         AssertContains(sourceText, "Interlocked.Add(ref _commandsDropped, abandoned);");
