@@ -1510,9 +1510,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     {
         string? completedPath = null;
         string? newPath = null;
+        var encoderRotated = false;
         try
         {
             completedPath = _tsFilePath;
+            var completedStartPts = _segmentStartPts;
             newPath = _bufferManager.GenerateSegmentPath();
 
             // RotateOutput flushes encoder queues, writes trailer, then resets
@@ -1520,12 +1522,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             // in the result includes all drain/trailer bytes.
             var result = _encoder.RotateOutput(newPath);
             var segmentBytes = NonNegativeByteDelta(result.PreviousTotalBytes, Interlocked.Read(ref _segmentStartBytes));
-
-            _bufferManager.OnSegmentCompleted(completedPath!, _segmentStartPts, currentPts, segmentBytes);
+            encoderRotated = true;
 
             _segmentStartPts = currentPts;
             _tsFilePath = newPath;
             Interlocked.Exchange(ref _segmentStartBytes, _encoder.TotalBytesWritten);
+
+            _bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, segmentBytes);
 
             // Update disk bytes tracking
             _bufferManager.UpdateDiskBytes(_encoder.TotalBytesWritten);
@@ -1538,7 +1541,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
         catch (Exception ex)
         {
-            if (newPath != null)
+            if (newPath != null && !encoderRotated)
             {
                 _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);
             }

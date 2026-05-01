@@ -2236,9 +2236,14 @@ static partial class Program
             "    public IReadOnlyList<string> ForceRotateForExport");
         AssertContains(rotateBlock, "string? completedPath = null;");
         AssertContains(rotateBlock, "string? newPath = null;");
+        AssertContains(rotateBlock, "var encoderRotated = false;");
         AssertContains(rotateBlock, "completedPath = _tsFilePath;");
+        AssertContains(rotateBlock, "var completedStartPts = _segmentStartPts;");
         AssertContains(rotateBlock, "newPath = _bufferManager.GenerateSegmentPath();");
-        AssertContains(rotateBlock, "if (newPath != null)\n            {\n                _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);\n            }");
+        AssertContains(rotateBlock, "encoderRotated = true;");
+        AssertOccursBefore(rotateBlock, "encoderRotated = true;", "_tsFilePath = newPath;");
+        AssertOccursBefore(rotateBlock, "_tsFilePath = newPath;", "_bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, segmentBytes);");
+        AssertContains(rotateBlock, "if (newPath != null && !encoderRotated)\n            {\n                _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);\n            }");
 
         var abandonBlock = ExtractTextBetween(
             bufferText,
