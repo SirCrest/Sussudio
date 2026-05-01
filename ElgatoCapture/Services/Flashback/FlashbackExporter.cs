@@ -179,11 +179,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         finally
         {
             if (lockAcquired)
-                _exportLock.Release();
+                ReleaseExportLockBestEffort("dispose");
         }
 
-        _exportLock.Dispose();
-        disposeCts?.Dispose();
+        DisposeExportLockBestEffort();
+        DisposeLinkedCtsBestEffort(disposeCts, "dispose");
         ClearDisposeCtsReference(disposeCts);
         GC.SuppressFinalize(this);
     }
@@ -1396,6 +1396,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_EXPORT_LOCK_RELEASE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void DisposeExportLockBestEffort()
+    {
+        try
+        {
+            _exportLock.Dispose();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_LOCK_DISPOSE_WARN type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 
