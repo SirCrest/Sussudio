@@ -249,6 +249,23 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
+    public void UpdatePreviewComponents(IPreviewFrameSink? previewSink, ILiveVideoSource? videoCapture)
+    {
+        lock (_playbackThreadSync)
+        {
+            if (_disposedFlag != 0)
+            {
+                Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_UPDATE_SKIP reason=disposed");
+                return;
+            }
+
+            _previewSink = previewSink;
+            _videoCapture = videoCapture;
+            _initialized = previewSink != null && videoCapture != null;
+            Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_UPDATE sink={previewSink != null} capture={videoCapture != null}");
+        }
+    }
+
     // --- State transitions (called from UI thread) ---
 
     public bool BeginScrub(TimeSpan position)
@@ -1307,6 +1324,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)
     {
+        var previewSink = Volatile.Read(ref _previewSink);
+        if (previewSink == null)
+        {
+            Interlocked.Increment(ref _playbackSubmitFailures);
+            SetLastSubmitFailure($"{operation}:missing_preview_sink");
+            ReleaseHeldFrameBestEffort(frame, $"{operation}_missing_preview_sink");
+            Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_SKIP op={operation} reason=missing_preview_sink");
+            return false;
+        }
+
         if (!TryValidatePreviewFrame(frame, out var skipReason))
         {
             Interlocked.Increment(ref _playbackSubmitFailures);
@@ -1318,7 +1345,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         try
         {
-            SubmitFrame(frame);
+            SubmitFrame(previewSink, frame);
             ReleasePreviousHeldFrame();
             _previousHeldFrame = frame;
             _hasPreviousHeldFrame = true;
@@ -1946,7 +1973,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     /// <summary>
     /// Submits a decoded frame to the preview renderer — GPU texture or raw CPU data.
     /// </summary>
-    private void SubmitFrame(DecodedVideoFrame frame)
+    private static void SubmitFrame(IPreviewFrameSink previewSink, DecodedVideoFrame frame)
     {
         if (frame.IsD3D11Texture)
         {
@@ -1955,13 +1982,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 Logger.Log("FLASHBACK_PLAYBACK_SUBMIT_SKIP reason=null_texture");
                 return;
             }
-            _previewSink?.SubmitTexture(
+            previewSink.SubmitTexture(
                 frame.TexturePtr, frame.SubresourceIndex,
                 frame.Width, frame.Height, frame.IsHdr, arrivalTick: 0);
         }
         else
         {
-            _previewSink?.SubmitRawFrame(
+            previewSink.SubmitRawFrame(
                 frame.Data, frame.DataLength,
                 frame.Width, frame.Height, frame.IsHdr, arrivalTick: 0);
         }

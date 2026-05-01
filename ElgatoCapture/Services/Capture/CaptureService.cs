@@ -1399,6 +1399,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             controller.Initialize(sink, _unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);
             Logger.Log("FLASHBACK_PLAYBACK_LATE_INIT via SetPreviewFrameSink");
         }
+        else if (controller is { IsDisposed: false, IsInitialized: true })
+        {
+            controller.UpdatePreviewComponents(sink, _unifiedVideoCapture);
+        }
     }
 
     private void CacheMjpegTimingMetrics(UnifiedVideoCapture? unifiedVideoCapture)

@@ -1868,6 +1868,12 @@ static partial class Program
         AssertContains(sourceText, "public string LastSubmitFailure => Volatile.Read(ref _lastSubmitFailure);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _playbackSubmitFailures, 0);");
         AssertContains(sourceText, "ClearLastSubmitFailure();");
+        AssertContains(sourceText, "public void UpdatePreviewComponents(IPreviewFrameSink? previewSink, ILiveVideoSource? videoCapture)");
+        AssertContains(sourceText, "_initialized = previewSink != null && videoCapture != null;");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_UPDATE sink={previewSink != null} capture={videoCapture != null}");
+        AssertContains(sourceText, "var previewSink = Volatile.Read(ref _previewSink);");
+        AssertContains(sourceText, "SetLastSubmitFailure($\"{operation}:missing_preview_sink\");");
+        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_missing_preview_sink\");");
         AssertContains(sourceText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
         AssertContains(sourceText, "reason = \"invalid_dimensions\";");
         AssertContains(sourceText, "reason = \"null_texture\";");
@@ -1900,7 +1906,7 @@ static partial class Program
         AssertContains(sourceText, "TrySubmitAndHoldFrame(videoFrame, \"playback\")");
         AssertContains(sourceText, "if (!TrySubmitAndHoldFrame(videoFrame, \"playback\"))\n            {\n                SetState(FlashbackPlaybackState.Paused);\n                Logger.Log($\"FLASHBACK_PLAYBACK_SUBMIT_STOP pos_ms={(long)PlaybackPosition.TotalMilliseconds}\");\n                return false;\n            }");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n        try\n        {\n            SubmitFrame(frame);");
-        AssertContains(sourceText, "SubmitFrame(frame);\n            ReleasePreviousHeldFrame();");
+        AssertContains(sourceText, "SubmitFrame(previewSink, frame);\n            ReleasePreviousHeldFrame();");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n            SubmitFrame(videoFrame);");
 
         return Task.CompletedTask;
