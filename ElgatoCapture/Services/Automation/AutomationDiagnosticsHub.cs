@@ -34,6 +34,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private long _lastRecordedBytes;
     private long _muteLowSignalStartTick;
     private long _recordingNoGrowthStartTick;
+    private long _lastPreviewJitterUnderflows;
+    private long _lastPreviewJitterDeadlineDrops;
+    private long _lastPreviewJitterEvalTick;
     private Task? _autoVerificationTask;
     private int _verificationInProgress;
     private int _autoVerificationScheduled;
@@ -432,13 +435,16 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             captureCadenceP95IntervalMs: health.CaptureCadenceP95IntervalMs,
             captureCadenceDropPercent: health.CaptureCadenceEstimatedDropPercent,
             lastVerification: lastVerification);
+        var (recentPreviewUnderflows, recentPreviewDeadlineDrops) = UpdatePreviewJitterRecentCounters(health, nowTick);
         var diagnostic = BuildDiagnosticEvaluation(
             health,
             captureRuntime,
             previewRuntime,
             viewModelSnapshot.IsPreviewing,
             viewModelSnapshot.IsRecording,
-            performance);
+            performance,
+            recentPreviewUnderflows,
+            recentPreviewDeadlineDrops);
         var hdrTruthVerdict = BuildHdrTruthVerdict(captureRuntime, viewModelSnapshot.IsHdrEnabled, lastVerification);
         var previewHdrInputDetected =
             IsHdrSubtype(captureRuntime.NegotiatedPixelFormat) ||
@@ -1204,6 +1210,26 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         return snapshot;
     }
 
+    private (long RecentUnderflows, long RecentDeadlineDrops) UpdatePreviewJitterRecentCounters(
+        CaptureHealthSnapshot health,
+        long nowTick)
+    {
+        var underflows = Math.Max(0, health.MjpegPreviewJitterUnderflowCount);
+        var deadlineDrops = Math.Max(0, health.MjpegPreviewJitterDeadlineDropCount);
+        var previousTick = Interlocked.Exchange(ref _lastPreviewJitterEvalTick, nowTick);
+        var previousUnderflows = Interlocked.Exchange(ref _lastPreviewJitterUnderflows, underflows);
+        var previousDeadlineDrops = Interlocked.Exchange(ref _lastPreviewJitterDeadlineDrops, deadlineDrops);
+
+        if (previousTick == 0 || nowTick < previousTick)
+        {
+            return (0, 0);
+        }
+
+        return (
+            Math.Max(0, underflows - previousUnderflows),
+            Math.Max(0, deadlineDrops - previousDeadlineDrops));
+    }
+
     private void UpdateAlerts(AutomationSnapshot snapshot)
     {
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -1357,7 +1383,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         PreviewRuntimeSnapshot previewRuntime,
         bool isPreviewing,
         bool isRecording,
-        PerformanceEvaluation performance)
+        PerformanceEvaluation performance,
+        long recentPreviewUnderflows,
+        long recentPreviewDeadlineDrops)
     {
         var sourceTarget = health.ExpectedFrameRate > 0
             ? $"{1000.0 / health.ExpectedFrameRate:0.##}ms"
@@ -1367,7 +1395,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var decodeLane =
             $"decode p95={health.MjpegDecodeP95Ms:0.##}ms callbackP95={health.MjpegCallbackP95Ms:0.##}ms dropped={health.MjpegTotalDropped} failures={health.MjpegDecodeFailures + health.MjpegEmitFailures}";
         var previewLane =
-            $"preview scheduler target={health.MjpegPreviewJitterTargetDepth} depth={health.MjpegPreviewJitterQueueDepth}/{health.MjpegPreviewJitterMaxDepth} deadlineDrops={health.MjpegPreviewJitterDeadlineDropCount} underflows={health.MjpegPreviewJitterUnderflowCount}";
+            $"preview scheduler target={health.MjpegPreviewJitterTargetDepth} depth={health.MjpegPreviewJitterQueueDepth}/{health.MjpegPreviewJitterMaxDepth} deadlineDrops={health.MjpegPreviewJitterDeadlineDropCount} underflows={health.MjpegPreviewJitterUnderflowCount} recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows}";
         var rendererSubmitted = Math.Max(
             previewRuntime.D3DFramesSubmitted,
             previewRuntime.D3DFramesRendered + previewRuntime.D3DFramesDropped);
@@ -1511,8 +1539,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 audioLane);
         }
 
-        if (health.MjpegPreviewJitterDeadlineDropCount > 0 ||
-            health.MjpegPreviewJitterUnderflowCount > 3)
+        if (recentPreviewDeadlineDrops > 0 ||
+            recentPreviewUnderflows > 3)
         {
             return new DiagnosticEvaluation(
                 "Warning",

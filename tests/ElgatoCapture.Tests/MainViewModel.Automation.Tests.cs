@@ -220,6 +220,9 @@ static partial class Program
         AssertContains(diagnosticsText, "DiagnosticsCategory.Flashback");
         AssertContains(diagnosticsText, "health.FlashbackExportActive");
         AssertContains(diagnosticsText, "\"flashback_export\"");
+        AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
+        AssertContains(diagnosticsText, "recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows}");
+        AssertContains(diagnosticsText, "if (recentPreviewDeadlineDrops > 0 ||\n            recentPreviewUnderflows > 3)");
 
         var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
