@@ -495,12 +495,28 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     }
     private bool EnqueueUiOperation(Func<Task> operation, string operationName, bool allowDuringDispose = false)
     {
-        if (!allowDuringDispose && Volatile.Read(ref _disposeState) != 0) return false;
-        return _dispatcherQueue.TryEnqueue(() =>
+        if (!allowDuringDispose && Volatile.Read(ref _disposeState) != 0)
         {
-            if (!allowDuringDispose && Volatile.Read(ref _disposeState) != 0) return;
+            Logger.Log($"UI_OPERATION_SKIP op='{operationName}' reason=disposing");
+            return false;
+        }
+
+        var enqueued = _dispatcherQueue.TryEnqueue(() =>
+        {
+            if (!allowDuringDispose && Volatile.Read(ref _disposeState) != 0)
+            {
+                Logger.Log($"UI_OPERATION_SKIP op='{operationName}' reason=disposing_after_enqueue");
+                return;
+            }
+
             _ = ExecuteUiOperationAsync(operation, operationName);
         });
+        if (!enqueued)
+        {
+            Logger.Log($"UI_OPERATION_ENQUEUE_FAILED op='{operationName}'");
+        }
+
+        return enqueued;
     }
 
     private async Task ExecuteUiOperationAsync(Func<Task> operation, string operationName)
