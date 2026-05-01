@@ -104,6 +104,7 @@ public static class DiagnosticSessionRunner
         var runFlashbackDisableDuringExport = scenario == "flashback-disable-during-export";
         var runFlashbackPreviewCycle = scenario == "flashback-preview-cycle";
         var runFlashbackRecording = scenario == "flashback-recording";
+        var runFlashbackRecordingPreviewCycle = scenario == "flashback-recording-preview-cycle";
         var runFlashbackExportRejected = scenario == "flashback-export-rejected";
         using var commandSendGate = new SemaphoreSlim(1, 1);
 
@@ -138,7 +139,7 @@ public static class DiagnosticSessionRunner
 
             if (ScenarioNeedsRecording(scenario) && !GetBool(initialSnapshot, "IsRecording"))
             {
-                if (runFlashbackRecording &&
+                if ((runFlashbackRecording || runFlashbackRecordingPreviewCycle) &&
                     !await WaitForFlashbackStressBufferReadyAsync(
                         (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
                         cancellationToken).ConfigureAwait(false))
@@ -244,6 +245,7 @@ public static class DiagnosticSessionRunner
 
             Task? flashbackDisableDuringExportTask = null;
             Task? flashbackPreviewCycleTask = null;
+            Task? flashbackRecordingPreviewCycleTask = null;
             if (runFlashbackDisableDuringExport)
             {
                 flashbackDisableDuringExportTask = RunFlashbackDisableDuringExportAsync(
@@ -264,6 +266,16 @@ public static class DiagnosticSessionRunner
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
                     cancellationToken);
                 actions.Add("flashback preview cycle started");
+            }
+
+            if (runFlashbackRecordingPreviewCycle)
+            {
+                flashbackRecordingPreviewCycleTask = RunFlashbackRecordingPreviewCycleAsync(
+                    actions,
+                    warnings,
+                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                    cancellationToken);
+                actions.Add("flashback recording preview cycle started");
             }
 
             await SampleLoopAsync(
@@ -312,6 +324,11 @@ public static class DiagnosticSessionRunner
             if (flashbackPreviewCycleTask is not null)
             {
                 await flashbackPreviewCycleTask.ConfigureAwait(false);
+            }
+
+            if (flashbackRecordingPreviewCycleTask is not null)
+            {
+                await flashbackRecordingPreviewCycleTask.ConfigureAwait(false);
             }
 
             if (runFlashbackExportRejected)
@@ -381,7 +398,7 @@ public static class DiagnosticSessionRunner
             }
         }
 
-        if (runFlashbackRecording)
+        if (runFlashbackRecording || runFlashbackRecordingPreviewCycle)
         {
             ValidateFlashbackRecordingSession(samples, warnings);
         }
@@ -429,7 +446,7 @@ public static class DiagnosticSessionRunner
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackExportPlayback || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0),
+                      (!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackExportPlayback || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackExportRejected) || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -1105,6 +1122,129 @@ public static class DiagnosticSessionRunner
         }
     }
 
+    private static async Task RunFlashbackRecordingPreviewCycleAsync(
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        var recordingReadySnapshot = await WaitForFlashbackRecordingReadyAsync(
+                sendCommandAsync,
+                TimeSpan.FromSeconds(20),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (recordingReadySnapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add("flashback recording preview cycle: Flashback recording backend did not become ready");
+            return;
+        }
+
+        var submittedBeforeStop = GetNullableLong(recordingReadySnapshot.Value, "FlashbackVideoFramesSubmittedToEncoder") ?? 0;
+        var packetsBeforeStop = GetNullableLong(recordingReadySnapshot.Value, "FlashbackVideoEncoderPacketsWritten") ?? 0;
+
+        var stopPreviewResponse = await sendCommandAsync(
+                "SetPreviewEnabled",
+                new Dictionary<string, object?> { ["enabled"] = false },
+                60_000)
+            .ConfigureAwait(false);
+        actions.Add("flashback recording preview cycle preview stopped");
+        if (!AutomationSnapshotFormatter.IsSuccess(stopPreviewResponse))
+        {
+            warnings.Add(
+                $"flashback recording preview cycle: preview stop failed - {AutomationSnapshotFormatter.Get(stopPreviewResponse, "Message", "unknown error")}");
+            return;
+        }
+
+        var previewStoppedSnapshot = await WaitForPreviewActiveAsync(
+                sendCommandAsync,
+                expectedActive: false,
+                timeout: TimeSpan.FromSeconds(15),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (previewStoppedSnapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add("flashback recording preview cycle: preview did not report stopped");
+            return;
+        }
+
+        if (!GetBool(previewStoppedSnapshot.Value, "IsRecording") ||
+            !string.Equals(GetString(previewStoppedSnapshot.Value, "RecordingBackend"), "Flashback", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add("flashback recording preview cycle: Flashback recording backend stopped with preview");
+            return;
+        }
+
+        await Task.Delay(2_000, cancellationToken).ConfigureAwait(false);
+        var previewOffSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        if (!TryGetSnapshot(previewOffSnapshotResponse, out var previewOffSnapshot))
+        {
+            warnings.Add("flashback recording preview cycle: no preview-off recording snapshot returned");
+            return;
+        }
+
+        var submittedPreviewOff = GetNullableLong(previewOffSnapshot, "FlashbackVideoFramesSubmittedToEncoder") ?? 0;
+        var packetsPreviewOff = GetNullableLong(previewOffSnapshot, "FlashbackVideoEncoderPacketsWritten") ?? 0;
+        if (!GetBool(previewOffSnapshot, "IsRecording") ||
+            !string.Equals(GetString(previewOffSnapshot, "RecordingBackend"), "Flashback", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add("flashback recording preview cycle: recording inactive while preview was off");
+        }
+
+        if (submittedPreviewOff <= submittedBeforeStop || packetsPreviewOff <= packetsBeforeStop)
+        {
+            warnings.Add(
+                "flashback recording preview cycle: recording counters did not advance while preview was off " +
+                $"submitted={submittedBeforeStop}->{submittedPreviewOff} packets={packetsBeforeStop}->{packetsPreviewOff}");
+        }
+
+        var startPreviewResponse = await sendCommandAsync(
+                "SetPreviewEnabled",
+                new Dictionary<string, object?> { ["enabled"] = true },
+                60_000)
+            .ConfigureAwait(false);
+        actions.Add("flashback recording preview cycle preview restarted");
+        if (!AutomationSnapshotFormatter.IsSuccess(startPreviewResponse))
+        {
+            warnings.Add(
+                $"flashback recording preview cycle: preview restart failed - {AutomationSnapshotFormatter.Get(startPreviewResponse, "Message", "unknown error")}");
+            return;
+        }
+
+        var previewStartedSnapshot = await WaitForPreviewActiveAsync(
+                sendCommandAsync,
+                expectedActive: true,
+                timeout: TimeSpan.FromSeconds(15),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (previewStartedSnapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add("flashback recording preview cycle: preview did not report active after restart");
+            return;
+        }
+
+        if (!GetBool(previewStartedSnapshot.Value, "IsRecording") ||
+            !string.Equals(GetString(previewStartedSnapshot.Value, "RecordingBackend"), "Flashback", StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add("flashback recording preview cycle: Flashback recording backend inactive after preview restart");
+        }
+
+        var framesFlowingResponse = await sendCommandAsync(
+                "WaitForCondition",
+                new Dictionary<string, object?>
+                {
+                    ["condition"] = "VideoFramesFlowing",
+                    ["timeoutMs"] = 15_000,
+                    ["pollMs"] = 250
+                },
+                17_000)
+            .ConfigureAwait(false);
+        if (!AutomationSnapshotFormatter.IsSuccess(framesFlowingResponse))
+        {
+            warnings.Add(
+                $"flashback recording preview cycle: preview frames did not resume - {AutomationSnapshotFormatter.Get(framesFlowingResponse, "Message", "not met")}");
+        }
+    }
+
     private static async Task RunFlashbackScrubStressAsync(
         List<string> actions,
         List<string> warnings,
@@ -1553,6 +1693,30 @@ public static class DiagnosticSessionRunner
         return null;
     }
 
+    private static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started) < timeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(response, out var snapshot) &&
+                GetBool(snapshot, "IsRecording") &&
+                string.Equals(GetString(snapshot, "RecordingBackend"), "Flashback", StringComparison.OrdinalIgnoreCase) &&
+                GetBool(snapshot, "RecordingFileGrowing"))
+            {
+                return snapshot.Clone();
+            }
+
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        }
+
+        return null;
+    }
+
     private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
@@ -1789,18 +1953,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-export-rejected" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-export-rejected" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
-        => scenario is "recording-only" or "flashback-recording" or "combined";
+        => scenario is "recording-only" or "flashback-recording" or "flashback-recording-preview-cycle" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "combined";
+        => scenario is "flashback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-export-playback" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "combined";
 
 }
