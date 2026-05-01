@@ -1987,7 +1987,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in FlashbackEncoderSink.GetFileSize: {ex.Message}");
+            Logger.Log($"FLASHBACK_SINK_FILE_SIZE_WARN path='{path}' type={ex.GetType().Name} msg='{ex.Message}'");
             return 0;
         }
     }

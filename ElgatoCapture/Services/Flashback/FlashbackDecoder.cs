@@ -254,7 +254,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Trace.TraceWarning($"Suppressed exception in FlashbackDecoder.OpenFile: {ex.Message}");
+            Logger.Log($"FLASHBACK_DECODER_OPEN_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
             CloseFileCore();
             throw;
         }

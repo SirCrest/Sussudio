@@ -610,6 +610,9 @@ static partial class Program
                 "Flashback encoder sink logs fatal segment registration failures",
                 FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged),
             await RunCheckAsync(
+                "Flashback suppressed exceptions use app logs",
+                FlashbackSuppressedExceptionsUseAppLogs),
+            await RunCheckAsync(
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
             await RunCheckAsync(

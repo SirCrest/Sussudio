@@ -1071,4 +1071,30 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackSuppressedExceptionsUseAppLogs()
+    {
+        var decoderText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var sinkText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+
+        var openFileBlock = ExtractTextBetween(
+            decoderText,
+            "public void OpenFile(string filePath)",
+            "    /// <summary>\n    /// Closes the currently open file");
+        AssertContains(openFileBlock, "FLASHBACK_DECODER_OPEN_WARN");
+        AssertContains(openFileBlock, "CloseFileCore();\n            throw;");
+        AssertDoesNotContain(openFileBlock, "System.Diagnostics.Trace.TraceWarning");
+
+        var fileSizeBlock = ExtractTextBetween(
+            sinkText,
+            "private static long GetFileSize(string path)",
+            "    private static string CreateSessionId()");
+        AssertContains(fileSizeBlock, "FLASHBACK_SINK_FILE_SIZE_WARN");
+        AssertContains(fileSizeBlock, "return 0;");
+        AssertDoesNotContain(fileSizeBlock, "System.Diagnostics.Trace.TraceWarning");
+
+        return Task.CompletedTask;
+    }
 }
