@@ -95,6 +95,7 @@ public static class DiagnosticSessionRunner
         var enabledFlashback = false;
         var disabledFlashback = false;
         var runFlashbackStress = scenario == "flashback-stress";
+        var runFlashbackLifecycle = scenario == "flashback-lifecycle";
         var runFlashbackRecording = scenario == "flashback-recording";
         var runFlashbackExportRejected = scenario == "flashback-export-rejected";
         using var commandSendGate = new SemaphoreSlim(1, 1);
@@ -176,6 +177,17 @@ public static class DiagnosticSessionRunner
                 actions.Add("flashback stress started");
             }
 
+            Task? flashbackLifecycleTask = null;
+            if (runFlashbackLifecycle)
+            {
+                flashbackLifecycleTask = RunFlashbackLifecycleAsync(
+                    actions,
+                    warnings,
+                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                    cancellationToken);
+                actions.Add("flashback lifecycle started");
+            }
+
             await SampleLoopAsync(
                     durationSeconds,
                     sampleIntervalMs,
@@ -187,6 +199,11 @@ public static class DiagnosticSessionRunner
             if (flashbackStressTask is not null)
             {
                 await flashbackStressTask.ConfigureAwait(false);
+            }
+
+            if (flashbackLifecycleTask is not null)
+            {
+                await flashbackLifecycleTask.ConfigureAwait(false);
             }
 
             if (runFlashbackExportRejected)
@@ -304,7 +321,7 @@ public static class DiagnosticSessionRunner
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!(runFlashbackStress || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0),
+                      (!(runFlashbackStress || runFlashbackLifecycle || runFlashbackRecording || runFlashbackExportRejected) || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -623,6 +640,116 @@ public static class DiagnosticSessionRunner
         }
     }
 
+    private static async Task RunFlashbackLifecycleAsync(
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        {
+            warnings.Add("flashback lifecycle: Flashback buffer did not become playback-ready within 30s");
+            return;
+        }
+
+        await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "pause" },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback lifecycle pause requested");
+
+        await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 1_000 },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback lifecycle seek requested");
+
+        await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "play" },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback lifecycle play requested");
+
+        await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        await sendCommandAsync(
+                "SetFlashbackEnabled",
+                new Dictionary<string, object?> { ["enabled"] = false },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback lifecycle disabled during playback");
+
+        var disabledSnapshot = await WaitForFlashbackActiveAsync(
+                sendCommandAsync,
+                expectedActive: false,
+                timeout: TimeSpan.FromSeconds(15),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (disabledSnapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add("flashback lifecycle: Flashback did not report inactive after disable");
+        }
+        else
+        {
+            if (GetBool(disabledSnapshot.Value, "FlashbackPlaybackThreadAlive"))
+            {
+                warnings.Add("flashback lifecycle: playback worker still alive after disable");
+            }
+
+            if (GetInt(disabledSnapshot.Value, "FlashbackPlaybackPendingCommands") > 0)
+            {
+                warnings.Add(
+                    "flashback lifecycle: pending commands remained after disable " +
+                    $"pending={GetInt(disabledSnapshot.Value, "FlashbackPlaybackPendingCommands")}");
+            }
+        }
+
+        await sendCommandAsync(
+                "SetFlashbackEnabled",
+                new Dictionary<string, object?> { ["enabled"] = true },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback lifecycle re-enabled");
+
+        var enabledSnapshot = await WaitForFlashbackActiveAsync(
+                sendCommandAsync,
+                expectedActive: true,
+                timeout: TimeSpan.FromSeconds(30),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (enabledSnapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add("flashback lifecycle: Flashback did not report active after re-enable");
+        }
+    }
+
+    private static async Task<JsonElement?> WaitForFlashbackActiveAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        bool expectedActive,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started) < timeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(response, out var snapshot) &&
+                GetBool(snapshot, "FlashbackActive") == expectedActive)
+            {
+                return snapshot.Clone();
+            }
+
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        }
+
+        return null;
+    }
+
     private static async Task<bool> WaitForFlashbackStressBufferReadyAsync(
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
@@ -859,18 +986,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-recording" or "flashback-export-rejected" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-stress" or "flashback-lifecycle" or "flashback-recording" or "flashback-export-rejected" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-recording" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-stress" or "flashback-lifecycle" or "flashback-recording" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
         => scenario is "recording-only" or "flashback-recording" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-stress" or "flashback-recording" or "combined";
+        => scenario is "flashback" or "flashback-stress" or "flashback-lifecycle" or "flashback-recording" or "combined";
 
 }
