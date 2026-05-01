@@ -297,6 +297,9 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     var outputPath = RequireString(payload, "outputPath");
                     var useSelectionRange = GetBool(payload, "useSelectionRange") ?? false;
                     var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken).ConfigureAwait(false);
+                    var failureKind = exportResult.Succeeded
+                        ? string.Empty
+                        : CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage);
                     return CreateResponse(
                         correlationId,
                         exportResult.StatusMessage ?? (exportResult.Succeeded ? "Export complete." : "Export failed."),
@@ -305,6 +308,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                             exportResult.Succeeded,
                             exportResult.OutputPath,
                             exportResult.StatusMessage,
+                            FailureKind = failureKind,
                             FileSizeBytes = File.Exists(exportResult.OutputPath) ? new FileInfo(exportResult.OutputPath).Length : 0L
                         },
                         errorCode: exportResult.Succeeded ? null : "export-failed",

@@ -476,6 +476,38 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExportFailureClassifier_MapsCommandFailures()
+    {
+        var captureServiceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var method = captureServiceType.GetMethod(
+            "ClassifyFlashbackExportFailureKind",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("CaptureService.ClassifyFlashbackExportFailureKind was not found.");
+
+        AssertEqual(
+            "BufferInactive",
+            method.Invoke(null, new object?[] { "Flashback buffer not active" })?.ToString(),
+            "inactive buffer export rejection is classified");
+        AssertEqual(
+            "UnavailableDuringRecording",
+            method.Invoke(null, new object?[] { "Cannot export while Flashback is the active recording backend." })?.ToString(),
+            "recording backend export rejection is classified");
+        AssertEqual(
+            "InvalidOutputPath",
+            method.Invoke(null, new object?[] { "Flashback export failed: output path is a directory." })?.ToString(),
+            "output path export rejection is classified");
+        AssertEqual(
+            "InputUnavailable",
+            method.Invoke(null, new object?[] { "Flashback buffer has no active file" })?.ToString(),
+            "missing active file export rejection is classified");
+        AssertEqual(
+            "NoMediaWritten",
+            method.Invoke(null, new object?[] { "Flashback export wrote no packets." })?.ToString(),
+            "empty media export failure is classified");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_RejectsInvalidExportRanges()
     {
         var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");

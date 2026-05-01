@@ -949,7 +949,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _flashbackExportInPointMs = 0;
             _flashbackExportOutPointMs = 0;
             _flashbackExportMessage = result.StatusMessage;
-            _flashbackExportFailureKind = ClassifyFlashbackExportFailure(result.StatusMessage);
+            _flashbackExportFailureKind = ClassifyFlashbackExportFailureKind(result.StatusMessage);
         }
     }
 
@@ -1043,7 +1043,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             _flashbackExportMessage = result.StatusMessage;
             _flashbackExportFailureKind = result.Succeeded
                 ? string.Empty
-                : ClassifyFlashbackExportFailure(result.StatusMessage);
+                : ClassifyFlashbackExportFailureKind(result.StatusMessage);
             if (result.Succeeded && _flashbackExportPercent < 100)
             {
                 _flashbackExportPercent = 100;
@@ -1054,7 +1054,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private static bool IsFlashbackExportCancelled(string? statusMessage)
         => statusMessage?.Contains("cancel", StringComparison.OrdinalIgnoreCase) == true;
 
-    private static string ClassifyFlashbackExportFailure(string? statusMessage)
+    internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)
     {
         if (string.IsNullOrWhiteSpace(statusMessage))
         {

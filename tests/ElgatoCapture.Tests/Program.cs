@@ -706,6 +706,9 @@ static partial class Program
                 "Flashback exporter output path validation returns failure",
                 FlashbackExporter_OutputPathValidation_ReturnsFailure),
             await RunCheckAsync(
+                "Flashback export failure classifier maps command failures",
+                FlashbackExportFailureClassifier_MapsCommandFailures),
+            await RunCheckAsync(
                 "Flashback exporter rejects directory output paths",
                 FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathIsDirectory),
             await RunCheckAsync(

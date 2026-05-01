@@ -115,6 +115,8 @@ static partial class Program
         AssertContains(dispatcherText, "await _viewModel.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
         AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
+        AssertContains(dispatcherText, "CaptureService.ClassifyFlashbackExportFailureKind(exportResult.StatusMessage)");
+        AssertContains(dispatcherText, "FailureKind = failureKind");
         AssertContains(dispatcherText, "if (positionMs.HasValue &&\n                        (!double.IsFinite(positionMs.Value) ||\n                         positionMs.Value < 0 ||\n                         positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds))");
         AssertContains(dispatcherText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(dispatcherText, "case AutomationFlashbackAction.SetInPoint:");
@@ -386,7 +388,8 @@ static partial class Program
         AssertContains(captureServiceText, "var completedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();");
         AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = completedUtcUnixMs;");
         AssertContains(captureServiceText, "_flashbackExportLastProgressUtcUnixMs = completedUtcUnixMs;");
-        AssertContains(captureServiceText, "ClassifyFlashbackExportFailure(result.StatusMessage)");
+        AssertContains(captureServiceText, "ClassifyFlashbackExportFailureKind(result.StatusMessage)");
+        AssertContains(captureServiceText, "internal static string ClassifyFlashbackExportFailureKind(string? statusMessage)");
         AssertContains(captureServiceText, "return \"UnavailableDuringRecording\";");
         AssertContains(captureServiceText, "return \"BufferInactive\";");
         AssertContains(captureServiceText, "ContainsFlashbackExportFailureText(statusMessage, \"buffer has no active file\")");
