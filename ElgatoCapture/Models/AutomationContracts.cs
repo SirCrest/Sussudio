@@ -884,6 +884,12 @@ public sealed class PerformanceTimelineEntry
     public double PreviewCadenceP95Ms { get; init; }
     public double PreviewCadenceP99Ms { get; init; }
     public double PreviewCadenceMaxMs { get; init; }
+    public double PreviewCadenceSlowFramePercent { get; init; }
+    public int PreviewD3DPendingFrameCount { get; init; }
+    public double PreviewD3DPresentCallP95Ms { get; init; }
+    public double PreviewD3DTotalFrameCpuP95Ms { get; init; }
+    public long PreviewD3DFrameStatsRecentMissedRefreshCount { get; init; }
+    public long PreviewD3DFrameStatsRecentFailureCount { get; init; }
     public long PipelineLatencyMs { get; init; }
     public double MemoryWorkingSetMb { get; init; }
     public double MemoryManagedHeapMb { get; init; }

@@ -341,6 +341,20 @@ static partial class Program
             AssertNotNull(automationSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"AutomationSnapshot.{prop}");
         }
 
+        var performanceTimelineEntryType = RequireType("ElgatoCapture.Models.PerformanceTimelineEntry");
+        foreach (var prop in new[]
+                 {
+                     "PreviewCadenceSlowFramePercent",
+                     "PreviewD3DPendingFrameCount",
+                     "PreviewD3DPresentCallP95Ms",
+                     "PreviewD3DTotalFrameCpuP95Ms",
+                     "PreviewD3DFrameStatsRecentMissedRefreshCount",
+                     "PreviewD3DFrameStatsRecentFailureCount"
+                 })
+        {
+            AssertNotNull(performanceTimelineEntryType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PerformanceTimelineEntry.{prop}");
+        }
+
         return Task.CompletedTask;
     }
 }

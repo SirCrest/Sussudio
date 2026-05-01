@@ -406,6 +406,12 @@ internal static class Formatters
                 PreviewAvgMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceAverageMs"),
                 PreviewP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceP95Ms"),
                 PreviewMaxMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceMaxMs"),
+                PreviewSlowPct = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceSlowFramePercent"),
+                PreviewD3DPending = AutomationSnapshotFormatter.GetInt(item, "PreviewD3DPendingFrameCount"),
+                PreviewD3DPresentP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DPresentCallP95Ms"),
+                PreviewD3DTotalP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DTotalFrameCpuP95Ms"),
+                PreviewD3DRecentMissed = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentMissedRefreshCount"),
+                PreviewD3DRecentFailures = AutomationSnapshotFormatter.GetLong(item, "PreviewD3DFrameStatsRecentFailureCount"),
                 LatencyMs = AutomationSnapshotFormatter.GetLong(item, "PipelineLatencyMs"),
                 WorkingMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryWorkingSetMb"),
                 ManagedMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryManagedHeapMb"),
@@ -426,14 +432,14 @@ internal static class Formatters
         var builder = new StringBuilder();
         builder.AppendLine($"Performance Timeline ({entries.Count} samples)");
         builder.AppendLine();
-        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
-        builder.AppendLine(new string('-', 160));
+        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | D3DQ | D3DPrs | D3DTot | D3DMiss | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
+        builder.AppendLine(new string('-', 200));
 
         foreach (var entry in entries)
         {
             builder.AppendLine(string.Format(
                 CultureInfo.InvariantCulture,
-                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,4} | {8,7} | {9,5} | {10,6:F1} | {11,6:F1} | {12,4} | {13,4} | {14,4} | {15,4:F1} | {16,4} | {17,4}",
+                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,4} | {9,6:F1} | {10,6:F1} | {11,7} | {12,4} | {13,7} | {14,5} | {15,6:F1} | {16,6:F1} | {17,4} | {18,4} | {19,4} | {20,4:F1} | {21,4} | {22,4}",
                 entry.Timestamp,
                 entry.CaptureAvgMs,
                 entry.CaptureP95Ms,
@@ -441,6 +447,11 @@ internal static class Formatters
                 entry.CaptureOnePercentLowFps,
                 entry.PreviewAvgMs,
                 entry.PreviewP95Ms,
+                entry.PreviewSlowPct,
+                entry.PreviewD3DPending,
+                entry.PreviewD3DPresentP95Ms,
+                entry.PreviewD3DTotalP95Ms,
+                entry.PreviewD3DRecentMissed,
                 entry.VidQueue,
                 entry.VidDrops,
                 entry.LatencyMs,
@@ -467,6 +478,11 @@ internal static class Formatters
             builder.AppendLine($"Preview Avg:    {first.PreviewAvgMs:F1}ms -> {last.PreviewAvgMs:F1}ms (delta: {last.PreviewAvgMs - first.PreviewAvgMs:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview P95:    {first.PreviewP95Ms:F1}ms -> {last.PreviewP95Ms:F1}ms (delta: {last.PreviewP95Ms - first.PreviewP95Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview Max:    {first.PreviewMaxMs:F1}ms -> {last.PreviewMaxMs:F1}ms (delta: {last.PreviewMaxMs - first.PreviewMaxMs:+0.0;-0.0;0.0}ms)");
+            builder.AppendLine($"Preview Slow%:  {first.PreviewSlowPct:F1}% -> {last.PreviewSlowPct:F1}% (delta: {last.PreviewSlowPct - first.PreviewSlowPct:+0.0;-0.0;0.0}%)");
+            builder.AppendLine($"D3D Present P95:{first.PreviewD3DPresentP95Ms:F1}ms -> {last.PreviewD3DPresentP95Ms:F1}ms (delta: {last.PreviewD3DPresentP95Ms - first.PreviewD3DPresentP95Ms:+0.0;-0.0;0.0}ms)");
+            builder.AppendLine($"D3D Total P95:  {first.PreviewD3DTotalP95Ms:F1}ms -> {last.PreviewD3DTotalP95Ms:F1}ms (delta: {last.PreviewD3DTotalP95Ms - first.PreviewD3DTotalP95Ms:+0.0;-0.0;0.0}ms)");
+            builder.AppendLine($"D3D Missed:     {first.PreviewD3DRecentMissed} -> {last.PreviewD3DRecentMissed} (latest-window delta: {last.PreviewD3DRecentMissed - first.PreviewD3DRecentMissed:+0;-0;0})");
+            builder.AppendLine($"D3D Stat Fails: {first.PreviewD3DRecentFailures} -> {last.PreviewD3DRecentFailures} (latest-window delta: {last.PreviewD3DRecentFailures - first.PreviewD3DRecentFailures:+0;-0;0})");
             builder.AppendLine($"Capture Rate:   {first.CaptureFps:F1}fps -> {last.CaptureFps:F1}fps (derived avg)");
             builder.AppendLine($"Capture 1% Low: {first.CaptureOnePercentLowFps:F1}fps -> {last.CaptureOnePercentLowFps:F1}fps");
             builder.AppendLine($"Preview Rate:   {first.PreviewFps:F1}fps -> {last.PreviewFps:F1}fps (derived avg)");
@@ -633,6 +649,12 @@ internal static class Formatters
         public double PreviewAvgMs { get; init; }
         public double PreviewP95Ms { get; init; }
         public double PreviewMaxMs { get; init; }
+        public double PreviewSlowPct { get; init; }
+        public int PreviewD3DPending { get; init; }
+        public double PreviewD3DPresentP95Ms { get; init; }
+        public double PreviewD3DTotalP95Ms { get; init; }
+        public long PreviewD3DRecentMissed { get; init; }
+        public long PreviewD3DRecentFailures { get; init; }
         public long LatencyMs { get; init; }
         public double WorkingMb { get; init; }
         public double ManagedMb { get; init; }
