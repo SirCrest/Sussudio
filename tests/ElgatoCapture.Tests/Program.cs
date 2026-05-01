@@ -667,6 +667,9 @@ static partial class Program
                 "Flashback decoder held-frame cleanup is best effort",
                 FlashbackDecoder_HeldFrameCleanupIsBestEffort),
             await RunCheckAsync(
+                "Flashback decoder rejects initialize after dispose",
+                FlashbackDecoder_RejectsInitializeAfterDispose),
+            await RunCheckAsync(
                 "Flashback encoder sink restores active segment after rotation failure",
                 FlashbackEncoderSink_RotateFailureRestoresActiveSegment),
             await RunCheckAsync(

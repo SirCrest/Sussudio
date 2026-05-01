@@ -120,6 +120,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     /// </summary>
     public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)
     {
+        ThrowIfDisposed();
+
         if (_initialized)
         {
             return;

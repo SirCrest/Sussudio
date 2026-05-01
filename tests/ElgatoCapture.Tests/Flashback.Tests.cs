@@ -1834,6 +1834,36 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackDecoder_RejectsInitializeAfterDispose()
+    {
+        var decoderType = RequireType("ElgatoCapture.Services.Flashback.FlashbackDecoder");
+        using var decoder = (IDisposable)Activator.CreateInstance(decoderType)!;
+        var initialize = decoderType.GetMethod("Initialize", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("FlashbackDecoder.Initialize not found.");
+
+        decoder.Dispose();
+
+        try
+        {
+            initialize.Invoke(decoder, new object[] { IntPtr.Zero, IntPtr.Zero });
+            throw new InvalidOperationException("Expected disposed decoder initialization to be rejected.");
+        }
+        catch (TargetInvocationException ex) when (ex.InnerException is ObjectDisposedException)
+        {
+        }
+
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+        var initializeBlock = ExtractTextBetween(
+            sourceText,
+            "public void Initialize(IntPtr d3dDevicePtr, IntPtr d3dContextPtr)",
+            "    /// <summary>\n    /// Opens a .ts or .mp4 file for decoding.");
+        AssertContains(initializeBlock, "ThrowIfDisposed();");
+        AssertOccursBefore(initializeBlock, "ThrowIfDisposed();", "if (_initialized)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackEncoderSink_RotateFailureRestoresActiveSegment()
     {
         var sinkText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
