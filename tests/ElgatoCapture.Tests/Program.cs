@@ -547,6 +547,9 @@ static partial class Program
                 "Flashback in/out points clear invalid counterpart",
                 FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart),
             await RunCheckAsync(
+                "Flashback clamp bounds stale markers to buffered duration",
+                FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration),
+            await RunCheckAsync(
                 "Flashback pause from live does not block on exact seek",
                 FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek),
             await RunCheckAsync(

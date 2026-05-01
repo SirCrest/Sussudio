@@ -1498,10 +1498,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private TimeSpan ClampPosition(TimeSpan position)
     {
+        var bufferDuration = _bufferManager.BufferedDuration;
         var inTicks = Interlocked.Read(ref _inPointTicks);
         var min = inTicks == long.MinValue ? TimeSpan.Zero : TimeSpan.FromTicks(inTicks);
         var outTicks = Interlocked.Read(ref _outPointTicks);
-        var max = outTicks == long.MinValue ? _bufferManager.BufferedDuration : TimeSpan.FromTicks(outTicks);
+        var max = outTicks == long.MinValue ? bufferDuration : TimeSpan.FromTicks(outTicks);
+        if (max > bufferDuration) max = bufferDuration;
+        if (min > max) min = max;
         if (position < min) return min;
         if (position > max) return max;
         return position;
