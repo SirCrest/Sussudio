@@ -244,6 +244,14 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                         AutomationFlashbackAction.Seek => GetDouble(payload, "positionMs") ?? 0,
                         _ => null
                     };
+                    if (positionMs.HasValue &&
+                        (!double.IsFinite(positionMs.Value) ||
+                         positionMs.Value < 0 ||
+                         positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds))
+                    {
+                        throw new InvalidOperationException("Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
+                    }
+
                     var position = positionMs.HasValue
                         ? TimeSpan.FromMilliseconds(positionMs.Value)
                         : (TimeSpan?)null;
