@@ -429,7 +429,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Increment(ref _commandsEnqueued);
         UpdateMaxPendingCommands(pending);
         Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        _lastCommandQueued = command.Kind.ToString();
+        Volatile.Write(ref _lastCommandQueued, command.Kind.ToString());
         ClearLastCommandFailure();
         return true;
     }
@@ -1021,7 +1021,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (abandoned > 0)
         {
             Interlocked.Add(ref _commandsDropped, abandoned);
-            if (string.IsNullOrEmpty(_lastCommandFailure))
+            if (string.IsNullOrEmpty(Volatile.Read(ref _lastCommandFailure)))
             {
                 SetLastCommandFailure($"abandoned_on_exit:{abandoned}");
             }
@@ -1975,9 +1975,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long PlaybackDecodeErrorSnaps => Interlocked.Read(ref _playbackDecodeErrorSnaps);
     public long PlaybackSubmitFailures => Interlocked.Read(ref _playbackSubmitFailures);
     public long LastPlaybackDropUtcUnixMs => Interlocked.Read(ref _lastPlaybackDropUtcUnixMs);
-    public string LastPlaybackDropReason => _lastPlaybackDropReason;
+    public string LastPlaybackDropReason => Volatile.Read(ref _lastPlaybackDropReason);
     public long LastSubmitFailureUtcUnixMs => Interlocked.Read(ref _lastSubmitFailureUtcUnixMs);
-    public string LastSubmitFailure => _lastSubmitFailure;
+    public string LastSubmitFailure => Volatile.Read(ref _lastSubmitFailure);
     public long LastSegmentSwitchUtcUnixMs => Interlocked.Read(ref _lastSegmentSwitchUtcUnixMs);
     public long LastFmp4ReopenUtcUnixMs => Interlocked.Read(ref _lastFmp4ReopenUtcUnixMs);
     public long LastWriteHeadWaitGapMs => Interlocked.Read(ref _lastWriteHeadWaitGapMs);
@@ -1996,9 +1996,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long LastCommandQueuedUtcUnixMs => Interlocked.Read(ref _lastCommandQueuedUtcUnixMs);
     public long LastCommandProcessedUtcUnixMs => Interlocked.Read(ref _lastCommandProcessedUtcUnixMs);
     public long LastCommandFailureUtcUnixMs => Interlocked.Read(ref _lastCommandFailureUtcUnixMs);
-    public string LastCommandQueued => _lastCommandQueued;
-    public string LastCommandProcessed => _lastCommandProcessed;
-    public string LastCommandFailure => _lastCommandFailure;
+    public string LastCommandQueued => Volatile.Read(ref _lastCommandQueued);
+    public string LastCommandProcessed => Volatile.Read(ref _lastCommandProcessed);
+    public string LastCommandFailure => Volatile.Read(ref _lastCommandFailure);
     public bool PlaybackThreadAlive => _playbackThread is { IsAlive: true };
 
     public PlaybackCadenceMetrics GetPlaybackCadenceMetrics()
@@ -2155,32 +2155,32 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private void SetLastCommandFailure(string failure)
     {
-        _lastCommandFailure = failure;
+        Volatile.Write(ref _lastCommandFailure, failure);
         Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
     }
 
     private void SetLastSubmitFailure(string failure)
     {
-        _lastSubmitFailure = failure;
+        Volatile.Write(ref _lastSubmitFailure, failure);
         Interlocked.Exchange(ref _lastSubmitFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
     }
 
     private void ClearLastSubmitFailure()
     {
-        _lastSubmitFailure = string.Empty;
+        Volatile.Write(ref _lastSubmitFailure, string.Empty);
         Interlocked.Exchange(ref _lastSubmitFailureUtcUnixMs, 0);
     }
 
     private void RecordPlaybackDroppedFrame(string reason)
     {
         Interlocked.Increment(ref _playbackDroppedFrames);
-        _lastPlaybackDropReason = reason;
+        Volatile.Write(ref _lastPlaybackDropReason, reason);
         Interlocked.Exchange(ref _lastPlaybackDropUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
     }
 
     private void ClearLastCommandFailure()
     {
-        _lastCommandFailure = string.Empty;
+        Volatile.Write(ref _lastCommandFailure, string.Empty);
         Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);
     }
 
@@ -2200,7 +2200,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         DecrementPendingCommands();
         TrackCommandQueueLatency(command);
         Interlocked.Exchange(ref _lastCommandProcessedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        _lastCommandProcessed = command.Kind.ToString();
+        Volatile.Write(ref _lastCommandProcessed, command.Kind.ToString());
     }
 
     private void TrackCommandQueueLatency(PlaybackCommand command)
@@ -2338,7 +2338,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Exchange(ref _playbackFrameCount, 0);
         Interlocked.Exchange(ref _playbackLateFrames, 0);
         Interlocked.Exchange(ref _playbackDroppedFrames, 0);
-        _lastPlaybackDropReason = string.Empty;
+        Volatile.Write(ref _lastPlaybackDropReason, string.Empty);
         Interlocked.Exchange(ref _lastPlaybackDropUtcUnixMs, 0);
         Interlocked.Exchange(ref _playbackSubmitFailures, 0);
         ClearLastSubmitFailure();

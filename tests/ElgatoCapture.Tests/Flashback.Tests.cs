@@ -1557,7 +1557,7 @@ static partial class Program
         AssertContains(sourceText, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
         AssertContains(sourceText, "DrainAbandonedCommandsOnThreadExit();");
         AssertContains(sourceText, "Interlocked.Add(ref _commandsDropped, abandoned);");
-        AssertContains(sourceText, "if (string.IsNullOrEmpty(_lastCommandFailure))\n            {\n                SetLastCommandFailure($\"abandoned_on_exit:{abandoned}\");\n            }");
+        AssertContains(sourceText, "if (string.IsNullOrEmpty(Volatile.Read(ref _lastCommandFailure)))\n            {\n                SetLastCommandFailure($\"abandoned_on_exit:{abandoned}\");\n            }");
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);");
         AssertContains(sourceText, "ReferenceEquals(Thread.CurrentThread, _playbackThread)");
         AssertContains(sourceText, "_playbackThread = null;");
@@ -1567,7 +1567,7 @@ static partial class Program
         AssertContains(sourceText, "private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_CTS_DISPOSE_WARN");
         AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);");
-        AssertContains(sourceText, "_lastCommandQueued = command.Kind.ToString();\n        ClearLastCommandFailure();\n        return true;");
+        AssertContains(sourceText, "Volatile.Write(ref _lastCommandQueued, command.Kind.ToString());\n        ClearLastCommandFailure();\n        return true;");
 
         return Task.CompletedTask;
     }
@@ -1795,7 +1795,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SUBMIT_SKIP op={operation} reason={skipReason}");
         AssertContains(sourceText, "public long PlaybackSubmitFailures => Interlocked.Read(ref _playbackSubmitFailures);");
         AssertContains(sourceText, "public long LastSubmitFailureUtcUnixMs => Interlocked.Read(ref _lastSubmitFailureUtcUnixMs);");
-        AssertContains(sourceText, "public string LastSubmitFailure => _lastSubmitFailure;");
+        AssertContains(sourceText, "public string LastSubmitFailure => Volatile.Read(ref _lastSubmitFailure);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _playbackSubmitFailures, 0);");
         AssertContains(sourceText, "ClearLastSubmitFailure();");
         AssertContains(sourceText, "private static bool TryValidatePreviewFrame(DecodedVideoFrame frame, out string reason)");
@@ -1936,8 +1936,8 @@ static partial class Program
         AssertContains(sourceText, "private static string FormatCommandDetail(PlaybackCommand command)");
         AssertContains(sourceText, "return $\" pos_ms={position.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "return $\" delta_ms={delta.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
-        AssertContains(sourceText, "private void SetLastCommandFailure(string failure)\n    {\n        _lastCommandFailure = failure;\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());\n    }");
-        AssertContains(sourceText, "private void ClearLastCommandFailure()\n    {\n        _lastCommandFailure = string.Empty;\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);\n    }");
+        AssertContains(sourceText, "private void SetLastCommandFailure(string failure)\n    {\n        Volatile.Write(ref _lastCommandFailure, failure);\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());\n    }");
+        AssertContains(sourceText, "private void ClearLastCommandFailure()\n    {\n        Volatile.Write(ref _lastCommandFailure, string.Empty);\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);\n    }");
         AssertContains(sourceText, "private void TrackCoalescedScrubUpdate()");
         AssertContains(sourceText, "Interlocked.Increment(ref _scrubUpdatesCoalesced);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SCRUB_COALESCED");
