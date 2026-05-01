@@ -495,7 +495,7 @@ internal static class AutomationSnapshotFormatter
         builder.AppendLine($"Average Rate: {Get(snapshot, "PreviewCadenceObservedFps")} fps");
     }
 
-    private static void AppendPreviewSlowFrameDiagnostics(StringBuilder builder, JsonElement snapshot)
+    internal static void AppendPreviewSlowFrameDiagnostics(StringBuilder builder, JsonElement snapshot)
     {
         if (!snapshot.TryGetProperty("PreviewD3DRecentSlowFrames", out var slowFrames) ||
             slowFrames.ValueKind != JsonValueKind.Array ||
@@ -514,7 +514,8 @@ internal static class AutomationSnapshotFormatter
 
             lines.Add(
                 $"present={Get(frame, "PreviewPresentId")} srcSeq={Get(frame, "SourceSequenceNumber")} " +
-                $"interval={FormatDiagnosticMs(frame, "PresentIntervalMs")} total={FormatDiagnosticMs(frame, "TotalFrameCpuMs")} " +
+                $"reason={Get(frame, "SlowReason")} target={FormatDiagnosticMs(frame, "ExpectedIntervalMs")} " +
+                $"over={FormatDiagnosticMs(frame, "WorstOverBudgetMs")} interval={FormatDiagnosticMs(frame, "PresentIntervalMs")} total={FormatDiagnosticMs(frame, "TotalFrameCpuMs")} " +
                 $"upload={FormatDiagnosticMs(frame, "InputUploadCpuMs")} render={FormatDiagnosticMs(frame, "RenderSubmitCpuMs")} " +
                 $"presentCall={FormatDiagnosticMs(frame, "PresentCallMs")} sched={FormatDiagnosticMs(frame, "SchedulerToPresentMs")} " +
                 $"pending={Get(frame, "PendingFrameCount")} dxgiDelta={Get(frame, "DxgiPresentDelta")}/{Get(frame, "DxgiPresentRefreshDelta")}/{Get(frame, "DxgiSyncRefreshDelta")}");

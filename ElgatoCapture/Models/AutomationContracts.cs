@@ -109,6 +109,10 @@ public sealed class PreviewSlowFrameDiagnostic
     public double PresentCallMs { get; init; }
     public double TotalFrameCpuMs { get; init; }
     public double SchedulerToPresentMs { get; init; }
+    public double ExpectedIntervalMs { get; init; }
+    public double DiagnosticThresholdMs { get; init; }
+    public double WorstOverBudgetMs { get; init; }
+    public string SlowReason { get; init; } = string.Empty;
     public int PendingFrameCount { get; init; }
     public long DxgiPresentDelta { get; init; }
     public long DxgiPresentRefreshDelta { get; init; }

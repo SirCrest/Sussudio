@@ -220,6 +220,10 @@ static partial class Program
                     "PresentCallMs": 3.3,
                     "TotalFrameCpuMs": 6.6,
                     "SchedulerToPresentMs": 7.7,
+                    "ExpectedIntervalMs": 8.33,
+                    "DiagnosticThresholdMs": 8.5,
+                    "WorstOverBudgetMs": 0.87,
+                    "SlowReason": "present_interval",
                     "PendingFrameCount": 1,
                     "DxgiPresentDelta": 1,
                     "DxgiPresentRefreshDelta": 2,
@@ -243,7 +247,7 @@ static partial class Program
         AssertContains(formatted, "== MJPEG Pipeline Timing ==");
         AssertContains(formatted, "Decoder[0]: avg=2.1ms");
         AssertContains(formatted, "== Preview ==");
-        AssertContains(formatted, "D3D Slow Frames: present=42 srcSeq=9001 interval=9.20ms");
+        AssertContains(formatted, "D3D Slow Frames: present=42 srcSeq=9001 reason=present_interval target=8.33ms over=0.87ms interval=9.20ms");
         AssertContains(formatted, "== Source ==");
 
         using var failedFlashbackDoc = JsonDocument.Parse(

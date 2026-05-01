@@ -1616,6 +1616,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         var schedulerToPresentMs = frame.SchedulerSubmitTick > 0 && presentEndTick > frame.SchedulerSubmitTick
             ? TicksToMs(presentEndTick - frame.SchedulerSubmitTick)
             : 0;
+        var worstObservedMs = Math.Max(
+            Math.Max(presentIntervalMs > 0 ? presentIntervalMs : 0, totalMs),
+            presentCallMs);
+        var worstOverBudgetMs = Math.Max(0, worstObservedMs - expectedIntervalMs);
+        var slowReason = BuildSlowFrameDiagnosticReason(
+            presentIntervalMs,
+            totalMs,
+            presentCallMs,
+            dxgiRefreshSlip,
+            thresholdMs);
         var sample = new PreviewSlowFrameDiagnostic
         {
             PreviewPresentId = frame.PreviewPresentId,
@@ -1628,6 +1638,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             PresentCallMs = IsValidRenderCpuStageMs(presentCallMs) ? presentCallMs : 0,
             TotalFrameCpuMs = totalMs,
             SchedulerToPresentMs = schedulerToPresentMs,
+            ExpectedIntervalMs = expectedIntervalMs,
+            DiagnosticThresholdMs = thresholdMs,
+            WorstOverBudgetMs = worstOverBudgetMs,
+            SlowReason = slowReason,
             PendingFrameCount = PendingFrameCount,
             DxgiPresentDelta = presentDelta,
             DxgiPresentRefreshDelta = presentRefreshDelta,
@@ -1644,6 +1658,31 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 _slowFrameDiagnosticsCount++;
             }
         }
+    }
+
+    private static string BuildSlowFrameDiagnosticReason(
+        double presentIntervalMs,
+        double totalFrameCpuMs,
+        double presentCallMs,
+        bool dxgiRefreshSlip,
+        double thresholdMs)
+    {
+        var reason = string.Empty;
+        AppendSlowFrameReason(ref reason, presentIntervalMs >= thresholdMs, "present_interval");
+        AppendSlowFrameReason(ref reason, totalFrameCpuMs >= thresholdMs, "total_cpu");
+        AppendSlowFrameReason(ref reason, presentCallMs >= thresholdMs, "present_call");
+        AppendSlowFrameReason(ref reason, dxgiRefreshSlip, "dxgi_refresh_slip");
+        return reason.Length > 0 ? reason : "unknown";
+    }
+
+    private static void AppendSlowFrameReason(ref string reason, bool condition, string token)
+    {
+        if (!condition)
+        {
+            return;
+        }
+
+        reason = reason.Length == 0 ? token : $"{reason}+{token}";
     }
 
     private static double TicksToMs(long ticks)
