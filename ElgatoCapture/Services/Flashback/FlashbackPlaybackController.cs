@@ -432,6 +432,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 {
                     if (!_commandChannel.Reader.TryRead(out cmd))
                     {
+                        if (cts.IsCancellationRequested)
+                        {
+                            Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested");
+                            CleanupDecoder(ref decoder, ref fileOpen);
+                            RestoreLiveAudio();
+                            SafeResumePreviewSubmission("thread_cancelled");
+                            SetState(FlashbackPlaybackState.Live);
+                            return;
+                        }
+
                         if (decoder is { IsOpen: true })
                         {
                             if (!PaceAndDecodeFrame(decoder, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart))
