@@ -113,6 +113,11 @@ static partial class Program
         AssertDoesNotContain(interfaceText, "VideoSourceProbeResult ProbeVideoSource();");
         AssertDoesNotContain(interfaceText, "PreviewColorProbeResult ProbePreviewColor();");
         AssertContains(dispatcherText, "await _viewModel.ExecuteFlashbackActionAsync(action, position, cancellationToken).ConfigureAwait(false)");
+        AssertContains(dispatcherText, "var useSelectionRange = GetBool(payload, \"useSelectionRange\") ?? false;");
+        AssertContains(dispatcherText, "ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken)");
+        AssertContains(dispatcherText, "case AutomationFlashbackAction.SetInPoint:");
+        AssertContains(dispatcherText, "case AutomationFlashbackAction.SetOutPoint:");
+        AssertContains(dispatcherText, "case AutomationFlashbackAction.ClearInOutPoints:");
         AssertContains(dispatcherText, "await _viewModel.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "await _viewModel.GetFlashbackSegmentsAsync(cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "await _viewModel.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false)");
@@ -120,6 +125,10 @@ static partial class Program
         AssertContains(dispatcherText, "await _viewModel.SetMicrophoneEnabledAsync(enabled, cancellationToken).ConfigureAwait(false)");
         AssertDoesNotContain(dispatcherText, "_viewModel.IsMicrophoneEnabled =");
         AssertContains(automationText, "public Task<bool> ExecuteFlashbackActionAsync(");
+        AssertContains(automationText, "case AutomationFlashbackAction.SetInPoint:");
+        AssertContains(automationText, "case AutomationFlashbackAction.SetOutPoint:");
+        AssertContains(automationText, "case AutomationFlashbackAction.ClearInOutPoints:");
+        AssertContains(automationText, "if (useSelectionRange)");
         AssertContains(automationText, "public Task SetFlashbackEnabledAsync(bool enabled, CancellationToken cancellationToken = default)");
         AssertContains(automationText, "InvokeOnUiThreadAsync(() => ExecuteFlashbackAction(action, position), cancellationToken)");
         AssertContains(automationText, "=> FromSynchronousSnapshot(ProbeVideoSource, cancellationToken);");
@@ -282,6 +291,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var runFlashbackScrubStress = scenario == \"flashback-scrub-stress\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRestartCycle = scenario == \"flashback-restart-cycle\";");
         AssertContains(diagnosticSessionText, "var runFlashbackExportPlayback = scenario == \"flashback-export-playback\";");
+        AssertContains(diagnosticSessionText, "var runFlashbackRangeExport = scenario == \"flashback-range-export\";");
         AssertContains(diagnosticSessionText, "var runFlashbackLifecycle = scenario == \"flashback-lifecycle\";");
         AssertContains(diagnosticSessionText, "var runFlashbackExportConcurrent = scenario == \"flashback-export-concurrent\";");
         AssertContains(diagnosticSessionText, "var runFlashbackDisableDuringExport = scenario == \"flashback-disable-during-export\";");
@@ -313,6 +323,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback restart cycle export verified");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportPlaybackAsync(");
         AssertContains(diagnosticSessionText, "flashback export during playback verified");
+        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRangeExportAsync(");
+        AssertContains(diagnosticSessionText, "\"flashback-range-export.mp4\"");
+        AssertContains(diagnosticSessionText, "[\"useSelectionRange\"] = true");
+        AssertContains(diagnosticSessionText, "flashback selected range export verified");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackLifecycleAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportConcurrentAsync(");
         AssertContains(diagnosticSessionText, "var exportTaskA = sendCommandAsync(\"FlashbackExport\", exportPayloadA, 60_000);");
@@ -363,8 +377,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback-rejected-export.mp4\"");
         AssertContains(diagnosticSessionText, "$\"flashback export rejected: expected Failed status, got {status}\"");
         AssertContains(diagnosticSessionText, "message.Contains(\"Flashback buffer not active\", StringComparison.OrdinalIgnoreCase)");
-        AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackExportPlayback || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0)");
-        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-export-playback\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
+        AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackExportPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0)");
+        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-export-playback\" or \"flashback-range-export\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
 
         var ecctlProgramText = ReadRepoFile("tools/ecctl/Program.cs")
             .Replace("\r\n", "\n");
@@ -375,6 +389,9 @@ static partial class Program
         AssertContains(ecctlProgramText, "flashback-export-playback");
         AssertContains(ecctlCommandHandlersText, "flashback-export-playback");
         AssertContains(mcpDiagnosticSessionText, "flashback-export-playback");
+        AssertContains(ecctlProgramText, "flashback-range-export");
+        AssertContains(ecctlCommandHandlersText, "flashback-range-export");
+        AssertContains(mcpDiagnosticSessionText, "flashback-range-export");
         AssertContains(ecctlProgramText, "flashback-disable-during-export");
         AssertContains(ecctlCommandHandlersText, "flashback-disable-during-export");
         AssertContains(mcpDiagnosticSessionText, "flashback-disable-during-export");

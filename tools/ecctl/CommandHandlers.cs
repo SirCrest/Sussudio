@@ -134,7 +134,7 @@ internal static class CommandHandlers
         var includePresentMon = ConsumeFlag(context.Rest, "--presentmon");
         var verify = ConsumeFlag(context.Rest, "--verify");
         var leaveRunning = ConsumeFlag(context.Rest, "--leave-running");
-        EnsureNoArgs(context.Rest, "diagnostic-session [--scenario observe|preview-only|recording-only|flashback|flashback-stress|flashback-scrub-stress|flashback-restart-cycle|flashback-export-playback|flashback-lifecycle|flashback-export-concurrent|flashback-disable-during-export|flashback-preview-cycle|flashback-recording|flashback-recording-preview-cycle|flashback-recording-export-rejected|flashback-export-rejected|combined] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
+        EnsureNoArgs(context.Rest, "diagnostic-session [--scenario observe|preview-only|recording-only|flashback|flashback-stress|flashback-scrub-stress|flashback-restart-cycle|flashback-export-playback|flashback-range-export|flashback-lifecycle|flashback-export-concurrent|flashback-disable-during-export|flashback-preview-cycle|flashback-recording|flashback-recording-preview-cycle|flashback-recording-export-rejected|flashback-export-rejected|combined] [--seconds N] [--sample-ms N] [--output PATH] [--presentmon] [--presentmon-path PATH] [--verify] [--leave-running] [--json]");
 
         var result = await DiagnosticSessionRunner.RunAsync(
                 new DiagnosticSessionOptions
@@ -453,7 +453,7 @@ internal static class CommandHandlers
 
     private static Task<int> HandleFlashbackAsync(CommandContext context)
     {
-        var subcommand = RequireWord(context.Rest, 0, "flashback on|off|play|pause|go-live|seek|export|segments|apply").ToLowerInvariant();
+        var subcommand = RequireWord(context.Rest, 0, "flashback on|off|play|pause|go-live|seek|set-in|set-out|clear-range|export|segments|apply").ToLowerInvariant();
         switch (subcommand)
         {
             case "on":
@@ -489,8 +489,24 @@ internal static class CommandHandlers
                         ["action"] = "seek",
                         ["positionMs"] = ParseDouble(RequireWord(context.Rest, 1, "flashback seek <ms>"))
                     }, includeData: false);
+            case "set-in":
+            case "set-in-point":
+                EnsureArgCount(context.Rest, 1, "flashback set-in");
+                return HandleSimpleCommandAsync(context, "FlashbackAction",
+                    new Dictionary<string, object?> { ["action"] = "set-in-point" }, includeData: false);
+            case "set-out":
+            case "set-out-point":
+                EnsureArgCount(context.Rest, 1, "flashback set-out");
+                return HandleSimpleCommandAsync(context, "FlashbackAction",
+                    new Dictionary<string, object?> { ["action"] = "set-out-point" }, includeData: false);
+            case "clear-range":
+            case "clear-in-out":
+                EnsureArgCount(context.Rest, 1, "flashback clear-range");
+                return HandleSimpleCommandAsync(context, "FlashbackAction",
+                    new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, includeData: false);
             case "export":
             {
+                var useSelectionRange = ConsumeFlag(context.Rest, "--range");
                 var seconds = context.Rest.Count >= 2
                     ? ParseDouble(context.Rest[1])
                     : 300;
@@ -502,13 +518,14 @@ internal static class CommandHandlers
                     new Dictionary<string, object?>
                     {
                         ["seconds"] = seconds,
-                        ["outputPath"] = outputPath
+                        ["outputPath"] = outputPath,
+                        ["useSelectionRange"] = useSelectionRange
                     }, includeData: true);
             }
             case "segments":
                 return HandleSimpleCommandAsync(context, "FlashbackGetSegments", includeData: true);
             default:
-                throw new UsageException($"Unknown flashback command '{subcommand}'. Expected on, off, play, pause, go-live, seek, export, or segments.");
+                throw new UsageException($"Unknown flashback command '{subcommand}'. Expected on, off, play, pause, go-live, seek, set-in, set-out, clear-range, export, or segments.");
         }
     }
 

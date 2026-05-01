@@ -21,10 +21,10 @@ public static class FlashbackTools
             payload: new Dictionary<string, object?> { ["enabled"] = enabled }).ConfigureAwait(false);
     }
 
-    [McpServerTool, Description("Control flashback playback: play, pause, go_live, or seek to a position in milliseconds")]
+    [McpServerTool, Description("Control flashback playback: play, pause, go_live, seek, set_in_point, set_out_point, or clear_in_out_points")]
     public static async Task<string> flashback_action(
         PipeClient pipeClient,
-        [Description("Action: play, pause, go_live, seek")] string action,
+        [Description("Action: play, pause, go_live, seek, set_in_point, set_out_point, clear_in_out_points")] string action,
         [Description("Position in milliseconds (required for seek)")] double? positionMs = null)
     {
         var normalizedAction = action.Replace("_", "-").ToLowerInvariant();
@@ -50,7 +50,8 @@ public static class FlashbackTools
     public static async Task<string> flashback_export(
         PipeClient pipeClient,
         [Description("Number of seconds to export from the buffer (default: 300)")] double seconds = 300,
-        [Description("Output file path (default: temp/flashback_export_<timestamp>.mp4)")] string? outputPath = null)
+        [Description("Output file path (default: temp/flashback_export_<timestamp>.mp4)")] string? outputPath = null,
+        [Description("True to export the current in/out selection instead of the most recent N seconds")] bool useSelectionRange = false)
     {
         outputPath ??= $"temp/flashback_export_{DateTime.Now:yyyyMMdd_HHmmss}.mp4";
 
@@ -63,7 +64,8 @@ public static class FlashbackTools
         var payload = new Dictionary<string, object?>
         {
             ["seconds"] = seconds,
-            ["outputPath"] = outputPath
+            ["outputPath"] = outputPath,
+            ["useSelectionRange"] = useSelectionRange
         };
 
         var response = await pipeClient.SendCommandAsync("FlashbackExport", payload, responseTimeoutMs: 60000).ConfigureAwait(false);
@@ -72,7 +74,9 @@ public static class FlashbackTools
 
         var builder = new StringBuilder();
         builder.AppendLine($"[{status}] FlashbackExport: {message}");
-        builder.AppendLine($"Requested: {seconds}s -> {outputPath}");
+        builder.AppendLine(useSelectionRange
+            ? $"Requested: selected range -> {outputPath}"
+            : $"Requested: {seconds}s -> {outputPath}");
 
         if (response.TryGetProperty("Data", out var data) && data.ValueKind == JsonValueKind.Object)
         {

@@ -88,7 +88,7 @@ public interface IAutomationViewModel
         AutomationFlashbackAction action,
         TimeSpan? position = null,
         CancellationToken cancellationToken = default);
-    Task<FinalizeResult> ExportFlashbackAutomationAsync(double seconds, string outputPath, CancellationToken ct);
+    Task<FinalizeResult> ExportFlashbackAutomationAsync(double seconds, string outputPath, bool useSelectionRange, CancellationToken ct);
     Task<IReadOnlyList<FlashbackSegmentInfo>> GetFlashbackSegmentsAsync(CancellationToken cancellationToken = default);
 
     // ── Probes ──────────────────────────────────────────────────────

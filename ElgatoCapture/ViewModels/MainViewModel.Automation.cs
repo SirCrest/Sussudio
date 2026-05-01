@@ -139,6 +139,13 @@ public partial class MainViewModel
                 return FlashbackGoLive();
             case AutomationFlashbackAction.Seek:
                 return FlashbackSeek(position ?? TimeSpan.Zero);
+            case AutomationFlashbackAction.SetInPoint:
+                return _sessionCoordinator.FlashbackSetInPoint().HasValue;
+            case AutomationFlashbackAction.SetOutPoint:
+                return _sessionCoordinator.FlashbackSetOutPoint().HasValue;
+            case AutomationFlashbackAction.ClearInOutPoints:
+                _sessionCoordinator.FlashbackClearInOutPoints();
+                return true;
             default:
                 throw new InvalidOperationException($"Unsupported flashback action '{action}'.");
         }
@@ -320,7 +327,7 @@ public partial class MainViewModel
     }
 
     public async Task<FinalizeResult> ExportFlashbackAutomationAsync(
-        double seconds, string outputPath, CancellationToken ct)
+        double seconds, string outputPath, bool useSelectionRange, CancellationToken ct)
     {
         _dispatcherQueue.TryEnqueue(() =>
         {
@@ -333,6 +340,14 @@ public partial class MainViewModel
             {
                 _dispatcherQueue.TryEnqueue(() => FlashbackExportProgress = p.Percent);
             });
+
+            if (useSelectionRange)
+            {
+                var playback = _sessionCoordinator.GetFlashbackPlaybackSnapshot();
+                return await _sessionCoordinator.ExportFlashbackRangeAsync(
+                    playback.InPoint, playback.OutPoint, outputPath, progress, ct);
+            }
+
             return await _sessionCoordinator.ExportFlashbackLastNSecondsAsync(
                 seconds, outputPath, progress, ct);
         }

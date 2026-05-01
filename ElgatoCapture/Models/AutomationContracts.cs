@@ -9,7 +9,10 @@ public enum AutomationFlashbackAction
     Play,
     Pause,
     GoLive,
-    Seek
+    Seek,
+    SetInPoint,
+    SetOutPoint,
+    ClearInOutPoints
 }
 
 public enum AutomationWindowAction

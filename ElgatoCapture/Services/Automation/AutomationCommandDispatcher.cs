@@ -265,6 +265,12 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                             return CreateAcknowledgedResponse(correlationId, "Flashback go-live requested.");
                         case AutomationFlashbackAction.Seek:
                             return CreateAcknowledgedResponse(correlationId, $"Flashback seek to {positionMs:0}ms requested.");
+                        case AutomationFlashbackAction.SetInPoint:
+                            return CreateAcknowledgedResponse(correlationId, "Flashback in point set.");
+                        case AutomationFlashbackAction.SetOutPoint:
+                            return CreateAcknowledgedResponse(correlationId, "Flashback out point set.");
+                        case AutomationFlashbackAction.ClearInOutPoints:
+                            return CreateAcknowledgedResponse(correlationId, "Flashback in/out points cleared.");
                         default:
                             throw new InvalidOperationException($"Unsupported flashback action '{action}'.");
                     }
@@ -274,7 +280,8 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 {
                     var seconds = GetDouble(payload, "seconds") ?? 300;
                     var outputPath = RequireString(payload, "outputPath");
-                    var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, cancellationToken).ConfigureAwait(false);
+                    var useSelectionRange = GetBool(payload, "useSelectionRange") ?? false;
+                    var exportResult = await _viewModel.ExportFlashbackAutomationAsync(seconds, outputPath, useSelectionRange, cancellationToken).ConfigureAwait(false);
                     return CreateResponse(
                         correlationId,
                         exportResult.StatusMessage ?? (exportResult.Succeeded ? "Export complete." : "Export failed."),
@@ -731,7 +738,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         }
 
         throw new InvalidOperationException(
-            $"Invalid flashback action: '{raw}'. Expected play, pause, go-live, or seek.");
+            $"Invalid flashback action: '{raw}'. Expected play, pause, go-live, seek, set-in-point, set-out-point, or clear-in-out-points.");
     }
 
     private static AutomationWaitCondition ParseWaitCondition(JsonElement payload)
