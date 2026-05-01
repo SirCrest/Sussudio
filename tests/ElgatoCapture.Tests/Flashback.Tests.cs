@@ -1055,4 +1055,20 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+
+        var fatalBlock = ExtractTextBetween(
+            sourceText,
+            "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_SINK_ENCODING_LOOP_FATAL",
+            "            ReturnAllRemainingQueuedBuffers();");
+        AssertContains(fatalBlock, "catch (Exception segmentEx)");
+        AssertContains(fatalBlock, "FLASHBACK_SINK_FATAL_SEGMENT_REGISTER_FAIL");
+        AssertContains(fatalBlock, "Preserve the original fatal error.");
+
+        return Task.CompletedTask;
+    }
 }

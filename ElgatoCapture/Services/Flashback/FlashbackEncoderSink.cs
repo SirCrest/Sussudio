@@ -1111,7 +1111,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                         _bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, crashPts, crashSegmentBytes);
                     }
                 }
-                catch { /* Best effort — don't mask the original fatal error */ }
+                catch (Exception segmentEx)
+                {
+                    Logger.Log($"FLASHBACK_SINK_FATAL_SEGMENT_REGISTER_FAIL type={segmentEx.GetType().Name} msg={segmentEx.Message}");
+                    // Preserve the original fatal error.
+                }
             }
 
             ReturnAllRemainingQueuedBuffers();

@@ -607,6 +607,9 @@ static partial class Program
                 "Flashback encoder sink rejects force rotate after encoder failure",
                 FlashbackEncoderSink_ForceRotateRejectsFailedEncoder),
             await RunCheckAsync(
+                "Flashback encoder sink logs fatal segment registration failures",
+                FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged),
+            await RunCheckAsync(
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
             await RunCheckAsync(
