@@ -69,7 +69,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 linkedCts.Dispose();
             }
-        }, linkedCts.Token);
+        });
     }
 
     /// <summary>
@@ -97,7 +97,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 linkedCts.Dispose();
             }
-        }, linkedCts.Token);
+        });
     }
 
     public void Dispose()

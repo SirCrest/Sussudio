@@ -525,6 +525,12 @@ static partial class Program
             await RunCheckAsync(
                 "FlashbackPlaybackState enum has all expected states",
                 FlashbackPlaybackState_HasAllExpectedStates),
+            await RunCheckAsync(
+                "Flashback playback worker exit rearms future commands",
+                FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart),
+            await RunCheckAsync(
+                "Flashback exporter task wrappers dispose linked cancellation",
+                FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
 
             // --- RecordingPipelineOptions ---
             await RunCheckAsync(
@@ -1161,6 +1167,30 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoQueueLatencyP95Ms"), "AutomationSnapshot.FlashbackVideoQueueLatencyP95Ms");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoBackpressureWaitMs"), "AutomationSnapshot.FlashbackVideoBackpressureWaitMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackVideoBackpressureEvents"), "AutomationSnapshot.FlashbackVideoBackpressureEvents");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackThreadAlive"), "AutomationSnapshot.FlashbackPlaybackThreadAlive");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsEnqueued"), "AutomationSnapshot.FlashbackPlaybackCommandsEnqueued");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsProcessed"), "AutomationSnapshot.FlashbackPlaybackCommandsProcessed");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsDropped"), "AutomationSnapshot.FlashbackPlaybackCommandsDropped");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsSkippedNotReady"), "AutomationSnapshot.FlashbackPlaybackCommandsSkippedNotReady");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackPendingCommands"), "AutomationSnapshot.FlashbackPlaybackPendingCommands");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandQueued"), "AutomationSnapshot.FlashbackPlaybackLastCommandQueued");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandProcessed"), "AutomationSnapshot.FlashbackPlaybackLastCommandProcessed");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandQueuedUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandProcessedUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastCommandFailure"), "AutomationSnapshot.FlashbackPlaybackLastCommandFailure");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportActive"), "AutomationSnapshot.FlashbackExportActive");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportId"), "AutomationSnapshot.FlashbackExportId");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportStatus"), "AutomationSnapshot.FlashbackExportStatus");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportOutputPath"), "AutomationSnapshot.FlashbackExportOutputPath");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportStartedUtcUnixMs"), "AutomationSnapshot.FlashbackExportStartedUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportLastProgressUtcUnixMs"), "AutomationSnapshot.FlashbackExportLastProgressUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportCompletedUtcUnixMs"), "AutomationSnapshot.FlashbackExportCompletedUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportSegmentsProcessed"), "AutomationSnapshot.FlashbackExportSegmentsProcessed");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportTotalSegments"), "AutomationSnapshot.FlashbackExportTotalSegments");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportPercent"), "AutomationSnapshot.FlashbackExportPercent");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportInPointMs"), "AutomationSnapshot.FlashbackExportInPointMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportOutPointMs"), "AutomationSnapshot.FlashbackExportOutPointMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackExportMessage"), "AutomationSnapshot.FlashbackExportMessage");
         AssertNotNull(snapshotType.GetProperty("MjpegPacketHashSampleCount"), "AutomationSnapshot.MjpegPacketHashSampleCount");
         AssertNotNull(snapshotType.GetProperty("MjpegPacketHashInputObservedFps"), "AutomationSnapshot.MjpegPacketHashInputObservedFps");
         AssertNotNull(snapshotType.GetProperty("MjpegPacketHashUniqueObservedFps"), "AutomationSnapshot.MjpegPacketHashUniqueObservedFps");
@@ -3213,8 +3243,11 @@ static partial class Program
         SetPropertyOrBackingField(instance, propertyName, value);
     }
 
-    private static int GetCountProperty(object collection)
+    private static int GetCountProperty(object? collection)
     {
+        if (collection == null)
+            throw new InvalidOperationException("Collection is null");
+
         var countProp = collection.GetType().GetProperty("Count");
         if (countProp != null)
             return (int)(countProp.GetValue(collection) ?? 0);

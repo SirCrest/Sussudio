@@ -258,10 +258,34 @@ static partial class Program
                      "D3DLastDroppedPreviewPresentId",
                      "D3DLastDroppedSourceSequenceNumber",
                      "D3DLastDroppedUtcUnixMs",
-                     "D3DLastDropReason"
+                     "D3DLastDropReason",
+                     "D3DRecentSlowFrames"
                  })
         {
             AssertNotNull(previewSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PreviewRuntimeSnapshot.{prop}");
+        }
+
+        var slowFrameDiagnosticType = RequireType("ElgatoCapture.Models.PreviewSlowFrameDiagnostic");
+        foreach (var prop in new[]
+                 {
+                     "PreviewPresentId",
+                     "SourceSequenceNumber",
+                     "QpcTimestamp",
+                     "UtcUnixMs",
+                     "PresentIntervalMs",
+                     "InputUploadCpuMs",
+                     "RenderSubmitCpuMs",
+                     "PresentCallMs",
+                     "TotalFrameCpuMs",
+                     "SchedulerToPresentMs",
+                     "PendingFrameCount",
+                     "DxgiPresentDelta",
+                     "DxgiPresentRefreshDelta",
+                     "DxgiSyncRefreshDelta",
+                     "DxgiMissedRefreshCount"
+                 })
+        {
+            AssertNotNull(slowFrameDiagnosticType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PreviewSlowFrameDiagnostic.{prop}");
         }
 
         var automationSnapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
@@ -304,7 +328,8 @@ static partial class Program
                      "PreviewD3DLastDroppedPreviewPresentId",
                      "PreviewD3DLastDroppedSourceSequenceNumber",
                      "PreviewD3DLastDroppedUtcUnixMs",
-                     "PreviewD3DLastDropReason"
+                     "PreviewD3DLastDropReason",
+                     "PreviewD3DRecentSlowFrames"
                  })
         {
             AssertNotNull(automationSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"AutomationSnapshot.{prop}");

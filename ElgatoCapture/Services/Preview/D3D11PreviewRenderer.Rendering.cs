@@ -355,8 +355,6 @@ internal sealed partial class D3D11PreviewRenderer
             var renderStart = Stopwatch.GetTimestamp();
             _deviceContext.Draw(3, 0);
             renderTicks += Stopwatch.GetTimestamp() - renderStart;
-            _srvNullArray2[0] = null;
-            _srvNullArray2[1] = null;
             _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
             PresentAndTrackFrame(
@@ -478,8 +476,6 @@ internal sealed partial class D3D11PreviewRenderer
             var renderStart = Stopwatch.GetTimestamp();
             _deviceContext.Draw(3, 0);
             renderTicks += Stopwatch.GetTimestamp() - renderStart;
-            _srvNullArray2[0] = null;
-            _srvNullArray2[1] = null;
             _deviceContext.PSSetShaderResources(0, 2, _srvNullArray2);
 
             var rendererMode = ReferenceEquals(pixelShader, _hdrPassthroughPS)
@@ -531,10 +527,12 @@ internal sealed partial class D3D11PreviewRenderer
 
         Interlocked.Increment(ref _framesRendered);
         TrackFramePresented(frame, presentEnd);
-        TrackPresentCadence();
+        var presentIntervalMs = TrackPresentCadence();
         TrackDxgiFrameStatistics();
         TrackPipelineLatency(frame.ArrivalTick);
-        TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, Stopwatch.GetTimestamp() - totalStart);
+        var totalTicks = Stopwatch.GetTimestamp() - totalStart;
+        TrackRenderCpuTiming(inputUploadTicks, renderTicks, presentTicks, totalTicks);
+        RecordSlowFrameDiagnostic(frame, presentIntervalMs, inputUploadTicks, renderTicks, presentTicks, totalTicks, presentEnd);
     }
 
     private bool TryEnsureNv12ShaderResources(PendingFrame frame)

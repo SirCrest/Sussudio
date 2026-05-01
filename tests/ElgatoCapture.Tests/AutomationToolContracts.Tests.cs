@@ -173,12 +173,49 @@ static partial class Program
                 "EncoderCodecName": "hevc_nvenc",
                 "FlashbackBufferedDurationMs": 120000,
                 "FlashbackDiskBytes": 1048576,
+                "FlashbackPlaybackPendingCommands": 1,
+                "FlashbackPlaybackCommandsEnqueued": 12,
+                "FlashbackPlaybackCommandsProcessed": 11,
+                "FlashbackPlaybackCommandsDropped": 0,
+                "FlashbackPlaybackCommandsSkippedNotReady": 2,
+                "FlashbackPlaybackThreadAlive": true,
+                "FlashbackPlaybackLastCommandQueued": "UpdateScrub",
+                "FlashbackPlaybackLastCommandProcessed": "BeginScrub",
+                "FlashbackPlaybackLastCommandFailure": "not_ready:Pause",
+                "FlashbackExportActive": true,
+                "FlashbackExportStatus": "Running",
+                "FlashbackExportId": 7,
+                "FlashbackExportPercent": 37.5,
+                "FlashbackExportSegmentsProcessed": 3,
+                "FlashbackExportTotalSegments": 8,
+                "FlashbackExportInPointMs": 1000,
+                "FlashbackExportOutPointMs": 9000,
+                "FlashbackExportLastProgressUtcUnixMs": 123456,
+                "FlashbackExportCompletedUtcUnixMs": 0,
+                "FlashbackExportOutputPath": "C:/tmp/flashback.mp4",
+                "FlashbackExportMessage": "copying packets",
                 "MjpegDecodeSampleCount": 1,
                 "MjpegDecoderCount": 1,
                 "MjpegPerDecoder": [
                   { "WorkerIndex": 0, "AvgMs": 2.1, "P95Ms": 3.1, "MaxMs": 4.1, "SampleCount": 5 }
                 ],
                 "PreviewRendererMode": "D3D11VideoProcessor",
+                "PreviewD3DRecentSlowFrames": [
+                  {
+                    "PreviewPresentId": 42,
+                    "SourceSequenceNumber": 9001,
+                    "PresentIntervalMs": 9.2,
+                    "InputUploadCpuMs": 1.1,
+                    "RenderSubmitCpuMs": 2.2,
+                    "PresentCallMs": 3.3,
+                    "TotalFrameCpuMs": 6.6,
+                    "SchedulerToPresentMs": 7.7,
+                    "PendingFrameCount": 1,
+                    "DxgiPresentDelta": 1,
+                    "DxgiPresentRefreshDelta": 2,
+                    "DxgiSyncRefreshDelta": 2
+                  }
+                ],
                 "SourceWidth": 3840,
                 "SourceHeight": 2160
               }
@@ -190,9 +227,12 @@ static partial class Program
         AssertContains(formatted, "Frame Rate: 59.94 fps (59.940 fps, 60000/1001)");
         AssertContains(formatted, "== Flashback ==");
         AssertContains(formatted, "Encoder: hevc_nvenc");
+        AssertContains(formatted, "Playback Commands: pending=1 enq=12 proc=11 drop=0 skip=2 threadAlive=true lastQueued=UpdateScrub lastProcessed=BeginScrub failure=not_ready:Pause");
+        AssertContains(formatted, "Export: active=true status=Running id=7 progress=37.5% segments=3/8");
         AssertContains(formatted, "== MJPEG Pipeline Timing ==");
         AssertContains(formatted, "Decoder[0]: avg=2.1ms");
         AssertContains(formatted, "== Preview ==");
+        AssertContains(formatted, "D3D Slow Frames: present=42 srcSeq=9001 interval=9.20ms");
         AssertContains(formatted, "== Source ==");
 
         using var failedFlashbackDoc = JsonDocument.Parse(

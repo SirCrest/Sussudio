@@ -181,6 +181,7 @@ public sealed partial class MainWindow
         var d3dRenderCpuTiming = d3d?.GetRenderCpuTimingMetrics();
         var d3dFrameOwnership = d3d?.GetFrameOwnershipMetrics();
         var d3dFrameStats = d3d?.GetDxgiFrameStatisticsMetrics();
+        var d3dSlowFrames = d3d?.GetRecentSlowFrameDiagnostics() ?? Array.Empty<PreviewSlowFrameDiagnostic>();
         if (gpuActive)
         {
             framesArrived = d3dFramesSubmitted;
@@ -318,6 +319,7 @@ public sealed partial class MainWindow
             D3DLastDroppedQpc = d3dFrameOwnership?.LastDroppedQpc ?? 0,
             D3DLastDroppedUtcUnixMs = d3dFrameOwnership?.LastDroppedUtcUnixMs ?? 0,
             D3DLastDropReason = d3dFrameOwnership?.LastDropReason ?? string.Empty,
+            D3DRecentSlowFrames = d3dSlowFrames,
             EstimatedPipelineLatencyMs = d3d?.GetEstimatedPipelineLatencyMs() ?? 0,
             GpuPlaybackState = gpuPlaybackState,
             GpuNaturalVideoWidth = gpuNaturalVideoWidth,

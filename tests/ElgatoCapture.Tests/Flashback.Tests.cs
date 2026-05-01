@@ -298,6 +298,18 @@ static partial class Program
         AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Export segments fails when no segments");
     }
 
+    private static Task FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct, _disposeCts!.Token);");
+        AssertContains(sourceText, "finally\n            {\n                linkedCts.Dispose();\n            }\n        });");
+        AssertDoesNotContain(sourceText, "}, linkedCts.Token);");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_InOutPoints_DefaultToUnset()
     {
         var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
@@ -317,11 +329,46 @@ static partial class Program
 
         AssertNotNull(inPointProp, "FlashbackPlaybackController.InPoint");
         AssertNotNull(outPointProp, "FlashbackPlaybackController.OutPoint");
+        foreach (var propertyName in new[]
+                 {
+                     "CommandsEnqueued",
+                     "CommandsProcessed",
+                     "CommandsDropped",
+                     "CommandsSkippedNotReady",
+                     "PendingCommands",
+                     "LastCommandQueued",
+                     "LastCommandProcessed",
+                     "LastCommandQueuedUtcUnixMs",
+                     "LastCommandProcessedUtcUnixMs",
+                     "LastCommandFailure",
+                     "PlaybackThreadAlive"
+                 })
+        {
+            AssertNotNull(
+                controllerType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance),
+                $"FlashbackPlaybackController.{propertyName}");
+        }
 
         // ClearInOutPoints should not throw on a fresh controller
         var clearMethod = controllerType.GetMethod("ClearInOutPoints", BindingFlags.Public | BindingFlags.Instance);
         AssertNotNull(clearMethod, "FlashbackPlaybackController.ClearInOutPoints");
         clearMethod!.Invoke(controller, null);
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n        {\n            SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n        }");
+        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return;\n        EnsurePlaybackThread();\n        SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
+        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_GO_LIVE\");\n                        return;");
+        AssertContains(sourceText, "finally\n        {\n            timeEndPeriod(1);");
+        AssertContains(sourceText, "ReferenceEquals(Thread.CurrentThread, _playbackThread)");
+        AssertContains(sourceText, "_playbackThread = null;");
+        AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);");
 
         return Task.CompletedTask;
     }

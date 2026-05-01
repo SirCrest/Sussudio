@@ -94,6 +94,25 @@ public sealed record MjpegDecoderAutomationSnapshot(
     double P95Ms,
     double MaxMs);
 
+public sealed class PreviewSlowFrameDiagnostic
+{
+    public long PreviewPresentId { get; init; }
+    public long SourceSequenceNumber { get; init; }
+    public long QpcTimestamp { get; init; }
+    public long UtcUnixMs { get; init; }
+    public double PresentIntervalMs { get; init; }
+    public double InputUploadCpuMs { get; init; }
+    public double RenderSubmitCpuMs { get; init; }
+    public double PresentCallMs { get; init; }
+    public double TotalFrameCpuMs { get; init; }
+    public double SchedulerToPresentMs { get; init; }
+    public int PendingFrameCount { get; init; }
+    public long DxgiPresentDelta { get; init; }
+    public long DxgiPresentRefreshDelta { get; init; }
+    public long DxgiSyncRefreshDelta { get; init; }
+    public long DxgiMissedRefreshCount { get; init; }
+}
+
 public sealed class AutomationDeviceOption
 {
     public string Id { get; init; } = string.Empty;
@@ -503,6 +522,7 @@ public sealed class AutomationSnapshot
     public long PreviewD3DLastDroppedQpc { get; init; }
     public long PreviewD3DLastDroppedUtcUnixMs { get; init; }
     public string PreviewD3DLastDropReason { get; init; } = string.Empty;
+    public PreviewSlowFrameDiagnostic[] PreviewD3DRecentSlowFrames { get; init; } = Array.Empty<PreviewSlowFrameDiagnostic>();
     public string PreviewGpuPlaybackState { get; init; } = "None";
     public int PreviewGpuNaturalVideoWidth { get; init; }
     public int PreviewGpuNaturalVideoHeight { get; init; }
@@ -766,6 +786,30 @@ public sealed class AutomationSnapshot
     public double FlashbackPlaybackObservedFps { get; init; }
     public double FlashbackPlaybackAvgFrameMs { get; init; }
     public double FlashbackAvDriftMs { get; init; }
+    public bool FlashbackPlaybackThreadAlive { get; init; }
+    public long FlashbackPlaybackCommandsEnqueued { get; init; }
+    public long FlashbackPlaybackCommandsProcessed { get; init; }
+    public long FlashbackPlaybackCommandsDropped { get; init; }
+    public long FlashbackPlaybackCommandsSkippedNotReady { get; init; }
+    public int FlashbackPlaybackPendingCommands { get; init; }
+    public string FlashbackPlaybackLastCommandQueued { get; init; } = "None";
+    public string FlashbackPlaybackLastCommandProcessed { get; init; } = "None";
+    public long FlashbackPlaybackLastCommandQueuedUtcUnixMs { get; init; }
+    public long FlashbackPlaybackLastCommandProcessedUtcUnixMs { get; init; }
+    public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;
+    public bool FlashbackExportActive { get; init; }
+    public long FlashbackExportId { get; init; }
+    public string FlashbackExportStatus { get; init; } = "NotStarted";
+    public string FlashbackExportOutputPath { get; init; } = string.Empty;
+    public long FlashbackExportStartedUtcUnixMs { get; init; }
+    public long FlashbackExportLastProgressUtcUnixMs { get; init; }
+    public long FlashbackExportCompletedUtcUnixMs { get; init; }
+    public int FlashbackExportSegmentsProcessed { get; init; }
+    public int FlashbackExportTotalSegments { get; init; }
+    public double FlashbackExportPercent { get; init; }
+    public long FlashbackExportInPointMs { get; init; }
+    public long FlashbackExportOutPointMs { get; init; }
+    public string FlashbackExportMessage { get; init; } = string.Empty;
     public string? LastExportPath { get; init; }
     public bool? LastExportSuccess { get; init; }
     public string? LastExportMessage { get; init; }
@@ -820,6 +864,7 @@ public enum DiagnosticsCategory
     Preview,
     Audio,
     Recording,
+    Flashback,
     Verification,
     System
 }
@@ -997,6 +1042,7 @@ public sealed class PreviewRuntimeSnapshot
     public long D3DLastDroppedQpc { get; init; }
     public long D3DLastDroppedUtcUnixMs { get; init; }
     public string D3DLastDropReason { get; init; } = string.Empty;
+    public PreviewSlowFrameDiagnostic[] D3DRecentSlowFrames { get; init; } = Array.Empty<PreviewSlowFrameDiagnostic>();
     public double EstimatedPipelineLatencyMs { get; init; }
 
     // GPU MediaPlayer metrics (only meaningful when GpuActive == true)

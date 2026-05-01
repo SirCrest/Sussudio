@@ -196,6 +196,30 @@ static partial class Program
                 new("FlashbackPlaybackObservedFps", typeof(double)),
                 new("FlashbackPlaybackAvgFrameMs", typeof(double)),
                 new("FlashbackAvDriftMs", typeof(double)),
+                new("FlashbackPlaybackThreadAlive", typeof(bool)),
+                new("FlashbackPlaybackCommandsEnqueued", typeof(long)),
+                new("FlashbackPlaybackCommandsProcessed", typeof(long)),
+                new("FlashbackPlaybackCommandsDropped", typeof(long)),
+                new("FlashbackPlaybackCommandsSkippedNotReady", typeof(long)),
+                new("FlashbackPlaybackPendingCommands", typeof(int)),
+                NonNullString("FlashbackPlaybackLastCommandQueued"),
+                NonNullString("FlashbackPlaybackLastCommandProcessed"),
+                new("FlashbackPlaybackLastCommandQueuedUtcUnixMs", typeof(long)),
+                new("FlashbackPlaybackLastCommandProcessedUtcUnixMs", typeof(long)),
+                NonNullString("FlashbackPlaybackLastCommandFailure"),
+                new("FlashbackExportActive", typeof(bool)),
+                new("FlashbackExportId", typeof(long)),
+                NonNullString("FlashbackExportStatus"),
+                NonNullString("FlashbackExportOutputPath"),
+                new("FlashbackExportStartedUtcUnixMs", typeof(long)),
+                new("FlashbackExportLastProgressUtcUnixMs", typeof(long)),
+                new("FlashbackExportCompletedUtcUnixMs", typeof(long)),
+                new("FlashbackExportSegmentsProcessed", typeof(int)),
+                new("FlashbackExportTotalSegments", typeof(int)),
+                new("FlashbackExportPercent", typeof(double)),
+                new("FlashbackExportInPointMs", typeof(long)),
+                new("FlashbackExportOutPointMs", typeof(long)),
+                NonNullString("FlashbackExportMessage"),
                 NullableString("LastExportPath"),
                 new("LastExportSuccess", typeof(bool?)),
                 NullableString("LastExportMessage"),
@@ -235,6 +259,9 @@ static partial class Program
         AssertNonNullStringValue(health, "RecordingBackend", "None", "CaptureHealthSnapshot inherited RecordingBackend default");
         AssertNonNullStringValue(health, "FlashbackPlaybackState", "N/A", "CaptureHealthSnapshot.FlashbackPlaybackState default");
         AssertNonNullStringValue(health, "FlashbackDecoderHwAccel", "N/A", "CaptureHealthSnapshot.FlashbackDecoderHwAccel default");
+        AssertNonNullStringValue(health, "FlashbackPlaybackLastCommandQueued", "None", "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueued default");
+        AssertNonNullStringValue(health, "FlashbackPlaybackLastCommandProcessed", "None", "CaptureHealthSnapshot.FlashbackPlaybackLastCommandProcessed default");
+        AssertNonNullStringValue(health, "FlashbackExportStatus", "NotStarted", "CaptureHealthSnapshot.FlashbackExportStatus default");
         AssertEqual(0, GetCountProperty(GetPropertyValue(health, "SourceTelemetryDetails")!), "CaptureHealthSnapshot.SourceTelemetryDetails default count");
 
         var detailEntry = Activator.CreateInstance(detailType, "Signal", "Colorimetry", "BT.2020", "bt2020")
@@ -250,6 +277,13 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackFilePath", "flashback.ts");
         SetPropertyOrBackingField(health, "FlashbackPlaybackState", "Paused");
         SetPropertyOrBackingField(health, "FlashbackDecoderHwAccel", "D3D11");
+        SetPropertyOrBackingField(health, "FlashbackPlaybackCommandsEnqueued", 9L);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackPendingCommands", 2);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackLastCommandQueued", "UpdateScrub");
+        SetPropertyOrBackingField(health, "FlashbackExportActive", true);
+        SetPropertyOrBackingField(health, "FlashbackExportStatus", "Running");
+        SetPropertyOrBackingField(health, "FlashbackExportPercent", 37.5d);
+        SetPropertyOrBackingField(health, "FlashbackExportSegmentsProcessed", 3);
         SetPropertyOrBackingField(health, "SourceVideoFormat", "YCbCr422");
         SetPropertyOrBackingField(health, "SourceHdrTransferCode", 2);
         SetPropertyOrBackingField(health, "SourceTelemetryDetails", details);
@@ -263,6 +297,13 @@ static partial class Program
         AssertEqual("flashback.ts", GetStringProperty(health, "FlashbackFilePath"), "CaptureHealthSnapshot.FlashbackFilePath round-trip");
         AssertEqual("Paused", GetStringProperty(health, "FlashbackPlaybackState"), "CaptureHealthSnapshot.FlashbackPlaybackState round-trip");
         AssertEqual("D3D11", GetStringProperty(health, "FlashbackDecoderHwAccel"), "CaptureHealthSnapshot.FlashbackDecoderHwAccel round-trip");
+        AssertEqual(9L, GetLongProperty(health, "FlashbackPlaybackCommandsEnqueued"), "CaptureHealthSnapshot.FlashbackPlaybackCommandsEnqueued round-trip");
+        AssertEqual(2, GetIntProperty(health, "FlashbackPlaybackPendingCommands"), "CaptureHealthSnapshot.FlashbackPlaybackPendingCommands round-trip");
+        AssertEqual("UpdateScrub", GetStringProperty(health, "FlashbackPlaybackLastCommandQueued"), "CaptureHealthSnapshot.FlashbackPlaybackLastCommandQueued round-trip");
+        AssertEqual(true, GetBoolProperty(health, "FlashbackExportActive"), "CaptureHealthSnapshot.FlashbackExportActive round-trip");
+        AssertEqual("Running", GetStringProperty(health, "FlashbackExportStatus"), "CaptureHealthSnapshot.FlashbackExportStatus round-trip");
+        AssertEqual(37.5d, GetDoubleProperty(health, "FlashbackExportPercent"), "CaptureHealthSnapshot.FlashbackExportPercent round-trip");
+        AssertEqual(3, GetIntProperty(health, "FlashbackExportSegmentsProcessed"), "CaptureHealthSnapshot.FlashbackExportSegmentsProcessed round-trip");
         AssertEqual("YCbCr422", GetStringProperty(health, "SourceVideoFormat"), "CaptureHealthSnapshot.SourceVideoFormat round-trip");
         AssertEqual(2, Convert.ToInt32(GetPropertyValue(health, "SourceHdrTransferCode")), "CaptureHealthSnapshot.SourceHdrTransferCode round-trip");
         AssertEqual(1, GetCountProperty(GetPropertyValue(health, "SourceTelemetryDetails")!), "CaptureHealthSnapshot.SourceTelemetryDetails round-trip count");
@@ -277,6 +318,8 @@ static partial class Program
         AssertEqual("BT.2020", GetStringProperty(detailJsonRoundTrip, "DisplayValue"), "SourceTelemetryDetailEntry JSON DisplayValue");
         var jsonRoundTrip = ReflectionJsonRoundTrip(healthType, health);
         AssertEqual("Paused", GetStringProperty(jsonRoundTrip, "FlashbackPlaybackState"), "CaptureHealthSnapshot JSON FlashbackPlaybackState");
+        AssertEqual(9L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackCommandsEnqueued"), "CaptureHealthSnapshot JSON FlashbackPlaybackCommandsEnqueued");
+        AssertEqual("Running", GetStringProperty(jsonRoundTrip, "FlashbackExportStatus"), "CaptureHealthSnapshot JSON FlashbackExportStatus");
         AssertEqual("YCbCr422", GetStringProperty(jsonRoundTrip, "SourceVideoFormat"), "CaptureHealthSnapshot JSON SourceVideoFormat");
         AssertEqual(1, GetCountProperty(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!), "CaptureHealthSnapshot JSON SourceTelemetryDetails count");
         AssertEqual("BT.2020", GetStringProperty(GetSingleEnumerableItem(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!), "DisplayValue"), "CaptureHealthSnapshot JSON SourceTelemetryDetails DisplayValue");

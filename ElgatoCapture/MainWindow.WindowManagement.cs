@@ -563,6 +563,7 @@ public sealed partial class MainWindow
     private const uint WM_GETMINMAXINFO = 0x0024;
     private delegate IntPtr WndProcDelegate(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam);
     private struct POINT { public int X, Y; }
+#pragma warning disable CS0649 // Populated by Marshal.PtrToStructure for WM_GETMINMAXINFO.
     private struct MINMAXINFO
     {
         public POINT ptReserved;
@@ -571,6 +572,7 @@ public sealed partial class MainWindow
         public POINT ptMinTrackSize;
         public POINT ptMaxTrackSize;
     }
+#pragma warning restore CS0649
     [DllImport("user32.dll", EntryPoint = "SetWindowLongPtrW")]
     private static extern IntPtr SetWindowLongPtr(IntPtr hWnd, int nIndex, IntPtr dwNewLong);
     [DllImport("user32.dll", EntryPoint = "GetWindowLongPtrW")]

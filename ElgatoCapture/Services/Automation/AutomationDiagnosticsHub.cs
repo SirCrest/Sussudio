@@ -826,6 +826,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             PreviewD3DLastDroppedQpc = previewRuntime.D3DLastDroppedQpc,
             PreviewD3DLastDroppedUtcUnixMs = previewRuntime.D3DLastDroppedUtcUnixMs,
             PreviewD3DLastDropReason = previewRuntime.D3DLastDropReason,
+            PreviewD3DRecentSlowFrames = previewRuntime.D3DRecentSlowFrames,
             PreviewGpuPlaybackState = previewRuntime.GpuPlaybackState,
             PreviewGpuNaturalVideoWidth = previewRuntime.GpuNaturalVideoWidth,
             PreviewGpuNaturalVideoHeight = previewRuntime.GpuNaturalVideoHeight,
@@ -1087,6 +1088,30 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackPlaybackObservedFps = health.FlashbackPlaybackObservedFps,
             FlashbackPlaybackAvgFrameMs = health.FlashbackPlaybackAvgFrameMs,
             FlashbackAvDriftMs = health.FlashbackAvDriftMs,
+            FlashbackPlaybackThreadAlive = health.FlashbackPlaybackThreadAlive,
+            FlashbackPlaybackCommandsEnqueued = health.FlashbackPlaybackCommandsEnqueued,
+            FlashbackPlaybackCommandsProcessed = health.FlashbackPlaybackCommandsProcessed,
+            FlashbackPlaybackCommandsDropped = health.FlashbackPlaybackCommandsDropped,
+            FlashbackPlaybackCommandsSkippedNotReady = health.FlashbackPlaybackCommandsSkippedNotReady,
+            FlashbackPlaybackPendingCommands = health.FlashbackPlaybackPendingCommands,
+            FlashbackPlaybackLastCommandQueued = health.FlashbackPlaybackLastCommandQueued,
+            FlashbackPlaybackLastCommandProcessed = health.FlashbackPlaybackLastCommandProcessed,
+            FlashbackPlaybackLastCommandQueuedUtcUnixMs = health.FlashbackPlaybackLastCommandQueuedUtcUnixMs,
+            FlashbackPlaybackLastCommandProcessedUtcUnixMs = health.FlashbackPlaybackLastCommandProcessedUtcUnixMs,
+            FlashbackPlaybackLastCommandFailure = health.FlashbackPlaybackLastCommandFailure,
+            FlashbackExportActive = health.FlashbackExportActive,
+            FlashbackExportId = health.FlashbackExportId,
+            FlashbackExportStatus = health.FlashbackExportStatus,
+            FlashbackExportOutputPath = health.FlashbackExportOutputPath,
+            FlashbackExportStartedUtcUnixMs = health.FlashbackExportStartedUtcUnixMs,
+            FlashbackExportLastProgressUtcUnixMs = health.FlashbackExportLastProgressUtcUnixMs,
+            FlashbackExportCompletedUtcUnixMs = health.FlashbackExportCompletedUtcUnixMs,
+            FlashbackExportSegmentsProcessed = health.FlashbackExportSegmentsProcessed,
+            FlashbackExportTotalSegments = health.FlashbackExportTotalSegments,
+            FlashbackExportPercent = health.FlashbackExportPercent,
+            FlashbackExportInPointMs = health.FlashbackExportInPointMs,
+            FlashbackExportOutPointMs = health.FlashbackExportOutPointMs,
+            FlashbackExportMessage = health.FlashbackExportMessage,
             LastExportPath = health.LastExportPath,
             LastExportSuccess = health.LastExportSuccess,
             LastExportMessage = health.LastExportMessage
@@ -1181,6 +1206,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
     private void UpdateAlerts(AutomationSnapshot snapshot)
     {
+        var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var exportLastProgressAgeMs = snapshot.FlashbackExportActive && snapshot.FlashbackExportLastProgressUtcUnixMs > 0
+            ? nowUnixMs - snapshot.FlashbackExportLastProgressUtcUnixMs
+            : 0;
+
         SetAlertState(
             "preview-blank",
             snapshot.PreviewBlankSuspected,
@@ -1256,6 +1286,19 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"Capture cadence drop estimate={snapshot.CaptureCadenceEstimatedDropPercent:0.##}% " +
             $"(estDropped={snapshot.CaptureCadenceEstimatedDroppedFrames}, severeGaps={snapshot.CaptureCadenceSevereGapCount}).",
             "Capture cadence drop estimate returned to healthy range.");
+
+        SetAlertState(
+            "flashback-export-stalled",
+            snapshot.FlashbackExportActive &&
+            snapshot.FlashbackExportLastProgressUtcUnixMs > 0 &&
+            exportLastProgressAgeMs >= 30000,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback export has not reported progress for {exportLastProgressAgeMs}ms " +
+            $"(id={snapshot.FlashbackExportId}, status={snapshot.FlashbackExportStatus}, " +
+            $"progress={snapshot.FlashbackExportPercent:0.##}%, segments={snapshot.FlashbackExportSegmentsProcessed}/{snapshot.FlashbackExportTotalSegments}).",
+            "Flashback export progress resumed.",
+            throttleMs: 10000);
 
         SetAlertState(
             "hdr-parity-mismatch",
@@ -1345,6 +1388,24 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"recording integrity={captureRuntime.RecordingIntegrityStatus} complete={captureRuntime.RecordingIntegrityComplete} seqGaps={captureRuntime.RecordingIntegritySequenceGaps} queueDrops={captureRuntime.RecordingIntegrityQueueDroppedFrames}";
         var audioLane =
             $"audio integrity={captureRuntime.RecordingIntegrityAudioStatus} drops={captureRuntime.RecordingIntegrityAudioDropEvents} disc={captureRuntime.RecordingIntegrityAudioDiscontinuities} gaps={captureRuntime.RecordingIntegrityAudioCallbackGaps}";
+        var exportLane =
+            $"export active={health.FlashbackExportActive} status={health.FlashbackExportStatus} id={health.FlashbackExportId} progress={health.FlashbackExportPercent:0.##}% segments={health.FlashbackExportSegmentsProcessed}/{health.FlashbackExportTotalSegments} lastProgressUtc={health.FlashbackExportLastProgressUtcUnixMs} completedUtc={health.FlashbackExportCompletedUtcUnixMs}";
+
+        if (health.FlashbackExportActive)
+        {
+            return new DiagnosticEvaluation(
+                "Busy",
+                "flashback_export",
+                "Flashback export is running.",
+                exportLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
 
         if (!isPreviewing && !isRecording)
         {

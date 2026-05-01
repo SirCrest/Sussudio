@@ -370,6 +370,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private readonly bool _waitableSwapChainEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_WAITABLE_SWAPCHAIN", 0, 0, 1) != 0;
     private readonly bool _dxgiFrameStatisticsEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS", 1, 0, 1) != 0;
     private readonly bool _dxgiFrameStatisticsDwmFlushEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS_DWM_FLUSH", 0, 0, 1) != 0;
+    private readonly double _slowFrameDiagnosticThresholdMs = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PREVIEW_SLOW_FRAME_THRESHOLD_MS", 0, 0, 1000);
     private readonly bool _mediaPresentDurationEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_MEDIA_PRESENT_DURATION", 0, 0, 1) != 0;
     private readonly string _renderMmcssTask = Environment.GetEnvironmentVariable("ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_TASK") ?? "Playback";
     private readonly int _renderMmcssPriority = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_PRIORITY", 1, -2, 2);
@@ -420,6 +421,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private double[] _renderTotalCpuTimingWindowMs = new double[1200];
     private int _renderCpuTimingCount;
     private int _renderCpuTimingIndex;
+    private readonly object _slowFrameDiagnosticsLock = new();
+    private readonly PreviewSlowFrameDiagnostic[] _slowFrameDiagnostics = new PreviewSlowFrameDiagnostic[64];
+    private int _slowFrameDiagnosticsCount;
+    private int _slowFrameDiagnosticsIndex;
     private readonly object _dxgiFrameStatisticsLock = new();
     private long _dxgiFrameStatisticsSampleCount;
     private long _dxgiFrameStatisticsSuccessCount;
@@ -499,11 +504,11 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
     // Pre-allocated arrays to avoid per-frame GC pressure (720+ allocs/s at 120fps)
     private readonly VideoProcessorStream[] _vpStreamArray = new VideoProcessorStream[1];
-    private readonly ID3D11RenderTargetView?[] _rtvArray = new ID3D11RenderTargetView?[1];
+    private readonly ID3D11RenderTargetView[] _rtvArray = new ID3D11RenderTargetView[1];
     private readonly Viewport[] _viewportArray = new Viewport[1];
     private readonly ID3D11SamplerState[] _samplerArray = new ID3D11SamplerState[1];
-    private readonly ID3D11ShaderResourceView?[] _srvArray2 = new ID3D11ShaderResourceView?[2];
-    private readonly ID3D11ShaderResourceView?[] _srvNullArray2 = new ID3D11ShaderResourceView?[2];
+    private readonly ID3D11ShaderResourceView[] _srvArray2 = new ID3D11ShaderResourceView[2];
+    private readonly ID3D11ShaderResourceView[] _srvNullArray2 = { null!, null! };
     private readonly ID3D11Buffer[] _cbArray = new ID3D11Buffer[1];
 
     // Persistent staging texture for frame capture (avoids GPU resource churn)
@@ -1288,6 +1293,27 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             SummarizeCpuStageTiming(totalSamples));
     }
 
+    public PreviewSlowFrameDiagnostic[] GetRecentSlowFrameDiagnostics(int maxEntries = 16)
+    {
+        lock (_slowFrameDiagnosticsLock)
+        {
+            var take = Math.Min(Math.Max(0, maxEntries), _slowFrameDiagnosticsCount);
+            if (take <= 0)
+            {
+                return Array.Empty<PreviewSlowFrameDiagnostic>();
+            }
+
+            var result = new PreviewSlowFrameDiagnostic[take];
+            var start = (_slowFrameDiagnosticsIndex - take + _slowFrameDiagnostics.Length) % _slowFrameDiagnostics.Length;
+            for (var i = 0; i < take; i++)
+            {
+                result[i] = _slowFrameDiagnostics[(start + i) % _slowFrameDiagnostics.Length];
+            }
+
+            return result;
+        }
+    }
+
     public FrameOwnershipMetrics GetFrameOwnershipMetrics()
     {
         var schedulerToPresentTicks = Interlocked.Read(ref _lastRenderedSchedulerToPresentTicks);
@@ -1375,19 +1401,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         return result;
     }
 
-    private void TrackPresentCadence()
+    private double TrackPresentCadence()
     {
         var nowTick = Stopwatch.GetTimestamp();
         var previousTick = Interlocked.Exchange(ref _lastPresentTick, nowTick);
         if (previousTick <= 0)
         {
-            return;
+            return 0;
         }
 
         var intervalMs = (nowTick - previousTick) * 1000.0 / Stopwatch.Frequency;
         if (intervalMs <= 0 || intervalMs > 5000)
         {
-            return;
+            return 0;
         }
 
         lock (_presentCadenceLock)
@@ -1399,6 +1425,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 _presentIntervalCount++;
             }
         }
+
+        return intervalMs;
     }
 
     private void TrackDxgiFrameStatistics()
@@ -1541,6 +1569,83 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
     }
 
+    private void RecordSlowFrameDiagnostic(
+        PendingFrame frame,
+        double presentIntervalMs,
+        long inputUploadTicks,
+        long renderSubmitTicks,
+        long presentCallTicks,
+        long totalTicks,
+        long presentEndTick)
+    {
+        var inputUploadMs = TicksToMs(inputUploadTicks);
+        var renderSubmitMs = TicksToMs(renderSubmitTicks);
+        var presentCallMs = TicksToMs(presentCallTicks);
+        var totalMs = TicksToMs(totalTicks);
+        if (!IsValidRenderCpuStageMs(totalMs))
+        {
+            return;
+        }
+
+        var expectedIntervalMs = _startupFps > 0 ? 1000.0 / _startupFps : 8.333;
+        var thresholdMs = _slowFrameDiagnosticThresholdMs > 0
+            ? _slowFrameDiagnosticThresholdMs
+            : Math.Max(expectedIntervalMs * 1.02, expectedIntervalMs + 0.15);
+
+        long presentDelta;
+        long presentRefreshDelta;
+        long syncRefreshDelta;
+        long missedRefreshCount;
+        lock (_dxgiFrameStatisticsLock)
+        {
+            presentDelta = _dxgiFrameStatisticsLastPresentDelta;
+            presentRefreshDelta = _dxgiFrameStatisticsLastPresentRefreshDelta;
+            syncRefreshDelta = _dxgiFrameStatisticsLastSyncRefreshDelta;
+            missedRefreshCount = _dxgiFrameStatisticsMissedRefreshCount;
+        }
+
+        var dxgiRefreshSlip = presentDelta > 0 && presentRefreshDelta > presentDelta;
+        if ((presentIntervalMs <= 0 || presentIntervalMs < thresholdMs) &&
+            totalMs < thresholdMs &&
+            presentCallMs < thresholdMs &&
+            !dxgiRefreshSlip)
+        {
+            return;
+        }
+
+        var schedulerToPresentMs = frame.SchedulerSubmitTick > 0 && presentEndTick > frame.SchedulerSubmitTick
+            ? TicksToMs(presentEndTick - frame.SchedulerSubmitTick)
+            : 0;
+        var sample = new PreviewSlowFrameDiagnostic
+        {
+            PreviewPresentId = frame.PreviewPresentId,
+            SourceSequenceNumber = frame.SourceSequenceNumber,
+            QpcTimestamp = presentEndTick,
+            UtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            PresentIntervalMs = presentIntervalMs,
+            InputUploadCpuMs = IsValidRenderCpuStageMs(inputUploadMs) ? inputUploadMs : 0,
+            RenderSubmitCpuMs = IsValidRenderCpuStageMs(renderSubmitMs) ? renderSubmitMs : 0,
+            PresentCallMs = IsValidRenderCpuStageMs(presentCallMs) ? presentCallMs : 0,
+            TotalFrameCpuMs = totalMs,
+            SchedulerToPresentMs = schedulerToPresentMs,
+            PendingFrameCount = PendingFrameCount,
+            DxgiPresentDelta = presentDelta,
+            DxgiPresentRefreshDelta = presentRefreshDelta,
+            DxgiSyncRefreshDelta = syncRefreshDelta,
+            DxgiMissedRefreshCount = missedRefreshCount
+        };
+
+        lock (_slowFrameDiagnosticsLock)
+        {
+            _slowFrameDiagnostics[_slowFrameDiagnosticsIndex] = sample;
+            _slowFrameDiagnosticsIndex = (_slowFrameDiagnosticsIndex + 1) % _slowFrameDiagnostics.Length;
+            if (_slowFrameDiagnosticsCount < _slowFrameDiagnostics.Length)
+            {
+                _slowFrameDiagnosticsCount++;
+            }
+        }
+    }
+
     private static double TicksToMs(long ticks)
         => ticks <= 0 ? 0 : ticks * 1000.0 / Stopwatch.Frequency;
 
@@ -1635,6 +1740,13 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             Array.Clear(_renderTotalCpuTimingWindowMs, 0, _renderTotalCpuTimingWindowMs.Length);
             _renderCpuTimingCount = 0;
             _renderCpuTimingIndex = 0;
+        }
+
+        lock (_slowFrameDiagnosticsLock)
+        {
+            Array.Clear(_slowFrameDiagnostics, 0, _slowFrameDiagnostics.Length);
+            _slowFrameDiagnosticsCount = 0;
+            _slowFrameDiagnosticsIndex = 0;
         }
     }
 

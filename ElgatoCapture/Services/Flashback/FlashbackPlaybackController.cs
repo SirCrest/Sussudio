@@ -68,6 +68,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private double _playbackObservedFps;
     private double _playbackAvgFrameMs;
     private readonly Stopwatch _playbackFpsClock = new();
+    private long _commandsEnqueued;
+    private long _commandsProcessed;
+    private long _commandsDropped;
+    private long _commandsSkippedNotReady;
+    private int _pendingCommands;
+    private long _lastCommandQueuedUtcUnixMs;
+    private long _lastCommandProcessedUtcUnixMs;
+    private string _lastCommandQueued = "None";
+    private string _lastCommandProcessed = "None";
+    private string _lastCommandFailure = string.Empty;
 
     // --- Deferred frame release for D3D11VA (C1 fix) ---
     // The renderer's render thread hasn't copied the texture yet when we release.
@@ -211,12 +221,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public void GoLive()
     {
         if (IsNotReady(CommandKind.GoLive)) return;
+        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return;
+        EnsurePlaybackThread();
         SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });
     }
 
     public void NudgePosition(TimeSpan delta)
     {
         if (IsNotReady(CommandKind.Nudge)) return;
+        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return;
+        EnsurePlaybackThread();
         SendCommand(new PlaybackCommand { Kind = CommandKind.Nudge, Delta = delta });
     }
 
@@ -262,8 +276,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (!_commandChannel.Writer.TryWrite(command))
         {
+            Interlocked.Increment(ref _commandsDropped);
+            _lastCommandFailure = $"write_failed:{command.Kind}";
             Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP kind={command.Kind}");
+            return;
         }
+
+        Interlocked.Increment(ref _commandsEnqueued);
+        Interlocked.Increment(ref _pendingCommands);
+        Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        _lastCommandQueued = command.Kind.ToString();
     }
 
     private void EnsurePlaybackThread()
@@ -300,12 +322,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private void StopPlaybackThread()
     {
-        SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });
+        var thread = _playbackThread;
+        if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })
+        {
+            SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });
+        }
+
         _commandChannel.Writer.TryComplete();
 
         try { _playCts?.Cancel(); } catch { /* Best-effort: CTS cancel during stop must not prevent thread join */ }
 
-        var thread = _playbackThread;
         if (thread is { IsAlive: true })
         {
             if (!thread.Join(TimeSpan.FromSeconds(3)))
@@ -354,6 +380,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         }
                         continue;
                     }
+                    TrackCommandDequeued(cmd);
                 }
                 else
                 {
@@ -370,6 +397,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             continue;
                         }
                     }
+                    TrackCommandDequeued(cmd);
                 }
 
                 switch (cmd.Kind)
@@ -409,6 +437,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         // Drain stale UpdateScrub commands — only process the latest position (F2 fix)
                         while (_commandChannel.Reader.TryRead(out var newer))
                         {
+                            TrackCommandDequeued(newer);
                             if (newer.Kind == CommandKind.UpdateScrub)
                             {
                                 cmd = newer;
@@ -451,7 +480,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                                 }
                                 frameDuration = TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0));
                             }
-                            RestoreAudioCallback(decoder, endScrubTarget.Ticks);
+                            if (decoder != null)
+                            {
+                                RestoreAudioCallback(decoder, endScrubTarget.Ticks);
+                            }
                             _audioPlayback?.Flush();
                             _audioPlayback?.ResumeRendering();
                         }
@@ -506,7 +538,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                                 // Active fMP4 segment: demuxer fragment index is stale — reopen and retry.
                                 // Only applies to fMP4 (.mp4); transport streams (.ts) handle appended data
                                 // via eof_reached reset and don't need reopening.
-                                if (IsActiveFmp4Segment(_currentOpenFilePath))
+                                if (IsActiveFmp4Segment(_currentOpenFilePath) && _currentOpenFilePath != null)
                                 {
                                     Logger.Log($"FLASHBACK_PLAY_SEEK_REOPEN_ACTIVE offset_ms={(long)seekTarget.TotalMilliseconds}");
                                     decoder.CloseFile();
@@ -577,7 +609,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         _videoCapture?.ResumePreviewSubmission();
                         SetState(FlashbackPlaybackState.Live);
                         Logger.Log("FLASHBACK_PLAYBACK_GO_LIVE");
-                        break;
+                        return;
 
                     case CommandKind.Nudge:
                         var nudgedPos = PlaybackPosition + cmd.Delta;
@@ -611,6 +643,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         catch (Exception ex)
         {
+            _lastCommandFailure = ex.GetType().Name + ":" + ex.Message;
             Logger.Log($"FLASHBACK_PLAYBACK_FATAL error='{ex.Message}'");
             CleanupDecoder(ref decoder, ref fileOpen);
             try { RestoreLiveAudio(); } catch { /* Best-effort: restore audio during fatal error recovery — already logged above */ }
@@ -620,6 +653,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
         finally
         {
             timeEndPeriod(1);
+            if (ReferenceEquals(Thread.CurrentThread, _playbackThread))
+            {
+                _playbackThread = null;
+            }
+            Volatile.Write(ref _playbackThreadStarted, 0);
         }
 
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
@@ -746,7 +784,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 // Active fMP4 segment: demuxer caches fragment index at open time.
                 // New fragments written since open aren't visible — reopen and retry.
                 // Only for fMP4; .ts handles appended data via eof_reached reset.
-                if (IsActiveFmp4Segment(_currentOpenFilePath))
+                if (IsActiveFmp4Segment(_currentOpenFilePath) && _currentOpenFilePath != null)
                 {
                     Logger.Log($"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds}");
                     decoder.CloseFile();
@@ -1000,8 +1038,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         if (gapFromLive > 2000)
         {
-            var nextFile = _bufferManager.GetNextSegmentFile(_currentOpenFilePath);
-            if (nextFile != null && nextFile != _currentOpenFilePath)
+            var currentOpenFilePath = _currentOpenFilePath;
+            var nextFile = currentOpenFilePath != null
+                ? _bufferManager.GetNextSegmentFile(currentOpenFilePath)
+                : null;
+            if (nextFile != null && nextFile != currentOpenFilePath)
             {
                 Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH pos_ms={(long)pos.TotalMilliseconds} next='{System.IO.Path.GetFileName(nextFile)}'");
                 decoder.CloseFile();
@@ -1023,12 +1064,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
             // time and won't see new fragments without re-opening. Close and re-open
             // the same file, then seek to where playback left off.
             // Only for fMP4; .ts handles appended data via eof_reached reset.
-            if (IsActiveFmp4Segment(_currentOpenFilePath))
+            if (IsActiveFmp4Segment(currentOpenFilePath) && currentOpenFilePath != null)
             {
                 var resumeTarget = lastFrameAbsPts;
                 Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN pos_ms={(long)pos.TotalMilliseconds} resumePts_ms={(long)resumeTarget.TotalMilliseconds}");
                 decoder.CloseFile();
-                decoder.OpenFile(_currentOpenFilePath);
+                decoder.OpenFile(currentOpenFilePath);
                 var fmpAudioGate = Interlocked.Read(ref _lastAudioPtsTicks);
                 decoder.AudioChunkCallback = null;
                 decoder.SeekTo(resumeTarget);
@@ -1294,6 +1335,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long PlaybackDroppedFrames => Interlocked.Read(ref _playbackDroppedFrames);
     public double PlaybackObservedFps => _playbackObservedFps;
     public double PlaybackAvgFrameMs => _playbackAvgFrameMs;
+    public long CommandsEnqueued => Interlocked.Read(ref _commandsEnqueued);
+    public long CommandsProcessed => Interlocked.Read(ref _commandsProcessed);
+    public long CommandsDropped => Interlocked.Read(ref _commandsDropped);
+    public long CommandsSkippedNotReady => Interlocked.Read(ref _commandsSkippedNotReady);
+    public int PendingCommands => Volatile.Read(ref _pendingCommands);
+    public long LastCommandQueuedUtcUnixMs => Interlocked.Read(ref _lastCommandQueuedUtcUnixMs);
+    public long LastCommandProcessedUtcUnixMs => Interlocked.Read(ref _lastCommandProcessedUtcUnixMs);
+    public string LastCommandQueued => _lastCommandQueued;
+    public string LastCommandProcessed => _lastCommandProcessed;
+    public string LastCommandFailure => _lastCommandFailure;
+    public bool PlaybackThreadAlive => _playbackThread is { IsAlive: true };
 
     /// <summary>
     /// Audio-video drift in milliseconds. Positive = audio ahead, negative = audio behind.
@@ -1318,8 +1370,35 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private bool IsNotReady(CommandKind kind)
     {
         if (IsReady) return false;
+        Interlocked.Increment(ref _commandsSkippedNotReady);
+        _lastCommandFailure = $"not_ready:{kind}";
         Logger.Log($"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason=not_ready initialized={_initialized} disposed={_disposedFlag != 0}");
         return true;
+    }
+
+    private void TrackCommandDequeued(PlaybackCommand command)
+    {
+        Interlocked.Increment(ref _commandsProcessed);
+        DecrementPendingCommands();
+        Interlocked.Exchange(ref _lastCommandProcessedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        _lastCommandProcessed = command.Kind.ToString();
+    }
+
+    private void DecrementPendingCommands()
+    {
+        while (true)
+        {
+            var current = Volatile.Read(ref _pendingCommands);
+            if (current <= 0)
+            {
+                return;
+            }
+
+            if (Interlocked.CompareExchange(ref _pendingCommands, current - 1, current) == current)
+            {
+                return;
+            }
+        }
     }
 
     private void ResetPlaybackMetrics()

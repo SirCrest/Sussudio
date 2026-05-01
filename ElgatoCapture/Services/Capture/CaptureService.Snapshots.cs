@@ -1264,6 +1264,35 @@ public partial class CaptureService
                                                   (flashbackIsRecordingBackend ? fbSink?.LastVideoEnqueueTick ?? 0 : 0);
         var activeRecordingLastVideoWriteTick = sink?.LastVideoWriteTick ??
                                                 (flashbackIsRecordingBackend ? fbSink?.LastVideoWriteTick ?? 0 : 0);
+        bool flashbackExportActive;
+        long flashbackExportId;
+        string flashbackExportStatus;
+        string flashbackExportOutputPath;
+        long flashbackExportStartedUtcUnixMs;
+        long flashbackExportLastProgressUtcUnixMs;
+        long flashbackExportCompletedUtcUnixMs;
+        int flashbackExportSegmentsProcessed;
+        int flashbackExportTotalSegments;
+        double flashbackExportPercent;
+        long flashbackExportInPointMs;
+        long flashbackExportOutPointMs;
+        string flashbackExportMessage;
+        lock (_flashbackExportDiagnosticsLock)
+        {
+            flashbackExportActive = _flashbackExportActive;
+            flashbackExportId = _flashbackExportId;
+            flashbackExportStatus = _flashbackExportStatus;
+            flashbackExportOutputPath = _flashbackExportOutputPath;
+            flashbackExportStartedUtcUnixMs = _flashbackExportStartedUtcUnixMs;
+            flashbackExportLastProgressUtcUnixMs = _flashbackExportLastProgressUtcUnixMs;
+            flashbackExportCompletedUtcUnixMs = _flashbackExportCompletedUtcUnixMs;
+            flashbackExportSegmentsProcessed = _flashbackExportSegmentsProcessed;
+            flashbackExportTotalSegments = _flashbackExportTotalSegments;
+            flashbackExportPercent = _flashbackExportPercent;
+            flashbackExportInPointMs = _flashbackExportInPointMs;
+            flashbackExportOutPointMs = _flashbackExportOutPointMs;
+            flashbackExportMessage = _flashbackExportMessage;
+        }
 
         return new CaptureHealthSnapshot
         {
@@ -1295,6 +1324,30 @@ public partial class CaptureService
             FlashbackPlaybackObservedFps = fbPlayback?.PlaybackObservedFps ?? 0,
             FlashbackPlaybackAvgFrameMs = fbPlayback?.PlaybackAvgFrameMs ?? 0,
             FlashbackAvDriftMs = fbPlayback?.AvDriftMs ?? 0,
+            FlashbackPlaybackThreadAlive = fbPlayback?.PlaybackThreadAlive ?? false,
+            FlashbackPlaybackCommandsEnqueued = fbPlayback?.CommandsEnqueued ?? 0,
+            FlashbackPlaybackCommandsProcessed = fbPlayback?.CommandsProcessed ?? 0,
+            FlashbackPlaybackCommandsDropped = fbPlayback?.CommandsDropped ?? 0,
+            FlashbackPlaybackCommandsSkippedNotReady = fbPlayback?.CommandsSkippedNotReady ?? 0,
+            FlashbackPlaybackPendingCommands = fbPlayback?.PendingCommands ?? 0,
+            FlashbackPlaybackLastCommandQueued = fbPlayback?.LastCommandQueued ?? "None",
+            FlashbackPlaybackLastCommandProcessed = fbPlayback?.LastCommandProcessed ?? "None",
+            FlashbackPlaybackLastCommandQueuedUtcUnixMs = fbPlayback?.LastCommandQueuedUtcUnixMs ?? 0,
+            FlashbackPlaybackLastCommandProcessedUtcUnixMs = fbPlayback?.LastCommandProcessedUtcUnixMs ?? 0,
+            FlashbackPlaybackLastCommandFailure = fbPlayback?.LastCommandFailure ?? string.Empty,
+            FlashbackExportActive = flashbackExportActive,
+            FlashbackExportId = flashbackExportId,
+            FlashbackExportStatus = flashbackExportStatus,
+            FlashbackExportOutputPath = flashbackExportOutputPath,
+            FlashbackExportStartedUtcUnixMs = flashbackExportStartedUtcUnixMs,
+            FlashbackExportLastProgressUtcUnixMs = flashbackExportLastProgressUtcUnixMs,
+            FlashbackExportCompletedUtcUnixMs = flashbackExportCompletedUtcUnixMs,
+            FlashbackExportSegmentsProcessed = flashbackExportSegmentsProcessed,
+            FlashbackExportTotalSegments = flashbackExportTotalSegments,
+            FlashbackExportPercent = flashbackExportPercent,
+            FlashbackExportInPointMs = flashbackExportInPointMs,
+            FlashbackExportOutPointMs = flashbackExportOutPointMs,
+            FlashbackExportMessage = flashbackExportMessage,
             LastExportPath = _lastExportResult?.OutputPath,
             LastExportSuccess = _lastExportResult?.Succeeded,
             LastExportMessage = _lastExportResult?.StatusMessage,

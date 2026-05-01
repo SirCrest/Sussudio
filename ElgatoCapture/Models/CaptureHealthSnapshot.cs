@@ -37,8 +37,32 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public double FlashbackPlaybackObservedFps { get; init; }
     public double FlashbackPlaybackAvgFrameMs { get; init; }
     public double FlashbackAvDriftMs { get; init; }
+    public bool FlashbackPlaybackThreadAlive { get; init; }
+    public long FlashbackPlaybackCommandsEnqueued { get; init; }
+    public long FlashbackPlaybackCommandsProcessed { get; init; }
+    public long FlashbackPlaybackCommandsDropped { get; init; }
+    public long FlashbackPlaybackCommandsSkippedNotReady { get; init; }
+    public int FlashbackPlaybackPendingCommands { get; init; }
+    public string FlashbackPlaybackLastCommandQueued { get; init; } = "None";
+    public string FlashbackPlaybackLastCommandProcessed { get; init; } = "None";
+    public long FlashbackPlaybackLastCommandQueuedUtcUnixMs { get; init; }
+    public long FlashbackPlaybackLastCommandProcessedUtcUnixMs { get; init; }
+    public string FlashbackPlaybackLastCommandFailure { get; init; } = string.Empty;
 
     // ── Export ──────────────────────────────────────────────────────────
+    public bool FlashbackExportActive { get; init; }
+    public long FlashbackExportId { get; init; }
+    public string FlashbackExportStatus { get; init; } = "NotStarted";
+    public string FlashbackExportOutputPath { get; init; } = string.Empty;
+    public long FlashbackExportStartedUtcUnixMs { get; init; }
+    public long FlashbackExportLastProgressUtcUnixMs { get; init; }
+    public long FlashbackExportCompletedUtcUnixMs { get; init; }
+    public int FlashbackExportSegmentsProcessed { get; init; }
+    public int FlashbackExportTotalSegments { get; init; }
+    public double FlashbackExportPercent { get; init; }
+    public long FlashbackExportInPointMs { get; init; }
+    public long FlashbackExportOutPointMs { get; init; }
+    public string FlashbackExportMessage { get; init; } = string.Empty;
     public string? LastExportPath { get; init; }
     public bool? LastExportSuccess { get; init; }
     public string? LastExportMessage { get; init; }

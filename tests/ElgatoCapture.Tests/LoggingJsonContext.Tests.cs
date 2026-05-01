@@ -97,6 +97,10 @@ static partial class Program
                 ?? throw new InvalidOperationException("Failed to create isolated CaptureHealthSnapshot.");
             SetPropertyOrBackingField(health, "RecordingBackend", "FFmpeg");
             SetPropertyOrBackingField(health, "FlashbackPlaybackState", "Paused");
+            SetPropertyOrBackingField(health, "FlashbackPlaybackCommandsEnqueued", 4L);
+            SetPropertyOrBackingField(health, "FlashbackPlaybackLastCommandQueued", "Pause");
+            SetPropertyOrBackingField(health, "FlashbackExportStatus", "Running");
+            SetPropertyOrBackingField(health, "FlashbackExportPercent", 37.5d);
             SetPropertyOrBackingField(health, "FlashbackOutputBytes", 123456L);
             SetPropertyOrBackingField(health, "SourceVideoFormat", "YCbCr422");
             SetPropertyOrBackingField(health, "SourceTelemetryDetails", details);
@@ -110,6 +114,10 @@ static partial class Program
             var healthRoot = healthDocument.RootElement;
             AssertJsonString(healthRoot, "RecordingBackend", "FFmpeg", "CaptureHealthSnapshot source-gen JSON inherited RecordingBackend");
             AssertJsonString(healthRoot, "FlashbackPlaybackState", "Paused", "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackState");
+            AssertJsonInt64(healthRoot, "FlashbackPlaybackCommandsEnqueued", 4L, "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackCommandsEnqueued");
+            AssertJsonString(healthRoot, "FlashbackPlaybackLastCommandQueued", "Pause", "CaptureHealthSnapshot source-gen JSON FlashbackPlaybackLastCommandQueued");
+            AssertJsonString(healthRoot, "FlashbackExportStatus", "Running", "CaptureHealthSnapshot source-gen JSON FlashbackExportStatus");
+            AssertJsonDouble(healthRoot, "FlashbackExportPercent", 37.5d, "CaptureHealthSnapshot source-gen JSON FlashbackExportPercent");
             AssertJsonInt64(healthRoot, "FlashbackOutputBytes", 123456L, "CaptureHealthSnapshot source-gen JSON FlashbackOutputBytes");
             AssertJsonString(healthRoot, "SourceVideoFormat", "YCbCr422", "CaptureHealthSnapshot source-gen JSON SourceVideoFormat");
             var detailJson = AssertSingleJsonArrayItem(healthRoot, "SourceTelemetryDetails");
@@ -201,6 +209,9 @@ static partial class Program
 
     private static void AssertJsonBool(JsonElement root, string propertyName, bool expected, string fieldName)
         => AssertEqual(expected, RequireJsonProperty(root, propertyName).GetBoolean(), fieldName);
+
+    private static void AssertJsonDouble(JsonElement root, string propertyName, double expected, string fieldName)
+        => AssertEqual(expected, RequireJsonProperty(root, propertyName).GetDouble(), fieldName);
 
     private static JsonElement RequireJsonProperty(JsonElement root, string propertyName)
     {

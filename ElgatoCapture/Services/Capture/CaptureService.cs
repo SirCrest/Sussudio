@@ -86,6 +86,21 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private RecordingAudioIntegrityCounterSnapshot? _recordingIntegrityAudioBaseline;
     private bool _lastUsePostMuxAudio;
     private FinalizeResult? _lastExportResult;
+    private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);
+    private readonly object _flashbackExportDiagnosticsLock = new();
+    private bool _flashbackExportActive;
+    private long _flashbackExportId;
+    private string _flashbackExportStatus = "NotStarted";
+    private string _flashbackExportOutputPath = string.Empty;
+    private long _flashbackExportStartedUtcUnixMs;
+    private long _flashbackExportLastProgressUtcUnixMs;
+    private long _flashbackExportCompletedUtcUnixMs;
+    private int _flashbackExportSegmentsProcessed;
+    private int _flashbackExportTotalSegments;
+    private double _flashbackExportPercent;
+    private long _flashbackExportInPointMs;
+    private long _flashbackExportOutPointMs;
+    private string _flashbackExportMessage = string.Empty;
     private string? _audioDeviceId;
     private string? _audioDeviceName;
     private bool _mfConvertersDisabled;
@@ -442,7 +457,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {
                 Logger.Log("FLASHBACK_EXPORT_REJECTED reason=flashback_recording_active");
-                return FinalizeResult.Failure(outputPath, "Flashback export is unavailable while Flashback is the active recording backend.");
+                return FailFlashbackExport(outputPath, "Flashback export is unavailable while Flashback is the active recording backend.");
             }
 
             await _flashbackBackendLeaseLock.WaitAsync(ct).ConfigureAwait(false);
@@ -466,7 +481,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         try
         {
             if (bufferManager == null)
-                return FinalizeResult.Failure(outputPath, "Flashback buffer not active");
+                return FailFlashbackExport(outputPath, "Flashback buffer not active");
 
             return await ExportFlashbackCoreAsync(fileInPoint, fileOutPoint, outputPath, progress, ct,
                 snapshotSink: flashbackSink, snapshotBufferManager: bufferManager).ConfigureAwait(false);
@@ -495,7 +510,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (_isRecording && IsFlashbackRecordingBackendActive())
             {
                 Logger.Log("FLASHBACK_EXPORT_REJECTED reason=flashback_recording_active");
-                return FinalizeResult.Failure(outputPath, "Flashback export is unavailable while Flashback is the active recording backend.");
+                return FailFlashbackExport(outputPath, "Flashback export is unavailable while Flashback is the active recording backend.");
             }
 
             await _flashbackBackendLeaseLock.WaitAsync(ct).ConfigureAwait(false);
@@ -521,7 +536,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         try
         {
             if (bufferManager == null)
-                return FinalizeResult.Failure(outputPath, "Flashback buffer not active");
+                return FailFlashbackExport(outputPath, "Flashback buffer not active");
 
             return await ExportFlashbackCoreAsync(fileInPoint, TimeSpan.MaxValue, outputPath, progress, ct,
                 snapshotSink: flashbackSink, snapshotBufferManager: bufferManager).ConfigureAwait(false);
@@ -533,6 +548,14 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 _flashbackBackendLeaseLock.Release();
             }
         }
+    }
+
+    private FinalizeResult FailFlashbackExport(string outputPath, string statusMessage)
+    {
+        var result = FinalizeResult.Failure(outputPath, statusMessage);
+        _lastExportResult = result;
+        RecordRejectedFlashbackExportDiagnostics(outputPath, result);
+        return result;
     }
 
     // Called from two contexts:
@@ -549,10 +572,18 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         var bufferManager = snapshotBufferManager ?? _flashbackBufferManager;
         var exporter = _flashbackExporter ??= new FlashbackExporter();
 
-        // Pause eviction so segments aren't deleted while the exporter reads them
-        bufferManager?.PauseEviction();
+        await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);
+        var exportId = 0L;
+        var evictionPaused = false;
         try
         {
+            exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);
+            var diagnosticProgress = CreateFlashbackExportProgressSink(exportId, progress);
+
+            // Pause eviction so segments aren't deleted while the exporter reads them
+            bufferManager?.PauseEviction();
+            evictionPaused = bufferManager != null;
+
             FinalizeResult result;
             IReadOnlyList<string>? segmentPaths = null;
             string? tsPath = null;
@@ -571,6 +602,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                             "Flashback recording finalize failed: live-edge segment was not closed before timeout.",
                             preservedArtifacts);
                         _lastExportResult = result;
+                        CompleteFlashbackExportDiagnostics(exportId, result);
                         Logger.Log(
                             "FLASHBACK_RECORDING_EXPORT_INCOMPLETE_FAIL " +
                             $"preserved_segments={preservedArtifacts.Count} " +
@@ -606,6 +638,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 {
                     result = FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
                     _lastExportResult = result;
+                    CompleteFlashbackExportDiagnostics(exportId, result);
                     return result;
                 }
             }
@@ -618,14 +651,156 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 OutPoint = outPoint,
                 OutputPath = outputPath,
             };
-            result = await exporter.ExportAsync(request, progress, ct).ConfigureAwait(false);
+            result = await exporter.ExportAsync(request, diagnosticProgress, ct).ConfigureAwait(false);
             _lastExportResult = result;
+            CompleteFlashbackExportDiagnostics(exportId, result);
             return result;
+        }
+        catch (Exception ex)
+        {
+            var failure = FinalizeResult.Failure(outputPath, ex.Message);
+            _lastExportResult = failure;
+            if (exportId != 0)
+            {
+                CompleteFlashbackExportDiagnostics(exportId, failure);
+            }
+            throw;
         }
         finally
         {
-            bufferManager?.ResumeEviction();
+            if (evictionPaused)
+            {
+                bufferManager?.ResumeEviction();
+            }
+            _flashbackExportOperationLock.Release();
         }
+    }
+
+    private long BeginFlashbackExportDiagnostics(TimeSpan inPoint, TimeSpan outPoint, string outputPath)
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        lock (_flashbackExportDiagnosticsLock)
+        {
+            var exportId = Interlocked.Increment(ref _flashbackExportId);
+            _flashbackExportActive = true;
+            _flashbackExportStatus = "Running";
+            _flashbackExportOutputPath = outputPath;
+            _flashbackExportStartedUtcUnixMs = now;
+            _flashbackExportLastProgressUtcUnixMs = now;
+            _flashbackExportCompletedUtcUnixMs = 0;
+            _flashbackExportSegmentsProcessed = 0;
+            _flashbackExportTotalSegments = 0;
+            _flashbackExportPercent = 0;
+            _flashbackExportInPointMs = (long)inPoint.TotalMilliseconds;
+            _flashbackExportOutPointMs = outPoint == TimeSpan.MaxValue ? -1 : (long)outPoint.TotalMilliseconds;
+            _flashbackExportMessage = string.Empty;
+
+            return exportId;
+        }
+    }
+
+    private void RecordRejectedFlashbackExportDiagnostics(string outputPath, FinalizeResult result)
+    {
+        var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        lock (_flashbackExportDiagnosticsLock)
+        {
+            if (_flashbackExportActive)
+            {
+                return;
+            }
+
+            var exportId = Interlocked.Increment(ref _flashbackExportId);
+            _flashbackExportId = exportId;
+            _flashbackExportActive = false;
+            _flashbackExportStatus = IsFlashbackExportCancelled(result.StatusMessage) ? "Cancelled" : "Failed";
+            _flashbackExportOutputPath = outputPath;
+            _flashbackExportStartedUtcUnixMs = now;
+            _flashbackExportLastProgressUtcUnixMs = now;
+            _flashbackExportCompletedUtcUnixMs = now;
+            _flashbackExportSegmentsProcessed = 0;
+            _flashbackExportTotalSegments = 0;
+            _flashbackExportPercent = 0;
+            _flashbackExportInPointMs = 0;
+            _flashbackExportOutPointMs = 0;
+            _flashbackExportMessage = result.StatusMessage;
+        }
+    }
+
+    private IProgress<ExportProgress> CreateFlashbackExportProgressSink(
+        long exportId,
+        IProgress<ExportProgress>? innerProgress)
+    {
+        return new FlashbackExportProgressForwarder(progress =>
+        {
+            UpdateFlashbackExportProgress(exportId, progress);
+            innerProgress?.Report(progress);
+        });
+    }
+
+    private void UpdateFlashbackExportProgress(long exportId, ExportProgress progress)
+    {
+        if (Volatile.Read(ref _flashbackExportId) != exportId)
+        {
+            return;
+        }
+
+        lock (_flashbackExportDiagnosticsLock)
+        {
+            if (_flashbackExportId != exportId)
+            {
+                return;
+            }
+
+            _flashbackExportSegmentsProcessed = progress.SegmentsProcessed;
+            _flashbackExportTotalSegments = progress.TotalSegments;
+            _flashbackExportPercent = progress.Percent;
+            _flashbackExportLastProgressUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        }
+    }
+
+    private void CompleteFlashbackExportDiagnostics(long exportId, FinalizeResult result)
+    {
+        if (Volatile.Read(ref _flashbackExportId) != exportId)
+        {
+            return;
+        }
+
+        lock (_flashbackExportDiagnosticsLock)
+        {
+            if (_flashbackExportId != exportId)
+            {
+                return;
+            }
+
+            _flashbackExportActive = false;
+            _flashbackExportStatus = result.Succeeded
+                ? "Succeeded"
+                : IsFlashbackExportCancelled(result.StatusMessage)
+                    ? "Cancelled"
+                    : "Failed";
+            _flashbackExportCompletedUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            _flashbackExportMessage = result.StatusMessage;
+            if (result.Succeeded && _flashbackExportPercent < 100)
+            {
+                _flashbackExportPercent = 100;
+            }
+        }
+    }
+
+    private static bool IsFlashbackExportCancelled(string? statusMessage)
+        => statusMessage?.Contains("cancel", StringComparison.OrdinalIgnoreCase) == true;
+
+    private sealed class FlashbackExportProgressForwarder : IProgress<ExportProgress>
+    {
+        private readonly Action<ExportProgress> _onProgress;
+
+        public FlashbackExportProgressForwarder(Action<ExportProgress> onProgress)
+        {
+            _onProgress = onProgress;
+        }
+
+        public void Report(ExportProgress value)
+            => _onProgress(value);
     }
 
     private void ScheduleDeferredFlashbackBackendCleanup(
@@ -4206,6 +4381,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         _sessionTransitionLock.Dispose();
         _flashbackBackendLeaseLock.Dispose();
+        _flashbackExportOperationLock.Dispose();
         _sessionState = CaptureSessionState.Disposed;
     }
 
@@ -4223,6 +4399,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         _sessionTransitionLock.Dispose();
         _flashbackBackendLeaseLock.Dispose();
+        _flashbackExportOperationLock.Dispose();
         _sessionState = CaptureSessionState.Disposed;
     }
 }

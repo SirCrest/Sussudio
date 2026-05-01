@@ -216,6 +216,34 @@ static partial class Program
         AssertContains(dispatcherText, "snapshot: snapshot");
         AssertContains(dispatcherText, "AutomationSnapshot? snapshot = null");
         AssertContains(dispatcherText, "Snapshot = includeSnapshot ? snapshot ?? _diagnosticsHub.GetLatestSnapshot() : null");
+        AssertContains(diagnosticsText, "\"flashback-export-stalled\"");
+        AssertContains(diagnosticsText, "DiagnosticsCategory.Flashback");
+        AssertContains(diagnosticsText, "health.FlashbackExportActive");
+        AssertContains(diagnosticsText, "\"flashback_export\"");
+
+        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
+        AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
+        AssertContains(captureServiceText, "var exportId = 0L;");
+        AssertContains(captureServiceText, "var evictionPaused = false;");
+        AssertContains(captureServiceText, "exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
+        AssertContains(captureServiceText, "evictionPaused = bufferManager != null;");
+        AssertContains(captureServiceText, "if (exportId != 0)");
+        AssertContains(captureServiceText, "if (evictionPaused)");
+        AssertContains(captureServiceText, "_lastExportResult = failure;");
+        AssertContains(captureServiceText, "private FinalizeResult FailFlashbackExport(string outputPath, string statusMessage)");
+        AssertContains(captureServiceText, "_lastExportResult = result;");
+        AssertContains(captureServiceText, "RecordRejectedFlashbackExportDiagnostics(outputPath, result);");
+        AssertContains(captureServiceText, "private void RecordRejectedFlashbackExportDiagnostics(string outputPath, FinalizeResult result)");
+        AssertContains(captureServiceText, "if (_flashbackExportActive)");
+        AssertContains(captureServiceText, "_flashbackExportStartedUtcUnixMs = now;");
+        AssertContains(captureServiceText, "_flashbackExportCompletedUtcUnixMs = now;");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\");");
+        AssertContains(captureServiceText, "? \"Cancelled\"");
+        AssertContains(captureServiceText, "private static bool IsFlashbackExportCancelled(string? statusMessage)");
+        AssertContains(captureServiceText, "_flashbackExportOperationLock.Release();");
+        AssertContains(captureServiceText, "_flashbackExportOperationLock.Dispose();");
 
         return Task.CompletedTask;
     }
