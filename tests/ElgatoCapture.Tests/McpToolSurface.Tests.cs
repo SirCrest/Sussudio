@@ -686,6 +686,7 @@ static partial class Program
         AssertContains(source, "targetOnePercentLowFps");
         AssertContains(source, "== 1% Low Target Summary");
         AssertContains(source, "AppendOnePercentLowTargetSummary");
+        AssertContains(source, "AppendPressureSummary");
         AssertContains(source, "misses={belowTarget}/{valid.Length}");
         AssertContains(source, "PreviewP99Ms = AutomationSnapshotFormatter.GetDouble(item, \"PreviewCadenceP99Ms\")");
         AssertContains(source, "Preview P99:");
@@ -754,6 +755,18 @@ static partial class Program
         AssertContains(source, "D3D Total P99:");
         AssertContains(source, "D3D P99 Bottleneck:");
         AssertContains(source, "FormatD3DP99Bottleneck");
+        AssertContains(source, "== Pressure Summary ==");
+        AssertContains(source, "Preview Pressure:");
+        AssertContains(source, "overBudgetSamples input=");
+        AssertContains(source, "dxgiMissedSamples=");
+        AssertContains(source, "jitterDropsDelta=");
+        AssertContains(source, "Flashback Pressure:");
+        AssertContains(source, "decodeOverBudget=");
+        AssertContains(source, "pendingCmdSamples=");
+        AssertContains(source, "System Pressure:");
+        AssertContains(source, "gcPauseSamples=");
+        AssertContains(source, "CountOverBudget");
+        AssertContains(source, "NonNegativeDelta");
         AssertContains(source, "Flashback P99:");
         AssertContains(source, "Flashback Decode:");
         AssertContains(source, "Flashback Cmds:");
