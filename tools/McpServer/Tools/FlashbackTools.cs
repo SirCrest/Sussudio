@@ -36,6 +36,13 @@ public static class FlashbackTools
 
         if (positionMs.HasValue)
         {
+            if (!double.IsFinite(positionMs.Value) ||
+                positionMs.Value < 0 ||
+                positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds)
+            {
+                throw new ArgumentOutOfRangeException(nameof(positionMs), "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
+            }
+
             payload["positionMs"] = positionMs.Value;
         }
 
@@ -53,6 +60,11 @@ public static class FlashbackTools
         [Description("Output file path (default: temp/flashback_export_<timestamp>.mp4)")] string? outputPath = null,
         [Description("True to export the current in/out selection instead of the most recent N seconds")] bool useSelectionRange = false)
     {
+        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)
+        {
+            throw new ArgumentOutOfRangeException(nameof(seconds), "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
+        }
+
         outputPath ??= $"temp/flashback_export_{DateTime.Now:yyyyMMdd_HHmmss}.mp4";
 
         var dir = Path.GetDirectoryName(outputPath);

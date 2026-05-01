@@ -922,6 +922,13 @@ static partial class Program
 
         AssertCommandRequest(requests[0], "SetFlashbackEnabled", ("enabled", false));
         AssertEqual("[OK] SetFlashbackEnabled: Flashback disabled.", result, "flashback_enabled formatted success");
+
+        var flashbackToolsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(flashbackToolsText, "if (!double.IsFinite(positionMs.Value) ||\n                positionMs.Value < 0 ||\n                positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds)");
+        AssertContains(flashbackToolsText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
+        AssertContains(flashbackToolsText, "if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)");
+        AssertContains(flashbackToolsText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
     }
 
     private static async Task McpPreviewColorProbeTool_FormatsProbeResponses()
