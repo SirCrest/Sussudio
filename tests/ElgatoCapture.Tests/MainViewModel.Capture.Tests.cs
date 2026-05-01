@@ -87,7 +87,7 @@ static partial class Program
         AssertMemberContains(automationText, "FlashbackNudge", "_sessionCoordinator.FlashbackNudge(delta)");
         AssertMemberContains(automationText, "FlashbackSetInPoint", "_sessionCoordinator.FlashbackSetInPoint()");
         AssertMemberContains(automationText, "FlashbackSetOutPoint", "_sessionCoordinator.FlashbackSetOutPoint()");
-        AssertMemberContains(automationText, "FlashbackClearInOutPoints", "_sessionCoordinator.FlashbackClearInOutPoints()");
+        AssertMemberContains(automationText, "FlashbackClearInOutPoints", "=> _sessionCoordinator.FlashbackClearInOutPoints()");
         AssertMemberContains(automationText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackBufferStatus()");
         AssertMemberContains(automationText, "UpdateFlashbackBufferStatus", "_sessionCoordinator.GetFlashbackPlaybackSnapshot()");
         AssertMemberContains(automationText, "UpdateFlashbackBufferStatus", "FlashbackInPoint = playback.InPoint;");

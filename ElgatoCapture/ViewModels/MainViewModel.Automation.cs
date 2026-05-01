@@ -143,8 +143,7 @@ public partial class MainViewModel
             case AutomationFlashbackAction.SetOutPoint:
                 return _sessionCoordinator.FlashbackSetOutPoint().HasValue;
             case AutomationFlashbackAction.ClearInOutPoints:
-                _sessionCoordinator.FlashbackClearInOutPoints();
-                return true;
+                return _sessionCoordinator.FlashbackClearInOutPoints();
             default:
                 throw new InvalidOperationException($"Unsupported flashback action '{action}'.");
         }
@@ -156,7 +155,7 @@ public partial class MainViewModel
     public TimeSpan? FlashbackSetOutPoint()
         => _sessionCoordinator.FlashbackSetOutPoint();
 
-    public void FlashbackClearInOutPoints()
+    public bool FlashbackClearInOutPoints()
         => _sessionCoordinator.FlashbackClearInOutPoints();
 
     /// <summary>

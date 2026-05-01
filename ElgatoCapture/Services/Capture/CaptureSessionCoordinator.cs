@@ -365,12 +365,11 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
             : null;
     }
 
-    internal void FlashbackClearInOutPoints()
+    internal bool FlashbackClearInOutPoints()
     {
-        if (TryGetActiveFlashback(out var controller))
-        {
-            controller.ClearInOutPoints();
-        }
+        if (!TryGetActiveFlashback(out var controller)) return false;
+        controller.ClearInOutPoints();
+        return true;
     }
 
     internal Task<FinalizeResult> ExportFlashbackRangeAsync(

@@ -274,7 +274,11 @@ public sealed partial class MainWindow
     }
     private void FlashbackClearButton_Click(object sender, RoutedEventArgs e)
     {
-        ViewModel.FlashbackClearInOutPoints();
+        if (!ViewModel.FlashbackClearInOutPoints())
+        {
+            Logger.Log("FLASHBACK_UI_CLEAR_INOUT_REJECTED");
+            return;
+        }
         ViewModel.FlashbackInPoint = null;
         ViewModel.FlashbackOutPoint = null;
     }
