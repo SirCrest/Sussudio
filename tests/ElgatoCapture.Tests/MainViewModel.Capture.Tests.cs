@@ -102,6 +102,10 @@ static partial class Program
         AssertMemberContains(automationText, "UpdateFlashbackBufferStatus", "FlashbackState = FlashbackPlaybackState.Live;");
         AssertMemberContains(automationText, "UpdateFlashbackBitrate", "_sessionCoordinator.FlashbackTotalBytesWritten");
         AssertContains(captureServiceText, "public long FlashbackTotalBytesWritten => _flashbackBufferManager?.TotalBytesWritten ?? 0;");
+        AssertContains(captureServiceText, "ReferenceEquals(sender, _wasapiAudioCapture)");
+        AssertContains(captureServiceText, "ReferenceEquals(sender, _microphoneCapture)");
+        AssertContains(captureServiceText, "WASAPI_CAPTURE_FAILED source={source}");
+        AssertContains(captureServiceText, "Volatile.Write(ref _wasapiAudioCaptureFaultMessage, $\"{source}: {ex.Message}\");");
         AssertMemberContains(automationText, "ExportFlashbackAsync", "_sessionCoordinator.ExportFlashbackRangeAsync(");
         AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
         AssertMemberContains(automationText, "ExportFlashbackAsync", "if (!isCurrent) return;");

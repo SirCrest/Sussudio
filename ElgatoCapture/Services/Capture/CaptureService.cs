@@ -2381,14 +2381,21 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private void OnWasapiCaptureFailed(object? sender, Exception ex)
     {
+        var source = ReferenceEquals(sender, _wasapiAudioCapture)
+            ? "program"
+            : ReferenceEquals(sender, _microphoneCapture)
+                ? "microphone"
+                : "unknown";
+
         if (_isRecording)
         {
             Volatile.Write(ref _wasapiAudioCaptureFaulted, true);
-            Volatile.Write(ref _wasapiAudioCaptureFaultMessage, ex.Message);
+            Volatile.Write(ref _wasapiAudioCaptureFaultMessage, $"{source}: {ex.Message}");
         }
 
-        Logger.Log($"WASAPI_CAPTURE_FAILED type={ex.GetType().Name} hr=0x{ex.HResult:X8} message={ex.Message} recording={_isRecording}");
-        StatusChanged?.Invoke(this, $"Audio capture error: {ex.Message}");
+        Logger.Log($"WASAPI_CAPTURE_FAILED source={source} type={ex.GetType().Name} hr=0x{ex.HResult:X8} message={ex.Message} recording={_isRecording}");
+        var statusPrefix = source == "microphone" ? "Microphone capture error" : "Audio capture error";
+        StatusChanged?.Invoke(this, $"{statusPrefix}: {ex.Message}");
         ErrorOccurred?.Invoke(this, ex);
     }
 
