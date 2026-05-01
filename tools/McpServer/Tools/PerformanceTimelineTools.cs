@@ -43,7 +43,9 @@ public static class PerformanceTimelineTools
                 VidDrops = AutomationSnapshotFormatter.GetLong(item, "VideoDrops"),
                 CaptureAvgMs = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceAverageMs"),
                 CaptureP95Ms = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceP95Ms"),
+                CaptureP99Ms = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceP99Ms"),
                 CaptureMaxMs = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceMaxMs"),
+                CaptureOnePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceOnePercentLowFps"),
                 PreviewAvgMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceAverageMs"),
                 PreviewP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceP95Ms"),
                 PreviewMaxMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceMaxMs"),
@@ -67,17 +69,19 @@ public static class PerformanceTimelineTools
         var builder = new StringBuilder();
         builder.AppendLine($"Performance Timeline ({entries.Count} samples)");
         builder.AppendLine();
-        builder.AppendLine("Timestamp                | CapAvg | CapP95 | PrvAvg | PrvP95 | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
+        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
         builder.AppendLine(new string('-', 160));
 
         foreach (var e in entries)
         {
             builder.AppendLine(string.Format(
                 CultureInfo.InvariantCulture,
-                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,6:F1} | {5,4} | {6,7} | {7,5} | {8,6:F1} | {9,6:F1} | {10,4} | {11,4} | {12,4} | {13,4:F1} | {14,4} | {15,4}",
+                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,4} | {8,7} | {9,5} | {10,6:F1} | {11,6:F1} | {12,4} | {13,4} | {14,4} | {15,4:F1} | {16,4} | {17,4}",
                 e.Timestamp,
                 e.CaptureAvgMs,
                 e.CaptureP95Ms,
+                e.CaptureP99Ms,
+                e.CaptureOnePercentLowFps,
                 e.PreviewAvgMs,
                 e.PreviewP95Ms,
                 e.VidQueue,
@@ -101,11 +105,13 @@ public static class PerformanceTimelineTools
             builder.AppendLine("== Trend Summary (first vs last sample) ==");
             builder.AppendLine($"Capture Avg:    {first.CaptureAvgMs:F1}ms -> {last.CaptureAvgMs:F1}ms (delta: {last.CaptureAvgMs - first.CaptureAvgMs:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Capture P95:    {first.CaptureP95Ms:F1}ms -> {last.CaptureP95Ms:F1}ms (delta: {last.CaptureP95Ms - first.CaptureP95Ms:+0.0;-0.0;0.0}ms)");
+            builder.AppendLine($"Capture P99:    {first.CaptureP99Ms:F1}ms -> {last.CaptureP99Ms:F1}ms (delta: {last.CaptureP99Ms - first.CaptureP99Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Capture Max:    {first.CaptureMaxMs:F1}ms -> {last.CaptureMaxMs:F1}ms (delta: {last.CaptureMaxMs - first.CaptureMaxMs:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview Avg:    {first.PreviewAvgMs:F1}ms -> {last.PreviewAvgMs:F1}ms (delta: {last.PreviewAvgMs - first.PreviewAvgMs:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview P95:    {first.PreviewP95Ms:F1}ms -> {last.PreviewP95Ms:F1}ms (delta: {last.PreviewP95Ms - first.PreviewP95Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview Max:    {first.PreviewMaxMs:F1}ms -> {last.PreviewMaxMs:F1}ms (delta: {last.PreviewMaxMs - first.PreviewMaxMs:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Capture Rate:   {first.CaptureFps:F1}fps -> {last.CaptureFps:F1}fps (derived avg)");
+            builder.AppendLine($"Capture 1% Low: {first.CaptureOnePercentLowFps:F1}fps -> {last.CaptureOnePercentLowFps:F1}fps");
             builder.AppendLine($"Preview Rate:   {first.PreviewFps:F1}fps -> {last.PreviewFps:F1}fps (derived avg)");
             builder.AppendLine($"Video Drops:    {first.VidDrops} -> {last.VidDrops} (delta: {last.VidDrops - first.VidDrops:+0;-0;0})");
             builder.AppendLine($"Working Set:    {first.WorkingMb:F1}MB -> {last.WorkingMb:F1}MB (delta: {last.WorkingMb - first.WorkingMb:+0.0;-0.0;0.0}MB)");
@@ -132,7 +138,9 @@ public static class PerformanceTimelineTools
         public long VidDrops { get; init; }
         public double CaptureAvgMs { get; init; }
         public double CaptureP95Ms { get; init; }
+        public double CaptureP99Ms { get; init; }
         public double CaptureMaxMs { get; init; }
+        public double CaptureOnePercentLowFps { get; init; }
         public double PreviewAvgMs { get; init; }
         public double PreviewP95Ms { get; init; }
         public double PreviewMaxMs { get; init; }

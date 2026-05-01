@@ -930,7 +930,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             CaptureCadenceExpectedIntervalMs = health.CaptureCadenceExpectedIntervalMs,
             CaptureCadenceAverageIntervalMs = health.CaptureCadenceAverageIntervalMs,
             CaptureCadenceP95IntervalMs = health.CaptureCadenceP95IntervalMs,
+            CaptureCadenceP99IntervalMs = health.CaptureCadenceP99IntervalMs,
             CaptureCadenceMaxIntervalMs = health.CaptureCadenceMaxIntervalMs,
+            CaptureCadenceOnePercentLowFps = health.CaptureCadenceOnePercentLowFps,
             CaptureCadenceJitterStdDevMs = health.CaptureCadenceJitterStdDevMs,
             CaptureCadenceSevereGapCount = health.CaptureCadenceSevereGapCount,
             CaptureCadenceEstimatedDroppedFrames = health.CaptureCadenceEstimatedDroppedFrames,
@@ -1175,7 +1177,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 VideoDrops = snapshot.VideoDropsQueueSaturated,
                 CaptureCadenceAverageMs = snapshot.CaptureCadenceAverageIntervalMs,
                 CaptureCadenceP95Ms = snapshot.CaptureCadenceP95IntervalMs,
+                CaptureCadenceP99Ms = snapshot.CaptureCadenceP99IntervalMs,
                 CaptureCadenceMaxMs = snapshot.CaptureCadenceMaxIntervalMs,
+                CaptureCadenceOnePercentLowFps = snapshot.CaptureCadenceOnePercentLowFps,
                 PreviewCadenceAverageMs = snapshot.PreviewCadenceAverageIntervalMs,
                 PreviewCadenceP95Ms = snapshot.PreviewCadenceP95IntervalMs,
                 PreviewCadenceP99Ms = snapshot.PreviewCadenceP99IntervalMs,
@@ -1471,7 +1475,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             ? $"{1000.0 / health.ExpectedFrameRate:0.##}ms"
             : "n/a";
         var sourceLane =
-            $"source target={sourceTarget} avg={health.CaptureCadenceAverageIntervalMs:0.##}ms p95={health.CaptureCadenceP95IntervalMs:0.##}ms max={health.CaptureCadenceMaxIntervalMs:0.##}ms rate={health.CaptureCadenceObservedFps:0.##}/{health.ExpectedFrameRate:0.##}fps gaps={health.CaptureCadenceSevereGapCount} drops={health.CaptureCadenceEstimatedDroppedFrames} ({health.CaptureCadenceEstimatedDropPercent:0.###}%)";
+            $"source target={sourceTarget} avg={health.CaptureCadenceAverageIntervalMs:0.##}ms p95={health.CaptureCadenceP95IntervalMs:0.##}ms p99={health.CaptureCadenceP99IntervalMs:0.##}ms max={health.CaptureCadenceMaxIntervalMs:0.##}ms rate={health.CaptureCadenceObservedFps:0.##}/{health.ExpectedFrameRate:0.##}fps 1pctLow={health.CaptureCadenceOnePercentLowFps:0.##}fps gaps={health.CaptureCadenceSevereGapCount} drops={health.CaptureCadenceEstimatedDroppedFrames} ({health.CaptureCadenceEstimatedDropPercent:0.###}%)";
         var decodeLane =
             $"decode p95={health.MjpegDecodeP95Ms:0.##}ms callbackP95={health.MjpegCallbackP95Ms:0.##}ms dropped={health.MjpegTotalDropped} failures={health.MjpegDecodeFailures + health.MjpegEmitFailures}";
         var previewLane =

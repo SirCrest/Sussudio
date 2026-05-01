@@ -96,7 +96,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         double ExpectedIntervalMs,
         double AverageIntervalMs,
         double P95IntervalMs,
+        double P99IntervalMs,
         double MaxIntervalMs,
+        double OnePercentLowFps,
         double JitterStdDevMs,
         long SevereGapCount,
         long EstimatedDroppedFrames,
@@ -672,7 +674,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     ExpectedIntervalMs: expectedIntervalMs,
                     AverageIntervalMs: 0,
                     P95IntervalMs: 0,
+                    P99IntervalMs: 0,
                     MaxIntervalMs: 0,
+                    OnePercentLowFps: 0,
                     JitterStdDevMs: 0,
                     SevereGapCount: 0,
                     EstimatedDroppedFrames: 0,
@@ -728,7 +732,10 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         var sorted = (double[])samples.Clone();
         Array.Sort(sorted);
         var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
+        var p99Index = (int)Math.Ceiling((sorted.Length - 1) * 0.99);
         var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
+        var p99IntervalMs = sorted[Math.Clamp(p99Index, 0, sorted.Length - 1)];
+        var onePercentLowFps = p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0;
         var estimatedDropPercent = estimatedDroppedFrames * 100.0 / Math.Max(1, sampleCount + estimatedDroppedFrames);
 
         return new SourceCadenceMetrics(
@@ -737,7 +744,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             ExpectedIntervalMs: targetIntervalMs,
             AverageIntervalMs: average,
             P95IntervalMs: p95IntervalMs,
+            P99IntervalMs: p99IntervalMs,
             MaxIntervalMs: max,
+            OnePercentLowFps: onePercentLowFps,
             JitterStdDevMs: jitterStdDevMs,
             SevereGapCount: severeGapCount,
             EstimatedDroppedFrames: estimatedDroppedFrames,

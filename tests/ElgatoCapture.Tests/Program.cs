@@ -1230,6 +1230,8 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSlowFrames"), "AutomationSnapshot.FlashbackPlaybackSlowFrames");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSlowFramePercent"), "AutomationSnapshot.FlashbackPlaybackSlowFramePercent");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackOnePercentLowFps"), "AutomationSnapshot.FlashbackPlaybackOnePercentLowFps");
+        AssertNotNull(snapshotType.GetProperty("CaptureCadenceP99IntervalMs"), "AutomationSnapshot.CaptureCadenceP99IntervalMs");
+        AssertNotNull(snapshotType.GetProperty("CaptureCadenceOnePercentLowFps"), "AutomationSnapshot.CaptureCadenceOnePercentLowFps");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsEnqueued"), "AutomationSnapshot.FlashbackPlaybackCommandsEnqueued");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsProcessed"), "AutomationSnapshot.FlashbackPlaybackCommandsProcessed");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsDropped"), "AutomationSnapshot.FlashbackPlaybackCommandsDropped");

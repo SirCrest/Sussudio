@@ -614,7 +614,9 @@ public sealed class AutomationSnapshot
     public double CaptureCadenceExpectedIntervalMs { get; init; }
     public double CaptureCadenceAverageIntervalMs { get; init; }
     public double CaptureCadenceP95IntervalMs { get; init; }
+    public double CaptureCadenceP99IntervalMs { get; init; }
     public double CaptureCadenceMaxIntervalMs { get; init; }
+    public double CaptureCadenceOnePercentLowFps { get; init; }
     public double CaptureCadenceJitterStdDevMs { get; init; }
     public long CaptureCadenceSevereGapCount { get; init; }
     public long CaptureCadenceEstimatedDroppedFrames { get; init; }
@@ -863,7 +865,9 @@ public sealed class PerformanceTimelineEntry
     public long VideoDrops { get; init; }
     public double CaptureCadenceAverageMs { get; init; }
     public double CaptureCadenceP95Ms { get; init; }
+    public double CaptureCadenceP99Ms { get; init; }
     public double CaptureCadenceMaxMs { get; init; }
+    public double CaptureCadenceOnePercentLowFps { get; init; }
     public double PreviewCadenceAverageMs { get; init; }
     public double PreviewCadenceP95Ms { get; init; }
     public double PreviewCadenceP99Ms { get; init; }

@@ -1215,7 +1215,7 @@ public sealed partial class MainWindow
         }
 
         var sourceEvidence =
-            $"source target={FormatFrameBudgetMs(health.ExpectedFrameRate)} avg={Sanitize(health.CaptureCadenceAverageIntervalMs):0.##}ms p95={Sanitize(health.CaptureCadenceP95IntervalMs):0.##}ms max={Sanitize(health.CaptureCadenceMaxIntervalMs):0.##}ms rate={Sanitize(health.CaptureCadenceObservedFps):0.##}/{Sanitize(health.ExpectedFrameRate):0.##}fps gaps={health.CaptureCadenceSevereGapCount} drops={health.CaptureCadenceEstimatedDroppedFrames} ({sourceDropPercent:0.###}%)";
+            $"source target={FormatFrameBudgetMs(health.ExpectedFrameRate)} avg={Sanitize(health.CaptureCadenceAverageIntervalMs):0.##}ms p95={Sanitize(health.CaptureCadenceP95IntervalMs):0.##}ms p99={Sanitize(health.CaptureCadenceP99IntervalMs):0.##}ms max={Sanitize(health.CaptureCadenceMaxIntervalMs):0.##}ms rate={Sanitize(health.CaptureCadenceObservedFps):0.##}/{Sanitize(health.ExpectedFrameRate):0.##}fps 1pctLow={Sanitize(health.CaptureCadenceOnePercentLowFps):0.##}fps gaps={health.CaptureCadenceSevereGapCount} drops={health.CaptureCadenceEstimatedDroppedFrames} ({sourceDropPercent:0.###}%)";
 
         if (health.CaptureCadenceSampleCount < 30 || (isPreviewing && presentSampleCount == 0))
         {
