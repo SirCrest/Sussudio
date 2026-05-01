@@ -549,7 +549,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         }
         finally
         {
-            Exception failure = _isDisposed
+            Exception failure = Volatile.Read(ref _isDisposed)
                 ? new ObjectDisposedException(nameof(CaptureSessionCoordinator))
                 : new OperationCanceledException("Capture session coordinator stopped.");
             FailPendingCommands(failure);
@@ -569,7 +569,7 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
 
     private void ThrowIfDisposed()
     {
-        if (_isDisposed)
+        if (Volatile.Read(ref _isDisposed))
         {
             throw new ObjectDisposedException(nameof(CaptureSessionCoordinator));
         }
@@ -603,8 +603,8 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     {
         lock (_disposeLock)
         {
-            if (_isDisposed) return false;
-            _isDisposed = true;
+            if (Volatile.Read(ref _isDisposed)) return false;
+            Volatile.Write(ref _isDisposed, true);
         }
         return true;
     }

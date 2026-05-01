@@ -106,6 +106,9 @@ static partial class Program
         AssertContains(captureServiceText, "ReferenceEquals(sender, _microphoneCapture)");
         AssertContains(captureServiceText, "WASAPI_CAPTURE_FAILED source={source}");
         AssertContains(captureServiceText, "Volatile.Write(ref _wasapiAudioCaptureFaultMessage, $\"{source}: {ex.Message}\");");
+        AssertContains(coordinatorText, "if (Volatile.Read(ref _isDisposed))");
+        AssertContains(coordinatorText, "Volatile.Write(ref _isDisposed, true);");
+        AssertContains(coordinatorText, "Exception failure = Volatile.Read(ref _isDisposed)");
         AssertMemberContains(automationText, "ExportFlashbackAsync", "_sessionCoordinator.ExportFlashbackRangeAsync(");
         AssertMemberContains(automationText, "SaveFlashbackLast5mAsync", "_sessionCoordinator.ExportFlashbackLastNSecondsAsync(");
         AssertMemberContains(automationText, "ExportFlashbackAsync", "if (!isCurrent) return;");
