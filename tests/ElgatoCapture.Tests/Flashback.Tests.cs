@@ -489,6 +489,10 @@ static partial class Program
             method.Invoke(null, new object?[] { "Flashback buffer not active" })?.ToString(),
             "inactive buffer export rejection is classified");
         AssertEqual(
+            "InvalidRequest",
+            method.Invoke(null, new object?[] { "Flashback export duration must be finite, greater than zero, and within TimeSpan range." })?.ToString(),
+            "invalid duration export rejection is classified");
+        AssertEqual(
             "UnavailableDuringRecording",
             method.Invoke(null, new object?[] { "Cannot export while Flashback is the active recording backend." })?.ToString(),
             "recording backend export rejection is classified");

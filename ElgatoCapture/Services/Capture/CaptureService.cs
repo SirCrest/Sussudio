@@ -1076,7 +1076,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             return "Cancelled";
         }
 
-        if (ContainsFlashbackExportFailureText(statusMessage, "request is required"))
+        if (ContainsFlashbackExportFailureText(statusMessage, "request is required") ||
+            ContainsFlashbackExportFailureText(statusMessage, "duration must be finite"))
         {
             return "InvalidRequest";
         }
