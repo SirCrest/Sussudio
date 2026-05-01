@@ -106,6 +106,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private string _lastCommandQueued = "None";
     private string _lastCommandProcessed = "None";
     private string _lastCommandFailure = string.Empty;
+    private long _latestScrubUpdateTicks;
+    private int _scrubUpdateCommandQueued;
 
     // --- Deferred frame release for D3D11VA (C1 fix) ---
     // The renderer's render thread hasn't copied the texture yet when we release.
@@ -230,7 +232,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public void UpdateScrub(TimeSpan position)
     {
         if (IsNotReady(CommandKind.UpdateScrub)) return;
-        SendCommand(new PlaybackCommand { Kind = CommandKind.UpdateScrub, Position = position });
+        Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
+        if (Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0)
+        {
+            Interlocked.Increment(ref _commandsDropped);
+            return;
+        }
+
+        if (!SendCommand(new PlaybackCommand { Kind = CommandKind.UpdateScrub, Position = position }))
+        {
+            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
+        }
     }
 
     public void EndScrub()
@@ -307,7 +319,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- Command dispatch ---
 
-    private void SendCommand(PlaybackCommand command)
+    private bool SendCommand(PlaybackCommand command)
     {
         var queuedCommand = new PlaybackCommand
         {
@@ -322,13 +334,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Interlocked.Increment(ref _commandsDropped);
             _lastCommandFailure = $"write_failed:{command.Kind}";
             Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP kind={command.Kind}");
-            return;
+            return false;
         }
 
         Interlocked.Increment(ref _commandsEnqueued);
         UpdateMaxPendingCommands(Interlocked.Increment(ref _pendingCommands));
         Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         _lastCommandQueued = command.Kind.ToString();
+        return true;
     }
 
     private void EnsurePlaybackThread()
@@ -544,6 +557,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         break;
 
                     case CommandKind.UpdateScrub:
+                        Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
+                        cmd = cmd with { Position = TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks)) };
                         if (!isScrubbing) break;
                         // Drain stale UpdateScrub commands only. Leave control commands queued
                         // so their latency/accounting stays tied to the original command.
@@ -556,6 +571,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             }
 
                             TrackCommandDequeued(newer);
+                            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
+                            newer = newer with { Position = TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks)) };
                             cmd = newer;
                         }
                         decoder ??= CreateDecoder();
@@ -800,6 +817,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             Interlocked.Exchange(ref _pendingCommands, 0);
         }
+
+        Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
     }
 
     // --- Decode helpers ---

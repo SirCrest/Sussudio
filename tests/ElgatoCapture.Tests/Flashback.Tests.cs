@@ -634,11 +634,28 @@ static partial class Program
             sourceText,
             "case CommandKind.UpdateScrub:",
             "                    case CommandKind.EndScrub:");
+        var updateScrubMethod = ExtractTextBetween(
+            sourceText,
+            "public void UpdateScrub(TimeSpan position)",
+            "    public void EndScrub()");
+        var drainAbandonedCommands = ExtractTextBetween(
+            sourceText,
+            "private void DrainAbandonedCommandsOnThreadExit()",
+            "    // --- Decode helpers ---");
 
+        AssertContains(sourceText, "private long _latestScrubUpdateTicks;");
+        AssertContains(sourceText, "private int _scrubUpdateCommandQueued;");
+        AssertContains(updateScrubMethod, "Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);");
+        AssertContains(updateScrubMethod, "Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0");
+        AssertContains(updateScrubMethod, "Interlocked.Increment(ref _commandsDropped);");
+        AssertContains(updateScrubMethod, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
+        AssertContains(updateScrubBlock, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
+        AssertContains(updateScrubBlock, "TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks))");
         AssertContains(updateScrubBlock, "_commandChannel.Reader.TryPeek(out var newer) &&\n                               newer.Kind == CommandKind.UpdateScrub");
         AssertContains(updateScrubBlock, "if (!_commandChannel.Reader.TryRead(out newer))");
         AssertContains(updateScrubBlock, "TrackCommandDequeued(newer);");
         AssertContains(updateScrubBlock, "cmd = newer;");
+        AssertContains(drainAbandonedCommands, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
         AssertDoesNotContain(updateScrubBlock, "SendCommand(newer)");
         AssertDoesNotContain(updateScrubBlock, "Non-scrub command consumed");
 
