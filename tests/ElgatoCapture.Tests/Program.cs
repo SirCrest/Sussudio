@@ -694,6 +694,9 @@ static partial class Program
                 "Flashback exporter rejects empty segment paths",
                 FlashbackExporter_RejectsEmptySegmentPaths),
             await RunCheckAsync(
+                "Flashback exporter rejects duplicate segment paths",
+                FlashbackExporter_RejectsDuplicateSegmentPaths),
+            await RunCheckAsync(
                 "Flashback exporter progress callbacks are best effort",
                 FlashbackExporter_ProgressCallbacksAreBestEffort),
             await RunCheckAsync(

@@ -585,6 +585,72 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_RejectsDuplicateSegmentPaths()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(sourceText, "var duplicateSegmentIndex = FindDuplicateSegmentPathIndex(segments);");
+        AssertContains(sourceText, "Flashback export failed: duplicate segment path at index {duplicateSegmentIndex}.");
+        AssertContains(sourceText, "private static int FindDuplicateSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
+
+        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_duplicate_segment_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var exporter = Activator.CreateInstance(exporterType)!;
+            try
+            {
+                var segmentPath = Path.Combine(tempDir, "segment-0.ts");
+                File.WriteAllText(segmentPath, "segment");
+
+                var firstSegment = Activator.CreateInstance(segmentType)!;
+                SetPropertyBackingField(firstSegment, "Path", segmentPath);
+                var duplicateSegment = Activator.CreateInstance(segmentType)!;
+                SetPropertyBackingField(duplicateSegment, "Path", Path.Combine(tempDir, ".", "segment-0.ts"));
+
+                var segments = Array.CreateInstance(segmentType, 2);
+                segments.SetValue(firstSegment, 0);
+                segments.SetValue(duplicateSegment, 1);
+                var outputPath = Path.Combine(tempDir, "duplicate-segment-export.mp4");
+
+                var exportSegmentsCore = exporterType.GetMethod("ExportSegmentsCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                    ?? throw new InvalidOperationException("FlashbackExporter.ExportSegmentsCore not found.");
+
+                var result = exportSegmentsCore.Invoke(exporter, new object?[]
+                {
+                    segments,
+                    TimeSpan.Zero,
+                    TimeSpan.FromSeconds(1),
+                    outputPath,
+                    true,
+                    null,
+                    CancellationToken.None
+                }) ?? throw new InvalidOperationException("ExportSegmentsCore returned null.");
+
+                AssertEqual(false, GetBoolProperty(result, "Succeeded"), "Duplicate segment path export reports failure");
+                AssertContains(GetStringProperty(result, "StatusMessage"), "duplicate segment path at index 1");
+                AssertEqual(false, File.Exists(outputPath), "Duplicate segment path export does not create output");
+                AssertEqual(false, File.Exists(outputPath + ".tmp"), "Duplicate segment path export does not leave temp output");
+            }
+            finally
+            {
+                if (exporter is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackExporter_ProgressCallbacksAreBestEffort()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")

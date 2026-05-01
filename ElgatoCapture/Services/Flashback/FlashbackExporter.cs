@@ -588,6 +588,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, message);
         }
 
+        var duplicateSegmentIndex = FindDuplicateSegmentPathIndex(segments);
+        if (duplicateSegmentIndex >= 0)
+        {
+            var message = $"Flashback export failed: duplicate segment path at index {duplicateSegmentIndex}.";
+            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+            return FinalizeResult.Failure(outputPath, message);
+        }
+
         if (!TryValidateOutputDirectory(outputPath, out var outputPathFailure))
         {
             Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'");
@@ -1685,6 +1693,22 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             if (string.IsNullOrWhiteSpace(segments[i].Path))
             {
                 return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static int FindDuplicateSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)
+    {
+        for (var i = 1; i < segments.Count; i++)
+        {
+            for (var previous = 0; previous < i; previous++)
+            {
+                if (IsSamePath(segments[previous].Path, segments[i].Path))
+                {
+                    return i;
+                }
             }
         }
 
