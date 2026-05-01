@@ -1387,7 +1387,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Interlocked.Increment(ref _playbackNearLiveSnaps);
             var gapMs = (absoluteLatestPts - absoluteFramePts).TotalMilliseconds;
             Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)bufferPosition.TotalMilliseconds} framePts_ms={(long)absoluteFramePts.TotalMilliseconds} latestPts_ms={(long)absoluteLatestPts.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
-            if (decoder.IsOpen) decoder.CloseFile();
+            CloseDecoderFileBestEffort(decoder, "near_live");
             fileOpen = false;
             _currentOpenFilePath = null;
             _decoderHwAccel = "N/A";
@@ -1536,7 +1536,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var gapMs = (bufDur - pos).TotalMilliseconds;
         Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_SNAP_TO_LIVE error='{ex.Message}' pos_ms={(long)pos.TotalMilliseconds} bufferDur_ms={(long)bufDur.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
         Logger.Log($"FLASHBACK_PLAYBACK_DECODE_ERROR_STACK {ex.StackTrace?.Replace("\r\n", " | ")}");
-        if (decoder.IsOpen) decoder.CloseFile();
+        CloseDecoderFileBestEffort(decoder, "decode_error");
         fileOpen = false;
         _currentOpenFilePath = null;
         _decoderHwAccel = "N/A";
@@ -1546,6 +1546,18 @@ internal sealed class FlashbackPlaybackController : IDisposable
         RestoreLiveAudio();
         SafeResumePreviewSubmission("decode_error");
         SetState(FlashbackPlaybackState.Live);
+    }
+
+    private static void CloseDecoderFileBestEffort(FlashbackDecoder decoder, string operation)
+    {
+        try
+        {
+            if (decoder.IsOpen) decoder.CloseFile();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 
     /// <summary>
