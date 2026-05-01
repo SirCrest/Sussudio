@@ -998,6 +998,31 @@ static partial class Program
         AssertContains(flashbackToolsText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(flashbackToolsText, "if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)");
         AssertContains(flashbackToolsText, "Flashback export seconds must be finite, greater than zero, and within TimeSpan range.");
+        AssertContains(flashbackToolsText, "AutomationSnapshotFormatter.Get(data, \"FailureKind\", string.Empty)");
+        AssertContains(flashbackToolsText, "FailureKind: {failureKind}");
+
+        var exportPipeName = NewMcpToolPipeName("flashback-export-failure-kind");
+        var exportPipeClient = CreateMcpPipeClient(exportPipeName);
+        var exportRequests = await CapturePipeRequestsAsync(
+                exportPipeName,
+                expectedCount: 1,
+                async () =>
+                {
+                    result = await InvokeMcpToolStringAsync(
+                            flashbackTools,
+                            "flashback_export",
+                            exportPipeClient,
+                            1d,
+                            "temp/fb-failure-kind.mp4",
+                            false)
+                        .ConfigureAwait(false);
+                },
+                _ => "{\"Success\":false,\"Message\":\"Flashback buffer not active\",\"Data\":{\"Succeeded\":false,\"OutputPath\":\"temp/fb-failure-kind.mp4\",\"StatusMessage\":\"Flashback buffer not active\",\"FailureKind\":\"BufferInactive\",\"FileSizeBytes\":0}}")
+            .ConfigureAwait(false);
+
+        AssertCommandRequest(exportRequests[0], "FlashbackExport", ("seconds", 1d), ("outputPath", "temp/fb-failure-kind.mp4"), ("useSelectionRange", false));
+        AssertContains(result, "[ERROR] FlashbackExport: Flashback buffer not active");
+        AssertContains(result, "FailureKind: BufferInactive");
     }
 
     private static async Task McpPreviewColorProbeTool_FormatsProbeResponses()

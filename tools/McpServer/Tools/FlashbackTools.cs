@@ -110,6 +110,12 @@ public static class FlashbackTools
 
         if (response.TryGetProperty("Data", out var data) && data.ValueKind == JsonValueKind.Object)
         {
+            var failureKind = AutomationSnapshotFormatter.Get(data, "FailureKind", string.Empty);
+            if (!string.IsNullOrWhiteSpace(failureKind))
+            {
+                builder.AppendLine($"FailureKind: {failureKind}");
+            }
+
             builder.AppendLine($"Data: {data}");
         }
 
