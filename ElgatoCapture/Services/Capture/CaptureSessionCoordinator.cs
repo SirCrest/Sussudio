@@ -85,6 +85,20 @@ internal readonly record struct FlashbackPlaybackSnapshot(
         0,
         string.Empty,
         0);
+
+    public static FlashbackPlaybackSnapshot Inactive(
+        string lastCommandFailure,
+        long lastCommandFailureUtcUnixMs) => new(
+        false,
+        FlashbackPlaybackState.Disabled,
+        TimeSpan.Zero,
+        TimeSpan.Zero,
+        null,
+        null,
+        false,
+        0,
+        lastCommandFailure,
+        lastCommandFailureUtcUnixMs);
 }
 
 internal readonly record struct FlashbackBufferStatus(
@@ -120,6 +134,8 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
     private long _commandsCanceled;
     private long _lastCommandQueueLatencyMs;
     private long _maxCommandQueueLatencyMs;
+    private long _lastFlashbackCommandRejectionUtcUnixMs;
+    private string _lastFlashbackCommandRejection = string.Empty;
     private readonly Queue<DateTimeOffset> _pendingCommandEnqueuedAtUtc = new();
     private DateTimeOffset _lastTransitionUtc = DateTimeOffset.UtcNow;
     private CaptureCommandKind? _lastCommand;
@@ -320,7 +336,9 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
         ThrowIfDisposed();
         var controller = _captureService.FlashbackPlaybackController;
         return controller == null || controller.IsDisposed
-            ? FlashbackPlaybackSnapshot.Disabled
+            ? FlashbackPlaybackSnapshot.Inactive(
+                _lastFlashbackCommandRejection,
+                Interlocked.Read(ref _lastFlashbackCommandRejectionUtcUnixMs))
             : new FlashbackPlaybackSnapshot(
                 true,
                 controller.State,
@@ -451,6 +469,8 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
                 : !controller.IsInitialized
                 ? "not_initialized"
                 : $"state_{controller.State}";
+        _lastFlashbackCommandRejection = $"{reason}:{command}";
+        Interlocked.Exchange(ref _lastFlashbackCommandRejectionUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         Logger.Log($"FLASHBACK_COORD_COMMAND_REJECTED command={command} reason={reason}");
         return false;
     }
