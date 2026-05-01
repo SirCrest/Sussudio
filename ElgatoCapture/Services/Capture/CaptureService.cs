@@ -509,7 +509,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
+            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
             return FailFlashbackExport(outputPath, "Flashback export cancelled.");
+        }
+        catch
+        {
+            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
+            throw;
         }
         finally
         {
@@ -532,10 +538,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         finally
         {
-            if (backendLeaseHeld)
-            {
-                _flashbackBackendLeaseLock.Release();
-            }
+            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
         }
     }
 
@@ -587,7 +590,13 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
+            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
             return FailFlashbackExport(outputPath, "Flashback export cancelled.");
+        }
+        catch
+        {
+            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
+            throw;
         }
         finally
         {
@@ -607,11 +616,19 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         finally
         {
-            if (backendLeaseHeld)
-            {
-                _flashbackBackendLeaseLock.Release();
-            }
+            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
         }
+    }
+
+    private void ReleaseFlashbackBackendLeaseIfHeld(ref bool backendLeaseHeld)
+    {
+        if (!backendLeaseHeld)
+        {
+            return;
+        }
+
+        backendLeaseHeld = false;
+        _flashbackBackendLeaseLock.Release();
     }
 
     private FinalizeResult FailFlashbackExport(string outputPath, string statusMessage)

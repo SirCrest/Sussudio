@@ -281,6 +281,9 @@ static partial class Program
         AssertContains(captureServiceText, "var exportOperationLockHeld = false;");
         AssertContains(captureServiceText, "exportOperationLockHeld = true;");
         AssertContains(captureServiceText, "catch (OperationCanceledException) when (ct.IsCancellationRequested)");
+        AssertContains(captureServiceText, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
+        AssertContains(captureServiceText, "private void ReleaseFlashbackBackendLeaseIfHeld(ref bool backendLeaseHeld)");
+        AssertContains(captureServiceText, "backendLeaseHeld = false;\n        _flashbackBackendLeaseLock.Release();");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\");");
         AssertContains(captureServiceText, "var exportId = 0L;");
         AssertContains(captureServiceText, "var evictionPaused = false;");
