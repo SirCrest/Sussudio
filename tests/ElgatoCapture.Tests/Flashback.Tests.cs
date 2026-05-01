@@ -1273,6 +1273,8 @@ static partial class Program
         AssertContains(sourceText, "Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);\n                        RestoreLiveAudio();\n                        SafeResumePreviewSubmission(\"thread_stop\");\n                        SetState(FlashbackPlaybackState.Live);");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!EnsurePlaybackThread()) return false;\n        return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
         AssertContains(sourceText, "private bool EnsurePlaybackThread()");
+        AssertContains(sourceText, "private readonly object _playbackThreadSync = new();");
+        AssertContains(sourceText, "lock (_playbackThreadSync)");
         AssertContains(sourceText, "private const int CommandQueueCapacity = 256;");
         AssertContains(sourceText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
         AssertContains(sourceText, "private Channel<PlaybackCommand> _commandChannel = CreateCommandChannel();");

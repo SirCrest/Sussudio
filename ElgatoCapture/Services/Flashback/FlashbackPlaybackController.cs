@@ -163,6 +163,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private const int CommandQueueCapacity = 256;
     private const double FallbackPlaybackFrameRate = 60.0;
     private const double MaxPlaybackFrameRate = 1000.0;
+    private readonly object _playbackThreadSync = new();
     private Thread? _playbackThread;
     private int _playbackThreadStarted;
     private CancellationTokenSource? _playCts;
@@ -382,6 +383,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private bool EnsurePlaybackThread()
     {
+        lock (_playbackThreadSync)
+        {
         if (_disposedFlag != 0) return false;
         if (Interlocked.CompareExchange(ref _playbackThreadStarted, 1, 0) != 0)
             return true;
@@ -413,10 +416,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_START");
         return true;
+        }
     }
 
     private void StopPlaybackThread()
     {
+        lock (_playbackThreadSync)
+        {
         var thread = _playbackThread;
         if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })
         {
@@ -452,6 +458,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Interlocked.Exchange(ref _pendingCommands, 0);
             Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
             Volatile.Write(ref _playbackThreadStarted, 0);
+        }
         }
     }
 
