@@ -421,7 +421,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         _commandChannel.Writer.TryComplete();
 
-        try { _playCts?.Cancel(); } catch { /* Best-effort: CTS cancel during stop must not prevent thread join */ }
+        try
+        {
+            _playCts?.Cancel();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+        }
 
         var threadExited = true;
         if (thread is { IsAlive: true })

@@ -772,6 +772,7 @@ static partial class Program
         AssertContains(sourceText, "if (_disposedFlag != 0)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT\");\n                            isScrubbing = false;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"thread_disposed\");\n                            SetState(FlashbackPlaybackState.Live);\n                            return;\n                        }");
         AssertContains(sourceText, "catch (OperationCanceledException)\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_CANCELLED\");");
+        AssertContains(sourceText, "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_PLAYBACK_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'\");\n        }");
         AssertContains(sourceText, "finally\n        {\n            timeEndPeriod(1);");
         AssertContains(sourceText, "var threadExited = true;");
         AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT\");\n                threadExited = false;");
