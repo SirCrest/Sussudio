@@ -10,7 +10,7 @@ public static class DiagnosticSessionTools
     [McpServerTool, Description("Run a timed capture diagnostic session, write snapshot/frame-ledger/timeline artifacts, and optionally verify recording or capture PresentMon.")]
     public static async Task<string> run_diagnostic_session(
         PipeClient pipeClient,
-        [Description("Session scenario: observe, preview-only, recording-only, flashback, flashback-stress, flashback-scrub-stress, flashback-restart-cycle, flashback-lifecycle, flashback-export-concurrent, flashback-recording, flashback-export-rejected, or combined.")] string scenario = "observe",
+        [Description("Session scenario: observe, preview-only, recording-only, flashback, flashback-stress, flashback-scrub-stress, flashback-restart-cycle, flashback-export-playback, flashback-lifecycle, flashback-export-concurrent, flashback-recording, flashback-export-rejected, or combined.")] string scenario = "observe",
         [Description("Session duration in seconds. Use 0 for a single snapshot sample.")] int seconds = 10,
         [Description("Snapshot sample interval in milliseconds.")] int sampleIntervalMs = 1000,
         [Description("Optional artifact output directory. Defaults to temp/diagnostic-sessions/<timestamp>.")] string? outputDirectory = null,
