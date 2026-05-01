@@ -2935,7 +2935,8 @@ static partial class Program
         AssertContains(source, "SizeBytes = activeSizeBytes,");
         AssertContains(source, "var safeActiveSegmentBytes = Math.Max(0, activeSegmentBytes);");
         AssertContains(source, "_totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeActiveSegmentBytes);");
-        AssertContains(source, "_completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, freedBytes);");
+        AssertContains(source, "_completedSegmentBytes = GetCompletedSegmentBytesSaturated();");
+        AssertContains(source, "private long GetCompletedSegmentBytesSaturated()");
         AssertContains(source, "_totalDiskBytes = SubtractNonNegative(_totalDiskBytes, freedBytes);");
         AssertContains(source, "freedBytes = AddNonNegativeSaturated(freedBytes, _completedSegments[i].SizeBytes);");
         AssertContains(source, "FLASHBACK_BUFFER_DELETE_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
@@ -3552,8 +3553,10 @@ static partial class Program
         try
         {
             var completedPath = Path.Combine(tempDir, "completed-locked.ts");
+            var deletableCompletedPath = Path.Combine(tempDir, "completed-deletable.ts");
             var activePath = Path.Combine(tempDir, "fb_test_0003.ts");
             File.WriteAllBytes(completedPath, new byte[100]);
+            File.WriteAllBytes(deletableCompletedPath, new byte[200]);
             File.WriteAllBytes(activePath, new byte[50]);
 
             var onSegmentCompleted = manager.GetType().GetMethod("OnSegmentCompleted")
@@ -3570,18 +3573,29 @@ static partial class Program
                 TimeSpan.FromSeconds(1),
                 100L
             });
+            onSegmentCompleted.Invoke(manager, new object[]
+            {
+                deletableCompletedPath,
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(2),
+                200L
+            });
             updateDiskBytes.Invoke(manager, new object[] { 50L });
-            AssertEqual(150L, GetLongProperty(manager, "TotalDiskBytes"), "Setup should track completed plus active bytes");
+            AssertEqual(350L, GetLongProperty(manager, "TotalDiskBytes"), "Setup should track completed plus active bytes");
 
             lockedCompleted = new FileStream(completedPath, FileMode.Open, FileAccess.Read, FileShare.None);
             purgeCompleted.Invoke(manager, null);
 
             AssertEqual(false, File.Exists(activePath), "Partial purge should still delete stale active segment");
-            AssertEqual(100L, GetLongProperty(manager, "TotalDiskBytes"), "Partial purge subtracts deleted active bytes");
+            AssertEqual(false, File.Exists(deletableCompletedPath), "Partial purge deletes unlocked completed segments");
+            AssertEqual(true, File.Exists(completedPath), "Partial purge retains locked completed segments");
+            AssertEqual(100L, GetLongProperty(manager, "TotalDiskBytes"), "Partial purge subtracts deleted completed and active bytes");
+            AssertEqual(100L, (long)GetPrivateField(manager, "_completedSegmentBytes")!, "Partial purge preserves retained completed byte accounting");
             AssertEqual(0L, (long)GetPrivateField(manager, "_previousActiveSegmentBytes")!, "Partial purge resets active byte baseline");
 
             updateDiskBytes.Invoke(manager, new object[] { 25L });
-            AssertEqual(175L, GetLongProperty(manager, "TotalBytesWritten"), "Next active segment bytes are counted after purge baseline reset");
+            AssertEqual(125L, GetLongProperty(manager, "TotalDiskBytes"), "Next active bytes are added to retained completed bytes");
+            AssertEqual(375L, GetLongProperty(manager, "TotalBytesWritten"), "Next active segment bytes are counted after purge baseline reset");
         }
         finally
         {

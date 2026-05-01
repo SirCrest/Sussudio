@@ -244,7 +244,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             else
             {
                 // Partial purge — adjust byte counters for what we freed
-                _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, freedBytes);
+                _completedSegmentBytes = GetCompletedSegmentBytesSaturated();
                 _totalDiskBytes = SubtractNonNegative(_totalDiskBytes, freedBytes);
                 Logger.Log($"FLASHBACK_PURGE_PARTIAL freed={freedBytes} remaining_segments={_completedSegments.Count}");
             }
@@ -1364,6 +1364,18 @@ internal sealed class FlashbackBufferManager : IDisposable
         left = Math.Max(0, left);
         right = Math.Max(0, right);
         return left <= right ? 0 : left - right;
+    }
+
+    private long GetCompletedSegmentBytesSaturated()
+    {
+        // Must be called under _indexLock.
+        long total = 0;
+        foreach (var segment in _completedSegments)
+        {
+            total = AddNonNegativeSaturated(total, segment.SizeBytes);
+        }
+
+        return total;
     }
 
     private static long NonNegativeDeltaTicks(long latestTicks, long startTicks)
