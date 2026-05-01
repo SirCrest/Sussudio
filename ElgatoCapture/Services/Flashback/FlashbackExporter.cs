@@ -130,7 +130,11 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         // Signal any running export to cancel — ExportCore/ExportSegmentsCore will exit
         // via OperationCanceledException, clean up native state in their own finally block,
         // and release _exportLock before we acquire it.
-        try { disposeCts?.Cancel(); } catch (ObjectDisposedException) { /* Best-effort: CTS may already be disposed if Dispose races */ }
+        try { disposeCts?.Cancel(); }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_DISPOSE_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+        }
 
         // Wait for the export task to release the lock. The CTS is cancelled so
         // the task should exit promptly. Timeout prevents app hang if FFmpeg is stuck.
