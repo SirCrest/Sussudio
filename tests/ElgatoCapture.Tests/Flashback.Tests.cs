@@ -1451,6 +1451,10 @@ static partial class Program
         AssertContains(sourceText, "private readonly object _playbackThreadSync = new();");
         AssertContains(sourceText, "lock (_playbackThreadSync)");
         AssertContains(sourceText, "if (_disposedFlag != 0) return RejectCommand(commandKind, \"disposed\", \"disposed\", false);");
+        AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0)\n        {\n            if (_playbackThread is { IsAlive: true })");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_THREAD_RECOVER reason=stale_stopped");
+        AssertContains(sourceText, "DisposePlaybackCtsBestEffort(_playCts, \"recover_stale_thread\");");
+        AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);\n        }\n\n        if (Interlocked.CompareExchange(ref _playbackThreadStarted, 1, 0) != 0)");
         AssertContains(sourceText, "ObjectDisposedException.ThrowIf(_disposedFlag != 0, this);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_UPDATE_SKIP reason=disposed");
         AssertContains(sourceText, "private const int CommandQueueCapacity = 256;");

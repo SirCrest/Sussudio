@@ -439,6 +439,22 @@ internal sealed class FlashbackPlaybackController : IDisposable
         lock (_playbackThreadSync)
         {
         if (_disposedFlag != 0) return RejectCommand(commandKind, "disposed", "disposed", false);
+        if (Volatile.Read(ref _playbackThreadStarted) != 0)
+        {
+            if (_playbackThread is { IsAlive: true })
+            {
+                return true;
+            }
+
+            Logger.Log("FLASHBACK_PLAYBACK_THREAD_RECOVER reason=stale_stopped");
+            DisposePlaybackCtsBestEffort(_playCts, "recover_stale_thread");
+            _playCts = null;
+            _playbackThread = null;
+            Interlocked.Exchange(ref _pendingCommands, 0);
+            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
+            Volatile.Write(ref _playbackThreadStarted, 0);
+        }
+
         if (Interlocked.CompareExchange(ref _playbackThreadStarted, 1, 0) != 0)
             return true;
 
