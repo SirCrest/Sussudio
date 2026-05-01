@@ -1025,7 +1025,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         {
             for (int i = 0; i < _completedSegments.Count; i++)
             {
-                if (_completedSegments[i].Path == currentPath)
+                if (IsSameSegmentPath(_completedSegments[i].Path, currentPath))
                 {
                     // Found current — return next if it exists
                     for (var nextIndex = i + 1; nextIndex < _completedSegments.Count; nextIndex++)
@@ -1040,7 +1040,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                         : null;
                 }
             }
-            if (string.Equals(_activeSegmentPath, currentPath, StringComparison.OrdinalIgnoreCase))
+            if (IsSameSegmentPath(_activeSegmentPath, currentPath))
                 return _activeSegmentPath != null && File.Exists(_activeSegmentPath) ? _activeSegmentPath : null;
             // currentPath not found (evicted or unknown)
             // Return the oldest available segment, or active if none
@@ -1055,11 +1055,11 @@ internal sealed class FlashbackBufferManager : IDisposable
         {
             foreach (var seg in _completedSegments)
             {
-                if (string.Equals(seg.Path, path, StringComparison.OrdinalIgnoreCase))
+                if (IsSameSegmentPath(seg.Path, path))
                     return seg.StartPts;
             }
 
-            if (string.Equals(_activeSegmentPath, path, StringComparison.OrdinalIgnoreCase))
+            if (IsSameSegmentPath(_activeSegmentPath, path))
             {
                 return _completedSegments.Count > 0
                     ? _completedSegments[^1].EndPts
@@ -1288,6 +1288,27 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     private static TimeSpan ClampEndPtsToStart(TimeSpan startPts, TimeSpan endPts)
         => endPts < startPts ? startPts : endPts;
+
+    private static bool IsSameSegmentPath(string? left, string? right)
+    {
+        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
+        {
+            return false;
+        }
+
+        try
+        {
+            return string.Equals(
+                Path.GetFullPath(left),
+                Path.GetFullPath(right),
+                StringComparison.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_BUFFER_PATH_COMPARE_WARN left='{left}' right='{right}' type={ex.GetType().Name} msg='{ex.Message}'");
+            return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
+        }
+    }
 
     private static long ToNonNegativeLongSaturated(double value)
     {

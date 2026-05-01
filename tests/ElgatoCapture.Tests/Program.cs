@@ -460,6 +460,9 @@ static partial class Program
                 "FlashbackBufferManager GetNextSegmentFile walks forward through segments",
                 FlashbackBufferManager_GetNextSegmentFile_WalksForward),
             await RunCheckAsync(
+                "FlashbackBufferManager segment path lookups normalize equivalent paths",
+                FlashbackBufferManager_SegmentPathLookupsNormalizeEquivalentPaths),
+            await RunCheckAsync(
                 "FlashbackBufferManager GetNextSegmentFile skips missing indexed segments",
                 FlashbackBufferManager_GetNextSegmentFile_SkipsMissingIndexedSegments),
             await RunCheckAsync(
@@ -2705,6 +2708,42 @@ static partial class Program
 
         var nextC = method.Invoke(manager, new object[] { c }) as string;
         AssertContains(nextC!, "fb_test_0003.ts");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_SegmentPathLookupsNormalizeEquivalentPaths()
+    {
+        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(source, "private static bool IsSameSegmentPath(string? left, string? right)");
+        AssertContains(source, "Path.GetFullPath(left)");
+        AssertContains(source, "Path.GetFullPath(right)");
+        AssertContains(source, "FLASHBACK_BUFFER_PATH_COMPARE_WARN");
+        AssertContains(source, "if (IsSameSegmentPath(_completedSegments[i].Path, currentPath))");
+        AssertContains(source, "if (IsSameSegmentPath(seg.Path, path))");
+        AssertContains(source, "if (IsSameSegmentPath(_activeSegmentPath, path))");
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var a = Path.Combine(tempDir, "a.ts");
+        var b = Path.Combine(tempDir, "b.ts");
+        File.WriteAllText(a, "a");
+        File.WriteAllText(b, "b");
+
+        AddCompletedSegment(manager, a, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 500);
+        AddCompletedSegment(manager, b, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 500);
+
+        var equivalentA = Path.Combine(tempDir, ".", "a.ts");
+        var nextMethod = manager.GetType().GetMethod("GetNextSegmentFile")!;
+        var next = nextMethod.Invoke(manager, new object[] { equivalentA }) as string;
+        AssertEqual(b, next!, "Equivalent completed segment path should walk to next segment");
+
+        var startMethod = manager.GetType().GetMethod("GetSegmentStartPts")!;
+        var start = (TimeSpan?)startMethod.Invoke(manager, new object[] { equivalentA });
+        AssertEqual(TimeSpan.Zero, start!.Value, "Equivalent completed segment path should resolve start PTS");
 
         return Task.CompletedTask;
     }
