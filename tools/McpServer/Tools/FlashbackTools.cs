@@ -27,7 +27,25 @@ public static class FlashbackTools
         [Description("Action: play, pause, go_live, seek, set_in_point, set_out_point, clear_in_out_points")] string action,
         [Description("Position in milliseconds (required for seek)")] double? positionMs = null)
     {
+        if (string.IsNullOrWhiteSpace(action))
+        {
+            throw new ArgumentException(
+                "Flashback action is required. Expected play, pause, go_live, seek, set_in_point, set_out_point, or clear_in_out_points.",
+                nameof(action));
+        }
+
         var normalizedAction = action.Replace("_", "-").ToLowerInvariant();
+        if (normalizedAction is not ("play" or "pause" or "go-live" or "seek" or "set-in-point" or "set-out-point" or "clear-in-out-points"))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(action),
+                "Flashback action must be one of: play, pause, go_live, seek, set_in_point, set_out_point, clear_in_out_points.");
+        }
+
+        if (normalizedAction == "seek" && !positionMs.HasValue)
+        {
+            throw new ArgumentException("Flashback seek requires positionMs.", nameof(positionMs));
+        }
 
         var payload = new Dictionary<string, object?>
         {

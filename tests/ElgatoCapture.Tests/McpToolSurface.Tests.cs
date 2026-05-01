@@ -940,6 +940,12 @@ static partial class Program
 
         var flashbackToolsText = ReadRepoFile("tools/McpServer/Tools/FlashbackTools.cs")
             .Replace("\r\n", "\n");
+        AssertContains(flashbackToolsText, "if (string.IsNullOrWhiteSpace(action))");
+        AssertContains(flashbackToolsText, "Flashback action is required. Expected play, pause, go_live, seek, set_in_point, set_out_point, or clear_in_out_points.");
+        AssertContains(flashbackToolsText, "normalizedAction is not (\"play\" or \"pause\" or \"go-live\" or \"seek\" or \"set-in-point\" or \"set-out-point\" or \"clear-in-out-points\")");
+        AssertContains(flashbackToolsText, "Flashback action must be one of: play, pause, go_live, seek, set_in_point, set_out_point, clear_in_out_points.");
+        AssertContains(flashbackToolsText, "if (normalizedAction == \"seek\" && !positionMs.HasValue)");
+        AssertContains(flashbackToolsText, "Flashback seek requires positionMs.");
         AssertContains(flashbackToolsText, "if (!double.IsFinite(positionMs.Value) ||\n                positionMs.Value < 0 ||\n                positionMs.Value > TimeSpan.MaxValue.TotalMilliseconds)");
         AssertContains(flashbackToolsText, "Flashback positionMs must be finite, non-negative, and within TimeSpan range.");
         AssertContains(flashbackToolsText, "if (!double.IsFinite(seconds) || seconds <= 0 || seconds > TimeSpan.MaxValue.TotalSeconds)");
