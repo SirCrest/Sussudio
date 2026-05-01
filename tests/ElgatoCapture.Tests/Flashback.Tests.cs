@@ -975,6 +975,26 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackEncoderSink_AudioPacketsAreValidatedBeforeRent()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private const int AudioInputBlockAlignBytes = 2 * sizeof(float);");
+        AssertContains(sourceText, "private const int MaxAudioPacketBytes = 4 * 1024 * 1024;");
+        AssertContains(sourceText, "if (!TryValidateAudioPacketLength(samples.Length, \"audio\"))");
+        AssertContains(sourceText, "if (!TryValidateAudioPacketLength(samples.Length, \"microphone\"))");
+        AssertContains(sourceText, "private static bool TryValidateAudioPacketLength(int byteLength, string source)");
+        AssertContains(sourceText, "if (byteLength <= 0 || byteLength > MaxAudioPacketBytes)");
+        AssertContains(sourceText, "FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=size");
+        AssertContains(sourceText, "if (byteLength % AudioInputBlockAlignBytes != 0)");
+        AssertContains(sourceText, "FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=alignment");
+        AssertContains(sourceText, "return byteLength > 0 ? byteLength / AudioInputBlockAlignBytes : 0;");
+        AssertDoesNotContain(sourceText, "const int inputBlockAlign = 2 * sizeof(float);");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")

@@ -637,6 +637,9 @@ static partial class Program
                 "Flashback encoder sink logs fatal segment registration failures",
                 FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged),
             await RunCheckAsync(
+                "Flashback encoder sink validates audio packets before rent",
+                FlashbackEncoderSink_AudioPacketsAreValidatedBeforeRent),
+            await RunCheckAsync(
                 "Flashback suppressed exceptions use app logs",
                 FlashbackSuppressedExceptionsUseAppLogs),
             await RunCheckAsync(

@@ -24,6 +24,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private const int StopTimeoutMs = 30_000;
     private const int DisposeTimeoutMs = 1_000;
     private const int VideoQueueLatencyWindowSize = 256;
+    private const int AudioInputBlockAlignBytes = 2 * sizeof(float);
+    private const int MaxAudioPacketBytes = 4 * 1024 * 1024;
 
     private readonly object _sync = new();
     private readonly object _videoQueueSync = new();
@@ -644,6 +646,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             return;
         }
 
+        if (!TryValidateAudioPacketLength(samples.Length, "audio"))
+        {
+            return;
+        }
+
         var buffer = GetBuffer(samples.Length);
         samples.Span.CopyTo(buffer.AsSpan(0, samples.Length));
         var packet = new AudioSamplePacket(buffer, samples.Length);
@@ -666,6 +673,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     {
         var queue = _microphoneQueue;
         if (_disposed || !_started || !_microphoneEnabled || queue == null || samples.IsEmpty || Volatile.Read(ref _forceRotateDraining))
+        {
+            return;
+        }
+
+        if (!TryValidateAudioPacketLength(samples.Length, "microphone"))
         {
             return;
         }
@@ -2116,8 +2128,24 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
     private static long GetSampleCount(int byteLength)
     {
-        const int inputBlockAlign = 2 * sizeof(float);
-        return byteLength > 0 ? byteLength / inputBlockAlign : 0;
+        return byteLength > 0 ? byteLength / AudioInputBlockAlignBytes : 0;
+    }
+
+    private static bool TryValidateAudioPacketLength(int byteLength, string source)
+    {
+        if (byteLength <= 0 || byteLength > MaxAudioPacketBytes)
+        {
+            Logger.Log($"FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=size bytes={byteLength}");
+            return false;
+        }
+
+        if (byteLength % AudioInputBlockAlignBytes != 0)
+        {
+            Logger.Log($"FLASHBACK_SINK_AUDIO_PACKET_REJECT source={source} reason=alignment bytes={byteLength} align={AudioInputBlockAlignBytes}");
+            return false;
+        }
+
+        return true;
     }
 
     private static byte[] GetBuffer(int size)
