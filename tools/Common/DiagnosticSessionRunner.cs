@@ -52,6 +52,9 @@ public sealed class DiagnosticSessionSample
 
 public static class DiagnosticSessionRunner
 {
+    private const int FlashbackStressMaxPlaybackPendingCommands = 2;
+    private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;
+
     public static async Task<DiagnosticSessionResult> RunAsync(
         DiagnosticSessionOptions options,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
@@ -451,9 +454,20 @@ public static class DiagnosticSessionRunner
             var skipped = GetInt(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady");
             var state = GetString(lastSnapshot, "FlashbackPlaybackState") ?? "Unknown";
             var threadAlive = GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive");
+            var maxPending = GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
+            var maxLatencyMs = GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
             if (dropped > 0 || skipped > 0)
             {
                 warnings.Add($"flashback stress: dropped={dropped} skipped={skipped}");
+            }
+
+            if (maxPending > FlashbackStressMaxPlaybackPendingCommands ||
+                maxLatencyMs > FlashbackStressMaxPlaybackCommandLatencyMs)
+            {
+                warnings.Add(
+                    "flashback stress: playback command latency exceeded threshold " +
+                    $"maxPending={maxPending}/{FlashbackStressMaxPlaybackPendingCommands} " +
+                    $"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs}");
             }
 
             if (!string.Equals(state, "Live", StringComparison.OrdinalIgnoreCase))

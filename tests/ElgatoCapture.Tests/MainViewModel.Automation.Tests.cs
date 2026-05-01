@@ -274,6 +274,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s \"");
         AssertContains(diagnosticSessionText, "$\"maxPending={GetInt(lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")} \"");
         AssertContains(diagnosticSessionText, "$\"maxLatencyMs={GetInt(lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")}\"");
+        AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackPendingCommands = 2;");
+        AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
+        AssertContains(diagnosticSessionText, "\"flashback stress: playback command latency exceeded threshold \"");
+        AssertContains(diagnosticSessionText, "$\"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs}\"");
         AssertContains(diagnosticSessionText, "(!(runFlashbackStress || runFlashbackRecording) || warnings.Count == 0)");
         AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-stress\" or \"flashback-recording\" or \"combined\"");
 
