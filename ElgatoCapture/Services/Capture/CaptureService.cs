@@ -2591,7 +2591,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         fbController?.UpdateAudioComponents(null, null);
         var playback = _wasapiAudioPlayback;
         _wasapiAudioPlayback = null;
-        _wasapiAudioCapture?.SetPlayback(null);
+        SafeClearWasapiCapturePlayback(_wasapiAudioCapture, "stop_playback");
         if (playback != null)
         {
             try
@@ -2603,8 +2603,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 Logger.Log($"WASAPI audio playback stop warning: {ex.Message}");
             }
 
-            playback.Dispose();
-            Logger.Log("WASAPI audio playback disposed.");
+            DisposeWasapiPlaybackBestEffort(playback);
         }
     }
 
@@ -2618,8 +2617,38 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         capture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
         capture.CaptureFailed -= OnWasapiCaptureFailed;
-        capture.SetPlayback(null);
+        SafeClearWasapiCapturePlayback(capture, "detach_capture");
         StopWasapiPlayback();
+    }
+
+    private static void SafeClearWasapiCapturePlayback(WasapiAudioCapture? capture, string operation)
+    {
+        if (capture == null)
+        {
+            return;
+        }
+
+        try
+        {
+            capture.SetPlayback(null);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"WASAPI audio playback detach warning op={operation}: {ex.Message}");
+        }
+    }
+
+    private static void DisposeWasapiPlaybackBestEffort(WasapiAudioPlayback playback)
+    {
+        try
+        {
+            playback.Dispose();
+            Logger.Log("WASAPI audio playback disposed.");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"WASAPI audio playback dispose warning: {ex.Message}");
+        }
     }
 
     private void RecordObservedPixelFormat(string? pixelFormat, bool incrementAsFrame = true)
