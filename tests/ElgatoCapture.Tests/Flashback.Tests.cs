@@ -674,6 +674,19 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackPlaybackController_EndOfSegmentOpenFailuresSnapLive()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen);");
+        AssertContains(sourceText, "TimeSpan frozenValidStart,\n        ref bool fileOpen)");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_SEGMENT_SWITCH_ERROR path='{nextFile}' type={ex.GetType().Name} msg='{ex.Message}'\");\n                    SnapToLiveOnError(decoder, ex, ref fileOpen);\n                    return false;");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_FMP4_REOPEN_ERROR path='{currentOpenFilePath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n                    SnapToLiveOnError(decoder, ex, ref fileOpen);\n                    return false;");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")

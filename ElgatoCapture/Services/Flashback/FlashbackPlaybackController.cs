@@ -1102,7 +1102,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             cancellationToken.ThrowIfCancellationRequested();
             if (!decoder.TryDecodeNextVideoFrame(out var videoFrame))
             {
-                return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart);
+                return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen);
             }
 
             // Frame skip: when video falls significantly behind audio, decode-and-discard
@@ -1132,7 +1132,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         skipped++;
 
                         if (!decoder.TryDecodeNextVideoFrame(out videoFrame))
-                            return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart);
+                            return HandleEndOfSegment(decoder, pacingStopwatch, frozenValidStart, ref fileOpen);
 
                         // Recompute drift with the new frame's PTS
                         wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
@@ -1197,7 +1197,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private bool HandleEndOfSegment(
         FlashbackDecoder decoder,
         Stopwatch pacingStopwatch,
-        TimeSpan frozenValidStart)
+        TimeSpan frozenValidStart,
+        ref bool fileOpen)
     {
         // Use absolute PTS to measure distance from live edge.
         // PlaybackPosition uses frozenValidStart (captured at scrub time) while
@@ -1223,22 +1224,33 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 Interlocked.Increment(ref _playbackSegmentSwitches);
                 Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                 Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH pos_ms={(long)pos.TotalMilliseconds} next='{System.IO.Path.GetFileName(nextFile)}'");
-                decoder.CloseFile();
-                decoder.OpenFile(nextFile);
-                _currentOpenFilePath = nextFile;
-                // Gate audio at last played position, not seek target — audio between
-                // the last played sample and the seek point would otherwise be dropped,
-                // causing an audible gap at segment boundaries.
-                var audioGate = Interlocked.Read(ref _lastAudioPtsTicks);
-                decoder.AudioChunkCallback = null;
-                var segSwitchTarget = pos + frozenValidStart;
-                var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
-                if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)
-                    segSwitchTarget = nextSegmentStart.Value;
-                decoder.SeekTo(segSwitchTarget);
-                RestoreAudioCallback(decoder, audioGate);
-                pacingStopwatch.Restart();
-                return true;
+                try
+                {
+                    decoder.CloseFile();
+                    fileOpen = false;
+                    decoder.OpenFile(nextFile);
+                    fileOpen = true;
+                    _currentOpenFilePath = nextFile;
+                    // Gate audio at last played position, not seek target — audio between
+                    // the last played sample and the seek point would otherwise be dropped,
+                    // causing an audible gap at segment boundaries.
+                    var audioGate = Interlocked.Read(ref _lastAudioPtsTicks);
+                    decoder.AudioChunkCallback = null;
+                    var segSwitchTarget = pos + frozenValidStart;
+                    var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
+                    if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)
+                        segSwitchTarget = nextSegmentStart.Value;
+                    decoder.SeekTo(segSwitchTarget);
+                    RestoreAudioCallback(decoder, audioGate);
+                    pacingStopwatch.Restart();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH_ERROR path='{nextFile}' type={ex.GetType().Name} msg='{ex.Message}'");
+                    SnapToLiveOnError(decoder, ex, ref fileOpen);
+                    return false;
+                }
             }
 
             // Active fMP4 segment: the demuxer cached the file structure at open
@@ -1254,14 +1266,25 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 if (currentSegmentStart.HasValue && resumeTarget < currentSegmentStart.Value)
                     resumeTarget = currentSegmentStart.Value;
                 Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN pos_ms={(long)pos.TotalMilliseconds} resumePts_ms={(long)resumeTarget.TotalMilliseconds}");
-                decoder.CloseFile();
-                decoder.OpenFile(currentOpenFilePath);
-                var fmpAudioGate = Interlocked.Read(ref _lastAudioPtsTicks);
-                decoder.AudioChunkCallback = null;
-                decoder.SeekTo(resumeTarget);
-                RestoreAudioCallback(decoder, fmpAudioGate);
-                pacingStopwatch.Restart();
-                return true;
+                try
+                {
+                    decoder.CloseFile();
+                    fileOpen = false;
+                    decoder.OpenFile(currentOpenFilePath);
+                    fileOpen = true;
+                    var fmpAudioGate = Interlocked.Read(ref _lastAudioPtsTicks);
+                    decoder.AudioChunkCallback = null;
+                    decoder.SeekTo(resumeTarget);
+                    RestoreAudioCallback(decoder, fmpAudioGate);
+                    pacingStopwatch.Restart();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_ERROR path='{currentOpenFilePath}' type={ex.GetType().Name} msg='{ex.Message}'");
+                    SnapToLiveOnError(decoder, ex, ref fileOpen);
+                    return false;
+                }
             }
         }
 

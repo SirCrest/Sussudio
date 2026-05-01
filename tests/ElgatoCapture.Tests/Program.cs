@@ -553,6 +553,9 @@ static partial class Program
                 "Flashback command positions clamp before file lookup",
                 FlashbackPlaybackController_ClampsCommandPositionsBeforeFileLookup),
             await RunCheckAsync(
+                "Flashback end-of-segment open failures snap live",
+                FlashbackPlaybackController_EndOfSegmentOpenFailuresSnapLive),
+            await RunCheckAsync(
                 "Flashback pause from live does not block on exact seek",
                 FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek),
             await RunCheckAsync(
