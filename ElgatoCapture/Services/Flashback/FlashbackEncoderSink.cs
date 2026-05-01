@@ -1070,6 +1070,13 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     }
                     try
                     {
+                        if (localTcs == null)
+                        {
+                            Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request");
+                            madeProgress = true;
+                            continue;
+                        }
+
                         // Drain all remaining queued packets into the current segment before rotating.
                         // This ensures no data is lost at the live edge.
                         var inFlightCount = 0;

@@ -1966,6 +1966,24 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackEncoderSink_ForceRotateSkipsClearedPendingRequest()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+
+        var loopBlock = ExtractTextBetween(
+            sourceText,
+            "if (Volatile.Read(ref _forceRotateRequested))",
+            "                    madeProgress = true;\n                }");
+
+        AssertContains(loopBlock, "localTcs = _forceRotateTcs;\n                        _forceRotateTcs = null;");
+        AssertContains(loopBlock, "if (localTcs == null)\n                        {\n                            Logger.Log(\"FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request\");\n                            madeProgress = true;\n                            continue;\n                        }");
+        AssertOccursBefore(loopBlock, "FLASHBACK_SINK_FORCE_ROTATE_SKIP reason=no_pending_request", "while (DrainAudioPackets(audioQueue.Reader))");
+        AssertContains(loopBlock, "finally\n                    {\n                        lock (_videoQueueSync)\n                        {\n                            Volatile.Write(ref _forceRotateDraining, false);\n                        }\n                    }");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
