@@ -1106,6 +1106,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
 
         if (ContainsFlashbackExportFailureText(statusMessage, "operation=avio_open2") ||
+            ContainsFlashbackExportFailureText(statusMessage, "operation=avformat_alloc_output_context2") ||
+            ContainsFlashbackExportFailureText(statusMessage, "operation=avformat_new_stream") ||
+            ContainsFlashbackExportFailureText(statusMessage, "operation=avcodec_parameters_copy") ||
+            ContainsFlashbackExportFailureText(statusMessage, "operation=av_dict_set") ||
             ContainsFlashbackExportFailureText(statusMessage, "operation=avformat_write_header") ||
             ContainsFlashbackExportFailureText(statusMessage, "operation=av_interleaved_write_frame") ||
             ContainsFlashbackExportFailureText(statusMessage, "operation=av_write_trailer") ||

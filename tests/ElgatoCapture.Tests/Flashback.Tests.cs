@@ -513,6 +513,22 @@ static partial class Program
             method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=av_interleaved_write_frame code=-5 msg='I/O error'" })?.ToString(),
             "output packet write failure is classified");
         AssertEqual(
+            "OutputWriteFailed",
+            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_ERROR operation=avformat_alloc_output_context2 msg='Output context allocation failed.'" })?.ToString(),
+            "output context allocation failure is classified");
+        AssertEqual(
+            "OutputWriteFailed",
+            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_ERROR operation=avformat_new_stream msg='Stream allocation returned null.'" })?.ToString(),
+            "output stream allocation failure is classified");
+        AssertEqual(
+            "OutputWriteFailed",
+            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=avcodec_parameters_copy code=-22 msg='Invalid argument'" })?.ToString(),
+            "output stream parameter copy failure is classified");
+        AssertEqual(
+            "OutputWriteFailed",
+            method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=av_dict_set(movflags) code=-12 msg='Cannot allocate memory'" })?.ToString(),
+            "output muxer option failure is classified");
+        AssertEqual(
             "InputReadFailed",
             method.Invoke(null, new object?[] { "FLASHBACK_EXPORT_LIBAV_ERROR operation=av_read_frame code=-5 msg='I/O error'" })?.ToString(),
             "input read failure is classified");
