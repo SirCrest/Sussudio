@@ -1033,7 +1033,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (_hasPreviousHeldFrame)
         {
-            FlashbackDecoder.ReleaseHeldFrame(_previousHeldFrame);
+            ReleaseHeldFrameBestEffort(_previousHeldFrame, "previous_frame");
             _previousHeldFrame = default;
             _hasPreviousHeldFrame = false;
         }
@@ -1043,7 +1043,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (frame.IsD3D11Texture && frame.TexturePtr == IntPtr.Zero)
         {
-            FlashbackDecoder.ReleaseHeldFrame(frame);
+            ReleaseHeldFrameBestEffort(frame, $"{operation}_null_texture");
             Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_SKIP op={operation} reason=null_texture");
             return false;
         }
@@ -1058,9 +1058,21 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
         catch (Exception ex)
         {
-            FlashbackDecoder.ReleaseHeldFrame(frame);
+            ReleaseHeldFrameBestEffort(frame, $"{operation}_submit_fail");
             Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_FAIL op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
             return false;
+        }
+    }
+
+    private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)
+    {
+        try
+        {
+            FlashbackDecoder.ReleaseHeldFrame(frame);
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_RELEASE_HELD_FRAME_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 
@@ -1193,7 +1205,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         // Release the frame without displaying it
-                        FlashbackDecoder.ReleaseHeldFrame(videoFrame);
+                        ReleaseHeldFrameBestEffort(videoFrame, "av_sync_skip");
                         Interlocked.Increment(ref _playbackDroppedFrames);
                         skipped++;
 

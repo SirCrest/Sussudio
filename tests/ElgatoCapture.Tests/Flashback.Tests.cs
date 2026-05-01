@@ -866,7 +866,12 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
-        AssertContains(sourceText, "FlashbackDecoder.ReleaseHeldFrame(frame);");
+        AssertContains(sourceText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_RELEASE_HELD_FRAME_WARN");
+        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_submit_fail\");");
+        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_null_texture\");");
+        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_previousHeldFrame, \"previous_frame\");");
+        AssertContains(sourceText, "ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip\");");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SUBMIT_FAIL");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(nudgeFrame, \"nudge\")");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(frame, \"seek\")");
