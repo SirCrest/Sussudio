@@ -695,9 +695,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             pacingStopwatch.Restart();
                             var coalescedSeekTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
                             decoder.AudioChunkCallback = null;
-                            if (!decoder.SeekTo(coalescedSeekTarget) && IsActiveFmp4Segment(_currentOpenFilePath))
+                            if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, "seek_resume"))
                             {
-                                TryReopenCurrentFileAndSeek(decoder, ref fileOpen, coalescedSeekTarget, "seek");
+                                isPlaying = false;
+                                RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "seek_resume_failed");
+                                break;
                             }
                             frameDuration = ResolveFrameDuration(decoder);
                             RestoreAudioCallback(decoder, coalescedSeekTarget.Ticks);
@@ -798,9 +800,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             if (decoder is { IsOpen: true })
                             {
                                 decoder.AudioChunkCallback = null; // null during forward-decode
-                                if (!decoder.SeekTo(endScrubTarget) && IsActiveFmp4Segment(_currentOpenFilePath))
+                                if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, "end_scrub"))
                                 {
-                                    TryReopenCurrentFileAndSeek(decoder, ref fileOpen, endScrubTarget, "end_scrub");
+                                    isPlaying = false;
+                                    RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "end_scrub_seek_failed");
+                                    break;
                                 }
                                 frameDuration = ResolveFrameDuration(decoder);
                             }
@@ -860,15 +864,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             // the audio codec is clean and the next audio packet in the file
                             // is at the video target position. No suppression needed.
                             decoder.AudioChunkCallback = null;
-                            if (!decoder.SeekTo(seekTarget))
+                            if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, "play"))
                             {
-                                // Active fMP4 segment: demuxer fragment index is stale — reopen and retry.
-                                // Only applies to fMP4 (.mp4); transport streams (.ts) handle appended data
-                                // via eof_reached reset and don't need reopening.
-                                if (IsActiveFmp4Segment(_currentOpenFilePath) && _currentOpenFilePath != null)
-                                {
-                                    TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, "play");
-                                }
+                                isPlaying = false;
+                                RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "play_seek_failed");
+                                break;
                             }
                         }
                         frameDuration = ResolveFrameDuration(decoder);
@@ -1161,6 +1161,25 @@ internal sealed class FlashbackPlaybackController : IDisposable
         _decoderHwAccel = "N/A";
     }
 
+    private bool TrySeekWithActiveFmp4Reopen(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)
+    {
+        if (decoder.SeekTo(seekTarget))
+        {
+            return true;
+        }
+
+        // Active fMP4 segment: demuxer fragment index is stale. Reopen and retry.
+        // MPEG-TS handles appended data via eof_reached reset and does not need reopening.
+        if (IsActiveFmp4Segment(_currentOpenFilePath) && _currentOpenFilePath != null)
+        {
+            return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason);
+        }
+
+        SetReopenFailure(reason, "seek_failed", seekTarget);
+        Logger.Log($"FLASHBACK_PLAYBACK_SEEK_FAIL reason={reason} offset_ms={(long)seekTarget.TotalMilliseconds}");
+        return false;
+    }
+
     private bool TryReopenCurrentFileAndSeek(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)
     {
         var currentPath = _currentOpenFilePath;
@@ -1184,7 +1203,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
             fileOpen = true;
             _currentOpenFilePath = currentPath;
             _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
-            return decoder.SeekTo(seekTarget);
+            if (decoder.SeekTo(seekTarget))
+            {
+                return true;
+            }
+
+            SetReopenFailure(reason, "seek_failed", seekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SEEK_FAIL reason={reason} path='{currentPath}' offset_ms={(long)seekTarget.TotalMilliseconds}");
+            return false;
         }
         catch (Exception ex)
         {
@@ -1220,7 +1246,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
             fileOpen = true;
             _currentOpenFilePath = currentPath;
             _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
-            return decoder.SeekToKeyframe(seekTarget);
+            if (decoder.SeekToKeyframe(seekTarget))
+            {
+                return true;
+            }
+
+            SetReopenFailure(reason, "keyframe_seek_failed", seekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_SEEK_FAIL reason={reason} path='{currentPath}' offset_ms={(long)seekTarget.TotalMilliseconds}");
+            return false;
         }
         catch (Exception ex)
         {
@@ -1604,7 +1637,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
                     if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)
                         segSwitchTarget = nextSegmentStart.Value;
-                    decoder.SeekTo(segSwitchTarget);
+                    if (!decoder.SeekTo(segSwitchTarget))
+                    {
+                        SetReopenFailure("segment_switch", "seek_failed", segSwitchTarget);
+                        Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH_SEEK_FAIL path='{nextFile}' offset_ms={(long)segSwitchTarget.TotalMilliseconds}");
+                        RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "segment_switch_seek_failed");
+                        return false;
+                    }
                     RestoreAudioCallback(decoder, audioGate);
                     pacingStopwatch.Restart();
                     return true;
@@ -1639,7 +1678,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
                     var fmpAudioGate = Interlocked.Read(ref _lastAudioPtsTicks);
                     decoder.AudioChunkCallback = null;
-                    decoder.SeekTo(resumeTarget);
+                    if (!decoder.SeekTo(resumeTarget))
+                    {
+                        SetReopenFailure("fmp4_reopen", "seek_failed", resumeTarget);
+                        Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_SEEK_FAIL path='{currentOpenFilePath}' offset_ms={(long)resumeTarget.TotalMilliseconds}");
+                        RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "fmp4_reopen_seek_failed");
+                        return false;
+                    }
                     RestoreAudioCallback(decoder, fmpAudioGate);
                     pacingStopwatch.Restart();
                     return true;

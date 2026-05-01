@@ -1894,8 +1894,14 @@ static partial class Program
         AssertContains(sourceText, "if (fileOpen && decoder.IsOpen && IsSamePlaybackPath(filePath, _currentOpenFilePath))\n            return;");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Paused && IsSamePlaybackPath(prevFile, _currentOpenFilePath))");
         AssertContains(sourceText, "fileOpen = false;\n            _currentOpenFilePath = null;\n            return false;");
-        AssertContains(sourceText, "_currentOpenFilePath = currentPath;\n            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";\n            return decoder.SeekTo(seekTarget);");
-        AssertContains(sourceText, "_currentOpenFilePath = currentPath;\n            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";\n            return decoder.SeekToKeyframe(seekTarget);");
+        AssertContains(sourceText, "private bool TrySeekWithActiveFmp4Reopen(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)");
+        AssertContains(sourceText, "if (decoder.SeekTo(seekTarget))\n        {\n            return true;\n        }");
+        AssertContains(sourceText, "return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason);");
+        AssertContains(sourceText, "SetReopenFailure(reason, \"seek_failed\", seekTarget);\n        Logger.Log($\"FLASHBACK_PLAYBACK_SEEK_FAIL reason={reason} offset_ms={(long)seekTarget.TotalMilliseconds}\");\n        return false;");
+        AssertContains(sourceText, "if (decoder.SeekTo(seekTarget))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"seek_failed\", seekTarget);");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_SEEK_FAIL");
+        AssertContains(sourceText, "if (decoder.SeekToKeyframe(seekTarget))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"keyframe_seek_failed\", seekTarget);");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_SEEK_FAIL");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_REOPEN_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            _decoderHwAccel = \"N/A\";\n            fileOpen = false;");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            _decoderHwAccel = \"N/A\";\n            fileOpen = false;");
         AssertContains(sourceText, "SetReopenFailure(reason, \"no_current_file\", seekTarget);");
@@ -1920,10 +1926,16 @@ static partial class Program
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"scrub_update_display_failed\");");
         AssertContains(sourceText, "private void SetSeekDisplayFailure(CommandKind kind, string detail, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"seek_display_failed:{kind}:{detail}{FormatCommandDetail(position: position)}\");");
-        AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, coalescedSeekTarget, \"seek\")");
-        AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, endScrubTarget, \"end_scrub\")");
-        AssertContains(sourceText, "TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, \"play\")");
+        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, \"seek_resume\"))\n                            {\n                                isPlaying = false;\n                                RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"seek_resume_failed\");\n                                break;\n                            }");
+        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, \"end_scrub\"))\n                                {\n                                    isPlaying = false;\n                                    RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"end_scrub_seek_failed\");\n                                    break;\n                                }");
+        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, \"play\"))\n                            {\n                                isPlaying = false;\n                                RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"play_seek_failed\");\n                                break;\n                            }");
         AssertContains(sourceText, "TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, \"seek_keyframe\")");
+        AssertContains(sourceText, "SetReopenFailure(\"segment_switch\", \"seek_failed\", segSwitchTarget);");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_SEGMENT_SWITCH_SEEK_FAIL");
+        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"segment_switch_seek_failed\");");
+        AssertContains(sourceText, "SetReopenFailure(\"fmp4_reopen\", \"seek_failed\", resumeTarget);");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_FMP4_REOPEN_SEEK_FAIL");
+        AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"fmp4_reopen_seek_failed\");");
         AssertDoesNotContain(sourceText, "decoder.OpenFile(_currentOpenFilePath!)");
         AssertDoesNotContain(sourceText, "decoder.OpenFile(_currentOpenFilePath);");
 
