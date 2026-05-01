@@ -691,7 +691,11 @@ static partial class Program
         AssertContains(source, "FlashbackPlaybackDecodeP99Ms");
         AssertContains(source, "FlashbackPlaybackPendingCommands");
         AssertContains(source, "FlashbackPlaybackSubmitFailures");
+        AssertContains(source, "FlashbackExportPercent");
+        AssertContains(source, "FlashbackExportThroughputBytesPerSec");
+        AssertContains(source, "FlashbackExportLastProgressAgeMs");
         AssertContains(source, "FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail");
+        AssertContains(source, "ExStat  | Ex%   | ExMBps");
         AssertContains(source, "D3D Input P99:");
         AssertContains(source, "D3D Render P99:");
         AssertContains(source, "D3D Present P99:");
@@ -699,6 +703,8 @@ static partial class Program
         AssertContains(source, "Flashback P99:");
         AssertContains(source, "Flashback Decode:");
         AssertContains(source, "Flashback Cmds:");
+        AssertContains(source, "Export Progress:");
+        AssertContains(source, "Export Output:");
 
         return Task.CompletedTask;
     }

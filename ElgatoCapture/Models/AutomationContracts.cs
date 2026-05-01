@@ -922,6 +922,15 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackSubmitFailures { get; init; }
     public long FlashbackPlaybackDroppedFrames { get; init; }
     public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
+    public bool FlashbackExportActive { get; init; }
+    public string FlashbackExportStatus { get; init; } = "NotStarted";
+    public long FlashbackExportElapsedMs { get; init; }
+    public long FlashbackExportLastProgressAgeMs { get; init; }
+    public long FlashbackExportOutputBytes { get; init; }
+    public double FlashbackExportThroughputBytesPerSec { get; init; }
+    public int FlashbackExportSegmentsProcessed { get; init; }
+    public int FlashbackExportTotalSegments { get; init; }
+    public double FlashbackExportPercent { get; init; }
     public long PipelineLatencyMs { get; init; }
     public double ProcessCpuPercent { get; init; }
     public double MemoryWorkingSetMb { get; init; }

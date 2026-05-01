@@ -547,6 +547,9 @@ static partial class Program
         AssertContains(diagnosticsText, "FlashbackPlaybackDecodeP99Ms = snapshot.FlashbackPlaybackDecodeP99Ms");
         AssertContains(diagnosticsText, "FlashbackPlaybackPendingCommands = snapshot.FlashbackPlaybackPendingCommands");
         AssertContains(diagnosticsText, "FlashbackPlaybackSubmitFailures = snapshot.FlashbackPlaybackSubmitFailures");
+        AssertContains(diagnosticsText, "FlashbackExportPercent = snapshot.FlashbackExportPercent");
+        AssertContains(diagnosticsText, "FlashbackExportThroughputBytesPerSec = snapshot.FlashbackExportThroughputBytesPerSec");
+        AssertContains(diagnosticsText, "FlashbackExportLastProgressAgeMs = snapshot.FlashbackExportLastProgressAgeMs");
         AssertContains(diagnosticSessionText, "FlashbackRecordingFileGrowthObserved");
         AssertContains(diagnosticSessionText, "FlashbackRecordingVideoFramesSubmittedDelta");
         AssertContains(diagnosticSessionText, "FlashbackRecordingVideoEncoderPacketsWrittenDelta");

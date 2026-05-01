@@ -76,6 +76,15 @@ public static class PerformanceTimelineTools
                 FlashbackPlaybackSubmitFailures = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackSubmitFailures"),
                 FlashbackPlaybackDroppedFrames = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackDroppedFrames"),
                 FlashbackPlaybackDecodeErrorSnaps = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackDecodeErrorSnaps"),
+                FlashbackExportActive = AutomationSnapshotFormatter.GetBool(item, "FlashbackExportActive"),
+                FlashbackExportStatus = AutomationSnapshotFormatter.Get(item, "FlashbackExportStatus"),
+                FlashbackExportElapsedMs = AutomationSnapshotFormatter.GetLong(item, "FlashbackExportElapsedMs"),
+                FlashbackExportLastProgressAgeMs = AutomationSnapshotFormatter.GetLong(item, "FlashbackExportLastProgressAgeMs"),
+                FlashbackExportOutputBytes = AutomationSnapshotFormatter.GetLong(item, "FlashbackExportOutputBytes"),
+                FlashbackExportThroughputBytesPerSec = AutomationSnapshotFormatter.GetDouble(item, "FlashbackExportThroughputBytesPerSec"),
+                FlashbackExportSegmentsProcessed = AutomationSnapshotFormatter.GetInt(item, "FlashbackExportSegmentsProcessed"),
+                FlashbackExportTotalSegments = AutomationSnapshotFormatter.GetInt(item, "FlashbackExportTotalSegments"),
+                FlashbackExportPercent = AutomationSnapshotFormatter.GetDouble(item, "FlashbackExportPercent"),
                 LatencyMs = AutomationSnapshotFormatter.GetLong(item, "PipelineLatencyMs"),
                 WorkingMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryWorkingSetMb"),
                 ManagedMb = AutomationSnapshotFormatter.GetDouble(item, "MemoryManagedHeapMb"),
@@ -96,14 +105,14 @@ public static class PerformanceTimelineTools
         var builder = new StringBuilder();
         builder.AppendLine($"Performance Timeline ({entries.Count} samples)");
         builder.AppendLine();
-        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | D3DQ | D3DPrs | D3DTot | InP99 | RsP99 | PrP99 | TotP99 | D3DSch | D3DMiss | D3DDrop      | FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
-        builder.AppendLine(new string('-', 304));
+        builder.AppendLine("Timestamp                | CapAvg | CapP95 | CapP99 | Cap1% | PrvAvg | PrvP95 | PrvSlow | D3DQ | D3DPrs | D3DTot | InP99 | RsP99 | PrP99 | TotP99 | D3DSch | D3DMiss | D3DDrop      | FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail | ExStat  | Ex%   | ExMBps | VidQ | VidDrop | LatMs | WorkMB | MgdMB  | G0   | G1   | G2   | GC%  | Wkr  | IO");
+        builder.AppendLine(new string('-', 328));
 
         foreach (var e in entries)
         {
             builder.AppendLine(string.Format(
                 CultureInfo.InvariantCulture,
-                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,4} | {9,6:F1} | {10,6:F1} | {11,5:F1} | {12,5:F1} | {13,5:F1} | {14,6:F1} | {15,6:F1} | {16,7} | {17,-12} | {18,-7} | {19,5:F1} | {20,5:F1} | {21,5:F1} | {22,5} | {23,6} | {24,4} | {25,7} | {26,5} | {27,6:F1} | {28,6:F1} | {29,4} | {30,4} | {31,4} | {32,4:F1} | {33,4} | {34,4}",
+                "{0,-24} | {1,6:F1} | {2,6:F1} | {3,6:F1} | {4,5:F1} | {5,6:F1} | {6,6:F1} | {7,7:F1} | {8,4} | {9,6:F1} | {10,6:F1} | {11,5:F1} | {12,5:F1} | {13,5:F1} | {14,6:F1} | {15,6:F1} | {16,7} | {17,-12} | {18,-7} | {19,5:F1} | {20,5:F1} | {21,5:F1} | {22,5} | {23,6} | {24,-7} | {25,5:F1} | {26,6:F1} | {27,4} | {28,7} | {29,5} | {30,6:F1} | {31,6:F1} | {32,4} | {33,4} | {34,4} | {35,4:F1} | {36,4} | {37,4}",
                 e.Timestamp,
                 e.CaptureAvgMs,
                 e.CaptureP95Ms,
@@ -128,6 +137,9 @@ public static class PerformanceTimelineTools
                 e.FlashbackPlaybackDecodeP99Ms,
                 e.FlashbackPlaybackPendingCommands,
                 e.FlashbackPlaybackSubmitFailures,
+                CompactCell(e.FlashbackExportStatus, 7),
+                e.FlashbackExportPercent,
+                e.FlashbackExportThroughputBytesPerSec / (1024.0 * 1024.0),
                 e.VidQueue,
                 e.VidDrops,
                 e.LatencyMs,
@@ -173,6 +185,9 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Flashback Slow%:{first.FlashbackPlaybackSlowFramePercent:F1}% -> {last.FlashbackPlaybackSlowFramePercent:F1}%");
             builder.AppendLine($"Flashback Cmds: pending {first.FlashbackPlaybackPendingCommands} -> {last.FlashbackPlaybackPendingCommands}, maxPending latest={last.FlashbackPlaybackMaxPendingCommands}, maxLatency latest={last.FlashbackPlaybackMaxCommandQueueLatencyMs}ms");
             builder.AppendLine($"Flashback Drops: submitFailures {first.FlashbackPlaybackSubmitFailures} -> {last.FlashbackPlaybackSubmitFailures}, droppedFrames {first.FlashbackPlaybackDroppedFrames} -> {last.FlashbackPlaybackDroppedFrames}, decodeSnaps {first.FlashbackPlaybackDecodeErrorSnaps} -> {last.FlashbackPlaybackDecodeErrorSnaps}");
+            builder.AppendLine($"Export State:    {FormatOptional(first.FlashbackExportStatus)} -> {FormatOptional(last.FlashbackExportStatus)} active={last.FlashbackExportActive}");
+            builder.AppendLine($"Export Progress: {first.FlashbackExportPercent:F1}% -> {last.FlashbackExportPercent:F1}% segments={last.FlashbackExportSegmentsProcessed}/{last.FlashbackExportTotalSegments}");
+            builder.AppendLine($"Export Output:   {FormatBytes(first.FlashbackExportOutputBytes)} -> {FormatBytes(last.FlashbackExportOutputBytes)} throughput={FormatBytesPerSecond(last.FlashbackExportThroughputBytesPerSec)} elapsed={last.FlashbackExportElapsedMs}ms lastProgressAge={last.FlashbackExportLastProgressAgeMs}ms");
             builder.AppendLine($"Capture Rate:   {first.CaptureFps:F1}fps -> {last.CaptureFps:F1}fps (derived avg)");
             builder.AppendLine($"Capture 1% Low: {first.CaptureOnePercentLowFps:F1}fps -> {last.CaptureOnePercentLowFps:F1}fps");
             builder.AppendLine($"Preview Rate:   {first.PreviewFps:F1}fps -> {last.PreviewFps:F1}fps (derived avg)");
@@ -204,6 +219,20 @@ public static class PerformanceTimelineTools
 
         return compact.Length <= maxLength ? compact : compact[..Math.Max(0, maxLength - 1)] + "~";
     }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 0) return "N/A";
+        if (bytes >= 1024L * 1024L * 1024L) return $"{bytes / (1024.0 * 1024.0 * 1024.0):0.##}GB";
+        if (bytes >= 1024L * 1024L) return $"{bytes / (1024.0 * 1024.0):0.##}MB";
+        if (bytes >= 1024L) return $"{bytes / 1024.0:0.##}KB";
+        return $"{bytes}B";
+    }
+
+    private static string FormatBytesPerSecond(double bytesPerSecond)
+        => double.IsFinite(bytesPerSecond) && bytesPerSecond > 0
+            ? $"{FormatBytes((long)bytesPerSecond)}/s"
+            : "N/A";
 
     private sealed class TimelineRow
     {
@@ -247,6 +276,15 @@ public static class PerformanceTimelineTools
         public long FlashbackPlaybackSubmitFailures { get; init; }
         public long FlashbackPlaybackDroppedFrames { get; init; }
         public long FlashbackPlaybackDecodeErrorSnaps { get; init; }
+        public bool FlashbackExportActive { get; init; }
+        public string FlashbackExportStatus { get; init; } = string.Empty;
+        public long FlashbackExportElapsedMs { get; init; }
+        public long FlashbackExportLastProgressAgeMs { get; init; }
+        public long FlashbackExportOutputBytes { get; init; }
+        public double FlashbackExportThroughputBytesPerSec { get; init; }
+        public int FlashbackExportSegmentsProcessed { get; init; }
+        public int FlashbackExportTotalSegments { get; init; }
+        public double FlashbackExportPercent { get; init; }
         public long LatencyMs { get; init; }
         public double WorkingMb { get; init; }
         public double ManagedMb { get; init; }

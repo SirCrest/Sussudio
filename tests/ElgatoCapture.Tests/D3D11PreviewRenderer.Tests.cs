@@ -373,6 +373,11 @@ static partial class Program
                      "FlashbackPlaybackPendingCommands",
                      "FlashbackPlaybackSubmitFailures",
                      "FlashbackPlaybackDecodeErrorSnaps",
+                     "FlashbackExportActive",
+                     "FlashbackExportStatus",
+                     "FlashbackExportPercent",
+                     "FlashbackExportThroughputBytesPerSec",
+                     "FlashbackExportLastProgressAgeMs",
                      "ProcessCpuPercent"
                  })
         {
