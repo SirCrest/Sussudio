@@ -346,16 +346,17 @@ internal sealed class FlashbackBufferManager : IDisposable
         {
             ThrowIfDisposed();
 
-            Directory.CreateDirectory(_options.TempDirectory);
-            var sessionDirectory = Path.Combine(_options.TempDirectory, sessionId);
+            var tempDirectory = Path.GetFullPath(_options.TempDirectory);
+            Directory.CreateDirectory(tempDirectory);
+            var sessionDirectory = BuildSessionDirectory(tempDirectory, sessionId);
             Directory.CreateDirectory(sessionDirectory);
 
             // Clean up orphaned export temp files from previous sessions
-            FlashbackExporter.CleanupOrphanedTempFiles(_options.TempDirectory);
-            CleanupStaleRootSegmentFiles(_options.TempDirectory);
-            CleanupStaleSessionDirectories(_options.TempDirectory, sessionDirectory);
+            FlashbackExporter.CleanupOrphanedTempFiles(tempDirectory);
+            CleanupStaleRootSegmentFiles(tempDirectory);
+            CleanupStaleSessionDirectories(tempDirectory, sessionDirectory);
             var cacheCleanup = CleanupSessionCacheBudget(
-                _options.TempDirectory,
+                tempDirectory,
                 sessionDirectory,
                 CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));
 
@@ -379,7 +380,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             _sessionDirectory = sessionDirectory;
 
             Logger.Log(
-                $"FLASHBACK_BUFFER_INIT session='{sessionId}' temp_dir='{_options.TempDirectory}' session_dir='{sessionDirectory}'");
+                $"FLASHBACK_BUFFER_INIT session='{sessionId}' temp_dir='{tempDirectory}' session_dir='{sessionDirectory}'");
         }
     }
 
@@ -453,6 +454,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         try
         {
+            var tempRoot = EnsureTrailingDirectorySeparator(Path.GetFullPath(tempDirectory));
             var currentFullPath = Path.GetFullPath(currentSessionDirectory);
             var nowUtc = DateTime.UtcNow;
             var scannedCount = 0;
@@ -470,6 +472,12 @@ internal sealed class FlashbackBufferManager : IDisposable
                 scannedCount++;
 
                 var fullPath = Path.GetFullPath(directory);
+                if (!IsPathUnderDirectory(fullPath, tempRoot))
+                {
+                    Logger.Log($"FLASHBACK_STALE_SESSION_SKIP reason=outside_temp dir='{fullPath}'");
+                    continue;
+                }
+
                 if (string.Equals(fullPath, currentFullPath, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
@@ -478,6 +486,12 @@ internal sealed class FlashbackBufferManager : IDisposable
                 var info = new DirectoryInfo(fullPath);
                 if (!info.Exists)
                 {
+                    continue;
+                }
+
+                if (IsReparsePoint(info))
+                {
+                    Logger.Log($"FLASHBACK_STALE_SESSION_SKIP reason=reparse_point dir='{fullPath}'");
                     continue;
                 }
 
@@ -553,6 +567,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
         try
         {
+            var tempRoot = EnsureTrailingDirectorySeparator(Path.GetFullPath(tempDirectory));
             var currentFullPath = Path.GetFullPath(currentSessionDirectory);
             var candidates = new List<StartupCacheCandidate>();
             var scannedCount = 0;
@@ -581,6 +596,12 @@ internal sealed class FlashbackBufferManager : IDisposable
                 scannedCount++;
 
                 var fullPath = Path.GetFullPath(directory);
+                if (!IsPathUnderDirectory(fullPath, tempRoot))
+                {
+                    Logger.Log($"FLASHBACK_CACHE_BUDGET_SKIP reason=outside_temp dir='{fullPath}'");
+                    continue;
+                }
+
                 if (string.Equals(fullPath, currentFullPath, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
@@ -684,6 +705,12 @@ internal sealed class FlashbackBufferManager : IDisposable
                 return false;
             }
 
+            if (IsReparsePoint(info))
+            {
+                Logger.Log($"FLASHBACK_SESSION_STATS_SKIP reason=reparse_point dir='{fullPath}'");
+                return false;
+            }
+
             latestActivityUtc = info.LastWriteTimeUtc;
             var looksLikeFlashbackSession = false;
             foreach (var file in info.EnumerateFiles("fb_*", SearchOption.TopDirectoryOnly))
@@ -758,6 +785,35 @@ internal sealed class FlashbackBufferManager : IDisposable
             Logger.Log($"FLASHBACK_STALE_ROOT_SEGMENT_CLEANUP_WARN type={ex.GetType().Name} msg={ex.Message}");
         }
     }
+
+    private static string BuildSessionDirectory(string tempDirectory, string sessionId)
+    {
+        if (Path.IsPathRooted(sessionId) ||
+            sessionId.IndexOf(Path.DirectorySeparatorChar) >= 0 ||
+            sessionId.IndexOf(Path.AltDirectorySeparatorChar) >= 0 ||
+            sessionId.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            throw new ArgumentException("Session id must be a simple file-name component.", nameof(sessionId));
+        }
+
+        var tempRoot = EnsureTrailingDirectorySeparator(Path.GetFullPath(tempDirectory));
+        var sessionDirectory = Path.GetFullPath(Path.Combine(tempRoot, sessionId));
+        if (!IsPathUnderDirectory(sessionDirectory, tempRoot))
+        {
+            throw new ArgumentException("Session id must resolve inside the flashback temp directory.", nameof(sessionId));
+        }
+
+        return sessionDirectory;
+    }
+
+    private static string EnsureTrailingDirectorySeparator(string path)
+        => Path.EndsInDirectorySeparator(path) ? path : path + Path.DirectorySeparatorChar;
+
+    private static bool IsPathUnderDirectory(string fullPath, string fullDirectoryRoot)
+        => fullPath.StartsWith(fullDirectoryRoot, StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsReparsePoint(FileSystemInfo info)
+        => (info.Attributes & FileAttributes.ReparsePoint) != 0;
 
     public void OnSegmentCompleted(string path, TimeSpan startPts, TimeSpan endPts, long sizeBytes)
     {

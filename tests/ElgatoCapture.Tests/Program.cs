@@ -465,6 +465,9 @@ static partial class Program
             await RunCheckAsync(
                 "FlashbackBufferManager trims startup session cache budget",
                 FlashbackBufferManager_TrimsStartupSessionCacheBudget),
+            await RunCheckAsync(
+                "FlashbackBufferManager rejects unsafe session ids",
+                FlashbackBufferManager_RejectsUnsafeSessionIds),
 
             // --- GpuPipelineHandles ---
             await RunCheckAsync(
@@ -2764,6 +2767,43 @@ static partial class Program
             AssertEqual(true, Directory.Exists(recentSession), "Recent session preserved once budget is satisfied");
             AssertEqual(true, Directory.Exists(preservedSession), "Recovery-preserved session skipped");
             AssertEqual(true, Directory.Exists(nonFlashbackDirectory), "Non-flashback directory preserved");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_RejectsUnsafeSessionIds()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_session_id_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+            var options = RuntimeHelpers.GetUninitializedObject(optionsType);
+            SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
+            SetPropertyBackingField(options, "TempDirectory", tempDir);
+            SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
+
+            var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+            using var manager = (IDisposable)Activator.CreateInstance(managerType, new[] { options })!;
+            var initialize = managerType.GetMethod("Initialize")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.Initialize not found.");
+
+            try
+            {
+                initialize.Invoke(manager, new object[] { "..\\outside-session" });
+                throw new InvalidOperationException("Expected unsafe session id to be rejected.");
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException is ArgumentException)
+            {
+            }
+
+            AssertEqual(false, Directory.Exists(Path.Combine(Directory.GetParent(tempDir)!.FullName, "outside-session")), "Unsafe session id must not create outside directory");
         }
         finally
         {
