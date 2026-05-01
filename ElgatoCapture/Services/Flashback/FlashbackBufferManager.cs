@@ -915,27 +915,15 @@ internal sealed class FlashbackBufferManager : IDisposable
     }
 
     /// <summary>
-    /// Returns the segment file path containing the given absolute PTS, or the active segment
-    /// as fallback. Used by the playback controller to open the correct file for seeking.
+    /// Returns an existing segment file path containing the given absolute PTS, or the active segment
+    /// as fallback when it exists.
     /// </summary>
     public string? GetSegmentFileForPosition(TimeSpan absolutePts)
-    {
-        lock (_indexLock)
-        {
-            // Search completed segments (they have known PTS ranges)
-            foreach (var seg in _completedSegments)
-            {
-                if (absolutePts >= seg.StartPts && absolutePts < seg.EndPts)
-                    return seg.Path;
-            }
-            // Fall back to active segment (contains the most recent, still-growing data)
-            return _activeSegmentPath;
-        }
-    }
+        => GetValidSegmentFileForPosition(absolutePts);
 
     /// <summary>
-    /// Returns a validated segment file path for the given position. Unlike GetSegmentFileForPosition,
-    /// this checks that the file still exists (hasn't been evicted between lookup and open).
+    /// Returns a validated segment file path for the given position.
+    /// This checks that the file still exists (hasn't been evicted between lookup and open).
     /// If the target segment was evicted, falls back to the oldest available segment.
     /// </summary>
     public string? GetValidSegmentFileForPosition(TimeSpan absolutePts)
@@ -996,39 +984,6 @@ internal sealed class FlashbackBufferManager : IDisposable
             Logger.Log($"FLASHBACK_BUFFER_SEGMENT_PATH_WARN path='{path}' type={ex.GetType().Name} msg='{ex.Message}'");
             return false;
         }
-    }
-
-    /// <summary>
-    /// Core lookup without lock — caller must hold _indexLock.
-    /// Uses binary search since completed segments are sorted by StartPts.
-    /// </summary>
-    private string? GetSegmentFileForPositionCore(TimeSpan absolutePts)
-    {
-        var segments = _completedSegments;
-        var count = segments.Count;
-        if (count == 0)
-            return _activeSegmentPath;
-
-        // Binary search: find the last segment whose StartPts <= absolutePts
-        int lo = 0, hi = count - 1, best = -1;
-        while (lo <= hi)
-        {
-            var mid = lo + (hi - lo) / 2;
-            if (segments[mid].StartPts <= absolutePts)
-            {
-                best = mid;
-                lo = mid + 1;
-            }
-            else
-            {
-                hi = mid - 1;
-            }
-        }
-
-        if (best >= 0 && absolutePts < segments[best].EndPts)
-            return segments[best].Path;
-
-        return _activeSegmentPath;
     }
 
     /// <summary>

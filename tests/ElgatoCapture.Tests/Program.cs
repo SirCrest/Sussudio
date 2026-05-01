@@ -2428,22 +2428,35 @@ static partial class Program
     private static Task FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
         var manager = CreateInitializedBufferManager(tempDir);
 
+        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(source, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)\n        => GetValidSegmentFileForPosition(absolutePts);");
+
         // Add 3 segments: 0-5s, 5-10s, 10-15s
-        AddCompletedSegment(manager, "/seg0.ts", TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 1000);
-        AddCompletedSegment(manager, "/seg1.ts", TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 1000);
-        AddCompletedSegment(manager, "/seg2.ts", TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 1000);
+        var seg0 = Path.Combine(tempDir, "seg0.ts");
+        var seg1 = Path.Combine(tempDir, "seg1.ts");
+        var seg2 = Path.Combine(tempDir, "seg2.ts");
+        var active = Path.Combine(tempDir, "fb_test_0003.ts");
+        File.WriteAllText(seg0, "segment");
+        File.WriteAllText(seg1, "segment");
+        File.WriteAllText(seg2, "segment");
+        File.WriteAllText(active, "active");
+        AddCompletedSegment(manager, seg0, TimeSpan.FromSeconds(0), TimeSpan.FromSeconds(5), 1000);
+        AddCompletedSegment(manager, seg1, TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(10), 1000);
+        AddCompletedSegment(manager, seg2, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(15), 1000);
 
         var method = manager.GetType().GetMethod("GetSegmentFileForPosition")!;
 
         // Position 7s → segment 1 (5-10s)
         var result1 = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(7) }) as string;
-        AssertEqual("/seg1.ts", result1!, "Position 7s");
+        AssertEqual(seg1, result1!, "Position 7s");
 
         // Position 0s → segment 0 (0-5s)
         var result2 = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(0) }) as string;
-        AssertEqual("/seg0.ts", result2!, "Position 0s");
+        AssertEqual(seg0, result2!, "Position 0s");
 
         // Position 20s → not in any completed segment → falls back to active
         var result3 = method.Invoke(manager, new object[] { TimeSpan.FromSeconds(20) }) as string;
