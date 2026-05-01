@@ -448,6 +448,9 @@ static partial class Program
                 "FlashbackBufferManager segment rotation keeps total bytes written monotonic",
                 FlashbackBufferManager_SegmentRotationKeepsTotalBytesWrittenMonotonic),
             await RunCheckAsync(
+                "FlashbackBufferManager ignores updates after dispose",
+                FlashbackBufferManager_IgnoresUpdatesAfterDispose),
+            await RunCheckAsync(
                 "FlashbackBufferManager valid segment lookup skips missing files",
                 FlashbackBufferManager_GetValidSegmentFileForPosition_SkipsMissingFiles),
             await RunCheckAsync(
@@ -2573,6 +2576,45 @@ static partial class Program
         updateDiskBytes.Invoke(manager, new object[] { 100L });
         AssertEqual(1300L, GetLongProperty(manager, "TotalBytesWritten"), "First bytes from next segment counted after rotation");
 
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_IgnoresUpdatesAfterDispose()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_disposed_{Guid.NewGuid():N}");
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var updateLatestPts = manager.GetType().GetMethod("UpdateLatestPts")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.UpdateLatestPts not found.");
+        var updateDiskBytes = manager.GetType().GetMethod("UpdateDiskBytes")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.UpdateDiskBytes not found.");
+        var onSegmentCompleted = manager.GetType().GetMethod("OnSegmentCompleted")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.OnSegmentCompleted not found.");
+
+        ((IDisposable)manager).Dispose();
+
+        updateLatestPts.Invoke(manager, new object[] { TimeSpan.FromSeconds(5) });
+        updateDiskBytes.Invoke(manager, new object[] { 4096L });
+        onSegmentCompleted.Invoke(manager, new object[]
+        {
+            Path.Combine(tempDir, "completed-after-dispose.ts"),
+            TimeSpan.Zero,
+            TimeSpan.FromSeconds(1),
+            1200L
+        });
+
+        AssertEqual(TimeSpan.Zero, (TimeSpan)GetPropertyValue(manager, "LatestPts")!, "Disposed manager ignores latest PTS updates");
+        AssertEqual(0L, GetLongProperty(manager, "TotalBytesWritten"), "Disposed manager ignores disk and segment byte updates");
+        AssertEqual(0, (int)GetPrivateField(manager, "_completedSegmentSequence")!, "Disposed manager does not allocate segment sequence");
+
+        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(source, "private volatile bool _disposed;");
+        AssertContains(source, "FLASHBACK_BUFFER_SEGMENT_SKIP reason=disposed");
+        AssertContains(source, "public void UpdateLatestPts(TimeSpan pts)\n    {\n        if (_disposed)\n        {\n            return;\n        }");
+        AssertContains(source, "public void UpdateDiskBytes(long activeSegmentBytes)\n    {\n        if (_disposed)\n        {\n            return;\n        }");
+
+        try { Directory.Delete(tempDir, recursive: true); } catch { }
         return Task.CompletedTask;
     }
 

@@ -40,7 +40,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private long _startupCacheFreedBytes;
     private int _startupCacheSessionCount;
     private int _startupCacheDeletedSessionCount;
-    private bool _disposed;
+    private volatile bool _disposed;
     private int _evictionPauseCount;
     private TimeSpan _recordingStartPts;
     private TimeSpan _recordingEndPts;
@@ -844,6 +844,12 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     public void OnSegmentCompleted(string path, TimeSpan startPts, TimeSpan endPts, long sizeBytes)
     {
+        if (_disposed)
+        {
+            Logger.Log("FLASHBACK_BUFFER_SEGMENT_SKIP reason=disposed");
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(path))
         {
             Logger.Log("FLASHBACK_BUFFER_SEGMENT_SKIP reason=empty_path");
@@ -859,6 +865,12 @@ internal sealed class FlashbackBufferManager : IDisposable
         var safeSizeBytes = Math.Max(0, sizeBytes);
         lock (_indexLock)
         {
+            if (_disposed)
+            {
+                Logger.Log("FLASHBACK_BUFFER_SEGMENT_SKIP reason=disposed");
+                return;
+            }
+
             if (!IsPathInSessionDirectory(path))
             {
                 Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=outside_session path='{Path.GetFileName(path)}'");
@@ -1121,6 +1133,11 @@ internal sealed class FlashbackBufferManager : IDisposable
     /// </summary>
     public void UpdateLatestPts(TimeSpan pts)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         var ptsTicks = pts.Ticks;
         // Atomic monotonic update
         long current;
@@ -1168,8 +1185,18 @@ internal sealed class FlashbackBufferManager : IDisposable
     /// </summary>
     public void UpdateDiskBytes(long activeSegmentBytes)
     {
+        if (_disposed)
+        {
+            return;
+        }
+
         lock (_indexLock)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             var safeActiveSegmentBytes = Math.Max(0, activeSegmentBytes);
             // Track monotonic bytes written: when active segment grows, add the delta.
             // On rotation activeSegmentBytes resets to 0 — the completed segment's bytes
