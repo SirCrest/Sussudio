@@ -1761,6 +1761,8 @@ static partial class Program
             "    /// <summary>\n    /// Closes the currently open file");
         AssertContains(openFileBlock, "FLASHBACK_DECODER_OPEN_WARN");
         AssertContains(openFileBlock, "CloseFileCore();\n            throw;");
+        AssertContains(decoderText, "var closedPath = _currentFilePath;\n        CloseFileCore();\n        Logger.Log($\"FLASHBACK_DECODER_CLOSE path='{closedPath}'\");");
+        AssertContains(decoderText, "_currentPosition = TimeSpan.Zero;\n        _currentFilePath = null;\n        _needsConvert = false;");
         AssertDoesNotContain(openFileBlock, "System.Diagnostics.Trace.TraceWarning");
         AssertContains(decoderText, "FLASHBACK_DECODER_INIT d3d11va=false reason=exception type={ex.GetType().Name} msg='{ex.Message}'");
         AssertContains(decoderText, "FLASHBACK_DECODER_D3D11VA_SKIP reason=exception type={ex.GetType().Name} msg='{ex.Message}'");

@@ -284,9 +284,9 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             return;
         }
 
+        var closedPath = _currentFilePath;
         CloseFileCore();
-        Logger.Log($"FLASHBACK_DECODER_CLOSE path='{_currentFilePath}'");
-        _currentFilePath = null;
+        Logger.Log($"FLASHBACK_DECODER_CLOSE path='{closedPath}'");
     }
 
     /// <summary>
@@ -1425,6 +1425,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         _firstCalibrationPtsTicks = 0;
         _lastCalibrationPtsTicks = 0;
         _currentPosition = TimeSpan.Zero;
+        _currentFilePath = null;
         _needsConvert = false;
         _currentVideoBufferIndex = 0;
     }
