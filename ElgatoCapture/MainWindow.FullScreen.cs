@@ -129,6 +129,7 @@ public sealed partial class MainWindow
         if (_isFlashbackScrubbing)
         {
             _isFlashbackScrubbing = false;
+            _lastScrubUpdateTick = 0;
             if (ViewModel?.FlashbackEndScrub() == false)
             {
                 ViewModel.ReportFlashbackPlaybackRejection("scrub end (fullscreen_enter)", "FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter");
