@@ -2257,17 +2257,26 @@ internal sealed class FlashbackPlaybackController : IDisposable
         pacingStopwatch.Restart();
         TrackPlaybackCadence(intervalMs, expectedFrameMs);
 
-        if (frameNum == 1)
+        if (frameNum % 60 == 0)
         {
-            _playbackFpsClock.Restart();
-        }
-        else if (frameNum % 60 == 0)
-        {
-            var wallMs = _playbackFpsClock.ElapsedMilliseconds;
-            if (wallMs > 0)
+            // Rolling window over the cadence ring (~2 s at 120 fps) so transient dips
+            // are not smoothed away by the cumulative average over a long session.
+            double sumMs;
+            int count;
+            lock (_playbackCadenceLock)
             {
-                _playbackObservedFps = frameNum * 1000.0 / wallMs;
-                _playbackAvgFrameMs = wallMs / (double)frameNum;
+                count = _playbackFrameIntervalCount;
+                sumMs = 0;
+                for (var i = 0; i < count; i++)
+                {
+                    sumMs += _playbackFrameIntervalsMs[i];
+                }
+            }
+
+            if (count > 0 && sumMs > 0)
+            {
+                _playbackAvgFrameMs = sumMs / count;
+                _playbackObservedFps = count * 1000.0 / sumMs;
             }
         }
     }
