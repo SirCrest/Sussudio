@@ -76,6 +76,7 @@ public sealed partial class MainWindow
                 finally
                 {
                     _isPreviewReinitAnimating = false;
+                    Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(PreviewButton_Click)}");
                     ResetPreviewContentTransform();
                 }
             }

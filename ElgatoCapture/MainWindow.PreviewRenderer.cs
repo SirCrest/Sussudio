@@ -379,12 +379,26 @@ public sealed partial class MainWindow
     private void StopPreviewForShutdown()
     {
         _isPreviewReinitAnimating = false;
+        Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(StopPreviewForShutdown)}");
         StopPreviewFadeInTimer();
         ResetPreviewContentTransform();
         CleanupPreviewResources();
     }
     private Task StartPreviewRendererAsync()
     {
+        // Observability: detect the unsafe window where a new renderer could be allocated
+        // while the prior instance still has an active swap chain (see reasoning_d3d11_preview.md).
+        var prevRenderer = _d3dRenderer;
+        var reinitAnimating = _isPreviewReinitAnimating;
+        if (prevRenderer != null && !reinitAnimating)
+        {
+            var prevSwapChainAddress = prevRenderer.SwapChainAddress;
+            var prevIsRendering = prevRenderer.IsRendering;
+            var timeSinceStopMs = Environment.TickCount64 - Interlocked.Read(ref _lastRendererStopTick);
+            Interlocked.Increment(ref _rendererReinitUnsafeWindows);
+            Logger.Log($"D3D11_RENDERER_REINIT_UNSAFE_WINDOW prev_present={prevSwapChainAddress} reinit_animating={reinitAnimating} prev_rendering={prevIsRendering} time_since_last_stop_ms={timeSinceStopMs}");
+        }
+
         _previewFramesArrived = 0;
         _previewFramesDisplayed = 0;
         _previewFramesDropped = 0;
@@ -495,6 +509,7 @@ public sealed partial class MainWindow
         CleanupPreviewResources();
         _previewLastPresentedTick = 0;
         _previewMinPresentationIntervalMs = 1000.0 / 60.0;
+        Interlocked.Exchange(ref _lastRendererStopTick, Environment.TickCount64);
         Logger.Log("Preview renderer stopped.");
         return Task.CompletedTask;
     }

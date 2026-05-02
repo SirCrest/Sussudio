@@ -53,6 +53,7 @@ public sealed partial class MainWindow
         }
 
         _isPreviewReinitAnimating = true;
+        Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=true caller={nameof(ViewModel_PreviewReinitRequested)}");
         Logger.Log($"PREVIEW_REINIT_ANIMATE_OUT reason={reason}");
         await AnimatePreviewOutAsync();
     }
@@ -187,6 +188,7 @@ public sealed partial class MainWindow
                     if (!ViewModel.IsPreviewing)
                     {
                         _isPreviewReinitAnimating = false;
+                        Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(HandleViewModelPropertyChangedAsync)}");
                         StopPreviewStartupOverlay();
                         ResetPreviewContentTransform();
                         FadeInElement(NoDevicePlaceholder);
@@ -195,6 +197,7 @@ public sealed partial class MainWindow
                     {
                         Logger.Log($"PREVIEW_REINIT_ANIMATE_RESET attempt={_previewStartupAttemptId ?? "none"} reason=reinit-stop-failed");
                         _isPreviewReinitAnimating = false;
+                        Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(HandleViewModelPropertyChangedAsync)}");
                         StopPreviewStartupOverlay();
                         ResetPreviewContentTransform();
                     }

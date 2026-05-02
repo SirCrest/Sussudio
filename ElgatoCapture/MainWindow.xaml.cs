@@ -118,6 +118,9 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private long _previewStartupLastPositionDispatchTick;
     private bool _previewStopRequestedByUser;
     private bool _isPreviewReinitAnimating;
+    private long _lastRendererStopTick;
+    private long _rendererReinitUnsafeWindows;
+    public long RendererReinitUnsafeWindows => Interlocked.Read(ref _rendererReinitUnsafeWindows);
     private DispatcherQueueTimer? _previewFadeInTimer;
     private const int PreviewFadeInFrameThreshold = 3;
     private bool _isWindowClosing;

@@ -422,6 +422,7 @@ public sealed partial class MainWindow
         {
             Logger.Log($"PREVIEW_REINIT_ANIMATE_IN attempt={_previewStartupAttemptId ?? "none"}");
             _isPreviewReinitAnimating = false;
+            Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(ConfirmPreviewFirstVisual)}");
         }
         _previewStartupMissingSignals = string.Empty;
         var elapsedMs = _previewStartupRequestedUtc.HasValue
@@ -491,6 +492,7 @@ public sealed partial class MainWindow
         if (!preserveReinitAnimation)
         {
             _isPreviewReinitAnimating = false;
+            Logger.Log($"D3D11_RENDERER_REINIT_FLAG flag=false caller={nameof(ResetPreviewStartupTracking)}");
         }
         _previewStartupAttemptId = null;
         _previewStartupRequestedUtc = null;
