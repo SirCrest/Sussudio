@@ -64,6 +64,7 @@ public sealed class DiagnosticSessionResult
     public long FlashbackPlaybackSlowFramesAtEnd { get; init; }
     public double FlashbackPlaybackSlowFramePercentAtEnd { get; init; }
     public long FlashbackPlaybackDroppedFramesAtEnd { get; init; }
+    public long FlashbackPlaybackDroppedFramesDelta { get; init; }
     public long FlashbackPlaybackAudioMasterDelayDoublesAtEnd { get; init; }
     public long FlashbackPlaybackAudioMasterDelayShrinksAtEnd { get; init; }
     public long FlashbackPlaybackAudioMasterFallbacksAtEnd { get; init; }
@@ -74,6 +75,7 @@ public sealed class DiagnosticSessionResult
     public double FlashbackPlaybackMaxAudioQueueDurationMsObserved { get; init; }
     public double FlashbackPlaybackMaxAbsAvDriftMsObserved { get; init; }
     public long FlashbackPlaybackSubmitFailuresAtEnd { get; init; }
+    public long FlashbackPlaybackSubmitFailuresDelta { get; init; }
     public long FlashbackPlaybackSegmentSwitchesAtEnd { get; init; }
     public long FlashbackPlaybackFmp4ReopensAtEnd { get; init; }
     public long FlashbackPlaybackWriteHeadWaitsAtEnd { get; init; }
@@ -785,6 +787,7 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackSlowFramesAtEnd = playbackSlowFramesAtEnd,
             FlashbackPlaybackSlowFramePercentAtEnd = playbackSlowFramePercentAtEnd,
             FlashbackPlaybackDroppedFramesAtEnd = playbackDroppedFramesAtEnd,
+            FlashbackPlaybackDroppedFramesDelta = playbackSessionMetrics.DroppedFramesDelta,
             FlashbackPlaybackAudioMasterDelayDoublesAtEnd = playbackAudioMasterDelayDoublesAtEnd,
             FlashbackPlaybackAudioMasterDelayShrinksAtEnd = playbackAudioMasterDelayShrinksAtEnd,
             FlashbackPlaybackAudioMasterFallbacksAtEnd = playbackAudioMasterFallbacksAtEnd,
@@ -795,6 +798,7 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackMaxAudioQueueDurationMsObserved = playbackSessionMetrics.MaxAudioQueueDurationMsObserved,
             FlashbackPlaybackMaxAbsAvDriftMsObserved = playbackSessionMetrics.MaxAbsAvDriftMsObserved,
             FlashbackPlaybackSubmitFailuresAtEnd = playbackSubmitFailuresAtEnd,
+            FlashbackPlaybackSubmitFailuresDelta = playbackSessionMetrics.SubmitFailuresDelta,
             FlashbackPlaybackSegmentSwitchesAtEnd = playbackSegmentSwitchesAtEnd,
             FlashbackPlaybackFmp4ReopensAtEnd = playbackFmp4ReopensAtEnd,
             FlashbackPlaybackWriteHeadWaitsAtEnd = playbackWriteHeadWaitsAtEnd,
@@ -966,6 +970,7 @@ public static class DiagnosticSessionRunner
             $"slowPctEnd={result.FlashbackPlaybackSlowFramePercentAtEnd:0.##} " +
             $"slowPctMax={result.FlashbackPlaybackMaxSlowFramePercentObserved:0.##} " +
             $"droppedFramesEnd={result.FlashbackPlaybackDroppedFramesAtEnd} " +
+            $"droppedFramesDelta={result.FlashbackPlaybackDroppedFramesDelta} " +
             $"audioMasterDoubleEnd={result.FlashbackPlaybackAudioMasterDelayDoublesAtEnd} " +
             $"audioMasterDoubleMax={result.FlashbackPlaybackMaxAudioMasterDelayDoublesObserved} " +
             $"audioMasterShrinkEnd={result.FlashbackPlaybackAudioMasterDelayShrinksAtEnd} " +
@@ -975,7 +980,8 @@ public static class DiagnosticSessionRunner
             $"audioBufferedMsMax={result.FlashbackPlaybackMaxAudioBufferedDurationMsObserved:0.##} " +
             $"audioQueueMsMax={result.FlashbackPlaybackMaxAudioQueueDurationMsObserved:0.##} " +
             $"absAvDriftMsMax={result.FlashbackPlaybackMaxAbsAvDriftMsObserved:0.##} " +
-            $"submitFailuresEnd={result.FlashbackPlaybackSubmitFailuresAtEnd}");
+            $"submitFailuresEnd={result.FlashbackPlaybackSubmitFailuresAtEnd} " +
+            $"submitFailuresDelta={result.FlashbackPlaybackSubmitFailuresDelta}");
         builder.AppendLine(
             "Flashback Playback Decode: " +
             $"avgMsEnd={result.FlashbackPlaybackDecodeAvgMsAtEnd:0.##} " +
@@ -3203,16 +3209,16 @@ public static class DiagnosticSessionRunner
             }
         }
 
-        var droppedFrames = GetNullableLong(lastSnapshot, "FlashbackPlaybackDroppedFrames") ?? 0;
-        if (droppedFrames > 0)
+        if (metrics.DroppedFramesDelta > 0)
         {
-            warnings.Add($"flashback playback: dropped frames were reported dropped={droppedFrames}");
+            var droppedFrames = GetNullableLong(lastSnapshot, "FlashbackPlaybackDroppedFrames") ?? 0;
+            warnings.Add($"flashback playback: dropped frames increased delta={metrics.DroppedFramesDelta} end={droppedFrames}");
         }
 
-        var submitFailures = GetNullableLong(lastSnapshot, "FlashbackPlaybackSubmitFailures") ?? 0;
-        if (submitFailures > 0)
+        if (metrics.SubmitFailuresDelta > 0)
         {
-            warnings.Add($"flashback playback: submit failures were reported failures={submitFailures}");
+            var submitFailures = GetNullableLong(lastSnapshot, "FlashbackPlaybackSubmitFailures") ?? 0;
+            warnings.Add($"flashback playback: submit failures increased delta={metrics.SubmitFailuresDelta} end={submitFailures}");
         }
 
         const double maxHealthyAudioBufferedMs = 250.0;
@@ -3314,6 +3320,18 @@ public static class DiagnosticSessionRunner
             metrics.MinObservedFpsObserved = 0;
         }
 
+        if (metrics.Observed)
+        {
+            metrics.DroppedFramesDelta = GetCounterDelta(
+                metrics.EndSnapshot,
+                initialSnapshot,
+                "FlashbackPlaybackDroppedFrames");
+            metrics.SubmitFailuresDelta = GetCounterDelta(
+                metrics.EndSnapshot,
+                initialSnapshot,
+                "FlashbackPlaybackSubmitFailures");
+        }
+
         return metrics;
     }
 
@@ -3325,9 +3343,17 @@ public static class DiagnosticSessionRunner
         long baselineCommandsProcessed,
         bool baselinePlaybackActive)
     {
-        const long MinimumPlaybackFramesForLowPercentile = 240;
-
         var frameCount = GetNullableLong(snapshot, "FlashbackPlaybackFrameCount") ?? 0;
+        var sessionFrameCount = Math.Max(0, frameCount - baselineFrameCount);
+        var targetFps = GetDouble(snapshot, "FlashbackPlaybackTargetFps");
+        if (targetFps <= 0)
+        {
+            targetFps = GetDouble(snapshot, "SelectedExactFrameRate");
+        }
+
+        var minimumPlaybackFramesForLowPercentile = Math.Max(
+            240,
+            targetFps > 0 ? (long)Math.Ceiling(targetFps * 10.0) : 240);
         var commandsEnqueued = GetNullableLong(snapshot, "FlashbackPlaybackCommandsEnqueued") ?? 0;
         var commandsProcessed = GetNullableLong(snapshot, "FlashbackPlaybackCommandsProcessed") ?? 0;
         var relevantToSession =
@@ -3358,7 +3384,7 @@ public static class DiagnosticSessionRunner
         }
 
         var onePercentLow = GetDouble(snapshot, "FlashbackPlaybackOnePercentLowFps");
-        if (onePercentLow > 0 && frameCount >= MinimumPlaybackFramesForLowPercentile)
+        if (onePercentLow > 0 && sessionFrameCount >= minimumPlaybackFramesForLowPercentile)
         {
             metrics.MinOnePercentLowFpsObserved = Math.Min(metrics.MinOnePercentLowFpsObserved, onePercentLow);
         }
@@ -3404,6 +3430,8 @@ public static class DiagnosticSessionRunner
         public double MaxAudioBufferedDurationMsObserved { get; set; }
         public double MaxAudioQueueDurationMsObserved { get; set; }
         public double MaxAbsAvDriftMsObserved { get; set; }
+        public long DroppedFramesDelta { get; set; }
+        public long SubmitFailuresDelta { get; set; }
     }
 
     private static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(
