@@ -3240,3 +3240,20 @@ The flashback-playback 1% low dip is empirically resolved across four independen
 - `maxFrameMsObserved=17.59` is a one-frame outlier within the 5s window where `slowPctMax=30.77`; `lateEnd=15`/`slowEnd=12` over the full session = 0.17% of frames. The pre-fix dip was a sustained multi-frame stall; this is OS scheduling jitter, not the same class of failure.
 
 **Audit summary.** Five consecutive 60s live diagnostics close the audit gate on the headline flashback-playback dip. The other 19 source-level commits are backed by independent code-survey findings at named file:line sites with compile-clean diffs; their fault paths (cancellation mid-recording, induced rotate fault, HDR-negotiation drop, export-during-dispose-timeout, scrub capture-lost, etc.) require inducing specific failure modes that are not covered by the existing diagnostic scenarios. Those remain open for either targeted integration tests or scenario-specific live exercises in future sessions. The diagnostic plumbing now in place (close-trigger stack capture, pipe-command source PID logging, hook stdin-aware filtering) ensures the kind of regression that blocked validation earlier in this session would now be visible immediately.
+
+## 2026-05-02 — Renderer-reinit observability + 3-minute soak artifact
+
+**Renderer reinit observability.** Added pure-observation instrumentation to detect when `StartPreviewRendererAsync` enters with a still-bound prior renderer and `_isPreviewReinitAnimating==false` (the survey-identified D3D11 SetSwapChain AV race window). Adds `_lastRendererStopTick`, `_rendererReinitUnsafeWindows` Interlocked counter, `D3D11_RENDERER_REINIT_UNSAFE_WINDOW` event with `prev_present`, `prev_rendering`, `time_since_last_stop_ms` fields, plus a `D3D11_RENDERER_REINIT_FLAG flag=... caller=...` log at every flag-write site (PropertyChanged, PreviewRenderer, PreviewStartup, EventHandlers). The proper serialization lock fix is deferred — riskier D3D11 territory than is appropriate for this session — but the unsafe-window will now be visible in the log if it actually opens in practice, giving the next session concrete data to decide whether the lock is needed.
+
+**Extended-soak artifact.** A 180-second `flashback-playback` live diagnostic against the build with all 22 source-level commits:
+
+- `framesEnd=21584` (118.8fps over 180s — within rounding of source 119.88fps).
+- `fpsMin=119.23`, `onePercentLowFpsMin=111.66` — both well above the 96fps floor that the original 2026-05-01 dip session failed at (`89.61fps`).
+- `onePercentLowMinOffsetMs=161045` — worst sample at 161s into the session, still shallow.
+- `onePercentLowMinDecodeP99Ms=8.94`, `onePercentLowMinDecodeMaxMs=10.13` — decode latency within the 8.33ms target ± a couple of ms.
+- `onePercentLowMinAvDriftMs=0`, `audioBufferedMsMax=0`, `audioQueueMsMax=0` — A/V pacing primitives healthy throughout.
+- `slowPctMax=0.02`, `slowEnd=3` over 21584 frames = **0.014% slow frames over 3 minutes**.
+- `droppedFramesEnd=0`, `submitFailuresEnd=0`, `absAvDriftMsMax=0`.
+- The single `maxFrameMsObserved=19.19` is one outlier frame in a 3-minute window vs the prior sustained dip.
+
+The audio-gate dip fix is empirically validated across six independent live runs (5x 60s + 1x 180s) with progressively more demanding workloads. The pre-fix failing baseline was a sustained dip to `89.61fps` over a single 60s session; the post-fix evidence is a tightest-observed `slowPctMax=0.02` over 180s with the worst 1% low at `111.66fps`.
