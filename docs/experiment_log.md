@@ -3008,3 +3008,13 @@ Goal: harden flashback recording, previewing, scrubbing, export, playback to bul
 
 ### Test discipline
 Every fix is accompanied by source-text test assertions (matching the existing pattern). The reentrant BeginScrub fix would benefit from an integration test that exercises the queue race, but no end-to-end harness exists for that yet.
+
+## 2026-05-01 — Flashback decoder open failure hardening
+
+Follow-up from the deferred list above.
+
+**Issue:** `EnsureFileOpen` caught `decoder.OpenFile` exceptions, cleared controller bookkeeping, but did not forcibly close a decoder that may have become partially open before throwing. Callers then checked only `decoder.IsOpen`, so a half-open or stale native decoder could proceed into seek/display paths even though `fileOpen=false` and `_currentOpenFilePath=null`.
+
+**Change:** `EnsureFileOpen` now closes any partially opened decoder in the exception path using `CloseDecoderFileBestEffort(..., "ensure_file_open_error")`. All command paths that call `EnsureFileOpen` now gate on `fileOpen && decoder.IsOpen` via `IsDecoderFileReady`, covering Seek, BeginScrub, UpdateScrub, Play, and Nudge.
+
+**Verification:** `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore`, `dotnet build ElgatoCapture.slnx -c Debug --no-restore /nr:false`, and `git diff --check` all passed after the fix.

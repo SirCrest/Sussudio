@@ -720,7 +720,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
-                        if (!decoder.IsOpen)
+                        if (!IsDecoderFileReady(decoder, fileOpen))
                         {
                             SetNoFileFailure(CommandKind.Seek, cmd.Position);
                             Logger.Log("FLASHBACK_PLAYBACK_SEEK_NO_FILE - restoring live");
@@ -789,7 +789,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
-                        if (!decoder.IsOpen)
+                        if (!IsDecoderFileReady(decoder, fileOpen))
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_SCRUB_NO_FILE — restoring live");
                             isScrubbing = false;
@@ -830,7 +830,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
-                        if (!decoder.IsOpen)
+                        if (!IsDecoderFileReady(decoder, fileOpen))
                         {
                             SetNoFileFailure(CommandKind.UpdateScrub, cmd.Position);
                             isScrubbing = false;
@@ -906,7 +906,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         decoder ??= CreateDecoder();
                         var prevFile = _currentOpenFilePath;
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(PlaybackPosition, frozenValidStart));
-                        if (!decoder.IsOpen)
+                        if (!IsDecoderFileReady(decoder, fileOpen))
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE — restoring live");
                             SetNoFileFailure(CommandKind.Play, PlaybackPosition);
@@ -1002,7 +1002,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         nudgedPos = ClampPosition(nudgedPos, frozenValidStart);
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));
-                        if (!decoder.IsOpen)
+                        if (!IsDecoderFileReady(decoder, fileOpen))
                         {
                             SetNoFileFailure(CommandKind.Nudge, nudgedPos);
                             PlaybackPosition = nudgedPos;
@@ -1200,11 +1200,18 @@ internal sealed class FlashbackPlaybackController : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_PLAYBACK_FILE_OPEN_ERROR path='{filePath}' type={ex.GetType().Name} error='{ex.Message}'");
+            if (decoder.IsOpen)
+            {
+                CloseDecoderFileBestEffort(decoder, "ensure_file_open_error");
+            }
             _decoderHwAccel = "N/A";
             fileOpen = false;
             _currentOpenFilePath = null;
         }
     }
+
+    private static bool IsDecoderFileReady(FlashbackDecoder decoder, bool fileOpen)
+        => fileOpen && decoder.IsOpen;
 
     private void CleanupDecoder(ref FlashbackDecoder? decoder, ref bool fileOpen)
     {
