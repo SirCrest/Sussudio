@@ -68,6 +68,7 @@
                             <MenuFlyoutItem.Icon>
                                 <FontIcon Glyph="&#xE740;"/>
                             </MenuFlyoutItem.Icon>
+                            <MenuFlyoutItem.KeyboardAcceleratorTextOverride>F11</MenuFlyoutItem.KeyboardAcceleratorTextOverride>
                         </MenuFlyoutItem>
                     </MenuFlyout>
                 </Border.ContextFlyout>
@@ -1679,7 +1680,10 @@
                             Width="36" Height="36"
                             Padding="0"
                             CornerRadius="8"
-                            ToolTipService.ToolTip="Device and output settings">
+                            ToolTipService.ToolTip="Device and output settings (Ctrl+D)">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="D" Modifiers="Control"/>
+                        </Button.KeyboardAccelerators>
                         <FontIcon Glyph="&#xE713;" FontSize="14"/>
                     </Button>
                     <Button x:Name="OpenRecordingsButton"
@@ -1688,7 +1692,10 @@
                             Width="36" Height="36"
                             Padding="0"
                             CornerRadius="8"
-                            ToolTipService.ToolTip="Open recordings folder">
+                            ToolTipService.ToolTip="Open recordings folder (Ctrl+E)">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="E" Modifiers="Control"/>
+                        </Button.KeyboardAccelerators>
                         <Grid>
                             <FontIcon Glyph="&#xE8B7;" FontSize="15"/>
                             <FontIcon Glyph="&#xE768;" FontSize="6" Margin="1,2,0,0"/>
@@ -1701,7 +1708,10 @@
                             Width="36" Height="36"
                             Padding="0"
                             CornerRadius="8"
-                            ToolTipService.ToolTip="Capture screenshot">
+                            ToolTipService.ToolTip="Capture screenshot (Ctrl+Shift+S)">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="S" Modifiers="Control,Shift"/>
+                        </Button.KeyboardAccelerators>
                         <FontIcon Glyph="&#xE722;" FontSize="14"/>
                     </Button>
                     <Button x:Name="RecordButton"
@@ -1712,7 +1722,11 @@
                             Padding="0"
                             Background="{ThemeResource RecordButtonBrush}"
                             BorderBrush="Transparent"
-                            CornerRadius="18">
+                            CornerRadius="18"
+                            ToolTipService.ToolTip="Start/stop recording (Ctrl+R)">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="R" Modifiers="Control"/>
+                        </Button.KeyboardAccelerators>
                         <Button.Resources>
                             <SolidColorBrush x:Key="ButtonBackground" Color="#E81123"/>
                             <SolidColorBrush x:Key="ButtonBackgroundPointerOver" Color="#FF4D5E"/>
@@ -1765,7 +1779,10 @@
                             Height="36"
                             Padding="10,0"
                             CornerRadius="8"
-                            ToolTipService.ToolTip="Start Preview">
+                            ToolTipService.ToolTip="Start Preview (Ctrl+P)">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="P" Modifiers="Control"/>
+                        </Button.KeyboardAccelerators>
                         <StackPanel Orientation="Horizontal" Spacing="6">
                             <FontIcon x:Name="PreviewButtonIcon" Glyph="&#xE768;" FontSize="14"/>
                             <TextBlock x:Name="PreviewButtonLabel" Text="Preview"
@@ -1879,7 +1896,10 @@
                             VerticalAlignment="Center"
                             Width="36" Height="36"
                             Padding="0" CornerRadius="8"
-                            ToolTipService.ToolTip="Full screen">
+                            ToolTipService.ToolTip="Full screen (F11)">
+                        <Button.KeyboardAccelerators>
+                            <KeyboardAccelerator Key="F11"/>
+                        </Button.KeyboardAccelerators>
                         <FontIcon x:Name="FullScreenButtonIcon" Glyph="&#xE740;" FontSize="14"/>
                     </Button>
                 </StackPanel>
