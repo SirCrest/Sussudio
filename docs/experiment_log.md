@@ -3257,3 +3257,17 @@ The flashback-playback 1% low dip is empirically resolved across four independen
 - The single `maxFrameMsObserved=19.19` is one outlier frame in a 3-minute window vs the prior sustained dip.
 
 The audio-gate dip fix is empirically validated across six independent live runs (5x 60s + 1x 180s) with progressively more demanding workloads. The pre-fix failing baseline was a sustained dip to `89.61fps` over a single 60s session; the post-fix evidence is a tightest-observed `slowPctMax=0.02` over 180s with the worst 1% low at `111.66fps`.
+
+## 2026-05-02 — Preview-clear sequence reset during Flashback recording
+
+**Issue.** A 60s `flashback-recording-preview-cycle` live run passed recording verification but exposed noisy preview scheduler diagnostics: stopping preview during active Flashback recording produced `PreviewSchedulerUnderflowsDelta=74085` and a soft-deadline drop, even though recording wrote 7199/7199 frames and visual cadence recovered near 120fps. Code inspection showed the intentional preview clear drained queued MJPEG preview frames but kept `_nextPreviewSequence` pinned to the pre-clear sequence. When preview resumed, the next queued frame was far ahead, so the scheduler repeatedly treated the normal post-clear sequence jump as a missing-frame wait until deadline expiry.
+
+**Change.** `MjpegPreviewJitterBuffer.ClearQueue()` now resets `_nextPreviewSequence` to `-1` after draining frames, so an intentional clear creates a fresh preview ordering epoch. Real missing-frame gaps still use the existing deadline-skip path. Added `MJPEG preview jitter clear resets preview sequence` to the runtime regression suite to prove clear drains the lease, resets ordering, and accepts the first resumed frame without underflow or deadline-drop accounting.
+
+**Verification.**
+
+- `dotnet build ElgatoCapture\ElgatoCapture.csproj -c Debug -p:Platform=x64 --no-restore /nr:false /m:1 -p:UseSharedCompilation=false` passed.
+- `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore` passed, including the new clear/reset regression.
+- First post-fix 60s live `flashback-recording-preview-cycle`: recording backend observed, file growth observed, strict verification passed, 7199 frames submitted and 7199 packets written, sequence-gap and queue-drop deltas 0. Preview scheduler improved from `underflowsDelta=74085` to `underflowsDelta=0`, `deadlineDropsDelta=0`; visual cadence output `119.99fps`, change `119.99fps`.
+- Second 60s live rerun: strict verification again passed, 7199/7199 frames/packets, sequence-gap and queue-drop deltas 0, `underflowsDelta=0`, `deadlineDropsDelta=0`, visual cadence output/change `120.01fps`.
+- Both post-fix runs still reported a source-capture 1% low warning around `115.8fps` with zero capture gaps/drops. That warning is reproducible live input cadence sensitivity in 4K120 SDR mode, not the preview-clear underflow storm. HDR-off with HDR source telemetry is expected for this 4K120 USB mode because the capture card cannot also deliver HDR at that bandwidth.

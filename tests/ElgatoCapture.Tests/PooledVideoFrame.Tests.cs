@@ -308,6 +308,53 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task MjpegPreviewJitter_ClearResetsPreviewSequence()
+    {
+        var jitterType = RequireType("ElgatoCapture.Services.Capture.MjpegPreviewJitterBuffer");
+        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
+        var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
+
+        var jitter = CreateUnstartedJitterBuffer(jitterType, targetDepth: 3);
+        SetPrivateField(jitter, "_nextPreviewSequence", 10L);
+        var frames = (IList)(GetPrivateField(jitter, "_frames")
+            ?? throw new InvalidOperationException("Jitter frame list missing."));
+        var bufferedFrameType = RequireNestedType(jitterType, "BufferedFrame");
+        var nv12 = Enum.Parse(formatType, "Nv12");
+        var pool = new TrackingArrayPool();
+
+        var clearedOwner = CreatePooledVideoFrame(frameType, nv12, 10L, 100L, 200L, 16, 16, 384, pool);
+        var clearedLease = addLeaseMethod.Invoke(clearedOwner, Array.Empty<object>())
+            ?? throw new InvalidOperationException("AddLease returned null.");
+        ((IDisposable)clearedOwner).Dispose();
+        frames.Add(CreateLeaseBufferedFrame(bufferedFrameType, clearedLease, Stopwatch.GetTimestamp()));
+
+        InvokeNonPublicInstanceMethod(jitter, "ClearQueue", null);
+
+        AssertEqual(0, frames.Count, "clear drains queued preview frames");
+        AssertEqual(-1L, GetLongPrivateField(jitter, "_nextPreviewSequence"), "clear resets preview sequence");
+        AssertEqual(1, pool.ReturnCount, "cleared preview lease return count");
+
+        var resumedOwner = CreatePooledVideoFrame(frameType, nv12, 100L, 300L, 400L, 16, 16, 384, pool);
+        var resumedLease = addLeaseMethod.Invoke(resumedOwner, Array.Empty<object>())
+            ?? throw new InvalidOperationException("AddLease returned null.");
+        ((IDisposable)resumedOwner).Dispose();
+        frames.Add(CreateLeaseBufferedFrame(bufferedFrameType, resumedLease, Stopwatch.GetTimestamp()));
+
+        var dequeued = InvokeNonPublicInstanceMethod(jitter, "TryDequeue", null)
+            ?? throw new InvalidOperationException("Expected jitter buffer to accept the first frame after clear.");
+
+        AssertEqual(0L, GetLongPrivateField(jitter, "_underflowCount"), "clear resume does not create underflows");
+        AssertEqual(0L, GetLongPrivateField(jitter, "_deadlineDropCount"), "clear resume does not create deadline skips");
+        AssertEqual(101L, GetLongPrivateField(jitter, "_nextPreviewSequence"), "next preview sequence after resume");
+
+        ((IDisposable)dequeued).Dispose();
+        AssertEqual(2, pool.ReturnCount, "resumed preview lease return count");
+
+        return Task.CompletedTask;
+    }
+
     private static Task D3DPreviewPendingFrame_ReleasesQueuedLease()
     {
         var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");

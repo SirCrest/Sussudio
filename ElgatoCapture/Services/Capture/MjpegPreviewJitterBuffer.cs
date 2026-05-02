@@ -737,6 +737,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             }
 
             _frames.Clear();
+            _nextPreviewSequence = -1;
         }
     }
 

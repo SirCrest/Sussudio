@@ -558,6 +558,9 @@ static partial class Program
                 "MJPEG preview jitter does not count late sequence frames as queued",
                 MjpegPreviewJitter_LateSequenceDoesNotCountAsQueued),
             await RunCheckAsync(
+                "MJPEG preview jitter clear resets preview sequence",
+                MjpegPreviewJitter_ClearResetsPreviewSequence),
+            await RunCheckAsync(
                 "D3D preview pending frame releases queued lease",
                 D3DPreviewPendingFrame_ReleasesQueuedLease),
             await RunCheckAsync(
