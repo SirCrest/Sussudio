@@ -451,6 +451,13 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
             lastVerification = _lastVerification;
         }
+        var visualCadenceHealthy =
+            IsVisualCadenceHealthy(
+                health.ExpectedFrameRate,
+                health.VisualCadenceSampleCount,
+                health.VisualCadenceChangeObservedFps,
+                health.VisualCadenceRepeatFramePercent,
+                health.VisualCadenceLongestRepeatRun);
         var performance = EvaluatePerformance(
             isPreviewing: viewModelSnapshot.IsPreviewing,
             isRecording: viewModelSnapshot.IsRecording,
@@ -467,6 +474,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             captureCadenceOnePercentLowFps: health.CaptureCadenceOnePercentLowFps,
             previewCadenceExpectedIntervalMs: previewRuntime.DisplayCadenceExpectedIntervalMs,
             previewCadenceOnePercentLowFps: previewRuntime.DisplayCadenceOnePercentLowFps,
+            visualCadenceHealthy: visualCadenceHealthy,
             captureCadenceDropPercent: health.CaptureCadenceEstimatedDropPercent,
             lastVerification: lastVerification);
         var (recentPreviewUnderflows, recentPreviewDeadlineDrops) = UpdatePreviewJitterRecentCounters(health, nowTick);
@@ -1623,6 +1631,13 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 snapshot.PreviewCadenceExpectedIntervalMs,
                 snapshot.PreviewCadenceSampleCount,
                 snapshot.PreviewCadenceOnePercentLowFps);
+        var visualCadenceHealthy =
+            IsVisualCadenceHealthy(
+                snapshot.SelectedFrameRate,
+                snapshot.VisualCadenceSampleCount,
+                snapshot.VisualCadenceChangeObservedFps,
+                snapshot.VisualCadenceRepeatFramePercent,
+                snapshot.VisualCadenceLongestRepeatRun);
         var previewSlowFrameDetail = FormatPreviewSlowFrameAlertDetail(snapshot);
 
         SetAlertState(
@@ -1714,7 +1729,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         SetAlertState(
             "preview-display-low-1pct",
-            previewOnePercentLowDegraded,
+            previewOnePercentLowDegraded && !visualCadenceHealthy,
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Preview,
             $"Preview/display 1% low is below target: onePercentLow={snapshot.PreviewCadenceOnePercentLowFps:0.##}fps " +
@@ -2569,13 +2584,27 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         if (previewOnePercentLowDegraded)
         {
+            if (visualCadenceHealthy)
+            {
+                return new DiagnosticEvaluation(
+                    "Healthy",
+                    "none",
+                    "Present/display 1% low is below target, but sampled visual cadence confirms source-rate output.",
+                    $"{presentLane} | {visualLane}",
+                    sourceLane,
+                    decodeLane,
+                    previewLane,
+                    renderLane,
+                    presentLane,
+                    recordingLane,
+                    audioLane);
+            }
+
             return new DiagnosticEvaluation(
                 "Warning",
                 "present_display",
-                visualCadenceHealthy
-                    ? "Present/display 1% low is below target, but sampled visual cadence remains near source rate."
-                    : "Present/display 1% low is below target.",
-                visualCadenceHealthy ? $"{presentLane} | {visualLane}" : presentLane,
+                "Present/display 1% low is below target.",
+                presentLane,
                 sourceLane,
                 decodeLane,
                 previewLane,
@@ -2618,6 +2647,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         double captureCadenceOnePercentLowFps,
         double previewCadenceExpectedIntervalMs,
         double previewCadenceOnePercentLowFps,
+        bool visualCadenceHealthy,
         double captureCadenceDropPercent,
         RecordingVerificationResult? lastVerification)
     {
@@ -2683,6 +2713,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
 
         if (isPreviewing &&
+            !visualCadenceHealthy &&
             IsPreviewOnePercentLowDegraded(
                 previewCadenceExpectedIntervalMs,
                 previewCadenceSampleCount,

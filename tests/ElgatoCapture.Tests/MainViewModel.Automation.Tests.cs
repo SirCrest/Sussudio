@@ -410,6 +410,7 @@ static partial class Program
         AssertContains(diagnosticsText, "\"capture-cadence-low-1pct\"");
         AssertContains(diagnosticsText, "\"Capture cadence 1% low is below target:");
         AssertContains(diagnosticsText, "\"preview-display-low-1pct\"");
+        AssertContains(diagnosticsText, "previewOnePercentLowDegraded && !visualCadenceHealthy");
         AssertContains(diagnosticsText, "\"Preview/display 1% low is below target:");
         AssertContains(diagnosticsText, "FormatVisualCadenceAlertDetail(snapshot)");
         AssertContains(diagnosticsText, "visualChanges={snapshot.VisualCadenceChangeObservedFps:0.##}fps");
@@ -429,8 +430,9 @@ static partial class Program
         AssertContains(diagnosticsText, "\"Source/capture 1% low is below target.\"");
         AssertContains(diagnosticsText, "if (previewOnePercentLowDegraded)");
         AssertContains(diagnosticsText, "var visualCadenceHealthy =\n            IsVisualCadenceHealthy(");
-        AssertContains(diagnosticsText, "Present/display 1% low is below target, but sampled visual cadence remains near source rate.");
-        AssertContains(diagnosticsText, "visualCadenceHealthy ? $\"{presentLane} | {visualLane}\" : presentLane");
+        AssertContains(diagnosticsText, "Present/display 1% low is below target, but sampled visual cadence confirms source-rate output.");
+        AssertContains(diagnosticsText, "if (visualCadenceHealthy)\n            {\n                return new DiagnosticEvaluation(\n                    \"Healthy\",");
+        AssertContains(diagnosticsText, "!visualCadenceHealthy &&\n            IsPreviewOnePercentLowDegraded(");
         AssertContains(diagnosticsText, "private static bool IsVisualCadenceHealthy(");
         AssertContains(diagnosticsText, "changeObservedFps >= targetFrameRate * PreviewOnePercentLowWarningRatio");
         AssertContains(diagnosticsText, "repeatFramePercent <= 1.0");
