@@ -1351,6 +1351,7 @@ public static class DiagnosticSessionRunner
         var message = GetString(snapshot, "FlashbackExportMessage") ?? string.Empty;
         var failureKind = GetString(snapshot, "FlashbackExportFailureKind") ?? string.Empty;
         var lastSuccess = GetString(snapshot, "LastExportSuccess") ?? string.Empty;
+        actions.Add($"flashback rejected export observed status={status} kind={failureKind}");
         if (!string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase))
         {
             warnings.Add($"flashback export rejected: expected Failed status, got {status}");
@@ -1416,6 +1417,7 @@ public static class DiagnosticSessionRunner
         var message = GetString(snapshot, "FlashbackExportMessage") ?? string.Empty;
         var failureKind = GetString(snapshot, "FlashbackExportFailureKind") ?? string.Empty;
         var lastSuccess = GetString(snapshot, "LastExportSuccess") ?? string.Empty;
+        actions.Add($"flashback recording rejected export observed status={status} kind={failureKind}");
         if (!string.Equals(status, "Failed", StringComparison.OrdinalIgnoreCase))
         {
             warnings.Add($"flashback recording export rejected: expected Failed status, got {status}");

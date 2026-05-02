@@ -775,6 +775,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback-rotated-export\" => Path.Combine(outputDirectory, \"flashback-rotated-export.mp4\")");
         AssertContains(diagnosticSessionText, "expected BufferInactive failure kind");
         AssertContains(diagnosticSessionText, "expected UnavailableDuringRecording failure kind");
+        AssertContains(diagnosticSessionText, "flashback rejected export observed status={status} kind={failureKind}");
+        AssertContains(diagnosticSessionText, "flashback recording rejected export observed status={status} kind={failureKind}");
         AssertContains(diagnosticSessionText, "Flashback Export:");
         AssertContains(diagnosticSessionText, "failureKindEnd={FormatOptional(result.FlashbackExportFailureKindAtEnd)}");
         AssertContains(diagnosticSessionText, "messageEnd={FormatOptional(result.FlashbackExportMessageAtEnd)}");
