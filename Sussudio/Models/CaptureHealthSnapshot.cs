@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ElgatoCapture.Models;
+namespace Sussudio.Models;
 
 public sealed record MjpegDecoderHealthSnapshot(
     int WorkerIndex,

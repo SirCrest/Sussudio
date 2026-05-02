@@ -6,13 +6,13 @@ using System.Xml.Linq;
 static partial class Program
 {
     private static readonly Regex RootServicesUsingRegex = new(
-        @"(^|\s)using\s+ElgatoCapture\.Services\s*;",
+        @"(^|\s)using\s+Sussudio\.Services\s*;",
         RegexOptions.Multiline | RegexOptions.CultureInvariant);
 
     private static Task ServiceNamespaces_FollowServiceFolders()
     {
         var repoRoot = GetRepoRoot();
-        var servicesRoot = Path.Combine(GetRepoRoot(), "ElgatoCapture", "Services");
+        var servicesRoot = Path.Combine(GetRepoRoot(), "Sussudio", "Services");
         var rootFiles = EnumerateSourceFiles(servicesRoot, SearchOption.TopDirectoryOnly).ToArray();
         AssertEqual(0, rootFiles.Length, "Services root C# file count");
 
@@ -25,17 +25,17 @@ static partial class Program
                 throw new InvalidOperationException($"Service file must live in a domain folder: {relative}");
             }
 
-            var expectedNamespace = $"namespace ElgatoCapture.Services.{parts[0]};";
+            var expectedNamespace = $"namespace Sussudio.Services.{parts[0]};";
             var code = StripCSharpCommentsAndLiterals(File.ReadAllText(file));
             if (!code.Contains(expectedNamespace, StringComparison.Ordinal))
             {
                 throw new InvalidOperationException($"{relative} must declare {expectedNamespace}");
             }
 
-            AssertDoesNotContain(code, "namespace ElgatoCapture.Services;");
+            AssertDoesNotContain(code, "namespace Sussudio.Services;");
         }
 
-        foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "ElgatoCapture"), SearchOption.AllDirectories))
+        foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "Sussudio"), SearchOption.AllDirectories))
         {
             var code = StripCSharpCommentsAndLiterals(File.ReadAllText(file));
             if (RootServicesUsingRegex.IsMatch(code))
@@ -46,12 +46,12 @@ static partial class Program
 
         var nativeXuProbeProjectText = File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "NativeXuAudioProbe.csproj"));
         AssertDoesNotContain(nativeXuProbeProjectText, "<ProjectReference");
-        AssertDoesNotContain(nativeXuProbeProjectText, "ElgatoCapture.csproj");
+        AssertDoesNotContain(nativeXuProbeProjectText, "Sussudio.csproj");
         AssertContains(nativeXuProbeProjectText, "NativeXuAudioControlService.cs");
         AssertContains(nativeXuProbeProjectText, "NativeXuAtCommandProvider.cs");
-        AssertContains(File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "Models", "CaptureDevice.cs")), "NativeXuInterfacePath");
+        AssertContains(File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Models", "CaptureDevice.cs")), "NativeXuInterfacePath");
         AssertContains(File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "ToolCaptureDevice.cs")), "NativeXuInterfacePath");
-        var deviceServiceText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "Services", "Capture", "DeviceService.cs"));
+        var deviceServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "DeviceService.cs"));
         AssertContains(deviceServiceText, "NativeXuInterfacePath = ResolveNativeXuInterfacePath(videoDevice.SymbolicLink)");
         AssertContains(deviceServiceText, "Native XU interface resolution found no matching interface");
         AssertDoesNotContain(deviceServiceText, "SelectOnlyUnambiguousDeviceGroup");
@@ -64,7 +64,7 @@ static partial class Program
             File.ReadAllText(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe", "Program.cs")),
             "KsExtensionUnitNative.EnumerateKsInterfaces(");
 
-        var nativeXuAtProviderText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "Services", "Telemetry", "NativeXuAtCommandProvider.cs"));
+        var nativeXuAtProviderText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Telemetry", "NativeXuAtCommandProvider.cs"));
         AssertContains(nativeXuAtProviderText, "device?.NativeXuInterfacePath");
         AssertContains(nativeXuAtProviderText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
         AssertContains(nativeXuAtProviderText, "return Array.Empty<KsExtensionUnitNative.KsInterfacePath>()");
@@ -74,14 +74,14 @@ static partial class Program
         AssertContains(nativeXuAtProviderText, "cancellationToken.ThrowIfCancellationRequested()");
         AssertContains(nativeXuAtProviderText, "EnumerateKsInterfaces(vendorId, productId, device)");
 
-        var nativeXuAudioServiceText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "Services", "Audio", "NativeXuAudioControlService.cs"));
+        var nativeXuAudioServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Audio", "NativeXuAudioControlService.cs"));
         AssertContains(nativeXuAudioServiceText, "device?.NativeXuInterfacePath");
         AssertContains(nativeXuAudioServiceText, "missing-selected-interface");
         AssertContains(nativeXuAudioServiceText, "NATIVEXU_AUDIO_PAYLOAD_READ missing-selected-interface");
         AssertContains(nativeXuAudioServiceText, "new KsExtensionUnitNative.KsInterfacePath(selectedInterfacePath, Guid.Empty)");
         AssertContains(nativeXuAudioServiceText, "EnumerateCandidates(vendorId, productId, device?.NativeXuInterfacePath)");
 
-        var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "Services", "Capture", "CaptureService.cs"));
+        var captureServiceText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Capture", "CaptureService.cs"));
         AssertContains(captureServiceText, "pollGeneration != Volatile.Read(ref _telemetryPollGeneration)");
         AssertContains(captureServiceText, "_telemetryPollSync");
         AssertContains(captureServiceText, "lock (_telemetryPollSync)");
@@ -89,7 +89,7 @@ static partial class Program
         AssertContains(captureServiceText, "StartTelemetryPollCore");
         AssertContains(captureServiceText, "Telemetry poll start deferred until canceled poll exits");
 
-        var audioControlsText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.AudioControls.cs"));
+        var audioControlsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.AudioControls.cs"));
         AssertContains(audioControlsText, "RefreshDeviceAudioControlsAsync(");
         AssertContains(audioControlsText, "ReadStateAsync(device, cancellationToken)");
         AssertContains(audioControlsText, "Device audio mode failure readback ignored");
@@ -100,7 +100,7 @@ static partial class Program
         AssertContains(audioControlsText, "private async Task<bool> ApplyAnalogAudioGainAsync");
         AssertContains(audioControlsText, "IsCurrentSelectedDevice(device)");
 
-        var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.cs"));
+        var mainViewModelText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.cs"));
         AssertContains(mainViewModelText, "private bool EnqueueUiOperation");
         AssertContains(mainViewModelText, "allowDuringDispose: true");
         AssertContains(mainViewModelText, "UI_OPERATION_SKIP op='{operationName}' reason=disposing");
@@ -110,23 +110,23 @@ static partial class Program
         AssertContains(mainViewModelText, "INVOKE_UI_OPERATION_ENQUEUE_FAILED kind=value");
         AssertContains(mainViewModelText, "CAPTURE_STATUS_UI_ENQUEUE_FAILED status='{status}'");
         AssertContains(mainViewModelText, "CAPTURE_ERROR_UI_ENQUEUE_FAILED type={ex.GetType().Name} msg='{ex.Message}'");
-        var deviceManagementText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.DeviceManagement.cs"));
+        var deviceManagementText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.DeviceManagement.cs"));
         AssertContains(deviceManagementText, "CancelPendingAudioControlWork");
         AssertContains(deviceManagementText, "_deviceAudioModeCts");
         AssertContains(deviceManagementText, "_deviceAudioRefreshCts");
         AssertContains(deviceManagementText, "AUDIO_DEVICES_CHANGED_UI_ENQUEUE_FAILED");
         AssertContains(deviceManagementText, "FORMAT_PROBE_UI_ENQUEUE_FAILED deviceId='{e.DeviceId}' requestId={e.RequestId}");
         AssertContains(
-            File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.Telemetry.cs")),
+            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Telemetry.cs")),
             "SOURCE_TELEMETRY_UI_ENQUEUE_FAILED");
-        var settingsText = File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "ViewModels", "MainViewModel.Settings.cs"));
+        var settingsText = File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "ViewModels", "MainViewModel.Settings.cs"));
         AssertContains(settingsText, "RECORDING_FORMATS_UI_ENQUEUE_FAILED");
         AssertContains(settingsText, "SPLIT_ENCODE_MODES_UI_ENQUEUE_FAILED");
         AssertContains(
-            File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "Services", "Preview", "D3D11PreviewRenderer.Rendering.cs")),
+            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Rendering.cs")),
             "D3D_FIRST_FRAME_UI_ENQUEUE_FAILED");
         AssertContains(
-            File.ReadAllText(Path.Combine(repoRoot, "ElgatoCapture", "Services", "Preview", "D3D11PreviewRenderer.Rendering.cs")),
+            File.ReadAllText(Path.Combine(repoRoot, "Sussudio", "Services", "Preview", "D3D11PreviewRenderer.Rendering.cs")),
             "D3D11 preview swap chain unbind enqueue failed during cleanup.");
 
         foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "tools", "NativeXuAudioProbe"), SearchOption.AllDirectories))
@@ -150,7 +150,7 @@ static partial class Program
         AssertContains(rtkProbeText, "RTK I2C switch is disabled");
         AssertDoesNotContain(rtkProbeText, "rtk_setCurrentDevice(\"Elgato 4K X\"");
 
-        foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "ElgatoCapture"), SearchOption.AllDirectories))
+        foreach (var file in EnumerateSourceFiles(Path.Combine(repoRoot, "Sussudio"), SearchOption.AllDirectories))
         {
             var code = StripCSharpCommentsPreserveLiterals(File.ReadAllText(file));
             AssertDoesNotContain(code, "InternalsVisibleTo(\"NativeXuAudioProbe\")");
@@ -162,15 +162,15 @@ static partial class Program
     private static Task AutomationCommandKind_SourceOwnership_IsModelAligned()
     {
         var repoRoot = GetRepoRoot();
-        var automationKindPath = Path.Combine(repoRoot, "ElgatoCapture", "Models", "AutomationCommandKind.cs");
+        var automationKindPath = Path.Combine(repoRoot, "Sussudio", "Models", "AutomationCommandKind.cs");
         AssertEqual(true, File.Exists(automationKindPath), "AutomationCommandKind model source exists");
-        AssertContains(File.ReadAllText(automationKindPath), "namespace ElgatoCapture.Models;");
+        AssertContains(File.ReadAllText(automationKindPath), "namespace Sussudio.Models;");
         AssertEqual(
             false,
             File.Exists(Path.Combine(repoRoot, "tools", "Common", "AutomationCommandKind.cs")),
             "tools/Common no longer owns AutomationCommandKind");
 
-        var appIncludes = ReadCompileIncludes(Path.Combine(repoRoot, "ElgatoCapture", "ElgatoCapture.csproj"));
+        var appIncludes = ReadCompileIncludes(Path.Combine(repoRoot, "Sussudio", "Sussudio.csproj"));
         AssertEqual(
             0,
             CountCompileInclude(appIncludes, @"..\tools\Common\AutomationCommandKind.cs"),
@@ -179,14 +179,14 @@ static partial class Program
         foreach (var toolProject in new[]
         {
             Path.Combine(repoRoot, "tools", "AutomationClient", "AutomationClient.csproj"),
-            Path.Combine(repoRoot, "tools", "ecctl", "ecctl.csproj"),
+            Path.Combine(repoRoot, "tools", "ssctl", "ssctl.csproj"),
             Path.Combine(repoRoot, "tools", "McpServer", "McpServer.csproj")
         })
         {
             var includes = ReadCompileIncludes(toolProject);
             AssertEqual(
                 1,
-                CountCompileInclude(includes, @"..\..\ElgatoCapture\Models\AutomationCommandKind.cs"),
+                CountCompileInclude(includes, @"..\..\Sussudio\Models\AutomationCommandKind.cs"),
                 $"{Path.GetFileName(toolProject)} links app-owned AutomationCommandKind source exactly once");
         }
 

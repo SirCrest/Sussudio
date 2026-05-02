@@ -9,7 +9,7 @@ static partial class Program
 
     private static Task AutomationCommandDispatcher_GetString_ExtractsFromJsonPayload()
     {
-        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("GetString",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("GetString not found.");
@@ -33,7 +33,7 @@ static partial class Program
 
     private static Task AutomationCommandDispatcher_GetBool_ExtractsFromJsonPayload()
     {
-        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("GetBool",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("GetBool not found.");
@@ -55,7 +55,7 @@ static partial class Program
 
     private static Task AutomationCommandDispatcher_GetInt_ExtractsFromJsonPayload()
     {
-        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("GetInt",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("GetInt not found.");
@@ -73,7 +73,7 @@ static partial class Program
 
     private static Task AutomationCommandDispatcher_GetDouble_ExtractsFromJsonPayload()
     {
-        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("GetDouble",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("GetDouble not found.");
@@ -87,7 +87,7 @@ static partial class Program
 
     private static Task AutomationCommandDispatcher_RequireString_ThrowsOnMissing()
     {
-        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("RequireString",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("RequireString not found.");
@@ -116,12 +116,12 @@ static partial class Program
 
     private static Task AutomationCommandDispatcher_RequiresReadyDevices_ClassifiesCommands()
     {
-        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var method = dispatcherType.GetMethod("RequiresReadyDevices",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("RequiresReadyDevices not found.");
 
-        var commandType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var commandType = RequireType("Sussudio.Models.AutomationCommandKind");
 
         // UI/info commands should NOT require ready devices
         var getSnapshot = (bool)method.Invoke(null, new[] { Enum.Parse(commandType, "GetSnapshot") })!;
@@ -148,7 +148,7 @@ static partial class Program
 
     private static Task AutomationCommandDispatcher_WindowClose_AwaitsCloseCompletion()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationCommandDispatcher.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
         var windowActionBlock = ExtractTextBetween(
             sourceText,
@@ -207,7 +207,7 @@ static partial class Program
             .ConfigureAwait(false);
         AssertAutomationResponse(protectedCommandResponse, success: false, errorCode: "unauthorized", status: "error", "missing token rejects non-authenticate command");
 
-        var dispatcherText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationCommandDispatcher.cs")
+        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(dispatcherText, "if (string.IsNullOrWhiteSpace(_authToken))\n        {\n            return true;\n        }");
@@ -222,11 +222,11 @@ static partial class Program
 
     private static async Task AutomationCommandDispatcher_FlashbackActionFailure_ReturnsPlaybackDiagnostics()
     {
-        var viewModelType = RequireType("ElgatoCapture.Services.Automation.IAutomationViewModel");
-        var diagnosticsType = RequireType("ElgatoCapture.Services.Automation.IAutomationDiagnosticsHub");
-        var windowControlType = RequireType("ElgatoCapture.Services.Automation.IAutomationWindowControl");
-        var snapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
-        var actionType = RequireType("ElgatoCapture.Models.AutomationFlashbackAction");
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Automation.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Automation.IAutomationWindowControl");
+        var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
+        var actionType = RequireType("Sussudio.Models.AutomationFlashbackAction");
 
         var snapshot = Activator.CreateInstance(snapshotType)
                        ?? throw new InvalidOperationException("Failed to create AutomationSnapshot.");
@@ -283,10 +283,10 @@ static partial class Program
 
     private static object CreateAutomationCommandDispatcher(string? authToken)
     {
-        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
-        var viewModelType = RequireType("ElgatoCapture.Services.Automation.IAutomationViewModel");
-        var diagnosticsType = RequireType("ElgatoCapture.Services.Automation.IAutomationDiagnosticsHub");
-        var windowControlType = RequireType("ElgatoCapture.Services.Automation.IAutomationWindowControl");
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
+        var viewModelType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
+        var diagnosticsType = RequireType("Sussudio.Services.Automation.IAutomationDiagnosticsHub");
+        var windowControlType = RequireType("Sussudio.Services.Automation.IAutomationWindowControl");
         var constructor = dispatcherType.GetConstructors()
             .Single(ctor => ctor.GetParameters().Length == 4);
 
@@ -305,7 +305,7 @@ static partial class Program
         object windowControl,
         string? authToken)
     {
-        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.AutomationCommandDispatcher");
+        var dispatcherType = RequireType("Sussudio.Services.Automation.AutomationCommandDispatcher");
         var constructor = dispatcherType.GetConstructors()
             .Single(ctor => ctor.GetParameters().Length == 4);
 
@@ -363,8 +363,8 @@ static partial class Program
         string? authToken,
         string payloadJson)
     {
-        var requestType = RequireType("ElgatoCapture.Models.AutomationCommandRequest");
-        var commandType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var requestType = RequireType("Sussudio.Models.AutomationCommandRequest");
+        var commandType = RequireType("Sussudio.Models.AutomationCommandKind");
         var request = Activator.CreateInstance(requestType)
                       ?? throw new InvalidOperationException("Failed to create AutomationCommandRequest.");
         using var payload = JsonDocument.Parse(payloadJson);

@@ -1,4 +1,4 @@
-using ElgatoCapture.Services.Automation;
+using Sussudio.Services.Automation;
 using System.IO;
 using System.IO.Pipes;
 using System.Reflection;
@@ -10,7 +10,7 @@ static partial class Program
     {
         AssertPipeSecurityPolicyMatrix();
 
-        var pipeServerText = ReadRepoFile("ElgatoCapture/Services/Automation/NamedPipeAutomationServer.cs")
+        var pipeServerText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
             .Replace("\r\n", "\n");
         AssertContains(pipeServerText, "AutomationPipeSecurityPolicy.ShouldDisableDefaultSecurityFallback(");
         AssertContains(pipeServerText, "_explicitSecurityFailed = true;");
@@ -123,9 +123,9 @@ static partial class Program
 
     private static Task MainWindowAutomation_WiresPipeAuthFallbackPolicy()
     {
-        var mainWindowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs")
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("ElgatoCapture/MainWindow.WindowManagement.cs")
+        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);");
@@ -144,7 +144,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(docs, "\"authToken\": \"<token-or-null>\"");
-        AssertContains(docs, "ELGATOCAPTURE_AUTOMATION_TOKEN");
+        AssertContains(docs, "SUSSUDIO_AUTOMATION_TOKEN");
         AssertContains(docs, "AutomationPipeProtocol.CreateRequestEnvelope");
         AssertContains(docs, "ErrorCode: \"unauthorized\"");
         AssertContains(docs, "optional auth token");
@@ -212,8 +212,8 @@ static partial class Program
         Func<byte[], NamedPipeServerStream> secureServerStreamFactory,
         Func<NamedPipeServerStream> defaultServerStreamFactory)
     {
-        var serverType = RequireType("ElgatoCapture.Services.Automation.NamedPipeAutomationServer");
-        var dispatcherType = RequireType("ElgatoCapture.Services.Automation.IAutomationCommandDispatcher");
+        var serverType = RequireType("Sussudio.Services.Automation.NamedPipeAutomationServer");
+        var dispatcherType = RequireType("Sussudio.Services.Automation.IAutomationCommandDispatcher");
         var constructor = serverType
             .GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
             .Single(ctor => ctor.GetParameters().Length == 6);

@@ -1,5 +1,5 @@
 param(
-    [string]$PipeName = "ElgatoCaptureAutomation",
+    [string]$PipeName = "SussudioAutomation",
     [string]$AuthToken = "",
     [int]$DurationSeconds = 15,
     [int]$WaitTimeoutMs = 120000,
@@ -299,7 +299,7 @@ function Resolve-FfprobePath {
     $repoRoot = Split-Path -Parent $PSScriptRoot
     foreach ($candidate in @(
             (Join-Path $repoRoot "latest-build\ffmpeg\ffprobe.exe"),
-            (Join-Path $repoRoot "ElgatoCapture\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ffmpeg\ffprobe.exe"))) {
+            (Join-Path $repoRoot "Sussudio\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ffmpeg\ffprobe.exe"))) {
         if (Test-Path $candidate) {
             return $candidate
         }

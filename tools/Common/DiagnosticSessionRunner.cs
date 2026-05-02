@@ -2,9 +2,9 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using static ElgatoCapture.Tools.AutomationSnapshotFormatter;
+using static Sussudio.Tools.AutomationSnapshotFormatter;
 
-namespace ElgatoCapture.Tools;
+namespace Sussudio.Tools;
 
 public sealed class DiagnosticSessionOptions
 {
@@ -311,7 +311,7 @@ public static class DiagnosticSessionRunner
                 TryGetSnapshot(correlationSnapshotResponse, out var correlationSnapshot);
                 presentMonTask = PresentMonProbe.RunAsync(new PresentMonProbeOptions
                 {
-                    ProcessName = "ElgatoCapture",
+                    ProcessName = "Sussudio",
                     DurationSeconds = Math.Max(1, durationSeconds),
                     PresentMonPath = options.PresentMonPath,
                     OutputFile = Path.Combine(outputDirectory, "presentmon.csv"),

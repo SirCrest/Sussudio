@@ -6,14 +6,14 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 using Windows.Graphics.Imaging;
-using ElgatoCapture.Services.Audio;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Preview;
-using ElgatoCapture.Services.Recording;
+using Sussudio.Services.Audio;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Preview;
+using Sussudio.Services.Recording;
 
-namespace ElgatoCapture.Services.Flashback;
+namespace Sussudio.Services.Flashback;
 
 internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder
 {

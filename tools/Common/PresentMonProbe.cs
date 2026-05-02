@@ -2,12 +2,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
-namespace ElgatoCapture.Tools;
+namespace Sussudio.Tools;
 
 public sealed class PresentMonProbeOptions
 {
     public int? ProcessId { get; init; }
-    public string ProcessName { get; init; } = "ElgatoCapture";
+    public string ProcessName { get; init; } = "Sussudio";
     public int DurationSeconds { get; init; } = 10;
     public string? PresentMonPath { get; init; }
     public string? OutputFile { get; init; }
@@ -138,7 +138,7 @@ public static class PresentMonProbe
         if (presentMonPath == null)
         {
             return Error(
-                "PresentMon console executable was not found. Set ELGATOCAPTURE_PRESENTMON_PATH or PRESENTMON_PATH, " +
+                "PresentMon console executable was not found. Set SUSSUDIO_PRESENTMON_PATH or PRESENTMON_PATH, " +
                 "or place PresentMon.exe / PresentMon-*-x64.exe under tools\\PresentMon.");
         }
 
@@ -382,7 +382,7 @@ public static class PresentMonProbe
         }
 
         var name = string.IsNullOrWhiteSpace(options.ProcessName)
-            ? "ElgatoCapture"
+            ? "Sussudio"
             : Path.GetFileNameWithoutExtension(options.ProcessName.Trim());
         return Process.GetProcessesByName(name)
             .Where(process => !process.HasExited)
@@ -420,7 +420,7 @@ public static class PresentMonProbe
             yield return explicitPath;
         }
 
-        var envPath = Environment.GetEnvironmentVariable("ELGATOCAPTURE_PRESENTMON_PATH");
+        var envPath = Environment.GetEnvironmentVariable("SUSSUDIO_PRESENTMON_PATH");
         if (!string.IsNullOrWhiteSpace(envPath))
         {
             yield return envPath;
@@ -452,7 +452,7 @@ public static class PresentMonProbe
 
     private static string ResolveOutputPath(string? outputFile)
         => string.IsNullOrWhiteSpace(outputFile)
-            ? Path.Combine(Path.GetTempPath(), $"elgatocapture_presentmon_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.csv")
+            ? Path.Combine(Path.GetTempPath(), $"sussudio_presentmon_{DateTime.Now:yyyyMMdd_HHmmss}_{Guid.NewGuid():N}.csv")
             : Path.GetFullPath(outputFile);
 
     private static string BuildArguments(int processId, int durationSeconds, string outputPath, bool trackGpuVideo)
@@ -468,7 +468,7 @@ public static class PresentMonProbe
             "--terminate_after_timed",
             "--stop_existing_session",
             "--session_name",
-            $"ElgatoCapturePresentMon{Guid.NewGuid():N}",
+            $"SussudioPresentMon{Guid.NewGuid():N}",
             "--v2_metrics",
             "--no_console_stats"
         };

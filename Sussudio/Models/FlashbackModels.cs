@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace ElgatoCapture.Models;
+namespace Sussudio.Models;
 
 internal sealed record FlashbackBufferOptions
 {
@@ -12,7 +12,7 @@ internal sealed record FlashbackBufferOptions
     public TimeSpan BufferDuration { get; init; } = TimeSpan.FromMinutes(5);
     public string TempDirectory { get; init; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "ElgatoCapture",
+        "Sussudio",
         "Flashback");
     public TimeSpan SegmentDuration { get; init; } = TimeSpan.FromMinutes(10);
 

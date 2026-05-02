@@ -2,9 +2,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
-using ElgatoCapture.Services.Recording;
+using Sussudio.Services.Recording;
 
-namespace ElgatoCapture.Services.Gpu;
+namespace Sussudio.Services.Gpu;
 
 public sealed record NvmlSnapshot(
     string? GpuName,

@@ -55,8 +55,8 @@ static partial class Program
         /// </summary>
         public object CreateProxy()
         {
-            var supervisorType = RequireType("ElgatoCapture.Services.Runtime.IProcessSupervisor");
-            var specType = RequireType("ElgatoCapture.Services.Runtime.ProcessSpec");
+            var supervisorType = RequireType("Sussudio.Services.Runtime.IProcessSupervisor");
+            var specType = RequireType("Sussudio.Services.Runtime.ProcessSpec");
 
             // Use the generic DispatchProxy.Create<T, TProxy>() method
             var createMethod = typeof(DispatchProxy).GetMethods(BindingFlags.Public | BindingFlags.Static)
@@ -104,7 +104,7 @@ static partial class Program
 
         private static object CreateProcessRunResult(bool started, int exitCode, string stdOut)
         {
-            var resultType = RequireType("ElgatoCapture.Services.Runtime.ProcessRunResult");
+            var resultType = RequireType("Sussudio.Services.Runtime.ProcessRunResult");
             var result = RuntimeHelpers.GetUninitializedObject(resultType);
             SetPropertyBackingField(result, "Started", started);
             SetPropertyBackingField(result, "TimedOut", false);
@@ -182,7 +182,7 @@ static partial class Program
         string? flashbackExportOutputPath = null,
         string? flashbackExportVerificationFormat = null)
     {
-        var type = RequireType("ElgatoCapture.Models.CaptureRuntimeSnapshot");
+        var type = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");
         var snapshot = RuntimeHelpers.GetUninitializedObject(type);
         SetPropertyOrBackingField(snapshot, "RequestedFormat", requestedFormat);
         SetPropertyOrBackingField(snapshot, "RequestedHdrEnabled", (bool?)requestedHdrEnabled);
@@ -199,8 +199,8 @@ static partial class Program
 
     private static object CreateVerifierWithFake(object fakeSupervisor)
     {
-        var verifierType = RequireType("ElgatoCapture.Services.Recording.RecordingVerifier");
-        var supervisorType = RequireType("ElgatoCapture.Services.Runtime.IProcessSupervisor");
+        var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
+        var supervisorType = RequireType("Sussudio.Services.Runtime.IProcessSupervisor");
         var ctor = verifierType.GetConstructor(
             BindingFlags.Instance | BindingFlags.NonPublic,
             binder: null,

@@ -1,9 +1,9 @@
 {
   "profiles": {
-    "ElgatoCapture (Package)": {
+    "Sussudio (Package)": {
       "commandName": "MsixPackage"
     },
-    "ElgatoCapture (Unpackaged)": {
+    "Sussudio (Unpackaged)": {
       "commandName": "Project"
     }
   }

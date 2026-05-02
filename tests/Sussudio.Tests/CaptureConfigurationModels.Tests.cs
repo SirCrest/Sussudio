@@ -10,8 +10,8 @@ static partial class Program
 {
     private static Task CaptureModeOptions_PreserveDisplayTextAndMetadata()
     {
-        var resolutionType = RequireType("ElgatoCapture.Models.ResolutionOption");
-        var frameRateType = RequireType("ElgatoCapture.Models.FrameRateOption");
+        var resolutionType = RequireType("Sussudio.Models.ResolutionOption");
+        var frameRateType = RequireType("Sussudio.Models.FrameRateOption");
 
         AssertDeclaredConfigProperties(
             resolutionType,
@@ -68,14 +68,14 @@ static partial class Program
 
     private static Task CaptureSettings_DefaultsAndOutputContracts()
     {
-        var settingsType = RequireType("ElgatoCapture.Models.CaptureSettings");
-        var recordingFormatType = RequireType("ElgatoCapture.Models.RecordingFormat");
-        var videoQualityType = RequireType("ElgatoCapture.Models.VideoQuality");
-        var hdrOutputModeType = RequireType("ElgatoCapture.Models.HdrOutputMode");
-        var previewModeType = RequireType("ElgatoCapture.Models.PreviewMode");
-        var audioPathModeType = RequireType("ElgatoCapture.Models.AudioPathMode");
-        var pipelineOptionsType = RequireType("ElgatoCapture.Models.RecordingPipelineOptions");
-        var splitEncodeSupportType = RequireType("ElgatoCapture.Models.SplitEncodeSupport");
+        var settingsType = RequireType("Sussudio.Models.CaptureSettings");
+        var recordingFormatType = RequireType("Sussudio.Models.RecordingFormat");
+        var videoQualityType = RequireType("Sussudio.Models.VideoQuality");
+        var hdrOutputModeType = RequireType("Sussudio.Models.HdrOutputMode");
+        var previewModeType = RequireType("Sussudio.Models.PreviewMode");
+        var audioPathModeType = RequireType("Sussudio.Models.AudioPathMode");
+        var pipelineOptionsType = RequireType("Sussudio.Models.RecordingPipelineOptions");
+        var splitEncodeSupportType = RequireType("Sussudio.Models.SplitEncodeSupport");
 
         AssertEnumValues(recordingFormatType, ("H264Mp4", 0), ("HevcMp4", 1), ("Av1Mp4", 2));
         AssertEnumValues(videoQualityType, ("Auto", 0), ("Low", 1), ("Medium", 2), ("High", 3), ("SuperHigh", 4), ("Custom", 5));
@@ -134,20 +134,20 @@ static partial class Program
         AssertEqual(1920u, (uint)GetPropertyValue(settings, "Width")!, "CaptureSettings.Width default");
         AssertEqual(1080u, (uint)GetPropertyValue(settings, "Height")!, "CaptureSettings.Height default");
         AssertEqual(60d, GetDoubleProperty(settings, "FrameRate"), "CaptureSettings.FrameRate default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.RecordingFormat", "H264Mp4"), GetPropertyValue(settings, "Format"), "CaptureSettings.Format default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.VideoQuality", "High"), GetPropertyValue(settings, "Quality"), "CaptureSettings.Quality default");
+        AssertEqual(ParseEnum("Sussudio.Models.RecordingFormat", "H264Mp4"), GetPropertyValue(settings, "Format"), "CaptureSettings.Format default");
+        AssertEqual(ParseEnum("Sussudio.Models.VideoQuality", "High"), GetPropertyValue(settings, "Quality"), "CaptureSettings.Quality default");
         AssertEqual("Auto", GetStringProperty(settings, "NvencPreset"), "CaptureSettings.NvencPreset default");
         AssertEqual("Auto", GetStringProperty(settings, "SplitEncodeMode"), "CaptureSettings.SplitEncodeMode default");
         AssertEqual(50d, GetDoubleProperty(settings, "CustomBitrateMbps"), "CaptureSettings.CustomBitrateMbps default");
         AssertEqual(false, GetBoolProperty(settings, "HdrEnabled"), "CaptureSettings.HdrEnabled default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.HdrOutputMode", "Hdr10Pq"), GetPropertyValue(settings, "HdrOutputMode"), "CaptureSettings.HdrOutputMode default");
+        AssertEqual(ParseEnum("Sussudio.Models.HdrOutputMode", "Hdr10Pq"), GetPropertyValue(settings, "HdrOutputMode"), "CaptureSettings.HdrOutputMode default");
         AssertEqual(1000, GetIntProperty(settings, "HdrNominalPeakNits"), "CaptureSettings.HdrNominalPeakNits default");
         AssertEqual(string.Empty, GetStringProperty(settings, "HdrMasterDisplayMetadata"), "CaptureSettings.HdrMasterDisplayMetadata default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.PreviewMode", "GpuFast"), GetPropertyValue(settings, "PreviewMode"), "CaptureSettings.PreviewMode default");
+        AssertEqual(ParseEnum("Sussudio.Models.PreviewMode", "GpuFast"), GetPropertyValue(settings, "PreviewMode"), "CaptureSettings.PreviewMode default");
         AssertEqual(true, GetBoolProperty(settings, "AudioEnabled"), "CaptureSettings.AudioEnabled default");
         AssertEqual(false, GetBoolProperty(settings, "UseCustomAudioInput"), "CaptureSettings.UseCustomAudioInput default");
         AssertEqual(false, GetBoolProperty(settings, "MicrophoneEnabled"), "CaptureSettings.MicrophoneEnabled default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.AudioPathMode", "PostMuxDefault"), GetPropertyValue(settings, "AudioPathMode"), "CaptureSettings.AudioPathMode default");
+        AssertEqual(ParseEnum("Sussudio.Models.AudioPathMode", "PostMuxDefault"), GetPropertyValue(settings, "AudioPathMode"), "CaptureSettings.AudioPathMode default");
         AssertNotNull(GetPropertyValue(settings, "PipelineOptions"), "CaptureSettings.PipelineOptions default");
         AssertEqual(false, GetBoolProperty(settings, "ForceMjpegDecode"), "CaptureSettings.ForceMjpegDecode default");
         AssertEqual(true, GetBoolProperty(settings, "FlashbackGpuDecode"), "CaptureSettings.FlashbackGpuDecode default");
@@ -163,7 +163,7 @@ static partial class Program
 
         var outputDir = Path.Combine(Path.GetTempPath(), $"capture_settings_{Guid.NewGuid():N}");
         SetPropertyOrBackingField(settings, "OutputPath", outputDir);
-        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "HevcMp4"));
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "HevcMp4"));
         var fullPath = InvokeInstanceMethod(settings, "GetFullOutputPath").ToString()!;
         AssertEqual(outputDir, Path.GetDirectoryName(fullPath), "CaptureSettings.GetFullOutputPath directory");
         AssertContains(Path.GetFileName(fullPath), "_HEVC.mp4");
@@ -181,7 +181,7 @@ static partial class Program
 
     private static Task CaptureSettings_MjpegHighFrameRateMode_HandlesForceCaseAndInstanceState()
     {
-        var settingsType = RequireType("ElgatoCapture.Models.CaptureSettings");
+        var settingsType = RequireType("Sussudio.Models.CaptureSettings");
         var method = settingsType.GetMethod("IsMjpegHighFrameRateMode", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("CaptureSettings.IsMjpegHighFrameRateMode not found.");
 
@@ -213,7 +213,7 @@ static partial class Program
 
     private static Task EncoderSupport_ComputesAvailabilityAndPreferredEncoders()
     {
-        var supportType = RequireType("ElgatoCapture.Models.EncoderSupport");
+        var supportType = RequireType("Sussudio.Models.EncoderSupport");
         AssertDeclaredConfigProperties(
             supportType,
             new ConfigPropertySpec[]
@@ -262,12 +262,12 @@ static partial class Program
 
     private static Task FlashbackModels_PreserveBufferSessionExportContracts()
     {
-        var bufferOptionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
-        var sessionContextType = RequireType("ElgatoCapture.Models.FlashbackSessionContext");
-        var playbackStateType = RequireType("ElgatoCapture.Models.FlashbackPlaybackState");
-        var exportProgressType = RequireType("ElgatoCapture.Models.ExportProgress");
-        var exportSegmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
-        var exportRequestType = RequireType("ElgatoCapture.Models.FlashbackExportRequest");
+        var bufferOptionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
+        var sessionContextType = RequireType("Sussudio.Models.FlashbackSessionContext");
+        var playbackStateType = RequireType("Sussudio.Models.FlashbackPlaybackState");
+        var exportProgressType = RequireType("Sussudio.Models.ExportProgress");
+        var exportSegmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
+        var exportRequestType = RequireType("Sussudio.Models.FlashbackExportRequest");
 
         AssertEnumValues(playbackStateType, ("Disabled", 0), ("Buffering", 1), ("Live", 2), ("Scrubbing", 3), ("Playing", 4), ("Paused", 5));
         AssertDeclaredConfigProperties(
@@ -344,7 +344,7 @@ static partial class Program
         var bufferOptions = CreateConfigInstance(bufferOptionsType);
         AssertEqual(TimeSpan.FromMinutes(5), (TimeSpan)GetPropertyValue(bufferOptions, "BufferDuration")!, "FlashbackBufferOptions.BufferDuration default");
         AssertEqual(TimeSpan.FromMinutes(10), (TimeSpan)GetPropertyValue(bufferOptions, "SegmentDuration")!, "FlashbackBufferOptions.SegmentDuration default");
-        AssertContains(GetStringProperty(bufferOptions, "TempDirectory"), "ElgatoCapture");
+        AssertContains(GetStringProperty(bufferOptions, "TempDirectory"), "Sussudio");
         AssertContains(GetStringProperty(bufferOptions, "TempDirectory"), "Flashback");
         AssertEqual(300L * 57L * 1024L * 1024L, GetLongProperty(bufferOptions, "MaxDiskBytes"), "FlashbackBufferOptions.MaxDiskBytes default");
 
@@ -407,8 +407,8 @@ static partial class Program
 
     private static Task RecordingPipelineOptions_DefaultsAndCapacityBounds()
     {
-        var optionsType = RequireType("ElgatoCapture.Models.RecordingPipelineOptions");
-        var dropPolicyType = RequireType("ElgatoCapture.Models.VideoFrameDropPolicy");
+        var optionsType = RequireType("Sussudio.Models.RecordingPipelineOptions");
+        var dropPolicyType = RequireType("Sussudio.Models.VideoFrameDropPolicy");
         AssertEnumValues(dropPolicyType, ("DropOldest", 0), ("DropNewest", 1));
         AssertDeclaredConfigProperties(
             optionsType,
@@ -426,7 +426,7 @@ static partial class Program
         AssertEqual(250, GetIntProperty(options, "TargetVideoLatencyMs"), "RecordingPipelineOptions.TargetVideoLatencyMs default");
         AssertEqual(4, GetIntProperty(options, "MinBufferedVideoFrames"), "RecordingPipelineOptions.MinBufferedVideoFrames default");
         AssertEqual(30, GetIntProperty(options, "MaxBufferedVideoFrames"), "RecordingPipelineOptions.MaxBufferedVideoFrames default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.VideoFrameDropPolicy", "DropOldest"), GetPropertyValue(options, "VideoDropPolicy"), "RecordingPipelineOptions.VideoDropPolicy default");
+        AssertEqual(ParseEnum("Sussudio.Models.VideoFrameDropPolicy", "DropOldest"), GetPropertyValue(options, "VideoDropPolicy"), "RecordingPipelineOptions.VideoDropPolicy default");
         AssertEqual(15, (int)resolve.Invoke(options, new object[] { 60d })!, "RecordingPipelineOptions 60fps default capacity");
         AssertEqual(15, (int)resolve.Invoke(options, new object[] { -1d })!, "RecordingPipelineOptions non-positive frame rate fallback");
 
@@ -442,8 +442,8 @@ static partial class Program
         SetPropertyOrBackingField(options, "MaxBufferedVideoFrames", 4);
         AssertEqual(8, (int)resolve.Invoke(options, new object[] { 120d })!, "RecordingPipelineOptions max lower than min clamps to min");
 
-        SetPropertyOrBackingField(options, "VideoDropPolicy", ParseEnum("ElgatoCapture.Models.VideoFrameDropPolicy", "DropNewest"));
-        AssertEqual(ParseEnum("ElgatoCapture.Models.VideoFrameDropPolicy", "DropNewest"), GetPropertyValue(options, "VideoDropPolicy"), "RecordingPipelineOptions.VideoDropPolicy round-trip");
+        SetPropertyOrBackingField(options, "VideoDropPolicy", ParseEnum("Sussudio.Models.VideoFrameDropPolicy", "DropNewest"));
+        AssertEqual(ParseEnum("Sussudio.Models.VideoFrameDropPolicy", "DropNewest"), GetPropertyValue(options, "VideoDropPolicy"), "RecordingPipelineOptions.VideoDropPolicy round-trip");
 
         return Task.CompletedTask;
     }

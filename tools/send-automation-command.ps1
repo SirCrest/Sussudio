@@ -2,7 +2,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$Command,
 
-    [string]$PipeName = "ElgatoCaptureAutomation",
+    [string]$PipeName = "SussudioAutomation",
     [string]$AuthToken = "",
     [string]$PayloadJson = "{}",
     [int]$ConnectTimeoutMs = 5000,
@@ -65,7 +65,7 @@ function Get-AutomationClientInputWriteTimeUtc {
         }
     }
 
-    $commandKindPath = Join-Path $repoRoot "ElgatoCapture\Models\AutomationCommandKind.cs"
+    $commandKindPath = Join-Path $repoRoot "Sussudio\Models\AutomationCommandKind.cs"
     if (Test-Path $commandKindPath) {
         $inputFiles += Get-Item -LiteralPath $commandKindPath
     }

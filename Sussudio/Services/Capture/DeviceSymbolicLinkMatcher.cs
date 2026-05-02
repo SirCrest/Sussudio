@@ -1,6 +1,6 @@
 using System;
 
-namespace ElgatoCapture.Services.Capture;
+namespace Sussudio.Services.Capture;
 
 internal static class DeviceSymbolicLinkMatcher
 {

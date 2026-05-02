@@ -1,9 +1,9 @@
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Devices;
+using Sussudio.Models;
+using Sussudio.Services.Devices;
 
-namespace ElgatoCapture.Services.Telemetry;
+namespace Sussudio.Services.Telemetry;
 
 public interface ISourceSignalTelemetryProvider
 {

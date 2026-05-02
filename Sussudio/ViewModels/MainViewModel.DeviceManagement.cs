@@ -5,19 +5,19 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Audio;
-using ElgatoCapture.Services.Automation;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Configuration;
-using ElgatoCapture.Services.Flashback;
-using ElgatoCapture.Services.Gpu;
-using ElgatoCapture.Services.Preview;
-using ElgatoCapture.Services.Recording;
-using ElgatoCapture.Services.Runtime;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Models;
+using Sussudio.Services.Audio;
+using Sussudio.Services.Automation;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Configuration;
+using Sussudio.Services.Flashback;
+using Sussudio.Services.Gpu;
+using Sussudio.Services.Preview;
+using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture.ViewModels;
+namespace Sussudio.ViewModels;
 
 public partial class MainViewModel
 {

@@ -2,9 +2,9 @@ using System;
 using System.Runtime.InteropServices;
 using System.Threading;
 using FFmpeg.AutoGen;
-using ElgatoCapture.Services.Recording;
+using Sussudio.Services.Recording;
 
-namespace ElgatoCapture.Services.Gpu;
+namespace Sussudio.Services.Gpu;
 
 internal sealed class SoftwareMjpegDecoderPermanentException : InvalidOperationException
 {

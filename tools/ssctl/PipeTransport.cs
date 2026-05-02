@@ -1,5 +1,5 @@
 using System.Text.Json;
-using ElgatoCapture.Tools;
+using Sussudio.Tools;
 
 namespace EcCtl;
 

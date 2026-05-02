@@ -7,8 +7,8 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.ViewModels;
+using Sussudio.Models;
+using Sussudio.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -21,7 +21,7 @@ using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
 using WinRT.Interop;
 
-namespace ElgatoCapture;
+namespace Sussudio;
 
 public sealed partial class MainWindow
 {

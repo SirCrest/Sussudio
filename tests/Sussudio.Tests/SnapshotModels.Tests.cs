@@ -10,8 +10,8 @@ static partial class Program
 {
     private static Task CaptureDiagnosticsSnapshot_DefaultsAndRoundTripsCoreTelemetry()
     {
-        var snapshotType = RequireType("ElgatoCapture.Models.CaptureDiagnosticsSnapshot");
-        var decoderType = RequireType("ElgatoCapture.Models.MjpegDecoderHealthSnapshot");
+        var snapshotType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
+        var decoderType = RequireType("Sussudio.Models.MjpegDecoderHealthSnapshot");
 
         RegisterCaptureDiagnosticsSnapshotProperties(snapshotType);
         AssertDeclaredProperties(
@@ -26,7 +26,7 @@ static partial class Program
             });
 
         var before = DateTimeOffset.UtcNow.AddSeconds(-1);
-        var snapshot = CreateInstance("ElgatoCapture.Models.CaptureDiagnosticsSnapshot");
+        var snapshot = CreateInstance("Sussudio.Models.CaptureDiagnosticsSnapshot");
         var after = DateTimeOffset.UtcNow.AddSeconds(1);
         var timestamp = (DateTimeOffset)GetPropertyValue(snapshot, "TimestampUtc")!;
         if (timestamp < before || timestamp > after)
@@ -34,13 +34,13 @@ static partial class Program
             throw new InvalidOperationException("CaptureDiagnosticsSnapshot.TimestampUtc should default to current UTC time.");
         }
 
-        AssertEqual(ParseEnum("ElgatoCapture.Models.CaptureSessionState", "Uninitialized"), GetPropertyValue(snapshot, "SessionState"), "CaptureDiagnosticsSnapshot.SessionState default");
+        AssertEqual(ParseEnum("Sussudio.Models.CaptureSessionState", "Uninitialized"), GetPropertyValue(snapshot, "SessionState"), "CaptureDiagnosticsSnapshot.SessionState default");
         AssertNonNullStringValue(snapshot, "RecordingBackend", "None", "CaptureDiagnosticsSnapshot.RecordingBackend default");
         AssertNonNullStringValue(snapshot, "AudioPathMode", "None", "CaptureDiagnosticsSnapshot.AudioPathMode default");
         AssertNonNullStringValue(snapshot, "MuxResult", "NotAttempted", "CaptureDiagnosticsSnapshot.MuxResult default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceTelemetryAvailability", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryAvailability"), "CaptureDiagnosticsSnapshot.SourceTelemetryAvailability default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryOrigin"), "CaptureDiagnosticsSnapshot.SourceTelemetryOrigin default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceTelemetryConfidence", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryConfidence"), "CaptureDiagnosticsSnapshot.SourceTelemetryConfidence default");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryAvailability"), "CaptureDiagnosticsSnapshot.SourceTelemetryAvailability default");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryOrigin"), "CaptureDiagnosticsSnapshot.SourceTelemetryOrigin default");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "Unknown"), GetPropertyValue(snapshot, "SourceTelemetryConfidence"), "CaptureDiagnosticsSnapshot.SourceTelemetryConfidence default");
         AssertNonNullStringValue(snapshot, "SourceTelemetryOriginDetail", "Unknown", "CaptureDiagnosticsSnapshot.SourceTelemetryOriginDetail default");
         AssertNonNullStringValue(snapshot, "SourceTelemetryBackend", "Unknown", "CaptureDiagnosticsSnapshot.SourceTelemetryBackend default");
         AssertNonNullStringValue(snapshot, "SourceTelemetryCircuitState", "Closed", "CaptureDiagnosticsSnapshot.SourceTelemetryCircuitState default");
@@ -61,14 +61,14 @@ static partial class Program
         var decoder = CreateMjpegDecoderHealthSnapshot(decoderType, 1, 120, 2.1, 3.4, 5.6);
         var perDecoder = Array.CreateInstance(decoderType, 1);
         perDecoder.SetValue(decoder, 0);
-        SetPropertyOrBackingField(snapshot, "SessionState", ParseEnum("ElgatoCapture.Models.CaptureSessionState", "Recording"));
+        SetPropertyOrBackingField(snapshot, "SessionState", ParseEnum("Sussudio.Models.CaptureSessionState", "Recording"));
         SetPropertyOrBackingField(snapshot, "IsRecording", true);
         SetPropertyOrBackingField(snapshot, "RecordingBackend", "FFmpeg");
         SetPropertyOrBackingField(snapshot, "NegotiatedWidth", 3840u);
         SetPropertyOrBackingField(snapshot, "NegotiatedHeight", 2160u);
-        SetPropertyOrBackingField(snapshot, "SourceTelemetryAvailability", ParseEnum("ElgatoCapture.Models.SourceTelemetryAvailability", "Available"));
-        SetPropertyOrBackingField(snapshot, "SourceTelemetryOrigin", ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "NativeXu"));
-        SetPropertyOrBackingField(snapshot, "SourceTelemetryConfidence", ParseEnum("ElgatoCapture.Models.SourceTelemetryConfidence", "High"));
+        SetPropertyOrBackingField(snapshot, "SourceTelemetryAvailability", ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Available"));
+        SetPropertyOrBackingField(snapshot, "SourceTelemetryOrigin", ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "NativeXu"));
+        SetPropertyOrBackingField(snapshot, "SourceTelemetryConfidence", ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "High"));
         SetPropertyOrBackingField(snapshot, "MjpegDecoderCount", 1);
         SetPropertyOrBackingField(snapshot, "MjpegPerDecoder", perDecoder);
         SetPropertyOrBackingField(snapshot, "VideoDropsQueueSaturated", 2L);
@@ -118,11 +118,11 @@ static partial class Program
         SetPropertyOrBackingField(snapshot, "AudioChunksDropped", 3L);
 
         var roundTripDecoder = ((Array)GetPropertyValue(snapshot, "MjpegPerDecoder")!).GetValue(0)!;
-        AssertEqual(ParseEnum("ElgatoCapture.Models.CaptureSessionState", "Recording"), GetPropertyValue(snapshot, "SessionState"), "CaptureDiagnosticsSnapshot.SessionState round-trip");
+        AssertEqual(ParseEnum("Sussudio.Models.CaptureSessionState", "Recording"), GetPropertyValue(snapshot, "SessionState"), "CaptureDiagnosticsSnapshot.SessionState round-trip");
         AssertEqual(true, GetBoolProperty(snapshot, "IsRecording"), "CaptureDiagnosticsSnapshot.IsRecording round-trip");
         AssertEqual("FFmpeg", GetStringProperty(snapshot, "RecordingBackend"), "CaptureDiagnosticsSnapshot.RecordingBackend round-trip");
         AssertEqual(3840, Convert.ToInt32(GetPropertyValue(snapshot, "NegotiatedWidth")), "CaptureDiagnosticsSnapshot.NegotiatedWidth round-trip");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "NativeXu"), GetPropertyValue(snapshot, "SourceTelemetryOrigin"), "CaptureDiagnosticsSnapshot.SourceTelemetryOrigin round-trip");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "NativeXu"), GetPropertyValue(snapshot, "SourceTelemetryOrigin"), "CaptureDiagnosticsSnapshot.SourceTelemetryOrigin round-trip");
         AssertEqual(1, GetCountProperty(GetPropertyValue(snapshot, "MjpegPerDecoder")!), "CaptureDiagnosticsSnapshot.MjpegPerDecoder round-trip count");
         AssertEqual(1, GetIntProperty(roundTripDecoder, "WorkerIndex"), "MjpegDecoderHealthSnapshot.WorkerIndex round-trip");
         AssertEqual(120, GetIntProperty(roundTripDecoder, "SampleCount"), "MjpegDecoderHealthSnapshot.SampleCount round-trip");
@@ -195,9 +195,9 @@ static partial class Program
 
     private static Task CaptureHealthSnapshot_ExtendsDiagnosticsWithFlashbackSourceAndAvSync()
     {
-        var diagnosticsType = RequireType("ElgatoCapture.Models.CaptureDiagnosticsSnapshot");
-        var healthType = RequireType("ElgatoCapture.Models.CaptureHealthSnapshot");
-        var detailType = RequireType("ElgatoCapture.Models.SourceTelemetryDetailEntry");
+        var diagnosticsType = RequireType("Sussudio.Models.CaptureDiagnosticsSnapshot");
+        var healthType = RequireType("Sussudio.Models.CaptureHealthSnapshot");
+        var detailType = RequireType("Sussudio.Models.SourceTelemetryDetailEntry");
         if (!healthType.IsSealed)
         {
             throw new InvalidOperationException("CaptureHealthSnapshot must remain sealed.");
@@ -343,7 +343,7 @@ static partial class Program
                 NullableString("RawValue")
             });
 
-        var health = CreateInstance("ElgatoCapture.Models.CaptureHealthSnapshot");
+        var health = CreateInstance("Sussudio.Models.CaptureHealthSnapshot");
         AssertNonNullStringValue(health, "RecordingBackend", "None", "CaptureHealthSnapshot inherited RecordingBackend default");
         AssertNonNullStringValue(health, "FlashbackPlaybackState", "N/A", "CaptureHealthSnapshot.FlashbackPlaybackState default");
         AssertNonNullStringValue(health, "FlashbackDecoderHwAccel", "N/A", "CaptureHealthSnapshot.FlashbackDecoderHwAccel default");
@@ -521,13 +521,13 @@ static partial class Program
 
     private static Task SourceSignalTelemetrySnapshot_PreservesFullTelemetryContract()
     {
-        var snapshotType = RequireType("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
-        var availabilityType = RequireType("ElgatoCapture.Models.SourceTelemetryAvailability");
-        var originType = RequireType("ElgatoCapture.Models.SourceTelemetryOrigin");
-        var confidenceType = RequireType("ElgatoCapture.Models.SourceTelemetryConfidence");
-        var audioAvailabilityType = RequireType("ElgatoCapture.Models.SourceAudioInputAvailability");
-        var audioModeType = RequireType("ElgatoCapture.Models.SourceAudioInputMode");
-        var detailType = RequireType("ElgatoCapture.Models.SourceTelemetryDetailEntry");
+        var snapshotType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
+        var availabilityType = RequireType("Sussudio.Models.SourceTelemetryAvailability");
+        var originType = RequireType("Sussudio.Models.SourceTelemetryOrigin");
+        var confidenceType = RequireType("Sussudio.Models.SourceTelemetryConfidence");
+        var audioAvailabilityType = RequireType("Sussudio.Models.SourceAudioInputAvailability");
+        var audioModeType = RequireType("Sussudio.Models.SourceAudioInputMode");
+        var detailType = RequireType("Sussudio.Models.SourceTelemetryDetailEntry");
 
         AssertDeclaredProperties(
             snapshotType,
@@ -591,7 +591,7 @@ static partial class Program
             });
 
         var before = DateTimeOffset.UtcNow.AddSeconds(-1);
-        var snapshot = CreateInstance("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
+        var snapshot = CreateInstance("Sussudio.Models.SourceSignalTelemetrySnapshot");
         var after = DateTimeOffset.UtcNow.AddSeconds(1);
         var timestamp = (DateTimeOffset)GetPropertyValue(snapshot, "TimestampUtc")!;
         if (timestamp < before || timestamp > after)
@@ -599,11 +599,11 @@ static partial class Program
             throw new InvalidOperationException("SourceSignalTelemetrySnapshot.TimestampUtc should default to current UTC time.");
         }
 
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceTelemetryAvailability", "Unknown"), GetPropertyValue(snapshot, "Availability"), "SourceSignalTelemetrySnapshot.Availability default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "Unknown"), GetPropertyValue(snapshot, "Origin"), "SourceSignalTelemetrySnapshot.Origin default");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Unknown"), GetPropertyValue(snapshot, "Availability"), "SourceSignalTelemetrySnapshot.Availability default");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "Unknown"), GetPropertyValue(snapshot, "Origin"), "SourceSignalTelemetrySnapshot.Origin default");
         AssertNonNullStringValue(snapshot, "OriginDetail", "Unknown", "SourceSignalTelemetrySnapshot.OriginDetail default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceTelemetryConfidence", "Unknown"), GetPropertyValue(snapshot, "Confidence"), "SourceSignalTelemetrySnapshot.Confidence default");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceAudioInputAvailability", "Unavailable"), GetPropertyValue(snapshot, "AudioInputAvailability"), "SourceSignalTelemetrySnapshot.AudioInputAvailability default");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "Unknown"), GetPropertyValue(snapshot, "Confidence"), "SourceSignalTelemetrySnapshot.Confidence default");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceAudioInputAvailability", "Unavailable"), GetPropertyValue(snapshot, "AudioInputAvailability"), "SourceSignalTelemetrySnapshot.AudioInputAvailability default");
         AssertEqual("not-implemented", GetStringProperty(snapshot, "AudioInputOrigin"), "SourceSignalTelemetrySnapshot.AudioInputOrigin default");
         AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "DetailEntries")!), "SourceSignalTelemetrySnapshot.DetailEntries default count");
         AssertEqual(false, GetBoolProperty(snapshot, "HasDimensions"), "SourceSignalTelemetrySnapshot.HasDimensions default");
@@ -614,10 +614,10 @@ static partial class Program
         var detailEntry = Activator.CreateInstance(detailType, "Audio / Input", "Analog Gain", "12 dB", "0C")
             ?? throw new InvalidOperationException("Failed to create SourceTelemetryDetailEntry.");
         var details = CreateGenericList(detailType, detailEntry);
-        SetPropertyOrBackingField(snapshot, "Availability", ParseEnum("ElgatoCapture.Models.SourceTelemetryAvailability", "Available"));
-        SetPropertyOrBackingField(snapshot, "Origin", ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "NativeXu"));
+        SetPropertyOrBackingField(snapshot, "Availability", ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Available"));
+        SetPropertyOrBackingField(snapshot, "Origin", ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "NativeXu"));
         SetPropertyOrBackingField(snapshot, "OriginDetail", "NativeXuAtCommandProvider");
-        SetPropertyOrBackingField(snapshot, "Confidence", ParseEnum("ElgatoCapture.Models.SourceTelemetryConfidence", "High"));
+        SetPropertyOrBackingField(snapshot, "Confidence", ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "High"));
         SetPropertyOrBackingField(snapshot, "Width", 3840);
         SetPropertyOrBackingField(snapshot, "Height", 2160);
         SetPropertyOrBackingField(snapshot, "FrameRateExact", 120000d / 1001d);
@@ -653,13 +653,13 @@ static partial class Program
         SetPropertyOrBackingField(snapshot, "EgavOpenResultName", "Ok");
         SetPropertyOrBackingField(snapshot, "EgavSignalStatusResultName", "Ok");
         SetPropertyOrBackingField(snapshot, "EgavIsVideoHdrResultName", "Ok");
-        SetPropertyOrBackingField(snapshot, "AudioInputAvailability", ParseEnum("ElgatoCapture.Models.SourceAudioInputAvailability", "Available"));
-        SetPropertyOrBackingField(snapshot, "AudioInputMode", ParseEnum("ElgatoCapture.Models.SourceAudioInputMode", "Analog"));
+        SetPropertyOrBackingField(snapshot, "AudioInputAvailability", ParseEnum("Sussudio.Models.SourceAudioInputAvailability", "Available"));
+        SetPropertyOrBackingField(snapshot, "AudioInputMode", ParseEnum("Sussudio.Models.SourceAudioInputMode", "Analog"));
         SetPropertyOrBackingField(snapshot, "AudioInputOrigin", "native-xu");
 
         var roundTripDetail = GetSingleEnumerableItem(GetPropertyValue(snapshot, "DetailEntries")!);
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceTelemetryAvailability", "Available"), GetPropertyValue(snapshot, "Availability"), "SourceSignalTelemetrySnapshot.Availability round-trip");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "NativeXu"), GetPropertyValue(snapshot, "Origin"), "SourceSignalTelemetrySnapshot.Origin round-trip");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Available"), GetPropertyValue(snapshot, "Availability"), "SourceSignalTelemetrySnapshot.Availability round-trip");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "NativeXu"), GetPropertyValue(snapshot, "Origin"), "SourceSignalTelemetrySnapshot.Origin round-trip");
         AssertEqual("NativeXuAtCommandProvider", GetStringProperty(snapshot, "OriginDetail"), "SourceSignalTelemetrySnapshot.OriginDetail round-trip");
         AssertEqual(3840, Convert.ToInt32(GetPropertyValue(snapshot, "Width")), "SourceSignalTelemetrySnapshot.Width round-trip");
         AssertEqual("YCbCr422", GetStringProperty(snapshot, "VideoFormat"), "SourceSignalTelemetrySnapshot.VideoFormat round-trip");
@@ -672,8 +672,8 @@ static partial class Program
         AssertEqual("Analog Gain", GetStringProperty(roundTripDetail, "Label"), "SourceSignalTelemetryDetailEntry.Label round-trip");
         AssertEqual("12 dB", GetStringProperty(roundTripDetail, "DisplayValue"), "SourceSignalTelemetryDetailEntry.DisplayValue round-trip");
         AssertEqual("0C", GetStringProperty(roundTripDetail, "RawValue"), "SourceSignalTelemetryDetailEntry.RawValue round-trip");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceAudioInputAvailability", "Available"), GetPropertyValue(snapshot, "AudioInputAvailability"), "SourceSignalTelemetrySnapshot.AudioInputAvailability round-trip");
-        AssertEqual(ParseEnum("ElgatoCapture.Models.SourceAudioInputMode", "Analog"), GetPropertyValue(snapshot, "AudioInputMode"), "SourceSignalTelemetrySnapshot.AudioInputMode round-trip");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceAudioInputAvailability", "Available"), GetPropertyValue(snapshot, "AudioInputAvailability"), "SourceSignalTelemetrySnapshot.AudioInputAvailability round-trip");
+        AssertEqual(ParseEnum("Sussudio.Models.SourceAudioInputMode", "Analog"), GetPropertyValue(snapshot, "AudioInputMode"), "SourceSignalTelemetrySnapshot.AudioInputMode round-trip");
         AssertEqual("native-xu", GetStringProperty(snapshot, "AudioInputOrigin"), "SourceSignalTelemetrySnapshot.AudioInputOrigin round-trip");
         AssertEqual(true, GetBoolProperty(snapshot, "HasDimensions"), "SourceSignalTelemetrySnapshot.HasDimensions round-trip");
         AssertEqual(true, GetBoolProperty(snapshot, "HasFrameRate"), "SourceSignalTelemetrySnapshot.HasFrameRate round-trip");
@@ -715,11 +715,11 @@ static partial class Program
 
     private static void RegisterCaptureDiagnosticsSnapshotProperties(Type snapshotType)
     {
-        var decoderType = RequireType("ElgatoCapture.Models.MjpegDecoderHealthSnapshot");
-        var sessionStateType = RequireType("ElgatoCapture.Models.CaptureSessionState");
-        var availabilityType = RequireType("ElgatoCapture.Models.SourceTelemetryAvailability");
-        var originType = RequireType("ElgatoCapture.Models.SourceTelemetryOrigin");
-        var confidenceType = RequireType("ElgatoCapture.Models.SourceTelemetryConfidence");
+        var decoderType = RequireType("Sussudio.Models.MjpegDecoderHealthSnapshot");
+        var sessionStateType = RequireType("Sussudio.Models.CaptureSessionState");
+        var availabilityType = RequireType("Sussudio.Models.SourceTelemetryAvailability");
+        var originType = RequireType("Sussudio.Models.SourceTelemetryOrigin");
+        var confidenceType = RequireType("Sussudio.Models.SourceTelemetryConfidence");
 
         AssertDeclaredProperties(
             snapshotType,

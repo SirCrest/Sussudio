@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-namespace ElgatoCapture.Services.Runtime;
+namespace Sussudio.Services.Runtime;
 
 internal static class EnvironmentHelpers
 {

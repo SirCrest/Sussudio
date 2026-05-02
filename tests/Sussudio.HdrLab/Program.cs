@@ -402,7 +402,7 @@ internal static class Program
         var current = new DirectoryInfo(AppContext.BaseDirectory);
         while (current != null)
         {
-            if (File.Exists(Path.Combine(current.FullName, "ElgatoCapture.slnx")))
+            if (File.Exists(Path.Combine(current.FullName, "Sussudio.slnx")))
             {
                 return current.FullName;
             }
@@ -410,7 +410,7 @@ internal static class Program
             current = current.Parent;
         }
 
-        throw new InvalidOperationException("Could not locate repo root (ElgatoCapture.slnx).");
+        throw new InvalidOperationException("Could not locate repo root (Sussudio.slnx).");
     }
 
     private static Options ParseOptions(string[] args)
@@ -484,7 +484,7 @@ internal static class Program
     private static void PrintUsage()
     {
         Console.WriteLine("Usage:");
-        Console.WriteLine("  dotnet run --project tests/ElgatoCapture.HdrLab -- [--device <name contains>] [--width <uint>] [--height <uint>] [--fps <double>] [--frames <int>] [--timeout <seconds>] [--expect-hdr|--allow-sdr]");
+        Console.WriteLine("  dotnet run --project tests/Sussudio.HdrLab -- [--device <name contains>] [--width <uint>] [--height <uint>] [--fps <double>] [--frames <int>] [--timeout <seconds>] [--expect-hdr|--allow-sdr]");
     }
 }
 

@@ -7,7 +7,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_HasExpectedPublicMethods()
     {
-        var coordinatorType = RequireType("ElgatoCapture.Services.Capture.CaptureSessionCoordinator");
+        var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
 
         // Core lifecycle methods
         var expectedMethods = new[]
@@ -53,7 +53,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_CaptureCommandKind_HasExpectedValues()
     {
-        var commandKindType = RequireType("ElgatoCapture.Services.Capture.CaptureCommandKind");
+        var commandKindType = RequireType("Sussudio.Services.Capture.CaptureCommandKind");
 
         // Core command kinds should exist
         var expectedValues = new[]
@@ -78,7 +78,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_CaptureSessionSnapshot_HasFullContract()
     {
-        var snapshotType = RequireType("ElgatoCapture.Services.Capture.CaptureSessionSnapshot");
+        var snapshotType = RequireType("Sussudio.Services.Capture.CaptureSessionSnapshot");
 
         var expectedProps = new[]
         {
@@ -110,7 +110,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_CoalescesFlashbackEncoderCycles()
     {
-        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var cycleMethod = ExtractTextBetween(
             coordinatorText,
@@ -132,7 +132,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_DisposalAccounting_ClassifiesCanceledQueuedCommands()
     {
-        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var failPending = ExtractTextBetween(
             coordinatorText,
@@ -154,7 +154,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation()
     {
-        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var restartNoSettings = ExtractTextBetween(
             coordinatorText,
@@ -180,7 +180,7 @@ static partial class Program
 
     private static Task CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections()
     {
-        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(coordinatorText, "TryGetActiveFlashback(nameof(FlashbackBeginScrub), out var controller)");

@@ -1,4 +1,4 @@
-using ElgatoCapture.Tools;
+using Sussudio.Tools;
 namespace McpServer.Tools;
 
 internal static class ToolCommandFormatter

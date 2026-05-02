@@ -7,7 +7,7 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_ComputeLetterboxRect_CalculatesCorrectly()
     {
-        var rendererType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer");
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var method = rendererType.GetMethod("ComputeLetterboxRect",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ComputeLetterboxRect not found.");
@@ -47,7 +47,7 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_BlackEdgeCounting_WorksCorrectly()
     {
-        var rendererType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer");
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
 
         var leadingMethod = rendererType.GetMethod("CountLeadingBlackEdges",
             BindingFlags.Static | BindingFlags.NonPublic)
@@ -83,7 +83,7 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_IsDeviceLostException_ClassifiesCorrectly()
     {
-        var rendererType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer");
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var method = rendererType.GetMethod("IsDeviceLostException",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("IsDeviceLostException not found.");
@@ -111,7 +111,7 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_PresentCadenceMetrics_HasExpectedProperties()
     {
-        var metricsType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+PresentCadenceMetrics");
+        var metricsType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+PresentCadenceMetrics");
 
         var expectedProps = new[]
         {
@@ -132,7 +132,7 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_InitPngCrc32Table_Generates256Entries()
     {
-        var rendererType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer");
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var method = rendererType.GetMethod("InitPngCrc32Table",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("InitPngCrc32Table not found.");
@@ -152,11 +152,11 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming()
     {
-        var rendererType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer");
-        var source = ReadRepoFile("ElgatoCapture/Services/Preview/D3D11PreviewRenderer.cs");
-        var renderSource = ReadRepoFile("ElgatoCapture/Services/Preview/D3D11PreviewRenderer.Rendering.cs");
-        AssertContains(source, "ELGATOCAPTURE_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
-        AssertContains(source, "ELGATOCAPTURE_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL");
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
+        var source = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs");
+        var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs");
+        AssertContains(source, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
+        AssertContains(source, "SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL");
         AssertContains(source, "private long _dxgiFrameStatisticsFrameCounter;");
         AssertContains(source, "private long _dxgiFrameStatisticsLastSampleFrameCounter;");
         AssertContains(source, "public PipelineLatencyMetrics GetPipelineLatencyMetrics()");
@@ -196,31 +196,31 @@ static partial class Program
         AssertNotNull(rendererType.GetMethod("GetDxgiFrameStatisticsMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetDxgiFrameStatisticsMetrics");
         AssertNotNull(rendererType.GetMethod("TryGetDisplayClock", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.TryGetDisplayClock");
 
-        var displayClockSnapshotType = RequireType("ElgatoCapture.Services.Preview.PreviewDisplayClockSnapshot");
+        var displayClockSnapshotType = RequireType("Sussudio.Services.Preview.PreviewDisplayClockSnapshot");
         foreach (var prop in new[] { "LastPresentTick", "FrameIntervalTicks", "ExpectedFrameIntervalMs", "SampleCount" })
         {
             AssertNotNull(displayClockSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PreviewDisplayClockSnapshot.{prop}");
         }
 
-        var stageTimingType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+CpuStageTimingMetrics");
+        var stageTimingType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+CpuStageTimingMetrics");
         foreach (var prop in new[] { "SampleCount", "AverageMs", "P95Ms", "P99Ms", "MaxMs" })
         {
             AssertNotNull(stageTimingType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"CpuStageTimingMetrics.{prop}");
         }
 
-        var renderTimingType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+RenderCpuTimingMetrics");
+        var renderTimingType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+RenderCpuTimingMetrics");
         foreach (var prop in new[] { "InputUpload", "RenderSubmit", "PresentCall", "TotalFrame" })
         {
             AssertNotNull(renderTimingType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"RenderCpuTimingMetrics.{prop}");
         }
 
-        var pipelineLatencyType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+PipelineLatencyMetrics");
+        var pipelineLatencyType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+PipelineLatencyMetrics");
         foreach (var prop in new[] { "SampleCount", "AverageMs", "P95Ms", "P99Ms", "MaxMs" })
         {
             AssertNotNull(pipelineLatencyType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PipelineLatencyMetrics.{prop}");
         }
 
-        var ownershipMetricsType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+FrameOwnershipMetrics");
+        var ownershipMetricsType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+FrameOwnershipMetrics");
         foreach (var prop in new[]
                  {
                      "LastSubmittedPreviewPresentId",
@@ -240,7 +240,7 @@ static partial class Program
             AssertNotNull(ownershipMetricsType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"FrameOwnershipMetrics.{prop}");
         }
 
-        var dxgiFrameStatsType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer+DxgiFrameStatisticsMetrics");
+        var dxgiFrameStatsType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+DxgiFrameStatisticsMetrics");
         foreach (var prop in new[]
                  {
                      "SampleCount",
@@ -260,7 +260,7 @@ static partial class Program
             AssertNotNull(dxgiFrameStatsType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"DxgiFrameStatisticsMetrics.{prop}");
         }
 
-        var previewSnapshotType = RequireType("ElgatoCapture.Models.PreviewRuntimeSnapshot");
+        var previewSnapshotType = RequireType("Sussudio.Models.PreviewRuntimeSnapshot");
         foreach (var prop in new[]
                  {
                      "D3DSwapChainAddress",
@@ -327,7 +327,7 @@ static partial class Program
             AssertNotNull(previewSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PreviewRuntimeSnapshot.{prop}");
         }
 
-        var slowFrameDiagnosticType = RequireType("ElgatoCapture.Models.PreviewSlowFrameDiagnostic");
+        var slowFrameDiagnosticType = RequireType("Sussudio.Models.PreviewSlowFrameDiagnostic");
         foreach (var prop in new[]
                  {
                      "PreviewPresentId",
@@ -355,7 +355,7 @@ static partial class Program
             AssertNotNull(slowFrameDiagnosticType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"PreviewSlowFrameDiagnostic.{prop}");
         }
 
-        var automationSnapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
+        var automationSnapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
         foreach (var prop in new[]
                  {
                      "PreviewD3DSwapChainAddress",
@@ -426,7 +426,7 @@ static partial class Program
             AssertNotNull(automationSnapshotType.GetProperty(prop, BindingFlags.Public | BindingFlags.Instance), $"AutomationSnapshot.{prop}");
         }
 
-        var performanceTimelineEntryType = RequireType("ElgatoCapture.Models.PerformanceTimelineEntry");
+        var performanceTimelineEntryType = RequireType("Sussudio.Models.PerformanceTimelineEntry");
         foreach (var prop in new[]
                  {
                      "PreviewCadenceSlowFramePercent",
@@ -512,13 +512,13 @@ static partial class Program
 
     private static Task D3D11PreviewRenderer_FrameCaptureCancellationClearsPendingRequest()
     {
-        var rendererText = ReadRepoFile("ElgatoCapture/Services/Preview/D3D11PreviewRenderer.cs")
+        var rendererText = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs")
             .Replace("\r\n", "\n");
         var captureMethod = ExtractTextBetween(
             rendererText,
             "public Task<PreviewFrameCaptureResult> CaptureNextFrameAsync(string outputPath, CancellationToken cancellationToken)",
             "    public void SetSharedDevice");
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureMethod, "if (cancellationToken.IsCancellationRequested)");

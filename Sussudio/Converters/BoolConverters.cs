@@ -2,7 +2,7 @@ using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 
-namespace ElgatoCapture.Converters;
+namespace Sussudio.Converters;
 
 public class InverseBoolConverter : IValueConverter
 {

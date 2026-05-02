@@ -6,11 +6,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 using Microsoft.Win32.SafeHandles;
-using ElgatoCapture.Services.Devices;
+using Sussudio.Services.Devices;
 
-namespace ElgatoCapture.Services.Telemetry;
+namespace Sussudio.Services.Telemetry;
 
 public sealed class NativeXuAtCommandProvider : ISourceSignalTelemetryProvider
 {

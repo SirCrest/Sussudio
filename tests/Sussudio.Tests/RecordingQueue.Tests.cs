@@ -5,13 +5,13 @@ static partial class Program
 {
     private static Task RecordingVideoQueues_FailExplicitlyInsteadOfEvictingFrames()
     {
-        var libAvSource = ReadRepoFile("ElgatoCapture/Services/Recording/LibAvRecordingSink.cs");
-        var flashbackSource = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs");
-        var flashbackBufferSource = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs");
-        var captureServiceSource = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs");
-        var captureSnapshotsSource = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.Snapshots.cs");
-        var unifiedVideoCaptureSource = ReadRepoFile("ElgatoCapture/Services/Capture/UnifiedVideoCapture.cs");
-        var recordingContractsSource = ReadRepoFile("ElgatoCapture/Services/Recording/RecordingContracts.cs");
+        var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs");
+        var flashbackSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs");
+        var flashbackBufferSource = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs");
+        var captureServiceSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs");
+        var captureSnapshotsSource = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs");
+        var unifiedVideoCaptureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
+        var recordingContractsSource = ReadRepoFile("Sussudio/Services/Recording/RecordingContracts.cs");
 
         AssertDoesNotContain(libAvSource, "LIBAV_SINK_BURST_EVICT");
         AssertDoesNotContain(flashbackSource, "FLASHBACK_SINK_BURST_EVICT");
@@ -486,7 +486,7 @@ static partial class Program
         AssertContains(captureSnapshotsSource, "FlashbackStartupCacheBytes = bufMgr?.StartupCacheBytes");
         AssertContains(captureSnapshotsSource, "FlashbackTempDriveFreeBytes = bufMgr?.TempDriveAvailableFreeBytes");
         var sharedFormatterSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
-        var ecctlFormatterSource = ReadRepoFile("tools/ecctl/Formatters.cs");
+        var ssctlFormatterSource = ReadRepoFile("tools/ssctl/Formatters.cs");
         var mcpAppStateSource = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
         AssertContains(sharedFormatterSource, "FlashbackEncodingFailed");
         AssertContains(sharedFormatterSource, "FlashbackStartupCacheBytes");
@@ -494,19 +494,19 @@ static partial class Program
         AssertContains(sharedFormatterSource, "FlashbackForceRotateActive");
         AssertContains(sharedFormatterSource, "FlashbackForceRotateRequested");
         AssertContains(sharedFormatterSource, "FlashbackForceRotateDraining");
-        AssertContains(ecctlFormatterSource, "FlashbackEncodingFailed");
-        AssertContains(ecctlFormatterSource, "FlashbackStartupCacheBytes");
-        AssertContains(ecctlFormatterSource, "FlashbackCleanupInProgress");
-        AssertContains(ecctlFormatterSource, "FlashbackForceRotateActive");
-        AssertContains(ecctlFormatterSource, "FlashbackForceRotateRequested");
-        AssertContains(ecctlFormatterSource, "FlashbackForceRotateDraining");
+        AssertContains(ssctlFormatterSource, "FlashbackEncodingFailed");
+        AssertContains(ssctlFormatterSource, "FlashbackStartupCacheBytes");
+        AssertContains(ssctlFormatterSource, "FlashbackCleanupInProgress");
+        AssertContains(ssctlFormatterSource, "FlashbackForceRotateActive");
+        AssertContains(ssctlFormatterSource, "FlashbackForceRotateRequested");
+        AssertContains(ssctlFormatterSource, "FlashbackForceRotateDraining");
         AssertContains(mcpAppStateSource, "FormatSnapshot(response, includeFlashback: true)");
         AssertOccursBefore(
             sharedFormatterSource,
             "var flashbackFailed = Get(snapshot, \"FlashbackEncodingFailed\", \"false\");",
             "builder.AppendLine(\"== Flashback ==\");");
         AssertOccursBefore(
-            ecctlFormatterSource,
+            ssctlFormatterSource,
             "var flashbackFailed = AutomationSnapshotFormatter.Get(snapshot, \"FlashbackEncodingFailed\", \"false\");",
             "builder.AppendLine(\"== Flashback ==\");");
 
@@ -515,7 +515,7 @@ static partial class Program
 
     private static Task LibAvRecordingSink_StopValidatesFinalOutput()
     {
-        var libAvSource = ReadRepoFile("ElgatoCapture/Services/Recording/LibAvRecordingSink.cs")
+        var libAvSource = ReadRepoFile("Sussudio/Services/Recording/LibAvRecordingSink.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(libAvSource, "private static bool TryValidateStoppedOutputFile(string outputPath, out long outputBytes, out string failureMessage)");

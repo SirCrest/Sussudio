@@ -5,7 +5,7 @@ static partial class Program
 {
     private static Task App_Xaml_WiresUnhandledExceptionPolicy()
     {
-        var appType = RequireType("ElgatoCapture.App");
+        var appType = RequireType("Sussudio.App");
 
         // Verify crash handler methods exist on App
         var uiHandler = appType.GetMethod(

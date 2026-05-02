@@ -505,11 +505,11 @@ Exit criteria:
 Known baseline commands from the current checkpoint:
 
 ```powershell
-dotnet build ElgatoCapture\ElgatoCapture.csproj -c Debug -p:Platform=x64 --no-restore /nr:false /m:1 -p:UseSharedCompilation=false
-dotnet build tools\ecctl\ecctl.csproj -c Debug --no-restore /nr:false /m:1 -p:UseSharedCompilation=false
+dotnet build Sussudio\Sussudio.csproj -c Debug -p:Platform=x64 --no-restore /nr:false /m:1 -p:UseSharedCompilation=false
+dotnet build tools\ssctl\ssctl.csproj -c Debug --no-restore /nr:false /m:1 -p:UseSharedCompilation=false
 dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore /nr:false /m:1 -p:UseSharedCompilation=false
 dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug -t:Rebuild --no-restore /nr:false /m:1 -p:UseSharedCompilation=false
-dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj -c Debug -p:Platform=x64 --no-restore -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"
+dotnet run --project tests\Sussudio.Tests\Sussudio.Tests.csproj -c Debug -p:Platform=x64 --no-restore -- "Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll"
 git diff --check
 ```
 

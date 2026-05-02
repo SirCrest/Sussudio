@@ -4,11 +4,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using ElgatoCapture.Services.Devices;
-using ElgatoCapture.Services.Recording;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Services.Devices;
+using Sussudio.Services.Recording;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture.Services.Audio;
+namespace Sussudio.Services.Audio;
 
 internal sealed class WasapiAudioPlayback : IDisposable
 {

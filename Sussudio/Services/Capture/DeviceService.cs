@@ -10,12 +10,12 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Audio;
-using ElgatoCapture.Services.Devices;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Models;
+using Sussudio.Services.Audio;
+using Sussudio.Services.Devices;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture.Services.Capture;
+namespace Sussudio.Services.Capture;
 
 internal sealed class CachedMediaFormat
 {
@@ -246,7 +246,7 @@ public class DeviceService
         }).ToList();
 
     private static string GetFormatCacheDirectory()
-        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElgatoCapture");
+        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Sussudio");
 
     private static string SanitizeDeviceIdForFilename(string deviceId)
     {

@@ -18,7 +18,7 @@ static partial class Program
         if (!File.Exists(assemblyPath))
         {
             Console.Error.WriteLine($"Target assembly not found: {assemblyPath}");
-            Console.Error.WriteLine("Build the app first: dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64");
+            Console.Error.WriteLine("Build the app first: dotnet build Sussudio/Sussudio.csproj -c Debug -p:Platform=x64");
             return 2;
         }
 
@@ -1085,23 +1085,23 @@ static partial class Program
                 "ResponseFormatter.Get handles all JSON value kinds correctly",
                 ResponseFormatter_Get_HandlesAllJsonValueKinds),
             await RunCheckAsync(
-                "ecctl Formatters snapshot fields align with MCP ResponseFormatter",
-                EcctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter),
+                "ssctl Formatters snapshot fields align with MCP ResponseFormatter",
+                SsctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter),
             await RunCheckAsync(
                 "AutomationClient delegates to shared protocol for command resolution",
                 AutomationClient_UsesSharedProtocol_ForCommandResolution),
             await RunCheckAsync(
-                "ecctl CommandHandlers route core command groups",
-                EcctlCommandHandlers_RouteCoreCommandGroups),
+                "ssctl CommandHandlers route core command groups",
+                SsctlCommandHandlers_RouteCoreCommandGroups),
             await RunCheckAsync(
                 "PresentMon parser selects dominant non-artifact swap chain",
                 PresentMonParser_SelectsDominantNonArtifactSwapChain),
             await RunCheckAsync(
-                "ecctl Formatters emit core snapshot sections",
-                EcctlFormatters_EmitCoreSnapshotSections),
+                "ssctl Formatters emit core snapshot sections",
+                SsctlFormatters_EmitCoreSnapshotSections),
             await RunCheckAsync(
-                "ecctl PipeTransport exposes advanced automation command ids",
-                EcctlPipeTransport_ExposesAdvancedAutomationCommandIds),
+                "ssctl PipeTransport exposes advanced automation command ids",
+                SsctlPipeTransport_ExposesAdvancedAutomationCommandIds),
             await RunCheckAsync(
                 "RTK I2C probe guards unsafe native paths",
                 RtkI2cProbe_GuardsUnsafeNativePaths)
@@ -1135,13 +1135,13 @@ static partial class Program
         var root = GetRepoRoot();
         return Path.Combine(
             root,
-            "ElgatoCapture",
+            "Sussudio",
             "bin",
             "x64",
             "Debug",
             "net8.0-windows10.0.19041.0",
             "win-x64",
-            "ElgatoCapture.dll");
+            "Sussudio.dll");
     }
 
     private static async Task<CheckResult> RunCheckAsync(string name, Func<Task> check)
@@ -1161,7 +1161,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_UsesObservedTelemetryStateInsteadOfInferredCounts()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: true);
 
@@ -1186,7 +1186,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_PreservesReaderSourceSubtype_WhenObservedFramesAreDecoded()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -1204,17 +1204,17 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_TelemetryAlignment_Mismatch_WhenSourceModeDiffersFromRequest()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: true);
 
         await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
 
-        var sourceTelemetry = CreateInstance("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
-        SetPropertyOrBackingField(sourceTelemetry, "Availability", ParseEnum("ElgatoCapture.Models.SourceTelemetryAvailability", "Available"));
-        SetPropertyOrBackingField(sourceTelemetry, "Origin", ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "NativeXu"));
+        var sourceTelemetry = CreateInstance("Sussudio.Models.SourceSignalTelemetrySnapshot");
+        SetPropertyOrBackingField(sourceTelemetry, "Availability", ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Available"));
+        SetPropertyOrBackingField(sourceTelemetry, "Origin", ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "NativeXu"));
         SetPropertyOrBackingField(sourceTelemetry, "OriginDetail", "RegressionHarness");
-        SetPropertyOrBackingField(sourceTelemetry, "Confidence", ParseEnum("ElgatoCapture.Models.SourceTelemetryConfidence", "High"));
+        SetPropertyOrBackingField(sourceTelemetry, "Confidence", ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "High"));
         SetPropertyOrBackingField(sourceTelemetry, "Width", 1280);
         SetPropertyOrBackingField(sourceTelemetry, "Height", 720);
         SetPropertyOrBackingField(sourceTelemetry, "FrameRateExact", 30d);
@@ -1232,13 +1232,13 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_TelemetryAlignment_Unavailable_WhenTelemetryUnavailable()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
         await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
 
-        var telemetryType = RequireType("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
+        var telemetryType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
         var createUnavailable = telemetryType.GetMethod(
             "CreateUnavailable",
             BindingFlags.Public | BindingFlags.Static,
@@ -1262,9 +1262,9 @@ static partial class Program
 
     private static Task Diagnostics_HdrTruthVerdict_TreatsHdrSourceSdrRequestAsExpected()
     {
-        var diagnosticsType = RequireType("ElgatoCapture.Services.Automation.AutomationDiagnosticsHub");
-        var runtimeType = RequireType("ElgatoCapture.Models.CaptureRuntimeSnapshot");
-        var verifierResultType = RequireType("ElgatoCapture.Models.RecordingVerificationResult");
+        var diagnosticsType = RequireType("Sussudio.Services.Automation.AutomationDiagnosticsHub");
+        var runtimeType = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");
+        var verifierResultType = RequireType("Sussudio.Models.RecordingVerificationResult");
         var method = diagnosticsType.GetMethod(
             "BuildHdrTruthVerdict",
             BindingFlags.Static | BindingFlags.NonPublic,
@@ -1289,7 +1289,7 @@ static partial class Program
 
     private static async Task NativeXuTelemetry_AcceptsKnown4kXProductRevisions()
     {
-        var provider = CreateInstance("ElgatoCapture.Services.Telemetry.NativeXuAtCommandProvider");
+        var provider = CreateInstance("Sussudio.Services.Telemetry.NativeXuAtCommandProvider");
 
         foreach (var productId in new[] { "009b", "009c", "009d" })
         {
@@ -1327,16 +1327,16 @@ static partial class Program
 
     private static async Task CaptureHealthSnapshot_PropagatesStructuredSourceTelemetryDetails()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
         await InvokeInitializeAsync(captureService, device, settings).ConfigureAwait(false);
 
-        var sourceTelemetry = CreateInstance("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
-        SetPropertyOrBackingField(sourceTelemetry, "Availability", ParseEnum("ElgatoCapture.Models.SourceTelemetryAvailability", "Available"));
-        SetPropertyOrBackingField(sourceTelemetry, "Origin", ParseEnum("ElgatoCapture.Models.SourceTelemetryOrigin", "NativeXu"));
-        SetPropertyOrBackingField(sourceTelemetry, "Confidence", ParseEnum("ElgatoCapture.Models.SourceTelemetryConfidence", "High"));
+        var sourceTelemetry = CreateInstance("Sussudio.Models.SourceSignalTelemetrySnapshot");
+        SetPropertyOrBackingField(sourceTelemetry, "Availability", ParseEnum("Sussudio.Models.SourceTelemetryAvailability", "Available"));
+        SetPropertyOrBackingField(sourceTelemetry, "Origin", ParseEnum("Sussudio.Models.SourceTelemetryOrigin", "NativeXu"));
+        SetPropertyOrBackingField(sourceTelemetry, "Confidence", ParseEnum("Sussudio.Models.SourceTelemetryConfidence", "High"));
         SetPropertyOrBackingField(sourceTelemetry, "Width", 3840);
         SetPropertyOrBackingField(sourceTelemetry, "Height", 2160);
         SetPropertyOrBackingField(sourceTelemetry, "FrameRateExact", 119.88d);
@@ -1355,7 +1355,7 @@ static partial class Program
         SetPropertyOrBackingField(sourceTelemetry, "RxTxHdcpVersion", "Unknown (3)");
         SetPropertyOrBackingField(sourceTelemetry, "RawTimingHex", "3000CA0830117008");
 
-        var detailEntryType = RequireType("ElgatoCapture.Models.SourceTelemetryDetailEntry");
+        var detailEntryType = RequireType("Sussudio.Models.SourceTelemetryDetailEntry");
         var detailEntry = Activator.CreateInstance(detailEntryType, "Signal Details", "Quantization", "Limited", "Limited")
             ?? throw new InvalidOperationException("SourceTelemetryDetailEntry instance creation failed.");
         var detailArray = Array.CreateInstance(detailEntryType, 1);
@@ -1392,8 +1392,8 @@ static partial class Program
 
     private static Task AutomationSnapshots_ExposeHighConfidenceSourceTelemetryFields()
     {
-        var contractsText = ReadRepoFile("ElgatoCapture/Models/AutomationContracts.cs").Replace("\r\n", "\n");
-        var diagnosticsHubText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n");
+        var contractsText = ReadRepoFile("Sussudio/Models/AutomationContracts.cs").Replace("\r\n", "\n");
+        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs").Replace("\r\n", "\n");
 
         AssertContains(contractsText, "public string? SourceFirmware { get; init; }");
         AssertContains(contractsText, "public string? SourceAudioFormat { get; init; }");
@@ -1420,7 +1420,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_PipelineParity_Ready_WhenHdrRequestedAndIdle()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: true);
 
@@ -1437,7 +1437,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_PipelineParity_Violation_WhenHdrRequestedButIngressIsSdr()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: true);
 
@@ -1459,7 +1459,7 @@ static partial class Program
 
     private static async Task GetRuntimeSnapshot_ThreadHealthProbes_DefaultToZeroWhenInactive()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -1484,7 +1484,7 @@ static partial class Program
 
     private static async Task GetHealthSnapshot_UsesCachedMjpegTimingMetricsWhenCaptureIsGone()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -1569,7 +1569,7 @@ static partial class Program
 
     private static async Task GetDiagnosticsSnapshot_PropagatesMjpegTimingMetrics()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -1652,8 +1652,8 @@ static partial class Program
 
     private static Task AutomationSnapshot_ExposesFullCpuMjpegMetrics()
     {
-        var snapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
-        var decoderType = RequireType("ElgatoCapture.Models.MjpegDecoderAutomationSnapshot");
+        var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
+        var decoderType = RequireType("Sussudio.Models.MjpegDecoderAutomationSnapshot");
 
         AssertNotNull(snapshotType.GetProperty("MjpegDecoderCount"), "AutomationSnapshot.MjpegDecoderCount");
         AssertNotNull(snapshotType.GetProperty("MjpegReorderSampleCount"), "AutomationSnapshot.MjpegReorderSampleCount");
@@ -1848,9 +1848,9 @@ static partial class Program
 
     private static Task AutomationOptionsSnapshot_ExposesAdvancedControlState()
     {
-        var optionsType = RequireType("ElgatoCapture.Models.AutomationOptionsSnapshot");
-        var stringOptionType = RequireType("ElgatoCapture.Models.AutomationStringOption");
-        var intOptionType = RequireType("ElgatoCapture.Models.AutomationIntOption");
+        var optionsType = RequireType("Sussudio.Models.AutomationOptionsSnapshot");
+        var stringOptionType = RequireType("Sussudio.Models.AutomationStringOption");
+        var intOptionType = RequireType("Sussudio.Models.AutomationIntOption");
 
         AssertNotNull(optionsType.GetProperty("Presets"), "AutomationOptionsSnapshot.Presets");
         AssertNotNull(optionsType.GetProperty("SplitEncodeModes"), "AutomationOptionsSnapshot.SplitEncodeModes");
@@ -1871,7 +1871,7 @@ static partial class Program
             ?? throw new InvalidOperationException("AutomationOptionsSnapshot.MjpegDecoderCounts missing.");
         AssertEqual(intOptionType, decoderCountsProperty.PropertyType.GetElementType(), "AutomationOptionsSnapshot.MjpegDecoderCounts[] element type");
 
-        var snapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
+        var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
         AssertNotNull(snapshotType.GetProperty("SelectedVideoFormat"), "AutomationSnapshot.SelectedVideoFormat");
         AssertNotNull(snapshotType.GetProperty("ShowAllCaptureOptions"), "AutomationSnapshot.ShowAllCaptureOptions");
         AssertNotNull(snapshotType.GetProperty("PreviewVolumePercent"), "AutomationSnapshot.PreviewVolumePercent");
@@ -1894,7 +1894,7 @@ static partial class Program
             File.WriteAllBytes(Path.Combine(localFfmpegDir, "ffmpeg.exe"), Array.Empty<byte>());
             File.WriteAllBytes(Path.Combine(localFfmpegDir, "ffprobe.exe"), Array.Empty<byte>());
 
-            var locatorType = RequireType("ElgatoCapture.Services.Runtime.FfmpegRuntimeLocator");
+            var locatorType = RequireType("Sussudio.Services.Runtime.FfmpegRuntimeLocator");
             var resolveRuntime = locatorType.GetMethod(
                                      "TryResolveNativeRuntimeRoot",
                                      BindingFlags.Static | BindingFlags.NonPublic,
@@ -1936,9 +1936,9 @@ static partial class Program
 
     private static Task SharedFormatter_RendersMjpegTimingSection_WhenFieldsExist()
     {
-        var toolAssembly = LoadToolAssembly(Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll"));
-        var formatterType = toolAssembly.GetType("ElgatoCapture.Tools.AutomationSnapshotFormatter")
-            ?? throw new InvalidOperationException("ElgatoCapture.Tools.AutomationSnapshotFormatter type not found.");
+        var toolAssembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var formatterType = toolAssembly.GetType("Sussudio.Tools.AutomationSnapshotFormatter")
+            ?? throw new InvalidOperationException("Sussudio.Tools.AutomationSnapshotFormatter type not found.");
         var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("AutomationSnapshotFormatter.FormatSnapshot not found.");
 
@@ -1970,8 +1970,8 @@ static partial class Program
 
     private static Task AutomationCommandMaps_StayAligned_ForAdvancedMcpControls()
     {
-        var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
-        var protocolType = RequireType("ElgatoCapture.Tools.AutomationPipeProtocol");
+        var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
+        var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");
         var protocolText = ReadRepoFile("tools/Common/AutomationPipeProtocol.cs");
         var scriptText = ReadRepoFile("tools/send-automation-command.ps1");
         var resolveCommand = protocolType.GetMethod(
@@ -2018,7 +2018,7 @@ static partial class Program
         var appStateToolText = ReadRepoFile("tools/McpServer/Tools/AppStateTools.cs");
         var captureOptionsToolText = ReadRepoFile("tools/McpServer/Tools/CaptureOptionsTools.cs");
         var uiSettingsToolText = ReadRepoFile("tools/McpServer/Tools/UiSettingsTools.cs");
-        var snapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
+        var snapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
 
         AssertContains(captureSettingsToolsText, "string? preset = null");
         AssertContains(captureSettingsToolsText, "string? splitEncodeMode = null");
@@ -2047,7 +2047,7 @@ static partial class Program
 
     private static Task UiAutomationCommands_AreNotBlockedOnDeviceReadiness()
     {
-        var dispatcherText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationCommandDispatcher.cs");
+        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs");
 
         AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetShowAllCaptureOptions => true,");
         AssertDoesNotContain(dispatcherText, "AutomationCommandKind.SetPreviewVolume => true,");
@@ -2059,15 +2059,15 @@ static partial class Program
 
     private static Task AutomationPreviewVolume_PersistsThroughSettingsPath()
     {
-        var automationText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Automation.cs").Replace("\r\n", "\n");
+        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs").Replace("\r\n", "\n");
         AssertContains(automationText, "PreviewVolume = Math.Clamp(previewVolumePercent / 100.0, 0.0, 1.0);\n            SavePreviewVolume();");
         return Task.CompletedTask;
     }
 
     private static Task AutomationUiSettings_PersistThroughSettingsPath()
     {
-        var settingsPartialText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Settings.cs").Replace("\r\n", "\n");
-        var settingsServiceText = ReadRepoFile("ElgatoCapture/Services/Configuration/SettingsService.cs").Replace("\r\n", "\n");
+        var settingsPartialText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs").Replace("\r\n", "\n");
+        var settingsServiceText = ReadRepoFile("Sussudio/Services/Configuration/SettingsService.cs").Replace("\r\n", "\n");
 
         AssertContains(settingsServiceText, "public bool? ShowAllCaptureOptions { get; set; }");
         AssertContains(settingsServiceText, "public bool? IsStatsVisible { get; set; }");
@@ -2084,7 +2084,7 @@ static partial class Program
 
     private static Task ProjectFile_PreservesEnglishOnlyPublishLocalePolicy()
     {
-        var projectText = ReadRepoFile("ElgatoCapture/ElgatoCapture.csproj").Replace("\r\n", "\n");
+        var projectText = ReadRepoFile("Sussudio/Sussudio.csproj").Replace("\r\n", "\n");
         AssertContains(projectText, "<SatelliteResourceLanguages>en-US</SatelliteResourceLanguages>");
         AssertContains(projectText, "AfterTargets=\"Build;Publish\"");
         AssertContains(projectText, "$_.Name.ToLowerInvariant() -ne 'en-us'");
@@ -2095,7 +2095,7 @@ static partial class Program
 
     private static Task ShowAllCaptureOptions_UnlocksSourceFilteredFrameRates()
     {
-        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.DeviceManagement.cs").Replace("\r\n", "\n");
+        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceManagement.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "options = ShowAllCaptureOptions");
         AssertContains(mainViewModelText, "!IsSourceFilteredFrameRateDisableReason(option.DisableReason)");
@@ -2107,8 +2107,8 @@ static partial class Program
 
     private static Task DiagnosticsLoop_DoesNotRebuildAutomationOptionsEachPoll()
     {
-        var diagnosticsHubText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationDiagnosticsHub.cs");
-        var automationText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Automation.cs");
+        var diagnosticsHubText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs");
+        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs");
 
         AssertDoesNotContain(diagnosticsHubText, "GetAutomationOptionsSnapshotAsync(cancellationToken)");
         AssertDoesNotContain(diagnosticsHubText, "Options = optionsSnapshot");
@@ -2119,7 +2119,7 @@ static partial class Program
 
     private static Task PreviewStartup_ToleratesMissingAudioCaptureDevices()
     {
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "if (settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId))");
         AssertContains(captureServiceText, "Audio preview requested but no audio capture device is available; continuing with video-only preview.");
@@ -2130,7 +2130,7 @@ static partial class Program
 
     private static async Task AudioPreview_RemainsInactive_WhenNoAudioCaptureDeviceExists()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         SetPropertyOrBackingField(device, "AudioDeviceId", null);
         SetPropertyOrBackingField(device, "AudioDeviceName", null);
@@ -2176,8 +2176,8 @@ static partial class Program
 
     private static Task AudioMonitoringVisuals_FollowRuntimePreviewActivity()
     {
-        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
-        var propertyChangedText = ReadRepoFile("ElgatoCapture/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
+        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var propertyChangedText = ReadRepoFile("Sussudio/MainWindow.PropertyChanged.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "IsAudioPreviewActive");
         AssertContains(propertyChangedText, "case nameof(MainViewModel.IsAudioPreviewActive):");
@@ -2188,7 +2188,7 @@ static partial class Program
 
     private static Task PreviewBackendLog_ReflectsVideoOnlyFallback()
     {
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs").Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "_wasapiAudioCapture != null");
         AssertContains(captureServiceText, "\"Preview backend active: IMFSourceReader video + WASAPI audio ingest.\"");
@@ -2199,7 +2199,7 @@ static partial class Program
 
     private static Task LivePixelFormatSurfaces_PreferReaderSourceSubtype()
     {
-        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "runtime.ReaderSourceSubtype ??");
         AssertContains(mainViewModelText, "runtime.LatestObservedFramePixelFormat ??");
@@ -2215,11 +2215,11 @@ static partial class Program
 
     private static Task StatsPanels_UseSourceTelemetry_ForHdmiInput()
     {
-        var statsOverlayText = ReadRepoFile("ElgatoCapture/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var mainWindowXaml = ReadRepoFile("ElgatoCapture/MainWindow.xaml").Replace("\r\n", "\n");
-        var statsWindowText = ReadRepoFile("ElgatoCapture/StatsWindow.xaml.cs").Replace("\r\n", "\n");
-        var statsWindowXaml = ReadRepoFile("ElgatoCapture/StatsWindow.xaml").Replace("\r\n", "\n");
-        var nativeXuText = ReadRepoFile("ElgatoCapture/Services/Telemetry/NativeXuAtCommandProvider.cs").Replace("\r\n", "\n");
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
+        var statsWindowText = ReadRepoFile("Sussudio/StatsWindow.xaml.cs").Replace("\r\n", "\n");
+        var statsWindowXaml = ReadRepoFile("Sussudio/StatsWindow.xaml").Replace("\r\n", "\n");
+        var nativeXuText = ReadRepoFile("Sussudio/Services/Telemetry/NativeXuAtCommandProvider.cs").Replace("\r\n", "\n");
 
         AssertContains(statsOverlayText, "var sourceHdr = FormatSourceHdr(snapshot.SourceIsHdr, snapshot.SourceColorimetry);");
         AssertContains(statsOverlayText, "var sourceFormat = snapshot.SourceVideoFormat ?? \"\\u2014\";");
@@ -2240,8 +2240,8 @@ static partial class Program
 
     private static Task FrameTimeOverlay_UsesDetectedFpsBoundedRange()
     {
-        var statsOverlayText = ReadRepoFile("ElgatoCapture/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
-        var mainWindowXaml = ReadRepoFile("ElgatoCapture/MainWindow.xaml").Replace("\r\n", "\n");
+        var statsOverlayText = ReadRepoFile("Sussudio/MainWindow.StatsOverlay.cs").Replace("\r\n", "\n");
+        var mainWindowXaml = ReadRepoFile("Sussudio/MainWindow.xaml").Replace("\r\n", "\n");
 
         AssertContains(statsOverlayText, "ResolveFrameTimeRange(snapshot.SourceExpectedFps)");
         AssertContains(statsOverlayText, "fps * 0.75");
@@ -2254,7 +2254,7 @@ static partial class Program
         AssertContains(statsOverlayText, "UpdateFrameTimeExpectedLine");
         AssertContains(mainWindowXaml, "x:Name=\"FrameTime_ExpectedLine\"");
 
-        var mainWindowType = RequireType("ElgatoCapture.MainWindow");
+        var mainWindowType = RequireType("Sussudio.MainWindow");
         var resolveRange = mainWindowType.GetMethod("ResolveFrameTimeRange", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveFrameTimeRange was not found.");
 
@@ -2279,7 +2279,7 @@ static partial class Program
 
     private static Task CaptureSettings_MjpegHighFrameRateMode_RequiresSdr4k120StyleRequest()
     {
-        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
         SetPropertyOrBackingField(settings, "Width", 3840u);
         SetPropertyOrBackingField(settings, "Height", 2160u);
         SetPropertyOrBackingField(settings, "FrameRate", 120d);
@@ -2300,7 +2300,7 @@ static partial class Program
 
     private static Task UnifiedVideoCapture_CpuMjpegEmitReportsNv12()
     {
-        var unifiedVideoCapture = CreateInstance("ElgatoCapture.Services.Capture.UnifiedVideoCapture");
+        var unifiedVideoCapture = CreateInstance("Sussudio.Services.Capture.UnifiedVideoCapture");
         var observed = string.Empty;
 
         var setObserver = unifiedVideoCapture.GetType().GetMethod("SetPixelFormatDetectedCallback", BindingFlags.Public | BindingFlags.Instance)
@@ -2309,8 +2309,8 @@ static partial class Program
 
         var emitMethod = unifiedVideoCapture.GetType().GetMethod("OnMjpegPipelineFrameEmitted", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("OnMjpegPipelineFrameEmitted method not found.");
-        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
         var rentMethod = frameType.GetMethod("Rent", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("PooledVideoFrame.Rent method not found.");
         var frame = rentMethod.Invoke(
@@ -2341,8 +2341,8 @@ static partial class Program
 
     private static async Task UnifiedVideoCapture_RetainsMjpegPipeline_WhenStopFails()
     {
-        var unifiedVideoCapture = CreateInstance("ElgatoCapture.Services.Capture.UnifiedVideoCapture");
-        var pipelineType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline");
+        var unifiedVideoCapture = CreateInstance("Sussudio.Services.Capture.UnifiedVideoCapture");
+        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var pipeline = CreateUninitializedObject(pipelineType);
         SeedPipelineStopFailureState(pipeline, pipelineType);
 
@@ -2386,7 +2386,7 @@ static partial class Program
 
     private static Task FrameFingerprintCadenceTracker_CurrentDuplicateRunLowersUniqueFps()
     {
-        var tracker = CreateInstance("ElgatoCapture.Services.Capture.FrameFingerprintCadenceTracker");
+        var tracker = CreateInstance("Sussudio.Services.Capture.FrameFingerprintCadenceTracker");
         var trackerType = tracker.GetType();
         var recordFrame = trackerType.GetMethod("RecordFrame", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("FrameFingerprintCadenceTracker.RecordFrame not found.");
@@ -2431,8 +2431,8 @@ static partial class Program
 
     private static Task VisualCadenceTracker_UsesExactHighResolutionCropPixels()
     {
-        var trackerSource = ReadRepoFile("ElgatoCapture/Services/Capture/VisualCadenceTracker.cs").Replace("\r\n", "\n");
-        var captureSource = ReadRepoFile("ElgatoCapture/Services/Capture/UnifiedVideoCapture.cs").Replace("\r\n", "\n");
+        var trackerSource = ReadRepoFile("Sussudio/Services/Capture/VisualCadenceTracker.cs").Replace("\r\n", "\n");
+        var captureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs").Replace("\r\n", "\n");
 
         AssertContains(trackerSource, "DefaultSampleColumns = 640");
         AssertContains(trackerSource, "DefaultSampleRows = 360");
@@ -2463,7 +2463,7 @@ static partial class Program
 
     private static async Task CaptureService_StrictHfrFatalHandler_ClearsActiveSessionState()
     {
-        var captureService = CreateInstance("ElgatoCapture.Services.Capture.CaptureService");
+        var captureService = CreateInstance("Sussudio.Services.Capture.CaptureService");
         var device = BuildDevice();
         var settings = BuildSettings(hdrEnabled: false);
 
@@ -2497,7 +2497,7 @@ static partial class Program
 
     private static Task CaptureErrors_RefreshViewModelRuntimeFlags()
     {
-        var mainViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var mainViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
 
         AssertContains(mainViewModelText, "IsInitialized = _captureService.IsInitialized;");
         AssertContains(mainViewModelText, "IsPreviewing = _captureService.IsVideoPreviewActive;");
@@ -2512,7 +2512,7 @@ static partial class Program
 
     private static Task FinalizeResult_Success_ProducesEmptyPreservedList()
     {
-        var resultType = RequireType("ElgatoCapture.Services.Recording.FinalizeResult");
+        var resultType = RequireType("Sussudio.Services.Recording.FinalizeResult");
         var successMethod = resultType.GetMethod("Success", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("FinalizeResult.Success not found");
         var result = successMethod.Invoke(null, new object[] { "/path/output.mp4", "Stopped" })!;
@@ -2528,7 +2528,7 @@ static partial class Program
 
     private static Task FinalizeResult_Failure_DeduplicatesAndFiltersArtifacts()
     {
-        var resultType = RequireType("ElgatoCapture.Services.Recording.FinalizeResult");
+        var resultType = RequireType("Sussudio.Services.Recording.FinalizeResult");
         var failureMethod = resultType.GetMethod("Failure", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("FinalizeResult.Failure not found");
 
@@ -2554,7 +2554,7 @@ static partial class Program
             var finalPath = Path.Combine(tempDir, "video.mp4");
             File.WriteAllText(finalPath, "video-data");
 
-            var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
+            var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
             var context = BuildRecordingContext(usePostMuxAudio: false, finalPath: finalPath);
 
             var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
@@ -2585,7 +2585,7 @@ static partial class Program
             File.WriteAllText(audioPath, "audio-data");
             File.WriteAllBytes(finalPath, Array.Empty<byte>()); // empty placeholder
 
-            var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
+            var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
             var context = BuildRecordingContext(
                 usePostMuxAudio: true,
                 videoPath: videoPath,
@@ -2626,7 +2626,7 @@ static partial class Program
             File.WriteAllText(audioPath, "audio-data");
             File.WriteAllBytes(emptyFinalPath, Array.Empty<byte>());
 
-            var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
+            var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
             var finalizeMethod = manager.GetType().GetMethod("FinalizeContext")
                 ?? throw new InvalidOperationException("FinalizeContext not found");
 
@@ -2670,7 +2670,7 @@ static partial class Program
             File.WriteAllText(audioPath, "a");
             File.WriteAllText(finalPath, "f");
 
-            var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
+            var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
             var context = BuildRecordingContext(
                 usePostMuxAudio: true,
                 videoPath: videoPath,
@@ -2700,11 +2700,11 @@ static partial class Program
 
     private static Task ArtifactManager_RollbackAsync_SafeWithNullContext()
     {
-        var manager = CreateInstance("ElgatoCapture.Services.Recording.RecordingArtifactManager");
+        var manager = CreateInstance("Sussudio.Services.Recording.RecordingArtifactManager");
         var rollbackMethod = manager.GetType().GetMethod("RollbackAsync")
             ?? throw new InvalidOperationException("RollbackAsync not found");
 
-        var contextType = RequireType("ElgatoCapture.Services.Recording.RecordingContext");
+        var contextType = RequireType("Sussudio.Services.Recording.RecordingContext");
         var task = rollbackMethod.Invoke(manager, new object?[] { null, CancellationToken.None }) as Task
             ?? throw new InvalidOperationException("RollbackAsync did not return Task");
         task.GetAwaiter().GetResult();
@@ -2717,12 +2717,12 @@ static partial class Program
     private static Task CaptureSettings_GetTargetBitrate_ScalesByResolutionAndFrameRate()
     {
         // 4K60 H264 High: 25 * (3840*2160/2073600) * (60/30) * 1.0 = 25 * 3.98 * 2 = ~199.07 → clamped to 200
-        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
         SetPropertyOrBackingField(settings, "Width", 3840u);
         SetPropertyOrBackingField(settings, "Height", 2160u);
         SetPropertyOrBackingField(settings, "FrameRate", 60.0);
-        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "H264Mp4"));
-        SetPropertyOrBackingField(settings, "Quality", ParseEnum("ElgatoCapture.Models.VideoQuality", "High"));
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "H264Mp4"));
+        SetPropertyOrBackingField(settings, "Quality", ParseEnum("Sussudio.Models.VideoQuality", "High"));
 
         var bitrate = InvokeInstanceMethod(settings, "GetTargetBitrate");
         var bps = Convert.ToUInt32(bitrate);
@@ -2745,19 +2745,19 @@ static partial class Program
     private static Task CaptureSettings_GetTargetBitrate_AppliesCodecEfficiency()
     {
         // 1080p60 at each codec: H264 > HEVC > AV1
-        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
         SetPropertyOrBackingField(settings, "Width", 1920u);
         SetPropertyOrBackingField(settings, "Height", 1080u);
         SetPropertyOrBackingField(settings, "FrameRate", 60.0);
-        SetPropertyOrBackingField(settings, "Quality", ParseEnum("ElgatoCapture.Models.VideoQuality", "High"));
+        SetPropertyOrBackingField(settings, "Quality", ParseEnum("Sussudio.Models.VideoQuality", "High"));
 
-        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "H264Mp4"));
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "H264Mp4"));
         var h264 = Convert.ToUInt32(InvokeInstanceMethod(settings, "GetTargetBitrate"));
 
-        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "HevcMp4"));
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "HevcMp4"));
         var hevc = Convert.ToUInt32(InvokeInstanceMethod(settings, "GetTargetBitrate"));
 
-        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "Av1Mp4"));
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "Av1Mp4"));
         var av1 = Convert.ToUInt32(InvokeInstanceMethod(settings, "GetTargetBitrate"));
 
         if (hevc >= h264)
@@ -2770,8 +2770,8 @@ static partial class Program
 
     private static Task CaptureSettings_GetTargetBitrate_ClampsCustomQuality()
     {
-        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
-        SetPropertyOrBackingField(settings, "Quality", ParseEnum("ElgatoCapture.Models.VideoQuality", "Custom"));
+        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "Quality", ParseEnum("Sussudio.Models.VideoQuality", "Custom"));
 
         // Over max: should clamp to 300 Mbps
         SetPropertyOrBackingField(settings, "CustomBitrateMbps", 999.0);
@@ -2788,18 +2788,18 @@ static partial class Program
 
     private static Task CaptureSettings_GetOutputFileName_IncludesFormatSuffix()
     {
-        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
 
-        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "Av1Mp4"));
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "Av1Mp4"));
         var av1Name = InvokeInstanceMethod(settings, "GetOutputFileName").ToString()!;
         AssertContains(av1Name, "_AV1.");
         AssertContains(av1Name, ".mp4");
 
-        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "HevcMp4"));
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "HevcMp4"));
         var hevcName = InvokeInstanceMethod(settings, "GetOutputFileName").ToString()!;
         AssertContains(hevcName, "_HEVC.");
 
-        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "H264Mp4"));
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "H264Mp4"));
         var h264Name = InvokeInstanceMethod(settings, "GetOutputFileName").ToString()!;
         AssertContains(h264Name, "_H264.");
 
@@ -2808,7 +2808,7 @@ static partial class Program
 
     private static Task CaptureSettings_MjpegHfrMode_RequiresSdrAndMjpgPixelFormat()
     {
-        var settingsType = RequireType("ElgatoCapture.Models.CaptureSettings");
+        var settingsType = RequireType("Sussudio.Models.CaptureSettings");
         var method = settingsType.GetMethod("IsMjpegHighFrameRateMode", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("IsMjpegHighFrameRateMode not found");
 
@@ -2835,13 +2835,13 @@ static partial class Program
 
     private static object CreateInitializedBufferManager(string tempDir)
     {
-        var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+        var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
         var options = RuntimeHelpers.GetUninitializedObject(optionsType);
         SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
         SetPropertyBackingField(options, "TempDirectory", tempDir);
         SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
 
-        var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+        var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var manager = RuntimeHelpers.GetUninitializedObject(managerType);
         SetPrivateField(manager, "_options", options);
         SetPrivateField(manager, "_indexLock", new object());
@@ -2886,7 +2886,7 @@ static partial class Program
         Directory.CreateDirectory(tempDir);
         var manager = CreateInitializedBufferManager(tempDir);
 
-        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
         AssertContains(source, "public string? GetSegmentFileForPosition(TimeSpan absolutePts)\n        => GetValidSegmentFileForPosition(absolutePts);");
 
@@ -2922,7 +2922,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_SegmentCompletionRejectsInvalidMetadata()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(source, "if (string.IsNullOrWhiteSpace(path))\n        {\n            Logger.Log(\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=empty_path\");\n            return;\n        }");
@@ -3056,7 +3056,7 @@ static partial class Program
             AssertEqual(false, result, "Outside delete should be rejected");
             AssertEqual(true, File.Exists(outsidePath), "Outside delete should preserve file");
 
-            var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+            var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
                 .Replace("\r\n", "\n");
             AssertContains(source, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session");
             AssertOccursBefore(source, "FLASHBACK_BUFFER_DELETE_SKIP reason=outside_session", "File.Delete(filePath);");
@@ -3072,7 +3072,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_SegmentDiagnosticsClampActiveCounters()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(source, "var activeEndPts = TimeSpan.FromTicks(Math.Max(activeStartPts.Ticks, Interlocked.Read(ref _latestPtsTicks)));");
@@ -3092,7 +3092,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_UpdateLatestPts_ClampsInvalidBufferDuration()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(source, "var maxTicks = Math.Max(0, _options.BufferDuration.Ticks);");
@@ -3170,7 +3170,7 @@ static partial class Program
         AssertEqual(0L, GetLongProperty(manager, "TotalBytesWritten"), "Disposed manager ignores disk and segment byte updates");
         AssertEqual(0, (int)GetPrivateField(manager, "_completedSegmentSequence")!, "Disposed manager does not allocate segment sequence");
 
-        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
         AssertContains(source, "private volatile bool _disposed;");
         AssertContains(source, "FLASHBACK_BUFFER_SEGMENT_SKIP reason=disposed");
@@ -3214,7 +3214,7 @@ static partial class Program
         AssertEqual(0, GetIntProperty(manager, "SegmentCount"), "Disposed destructive operations keep the disposed empty index stable");
         AssertEqual(string.Empty, GetStringProperty(manager, "ActiveFilePath"), "Disposed destructive operations keep active path cleared");
 
-        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
         AssertContains(source, "FLASHBACK_PURGE_SKIP reason=disposed");
         AssertContains(source, "FLASHBACK_BUFFER_PURGE_SKIP reason=disposed");
@@ -3304,7 +3304,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_SegmentPathLookupsNormalizeEquivalentPaths()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
         AssertContains(source, "private static bool IsSameSegmentPath(string? left, string? right)");
         AssertContains(source, "Path.GetFullPath(left)");
@@ -3440,7 +3440,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_GetSegmentInfoList_SkipsMissingFiles()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
         AssertContains(source, "if (!File.Exists(seg.Path))\n                {\n                    continue;\n                }");
         AssertContains(source, "if (_activeSegmentPath != null && File.Exists(_activeSegmentPath))");
@@ -3477,7 +3477,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_ActiveFilePath_RequiresExistingFile()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
         AssertContains(source, "return _activeSegmentPath != null && File.Exists(_activeSegmentPath)\n                    ? _activeSegmentPath\n                    : null;");
 
@@ -3497,7 +3497,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_SegmentCount_SkipsMissingFiles()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
         AssertContains(source, "return _completedSegments.Count(seg => File.Exists(seg.Path)) +\n                    (_activeSegmentPath != null && File.Exists(_activeSegmentPath) ? 1 : 0);");
 
@@ -3611,7 +3611,7 @@ static partial class Program
         resumeMethod.Invoke(manager, null);
         AssertEqual(false, GetBoolProperty(manager, "EvictionPaused"), "After unbalanced resume");
 
-        var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "ElgatoCapture", "Services", "Flashback", "FlashbackBufferManager.cs"))
+        var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.cs"))
             .Replace("\r\n", "\n");
         AssertContains(source, "FLASHBACK_BUFFER_EVICTION_RESUME_UNBALANCED");
         AssertContains(source, "var unbalancedEndPts = ClampEndPtsToStart(_recordingStartPts, _recordingEndPts);");
@@ -3642,13 +3642,13 @@ static partial class Program
             File.SetLastWriteTimeUtc(recentRootSegment, DateTime.UtcNow);
             File.SetLastWriteTimeUtc(unrelatedFile, DateTime.UtcNow - TimeSpan.FromHours(13));
 
-            var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+            var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
             var options = RuntimeHelpers.GetUninitializedObject(optionsType);
             SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
             SetPropertyBackingField(options, "TempDirectory", tempDir);
             SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
 
-            var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+            var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
             manager = Activator.CreateInstance(managerType, new[] { options })!;
             var initialize = managerType.GetMethod("Initialize")
                 ?? throw new InvalidOperationException("FlashbackBufferManager.Initialize not found.");
@@ -3674,7 +3674,7 @@ static partial class Program
 
     private static Task FlashbackBufferManager_PurgeCompletedSegments_ForgetsActivePath()
     {
-        var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "ElgatoCapture", "Services", "Flashback", "FlashbackBufferManager.cs"))
+        var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.cs"))
             .Replace("\r\n", "\n");
         var purgeBlock = ExtractTextBetween(
             source,
@@ -3778,7 +3778,7 @@ static partial class Program
             Directory.SetLastWriteTimeUtc(staleFlashbackSession, staleTime);
             Directory.SetLastWriteTimeUtc(unrelatedEmptyDirectory, staleTime);
 
-            var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+            var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
             var cleanup = managerType.GetMethod("CleanupStaleSessionDirectories", BindingFlags.Static | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("CleanupStaleSessionDirectories not found.");
 
@@ -3788,7 +3788,7 @@ static partial class Program
             AssertEqual(false, Directory.Exists(staleFlashbackSession), "Plausible stale empty flashback session removed");
             AssertEqual(true, Directory.Exists(unrelatedEmptyDirectory), "Unrelated stale empty directory preserved");
 
-            var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "ElgatoCapture", "Services", "Flashback", "FlashbackBufferManager.cs"))
+            var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.cs"))
                 .Replace("\r\n", "\n");
             AssertContains(source, "FLASHBACK_STALE_SESSION_SKIP reason=unrecognized_empty_dir");
             AssertContains(source, "private static bool IsPlausibleFlashbackSessionDirectoryName(string name)");
@@ -3832,7 +3832,7 @@ static partial class Program
             File.SetLastWriteTimeUtc(Path.Combine(oldSession, "fb_old_0001.ts"), now - TimeSpan.FromHours(2));
             File.SetLastWriteTimeUtc(Path.Combine(recentSession, "fb_recent_0001.ts"), now - TimeSpan.FromMinutes(5));
 
-            var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+            var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
             var cleanup = managerType.GetMethod("CleanupSessionCacheBudget", BindingFlags.Static | BindingFlags.NonPublic)
                 ?? throw new InvalidOperationException("CleanupSessionCacheBudget not found.");
 
@@ -3859,13 +3859,13 @@ static partial class Program
 
         try
         {
-            var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+            var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
             var options = RuntimeHelpers.GetUninitializedObject(optionsType);
             SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
             SetPropertyBackingField(options, "TempDirectory", tempDir);
             SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
 
-            var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+            var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
             using var manager = (IDisposable)Activator.CreateInstance(managerType, new[] { options })!;
             var initialize = managerType.GetMethod("Initialize")
                 ?? throw new InvalidOperationException("FlashbackBufferManager.Initialize not found.");
@@ -3896,13 +3896,13 @@ static partial class Program
 
         try
         {
-            var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+            var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
             var options = RuntimeHelpers.GetUninitializedObject(optionsType);
             SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
             SetPropertyBackingField(options, "TempDirectory", tempDir);
             SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
 
-            var managerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+            var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
             using var manager = (IDisposable)Activator.CreateInstance(managerType, new[] { options })!;
             managerType.GetMethod("Initialize")!.Invoke(manager, new object[] { "safe-session" });
 
@@ -3943,7 +3943,7 @@ static partial class Program
 
     private static Task GpuPipelineHandles_None_ReturnsZeroedStruct()
     {
-        var handlesType = RequireType("ElgatoCapture.Services.Recording.GpuPipelineHandles");
+        var handlesType = RequireType("Sussudio.Services.Recording.GpuPipelineHandles");
         var noneProp = handlesType.GetProperty("None", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("GpuPipelineHandles.None not found");
         var none = noneProp.GetValue(null)!;
@@ -3958,7 +3958,7 @@ static partial class Program
 
     private static Task RecordingContextRequest_DefaultsMatchRecordingContextDefaults()
     {
-        var request = CreateInstance("ElgatoCapture.Services.Recording.RecordingContextRequest");
+        var request = CreateInstance("Sussudio.Services.Recording.RecordingContextRequest");
         AssertEqual("30", GetStringProperty(request, "FrameRateArg"), "FrameRateArg default");
         AssertEqual("nv12", GetStringProperty(request, "VideoInputPixelFormat"), "VideoInputPixelFormat default");
         AssertEqual(false, GetBoolProperty(request, "IsFullRangeInput"), "IsFullRangeInput default");
@@ -3971,7 +3971,7 @@ static partial class Program
 
     private static Task MediaFormat_Equality_WithMatchingRationalFrameRates()
     {
-        var a = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        var a = CreateInstance("Sussudio.Models.MediaFormat");
         SetPropertyOrBackingField(a, "Width", 1920u);
         SetPropertyOrBackingField(a, "Height", 1080u);
         SetPropertyOrBackingField(a, "FrameRateNumerator", 60000u);
@@ -3979,7 +3979,7 @@ static partial class Program
         SetPropertyOrBackingField(a, "PixelFormat", "NV12");
         SetPropertyOrBackingField(a, "IsHdr", false);
 
-        var b = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        var b = CreateInstance("Sussudio.Models.MediaFormat");
         SetPropertyOrBackingField(b, "Width", 1920u);
         SetPropertyOrBackingField(b, "Height", 1080u);
         SetPropertyOrBackingField(b, "FrameRateNumerator", 60000u);
@@ -3993,14 +3993,14 @@ static partial class Program
 
     private static Task MediaFormat_Inequality_WhenDimensionsDiffer()
     {
-        var a = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        var a = CreateInstance("Sussudio.Models.MediaFormat");
         SetPropertyOrBackingField(a, "Width", 1920u);
         SetPropertyOrBackingField(a, "Height", 1080u);
         SetPropertyOrBackingField(a, "FrameRate", 60.0);
         SetPropertyOrBackingField(a, "PixelFormat", "NV12");
         SetPropertyOrBackingField(a, "IsHdr", false);
 
-        var b = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        var b = CreateInstance("Sussudio.Models.MediaFormat");
         SetPropertyOrBackingField(b, "Width", 3840u);
         SetPropertyOrBackingField(b, "Height", 2160u);
         SetPropertyOrBackingField(b, "FrameRate", 60.0);
@@ -4013,7 +4013,7 @@ static partial class Program
 
     private static Task MediaFormat_GetHashCode_ConsistencyForEqualObjects()
     {
-        var a = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        var a = CreateInstance("Sussudio.Models.MediaFormat");
         SetPropertyOrBackingField(a, "Width", 3840u);
         SetPropertyOrBackingField(a, "Height", 2160u);
         SetPropertyOrBackingField(a, "FrameRateNumerator", 120000u);
@@ -4021,7 +4021,7 @@ static partial class Program
         SetPropertyOrBackingField(a, "PixelFormat", "P010");
         SetPropertyOrBackingField(a, "IsHdr", true);
 
-        var b = CreateInstance("ElgatoCapture.Models.MediaFormat");
+        var b = CreateInstance("Sussudio.Models.MediaFormat");
         SetPropertyOrBackingField(b, "Width", 3840u);
         SetPropertyOrBackingField(b, "Height", 2160u);
         SetPropertyOrBackingField(b, "FrameRateNumerator", 120000u);
@@ -4037,7 +4037,7 @@ static partial class Program
 
     private static Task AutomationCommandKind_HasSequentialValues_0Through47()
     {
-        var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var expectedCommands = ExpectedAutomationCommands();
         AssertEqual(expectedCommands.Length, Enum.GetValues(enumType).Length, "AutomationCommandKind value count");
 
@@ -4110,7 +4110,7 @@ static partial class Program
 
     private static Task AutomationWindowAction_HasExpectedValues()
     {
-        var enumType = RequireType("ElgatoCapture.Models.AutomationWindowAction");
+        var enumType = RequireType("Sussudio.Models.AutomationWindowAction");
         var names = Enum.GetNames(enumType);
 
         // Verify expected members exist
@@ -4136,7 +4136,7 @@ static partial class Program
 
     private static Task RuntimePaths_GetRepoLogFile_ReturnsPathUnderRepoRoot()
     {
-        var runtimePathsType = RequireType("ElgatoCapture.RuntimePaths");
+        var runtimePathsType = RequireType("Sussudio.RuntimePaths");
         var getRepoLogFile = runtimePathsType.GetMethod(
             "GetRepoLogFile",
             BindingFlags.Public | BindingFlags.Static,
@@ -4159,7 +4159,7 @@ static partial class Program
 
     private static Task RuntimePaths_PathsContainExpectedDirectoryNames()
     {
-        var runtimePathsType = RequireType("ElgatoCapture.RuntimePaths");
+        var runtimePathsType = RequireType("Sussudio.RuntimePaths");
 
         var getRepoLogRoot = runtimePathsType.GetMethod(
             "GetRepoLogRoot", BindingFlags.Public | BindingFlags.Static);
@@ -4180,7 +4180,7 @@ static partial class Program
 
     private static Task MmcssThreadRegistration_UsesUnicodeAvrtEntryPoint()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Runtime/MmcssThreadRegistration.cs");
+        var source = ReadRepoFile("Sussudio/Services/Runtime/MmcssThreadRegistration.cs");
         AssertContains(source, "EntryPoint = \"AvSetMmThreadCharacteristicsW\"");
         AssertContains(source, "MMCSS registered task=");
 
@@ -4191,7 +4191,7 @@ static partial class Program
 
     private static Task SourceSignalTelemetrySnapshot_DefaultsHaveExpectedValues()
     {
-        var type = RequireType("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
+        var type = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
         var instance = RuntimeHelpers.GetUninitializedObject(type);
 
         // Uninitialized record: nullable properties should be default (null for nullable, 0 for value types)
@@ -4220,7 +4220,7 @@ static partial class Program
 
     private static Task SourceSignalTelemetrySnapshot_PropertiesRoundTrip()
     {
-        var type = RequireType("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
+        var type = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
         var snapshot = RuntimeHelpers.GetUninitializedObject(type);
 
         SetPropertyBackingField(snapshot, "Width", (int?)1920);
@@ -4243,16 +4243,16 @@ static partial class Program
 
     private static Task HdrOutputPolicy_ReturnsTrue_WhenHdrAndHdr10PqRequested()
     {
-        var previousForceOff = Environment.GetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF");
+        var previousForceOff = Environment.GetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF");
         try
         {
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", null);
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", null);
             var result = InvokeHdrOutputPolicy(hdrEnabled: true, hdrOutputMode: "Hdr10Pq");
             AssertEqual(true, result, "HDR enabled + Hdr10Pq should return true");
         }
         finally
         {
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", previousForceOff);
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", previousForceOff);
         }
 
         return Task.CompletedTask;
@@ -4276,16 +4276,16 @@ static partial class Program
 
     private static Task HdrOutputPolicy_ReturnsFalse_WhenForceOffEnvSet()
     {
-        var previousForceOff = Environment.GetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF");
+        var previousForceOff = Environment.GetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF");
         try
         {
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", "true");
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", "true");
             var result = InvokeHdrOutputPolicy(hdrEnabled: true, hdrOutputMode: "Hdr10Pq");
             AssertEqual(false, result, "force-off env switch should disable HDR output");
         }
         finally
         {
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", previousForceOff);
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", previousForceOff);
         }
 
         return Task.CompletedTask;
@@ -4293,19 +4293,19 @@ static partial class Program
 
     private static Task HdrOutputPolicy_IgnoresLegacyEnabledEnvSwitch()
     {
-        var previousForceOff = Environment.GetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF");
-        var previousLegacyEnabled = Environment.GetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_ENABLED");
+        var previousForceOff = Environment.GetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF");
+        var previousLegacyEnabled = Environment.GetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_ENABLED");
         try
         {
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", null);
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_ENABLED", "false");
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", null);
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_ENABLED", "false");
             var result = InvokeHdrOutputPolicy(hdrEnabled: true, hdrOutputMode: "Hdr10Pq");
             AssertEqual(true, result, "legacy enabled env switch should no longer disable HDR output");
         }
         finally
         {
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", previousForceOff);
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_HDR_OUTPUT_ENABLED", previousLegacyEnabled);
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", previousForceOff);
+            Environment.SetEnvironmentVariable("SUSSUDIO_HDR_OUTPUT_ENABLED", previousLegacyEnabled);
         }
 
         return Task.CompletedTask;
@@ -4313,13 +4313,13 @@ static partial class Program
 
     private static bool InvokeHdrOutputPolicy(bool hdrEnabled, string hdrOutputMode)
     {
-        var policyType = RequireType("ElgatoCapture.Services.Capture.HdrOutputPolicy");
+        var policyType = RequireType("Sussudio.Services.Capture.HdrOutputPolicy");
         var method = policyType.GetMethod("IsEnabled", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("HdrOutputPolicy.IsEnabled not found");
 
-        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
         SetPropertyOrBackingField(settings, "HdrEnabled", hdrEnabled);
-        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("ElgatoCapture.Models.HdrOutputMode", hdrOutputMode));
+        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("Sussudio.Models.HdrOutputMode", hdrOutputMode));
 
         return (bool)method.Invoke(null, new[] { settings })!;
     }
@@ -4328,7 +4328,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackState_HasAllExpectedStates()
     {
-        var enumType = RequireType("ElgatoCapture.Models.FlashbackPlaybackState");
+        var enumType = RequireType("Sussudio.Models.FlashbackPlaybackState");
         var names = Enum.GetNames(enumType);
 
         // Expected states from the state machine design
@@ -4348,7 +4348,7 @@ static partial class Program
 
     private static Task RecordingPipelineOptions_ResolvesVideoQueueCapacity()
     {
-        var options = CreateInstance("ElgatoCapture.Models.RecordingPipelineOptions");
+        var options = CreateInstance("Sussudio.Models.RecordingPipelineOptions");
 
         // Default: 250ms latency, min=4, max=30
         // At 60fps: ceil(60 * 250 / 1000) = ceil(15) = 15 → clamp(15, 4, 30) = 15
@@ -4373,7 +4373,7 @@ static partial class Program
 
     private static Task NvmlSnapshot_ComputedProperties_ConvertUnits()
     {
-        var snapshotType = RequireType("ElgatoCapture.Services.Gpu.NvmlSnapshot");
+        var snapshotType = RequireType("Sussudio.Services.Gpu.NvmlSnapshot");
         // Constructor: GpuName, GpuUtil%, MemUtil%, NvdecUtil%, NvencUtil%, PcieTxKB, PcieRxKB,
         //              VramUsedB, VramTotalB, TempC, PowerMw, ClockMHz, MemClockMHz
         var snapshot = Activator.CreateInstance(snapshotType,
@@ -4412,7 +4412,7 @@ static partial class Program
 
     private static Task CaptureSessionSnapshot_DefaultState()
     {
-        var snapshotType = RequireType("ElgatoCapture.Services.Capture.CaptureSessionSnapshot");
+        var snapshotType = RequireType("Sussudio.Services.Capture.CaptureSessionSnapshot");
         var snapshot = RuntimeHelpers.GetUninitializedObject(snapshotType);
 
         AssertEqual(false, GetBoolProperty(snapshot, "IsRecording"), "IsRecording default");
@@ -4426,11 +4426,11 @@ static partial class Program
 
     private static Task ProcessSpec_DefaultTimeout_Is30Seconds()
     {
-        var specType = RequireType("ElgatoCapture.Services.Runtime.ProcessSpec");
+        var specType = RequireType("Sussudio.Services.Runtime.ProcessSpec");
         var spec = RuntimeHelpers.GetUninitializedObject(specType);
         // ProcessSpec uses init-only with defaults — GetUninitializedObject bypasses ctor
         // So test the contract by checking the source
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Runtime/ProcessSupervisor.cs");
+        var sourceText = ReadRepoFile("Sussudio/Services/Runtime/ProcessSupervisor.cs");
         AssertContains(sourceText, "public int TimeoutMs { get; init; } = 30_000;");
         AssertContains(sourceText, "public string Arguments { get; init; } = string.Empty;");
         AssertContains(sourceText, "public ProcessPriorityClass? PriorityClass { get; init; }");
@@ -4449,10 +4449,10 @@ static partial class Program
 
     private static Task SharedProtocol_CommandMap_CoversEveryAutomationCommandKind()
     {
-        var enumType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var enumType = RequireType("Sussudio.Models.AutomationCommandKind");
         var enumNames = Enum.GetNames(enumType);
         var expectedCommands = ExpectedAutomationCommands();
-        var protocolType = RequireType("ElgatoCapture.Tools.AutomationPipeProtocol");
+        var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");
 
         if (enumNames.Length == 0)
             throw new InvalidOperationException("AutomationCommandKind enum has no members.");
@@ -4496,7 +4496,7 @@ static partial class Program
 
     private static Task ResponseFormatter_IsSuccess_ParsesSuccessAndFailureJson()
     {
-        var formatterType = RequireSharedToolType("ElgatoCapture.Tools.AutomationSnapshotFormatter");
+        var formatterType = RequireSharedToolType("Sussudio.Tools.AutomationSnapshotFormatter");
         var isSuccess = RequireNonPublicStaticMethod(formatterType, "IsSuccess");
 
         using (var docTrue = JsonDocument.Parse("{\"Success\": true, \"Message\": \"ok\"}"))
@@ -4519,7 +4519,7 @@ static partial class Program
 
     private static Task ResponseFormatter_Get_HandlesAllJsonValueKinds()
     {
-        var formatterType = RequireSharedToolType("ElgatoCapture.Tools.AutomationSnapshotFormatter");
+        var formatterType = RequireSharedToolType("Sussudio.Tools.AutomationSnapshotFormatter");
         var get = RequireNonPublicStaticMethod(formatterType, "Get");
 
         var json = @"{
@@ -4550,31 +4550,31 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task EcctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter()
+    private static Task SsctlFormatters_SnapshotFields_AlignWithMcpResponseFormatter()
     {
         var mcpText = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
-        var ecctlText = ReadRepoFile("tools/ecctl/Formatters.cs");
+        var ssctlText = ReadRepoFile("tools/ssctl/Formatters.cs");
 
         var mcpFields = ExtractSnapshotFields(mcpText);
-        var ecctlFields = ExtractSnapshotFields(ecctlText);
+        var ssctlFields = ExtractSnapshotFields(ssctlText);
 
         if (mcpFields.Count == 0)
             throw new InvalidOperationException("Failed to extract any snapshot fields from AutomationSnapshotFormatter.");
-        if (ecctlFields.Count == 0)
-            throw new InvalidOperationException("Failed to extract any snapshot fields from ecctl Formatters.");
+        if (ssctlFields.Count == 0)
+            throw new InvalidOperationException("Failed to extract any snapshot fields from ssctl Formatters.");
 
-        var missingInEcctl = new List<string>();
+        var missingInSsctl = new List<string>();
         foreach (var field in mcpFields)
         {
-            if (!ecctlFields.Contains(field))
-                missingInEcctl.Add(field);
+            if (!ssctlFields.Contains(field))
+                missingInSsctl.Add(field);
         }
 
-        if (missingInEcctl.Count > 0)
+        if (missingInSsctl.Count > 0)
         {
             throw new InvalidOperationException(
-                $"AutomationSnapshotFormatter references {missingInEcctl.Count} snapshot field(s) " +
-                $"missing from ecctl Formatters: {string.Join(", ", missingInEcctl)}");
+                $"AutomationSnapshotFormatter references {missingInSsctl.Count} snapshot field(s) " +
+                $"missing from ssctl Formatters: {string.Join(", ", missingInSsctl)}");
         }
 
         return Task.CompletedTask;
@@ -4595,9 +4595,9 @@ static partial class Program
 
     private static Task PresentMonParser_SelectsDominantNonArtifactSwapChain()
     {
-        var toolAssembly = LoadToolAssembly(Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll"));
-        var probeType = toolAssembly.GetType("ElgatoCapture.Tools.PresentMonProbe")
-            ?? throw new InvalidOperationException("ElgatoCapture.Tools.PresentMonProbe type not found.");
+        var toolAssembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var probeType = toolAssembly.GetType("Sussudio.Tools.PresentMonProbe")
+            ?? throw new InvalidOperationException("Sussudio.Tools.PresentMonProbe type not found.");
         var parseCsv = probeType.GetMethod(
                 "ParseCsv",
                 BindingFlags.Static | BindingFlags.NonPublic,
@@ -4612,7 +4612,7 @@ static partial class Program
                 types: new[] { typeof(string), typeof(string) },
                 modifiers: null)
             ?? throw new InvalidOperationException("PresentMonProbe.ParseCsv(string,string) not found.");
-        var optionsType = toolAssembly.GetType("ElgatoCapture.Tools.PresentMonProbeOptions")
+        var optionsType = toolAssembly.GetType("Sussudio.Tools.PresentMonProbeOptions")
             ?? throw new InvalidOperationException("PresentMonProbeOptions type not found.");
         var parseCsvWithCorrelation = probeType.GetMethod(
                 "ParseCsv",
@@ -4627,9 +4627,9 @@ static partial class Program
             csvPath,
             """
             Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,PresentFlags,AllowsTearing,PresentMode,TimeInMs,MsBetweenPresents,MsBetweenDisplayChange,DisplayedTime,MsUntilDisplayed,MsInPresentAPI,MsCPUBusy,MsGPUBusy,MsGPUTime,DisplayLatency
-            ElgatoCapture.exe,1234,0xABC,DXGI,0,0,0,Composed: Flip,0.0000,8.3333,8.3333,NA,16.0000,0.0700,8.2500,2.0000,7.0000,NA
-            ElgatoCapture.exe,1234,0xABC,DXGI,0,0,0,Composed: Flip,8.3333,8.3334,8.3334,NA,16.1000,0.0710,8.2600,2.1000,7.1000,NA
-            ElgatoCapture.exe,1234,0x0,Other,-1,0,0,Composed: Flip,1000.0000,999.0000,999.0000,NA,16.2000,0.0800,999.0000,2.2000,7.2000,NA
+            Sussudio.exe,1234,0xABC,DXGI,0,0,0,Composed: Flip,0.0000,8.3333,8.3333,NA,16.0000,0.0700,8.2500,2.0000,7.0000,NA
+            Sussudio.exe,1234,0xABC,DXGI,0,0,0,Composed: Flip,8.3333,8.3334,8.3334,NA,16.1000,0.0710,8.2600,2.1000,7.1000,NA
+            Sussudio.exe,1234,0x0,Other,-1,0,0,Composed: Flip,1000.0000,999.0000,999.0000,NA,16.2000,0.0800,999.0000,2.2000,7.2000,NA
             """);
 
         try
@@ -4655,8 +4655,8 @@ static partial class Program
                 csvPath,
                 """
                 Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,PresentFlags,AllowsTearing,PresentMode,TimeInMs,MsBetweenPresents,MsBetweenDisplayChange,DisplayedTime,MsUntilDisplayed,MsInPresentAPI,MsCPUBusy,MsGPUBusy,MsGPUTime,DisplayLatency
-                ElgatoCapture.exe,1234,0xAAA,DXGI,0,0,0,Composed: Flip,0.0000,99.0000,99.0000,8.3333,16.0000,0.0700,8.2500,2.0000,7.0000,20.0000
-                ElgatoCapture.exe,1234,0x0000000000000BBB,DXGI,0,0,0,Composed: Flip,8.3333,8.3333,8.3333,8.3333,16.1000,0.0710,8.2600,2.1000,7.1000,20.1000
+                Sussudio.exe,1234,0xAAA,DXGI,0,0,0,Composed: Flip,0.0000,99.0000,99.0000,8.3333,16.0000,0.0700,8.2500,2.0000,7.0000,20.0000
+                Sussudio.exe,1234,0x0000000000000BBB,DXGI,0,0,0,Composed: Flip,8.3333,8.3333,8.3333,8.3333,16.1000,0.0710,8.2600,2.1000,7.1000,20.1000
                 """);
 
             var expectedSwapChainSummary = parseCsvWithExpectedSwapChain.Invoke(null, new object[] { csvPath, "0xbbb" })
@@ -4671,8 +4671,8 @@ static partial class Program
                 csvPath,
                 """
                 Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,PresentFlags,AllowsTearing,PresentMode,CPUStartTime,FrameTime,CPUBusy,GPUTime,DisplayedTime,MsUntilDisplayed,DisplayLatency
-                ElgatoCapture.exe,1234,0xBBB,DXGI,0,0,0,Composed: Flip,90.0000,8.3333,8.2000,6.0000,8.3333,6.0000,12.0000
-                ElgatoCapture.exe,1234,0xBBB,DXGI,0,0,0,Composed: Flip,104.0000,8.3333,8.2000,6.0000,NA,20.0000,18.0000
+                Sussudio.exe,1234,0xBBB,DXGI,0,0,0,Composed: Flip,90.0000,8.3333,8.2000,6.0000,8.3333,6.0000,12.0000
+                Sussudio.exe,1234,0xBBB,DXGI,0,0,0,Composed: Flip,104.0000,8.3333,8.2000,6.0000,NA,20.0000,18.0000
                 """);
             var options = Activator.CreateInstance(optionsType)
                 ?? throw new InvalidOperationException("Failed to create PresentMonProbeOptions.");
@@ -4704,8 +4704,8 @@ static partial class Program
                 csvPath,
                 """
                 Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,PresentFlags,AllowsTearing,PresentMode,CPUStartTime,FrameTime,CPUBusy,CPUWait,GPULatency,GPUTime,GPUBusy,GPUWait,VideoBusy,DisplayLatency,DisplayedTime
-                ElgatoCapture.exe,1234,0xDEF,DXGI,0,0,0,Composed: Flip,0.0000,9.0000,8.9000,0.1000,3.0000,6.0000,2.0000,4.0000,7.0000,22.0000,8.3333
-                ElgatoCapture.exe,1234,0xDEF,DXGI,0,0,0,Composed: Flip,9.0000,7.6666,7.5000,0.1666,3.0000,6.5000,2.5000,4.0000,7.0000,22.5000,8.3334
+                Sussudio.exe,1234,0xDEF,DXGI,0,0,0,Composed: Flip,0.0000,9.0000,8.9000,0.1000,3.0000,6.0000,2.0000,4.0000,7.0000,22.0000,8.3333
+                Sussudio.exe,1234,0xDEF,DXGI,0,0,0,Composed: Flip,9.0000,7.6666,7.5000,0.1666,3.0000,6.5000,2.5000,4.0000,7.0000,22.5000,8.3334
                 """);
 
             var v2Summary = parseCsv.Invoke(null, new object[] { csvPath })
@@ -4727,7 +4727,7 @@ static partial class Program
                 csvPath,
                 """
                 Application,ProcessID,SwapChainAddress,PresentRuntime,SyncInterval,PresentFlags,AllowsTearing,PresentMode,TimeInMs,MsBetweenPresents,MsBetweenDisplayChange,DisplayedTime,MsUntilDisplayed,MsInPresentAPI,MsCPUBusy,MsGPUBusy,MsGPUTime,DisplayLatency
-                ElgatoCapture.exe,1234,0x0,Other,-1,0,0,Composed: Flip,1000.0000,999.0000,999.0000,NA,16.2000,0.0800,999.0000,2.2000,7.2000,NA
+                Sussudio.exe,1234,0x0,Other,-1,0,0,Composed: Flip,1000.0000,999.0000,999.0000,NA,16.2000,0.0800,999.0000,2.2000,7.2000,NA
                 """);
 
             var artifactOnlySummary = parseCsv.Invoke(null, new object[] { csvPath })
@@ -4793,7 +4793,7 @@ static partial class Program
     {
         var settings = BuildSettings(hdrEnabled: false);
         // Build a RecordingContextRequest and use the RecordingContext constructor
-        var requestType = RequireType("ElgatoCapture.Services.Recording.RecordingContextRequest");
+        var requestType = RequireType("Sussudio.Services.Recording.RecordingContextRequest");
         var request = RuntimeHelpers.GetUninitializedObject(requestType);
         SetPropertyBackingField(request, "Settings", settings);
         SetPropertyBackingField(request, "UsePostMuxAudio", usePostMuxAudio);
@@ -4803,7 +4803,7 @@ static partial class Program
         SetPropertyBackingField(request, "EffectiveHeight", 1080u);
         SetPropertyBackingField(request, "VideoInputPixelFormat", "nv12");
 
-        var contextType = RequireType("ElgatoCapture.Services.Recording.RecordingContext");
+        var contextType = RequireType("Sussudio.Services.Recording.RecordingContext");
         var ctor = contextType.GetConstructors()[0];
         return ctor.Invoke(new object?[]
         {
@@ -4850,7 +4850,7 @@ static partial class Program
 
     private static object BuildDevice(string id = "device-1")
     {
-        var device = CreateInstance("ElgatoCapture.Models.CaptureDevice");
+        var device = CreateInstance("Sussudio.Models.CaptureDevice");
         SetPropertyOrBackingField(device, "Id", id);
         SetPropertyOrBackingField(device, "Name", "Synthetic Capture Device");
         SetPropertyOrBackingField(device, "AudioDeviceId", "audio-1");
@@ -4860,7 +4860,7 @@ static partial class Program
 
     private static object BuildSettings(bool hdrEnabled)
     {
-        var settings = CreateInstance("ElgatoCapture.Models.CaptureSettings");
+        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
         SetPropertyOrBackingField(settings, "Width", 1920u);
         SetPropertyOrBackingField(settings, "Height", 1080u);
         SetPropertyOrBackingField(settings, "FrameRate", 60d);
@@ -4868,10 +4868,10 @@ static partial class Program
         SetPropertyOrBackingField(settings, "RequestedFrameRateNumerator", 60u);
         SetPropertyOrBackingField(settings, "RequestedFrameRateDenominator", 1u);
         SetPropertyOrBackingField(settings, "RequestedPixelFormat", hdrEnabled ? "P010" : "NV12");
-        SetPropertyOrBackingField(settings, "Format", ParseEnum("ElgatoCapture.Models.RecordingFormat", "HevcMp4"));
-        SetPropertyOrBackingField(settings, "Quality", ParseEnum("ElgatoCapture.Models.VideoQuality", "High"));
+        SetPropertyOrBackingField(settings, "Format", ParseEnum("Sussudio.Models.RecordingFormat", "HevcMp4"));
+        SetPropertyOrBackingField(settings, "Quality", ParseEnum("Sussudio.Models.VideoQuality", "High"));
         SetPropertyOrBackingField(settings, "HdrEnabled", hdrEnabled);
-        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("ElgatoCapture.Models.HdrOutputMode", "Hdr10Pq"));
+        SetPropertyOrBackingField(settings, "HdrOutputMode", ParseEnum("Sussudio.Models.HdrOutputMode", "Hdr10Pq"));
         SetPropertyOrBackingField(settings, "AudioEnabled", true);
         SetPropertyOrBackingField(settings, "OutputPath", Path.GetTempPath());
         return settings;
@@ -4961,7 +4961,7 @@ static partial class Program
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory != null)
         {
-            if (File.Exists(Path.Combine(directory.FullName, "ElgatoCapture.slnx")))
+            if (File.Exists(Path.Combine(directory.FullName, "Sussudio.slnx")))
             {
                 return directory.FullName;
             }
@@ -5034,7 +5034,7 @@ static partial class Program
         SetPrivateField(pipeline, "_decoders", CreateEmptyArrayFieldValue(pipelineType, "_decoders"));
         SetPrivateField(pipeline, "_reorderFrames", Activator.CreateInstance(typeof(SortedDictionary<,>).MakeGenericType(
             typeof(long),
-            RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline+DecodedFrame")))!);
+            RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+DecodedFrame")))!);
         SetPrivateField(pipeline, "_reorderLock", new object());
         SetPrivateField(pipeline, "_emitSignal", new AutoResetEvent(false));
     }
@@ -5211,7 +5211,7 @@ static partial class Program
         double callbackP95Ms,
         double callbackMaxMs)
     {
-        var type = RequireType("ElgatoCapture.Services.Capture.UnifiedVideoCapture+MjpegPipelineTimingMetrics");
+        var type = RequireType("Sussudio.Services.Capture.UnifiedVideoCapture+MjpegPipelineTimingMetrics");
         return Activator.CreateInstance(
                    type,
                    decodeSampleCount,
@@ -5261,9 +5261,9 @@ static partial class Program
         long compressedQueueBytes = 0,
         long compressedQueueByteBudget = 0)
     {
-        var type = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
+        var type = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
         var perDecoderArray = Array.CreateInstance(
-            RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics"),
+            RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics"),
             perDecoder.Length);
         for (var i = 0; i < perDecoder.Length; i++)
         {
@@ -5312,7 +5312,7 @@ static partial class Program
         double p95Ms,
         double maxMs)
     {
-        var type = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics");
+        var type = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PerDecoderMetrics");
         return Activator.CreateInstance(type, workerIndex, sampleCount, avgMs, p95Ms, maxMs)
                ?? throw new InvalidOperationException("Failed to create per-decoder MJPEG metrics.");
     }
@@ -5417,7 +5417,7 @@ static partial class Program
         var inputFiles = inputDirectories
             .SelectMany(Directory.EnumerateFiles)
             .Concat(EnumerateToolProjectCompileIncludes(projectDirectory))
-            .Append(Path.Combine(root, "ElgatoCapture", "Models", "AutomationCommandKind.cs"))
+            .Append(Path.Combine(root, "Sussudio", "Models", "AutomationCommandKind.cs"))
             .Where(file => File.Exists(file) && IsToolInputFile(file))
             .Distinct(StringComparer.OrdinalIgnoreCase);
 
@@ -5479,9 +5479,9 @@ static partial class Program
     {
         var root = GetRepoRoot();
         var normalized = relativeAssemblyPath.Replace('\\', '/');
-        if (normalized.StartsWith("tools/ecctl/", StringComparison.OrdinalIgnoreCase))
+        if (normalized.StartsWith("tools/ssctl/", StringComparison.OrdinalIgnoreCase))
         {
-            return Path.Combine(root, "tools", "ecctl");
+            return Path.Combine(root, "tools", "ssctl");
         }
 
         if (normalized.StartsWith("tools/McpServer/", StringComparison.OrdinalIgnoreCase))
@@ -5505,9 +5505,9 @@ static partial class Program
     private static string GetToolBuildCommand(string relativeAssemblyPath)
     {
         var normalized = relativeAssemblyPath.Replace('\\', '/');
-        if (normalized.StartsWith("tools/ecctl/", StringComparison.OrdinalIgnoreCase))
+        if (normalized.StartsWith("tools/ssctl/", StringComparison.OrdinalIgnoreCase))
         {
-            return "dotnet build tools/ecctl/ecctl.csproj -c Debug --no-restore";
+            return "dotnet build tools/ssctl/ssctl.csproj -c Debug --no-restore";
         }
 
         if (normalized.StartsWith("tools/McpServer/", StringComparison.OrdinalIgnoreCase))

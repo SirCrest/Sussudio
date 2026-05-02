@@ -10,13 +10,13 @@ static partial class Program
 {
     private static Task LoggingJsonContext_SerializesStructuredSnapshotPayloads()
     {
-        var contextText = ReadRepoFile("ElgatoCapture/LoggingJsonContext.cs");
+        var contextText = ReadRepoFile("Sussudio/LoggingJsonContext.cs");
         AssertContains(contextText, "[JsonSourceGenerationOptions(WriteIndented = false)]");
         AssertContains(contextText, "[JsonSerializable(typeof(CaptureHealthSnapshot))]");
         AssertContains(contextText, "[JsonSerializable(typeof(CaptureDiagnosticsSnapshot))]");
         AssertContains(contextText, "internal sealed partial class LoggingJsonContext : JsonSerializerContext");
 
-        var loggerText = ReadRepoFile("ElgatoCapture/Logger.cs");
+        var loggerText = ReadRepoFile("Sussudio/Logger.cs");
         AssertContains(
             loggerText,
             "JsonSerializer.Serialize(healthSnapshot, LoggingJsonContext.Default.CaptureHealthSnapshot)");
@@ -49,10 +49,10 @@ static partial class Program
         try
         {
             var appAssembly = loadContext.LoadFromAssemblyPath(appAssemblyPath);
-            var diagnosticsType = RequireLoadedType(appAssembly, "ElgatoCapture.Models.CaptureDiagnosticsSnapshot");
-            var decoderType = RequireLoadedType(appAssembly, "ElgatoCapture.Models.MjpegDecoderHealthSnapshot");
-            var healthType = RequireLoadedType(appAssembly, "ElgatoCapture.Models.CaptureHealthSnapshot");
-            var detailType = RequireLoadedType(appAssembly, "ElgatoCapture.Models.SourceTelemetryDetailEntry");
+            var diagnosticsType = RequireLoadedType(appAssembly, "Sussudio.Models.CaptureDiagnosticsSnapshot");
+            var decoderType = RequireLoadedType(appAssembly, "Sussudio.Models.MjpegDecoderHealthSnapshot");
+            var healthType = RequireLoadedType(appAssembly, "Sussudio.Models.CaptureHealthSnapshot");
+            var detailType = RequireLoadedType(appAssembly, "Sussudio.Models.SourceTelemetryDetailEntry");
 
             var decoder = Activator.CreateInstance(decoderType, 7, 42, 1.2d, 2.3d, 3.4d)
                 ?? throw new InvalidOperationException("Failed to create isolated MjpegDecoderHealthSnapshot.");
@@ -172,7 +172,7 @@ static partial class Program
         object payload,
         string jsonTypeInfoPropertyName)
     {
-        var contextType = RequireLoadedType(appAssembly, "ElgatoCapture.LoggingJsonContext");
+        var contextType = RequireLoadedType(appAssembly, "Sussudio.LoggingJsonContext");
         var defaultContext = contextType.GetProperty(
                 "Default",
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)

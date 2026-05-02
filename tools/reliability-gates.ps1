@@ -73,7 +73,7 @@ if (-not (Test-Path $dotnetCliHome)) {
 $env:DOTNET_SKIP_FIRST_TIME_EXPERIENCE = "1"
 $env:DOTNET_CLI_HOME = $dotnetCliHome
 
-$projectPath = Join-Path $repoRoot "ElgatoCapture\ElgatoCapture.csproj"
+$projectPath = Join-Path $repoRoot "Sussudio\Sussudio.csproj"
 if (-not (Test-Path $projectPath)) {
     throw "Project file not found: $projectPath"
 }

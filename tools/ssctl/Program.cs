@@ -1,5 +1,5 @@
 using System.Globalization;
-using ElgatoCapture.Tools;
+using Sussudio.Tools;
 
 namespace EcCtl;
 
@@ -42,9 +42,9 @@ internal static class Program
 
     private static void WriteHelp()
     {
-        Console.WriteLine("ecctl");
+        Console.WriteLine("ssctl");
         Console.WriteLine("Usage:");
-        Console.WriteLine("  ecctl [--json] [--pipe NAME] [--timeout MS] <command>");
+        Console.WriteLine("  ssctl [--json] [--pipe NAME] [--timeout MS] <command>");
         Console.WriteLine();
         Console.WriteLine("Query:");
         Console.WriteLine("  state [--json]");
@@ -115,7 +115,7 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("Flags:");
         Console.WriteLine("  --json            Print raw JSON responses where supported");
-        Console.WriteLine("  --pipe NAME       Named pipe (default: ElgatoCaptureAutomation)");
+        Console.WriteLine("  --pipe NAME       Named pipe (default: SussudioAutomation)");
         Console.WriteLine("  --timeout MS      Response timeout override for pipe calls");
         Console.WriteLine("  --help            Show this help");
     }

@@ -5,7 +5,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$projectPath = Join-Path $repoRoot "ElgatoCapture\ElgatoCapture.csproj"
+$projectPath = Join-Path $repoRoot "Sussudio\Sussudio.csproj"
 $targetFramework = "net8.0-windows10.0.19041.0"
 $rid = "win-x64"
 
@@ -39,7 +39,7 @@ foreach ($configuration in $Configurations) {
         throw "dotnet build failed for configuration: $configuration"
     }
 
-    $source = Join-Path $repoRoot "ElgatoCapture\bin\x64\$configuration\$targetFramework\$rid"
+    $source = Join-Path $repoRoot "Sussudio\bin\x64\$configuration\$targetFramework\$rid"
     $dest = Join-Path $repoRoot "builds\$rid\$configuration"
 
     Write-Host "=== Staging $configuration build to $dest ==="
@@ -49,5 +49,5 @@ foreach ($configuration in $Configurations) {
 Write-Host ""
 Write-Host "Staged builds:"
 foreach ($configuration in $Configurations) {
-    Write-Host " - $(Join-Path $repoRoot "builds\$rid\$configuration\ElgatoCapture.exe")"
+    Write-Host " - $(Join-Path $repoRoot "builds\$rid\$configuration\Sussudio.exe")"
 }

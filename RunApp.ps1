@@ -1,10 +1,10 @@
-# Quick launcher for ElgatoCapture
+# Quick launcher for Sussudio
 # Opens in Visual Studio and starts debugging
 
 $vsPath = "C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\devenv.exe"
-$solutionPath = "C:\Users\crest\source\repos\ElgatoCapture\ElgatoCapture.slnx"
+$solutionPath = "C:\Users\crest\source\repos\Sussudio\Sussudio.slnx"
 
-Write-Host "Launching ElgatoCapture in Visual Studio..." -ForegroundColor Cyan
+Write-Host "Launching Sussudio in Visual Studio..." -ForegroundColor Cyan
 
 # Launch VS with the solution
 & $vsPath $solutionPath

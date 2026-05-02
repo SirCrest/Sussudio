@@ -2,7 +2,7 @@ using System;
 using System.Buffers;
 using System.Threading;
 
-namespace ElgatoCapture.Services.Capture;
+namespace Sussudio.Services.Capture;
 
 internal enum PooledVideoPixelFormat
 {

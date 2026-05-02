@@ -6,12 +6,12 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Audio;
-using ElgatoCapture.Services.Preview;
-using ElgatoCapture.Services.Recording;
+using Sussudio.Models;
+using Sussudio.Services.Audio;
+using Sussudio.Services.Preview;
+using Sussudio.Services.Recording;
 
-namespace ElgatoCapture.Services.Flashback;
+namespace Sussudio.Services.Flashback;
 
 internal sealed class FlashbackPlaybackController : IDisposable
 {

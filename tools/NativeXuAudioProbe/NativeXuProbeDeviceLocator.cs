@@ -1,5 +1,5 @@
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Devices;
+using Sussudio.Models;
+using Sussudio.Services.Devices;
 
 internal static class NativeXuProbeDeviceLocator
 {

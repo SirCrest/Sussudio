@@ -5,9 +5,9 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
-using ElgatoCapture.Services.Capture;
+using Sussudio.Services.Capture;
 
-namespace ElgatoCapture.Services.Gpu;
+namespace Sussudio.Services.Gpu;
 
 internal sealed class ParallelMjpegDecodePipeline : IDisposable
 {

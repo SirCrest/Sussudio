@@ -1,8 +1,8 @@
 using System.Globalization;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Audio;
-using ElgatoCapture.Services.Devices;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Models;
+using Sussudio.Services.Audio;
+using Sussudio.Services.Devices;
+using Sussudio.Services.Telemetry;
 
 const int CmdAudioFormat = 0x04;
 const int CmdAudioSamplingRate = 0x06;

@@ -1,5 +1,5 @@
 param(
-    [string]$PipeName = "ElgatoCaptureAutomation",
+    [string]$PipeName = "SussudioAutomation",
     [string]$AuthToken = "",
     [int]$WaitTimeoutMs = 45000,
     [int]$WaitPollMs = 250,

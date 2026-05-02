@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace ElgatoCapture.Services.Runtime;
+namespace Sussudio.Services.Runtime;
 
 internal sealed class MmcssThreadRegistration : IDisposable
 {

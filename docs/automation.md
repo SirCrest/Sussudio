@@ -43,8 +43,8 @@ workload context in any reported result.
 CLI:
 
 ```powershell
-dotnet tools/ecctl/bin/Debug/net8.0/ecctl.dll diagnostic-session --scenario preview-only --seconds 60 --sample-ms 5000 --presentmon
-dotnet tools/ecctl/bin/Debug/net8.0/ecctl.dll diagnostic-session --scenario recording-only --seconds 30 --sample-ms 5000
+dotnet tools/ssctl/bin/Debug/net8.0/ssctl.dll diagnostic-session --scenario preview-only --seconds 60 --sample-ms 5000 --presentmon
+dotnet tools/ssctl/bin/Debug/net8.0/ssctl.dll diagnostic-session --scenario recording-only --seconds 30 --sample-ms 5000
 ```
 
 MCP:
@@ -84,10 +84,10 @@ pipeline does not silently drift.
 
 Run these checks before merging automation/runtime changes:
 
-1. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Debug -p:Platform=x64`
-2. `dotnet build ElgatoCapture/ElgatoCapture.csproj -c Release -p:Platform=x64`
+1. `dotnet build Sussudio/Sussudio.csproj -c Debug -p:Platform=x64`
+2. `dotnet build Sussudio/Sussudio.csproj -c Release -p:Platform=x64`
 3. `powershell -ExecutionPolicy Bypass -File tools/reliability-gates.ps1 -Configuration Debug`
-4. `dotnet run --project tests/ElgatoCapture.Tests/ElgatoCapture.Tests.csproj -c Debug -p:Platform=x64`
+4. `dotnet run --project tests/Sussudio.Tests/Sussudio.Tests.csproj -c Debug -p:Platform=x64`
 5. `powershell -ExecutionPolicy Bypass -File tools/automation-snapshot-smoke.ps1 -PipeName <pipe> -AuthToken <token>`
 6. Diagnostic-session smoke:
    - preview-only with PresentMon

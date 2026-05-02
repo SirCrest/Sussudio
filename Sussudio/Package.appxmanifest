@@ -8,14 +8,14 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="ba28c983-d3b3-44b6-b543-f7fa8d0422b3"
+    Name="a77e8aeb-560c-4664-9698-4bb4b7eaead4"
     Publisher="CN=crest"
     Version="1.0.0.0" />
 
-  <mp:PhoneIdentity PhoneProductId="ba28c983-d3b3-44b6-b543-f7fa8d0422b3" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="a77e8aeb-560c-4664-9698-4bb4b7eaead4" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
   <Properties>
-    <DisplayName>ElgatoCapture</DisplayName>
+    <DisplayName>Simple Sussudio</DisplayName>
     <PublisherDisplayName>crest</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -34,8 +34,8 @@
       Executable="$targetnametoken$.exe"
       EntryPoint="$targetentrypoint$">
       <uap:VisualElements
-        DisplayName="ElgatoCapture"
-        Description="ElgatoCapture"
+        DisplayName="Simple Sussudio"
+        Description="Simple Sussudio"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"
         Square44x44Logo="Assets\Square44x44Logo.png">

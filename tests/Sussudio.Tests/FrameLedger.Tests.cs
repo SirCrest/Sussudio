@@ -4,9 +4,9 @@ static partial class Program
 {
     private static Task FrameLedger_RetainsBoundedRecentEvents()
     {
-        var ledgerType = RequireType("ElgatoCapture.Services.Capture.FrameLedger");
-        var identityType = RequireType("ElgatoCapture.Models.FrameIdentity");
-        var stageType = RequireType("ElgatoCapture.Models.FrameLedgerStage");
+        var ledgerType = RequireType("Sussudio.Services.Capture.FrameLedger");
+        var identityType = RequireType("Sussudio.Models.FrameIdentity");
+        var stageType = RequireType("Sussudio.Models.FrameLedgerStage");
         var ledger = Activator.CreateInstance(
                 ledgerType,
                 BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
@@ -79,10 +79,10 @@ static partial class Program
 
     private static Task FrameLedger_SnapshotContractExposesRecentEvents()
     {
-        var captureSnapshotType = RequireType("ElgatoCapture.Models.CaptureRuntimeSnapshot");
-        var automationSnapshotType = RequireType("ElgatoCapture.Models.AutomationSnapshot");
-        var eventSnapshotType = RequireType("ElgatoCapture.Models.FrameLedgerEventSnapshot");
-        var identityType = RequireType("ElgatoCapture.Models.FrameIdentity");
+        var captureSnapshotType = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");
+        var automationSnapshotType = RequireType("Sussudio.Models.AutomationSnapshot");
+        var eventSnapshotType = RequireType("Sussudio.Models.FrameLedgerEventSnapshot");
+        var identityType = RequireType("Sussudio.Models.FrameIdentity");
 
         foreach (var snapshotType in new[] { captureSnapshotType, automationSnapshotType })
         {

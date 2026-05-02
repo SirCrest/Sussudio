@@ -8,9 +8,9 @@ using D3D11Device = Vortice.Direct3D11.ID3D11Device;
 using D3D11DeviceContext = Vortice.Direct3D11.ID3D11DeviceContext;
 using D3D11Multithread = Vortice.Direct3D11.ID3D11Multithread;
 using D3D11Texture2D = Vortice.Direct3D11.ID3D11Texture2D;
-using ElgatoCapture.Services.Recording;
+using Sussudio.Services.Recording;
 
-namespace ElgatoCapture.Services.Gpu;
+namespace Sussudio.Services.Gpu;
 
 /// <summary>
 /// Copies NVDEC CUDA NV12 surfaces to a D3D11 NV12 texture for preview rendering.

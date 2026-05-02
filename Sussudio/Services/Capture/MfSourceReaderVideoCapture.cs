@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Services.Audio;
+using Sussudio.Services.Audio;
 
-namespace ElgatoCapture.Services.Capture;
+namespace Sussudio.Services.Capture;
 
 public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
 {

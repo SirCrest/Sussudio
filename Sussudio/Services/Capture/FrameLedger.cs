@@ -1,8 +1,8 @@
 using System;
 using System.Diagnostics;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 
-namespace ElgatoCapture.Services.Capture;
+namespace Sussudio.Services.Capture;
 
 internal sealed class FrameLedger
 {

@@ -10,14 +10,14 @@ using System.Security.AccessControl;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Tools;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Recording;
-using ElgatoCapture.Services.Runtime;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Models;
+using Sussudio.Tools;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture.Services.Automation;
+namespace Sussudio.Services.Automation;
 
 public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
 {
@@ -83,7 +83,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         };
         _jsonOptions.Converters.Add(new JsonStringEnumConverter());
         _requestTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
-            "ELGATOCAPTURE_AUTOMATION_REQUEST_TIMEOUT_MS",
+            "SUSSUDIO_AUTOMATION_REQUEST_TIMEOUT_MS",
             defaultValue: 300000,
             minValue: 1000,
             maxValue: 300000);
@@ -546,7 +546,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             // Keep the automation pipe on explicit Windows security, but avoid adding a
             // mandatory integrity SACL. Creating named objects with a SACL requires
             // SeSecurityPrivilege on some systems; without it CreateNamedPipe fails
-            // with ERROR_PRIVILEGE_NOT_HELD and disables MCP/ecctl entirely.
+            // with ERROR_PRIVILEGE_NOT_HELD and disables MCP/ssctl entirely.
             return (security.GetSecurityDescriptorBinaryForm(), $"explicit-security-user+admins+system ({currentUserSid.Value})");
         }
         catch (Exception ex)
@@ -595,7 +595,7 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
     {
         try
         {
-            var path = RuntimePaths.GetRepoLogFile("ElgatoCapture_AutomationPipe.log");
+            var path = RuntimePaths.GetRepoLogFile("Sussudio_AutomationPipe.log");
             File.AppendAllText(path, line + Environment.NewLine);
         }
         catch (Exception ex)

@@ -2,7 +2,7 @@ using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
 
-namespace ElgatoCapture.Services.Capture;
+namespace Sussudio.Services.Capture;
 
 internal sealed class FrameFingerprintCadenceTracker
 {

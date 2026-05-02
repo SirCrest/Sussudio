@@ -5,13 +5,13 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Recording;
-using ElgatoCapture.Services.Runtime;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Models;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture.Services.Automation;
+namespace Sussudio.Services.Automation;
 
 public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 {
@@ -100,10 +100,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         _viewModel = viewModel ?? throw new ArgumentNullException(nameof(viewModel));
         _previewSnapshotProvider = previewSnapshotProvider ?? throw new ArgumentNullException(nameof(previewSnapshotProvider));
         _recordingVerifier = recordingVerifier ?? throw new ArgumentNullException(nameof(recordingVerifier));
-        _perfectionCaptureDropPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PERF_CAPTURE_DROP_PCT", 0.10, 0.0, 50.0);
-        _perfectionCaptureP95MultiplierThreshold = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PERF_CAPTURE_P95_MULT", 1.30, 1.0, 10.0);
-        _perfectionPreviewSlowPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PERF_PREVIEW_SLOW_PCT", 2.00, 0.0, 100.0);
-        _perfectionVerificationDropPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PERF_VERIFY_DROP_PCT", 0.25, 0.0, 100.0);
+        _perfectionCaptureDropPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PERF_CAPTURE_DROP_PCT", 0.10, 0.0, 50.0);
+        _perfectionCaptureP95MultiplierThreshold = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PERF_CAPTURE_P95_MULT", 1.30, 1.0, 10.0);
+        _perfectionPreviewSlowPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PERF_PREVIEW_SLOW_PCT", 2.00, 0.0, 100.0);
+        _perfectionVerificationDropPercentThreshold = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PERF_VERIFY_DROP_PCT", 0.25, 0.0, 100.0);
     }
 
     public void Start()

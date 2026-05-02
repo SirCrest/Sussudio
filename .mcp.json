@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "elgatocapture": {
+    "sussudio": {
       "command": "cmd",
       "args": ["/c", "tools\\McpServer\\bin\\Debug\\net8.0\\McpServer.exe"]
     }

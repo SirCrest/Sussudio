@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace ElgatoCapture;
+namespace Sussudio;
 
 internal static class Logger
 {

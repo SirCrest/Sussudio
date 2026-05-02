@@ -6,9 +6,9 @@ static partial class Program
 {
     private static Task BoolConverters_PreserveInversionAndVisibilityMappings()
     {
-        var inverseBoolType = RequireType("ElgatoCapture.Converters.InverseBoolConverter");
-        var boolToVisType = RequireType("ElgatoCapture.Converters.BoolToVisibilityConverter");
-        var inverseBoolToVisType = RequireType("ElgatoCapture.Converters.BoolToInverseVisibilityConverter");
+        var inverseBoolType = RequireType("Sussudio.Converters.InverseBoolConverter");
+        var boolToVisType = RequireType("Sussudio.Converters.BoolToVisibilityConverter");
+        var inverseBoolToVisType = RequireType("Sussudio.Converters.BoolToInverseVisibilityConverter");
 
         var converterInterfaceType = RequireInterface(inverseBoolType, "Microsoft.UI.Xaml.Data.IValueConverter");
         AssertImplementsInterface(boolToVisType, converterInterfaceType);

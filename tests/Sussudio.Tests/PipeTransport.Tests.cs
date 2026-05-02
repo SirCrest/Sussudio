@@ -4,18 +4,18 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task EcctlPipeTransport_ExposesAdvancedAutomationCommandIds()
+    private static async Task SsctlPipeTransport_ExposesAdvancedAutomationCommandIds()
     {
-        var assemblyPath = Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll");
-        var ecctlAssembly = LoadToolAssembly(assemblyPath);
+        var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
+        var ssctlAssembly = LoadToolAssembly(assemblyPath);
 
         // Verify PipeTransport exposes expected command routing
-        var transportType = ecctlAssembly.GetType("EcCtl.PipeTransport")
+        var transportType = ssctlAssembly.GetType("EcCtl.PipeTransport")
             ?? throw new InvalidOperationException("EcCtl.PipeTransport type not found.");
         var sendCommandAsync = transportType.GetMethod("SendCommandAsync", BindingFlags.Instance | BindingFlags.Public)
             ?? throw new InvalidOperationException("EcCtl.PipeTransport.SendCommandAsync not found.");
 
-        var pipeName = $"ecctl-pipe-transport-{Guid.NewGuid():N}";
+        var pipeName = $"ssctl-pipe-transport-{Guid.NewGuid():N}";
         var transport = Activator.CreateInstance(transportType, pipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for transport test.");
         var request = await CapturePipeRequestAsync(
@@ -38,7 +38,7 @@ static partial class Program
         AssertEqual(55.5, request.GetProperty("payload").GetProperty("previewVolumePercent").GetDouble(), "PipeTransport preview volume payload");
 
         JsonElement response = default;
-        var responsePipeName = $"ecctl-pipe-response-{Guid.NewGuid():N}";
+        var responsePipeName = $"ssctl-pipe-response-{Guid.NewGuid():N}";
         var responseTransport = Activator.CreateInstance(transportType, responsePipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for response test.");
         var responseRequests = await CapturePipeRequestsAsync(
@@ -69,7 +69,7 @@ static partial class Program
         AssertEqual(123, response.GetProperty("Data").GetProperty("value").GetInt32(), "PipeTransport parsed response data");
 
         JsonElement retryResponse = default;
-        var retryPipeName = $"ecctl-pipe-retry-{Guid.NewGuid():N}";
+        var retryPipeName = $"ssctl-pipe-retry-{Guid.NewGuid():N}";
         var retryTransport = Activator.CreateInstance(transportType, retryPipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for retry test.");
         var retryRequests = await CapturePipeRequestsAsync(
@@ -110,7 +110,7 @@ static partial class Program
         AssertEqual(2, retryResponse.GetProperty("Data").GetProperty("attempt").GetInt32(), "PipeTransport retry final data");
 
         Exception? invalidJsonException = null;
-        var invalidPipeName = $"ecctl-pipe-invalid-{Guid.NewGuid():N}";
+        var invalidPipeName = $"ssctl-pipe-invalid-{Guid.NewGuid():N}";
         var invalidTransport = Activator.CreateInstance(transportType, invalidPipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for invalid JSON test.");
         var invalidRequest = await CapturePipeRequestWithRawResponseAsync(
@@ -137,7 +137,7 @@ static partial class Program
         AssertEqual(1, invalidRequest.GetProperty("command").GetInt32(), "PipeTransport invalid JSON request command id");
         AssertEqual(typeof(JsonException), invalidJsonException?.GetType(), "PipeTransport invalid JSON exception type");
 
-        var usageTransport = Activator.CreateInstance(transportType, $"ecctl-pipe-usage-{Guid.NewGuid():N}", (int?)null)
+        var usageTransport = Activator.CreateInstance(transportType, $"ssctl-pipe-usage-{Guid.NewGuid():N}", (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for usage test.");
         Exception? usageException = null;
         try

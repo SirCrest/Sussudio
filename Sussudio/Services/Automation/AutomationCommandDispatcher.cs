@@ -8,13 +8,13 @@ using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Recording;
-using ElgatoCapture.Services.Runtime;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Models;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture.Services.Automation;
+namespace Sussudio.Services.Automation;
 
 public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
 {

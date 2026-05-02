@@ -1,7 +1,7 @@
 using System;
-using ElgatoCapture.Services.Capture;
+using Sussudio.Services.Capture;
 
-namespace ElgatoCapture.Services.Preview;
+namespace Sussudio.Services.Preview;
 
 internal readonly record struct PreviewDisplayClockSnapshot(
     long LastPresentTick,

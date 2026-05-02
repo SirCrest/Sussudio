@@ -1,4 +1,4 @@
-namespace ElgatoCapture;
+namespace Sussudio;
 
 internal static class DisplayFormatters
 {

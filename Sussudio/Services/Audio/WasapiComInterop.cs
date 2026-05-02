@@ -1,8 +1,8 @@
 using System;
 using System.Runtime.InteropServices;
-using ElgatoCapture.Services.Devices;
+using Sussudio.Services.Devices;
 
-namespace ElgatoCapture.Services.Audio;
+namespace Sussudio.Services.Audio;
 
 internal static class WasapiComInterop
 {

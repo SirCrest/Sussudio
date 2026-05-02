@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Recording;
-using ElgatoCapture.Services.Runtime;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Models;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture.Services.Automation;
+namespace Sussudio.Services.Automation;
 
 /// <summary>
 /// Abstraction over MainViewModel consumed by the automation layer.
-/// Lives in ElgatoCapture.Services.Automation so the dependency arrow points
+/// Lives in Sussudio.Services.Automation so the dependency arrow points
 /// inward (Services defines the contract, ViewModels implements it).
 /// </summary>
 public interface IAutomationViewModel

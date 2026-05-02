@@ -6,10 +6,10 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading;
 using FFmpeg.AutoGen;
-using ElgatoCapture.Services.Flashback;
-using ElgatoCapture.Services.Runtime;
+using Sussudio.Services.Flashback;
+using Sussudio.Services.Runtime;
 
-namespace ElgatoCapture.Services.Recording;
+namespace Sussudio.Services.Recording;
 
 /// <summary>
 /// In-process libav encoder for MP4 recording.

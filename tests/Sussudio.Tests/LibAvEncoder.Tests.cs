@@ -8,7 +8,7 @@ static partial class Program
 
     private static Task LibAvEncoder_GetHdrBitstreamFilterName_MapsCodecs()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("GetHdrBitstreamFilterName",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("GetHdrBitstreamFilterName not found.");
@@ -36,7 +36,7 @@ static partial class Program
 
     private static Task LibAvEncoder_VideoBitstreamFilterSpec_ChainsHdrAndMpegTsFilters()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("GetVideoBitstreamFilterSpec",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("GetVideoBitstreamFilterSpec not found.");
@@ -82,7 +82,7 @@ static partial class Program
 
     private static Task LibAvEncoder_GetExpectedFrameSizeBytes_CalculatesCorrectly()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("GetExpectedFrameSizeBytes",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("GetExpectedFrameSizeBytes not found.");
@@ -109,7 +109,7 @@ static partial class Program
 
     private static Task LibAvEncoder_MapNvencPreset_MapsCorrectly()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("MapNvencPreset",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("MapNvencPreset not found.");
@@ -127,7 +127,7 @@ static partial class Program
 
     private static Task LibAvEncoder_ThrowIfError_ThrowsOnNegative()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ThrowIfError",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ThrowIfError not found.");
@@ -156,7 +156,7 @@ static partial class Program
 
     private static Task LibAvEncoder_Invert_SwapsNumeratorDenominator()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("Invert",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("Invert not found.");
@@ -182,7 +182,7 @@ static partial class Program
 
     private static Task LibAvEncoder_ChromaticityAndLuminanceRationals_ParseCorrectly()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
 
         var chromaMethod = encoderType.GetMethod("ToChromaticityRational",
             BindingFlags.Static | BindingFlags.NonPublic)
@@ -214,7 +214,7 @@ static partial class Program
 
     private static object CreateValidEncoderOptions()
     {
-        var optionsType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoderOptions");
+        var optionsType = RequireType("Sussudio.Services.Recording.LibAvEncoderOptions");
         var options = RuntimeHelpers.GetUninitializedObject(optionsType);
         SetPropertyBackingField(options, "OutputPath", "/output/test.mp4");
         SetPropertyBackingField(options, "CodecName", "hevc_nvenc");
@@ -229,7 +229,7 @@ static partial class Program
 
     private static Task LibAvEncoder_ValidateOptions_AcceptsValidOptions()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ValidateOptions not found.");
@@ -240,7 +240,7 @@ static partial class Program
 
     private static Task LibAvEncoder_ValidateOptions_RejectsEmptyOutputPath()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions", BindingFlags.Static | BindingFlags.NonPublic)!;
         var options = CreateValidEncoderOptions();
         SetPropertyBackingField(options, "OutputPath", "");
@@ -253,7 +253,7 @@ static partial class Program
 
     private static Task LibAvEncoder_ValidateOptions_RejectsZeroDimensions()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions", BindingFlags.Static | BindingFlags.NonPublic)!;
         var options = CreateValidEncoderOptions();
         SetPropertyBackingField(options, "Width", 0);
@@ -266,7 +266,7 @@ static partial class Program
 
     private static Task LibAvEncoder_ValidateOptions_RejectsHdrWithH264()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions", BindingFlags.Static | BindingFlags.NonPublic)!;
         var options = CreateValidEncoderOptions();
         SetPropertyBackingField(options, "HdrEnabled", true);
@@ -281,7 +281,7 @@ static partial class Program
 
     private static Task LibAvEncoder_ValidateOptions_RejectsHdrWithoutP010()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions", BindingFlags.Static | BindingFlags.NonPublic)!;
         var options = CreateValidEncoderOptions();
         SetPropertyBackingField(options, "HdrEnabled", true);
@@ -296,7 +296,7 @@ static partial class Program
 
     private static Task LibAvEncoder_ValidateOptions_RejectsMismatchedFrameRateParts()
     {
-        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var encoderType = RequireType("Sussudio.Services.Recording.LibAvEncoder");
         var method = encoderType.GetMethod("ValidateOptions", BindingFlags.Static | BindingFlags.NonPublic)!;
         var options = CreateValidEncoderOptions();
         SetPropertyBackingField(options, "FrameRateNumerator", (int?)60000);
@@ -310,7 +310,7 @@ static partial class Program
 
     private static Task LibAvEncoder_FragmentedMp4UsesShortFragmentsForPlayback()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Recording/LibAvEncoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private static unsafe void ApplyMp4MuxerOptions(");
@@ -327,7 +327,7 @@ static partial class Program
 
     private static Task LibAvEncoder_MpegTsNvencDumpsHeadersForRotatedSegments()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Recording/LibAvEncoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Recording/LibAvEncoder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");

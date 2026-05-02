@@ -1,8 +1,8 @@
 using System;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Runtime;
+using Sussudio.Models;
+using Sussudio.Services.Runtime;
 
-namespace ElgatoCapture.Services.Capture;
+namespace Sussudio.Services.Capture;
 
 internal static class HdrOutputPolicy
 {
@@ -16,9 +16,9 @@ internal static class HdrOutputPolicy
             return false;
         }
 
-        if (EnvironmentHelpers.TryGetBoolFromEnv("ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF", out var forceOff) && forceOff)
+        if (EnvironmentHelpers.TryGetBoolFromEnv("SUSSUDIO_HDR_OUTPUT_FORCE_OFF", out var forceOff) && forceOff)
         {
-            Logger.Log("HDR output requested but ELGATOCAPTURE_HDR_OUTPUT_FORCE_OFF disables the HDR pipeline.");
+            Logger.Log("HDR output requested but SUSSUDIO_HDR_OUTPUT_FORCE_OFF disables the HDR pipeline.");
             return false;
         }
 

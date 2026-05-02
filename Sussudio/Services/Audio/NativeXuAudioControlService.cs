@@ -4,12 +4,12 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 using Microsoft.Win32.SafeHandles;
-using ElgatoCapture.Services.Devices;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Services.Devices;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture.Services.Audio;
+namespace Sussudio.Services.Audio;
 
 internal sealed class NativeXuAudioControlService
 {

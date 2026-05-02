@@ -13,7 +13,7 @@ static partial class Program
         uint? negotiatedFrameRateNumerator = 60,
         uint? negotiatedFrameRateDenominator = 1)
     {
-        var type = RequireType("ElgatoCapture.Models.CaptureRuntimeSnapshot");
+        var type = RequireType("Sussudio.Models.CaptureRuntimeSnapshot");
         var snapshot = RuntimeHelpers.GetUninitializedObject(type);
         SetPropertyOrBackingField(snapshot, "RequestedFormat", requestedFormat);
         SetPropertyOrBackingField(snapshot, "RequestedHdrEnabled", (bool?)requestedHdrEnabled);
@@ -28,7 +28,7 @@ static partial class Program
 
     private static async Task RecordingVerifier_ReturnsFailure_WhenFileDoesNotExist()
     {
-        var verifierType = RequireType("ElgatoCapture.Services.Recording.RecordingVerifier");
+        var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
         var verifier = Activator.CreateInstance(verifierType)!;
         var verifyAsync = verifierType.GetMethod("VerifyAsync", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("VerifyAsync not found.");
@@ -52,7 +52,7 @@ static partial class Program
         File.WriteAllBytes(tempFile, Array.Empty<byte>());
         try
         {
-            var verifierType = RequireType("ElgatoCapture.Services.Recording.RecordingVerifier");
+            var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
             var verifier = Activator.CreateInstance(verifierType)!;
             var verifyAsync = verifierType.GetMethod("VerifyAsync", BindingFlags.Public | BindingFlags.Instance)!;
 
@@ -74,7 +74,7 @@ static partial class Program
 
     private static async Task RecordingVerifier_ReturnsFailure_WhenOutputPathIsNull()
     {
-        var verifierType = RequireType("ElgatoCapture.Services.Recording.RecordingVerifier");
+        var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
         var verifier = Activator.CreateInstance(verifierType)!;
         var verifyAsync = verifierType.GetMethod("VerifyAsync", BindingFlags.Public | BindingFlags.Instance)!;
 
@@ -92,8 +92,8 @@ static partial class Program
 
     private static Task RecordingVerifier_ImplementsIRecordingVerifier()
     {
-        var verifierType = RequireType("ElgatoCapture.Services.Recording.RecordingVerifier");
-        var interfaceType = RequireType("ElgatoCapture.Services.Recording.IRecordingVerifier");
+        var verifierType = RequireType("Sussudio.Services.Recording.RecordingVerifier");
+        var interfaceType = RequireType("Sussudio.Services.Recording.IRecordingVerifier");
 
         AssertEqual(true, interfaceType.IsAssignableFrom(verifierType), "RecordingVerifier implements IRecordingVerifier");
 
@@ -105,7 +105,7 @@ static partial class Program
         AssertEqual(3, parameters.Length, "VerifyAsync parameter count");
 
         // Return type is Task<RecordingVerificationResult>
-        var resultType = RequireType("ElgatoCapture.Models.RecordingVerificationResult");
+        var resultType = RequireType("Sussudio.Models.RecordingVerificationResult");
         AssertEqual(true, verifyAsync.ReturnType.IsGenericType, "VerifyAsync returns generic Task");
         AssertEqual(resultType, verifyAsync.ReturnType.GetGenericArguments()[0], "VerifyAsync returns Task<RecordingVerificationResult>");
 
@@ -114,7 +114,7 @@ static partial class Program
 
     private static Task RecordingVerificationResult_HasExpectedProperties()
     {
-        var resultType = RequireType("ElgatoCapture.Models.RecordingVerificationResult");
+        var resultType = RequireType("Sussudio.Models.RecordingVerificationResult");
 
         var expectedProps = new[]
         {

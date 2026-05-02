@@ -338,7 +338,7 @@ internal static class Program
         var current = new DirectoryInfo(AppContext.BaseDirectory);
         while (current is not null)
         {
-            if (File.Exists(Path.Combine(current.FullName, "ElgatoCapture.slnx")))
+            if (File.Exists(Path.Combine(current.FullName, "Sussudio.slnx")))
             {
                 return current.FullName;
             }
@@ -346,7 +346,7 @@ internal static class Program
             current = current.Parent;
         }
 
-        throw new InvalidOperationException("Could not locate repository root containing ElgatoCapture.slnx.");
+        throw new InvalidOperationException("Could not locate repository root containing Sussudio.slnx.");
     }
 
     private static string ResolveFfmpegPath(string repoRoot)
@@ -360,7 +360,7 @@ internal static class Program
         var candidates = new[]
         {
             Path.Combine(repoRoot, "latest-build", "ffmpeg", "ffmpeg.exe"),
-            Path.Combine(repoRoot, "ElgatoCapture", "bin", "x64", "Debug", "net8.0-windows10.0.19041.0", "win-x64", "ffmpeg", "ffmpeg.exe")
+            Path.Combine(repoRoot, "Sussudio", "bin", "x64", "Debug", "net8.0-windows10.0.19041.0", "win-x64", "ffmpeg", "ffmpeg.exe")
         };
 
         foreach (var candidate in candidates)
@@ -467,7 +467,7 @@ internal static class Program
     private static void PrintUsage()
     {
         Console.WriteLine("Usage:");
-        Console.WriteLine("  dotnet run --project tests/ElgatoCapture.FfmpegEncodeLab -- --input <p010 raw file> [--width <int>] [--height <int>] [--fps <double>] [--frames <int>]");
+        Console.WriteLine("  dotnet run --project tests/Sussudio.FfmpegEncodeLab -- --input <p010 raw file> [--width <int>] [--height <int>] [--fps <double>] [--frames <int>]");
         Console.WriteLine();
         Console.WriteLine("Defaults:");
         Console.WriteLine("  --width 1920 --height 1080 --fps 60 --frames 120");

@@ -4,13 +4,13 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 using FFmpeg.AutoGen;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Flashback;
-using ElgatoCapture.Services.Runtime;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Flashback;
+using Sussudio.Services.Runtime;
 
-namespace ElgatoCapture.Services.Recording;
+namespace Sussudio.Services.Recording;
 
 public readonly record struct GpuPipelineHandles(
     IntPtr D3D11DevicePtr,

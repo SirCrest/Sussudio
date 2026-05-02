@@ -6,9 +6,9 @@ static partial class Program
 {
     private static Task AutomationPipeProtocol_ResolvesCommandsTimeoutsAuthAndEnvelopes()
     {
-        var protocolType = RequireType("ElgatoCapture.Tools.AutomationPipeProtocol");
-        AssertEqual("ElgatoCaptureAutomation", GetConstant<string>(protocolType, "DefaultPipeName"), "AutomationPipeProtocol.DefaultPipeName");
-        AssertEqual("ELGATOCAPTURE_AUTOMATION_TOKEN", GetConstant<string>(protocolType, "AutomationKeyEnvVar"), "AutomationPipeProtocol.AutomationKeyEnvVar");
+        var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");
+        AssertEqual("SussudioAutomation", GetConstant<string>(protocolType, "DefaultPipeName"), "AutomationPipeProtocol.DefaultPipeName");
+        AssertEqual("SUSSUDIO_AUTOMATION_TOKEN", GetConstant<string>(protocolType, "AutomationKeyEnvVar"), "AutomationPipeProtocol.AutomationKeyEnvVar");
         AssertEqual(5000, GetConstant<int>(protocolType, "DefaultConnectTimeoutMs"), "AutomationPipeProtocol.DefaultConnectTimeoutMs");
         AssertEqual(15000, GetConstant<int>(protocolType, "DefaultResponseTimeoutMs"), "AutomationPipeProtocol.DefaultResponseTimeoutMs");
         AssertEqual(60000, GetConstant<int>(protocolType, "ExtendedResponseTimeoutMs"), "AutomationPipeProtocol.ExtendedResponseTimeoutMs");
@@ -36,14 +36,14 @@ static partial class Program
         AssertEqual(false, (bool)tryGetCommandName.Invoke(null, unknownNameArgs)!, "TryGetCommandName unknown");
         AssertEqual(string.Empty, (string)unknownNameArgs[1]!, "TryGetCommandName unknown output");
 
-        var previousToken = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_TOKEN");
+        var previousToken = Environment.GetEnvironmentVariable("SUSSUDIO_AUTOMATION_TOKEN");
         try
         {
             var getAuth = RequireNonPublicStaticMethod(protocolType, "GetConfiguredAuthToken");
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_TOKEN", "env-token");
+            Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_TOKEN", "env-token");
             AssertEqual("explicit-token", (string)getAuth.Invoke(null, new object?[] { "explicit-token" })!, "GetConfiguredAuthToken explicit");
             AssertEqual("env-token", (string)getAuth.Invoke(null, new object?[] { null })!, "GetConfiguredAuthToken env");
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_TOKEN", "   ");
+            Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_TOKEN", "   ");
             AssertEqual(null, getAuth.Invoke(null, new object?[] { null }), "GetConfiguredAuthToken whitespace env");
 
             var defaultTimeout = RequireNonPublicStaticMethod(protocolType, "GetDefaultResponseTimeout");
@@ -56,7 +56,7 @@ static partial class Program
             AssertEqual(150000, (int)defaultTimeout.Invoke(null, new object[] { "17" })!, "GetDefaultResponseTimeout numeric recording command");
 
             var createEnvelope = RequireNonPublicStaticMethod(protocolType, "CreateRequestEnvelope");
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_TOKEN", "env-token");
+            Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_TOKEN", "env-token");
             var payload = new Dictionary<string, object?> { ["enabled"] = true };
             var envelope = (IDictionary<string, object?>)createEnvelope.Invoke(null, new object?[] { 17, payload, null })!;
             AssertEqual(17, (int)envelope["command"]!, "CreateRequestEnvelope command");
@@ -70,7 +70,7 @@ static partial class Program
         }
         finally
         {
-            Environment.SetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_TOKEN", previousToken);
+            Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_TOKEN", previousToken);
         }
 
         return Task.CompletedTask;
@@ -78,7 +78,7 @@ static partial class Program
 
     private static Task AutomationResponseState_ParsesStatusAndRetryContracts()
     {
-        var responseStateType = RequireSharedToolType("ElgatoCapture.Tools.AutomationResponseState");
+        var responseStateType = RequireSharedToolType("Sussudio.Tools.AutomationResponseState");
         var tryRead = RequireNonPublicStaticMethod(responseStateType, "TryRead");
 
         AssertResponseState(
@@ -119,7 +119,7 @@ static partial class Program
 
     private static Task AutomationSnapshotFormatter_FormatsCoreSectionsAndTypedAccessors()
     {
-        var formatterType = RequireSharedToolType("ElgatoCapture.Tools.AutomationSnapshotFormatter");
+        var formatterType = RequireSharedToolType("Sussudio.Tools.AutomationSnapshotFormatter");
         var isSuccess = RequireNonPublicStaticMethod(formatterType, "IsSuccess");
         var get = RequireNonPublicStaticMethod(formatterType, "Get");
         var getInt = RequireNonPublicStaticMethod(formatterType, "GetInt");
@@ -303,7 +303,7 @@ static partial class Program
             }
             """);
         var formatted = (string)formatSnapshot.Invoke(null, new object[] { snapshotDoc.RootElement, true })!;
-        AssertContains(formatted, "== ElgatoCapture State ==");
+        AssertContains(formatted, "== Sussudio State ==");
         AssertContains(formatted, "Device: Synthetic (dev-1)");
         AssertContains(formatted, "Frame Rate: 59.94 fps (59.940 fps, 60000/1001)");
         AssertContains(formatted, "== Flashback ==");
@@ -372,7 +372,7 @@ static partial class Program
 
     private static Type RequireSharedToolType(string typeName)
     {
-        var assembly = LoadToolAssembly(Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll"));
+        var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
         return assembly.GetType(typeName)
                ?? throw new InvalidOperationException($"{typeName} was not found in the shared tool assembly.");
     }

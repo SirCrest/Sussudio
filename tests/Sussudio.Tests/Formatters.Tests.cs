@@ -4,11 +4,11 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static Task EcctlFormatters_EmitCoreSnapshotSections()
+    private static Task SsctlFormatters_EmitCoreSnapshotSections()
     {
-        var assemblyPath = Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll");
-        var ecctlAssembly = LoadToolAssembly(assemblyPath);
-        var formatterType = ecctlAssembly.GetType("EcCtl.Formatters")
+        var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
+        var ssctlAssembly = LoadToolAssembly(assemblyPath);
+        var formatterType = ssctlAssembly.GetType("EcCtl.Formatters")
             ?? throw new InvalidOperationException("EcCtl.Formatters type not found.");
         var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("EcCtl.Formatters.FormatSnapshot not found.");
@@ -20,7 +20,7 @@ static partial class Program
         var output = formatSnapshot.Invoke(null, new object[] { document.RootElement })?.ToString()
             ?? throw new InvalidOperationException("EcCtl.Formatters.FormatSnapshot returned null.");
 
-        AssertContains(output, "== ElgatoCapture State ==");
+        AssertContains(output, "== Sussudio State ==");
         AssertContains(output, "Capture Commands:");
         AssertContains(output, "== Capture Settings ==");
         AssertContains(output, "== Audio ==");
@@ -36,12 +36,12 @@ static partial class Program
         AssertContains(output, "Written: 150 MB");
         AssertContains(output, "submitFailures=1");
         AssertContains(output, "A/V Drift: -1.5ms");
-        var ecctlFormatterSource = ReadRepoFile("tools/ecctl/Formatters.cs");
-        AssertContains(ecctlFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
-        AssertContains(ecctlFormatterSource, "CaptureCommandMaxQueueLatencyMs");
-        AssertContains(ecctlFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
-        AssertContains(ecctlFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
-        AssertContains(ecctlFormatterSource, "ProcessCpuPercent");
+        var ssctlFormatterSource = ReadRepoFile("tools/ssctl/Formatters.cs");
+        AssertContains(ssctlFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
+        AssertContains(ssctlFormatterSource, "CaptureCommandMaxQueueLatencyMs");
+        AssertContains(ssctlFormatterSource, "PreviewD3DInputUploadCpuP99Ms");
+        AssertContains(ssctlFormatterSource, "PreviewD3DTotalFrameCpuMaxMs");
+        AssertContains(ssctlFormatterSource, "ProcessCpuPercent");
         var sharedFormatterSource = ReadRepoFile("tools/Common/AutomationSnapshotFormatter.cs");
         AssertContains(sharedFormatterSource, "CaptureCommandOldestPendingCommandAgeMs");
         AssertContains(sharedFormatterSource, "CaptureCommandMaxQueueLatencyMs");

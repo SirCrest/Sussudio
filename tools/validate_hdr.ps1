@@ -30,7 +30,7 @@ function Resolve-FfprobePath {
         return $candidate
     }
 
-    $candidate = Join-Path $repoRoot "ElgatoCapture\\bin\\x64\\Debug\\net8.0-windows10.0.19041.0\\win-x64\\ffmpeg\\ffprobe.exe"
+    $candidate = Join-Path $repoRoot "Sussudio\\bin\\x64\\Debug\\net8.0-windows10.0.19041.0\\win-x64\\ffmpeg\\ffprobe.exe"
     if (Test-Path $candidate) {
         return $candidate
     }

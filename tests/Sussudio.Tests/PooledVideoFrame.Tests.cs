@@ -9,8 +9,8 @@ static partial class Program
 {
     private static Task PooledVideoFrame_LeaseLifecycle_ReturnsBufferAfterLastRelease()
     {
-        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -54,8 +54,8 @@ static partial class Program
 
     private static Task PooledVideoFrame_AddLeaseAfterReturn_Throws()
     {
-        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -79,8 +79,8 @@ static partial class Program
 
     private static Task PooledVideoFrame_OwnerDisposeClosesNewLeasesButExistingLeaseRemainsReadable()
     {
-        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -110,15 +110,15 @@ static partial class Program
 
     private static Task MjpegPooledFrameFanout_ExposesLeaseContracts()
     {
-        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
-        var leaseType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrameLease");
-        var leaseEncoderType = RequireType("ElgatoCapture.Services.Recording.IRawVideoFrameLeaseEncoder");
-        var pipelineEmitCallbackType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline+EmitFrameCallback");
-        var previewSinkType = RequireType("ElgatoCapture.Services.Preview.IPreviewFrameSink");
-        var jitterBufferType = RequireType("ElgatoCapture.Services.Capture.MjpegPreviewJitterBuffer");
-        var rendererType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer");
-        var libAvSinkType = RequireType("ElgatoCapture.Services.Recording.LibAvRecordingSink");
-        var flashbackSinkType = RequireType("ElgatoCapture.Services.Flashback.FlashbackEncoderSink");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var leaseType = RequireType("Sussudio.Services.Capture.PooledVideoFrameLease");
+        var leaseEncoderType = RequireType("Sussudio.Services.Recording.IRawVideoFrameLeaseEncoder");
+        var pipelineEmitCallbackType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+EmitFrameCallback");
+        var previewSinkType = RequireType("Sussudio.Services.Preview.IPreviewFrameSink");
+        var jitterBufferType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
+        var libAvSinkType = RequireType("Sussudio.Services.Recording.LibAvRecordingSink");
+        var flashbackSinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
 
         var emitInvoke = pipelineEmitCallbackType.GetMethod("Invoke")
             ?? throw new InvalidOperationException("EmitFrameCallback.Invoke not found.");
@@ -150,9 +150,9 @@ static partial class Program
 
     private static Task MjpegPreviewJitter_ExposesAdaptiveDeadlinePolicy()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Capture/MjpegPreviewJitterBuffer.cs");
-        var pipelineSource = ReadRepoFile("ElgatoCapture/Services/Gpu/ParallelMjpegDecodePipeline.cs");
-        var captureSource = ReadRepoFile("ElgatoCapture/Services/Capture/UnifiedVideoCapture.cs");
+        var source = ReadRepoFile("Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs");
+        var pipelineSource = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        var captureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
         AssertContains(source, "DropDeadlineExpiredFrames");
         AssertContains(source, "DropLatencyOverflowFrames");
         AssertContains(source, "SoftDeadlineExtraFrames = 2");
@@ -171,12 +171,12 @@ static partial class Program
         AssertContains(source, "if (AddFrameInOrder(frame))");
         AssertContains(source, "private bool AddFrameInOrder(BufferedFrame frame)");
         AssertContains(source, "return false;");
-        AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_TARGET_DEPTH");
-        AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_MIN_TARGET_DEPTH");
-        AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_MAX_TARGET_DEPTH");
-        AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_MAX_DEPTH");
-        AssertContains(source, "ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_PACING\", 0");
-        AssertContains(source, "ELGATOCAPTURE_PREVIEW_JITTER_MMCSS_TASK\") ?? \"Playback\"");
+        AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH");
+        AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MIN_TARGET_DEPTH");
+        AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MAX_TARGET_DEPTH");
+        AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MAX_DEPTH");
+        AssertContains(source, "SUSSUDIO_PREVIEW_DISPLAY_CLOCK_PACING\", 0");
+        AssertContains(source, "SUSSUDIO_PREVIEW_JITTER_MMCSS_TASK\") ?? \"Playback\"");
         AssertContains(pipelineSource, "PreviewFrameCallback");
         AssertContains(pipelineSource, "NotifyPreviewFrameDecoded");
         AssertContains(captureSource, "OnMjpegPipelinePreviewFrameDecoded");
@@ -186,7 +186,7 @@ static partial class Program
 
     private static Task MjpegPreviewJitter_DropsSoftDeadlineOverflowToRecoverLatency()
     {
-        var jitterType = RequireType("ElgatoCapture.Services.Capture.MjpegPreviewJitterBuffer");
+        var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var jitter = CreateUnstartedJitterBuffer(jitterType, targetDepth: 3);
         var frames = (IList)(GetPrivateField(jitter, "_frames")
             ?? throw new InvalidOperationException("Jitter frame list missing."));
@@ -217,7 +217,7 @@ static partial class Program
 
     private static Task MjpegPreviewJitter_DropsExpiredFramesBelowTargetDepth()
     {
-        var jitterType = RequireType("ElgatoCapture.Services.Capture.MjpegPreviewJitterBuffer");
+        var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
         var jitter = CreateUnstartedJitterBuffer(jitterType, targetDepth: 6);
         var frames = (IList)(GetPrivateField(jitter, "_frames")
             ?? throw new InvalidOperationException("Jitter frame list missing."));
@@ -241,9 +241,9 @@ static partial class Program
 
     private static Task MjpegPreviewJitter_SkipsMissingPreviewSequenceAfterDeadline()
     {
-        var jitterType = RequireType("ElgatoCapture.Services.Capture.MjpegPreviewJitterBuffer");
-        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
+        var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -278,9 +278,9 @@ static partial class Program
 
     private static Task MjpegPreviewJitter_LateSequenceDoesNotCountAsQueued()
     {
-        var jitterType = RequireType("ElgatoCapture.Services.Capture.MjpegPreviewJitterBuffer");
-        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
+        var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -310,9 +310,9 @@ static partial class Program
 
     private static Task MjpegPreviewJitter_ClearResetsPreviewSequence()
     {
-        var jitterType = RequireType("ElgatoCapture.Services.Capture.MjpegPreviewJitterBuffer");
-        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
+        var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
 
@@ -357,10 +357,10 @@ static partial class Program
 
     private static Task D3DPreviewPendingFrame_ReleasesQueuedLease()
     {
-        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
-        var leaseType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrameLease");
-        var rendererType = RequireType("ElgatoCapture.Services.Preview.D3D11PreviewRenderer");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var leaseType = RequireType("Sussudio.Services.Capture.PooledVideoFrameLease");
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var pendingFrameType = RequireNestedType(rendererType, "PendingFrame");
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
@@ -391,20 +391,20 @@ static partial class Program
     private static Task MjpegLeasedVideoPackets_ReleaseQueuedLeases()
     {
         AssertLeasedPacketReturnDisposesLease(
-            sinkTypeName: "ElgatoCapture.Services.Recording.LibAvRecordingSink",
-            packetTypeName: "ElgatoCapture.Services.Recording.LibAvRecordingSink+VideoFramePacket");
+            sinkTypeName: "Sussudio.Services.Recording.LibAvRecordingSink",
+            packetTypeName: "Sussudio.Services.Recording.LibAvRecordingSink+VideoFramePacket");
         AssertLeasedPacketReturnDisposesLease(
-            sinkTypeName: "ElgatoCapture.Services.Flashback.FlashbackEncoderSink",
-            packetTypeName: "ElgatoCapture.Services.Flashback.FlashbackEncoderSink+VideoFramePacket");
+            sinkTypeName: "Sussudio.Services.Flashback.FlashbackEncoderSink",
+            packetTypeName: "Sussudio.Services.Flashback.FlashbackEncoderSink+VideoFramePacket");
 
         return Task.CompletedTask;
     }
 
     private static void AssertLeasedPacketReturnDisposesLease(string sinkTypeName, string packetTypeName)
     {
-        var frameType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrame");
-        var formatType = RequireType("ElgatoCapture.Services.Capture.PooledVideoPixelFormat");
-        var leaseType = RequireType("ElgatoCapture.Services.Capture.PooledVideoFrameLease");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var leaseType = RequireType("Sussudio.Services.Capture.PooledVideoFrameLease");
         var sinkType = RequireType(sinkTypeName);
         var packetType = RequireType(packetTypeName);
         var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)

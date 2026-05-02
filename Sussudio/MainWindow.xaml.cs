@@ -7,9 +7,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Tools;
-using ElgatoCapture.ViewModels;
+using Sussudio.Models;
+using Sussudio.Tools;
+using Sussudio.ViewModels;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -21,18 +21,18 @@ using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml.Hosting;
 using System.Numerics;
 using WinRT.Interop;
-using ElgatoCapture.Services.Audio;
-using ElgatoCapture.Services.Automation;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Configuration;
-using ElgatoCapture.Services.Flashback;
-using ElgatoCapture.Services.Gpu;
-using ElgatoCapture.Services.Preview;
-using ElgatoCapture.Services.Recording;
-using ElgatoCapture.Services.Runtime;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Services.Audio;
+using Sussudio.Services.Automation;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Configuration;
+using Sussudio.Services.Flashback;
+using Sussudio.Services.Gpu;
+using Sussudio.Services.Preview;
+using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture;
+namespace Sussudio;
 
 public sealed partial class MainWindow : Window, IAutomationWindowControl
 {
@@ -51,7 +51,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
     private const int PreviewStartupMaxVisualTimeoutMs = 15000;
     private static readonly TimeSpan PreviewStartupPlaybackAdvanceThreshold = TimeSpan.FromMilliseconds(33);
     private static readonly int PreviewStartupVisualTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
-        "ELGATOCAPTURE_PREVIEW_START_TIMEOUT_MS",
+        "SUSSUDIO_PREVIEW_START_TIMEOUT_MS",
         PreviewStartupDefaultVisualTimeoutMs,
         PreviewStartupMinVisualTimeoutMs,
         PreviewStartupMaxVisualTimeoutMs);
@@ -310,7 +310,7 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         _windowTitleBase = BuildWindowTitleBase();
         ApplyWindowTitle();
         var automationToken = Environment.GetEnvironmentVariable(AutomationPipeProtocol.AutomationKeyEnvVar);
-        var automationPipeName = Environment.GetEnvironmentVariable("ELGATOCAPTURE_AUTOMATION_PIPE");
+        var automationPipeName = Environment.GetEnvironmentVariable("SUSSUDIO_AUTOMATION_PIPE");
         if (string.IsNullOrWhiteSpace(automationPipeName))
         {
             automationPipeName = NamedPipeAutomationServer.DefaultPipeName;

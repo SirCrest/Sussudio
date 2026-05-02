@@ -63,14 +63,14 @@ rules exist because past fixes on surface symptoms papered over deeper issues.
   `capture_window_screenshot`, `window_action`, `control_preview`,
   `control_recording`, `get_diagnostics` for app interaction. Never hand-build
   pipe JSON when an MCP tool exists — enum ordinals drift.
-- **Read `temp/logs/ElgatoCapture_Debug.log` after every build/test.** Some
+- **Read `temp/logs/Sussudio_Debug.log` after every build/test.** Some
   local worktrees may have an ignored Claude hook that auto-tails the log after
   `dotnet build` / `dotnet run`, but clean checkouts should not assume it is
   present. Read or tail the log explicitly when the hook output is absent.
 - **After a backgrounded app launch, watch the log for ≤60 seconds.** The
   auto-tail hook only captures the instant the Bash call returns; GUI launches
   return immediately and real stability issues take seconds to appear. Tail
-  the log with `tail -f temp/logs/ElgatoCapture_Debug.log` as a background
+  the log with `tail -f temp/logs/Sussudio_Debug.log` as a background
   Bash, Monitor it with a 60-second cap, kill the tail at cap or on exit.
   - New lines arrive → act on them (errors → investigate before continuing).
   - Nothing new in 60s → the app is stable on this path. Resume work, prompt
@@ -84,11 +84,11 @@ rules exist because past fixes on surface symptoms papered over deeper issues.
 App must be closed first (see MCP app-state rule above).
 
 ```bash
-dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true
-dotnet run --project tests/ElgatoCapture.Tests/ -- "ElgatoCapture/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/ElgatoCapture.dll"
+dotnet build Sussudio/Sussudio.csproj -p:Platform=x64 -p:StageLatestBuild=true
+dotnet run --project tests/Sussudio.Tests/ -- "Sussudio/bin/x64/Debug/net8.0-windows10.0.19041.0/win-x64/Sussudio.dll"
 ```
 
-Logs: `temp/logs/ElgatoCapture_Debug.log`
+Logs: `temp/logs/Sussudio_Debug.log`
 
 ## Workflows
 

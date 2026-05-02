@@ -1,6 +1,6 @@
 param(
-    [string]$PipeName = "ElgatoCaptureAutomation",
-    [string]$AuthToken = $env:ELGATOCAPTURE_AUTOMATION_TOKEN,
+    [string]$PipeName = "SussudioAutomation",
+    [string]$AuthToken = $env:SUSSUDIO_AUTOMATION_TOKEN,
     [int]$PreviewSeconds = 60,
     [int]$FlashbackSeconds = 300,
     [int]$RecordingSeconds = 60,
@@ -27,9 +27,9 @@ $ErrorActionPreference = "Stop"
 $script:Root = Split-Path -Parent $PSScriptRoot
 $script:SendCommandPath = Join-Path $PSScriptRoot "send-automation-command.ps1"
 $script:VerifyDedicatedLibAvPath = Join-Path $PSScriptRoot "verify-dedicated-libav-recording.ps1"
-$script:EcCtlProjectPath = Join-Path $PSScriptRoot "ecctl\ecctl.csproj"
-$script:EcCtlPath = Join-Path $PSScriptRoot "ecctl\bin\Debug\net8.0\ecctl.dll"
-$script:AppExePath = Join-Path $script:Root "ElgatoCapture\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\ElgatoCapture.exe"
+$script:EcCtlProjectPath = Join-Path $PSScriptRoot "ssctl\ssctl.csproj"
+$script:EcCtlPath = Join-Path $PSScriptRoot "ssctl\bin\Debug\net8.0\ssctl.dll"
+$script:AppExePath = Join-Path $script:Root "Sussudio\bin\x64\Debug\net8.0-windows10.0.19041.0\win-x64\Sussudio.exe"
 $script:ImplementationLogPath = Join-Path $script:Root "docs\realtime-capture-engine-implementation-log.md"
 $script:LaunchedApp = $false
 $script:InitialSnapshot = $null
@@ -272,7 +272,7 @@ function Wait-AutomationAvailable {
 }
 
 function Start-AppIfNeeded {
-    $running = Get-Process -Name "ElgatoCapture" -ErrorAction SilentlyContinue | Select-Object -First 1
+    $running = Get-Process -Name "Sussudio" -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($null -ne $running) {
         return [pscustomobject]@{
             Started = $false
@@ -282,11 +282,11 @@ function Start-AppIfNeeded {
     }
 
     if ($NoLaunch) {
-        throw "ElgatoCapture is not running. Re-run without -NoLaunch or start the app before running the harness."
+        throw "Sussudio is not running. Re-run without -NoLaunch or start the app before running the harness."
     }
 
     if (-not (Test-Path $script:AppExePath)) {
-        throw "App executable not found. Build ElgatoCapture first: $script:AppExePath"
+        throw "App executable not found. Build Sussudio first: $script:AppExePath"
     }
 
     $psi = [System.Diagnostics.ProcessStartInfo]::new()
@@ -294,14 +294,14 @@ function Start-AppIfNeeded {
     $psi.WorkingDirectory = Split-Path -Parent $script:AppExePath
     $psi.UseShellExecute = $false
     if (-not [string]::IsNullOrWhiteSpace($AuthToken)) {
-        $psi.Environment["ELGATOCAPTURE_AUTOMATION_TOKEN"] = $AuthToken
+        $psi.Environment["SUSSUDIO_AUTOMATION_TOKEN"] = $AuthToken
     }
 
     $process = [System.Diagnostics.Process]::Start($psi)
     $script:LaunchedApp = $true
 
     if (-not (Wait-AutomationAvailable -TimeoutMs $WaitTimeoutMs)) {
-        throw "Timed out waiting for automation after launching ElgatoCapture."
+        throw "Timed out waiting for automation after launching Sussudio."
     }
 
     return [pscustomobject]@{
@@ -317,16 +317,16 @@ function Ensure-EcCtl {
     }
 
     if (-not (Test-Path $script:EcCtlProjectPath)) {
-        throw "ecctl project not found: $script:EcCtlProjectPath"
+        throw "ssctl project not found: $script:EcCtlProjectPath"
     }
 
     & dotnet build $script:EcCtlProjectPath -c Debug --no-restore /nr:false /m:1 -p:UseSharedCompilation=false | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        throw "ecctl build failed with exit code $LASTEXITCODE."
+        throw "ssctl build failed with exit code $LASTEXITCODE."
     }
 
     if (-not (Test-Path $script:EcCtlPath)) {
-        throw "ecctl build output not found: $script:EcCtlPath"
+        throw "ssctl build output not found: $script:EcCtlPath"
     }
 }
 
@@ -393,7 +393,7 @@ function Start-PresentMonCapture {
         "--json",
         "presentmon",
         "--seconds", ([string]$seconds),
-        "--process", "ElgatoCapture",
+        "--process", "Sussudio",
         "--output", $csvPath,
         "--keep-csv"
     )

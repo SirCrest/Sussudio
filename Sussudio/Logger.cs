@@ -7,13 +7,13 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 
-namespace ElgatoCapture;
+namespace Sussudio;
 
 public static class Logger
 {
-    private static readonly string LogFilePath = RuntimePaths.GetRepoLogFile("ElgatoCapture_Debug.log");
+    private static readonly string LogFilePath = RuntimePaths.GetRepoLogFile("Sussudio_Debug.log");
 
     private static readonly object LockObject = new();
     private static readonly Channel<string> LogChannel = Channel.CreateBounded<string>(new BoundedChannelOptions(8192)
@@ -37,7 +37,7 @@ public static class Logger
         try
         {
             RotatePriorLog();
-            var header = $"=== ElgatoCapture Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
+            var header = $"=== Sussudio Debug Log ===\nStarted: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\nPID: {Environment.ProcessId}\n\n";
             File.WriteAllText(LogFilePath, header);
         }
         catch { /* Best-effort: Logger init must not throw — if the log file is locked we proceed without it */ }
@@ -184,7 +184,7 @@ public static class Logger
         }
 
         var mtime = File.GetLastWriteTime(LogFilePath);
-        var rotated = RuntimePaths.GetRepoLogFile($"ElgatoCapture_Debug_{mtime:yyyyMMdd_HHmmss}.log");
+        var rotated = RuntimePaths.GetRepoLogFile($"Sussudio_Debug_{mtime:yyyyMMdd_HHmmss}.log");
         try
         {
             if (File.Exists(rotated))

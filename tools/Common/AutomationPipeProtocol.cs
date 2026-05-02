@@ -2,14 +2,14 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 
-namespace ElgatoCapture.Tools;
+namespace Sussudio.Tools;
 
 internal static class AutomationPipeProtocol
 {
-    internal const string DefaultPipeName = "ElgatoCaptureAutomation";
-    internal const string AutomationKeyEnvVar = "ELGATOCAPTURE_AUTOMATION_TOKEN";
+    internal const string DefaultPipeName = "SussudioAutomation";
+    internal const string AutomationKeyEnvVar = "SUSSUDIO_AUTOMATION_TOKEN";
     internal const int DefaultConnectTimeoutMs = 5000;
     internal const int DefaultResponseTimeoutMs = 15000;
     internal const int ExtendedResponseTimeoutMs = 60000;

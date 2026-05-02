@@ -2,13 +2,13 @@
   <Configurations>
     <Platform Name="x64" />
   </Configurations>
-  <Project Path="ElgatoCapture/ElgatoCapture.csproj">
+  <Project Path="Sussudio/Sussudio.csproj">
     <Platform Solution="*|x64" Project="x64" />
     <Deploy />
   </Project>
   <Project Path="tools/McpServer/McpServer.csproj" />
-  <Project Path="tests/ElgatoCapture.HdrLab/ElgatoCapture.HdrLab.csproj">
+  <Project Path="tests/Sussudio.HdrLab/Sussudio.HdrLab.csproj">
     <Platform Solution="*|x64" Project="x64" />
   </Project>
-  <Project Path="tests/ElgatoCapture.FfmpegEncodeLab/ElgatoCapture.FfmpegEncodeLab.csproj" />
+  <Project Path="tests/Sussudio.FfmpegEncodeLab/Sussudio.FfmpegEncodeLab.csproj" />
 </Solution>

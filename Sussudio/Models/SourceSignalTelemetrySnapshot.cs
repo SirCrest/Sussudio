@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace ElgatoCapture.Models;
+namespace Sussudio.Models;
 
 public enum SourceTelemetryAvailability
 {

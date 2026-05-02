@@ -1,6 +1,6 @@
 using System.IO;
 using System.Text.Json;
-using ElgatoCapture.Tools;
+using Sussudio.Tools;
 
 namespace McpServer;
 
@@ -44,7 +44,7 @@ public sealed class PipeClient
         catch (AutomationPipeConnectException)
         {
             return CreateSyntheticError(
-                "ElgatoCapture is not running or not responding. Start the app and try again.",
+                "Sussudio is not running or not responding. Start the app and try again.",
                 "pipe-connect-failed");
         }
         catch (AutomationPipeResponseTimeoutException ex)

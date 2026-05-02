@@ -46,7 +46,7 @@ static partial class Program
         string name,
         string? nativeXuInterfacePath)
     {
-        var deviceType = assembly.GetType("ElgatoCapture.Models.CaptureDevice")
+        var deviceType = assembly.GetType("Sussudio.Models.CaptureDevice")
             ?? throw new InvalidOperationException("NativeXuAudioProbe CaptureDevice type not found.");
         var device = Activator.CreateInstance(deviceType)
             ?? throw new InvalidOperationException("Failed to create NativeXuAudioProbe CaptureDevice.");

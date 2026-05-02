@@ -4,11 +4,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>ecctl</AssemblyName>
+    <AssemblyName>ssctl</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\ElgatoCapture\Models\AutomationCommandKind.cs" Link="Models\AutomationCommandKind.cs" />
+    <Compile Include="..\..\Sussudio\Models\AutomationCommandKind.cs" Link="Models\AutomationCommandKind.cs" />
     <Compile Include="..\Common\**\*.cs" Link="Common\%(RecursiveDir)%(Filename)%(Extension)" />
   </ItemGroup>
 </Project>

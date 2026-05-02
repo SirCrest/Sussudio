@@ -5,7 +5,7 @@ static partial class Program
 {
     private static Task DisplayFormatters_FormatSourceHdr_MapsKnownAndUnknownStates()
     {
-        var formatterType = RequireType("ElgatoCapture.DisplayFormatters");
+        var formatterType = RequireType("Sussudio.DisplayFormatters");
         var formatSourceHdr = formatterType.GetMethod(
             "FormatSourceHdr",
             BindingFlags.Public | BindingFlags.Static,

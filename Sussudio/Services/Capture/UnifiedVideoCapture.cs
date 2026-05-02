@@ -2,16 +2,16 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Audio;
-using ElgatoCapture.Services.Flashback;
-using ElgatoCapture.Services.Gpu;
-using ElgatoCapture.Services.Preview;
-using ElgatoCapture.Services.Recording;
-using ElgatoCapture.Services.Runtime;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Models;
+using Sussudio.Services.Audio;
+using Sussudio.Services.Flashback;
+using Sussudio.Services.Gpu;
+using Sussudio.Services.Preview;
+using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture.Services.Capture;
+namespace Sussudio.Services.Capture;
 
 internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
 {

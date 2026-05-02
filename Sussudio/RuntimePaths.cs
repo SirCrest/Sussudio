@@ -4,11 +4,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 
-namespace ElgatoCapture;
+namespace Sussudio;
 
 public static class RuntimePaths
 {
-    private const string LogRootEnvVar = "ELGATOCAPTURE_LOG_ROOT";
+    private const string LogRootEnvVar = "SUSSUDIO_LOG_ROOT";
     private static readonly Lazy<string> RepoRoot = new(ResolveRepoRoot, LazyThreadSafetyMode.ExecutionAndPublication);
     private static readonly Lazy<string> RepoTempRoot = new(
         () => EnsureDirectory(Path.Combine(RepoRoot.Value, "temp")),
@@ -40,7 +40,7 @@ public static class RuntimePaths
 
         // Non-repo scenario: keep logs in a stable per-user location.
         var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        return EnsureDirectory(Path.Combine(localAppData, "ElgatoCapture", "logs"));
+        return EnsureDirectory(Path.Combine(localAppData, "Sussudio", "logs"));
     }
 
     private static string ResolveRepoRoot()
@@ -161,14 +161,14 @@ public static class RuntimePaths
                 return true;
             }
 
-            if (File.Exists(Path.Combine(full, "ElgatoCapture.slnx")) ||
-                File.Exists(Path.Combine(full, "ElgatoCapture.sln")))
+            if (File.Exists(Path.Combine(full, "Sussudio.slnx")) ||
+                File.Exists(Path.Combine(full, "Sussudio.sln")))
             {
                 repoRoot = full;
                 return true;
             }
 
-            if (File.Exists(Path.Combine(full, "ElgatoCapture.csproj")))
+            if (File.Exists(Path.Combine(full, "Sussudio.csproj")))
             {
                 repoRoot = current.Parent?.FullName ?? full;
                 return true;

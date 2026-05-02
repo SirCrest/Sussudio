@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 
-namespace ElgatoCapture;
+namespace Sussudio;
 
 [JsonSourceGenerationOptions(WriteIndented = false)]
 [JsonSerializable(typeof(CaptureHealthSnapshot))]

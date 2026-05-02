@@ -5,10 +5,10 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Recording;
+using Sussudio.Models;
+using Sussudio.Services.Recording;
 
-namespace ElgatoCapture.Services.Runtime;
+namespace Sussudio.Services.Runtime;
 
 internal static class FfmpegRuntimeLocator
 {

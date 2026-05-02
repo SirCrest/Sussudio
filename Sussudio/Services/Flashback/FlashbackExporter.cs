@@ -6,13 +6,13 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 using FFmpeg.AutoGen;
-using ElgatoCapture.Services.Audio;
-using ElgatoCapture.Services.Preview;
-using ElgatoCapture.Services.Recording;
+using Sussudio.Services.Audio;
+using Sussudio.Services.Preview;
+using Sussudio.Services.Recording;
 
-namespace ElgatoCapture.Services.Flashback;
+namespace Sussudio.Services.Flashback;
 
 /// <summary>
 /// Exports a time range from a single .ts flashback file by remuxing to .mp4.

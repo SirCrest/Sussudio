@@ -4,18 +4,18 @@ using System.Threading.Tasks;
 
 static partial class Program
 {
-    private static async Task EcctlCommandHandlers_RouteCoreCommandGroups()
+    private static async Task SsctlCommandHandlers_RouteCoreCommandGroups()
     {
-        var assemblyPath = Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll");
-        var ecctlAssembly = LoadToolAssembly(assemblyPath);
-        var transportType = ecctlAssembly.GetType("EcCtl.PipeTransport")
+        var assemblyPath = Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll");
+        var ssctlAssembly = LoadToolAssembly(assemblyPath);
+        var transportType = ssctlAssembly.GetType("EcCtl.PipeTransport")
             ?? throw new InvalidOperationException("EcCtl.PipeTransport type not found.");
-        var commandHandlersType = ecctlAssembly.GetType("EcCtl.CommandHandlers")
+        var commandHandlersType = ssctlAssembly.GetType("EcCtl.CommandHandlers")
             ?? throw new InvalidOperationException("EcCtl.CommandHandlers type not found.");
         var executeAsync = commandHandlersType.GetMethod("ExecuteAsync", BindingFlags.Public | BindingFlags.Static)
             ?? throw new InvalidOperationException("EcCtl.CommandHandlers.ExecuteAsync not found.");
 
-        var devicePipeName = $"ecctl-device-audio-{Guid.NewGuid():N}";
+        var devicePipeName = $"ssctl-device-audio-{Guid.NewGuid():N}";
         var deviceTransport = Activator.CreateInstance(transportType, devicePipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for device command test.");
         var deviceArguments = new List<string> { "device", "audio-select", "Synthetic Mic" };
@@ -34,7 +34,7 @@ static partial class Program
         // Auth token is null when not configured via env var
         AssertEqual("Synthetic Mic", deviceRequest.GetProperty("payload").GetProperty("audioDeviceName").GetString(), "device audio-select payload key");
 
-        var previewPipeName = $"ecctl-preview-{Guid.NewGuid():N}";
+        var previewPipeName = $"ssctl-preview-{Guid.NewGuid():N}";
         var previewTransport = Activator.CreateInstance(transportType, previewPipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for preview command test.");
         var previewArguments = new List<string> { "preview", "start" };
@@ -52,7 +52,7 @@ static partial class Program
         AssertEqual(16, previewRequest.GetProperty("command").GetInt32(), "preview start command id");
         AssertEqual(true, previewRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(), "preview start payload enabled");
 
-        var flashbackPipeName = $"ecctl-flashback-{Guid.NewGuid():N}";
+        var flashbackPipeName = $"ssctl-flashback-{Guid.NewGuid():N}";
         var flashbackTransport = Activator.CreateInstance(transportType, flashbackPipeName, (int?)null)
             ?? throw new InvalidOperationException("Failed to create PipeTransport for flashback command test.");
         var flashbackArguments = new List<string> { "flashback", "off" };
@@ -70,7 +70,7 @@ static partial class Program
         AssertEqual(47, flashbackRequest.GetProperty("command").GetInt32(), "flashback off command id");
         AssertEqual(false, flashbackRequest.GetProperty("payload").GetProperty("enabled").GetBoolean(), "flashback off payload enabled");
 
-        var commandHandlersSource = ReadRepoFile("tools/ecctl/CommandHandlers.cs")
+        var commandHandlersSource = ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n");
         AssertContains(commandHandlersSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
         AssertContains(commandHandlersSource, "return HandleSimpleCommandAsync(context, \"FlashbackAction\", playPayload, includeData: true);");

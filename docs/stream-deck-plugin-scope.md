@@ -2,18 +2,18 @@
 
 ## What It Is
 
-A Stream Deck plugin that controls ElgatoCapture via the existing named pipe
+A Stream Deck plugin that controls Sussudio via the existing named pipe
 automation server. No changes to the main app — the pipe protocol already
 exposes everything needed.
 
 ## Transport
 
-- Named pipe: `ElgatoCaptureAutomation`
+- Named pipe: `SussudioAutomation`
 - JSON line protocol: one `NamedPipeClientStream` connection per command
 - UTF-8 encoding, newline-delimited request/response
 - Request: `{"command": <int>, "correlationId": "<guid>", "authToken": "<token-or-null>", "payload": {...}}`
 - Response: `{"Success": bool, "Status": "ok|error|not_ready", "Data": {...}, "Snapshot": {...}}`
-- If `ELGATOCAPTURE_AUTOMATION_TOKEN` is configured for the app, every command
+- If `SUSSUDIO_AUTOMATION_TOKEN` is configured for the app, every command
   must include the matching `authToken`. Use the same envelope shape as
   `AutomationPipeProtocol.CreateRequestEnvelope`.
 - Retry on `Status: "not_ready"` using `RetryAfterMs` hint
@@ -24,13 +24,13 @@ Reference implementation: `tools/Common/AutomationPipeClient.cs` with
 
 ## Authentication
 
-- App token environment variable: `ELGATOCAPTURE_AUTOMATION_TOKEN`
+- App token environment variable: `SUSSUDIO_AUTOMATION_TOKEN`
 - If the app is launched with a token, every request must include the matching
   top-level `authToken`.
 - If no token is configured, local automation is available only when the app
   can create the explicit per-user pipe security boundary. If that boundary
   cannot be established, automation is disabled instead of opening a default
-  security pipe; configure `ELGATOCAPTURE_AUTOMATION_TOKEN` to allow the
+  security pipe; configure `SUSSUDIO_AUTOMATION_TOKEN` to allow the
   token-required fallback mode.
 - Store the token in connection settings, not per-action settings.
 - Use `Authenticate` during startup to validate saved connection settings.
@@ -47,7 +47,7 @@ Two approaches:
    interop on Windows.
 2. **.NET** — Use `StreamDeckToolkit` or raw WebSocket. Native
    `NamedPipeClientStream` for pipe comms. Can share PipeTransport code from
-   ecctl directly. Recommended given the existing .NET codebase.
+   ssctl directly. Recommended given the existing .NET codebase.
 
 ## Actions (Stream Deck Buttons)
 
@@ -104,8 +104,8 @@ minimized. Use a single shared poll — don't poll per-button.
 com.elgato.capture/
   manifest.json          — plugin metadata, action definitions
   bin/
-    ElgatoCaptureSD.exe  — .NET 8 plugin process (or index.js for Node)
-    PipeTransport.cs     — copy from ecctl or shared lib
+    SussudioSD.exe  — .NET 8 plugin process (or index.js for Node)
+    PipeTransport.cs     — copy from ssctl or shared lib
   images/
     preview-on.svg
     preview-off.svg
@@ -131,8 +131,8 @@ com.elgato.capture/
 - **Screenshot**: output directory override (default: app's output path)
 - **Status Display**: which fields to show (resolution, codec, FPS, HDR)
 - **Set Codec**: which codecs to cycle through
-- **Connection**: pipe name override (default: `ElgatoCaptureAutomation`) and
-  optional auth token, normally sourced from `ELGATOCAPTURE_AUTOMATION_TOKEN`
+- **Connection**: pipe name override (default: `SussudioAutomation`) and
+  optional auth token, normally sourced from `SUSSUDIO_AUTOMATION_TOKEN`
 
 ## Error Handling
 
@@ -158,9 +158,9 @@ com.elgato.capture/
 ## Dependencies on Main App
 
 None beyond honoring the existing pipe auth contract. The pipe server and
-command protocol are stable and already consumed by three clients (ecctl,
+command protocol are stable and already consumed by three clients (ssctl,
 McpServer, AutomationClient). The plugin is client #4. If the app is launched
-with `ELGATOCAPTURE_AUTOMATION_TOKEN`, the plugin must send the same token in
+with `SUSSUDIO_AUTOMATION_TOKEN`, the plugin must send the same token in
 the request envelope. Tier 3's device selection may benefit from a dedicated
 `GetDeviceList` command if `GetCaptureOptions` is too heavy for frequent
 polling, but that's an optimization, not a blocker.

@@ -6,7 +6,7 @@ static partial class Program
 {
     private static Task MainViewModelAutomation_RoutesPreviewVolumePersistenceThroughSaveHook()
     {
-        var vmType = RequireType("ElgatoCapture.ViewModels.MainViewModel");
+        var vmType = RequireType("Sussudio.ViewModels.MainViewModel");
 
         // SavePreviewVolume must exist as the persistence hook
         var savePreviewVolume = vmType.GetMethod(
@@ -37,11 +37,11 @@ static partial class Program
 
     private static Task MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate()
     {
-        var automationText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Automation.cs")
+        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
             .Replace("\r\n", "\n");
-        var captureText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Capture.cs")
+        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
-        var dispatcherText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationCommandDispatcher.cs")
+        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureText, "internal Task SetRecordingDesiredStateAsync");
@@ -65,7 +65,7 @@ static partial class Program
 
     private static Task MainViewModelAutomation_UsesAsyncFlashbackAndProbeSurface()
     {
-        var automationInterfaceType = RequireType("ElgatoCapture.Services.Automation.IAutomationViewModel");
+        var automationInterfaceType = RequireType("Sussudio.Services.Automation.IAutomationViewModel");
         AssertEqual(
             false,
             automationInterfaceType.GetProperty("IsMicrophoneEnabled") != null,
@@ -76,33 +76,33 @@ static partial class Program
         AssertTaskReturningMethod(
             automationInterfaceType,
             "GetFlashbackSegmentsAsync",
-            typeof(IReadOnlyList<>).MakeGenericType(RequireType("ElgatoCapture.Models.FlashbackSegmentInfo")));
+            typeof(IReadOnlyList<>).MakeGenericType(RequireType("Sussudio.Models.FlashbackSegmentInfo")));
         AssertTaskReturningMethod(
             automationInterfaceType,
             "ProbeVideoSourceAsync",
-            RequireType("ElgatoCapture.Models.VideoSourceProbeResult"));
+            RequireType("Sussudio.Models.VideoSourceProbeResult"));
         AssertTaskReturningMethod(
             automationInterfaceType,
             "ProbePreviewColorAsync",
-            RequireType("ElgatoCapture.Models.PreviewColorProbeResult"));
+            RequireType("Sussudio.Models.PreviewColorProbeResult"));
 
-        var interfaceText = ReadRepoFile("ElgatoCapture/Services/Automation/IAutomationViewModel.cs")
+        var interfaceText = ReadRepoFile("Sussudio/Services/Automation/IAutomationViewModel.cs")
             .Replace("\r\n", "\n");
-        var dispatcherText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationCommandDispatcher.cs")
+        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
-        var automationText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Automation.cs")
+        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
             .Replace("\r\n", "\n");
-        var viewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs")
+        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
-        var pipeServerText = ReadRepoFile("ElgatoCapture/Services/Automation/NamedPipeAutomationServer.cs")
+        var pipeServerText = ReadRepoFile("Sussudio/Services/Automation/NamedPipeAutomationServer.cs")
             .Replace("\r\n", "\n");
-        var captureText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Capture.cs")
+        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
-        var deviceManagementText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.DeviceManagement.cs")
+        var deviceManagementText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.DeviceManagement.cs")
             .Replace("\r\n", "\n");
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(interfaceText, "bool FlashbackPlay();");
@@ -241,9 +241,9 @@ static partial class Program
 
     private static Task DiagnosticsSnapshotRefresh_IsSerializedForRecordingResponses()
     {
-        var diagnosticsText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationDiagnosticsHub.cs")
+        var diagnosticsText = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs")
             .Replace("\r\n", "\n");
-        var dispatcherText = ReadRepoFile("ElgatoCapture/Services/Automation/AutomationCommandDispatcher.cs")
+        var dispatcherText = ReadRepoFile("Sussudio/Services/Automation/AutomationCommandDispatcher.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(diagnosticsText, "private readonly SemaphoreSlim _refreshGate = new(1, 1);");
@@ -447,7 +447,7 @@ static partial class Program
         AssertContains(diagnosticsText, "if (recentRendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&\n            recentRendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)");
         AssertDoesNotContain(diagnosticsText, "rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||\n            previewRuntime.DisplayCadenceSlowFramePercent > 1.0");
 
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
@@ -551,7 +551,7 @@ static partial class Program
         AssertContains(captureServiceText, "raw_percent={rawPercent:0.###} percent={percent:0.###}");
         AssertContains(captureServiceText, "try\n            {\n                innerProgress?.Report(progress);\n            }\n            catch (Exception ex)\n            {\n                Logger.Log($\"FLASHBACK_EXPORT_PROGRESS_FORWARD_WARN id={exportId} type={ex.GetType().Name} msg='{ex.Message}'\");\n            }");
 
-        var flashbackExporterText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+        var flashbackExporterText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
         AssertContains(flashbackExporterText, "if (request.Segments is { Count: > 0 })");
         AssertContains(flashbackExporterText, "var useSegmentTimeline = segment.StartPts.HasValue");
@@ -559,7 +559,7 @@ static partial class Program
         AssertContains(flashbackExporterText, "ResolveSegmentBoundaryTimestampRepairUs(");
         AssertContains(flashbackExporterText, "FLASHBACK_EXPORT_SEGMENT_PTS_REPAIR");
 
-        var sourceReaderText = ReadRepoFile("ElgatoCapture/Services/Capture/MfSourceReaderVideoCapture.cs")
+        var sourceReaderText = ReadRepoFile("Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs")
             .Replace("\r\n", "\n");
         AssertContains(sourceReaderText, "Keep source cadence state coherent with diagnostics snapshots");
         AssertContains(sourceReaderText, "lock (_cadenceLock)");
@@ -880,44 +880,44 @@ static partial class Program
         AssertContains(diagnosticSessionText, "(!(runFlashbackPlayback || runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackRotatedExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0)");
         AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-playback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-encoder-cycle\" or \"flashback-export-playback\" or \"flashback-segment-playback\" or \"flashback-range-export\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-rotated-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-settings-deferred\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
 
-        var ecctlProgramText = ReadRepoFile("tools/ecctl/Program.cs")
+        var ssctlProgramText = ReadRepoFile("tools/ssctl/Program.cs")
             .Replace("\r\n", "\n");
-        var ecctlCommandHandlersText = ReadRepoFile("tools/ecctl/CommandHandlers.cs")
+        var ssctlCommandHandlersText = ReadRepoFile("tools/ssctl/CommandHandlers.cs")
             .Replace("\r\n", "\n");
         var mcpDiagnosticSessionText = ReadRepoFile("tools/McpServer/Tools/DiagnosticSessionTools.cs")
             .Replace("\r\n", "\n");
-        AssertContains(ecctlProgramText, "flashback-export-playback");
-        AssertContains(ecctlProgramText, "flashback-playback");
-        AssertContains(ecctlCommandHandlersText, "flashback-export-playback");
-        AssertContains(ecctlCommandHandlersText, "flashback-playback");
+        AssertContains(ssctlProgramText, "flashback-export-playback");
+        AssertContains(ssctlProgramText, "flashback-playback");
+        AssertContains(ssctlCommandHandlersText, "flashback-export-playback");
+        AssertContains(ssctlCommandHandlersText, "flashback-playback");
         AssertContains(mcpDiagnosticSessionText, "flashback-export-playback");
         AssertContains(mcpDiagnosticSessionText, "flashback-playback");
-        AssertContains(ecctlProgramText, "flashback-segment-playback");
-        AssertContains(ecctlCommandHandlersText, "flashback-segment-playback");
+        AssertContains(ssctlProgramText, "flashback-segment-playback");
+        AssertContains(ssctlCommandHandlersText, "flashback-segment-playback");
         AssertContains(mcpDiagnosticSessionText, "flashback-segment-playback");
-        AssertContains(ecctlProgramText, "flashback-encoder-cycle");
-        AssertContains(ecctlCommandHandlersText, "flashback-encoder-cycle");
+        AssertContains(ssctlProgramText, "flashback-encoder-cycle");
+        AssertContains(ssctlCommandHandlersText, "flashback-encoder-cycle");
         AssertContains(mcpDiagnosticSessionText, "flashback-encoder-cycle");
-        AssertContains(ecctlProgramText, "flashback-range-export");
-        AssertContains(ecctlCommandHandlersText, "flashback-range-export");
+        AssertContains(ssctlProgramText, "flashback-range-export");
+        AssertContains(ssctlCommandHandlersText, "flashback-range-export");
         AssertContains(mcpDiagnosticSessionText, "flashback-range-export");
-        AssertContains(ecctlProgramText, "flashback-disable-during-export");
-        AssertContains(ecctlCommandHandlersText, "flashback-disable-during-export");
+        AssertContains(ssctlProgramText, "flashback-disable-during-export");
+        AssertContains(ssctlCommandHandlersText, "flashback-disable-during-export");
         AssertContains(mcpDiagnosticSessionText, "flashback-disable-during-export");
-        AssertContains(ecctlProgramText, "flashback-rotated-export");
-        AssertContains(ecctlCommandHandlersText, "flashback-rotated-export");
+        AssertContains(ssctlProgramText, "flashback-rotated-export");
+        AssertContains(ssctlCommandHandlersText, "flashback-rotated-export");
         AssertContains(mcpDiagnosticSessionText, "flashback-rotated-export");
-        AssertContains(ecctlProgramText, "flashback-preview-cycle");
-        AssertContains(ecctlCommandHandlersText, "flashback-preview-cycle");
+        AssertContains(ssctlProgramText, "flashback-preview-cycle");
+        AssertContains(ssctlCommandHandlersText, "flashback-preview-cycle");
         AssertContains(mcpDiagnosticSessionText, "flashback-preview-cycle");
-        AssertContains(ecctlProgramText, "flashback-recording-preview-cycle");
-        AssertContains(ecctlCommandHandlersText, "flashback-recording-preview-cycle");
+        AssertContains(ssctlProgramText, "flashback-recording-preview-cycle");
+        AssertContains(ssctlCommandHandlersText, "flashback-recording-preview-cycle");
         AssertContains(mcpDiagnosticSessionText, "flashback-recording-preview-cycle");
-        AssertContains(ecctlProgramText, "flashback-recording-settings-deferred");
-        AssertContains(ecctlCommandHandlersText, "flashback-recording-settings-deferred");
+        AssertContains(ssctlProgramText, "flashback-recording-settings-deferred");
+        AssertContains(ssctlCommandHandlersText, "flashback-recording-settings-deferred");
         AssertContains(mcpDiagnosticSessionText, "flashback-recording-settings-deferred");
-        AssertContains(ecctlProgramText, "flashback-recording-export-rejected");
-        AssertContains(ecctlCommandHandlersText, "flashback-recording-export-rejected");
+        AssertContains(ssctlProgramText, "flashback-recording-export-rejected");
+        AssertContains(ssctlCommandHandlersText, "flashback-recording-export-rejected");
         AssertContains(mcpDiagnosticSessionText, "flashback-recording-export-rejected");
 
         return Task.CompletedTask;
@@ -947,7 +947,7 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertDoesNotContain(pipeClientText, "AlignResponseTimeoutWithServerRequest");
 
-        var protocolType = RequireType("ElgatoCapture.Tools.AutomationPipeProtocol");
+        var protocolType = RequireType("Sussudio.Tools.AutomationPipeProtocol");
         var getDefaultResponseTimeout = protocolType.GetMethod(
             "GetDefaultResponseTimeout",
             BindingFlags.Static | BindingFlags.NonPublic)
@@ -976,7 +976,7 @@ static partial class Program
 
     private static Task MainViewModelCapture_RecordingFailuresPropagateToCallers()
     {
-        var captureText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Capture.cs")
+        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureText, "Logger.LogException(ex);");
@@ -1002,9 +1002,9 @@ static partial class Program
 
     private static Task MainWindowClose_CancelsCloseUntilRecordingStopCompletes()
     {
-        var windowCtorText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs")
+        var windowCtorText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
-        var windowManagementText = ReadRepoFile("ElgatoCapture/MainWindow.WindowManagement.cs")
+        var windowManagementText = ReadRepoFile("Sussudio/MainWindow.WindowManagement.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(windowCtorText, "appWindow.Closing += MainWindow_Closing;");
@@ -1023,9 +1023,9 @@ static partial class Program
 
     private static Task ExternalProcessProbes_UseBoundedProcessSupervisor()
     {
-        var ffmpegText = ReadRepoFile("ElgatoCapture/Services/Runtime/FfmpegRuntimeLocator.cs")
+        var ffmpegText = ReadRepoFile("Sussudio/Services/Runtime/FfmpegRuntimeLocator.cs")
             .Replace("\r\n", "\n");
-        var hdrText = ReadRepoFile("ElgatoCapture/Services/Recording/HdrValidationRunner.cs")
+        var hdrText = ReadRepoFile("Sussudio/Services/Recording/HdrValidationRunner.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(ffmpegText, "private const int ProbeTimeoutMs = 10_000;");
@@ -1042,7 +1042,7 @@ static partial class Program
 
     private static Task RecordingStop_PropagatesUnifiedVideoStopFailure()
     {
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "Unified video recording stop failed");
@@ -1055,7 +1055,7 @@ static partial class Program
 
     private static Task MainWindowScreenshot_CompletesOnDispatcherFailureAndCancellation()
     {
-        var windowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs")
+        var windowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
         var method = ExtractTextBetween(
             windowText,
@@ -1076,11 +1076,11 @@ static partial class Program
 
     private static Task PreviewStopCompatibilityOverloads_ArePreserved()
     {
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
-        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
-        var viewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Capture.cs")
+        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)");
@@ -1103,8 +1103,8 @@ static partial class Program
 
     private static Task PreviewStopApiSurface_HasNoDefaultLiteralAmbiguity()
     {
-        AssertPreviewStopSurface("ElgatoCapture.Services.Capture.CaptureService");
-        AssertPreviewStopSurface("ElgatoCapture.Services.Capture.CaptureSessionCoordinator");
+        AssertPreviewStopSurface("Sussudio.Services.Capture.CaptureService");
+        AssertPreviewStopSurface("Sussudio.Services.Capture.CaptureSessionCoordinator");
         return Task.CompletedTask;
     }
 
@@ -1148,9 +1148,9 @@ static partial class Program
 
     private static Task EmergencyRecordingStop_DoesNotDispatchBackToBlockedUiThread()
     {
-        var appText = ReadRepoFile("ElgatoCapture/App.xaml.cs")
+        var appText = ReadRepoFile("Sussudio/App.xaml.cs")
             .Replace("\r\n", "\n");
-        var captureText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Capture.cs")
+        var captureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureText, "internal Task StopRecordingForEmergencyAsync");
@@ -1167,9 +1167,9 @@ static partial class Program
 
     private static Task FlashbackBufferManager_CleansStaleSessionDirectories()
     {
-        var bufferText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var bufferText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
-        var playbackText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var playbackText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(bufferText, "private static readonly TimeSpan StaleSessionMinAge = TimeSpan.FromHours(12);");

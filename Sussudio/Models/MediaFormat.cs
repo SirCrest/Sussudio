@@ -1,6 +1,6 @@
 using System;
 
-namespace ElgatoCapture.Models;
+namespace Sussudio.Models;
 
 public class MediaFormat
 {

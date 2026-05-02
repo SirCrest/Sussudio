@@ -7,7 +7,7 @@ static partial class Program
 {
     private static Task RecordingIntegritySummary_DefaultsAreExplicit()
     {
-        var summaryType = RequireType("ElgatoCapture.Models.RecordingIntegritySummary");
+        var summaryType = RequireType("Sussudio.Models.RecordingIntegritySummary");
         var notStarted = summaryType.GetProperty("NotStarted", BindingFlags.Public | BindingFlags.Static)?.GetValue(null)
             ?? throw new InvalidOperationException("RecordingIntegritySummary.NotStarted missing.");
 
@@ -29,8 +29,8 @@ static partial class Program
     {
         foreach (var typeName in new[]
         {
-            "ElgatoCapture.Models.CaptureRuntimeSnapshot",
-            "ElgatoCapture.Models.AutomationSnapshot"
+            "Sussudio.Models.CaptureRuntimeSnapshot",
+            "Sussudio.Models.AutomationSnapshot"
         })
         {
             var snapshotType = RequireType(typeName);
@@ -95,19 +95,19 @@ static partial class Program
     {
         var unifiedText = System.IO.File.ReadAllText(System.IO.Path.Combine(
             GetRepoRoot(),
-            "ElgatoCapture",
+            "Sussudio",
             "Services",
             "Capture",
             "UnifiedVideoCapture.cs"));
         var snapshotsText = System.IO.File.ReadAllText(System.IO.Path.Combine(
             GetRepoRoot(),
-            "ElgatoCapture",
+            "Sussudio",
             "Services",
             "Capture",
             "CaptureService.Snapshots.cs"));
         var serviceText = System.IO.File.ReadAllText(System.IO.Path.Combine(
             GetRepoRoot(),
-            "ElgatoCapture",
+            "Sussudio",
             "Services",
             "Capture",
             "CaptureService.cs"));
@@ -123,9 +123,9 @@ static partial class Program
 
     private static Task SharedFormatter_RendersRecordingIntegrity()
     {
-        var toolAssembly = LoadToolAssembly(System.IO.Path.Combine("tools", "ecctl", "bin", "Debug", "net8.0", "ecctl.dll"));
-        var formatterType = toolAssembly.GetType("ElgatoCapture.Tools.AutomationSnapshotFormatter")
-            ?? throw new InvalidOperationException("ElgatoCapture.Tools.AutomationSnapshotFormatter type not found.");
+        var toolAssembly = LoadToolAssembly(System.IO.Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var formatterType = toolAssembly.GetType("Sussudio.Tools.AutomationSnapshotFormatter")
+            ?? throw new InvalidOperationException("Sussudio.Tools.AutomationSnapshotFormatter type not found.");
         var formatSnapshot = formatterType.GetMethod("FormatSnapshot", BindingFlags.NonPublic | BindingFlags.Static)
             ?? throw new InvalidOperationException("AutomationSnapshotFormatter.FormatSnapshot not found.");
 
@@ -157,7 +157,7 @@ static partial class Program
         double avSyncDriftMs,
         double encoderAvSyncDriftMs)
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var counterType = serviceType.GetNestedType("RecordingIntegrityCounterSnapshot", BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("RecordingIntegrityCounterSnapshot missing.");
         var audioCounterType = serviceType.GetNestedType("RecordingAudioIntegrityCounterSnapshot", BindingFlags.NonPublic)

@@ -7,13 +7,13 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 using FFmpeg.AutoGen;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Flashback;
-using ElgatoCapture.Services.Runtime;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Flashback;
+using Sussudio.Services.Runtime;
 
-namespace ElgatoCapture.Services.Recording;
+namespace Sussudio.Services.Recording;
 
 public sealed class LibAvRecordingSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder, ICudaVideoFrameEncoder
 {

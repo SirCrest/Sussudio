@@ -11,7 +11,7 @@ static partial class Program
 
     private static Task ParallelMjpegDecodePipeline_ComputeTimingMetrics_CalculatesCorrectly()
     {
-        var pipelineType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var method = pipelineType.GetMethod("ComputeTimingMetrics",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ComputeTimingMetrics not found.");
@@ -38,7 +38,7 @@ static partial class Program
 
     private static Task ParallelMjpegDecodePipeline_ComputeTimingMetrics_P95Calculation()
     {
-        var pipelineType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var method = pipelineType.GetMethod("ComputeTimingMetrics",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ComputeTimingMetrics not found.");
@@ -67,7 +67,7 @@ static partial class Program
 
     private static Task ParallelMjpegDecodePipeline_CopyRing_ExtractsCorrectWindow()
     {
-        var pipelineType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var method = pipelineType.GetMethod("CopyRing",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CopyRing not found.");
@@ -93,7 +93,7 @@ static partial class Program
 
     private static Task ParallelMjpegDecodePipeline_GetElapsedMilliseconds_ComputesCorrectly()
     {
-        var pipelineType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var method = pipelineType.GetMethod("GetElapsedMilliseconds",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("GetElapsedMilliseconds not found.");
@@ -120,7 +120,7 @@ static partial class Program
 
     private static Task ParallelMjpegDecodePipeline_GetRemainingTimeout_ReturnsCorrectTimeSpan()
     {
-        var pipelineType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var method = pipelineType.GetMethod("GetRemainingTimeout",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("GetRemainingTimeout not found.");
@@ -144,7 +144,7 @@ static partial class Program
 
     private static Task ParallelMjpegDecodePipeline_PipelineTimingMetrics_HasExpectedProperties()
     {
-        var metricsType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
+        var metricsType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline+PipelineTimingMetrics");
 
         var expectedProps = new[]
         {
@@ -168,7 +168,7 @@ static partial class Program
 
     private static Task SoftwareMjpegDecoder_Properties_ExposeCorrectDimensions()
     {
-        var decoderType = RequireType("ElgatoCapture.Services.Gpu.SoftwareMjpegDecoder");
+        var decoderType = RequireType("Sussudio.Services.Gpu.SoftwareMjpegDecoder");
 
         // Verify the type has Width, Height, Nv12Size properties
         var widthProp = decoderType.GetProperty("Width", BindingFlags.Public | BindingFlags.Instance);
@@ -184,7 +184,7 @@ static partial class Program
 
     private static Task ParallelMjpegDecodePipeline_SharedReorder_DoesNotSynthesizeRecordingSkips()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
         AssertContains(source, "MJPEG_PIPELINE_STARTUP_DROP");
         AssertContains(source, "HasJpegStartOfImage");
         AssertContains(source, "MJPEG_REORDER_STRICT_WAIT");
@@ -218,7 +218,7 @@ static partial class Program
 
     private static Task ParallelMjpegDecodePipeline_DropsStartupNonJpegBeforeSequencing()
     {
-        var source = ReadRepoFile("ElgatoCapture/Services/Gpu/ParallelMjpegDecodePipeline.cs");
+        var source = ReadRepoFile("Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs");
         var guardIndex = source.IndexOf("!HasJpegStartOfImage(jpegData)", StringComparison.Ordinal);
         var sequenceIndex = source.IndexOf("Interlocked.Increment(ref _nextDispatchSeq)", StringComparison.Ordinal);
 
@@ -233,7 +233,7 @@ static partial class Program
 
     private static Task ParallelMjpegDecodePipeline_KnownLossSignalsFatalInsteadOfSkipping()
     {
-        var pipelineType = RequireType("ElgatoCapture.Services.Gpu.ParallelMjpegDecodePipeline");
+        var pipelineType = RequireType("Sussudio.Services.Gpu.ParallelMjpegDecodePipeline");
         var pipeline = RuntimeHelpers.GetUninitializedObject(pipelineType);
         using var fatalSignaled = new ManualResetEventSlim(false);
         using var emitSignal = new AutoResetEvent(false);

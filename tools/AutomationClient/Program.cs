@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
-using ElgatoCapture.Tools;
+using Sussudio.Tools;
 
 internal static class Program
 {
@@ -240,7 +240,7 @@ internal static class Program
         Console.WriteLine();
         Console.WriteLine("Options:");
         Console.WriteLine("  --command, -c             Required command name or numeric id");
-        Console.WriteLine("  --pipe, -p                Pipe name (default: ElgatoCaptureAutomation)");
+        Console.WriteLine("  --pipe, -p                Pipe name (default: SussudioAutomation)");
         Console.WriteLine("  --token, -t               Auth token when server token is configured");
         Console.WriteLine("  --payload                 JSON object payload (default: {})");
         Console.WriteLine("  --payload-base64          UTF-8 JSON object payload encoded as base64");

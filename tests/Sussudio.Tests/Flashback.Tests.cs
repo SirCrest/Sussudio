@@ -9,7 +9,7 @@ static partial class Program
 
     private static Task FlashbackBufferOptions_MaxDiskBytes_ScalesWithDuration()
     {
-        var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+        var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
 
         // 57 MB/s safety rate = 57 * 1024 * 1024 = 59768832 bytes/sec
         const long safetyBytesPerSecond = 57L * 1024 * 1024;
@@ -45,7 +45,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_ResolveFrameRateParts_ParsesFractionalRates()
     {
-        var sinkType = RequireType("ElgatoCapture.Services.Flashback.FlashbackEncoderSink");
+        var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
         var method = sinkType.GetMethod("ResolveFrameRateParts", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveFrameRateParts not found.");
 
@@ -92,11 +92,11 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_MapCodecName_MapsFormats()
     {
-        var sinkType = RequireType("ElgatoCapture.Services.Flashback.FlashbackEncoderSink");
+        var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
         var method = sinkType.GetMethod("MapCodecName", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("MapCodecName not found.");
 
-        var formatType = RequireType("ElgatoCapture.Models.RecordingFormat");
+        var formatType = RequireType("Sussudio.Models.RecordingFormat");
 
         var hevc = method.Invoke(null, new[] { Enum.Parse(formatType, "HevcMp4") })?.ToString();
         AssertContains(hevc ?? "", "hevc");
@@ -109,8 +109,8 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_CountersDefaultToZero()
     {
-        var sinkType = RequireType("ElgatoCapture.Services.Flashback.FlashbackEncoderSink");
-        var optionsType = RequireType("ElgatoCapture.Models.FlashbackBufferOptions");
+        var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
+        var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
         var ctor = sinkType.GetConstructor(new[] { optionsType })
             ?? throw new InvalidOperationException("FlashbackEncoderSink(FlashbackBufferOptions) constructor not found.");
         var sink = ctor.Invoke(new object?[] { null })!;
@@ -126,7 +126,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_StartFailureRollsBackStartedState()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
 
         var startCatchBlock = ExtractTextBetween(
@@ -154,7 +154,7 @@ static partial class Program
 
     private static Task FlashbackExporter_CleanupOrphanedTempFiles_HandlesNonexistentDirectory()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var cleanup = exporterType.GetMethod("CleanupOrphanedTempFiles", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CleanupOrphanedTempFiles not found.");
 
@@ -166,7 +166,7 @@ static partial class Program
 
     private static Task FlashbackExporter_CleanupOrphanedTempFiles_DeletesTempFiles()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var cleanup = exporterType.GetMethod("CleanupOrphanedTempFiles", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CleanupOrphanedTempFiles not found.");
 
@@ -215,10 +215,10 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_InitialState_IsLive()
     {
-        var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+        var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
 
-        var controllerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackPlaybackController");
+        var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
         var ctor = controllerType.GetConstructor(
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
             binder: null,
@@ -241,10 +241,10 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_CommandsNoOpBeforeInitialize()
     {
-        var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+        var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
 
-        var controllerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackPlaybackController");
+        var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
         var ctor = controllerType.GetConstructor(
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
             binder: null,
@@ -272,8 +272,8 @@ static partial class Program
 
     private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenInputFileNotFound()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var requestType = RequireType("ElgatoCapture.Models.FlashbackExportRequest");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var requestType = RequireType("Sussudio.Models.FlashbackExportRequest");
         var exporter = Activator.CreateInstance(exporterType)!;
         var exportMethod = exporterType.GetMethod("ExportAsync", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("ExportAsync not found.");
@@ -302,8 +302,8 @@ static partial class Program
 
     private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathEmpty()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var requestType = RequireType("ElgatoCapture.Models.FlashbackExportRequest");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var requestType = RequireType("Sussudio.Models.FlashbackExportRequest");
         var exporter = Activator.CreateInstance(exporterType)!;
         var exportMethod = exporterType.GetMethod("ExportAsync", BindingFlags.Public | BindingFlags.Instance)!;
 
@@ -338,8 +338,8 @@ static partial class Program
 
     private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenOutputPathIsDirectory()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var requestType = RequireType("ElgatoCapture.Models.FlashbackExportRequest");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var requestType = RequireType("Sussudio.Models.FlashbackExportRequest");
         var exporter = Activator.CreateInstance(exporterType)!;
         var exportMethod = exporterType.GetMethod("ExportAsync", BindingFlags.Public | BindingFlags.Instance)!;
 
@@ -378,8 +378,8 @@ static partial class Program
 
     private static async Task FlashbackExporter_ExportSegmentsAsync_ReturnsFailure_WhenNoSegments()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
         var exporter = Activator.CreateInstance(exporterType)!;
         var exportMethod = exporterType.GetMethod("ExportSegmentsAsync", BindingFlags.NonPublic | BindingFlags.Instance)
             ?? throw new InvalidOperationException("ExportSegmentsAsync not found.");
@@ -405,7 +405,7 @@ static partial class Program
 
     private static Task FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private readonly object _lifetimeSync = new();");
@@ -441,10 +441,10 @@ static partial class Program
 
     private static async Task FlashbackExporter_RejectsNullRequests()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var requestType = RequireType("ElgatoCapture.Models.FlashbackExportRequest");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var requestType = RequireType("Sussudio.Models.FlashbackExportRequest");
         var exporter = Activator.CreateInstance(exporterType)!;
-        var exportMethod = exporterType.GetMethod("ExportAsync", new[] { requestType, typeof(IProgress<>).MakeGenericType(RequireType("ElgatoCapture.Models.ExportProgress")), typeof(CancellationToken) })
+        var exportMethod = exporterType.GetMethod("ExportAsync", new[] { requestType, typeof(IProgress<>).MakeGenericType(RequireType("Sussudio.Models.ExportProgress")), typeof(CancellationToken) })
             ?? throw new InvalidOperationException("FlashbackExporter.ExportAsync(request) not found.");
 
         var task = exportMethod.Invoke(exporter, new object?[]
@@ -462,7 +462,7 @@ static partial class Program
 
     private static Task FlashbackExporter_OutputPathValidation_ReturnsFailure()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "if (!TryValidateOutputPath(outputPath, out var normalizedOutputPath, out var outputPathFailure))\n        {\n            Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{outputPathFailure}'\");\n            return FinalizeResult.Failure(outputPath, outputPathFailure);\n        }\n        outputPath = normalizedOutputPath;");
@@ -483,7 +483,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_EXPORT_PATH_COMPARE_WARN");
         AssertContains(sourceText, "FLASHBACK_EXPORT_PROGRESS_ESTIMATE_WARN");
 
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var validateOutputPath = exporterType.GetMethod("TryValidateOutputPath", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("TryValidateOutputPath not found.");
         var args = new object?[] { ".\\flashback-relative-output.mp4", null, null };
@@ -500,7 +500,7 @@ static partial class Program
 
     private static Task FlashbackExportFailureClassifier_MapsCommandFailures()
     {
-        var captureServiceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var captureServiceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = captureServiceType.GetMethod(
             "ClassifyFlashbackExportFailureKind",
             BindingFlags.Static | BindingFlags.NonPublic)
@@ -600,8 +600,8 @@ static partial class Program
 
     private static Task FlashbackExporter_RejectsInvalidExportRanges()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_invalid_range_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
         var inputPath = Path.Combine(tempDir, "input.ts");
@@ -672,7 +672,7 @@ static partial class Program
 
     private static Task FlashbackExportRejectedDiagnostics_PreserveAttemptedRange()
     {
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export range is empty or invalid.\", fileInPoint, fileOutPoint);");
@@ -689,8 +689,8 @@ static partial class Program
 
     private static Task FlashbackExporter_RejectsEmptySegmentPaths()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_empty_segment_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
 
@@ -760,14 +760,14 @@ static partial class Program
 
     private static Task FlashbackExporter_RejectsDuplicateSegmentPaths()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
         AssertContains(sourceText, "var duplicateSegmentIndex = FindDuplicateSegmentPathIndex(segments);");
         AssertContains(sourceText, "Flashback export failed: duplicate segment path at index {duplicateSegmentIndex}.");
         AssertContains(sourceText, "private static int FindDuplicateSegmentPathIndex(IReadOnlyList<FlashbackExportSegment> segments)");
 
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_duplicate_segment_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
 
@@ -826,7 +826,7 @@ static partial class Program
 
     private static Task FlashbackExporter_ProgressCallbacksAreBestEffort()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(sourceText, "progress?.Report(new ExportProgress");
@@ -880,7 +880,7 @@ static partial class Program
 
     private static Task FlashbackExporter_ReleasesBufferedSegmentPacketsOnFailures()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private static void FreeBufferedPackets(List<IntPtr> bufferedPackets, List<int>? bufferedStreamIndices = null)");
@@ -931,7 +931,7 @@ static partial class Program
 
     private static Task FlashbackExporter_TimestampConversionsAreSaturating()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(sourceText, "TotalSeconds * ffmpeg.AV_TIME_BASE");
@@ -974,7 +974,7 @@ static partial class Program
 
     private static Task FlashbackExporter_InputStreamCountsAreBounded()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private const int MaxSupportedInputStreams = 64;");
@@ -997,7 +997,7 @@ static partial class Program
 
     private static Task FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
         var missingVideoBlock = ExtractTextBetween(
@@ -1030,8 +1030,8 @@ static partial class Program
 
     private static Task FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -1076,8 +1076,8 @@ static partial class Program
 
     private static Task FlashbackExporter_CancellationWinsBeforeValidation()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
         using var cts = new CancellationTokenSource();
         cts.Cancel();
 
@@ -1134,8 +1134,8 @@ static partial class Program
 
     private static Task FlashbackExporter_ReturnsFailure_WhenSegmentFilesAreGone()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_missing_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
 
@@ -1187,7 +1187,7 @@ static partial class Program
 
     private static Task FlashbackExporter_DisposeTimeoutDoesNotTearDownActiveNativeState()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackExporter.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
         var disposeBlock = ExtractTextBetween(
@@ -1218,8 +1218,8 @@ static partial class Program
 
     private static Task FlashbackExporter_RejectsOutputPathThatOverwritesSource()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_paths_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
 
@@ -1326,7 +1326,7 @@ static partial class Program
 
     private static Task FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
         var finalizeTemp = exporterType.GetMethod("TryFinalizeTempOutputFile", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("TryFinalizeTempOutputFile not found.");
 
@@ -1361,8 +1361,8 @@ static partial class Program
 
     private static Task FlashbackExporter_RejectsBlockedTempOutputPathBeforeNativeExport()
     {
-        var exporterType = RequireType("ElgatoCapture.Services.Flashback.FlashbackExporter");
-        var segmentType = RequireType("ElgatoCapture.Models.FlashbackExportSegment");
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var segmentType = RequireType("Sussudio.Models.FlashbackExportSegment");
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_temp_blocked_{Guid.NewGuid():N}");
         Directory.CreateDirectory(tempDir);
 
@@ -1438,10 +1438,10 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_InOutPoints_DefaultToUnset()
     {
-        var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+        var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
 
-        var controllerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackPlaybackController");
+        var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
         var ctor = controllerType.GetConstructor(
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
             binder: null,
@@ -1485,7 +1485,7 @@ static partial class Program
         AssertNotNull(clearMethod, "FlashbackPlaybackController.ClearInOutPoints");
         clearMethod!.Invoke(controller, null);
 
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
         AssertContains(
             sourceText,
@@ -1497,7 +1497,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_InOutPoints_ClearInvalidCounterpart()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "var outTicks = Interlocked.Read(ref _outPointTicks);\n        if (outTicks != long.MinValue && outTicks <= pos.Ticks)\n        {\n            OutPoint = null;\n            Logger.Log(\"FLASHBACK_PLAYBACK_CLEAR_OUT invalid_range\");\n        }");
@@ -1515,7 +1515,7 @@ static partial class Program
 
         // UI must call the explicit-position overload so the marker matches the
         // visual playhead, not the controller's keyframe-snapped PlaybackPosition.
-        var mainWindowFlashback = ReadRepoFile("ElgatoCapture/MainWindow.Flashback.cs")
+        var mainWindowFlashback = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
         AssertContains(mainWindowFlashback, "ViewModel.FlashbackSetInPointAt(ViewModel.FlashbackPlaybackPosition)");
         AssertContains(mainWindowFlashback, "ViewModel.FlashbackSetOutPointAt(ViewModel.FlashbackPlaybackPosition)");
@@ -1525,7 +1525,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_InOutPointSettersNormalizeMarkers()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "set => Interlocked.Exchange(ref _inPointTicks, value.HasValue ? NormalizeMarkerPosition(value.Value).Ticks : long.MinValue);");
@@ -1537,10 +1537,10 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_InOutPointChangesStopAfterDispose()
     {
-        var bufferManagerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackBufferManager");
+        var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
         var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
 
-        var controllerType = RequireType("ElgatoCapture.Services.Flashback.FlashbackPlaybackController");
+        var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
         using var controller = (IDisposable)Activator.CreateInstance(controllerType, new[] { bufferManager })!;
 
         var setInPoint = controllerType.GetMethod("SetInPoint", BindingFlags.Public | BindingFlags.Instance)
@@ -1558,7 +1558,7 @@ static partial class Program
         AssertEqual(TimeSpan.Zero, (TimeSpan?)GetPropertyValue(controller, "InPoint"), "Disposed clear should preserve existing in point");
         AssertEqual(null, GetPropertyValue(controller, "OutPoint"), "Disposed set out should not create a marker");
 
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SET_IN_SKIP reason=disposed");
         AssertContains(sourceText, "SetLastCommandFailure(\"disposed:SetInPoint\");");
@@ -1572,7 +1572,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_ClampPosition_BoundsMarkersToBufferedDuration()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "var bufferDuration = _bufferManager.BufferedDuration;\n        var inTicks = Interlocked.Read(ref _inPointTicks);");
@@ -1590,7 +1590,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_ClampsCommandPositionsBeforeFileLookup()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
         // All three scrub-related command paths must clamp via the eviction-aware
         // overload so a long-held scrub doesn't resolve to evicted file PTS.
@@ -1603,7 +1603,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_TimestampArithmeticIsSaturating()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private static TimeSpan SaturatingAdd(TimeSpan left, TimeSpan right)");
@@ -1628,7 +1628,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_EndOfSegmentOpenFailuresSnapLive()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);");
@@ -1645,7 +1645,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_SnapLiveClearsOpenFileIdentity()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         var nearLiveBlock = ExtractTextBetween(
@@ -1686,7 +1686,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n        {\n            SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n        }");
@@ -1778,7 +1778,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_DisposeResetsGpuQueueDepth()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "ReturnRemainingGpuBuffers(_gpuQueue, ref _gpuQueueDepth);");
@@ -1883,7 +1883,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_AudioPacketsAreValidatedBeforeRent()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private const int AudioInputBlockAlignBytes = 2 * sizeof(float);");
@@ -1903,7 +1903,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private const int VideoDrainBatchLimit = 24;");
@@ -1932,7 +1932,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(_encoder.NextVideoPts / frameRate)");
@@ -1976,7 +1976,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         var pauseFromLiveBlock = ExtractTextBetween(
@@ -1998,7 +1998,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_FrameDuration_GuardsInvalidDecoderFps()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertDoesNotContain(sourceText, "TimeSpan.FromSeconds(1.0 / Math.Max(decoder.FrameRate, 1.0))");
@@ -2018,7 +2018,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         var nudgeBlock = ExtractTextBetween(
@@ -2044,7 +2044,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_SubmitFailuresReleaseDecodedFrames()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)");
@@ -2111,7 +2111,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_Fmp4ReopenRetriesAreGuarded()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeek(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)");
@@ -2180,7 +2180,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         var seekBlock = ExtractTextBetween(
@@ -2262,9 +2262,9 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_PlaybackTransitions_UseBestEffortAudioPreviewGuards()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        var wasapiPlaybackText = ReadRepoFile("ElgatoCapture/Services/Audio/WasapiAudioPlayback.cs")
+        var wasapiPlaybackText = ReadRepoFile("Sussudio/Services/Audio/WasapiAudioPlayback.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private void SafeSuppressPreviewSubmission(string operation)");
@@ -2349,7 +2349,7 @@ static partial class Program
 
     private static Task FlashbackPlaybackController_ResetClearsDecodeMetrics()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
         var resetMetricsBlock = ExtractTextBetween(
@@ -2366,7 +2366,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_DiscardedAudioFramesAreUnreffed()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
 
         var audioDecodeBlock = ExtractTextBetween(
@@ -2380,7 +2380,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_PtsConversionRejectsInvalidTimestamps()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "var pts = DecodePtsToTimeSpan(_videoFrame->pts, _videoTimeBase);");
@@ -2400,7 +2400,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_InputStreamsAndFrameSizesAreBounded()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private const int MaxSupportedInputStreams = 64;");
@@ -2429,7 +2429,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_AudioOutputBuffersAreBounded()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private const int MaxDecodedAudioFrameBytes = 16 * 1024 * 1024;");
@@ -2454,7 +2454,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_SoftwareFramePlanesAreValidated()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "if (actualFormat != AVPixelFormat.AV_PIX_FMT_NONE && actualFormat != _decodedPixelFormat)");
@@ -2483,7 +2483,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_D3D11FramesAreValidated()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "if (!TryValidateD3D11VideoFrame(clonedFrame, _videoWidth, _videoHeight, out var d3dFrameFailure))");
@@ -2498,7 +2498,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_HeldFrameCleanupIsBestEffort()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private static void ReleaseHeldFrameBestEffort(DecodedVideoFrame frame, string operation)");
@@ -2516,7 +2516,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_RejectsInitializeAfterDispose()
     {
-        var decoderType = RequireType("ElgatoCapture.Services.Flashback.FlashbackDecoder");
+        var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         using var decoder = (IDisposable)Activator.CreateInstance(decoderType)!;
         var initialize = decoderType.GetMethod("Initialize", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("FlashbackDecoder.Initialize not found.");
@@ -2532,7 +2532,7 @@ static partial class Program
         {
         }
 
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
         var initializeBlock = ExtractTextBetween(
             sourceText,
@@ -2546,7 +2546,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_ClearsAudioCallbackOnDispose()
     {
-        var decoderType = RequireType("ElgatoCapture.Services.Flashback.FlashbackDecoder");
+        var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         using var decoder = (IDisposable)Activator.CreateInstance(decoderType)!;
         var callbackProperty = decoderType.GetProperty("AudioChunkCallback", BindingFlags.Public | BindingFlags.Instance)
             ?? throw new InvalidOperationException("FlashbackDecoder.AudioChunkCallback not found.");
@@ -2560,7 +2560,7 @@ static partial class Program
 
         AssertEqual(null, callbackProperty.GetValue(decoder), "Disposed decoder clears audio callback");
 
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
         var disposeBlock = ExtractTextBetween(
             sourceText,
@@ -2574,9 +2574,9 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_RotateFailureRestoresActiveSegment()
     {
-        var sinkText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+        var sinkText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
-        var bufferText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
+        var bufferText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");
 
         var rotateBlock = ExtractTextBetween(
@@ -2609,7 +2609,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_ForceRotateRejectsFailedEncoder()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
 
         var forceRotateBlock = ExtractTextBetween(
@@ -2635,7 +2635,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_ForceRotateSkipsCompletedPendingRequest()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
 
         var loopBlock = ExtractTextBetween(
@@ -2670,7 +2670,7 @@ static partial class Program
 
     private static Task FlashbackEncoderSink_FatalSegmentRegistrationFailuresAreLogged()
     {
-        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
 
         var fatalBlock = ExtractTextBetween(
@@ -2686,9 +2686,9 @@ static partial class Program
 
     private static Task FlashbackSuppressedExceptionsUseAppLogs()
     {
-        var decoderText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackDecoder.cs")
+        var decoderText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
             .Replace("\r\n", "\n");
-        var sinkText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+        var sinkText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
             .Replace("\r\n", "\n");
 
         var openFileBlock = ExtractTextBetween(

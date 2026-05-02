@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
-using ElgatoCapture.Tools;
+using Sussudio.Tools;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;

@@ -9,7 +9,7 @@ static partial class Program
 {
     private static Task MainViewModelCapture_RoutesAudioMonitoringThroughCoordinator()
     {
-        var coordinatorType = RequireType("ElgatoCapture.Services.Capture.CaptureSessionCoordinator");
+        var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
 
         // Coordinator must expose the audio monitoring API surface
         var setPreviewVolume = coordinatorType.GetMethod(
@@ -29,7 +29,7 @@ static partial class Program
         AssertNotNull(startVideoPreview, "CaptureSessionCoordinator.StartVideoPreviewAsync");
 
         // The command kind enum must include UpdateAudioMonitoring
-        var commandKindType = RequireType("ElgatoCapture.Models.AutomationCommandKind");
+        var commandKindType = RequireType("Sussudio.Models.AutomationCommandKind");
         AssertEqual(true,
             Enum.IsDefined(commandKindType, Enum.Parse(commandKindType, "SetAudioPreviewEnabled")),
             "AutomationCommandKind.SetAudioPreviewEnabled exists");
@@ -39,7 +39,7 @@ static partial class Program
 
     private static Task MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator()
     {
-        var coordinatorType = RequireType("ElgatoCapture.Services.Capture.CaptureSessionCoordinator");
+        var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
         foreach (var methodName in new[]
         {
             "SetFlashbackEnabledAsync",
@@ -72,18 +72,18 @@ static partial class Program
         var viewModelFiles = ReadMainViewModelCodeFiles();
         var viewModelText = string.Join("\n", viewModelFiles.Values);
         var automationText = viewModelFiles["MainViewModel.Automation.cs"];
-        var rawViewModelText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.cs")
+        var rawViewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs")
             .Replace("\r\n", "\n");
-        var rawAutomationText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Automation.cs")
+        var rawAutomationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs")
             .Replace("\r\n", "\n");
-        var rawCaptureText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Capture.cs")
+        var rawCaptureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
             .Replace("\r\n", "\n");
         var settingsText = viewModelFiles["MainViewModel.Settings.cs"];
-        var rawSettingsText = ReadRepoFile("ElgatoCapture/ViewModels/MainViewModel.Settings.cs")
+        var rawSettingsText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Settings.cs")
             .Replace("\r\n", "\n");
-        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(coordinatorText, "if (controller is { IsDisposed: false, IsInitialized: true, State: not FlashbackPlaybackState.Disabled })\n        {\n            return true;\n        }");
@@ -263,11 +263,11 @@ static partial class Program
 
     private static Task MainWindowFlashbackScrub_EndsOnReleaseCancelAndCaptureLost()
     {
-        var flashbackWindowText = ReadRepoFile("ElgatoCapture/MainWindow.Flashback.cs")
+        var flashbackWindowText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
-        var fullScreenWindowText = ReadRepoFile("ElgatoCapture/MainWindow.FullScreen.cs")
+        var fullScreenWindowText = ReadRepoFile("Sussudio/MainWindow.FullScreen.cs")
             .Replace("\r\n", "\n");
-        var xamlText = ReadRepoFile("ElgatoCapture/MainWindow.xaml")
+        var xamlText = ReadRepoFile("Sussudio/MainWindow.xaml")
             .Replace("\r\n", "\n");
 
         AssertContains(xamlText, "PointerReleased=\"FlashbackScrubArea_PointerReleased\"");
@@ -316,9 +316,9 @@ static partial class Program
 
     private static Task MainWindowFlashbackToggle_RollsBackUiStateOnFailure()
     {
-        var flashbackWindowText = ReadRepoFile("ElgatoCapture/MainWindow.Flashback.cs")
+        var flashbackWindowText = ReadRepoFile("Sussudio/MainWindow.Flashback.cs")
             .Replace("\r\n", "\n");
-        var mainWindowText = ReadRepoFile("ElgatoCapture/MainWindow.xaml.cs")
+        var mainWindowText = ReadRepoFile("Sussudio/MainWindow.xaml.cs")
             .Replace("\r\n", "\n");
 
         AssertContains(mainWindowText, "private bool _suppressFlashbackEnabledToggle;");
@@ -338,10 +338,10 @@ static partial class Program
 
     private static Task CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange()
     {
-        var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("ElgatoCapture/Services/Capture/CaptureService.cs");
-        var captureServiceRawText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/Services/Capture/CaptureService.cs");
+        var captureServiceRawText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
-        var coordinatorText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureSessionCoordinator.cs")
+        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
         var startVideoPreview = ExtractTextBetween(
             captureServiceText,
@@ -480,11 +480,11 @@ static partial class Program
     private static Task CaptureService_FlashbackLifecycleLogs_UseOutcomeNames()
     {
         var flashbackTexts = Directory
-            .GetFiles(Path.Combine(GetRepoRoot(), "ElgatoCapture", "Services"), "*.cs", SearchOption.AllDirectories)
+            .GetFiles(Path.Combine(GetRepoRoot(), "Sussudio", "Services"), "*.cs", SearchOption.AllDirectories)
             .Where(path => File.ReadAllText(path).Contains("FLASHBACK_", StringComparison.Ordinal))
             .Select(path => File.ReadAllText(path).Replace("\r\n", "\n"))
             .ToArray();
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
         var flashbackText = string.Join("\n", flashbackTexts);
 
@@ -577,10 +577,10 @@ static partial class Program
         AssertContains(captureServiceText, "NVENC preset '");
         // Snapshot field must be populated from the resolver so downstream consumers
         // (verifier, automation, UI) all observe the same downgrade state.
-        var snapshotsText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.Snapshots.cs")
+        var snapshotsText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.Snapshots.cs")
             .Replace("\r\n", "\n");
         AssertContains(snapshotsText, "FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),");
-        var contractsText = ReadRepoFile("ElgatoCapture/Models/AutomationContracts.cs")
+        var contractsText = ReadRepoFile("Sussudio/Models/AutomationContracts.cs")
             .Replace("\r\n", "\n");
         AssertContains(contractsText, "public string? FlashbackCodecDowngradeReason { get; init; }");
         AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
@@ -603,7 +603,7 @@ static partial class Program
 
     private static Task CaptureService_FlashbackEnableDisable_PreservesPreviewState()
     {
-        var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
         var setFlashbackEnabled = ExtractTextBetween(
             captureServiceText,
@@ -675,7 +675,7 @@ static partial class Program
     private static Dictionary<string, string> ReadMainViewModelCodeFiles()
     {
         return Directory
-            .GetFiles(Path.Combine(GetRepoRoot(), "ElgatoCapture", "ViewModels"), "MainViewModel*.cs")
+            .GetFiles(Path.Combine(GetRepoRoot(), "Sussudio", "ViewModels"), "MainViewModel*.cs")
             .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(
                 path => Path.GetFileName(path),

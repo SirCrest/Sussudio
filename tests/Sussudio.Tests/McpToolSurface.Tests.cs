@@ -80,7 +80,7 @@ static partial class Program
             await WriteJsonRpcLineAsync(
                     process,
                     """
-                    {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ElgatoCapture.Tests","version":"1.0"}}}
+                    {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"Sussudio.Tests","version":"1.0"}}}
                     """,
                     cts.Token)
                 .ConfigureAwait(false);

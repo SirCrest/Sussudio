@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
-using ElgatoCapture.Services.Preview;
-using ElgatoCapture.Services.Runtime;
+using Sussudio.Services.Preview;
+using Sussudio.Services.Runtime;
 
-namespace ElgatoCapture.Services.Capture;
+namespace Sussudio.Services.Capture;
 
 internal sealed class MjpegPreviewJitterBuffer : IDisposable
 {
@@ -159,11 +159,11 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private long _lastDisplayClockPacedPresentTick;
     private string _lastDropReason = string.Empty;
     private int _disposed;
-    private readonly string _mmcssTask = Environment.GetEnvironmentVariable("ELGATOCAPTURE_PREVIEW_JITTER_MMCSS_TASK") ?? "Playback";
-    private readonly int _mmcssPriority = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_JITTER_MMCSS_PRIORITY", 1, -2, 2);
-    private readonly bool _displayClockPacingEnabled = EnvironmentHelpers.GetIntFromEnv("ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_PACING", 0, 0, 1) != 0;
-    private readonly double _displayClockSubmitDelayMs = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_SUBMIT_DELAY_MS", 0.25, 0.0, 4.0);
-    private readonly double _displayClockMinLeadMs = EnvironmentHelpers.GetDoubleFromEnv("ELGATOCAPTURE_PREVIEW_DISPLAY_CLOCK_MIN_LEAD_MS", 2.0, 0.25, 6.0);
+    private readonly string _mmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_PREVIEW_JITTER_MMCSS_TASK") ?? "Playback";
+    private readonly int _mmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_JITTER_MMCSS_PRIORITY", 1, -2, 2);
+    private readonly bool _displayClockPacingEnabled = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_DISPLAY_CLOCK_PACING", 0, 0, 1) != 0;
+    private readonly double _displayClockSubmitDelayMs = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PREVIEW_DISPLAY_CLOCK_SUBMIT_DELAY_MS", 0.25, 0.0, 4.0);
+    private readonly double _displayClockMinLeadMs = EnvironmentHelpers.GetDoubleFromEnv("SUSSUDIO_PREVIEW_DISPLAY_CLOCK_MIN_LEAD_MS", 2.0, 0.25, 6.0);
 
     public MjpegPreviewJitterBuffer(
         double fps,
@@ -180,19 +180,19 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         _fps = fps;
         _frameIntervalTicks = Math.Max(1, (long)Math.Round(Stopwatch.Frequency / fps));
         _minAdaptiveTargetDepth = EnvironmentHelpers.GetIntFromEnv(
-            "ELGATOCAPTURE_PREVIEW_JITTER_MIN_TARGET_DEPTH",
+            "SUSSUDIO_PREVIEW_JITTER_MIN_TARGET_DEPTH",
             DefaultMinAdaptiveTargetDepth,
             1,
             60);
         _maxAdaptiveTargetDepth = Math.Max(
             _minAdaptiveTargetDepth,
             EnvironmentHelpers.GetIntFromEnv(
-                "ELGATOCAPTURE_PREVIEW_JITTER_MAX_TARGET_DEPTH",
+                "SUSSUDIO_PREVIEW_JITTER_MAX_TARGET_DEPTH",
                 DefaultMaxAdaptiveTargetDepth,
                 1,
                 60));
         var requestedTargetDepth = EnvironmentHelpers.GetIntFromEnv(
-            "ELGATOCAPTURE_PREVIEW_JITTER_TARGET_DEPTH",
+            "SUSSUDIO_PREVIEW_JITTER_TARGET_DEPTH",
             targetDepth,
             1,
             60);
@@ -200,7 +200,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         _maxDepth = Math.Max(
             _targetDepth + 1,
             EnvironmentHelpers.GetIntFromEnv(
-                "ELGATOCAPTURE_PREVIEW_JITTER_MAX_DEPTH",
+                "SUSSUDIO_PREVIEW_JITTER_MAX_DEPTH",
                 _maxAdaptiveTargetDepth + DefaultExtraQueueDepth,
                 _targetDepth + 1,
                 90));

@@ -2,9 +2,9 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using ElgatoCapture.Services.Runtime;
+using Sussudio.Services.Runtime;
 
-namespace ElgatoCapture.Services.Configuration;
+namespace Sussudio.Services.Configuration;
 
 public class UserSettings
 {
@@ -41,7 +41,7 @@ public static class SettingsService
     private static readonly object _lock = new();
 
     private static string GetSettingsDirectory()
-        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "ElgatoCapture");
+        => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Sussudio");
 
     private static string GetSettingsFilePath()
         => Path.Combine(GetSettingsDirectory(), "settings.json");

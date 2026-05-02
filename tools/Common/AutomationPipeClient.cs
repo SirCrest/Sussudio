@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ElgatoCapture.Tools;
+namespace Sussudio.Tools;
 
 internal static class AutomationPipeClient
 {

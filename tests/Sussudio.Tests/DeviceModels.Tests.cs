@@ -7,7 +7,7 @@ static partial class Program
 {
     private static Task AudioInputDevice_DisplayName_UsesNameOrUnknownFallback()
     {
-        var deviceType = RequireType("ElgatoCapture.Models.AudioInputDevice");
+        var deviceType = RequireType("Sussudio.Models.AudioInputDevice");
         var idProperty = RequirePublicProperty(deviceType, "Id", typeof(string), SetterExpectation.Required);
         var nameProperty = RequirePublicProperty(deviceType, "Name", typeof(string), SetterExpectation.Required);
         var displayNameProperty = RequirePublicProperty(deviceType, "DisplayName", typeof(string), SetterExpectation.Forbidden);
@@ -34,7 +34,7 @@ static partial class Program
 
     private static Task AudioLevelEventArgs_ExposesPeakRmsAndClippedState()
     {
-        var argsType = RequireType("ElgatoCapture.Models.AudioLevelEventArgs");
+        var argsType = RequireType("Sussudio.Models.AudioLevelEventArgs");
         if (!typeof(EventArgs).IsAssignableFrom(argsType))
         {
             throw new InvalidOperationException("AudioLevelEventArgs must derive from EventArgs.");
@@ -63,8 +63,8 @@ static partial class Program
 
     private static Task CaptureDevice_DisplayNameAndDefaults_PreserveDeviceMetadata()
     {
-        var deviceType = RequireType("ElgatoCapture.Models.CaptureDevice");
-        var mediaFormatType = RequireType("ElgatoCapture.Models.MediaFormat");
+        var deviceType = RequireType("Sussudio.Models.CaptureDevice");
+        var mediaFormatType = RequireType("Sussudio.Models.MediaFormat");
         var supportedFormatsType = typeof(ObservableCollection<>).MakeGenericType(mediaFormatType);
         var idProperty = RequirePublicProperty(deviceType, "Id", typeof(string), SetterExpectation.Required);
         var nameProperty = RequirePublicProperty(deviceType, "Name", typeof(string), SetterExpectation.Required);

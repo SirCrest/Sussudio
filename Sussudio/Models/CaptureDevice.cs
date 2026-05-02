@@ -1,6 +1,6 @@
 using System.Collections.ObjectModel;
 
-namespace ElgatoCapture.Models;
+namespace Sussudio.Models;
 
 public class CaptureDevice
 {

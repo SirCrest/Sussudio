@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ElgatoCapture.Services.Runtime;
+namespace Sussudio.Services.Runtime;
 
 public sealed class ProcessSpec
 {

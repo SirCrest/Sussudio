@@ -1,4 +1,4 @@
-namespace ElgatoCapture.Services.Automation;
+namespace Sussudio.Services.Automation;
 
 internal static class AutomationPipeSecurityPolicy
 {

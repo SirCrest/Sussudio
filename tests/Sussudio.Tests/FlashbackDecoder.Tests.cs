@@ -7,7 +7,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_CalculateFrameBufferSize_Nv12()
     {
-        var decoderType = RequireType("ElgatoCapture.Services.Flashback.FlashbackDecoder");
+        var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         var method = decoderType.GetMethod("CalculateFrameBufferSize",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CalculateFrameBufferSize not found.");
@@ -27,7 +27,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_CalculateFrameBufferSize_P010()
     {
-        var decoderType = RequireType("ElgatoCapture.Services.Flashback.FlashbackDecoder");
+        var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         var method = decoderType.GetMethod("CalculateFrameBufferSize",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("CalculateFrameBufferSize not found.");
@@ -50,7 +50,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_DefaultState_IsNotOpenAndNotInitialized()
     {
-        var decoderType = RequireType("ElgatoCapture.Services.Flashback.FlashbackDecoder");
+        var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         var decoder = Activator.CreateInstance(decoderType)!;
 
         var isOpenProp = decoderType.GetProperty("IsOpen",
@@ -65,7 +65,7 @@ static partial class Program
 
     private static Task FlashbackDecoder_DisposeBeforeInitialize_DoesNotThrow()
     {
-        var decoderType = RequireType("ElgatoCapture.Services.Flashback.FlashbackDecoder");
+        var decoderType = RequireType("Sussudio.Services.Flashback.FlashbackDecoder");
         var decoder = Activator.CreateInstance(decoderType)!;
 
         // Dispose via IDisposable

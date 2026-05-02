@@ -1,4 +1,4 @@
-namespace ElgatoCapture.Models;
+namespace Sussudio.Models;
 
 public enum AudioPathMode
 {

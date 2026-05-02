@@ -8,13 +8,13 @@ static partial class Program
 
     private static Task CaptureService_ResolveEncoderCodecName_MapsFormats()
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveEncoderCodecName",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveEncoderCodecName not found.");
 
-        var settingsType = RequireType("ElgatoCapture.Models.CaptureSettings");
-        var formatType = RequireType("ElgatoCapture.Models.RecordingFormat");
+        var settingsType = RequireType("Sussudio.Models.CaptureSettings");
+        var formatType = RequireType("Sussudio.Models.RecordingFormat");
 
         // HEVC → hevc_nvenc
         var hevcSettings = Activator.CreateInstance(settingsType)!;
@@ -38,13 +38,13 @@ static partial class Program
 
     private static Task CaptureService_ResolveEncoderOutputPixelFormat_DistinguishesHdr()
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveEncoderOutputPixelFormat",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveEncoderOutputPixelFormat not found.");
 
-        var contextType = RequireType("ElgatoCapture.Services.Recording.RecordingContext");
-        var settingsType = RequireType("ElgatoCapture.Models.CaptureSettings");
+        var contextType = RequireType("Sussudio.Services.Recording.RecordingContext");
+        var settingsType = RequireType("Sussudio.Models.CaptureSettings");
 
         // HDR active context → yuv420p10le
         var hdrContext = RuntimeHelpers.GetUninitializedObject(contextType);
@@ -66,7 +66,7 @@ static partial class Program
 
     private static Task CaptureService_ResolveTelemetryAgeSeconds_ComputesCorrectly()
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveTelemetryAgeSeconds",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveTelemetryAgeSeconds not found.");
@@ -88,7 +88,7 @@ static partial class Program
 
     private static Task CaptureService_ResolveHdrWarmupState_ReturnsCorrectStates()
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveHdrWarmupState",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveHdrWarmupState not found.");
@@ -113,7 +113,7 @@ static partial class Program
 
     private static Task CaptureService_NormalizeObservedPixelFormat_NormalizesCorrectly()
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("NormalizeObservedPixelFormat",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("NormalizeObservedPixelFormat not found.");
@@ -144,13 +144,13 @@ static partial class Program
 
     private static Task CaptureService_ResolveSourceTelemetryBackend_MapsOrigins()
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveSourceTelemetryBackend",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveSourceTelemetryBackend not found.");
 
-        var telemetryType = RequireType("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
-        var originType = RequireType("ElgatoCapture.Models.SourceTelemetryOrigin");
+        var telemetryType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
+        var originType = RequireType("Sussudio.Models.SourceTelemetryOrigin");
 
         // NativeXu origin
         var nativeXuTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);
@@ -171,14 +171,14 @@ static partial class Program
 
     private static Task CaptureService_ResolveEncoderVideoProfile_MapsFormatsAndHdr()
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveEncoderVideoProfile",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveEncoderVideoProfile not found.");
 
-        var contextType = RequireType("ElgatoCapture.Services.Recording.RecordingContext");
-        var settingsType = RequireType("ElgatoCapture.Models.CaptureSettings");
-        var formatType = RequireType("ElgatoCapture.Models.RecordingFormat");
+        var contextType = RequireType("Sussudio.Services.Recording.RecordingContext");
+        var settingsType = RequireType("Sussudio.Models.CaptureSettings");
+        var formatType = RequireType("Sussudio.Models.RecordingFormat");
 
         // HDR → main10 regardless of format
         var hdrCtx = RuntimeHelpers.GetUninitializedObject(contextType);
@@ -208,7 +208,7 @@ static partial class Program
 
     private static Task CaptureService_ComputeTickAge_ReturnsCorrectValues()
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ComputeTickAge",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ComputeTickAge not found.");
@@ -229,14 +229,14 @@ static partial class Program
 
     private static Task CaptureService_ResolveTelemetryAlignment_DetectsMismatches()
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveTelemetryAlignment",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveTelemetryAlignment not found.");
 
-        var settingsType = RequireType("ElgatoCapture.Models.CaptureSettings");
-        var telemetryType = RequireType("ElgatoCapture.Models.SourceSignalTelemetrySnapshot");
-        var availabilityType = RequireType("ElgatoCapture.Models.SourceTelemetryAvailability");
+        var settingsType = RequireType("Sussudio.Models.CaptureSettings");
+        var telemetryType = RequireType("Sussudio.Models.SourceSignalTelemetrySnapshot");
+        var availabilityType = RequireType("Sussudio.Models.SourceTelemetryAvailability");
 
         // Aligned case: telemetry matches settings
         var alignedTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);
@@ -295,12 +295,12 @@ static partial class Program
 
     private static Task CaptureService_ResolveSourceTelemetryCircuitState_ReturnsCorrectState()
     {
-        var serviceType = RequireType("ElgatoCapture.Services.Capture.CaptureService");
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
         var method = serviceType.GetMethod("ResolveSourceTelemetryCircuitState",
             BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("ResolveSourceTelemetryCircuitState not found.");
 
-        var availabilityType = RequireType("ElgatoCapture.Models.SourceTelemetryAvailability");
+        var availabilityType = RequireType("Sussudio.Models.SourceTelemetryAvailability");
 
         // Available + not suppressed → Closed
         var closed = method.Invoke(null, new object[] { Enum.Parse(availabilityType, "Available"), false })?.ToString();

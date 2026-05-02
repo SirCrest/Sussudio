@@ -5,7 +5,7 @@ static partial class Program
 {
     private static Task RecordingStats_ComputesTotalsAndPreservesEstimateFlag()
     {
-        var statsType = RequireType("ElgatoCapture.Models.RecordingStats");
+        var statsType = RequireType("Sussudio.Models.RecordingStats");
         AssertEqual(true, statsType.IsValueType, "RecordingStats value type");
         AssertEqual(true, statsType.IsDefined(typeof(System.Runtime.CompilerServices.IsReadOnlyAttribute), inherit: false), "RecordingStats readonly metadata");
 

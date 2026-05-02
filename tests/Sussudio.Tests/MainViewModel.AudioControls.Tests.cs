@@ -5,7 +5,7 @@ static partial class Program
 {
     private static Task MainViewModelAudioControls_MapsAnalogGainCurveAndClamps()
     {
-        var viewModelType = RequireType("ElgatoCapture.ViewModels.MainViewModel");
+        var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
         var mapPercent = viewModelType.GetMethod("MapPercentToGainByte", BindingFlags.Static | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("MainViewModel.MapPercentToGainByte was not found.");
         var mapByte = viewModelType.GetMethod("MapGainByteToPercent", BindingFlags.Static | BindingFlags.NonPublic)
@@ -30,13 +30,13 @@ static partial class Program
 
     private static Task MainViewModelAudioControls_PreserveRoutingPersistenceAndDeviceGuards()
     {
-        var viewModelType = RequireType("ElgatoCapture.ViewModels.MainViewModel");
+        var viewModelType = RequireType("Sussudio.ViewModels.MainViewModel");
         AssertNotNull(viewModelType.GetProperty("SuppressVolumeSave", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SuppressVolumeSave");
         AssertNotNull(viewModelType.GetProperty("VolumeSaveOverride", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.VolumeSaveOverride");
         AssertNotNull(viewModelType.GetMethod("SavePreviewVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SavePreviewVolume");
         AssertNotNull(viewModelType.GetMethod("SaveMicrophoneVolume", BindingFlags.Instance | BindingFlags.NonPublic), "MainViewModel.SaveMicrophoneVolume");
 
-        var audioCode = ReadRepoCodeWithoutCommentsOrStrings("ElgatoCapture/ViewModels/MainViewModel.AudioControls.cs");
+        var audioCode = ReadRepoCodeWithoutCommentsOrStrings("Sussudio/ViewModels/MainViewModel.AudioControls.cs");
         var previewChanged = ExtractMemberCode(audioCode, "OnPreviewVolumeChanged");
         var setMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "SetMicrophoneEndpointVolume");
         var getMicrophoneEndpointVolume = ExtractMemberCode(audioCode, "GetMicrophoneEndpointVolume");

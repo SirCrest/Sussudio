@@ -7,11 +7,11 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Flashback;
-using ElgatoCapture.Services.Runtime;
+using Sussudio.Models;
+using Sussudio.Services.Flashback;
+using Sussudio.Services.Runtime;
 
-namespace ElgatoCapture.Services.Recording;
+namespace Sussudio.Services.Recording;
 
 public sealed class RecordingVerifier : IRecordingVerifier
 {

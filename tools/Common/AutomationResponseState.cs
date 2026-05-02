@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 
-namespace ElgatoCapture.Tools;
+namespace Sussudio.Tools;
 
 internal static class AutomationResponseState
 {

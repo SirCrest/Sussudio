@@ -1,4 +1,4 @@
-# ElgatoCapture Design System
+# Sussudio Design System
 
 Adapted from [shadcn/ui](https://ui.shadcn.com/) principles for WinUI 3 / XAML.
 Retains: drop shadows, teal accent color system. Eliminates: stock Fluent feel,

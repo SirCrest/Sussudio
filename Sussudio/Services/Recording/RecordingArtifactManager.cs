@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 using Windows.Storage;
-using ElgatoCapture.Services.Flashback;
-using ElgatoCapture.Services.Runtime;
+using Sussudio.Services.Flashback;
+using Sussudio.Services.Runtime;
 
-namespace ElgatoCapture.Services.Recording;
+namespace Sussudio.Services.Recording;
 
 public sealed class RecordingArtifactManager
 {

@@ -7,15 +7,15 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using ElgatoCapture.Models;
-using ElgatoCapture.Services.Runtime;
+using Sussudio.Models;
+using Sussudio.Services.Runtime;
 using Microsoft.UI.Dispatching;
 using Vortice.Direct3D;
 using Vortice.Direct3D11;
 using Vortice.DXGI;
 using Vortice.Mathematics;
 
-namespace ElgatoCapture.Services.Preview;
+namespace Sussudio.Services.Preview;
 
 internal sealed partial class D3D11PreviewRenderer
 {

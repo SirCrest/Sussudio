@@ -1,6 +1,6 @@
 # AutomationClient
 
-Small transport executable for ElgatoCapture's named-pipe automation API.
+Small transport executable for Sussudio's named-pipe automation API.
 
 ## Build
 

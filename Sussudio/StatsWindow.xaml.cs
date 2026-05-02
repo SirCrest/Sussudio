@@ -1,25 +1,25 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using WinRT.Interop;
 using Windows.Graphics;
-using ElgatoCapture.Services.Audio;
-using ElgatoCapture.Services.Automation;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Configuration;
-using ElgatoCapture.Services.Flashback;
-using ElgatoCapture.Services.Gpu;
-using ElgatoCapture.Services.Preview;
-using ElgatoCapture.Services.Recording;
-using ElgatoCapture.Services.Runtime;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Services.Audio;
+using Sussudio.Services.Automation;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Configuration;
+using Sussudio.Services.Flashback;
+using Sussudio.Services.Gpu;
+using Sussudio.Services.Preview;
+using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture;
+namespace Sussudio;
 
 public sealed partial class StatsWindow : Window
 {

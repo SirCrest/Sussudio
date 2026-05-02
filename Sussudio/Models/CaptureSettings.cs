@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 
-namespace ElgatoCapture.Models;
+namespace Sussudio.Models;
 
 public enum RecordingFormat
 {

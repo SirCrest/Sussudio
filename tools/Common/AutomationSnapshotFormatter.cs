@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 
-namespace ElgatoCapture.Tools;
+namespace Sussudio.Tools;
 
 internal static class AutomationSnapshotFormatter
 {
@@ -36,7 +36,7 @@ internal static class AutomationSnapshotFormatter
             : $"{frameRateBucket} fps ({frameRateExactDetail})";
 
         var builder = new StringBuilder();
-        builder.AppendLine("== ElgatoCapture State ==");
+        builder.AppendLine("== Sussudio State ==");
         builder.AppendLine($"Status: {Get(snapshot, "SessionState")} | {Get(snapshot, "StatusText")}");
         builder.AppendLine($"Capture Commands: pending={Get(snapshot, "CaptureCommandPendingCommands")} maxPending={Get(snapshot, "CaptureCommandMaxPendingCommands")} oldestAge={Get(snapshot, "CaptureCommandOldestPendingCommandAgeMs")}ms lastLatency={Get(snapshot, "CaptureCommandLastQueueLatencyMs")}ms maxLatency={Get(snapshot, "CaptureCommandMaxQueueLatencyMs")}ms enq={Get(snapshot, "CaptureCommandCommandsEnqueued")} done={Get(snapshot, "CaptureCommandCommandsCompleted")} fail={Get(snapshot, "CaptureCommandCommandsFailed")} cancel={Get(snapshot, "CaptureCommandCommandsCanceled")} last={Get(snapshot, "CaptureCommandLastCommand", "None")} error={Get(snapshot, "CaptureCommandLastError", "")}");
         builder.AppendLine($"Device: {Get(snapshot, "SelectedDeviceName")} ({Get(snapshot, "SelectedDeviceId")})");

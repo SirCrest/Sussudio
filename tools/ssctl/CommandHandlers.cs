@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
-using ElgatoCapture.Tools;
+using Sussudio.Tools;
 
 namespace EcCtl;
 
@@ -90,7 +90,7 @@ internal static class CommandHandlers
         var json = context.GlobalJson || ConsumeFlag(context.Rest, "--json");
         var seconds = ParseOptionalIntFlag(context.Rest, "--seconds") ?? 10;
         var pid = ParseOptionalIntFlag(context.Rest, "--pid");
-        var processName = ParseOptionalStringFlag(context.Rest, "--process") ?? "ElgatoCapture";
+        var processName = ParseOptionalStringFlag(context.Rest, "--process") ?? "Sussudio";
         var presentMonPath = ParseOptionalStringFlag(context.Rest, "--presentmon");
         var outputPath = ParseOptionalStringFlag(context.Rest, "--output");
         var swapChainAddress = ParseOptionalStringFlag(context.Rest, "--swapchain");

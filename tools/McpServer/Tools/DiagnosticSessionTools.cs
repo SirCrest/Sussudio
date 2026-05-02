@@ -1,5 +1,5 @@
 using System.ComponentModel;
-using ElgatoCapture.Tools;
+using Sussudio.Tools;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;

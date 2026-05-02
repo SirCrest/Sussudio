@@ -7,20 +7,20 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 using Microsoft.UI.Dispatching;
-using ElgatoCapture.Services.Audio;
-using ElgatoCapture.Services.Automation;
-using ElgatoCapture.Services.Capture;
-using ElgatoCapture.Services.Configuration;
-using ElgatoCapture.Services.Flashback;
-using ElgatoCapture.Services.Gpu;
-using ElgatoCapture.Services.Preview;
-using ElgatoCapture.Services.Recording;
-using ElgatoCapture.Services.Runtime;
-using ElgatoCapture.Services.Telemetry;
+using Sussudio.Services.Audio;
+using Sussudio.Services.Automation;
+using Sussudio.Services.Capture;
+using Sussudio.Services.Configuration;
+using Sussudio.Services.Flashback;
+using Sussudio.Services.Gpu;
+using Sussudio.Services.Preview;
+using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
+using Sussudio.Services.Telemetry;
 
-namespace ElgatoCapture.ViewModels;
+namespace Sussudio.ViewModels;
 
 public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDisposable, IAutomationViewModel
 {
@@ -1363,7 +1363,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
         _audioDeviceWatcher.DevicesChanged -= OnAudioDevicesChanged;
         _audioDeviceWatcher.Dispose();
         var stepTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
-            "ELGATOCAPTURE_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
+            "SUSSUDIO_VIEWMODEL_DISPOSE_STEP_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,
             1000,
             300000);
@@ -1406,7 +1406,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public void Dispose()
     {
         var disposeTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
-            "ELGATOCAPTURE_VIEWMODEL_DISPOSE_TIMEOUT_MS",
+            "SUSSUDIO_VIEWMODEL_DISPOSE_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,
             1000,
             300000);
@@ -1431,7 +1431,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     public async ValueTask DisposeAsync()
     {
         var disposeTimeoutMs = EnvironmentHelpers.GetIntFromEnv(
-            "ELGATOCAPTURE_VIEWMODEL_DISPOSE_TIMEOUT_MS",
+            "SUSSUDIO_VIEWMODEL_DISPOSE_TIMEOUT_MS",
             DefaultDisposeTimeoutMs,
             1000,
             300000);

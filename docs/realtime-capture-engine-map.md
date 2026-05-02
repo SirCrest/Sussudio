@@ -69,8 +69,8 @@ PresentMon captures, and recording-verification results as artifacts.
 ## Duplication To Collapse
 
 - Long-form formatter text still exists in both shared MCP formatting and
-  ecctl-specific formatting. The field set is test-aligned, but a future pass
-  can make ecctl delegate more of the full snapshot text to the shared
+  ssctl-specific formatting. The field set is test-aligned, but a future pass
+  can make ssctl delegate more of the full snapshot text to the shared
   formatter.
 - Some advanced counters remain available in the snapshot even when the new
   diagnostic lane fields already summarize the same subsystem. Keep them while
@@ -91,31 +91,31 @@ replacement ledger/engine path has tests and live evidence.
   fields without adding clock-domain information.
 - Delete legacy raw-copy preview paths once renderer frame-lease submission is
   proven across preview, screenshot, and Flashback playback.
-- Collapse duplicated automation formatter code once ecctl no longer needs
+- Collapse duplicated automation formatter code once ssctl no longer needs
   bespoke full-snapshot sections.
 - Demote snapshot fields that are always zero, stale, or inferred from another
   field after the new diagnostics UI has replacement values.
 
 ## High-Risk Files
 
-- `ElgatoCapture/Services/Capture/CaptureService.cs`
-- `ElgatoCapture/Services/Capture/CaptureService.Snapshots.cs`
-- `ElgatoCapture/Services/Capture/UnifiedVideoCapture.cs`
-- `ElgatoCapture/Services/Capture/MfSourceReaderVideoCapture.cs`
-- `ElgatoCapture/Services/Gpu/ParallelMjpegDecodePipeline.cs`
-- `ElgatoCapture/Services/Capture/PooledVideoFrame.cs`
-- `ElgatoCapture/Services/Capture/MjpegPreviewJitterBuffer.cs`
-- `ElgatoCapture/Services/Recording/LibAvRecordingSink.cs`
-- `ElgatoCapture/Services/Recording/LibAvEncoder.cs`
-- `ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs`
-- `ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs`
-- `ElgatoCapture/Services/Preview/D3D11PreviewRenderer.cs`
-- `ElgatoCapture/Services/Preview/D3D11PreviewRenderer.Rendering.cs`
-- `ElgatoCapture/Services/Automation/AutomationDiagnosticsHub.cs`
-- `ElgatoCapture/Services/Automation/AutomationCommandDispatcher.cs`
-- `ElgatoCapture/Models/AutomationContracts.cs`
-- `ElgatoCapture/ViewModels/MainViewModel*.cs`
-- `ElgatoCapture/MainWindow*.cs`
+- `Sussudio/Services/Capture/CaptureService.cs`
+- `Sussudio/Services/Capture/CaptureService.Snapshots.cs`
+- `Sussudio/Services/Capture/UnifiedVideoCapture.cs`
+- `Sussudio/Services/Capture/MfSourceReaderVideoCapture.cs`
+- `Sussudio/Services/Gpu/ParallelMjpegDecodePipeline.cs`
+- `Sussudio/Services/Capture/PooledVideoFrame.cs`
+- `Sussudio/Services/Capture/MjpegPreviewJitterBuffer.cs`
+- `Sussudio/Services/Recording/LibAvRecordingSink.cs`
+- `Sussudio/Services/Recording/LibAvEncoder.cs`
+- `Sussudio/Services/Flashback/FlashbackEncoderSink.cs`
+- `Sussudio/Services/Flashback/FlashbackBufferManager.cs`
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.cs`
+- `Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs`
+- `Sussudio/Services/Automation/AutomationDiagnosticsHub.cs`
+- `Sussudio/Services/Automation/AutomationCommandDispatcher.cs`
+- `Sussudio/Models/AutomationContracts.cs`
+- `Sussudio/ViewModels/MainViewModel*.cs`
+- `Sussudio/MainWindow*.cs`
 
 ## Phase 10 Status And Next Entry Point
 

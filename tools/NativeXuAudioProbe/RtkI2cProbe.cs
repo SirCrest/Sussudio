@@ -1,5 +1,5 @@
 using System.Runtime.InteropServices;
-using ElgatoCapture.Models;
+using Sussudio.Models;
 
 /// <summary>
 /// Direct P/Invoke probe for RTK_IO_x64.dll's rtk_sendI2CATCommand.

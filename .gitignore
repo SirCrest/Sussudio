@@ -38,7 +38,7 @@ AppPackages/
 # Root-level staged app builds for local testing convenience
 builds/
 latest-build/
-/ElgatoCapture.exe
+/Sussudio.exe
 
 # Claude Code local settings
 .claude/
@@ -56,7 +56,7 @@ artifacts/
 # Repo-local temp dumping ground (keep folder, ignore contents)
 temp/*
 !temp/.gitkeep
-ElgatoCapture/ffmpeg/*.dll
+Sussudio/ffmpeg/*.dll
 .desloppify/
 .duat/
 .codex/skills/duat/

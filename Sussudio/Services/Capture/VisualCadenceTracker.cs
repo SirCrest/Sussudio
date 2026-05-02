@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics;
 
-namespace ElgatoCapture.Services.Capture;
+namespace Sussudio.Services.Capture;
 
 internal sealed class VisualCadenceTracker
 {

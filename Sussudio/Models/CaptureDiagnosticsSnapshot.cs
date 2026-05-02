@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace ElgatoCapture.Models;
+namespace Sussudio.Models;
 
 /// <summary>
 /// Core capture diagnostics shared by both the lightweight diagnostics snapshot
