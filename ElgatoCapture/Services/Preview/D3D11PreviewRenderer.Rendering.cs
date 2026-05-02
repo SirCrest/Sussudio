@@ -193,6 +193,16 @@ internal sealed partial class D3D11PreviewRenderer
             }
         }
 
+        if (frame.IsHdr && !_loggedHdrShaderFallback)
+        {
+            _loggedHdrShaderFallback = true;
+            var reason = _fullscreenVS == null ? "fullscreen-VS-null"
+                : _hdrPlaneViewsUnavailable ? "hdr-plane-views-unavailable"
+                : _hdrTonemapPS == null && _hdrPassthroughPS == null ? "both-hdr-shaders-null"
+                : "hdr-shader-conditions-not-met";
+            Logger.Log($"D3D11_PREVIEW_HDR_SHADER_FALLBACK reason={reason} hdrPassthroughEnabled={Volatile.Read(ref _hdrPassthroughEnabled) != 0} hdrCapableSwapChain={_hdrCapableSwapChain}");
+        }
+
         Volatile.Write(ref _rendererMode, RendererModeVideoProcessor);
         RenderFrameWithVideoProcessor(frame);
     }

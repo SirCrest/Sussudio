@@ -56,6 +56,9 @@ internal interface IPreviewFrameSink
     /// <summary>
     /// Submit split NV12 plane textures (Y + UV). Callee calls AddRef on
     /// both COM pointers; caller may Release after return.
+    /// Pass <paramref name="isHdr"/> = true when the source content is HDR
+    /// (e.g. NVDEC NV12 output from a P010 source) so the renderer can route
+    /// the frame through the HDR shader path rather than the SDR VideoProcessor.
     /// </summary>
-    void SubmitNv12PlaneTextures(IntPtr yTexturePtr, IntPtr uvTexturePtr, int width, int height, long arrivalTick = 0);
+    void SubmitNv12PlaneTextures(IntPtr yTexturePtr, IntPtr uvTexturePtr, int width, int height, bool isHdr = false, long arrivalTick = 0);
 }

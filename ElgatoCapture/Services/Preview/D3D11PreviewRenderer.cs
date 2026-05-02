@@ -566,6 +566,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private int _sharedDeviceActive;
     private bool _loggedNv12ShaderMissing;
     private bool _loggedDirectUploadFallback;
+    private bool _loggedHdrShaderFallback;
+    private int _lastNv12IsHdr = -1; // tri-state: -1 = unset, 0 = SDR, 1 = HDR
 
     public D3D11PreviewRenderer(SwapChainPanel panel, DispatcherQueue dispatcherQueue)
     {
@@ -1103,7 +1105,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         EnqueuePendingFrame(frame);
     }
 
-    public void SubmitNv12PlaneTextures(IntPtr yTexturePtr, IntPtr uvTexturePtr, int width, int height, long arrivalTick = 0)
+    public void SubmitNv12PlaneTextures(IntPtr yTexturePtr, IntPtr uvTexturePtr, int width, int height, bool isHdr = false, long arrivalTick = 0)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1130,6 +1132,16 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             throw new InvalidOperationException("Shared D3D11 device is not active for NV12 texture submission.");
         }
 
+        // Log the first frame and any HDR/SDR transition through the NV12 plane path.
+        var hdrInt = isHdr ? 1 : 0;
+        var prev = Interlocked.Exchange(ref _lastNv12IsHdr, hdrInt);
+        if (prev != hdrInt)
+        {
+            var prevLabel = prev == -1 ? "unset" : (prev == 1 ? "HDR" : "SDR");
+            var curLabel = isHdr ? "HDR" : "SDR";
+            Logger.Log($"D3D11_PREVIEW_NV12_HDR_TRANSITION from={prevLabel} to={curLabel} pathTag=PlaneTextures");
+        }
+
         IntPtr ownedYTexturePtr = IntPtr.Zero;
         IntPtr ownedUvTexturePtr = IntPtr.Zero;
         ID3D11Texture2D? yTexture = null;
@@ -1144,7 +1156,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             ownedUvTexturePtr = uvTexturePtr;
             uvTexture = new ID3D11Texture2D(ownedUvTexturePtr);
 
-            EnqueueNv12Frame(ownedYTexturePtr, yTexture, ownedUvTexturePtr, uvTexture, width, height, arrivalTick);
+            EnqueueNv12Frame(ownedYTexturePtr, yTexture, ownedUvTexturePtr, uvTexture, width, height, isHdr, arrivalTick);
         }
         catch
         {
@@ -1171,6 +1183,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         ID3D11Texture2D uvTexture,
         int width,
         int height,
+        bool isHdr,
         long arrivalTick)
     {
         var frame = new PendingFrame(
@@ -1180,7 +1193,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             rawDataLength: 0,
             width: width,
             height: height,
-            isHdr: false,
+            isHdr: isHdr,
             arrivalTick: arrivalTick,
             d3dTextureY: yTexturePtr,
             d3dTextureUV: uvTexturePtr,
