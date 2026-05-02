@@ -233,6 +233,7 @@ public static class DiagnosticSessionRunner
         var runFlashbackLifecycle = scenario == "flashback-lifecycle";
         var runFlashbackExportConcurrent = scenario == "flashback-export-concurrent";
         var runFlashbackDisableDuringExport = scenario == "flashback-disable-during-export";
+        var runFlashbackRotatedExport = scenario == "flashback-rotated-export";
         var runFlashbackPreviewCycle = scenario == "flashback-preview-cycle";
         var runFlashbackRecording = scenario == "flashback-recording";
         var runFlashbackRecordingPreviewCycle = scenario == "flashback-recording-preview-cycle";
@@ -413,6 +414,7 @@ public static class DiagnosticSessionRunner
             }
 
             Task? flashbackDisableDuringExportTask = null;
+            Task? flashbackRotatedExportTask = null;
             Task? flashbackPreviewCycleTask = null;
             Task? flashbackRecordingPreviewCycleTask = null;
             Task<string?>? flashbackRecordingSettingsDeferredTask = null;
@@ -425,6 +427,17 @@ public static class DiagnosticSessionRunner
                     sendCommandAsync,
                     cancellationToken);
                 actions.Add("flashback disable during export started");
+            }
+
+            if (runFlashbackRotatedExport)
+            {
+                flashbackRotatedExportTask = RunFlashbackRotatedExportAsync(
+                    outputDirectory,
+                    actions,
+                    warnings,
+                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                    cancellationToken);
+                actions.Add("flashback rotated export started");
             }
 
             if (runFlashbackPreviewCycle)
@@ -549,6 +562,11 @@ public static class DiagnosticSessionRunner
             if (flashbackDisableDuringExportTask is not null)
             {
                 await flashbackDisableDuringExportTask.ConfigureAwait(false);
+            }
+
+            if (flashbackRotatedExportTask is not null)
+            {
+                await flashbackRotatedExportTask.ConfigureAwait(false);
             }
 
             if (flashbackPreviewCycleTask is not null)
@@ -774,7 +792,7 @@ public static class DiagnosticSessionRunner
             Success = commandFailureCount == 0 &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!(runFlashbackPlayback || runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0),
+                      (!(runFlashbackPlayback || runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackRotatedExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0),
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
@@ -1589,6 +1607,114 @@ public static class DiagnosticSessionRunner
         {
             warnings.Add("flashback disable during export: Flashback did not report active after re-enable");
         }
+    }
+
+    private static async Task RunFlashbackRotatedExportAsync(
+        string outputDirectory,
+        List<string> actions,
+        List<string> warnings,
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        CancellationToken cancellationToken)
+    {
+        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        {
+            warnings.Add("flashback rotated export: Flashback buffer did not become export-ready within 30s");
+            return;
+        }
+
+        var completedSegment = await WaitForFlashbackCompletedSegmentAsync(
+                sendCommandAsync,
+                TimeSpan.FromSeconds(210),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (completedSegment is null)
+        {
+            warnings.Add("flashback rotated export: no completed segment observed within 210s");
+            return;
+        }
+
+        actions.Add(
+            "flashback rotated segment observed " +
+            $"seq={completedSegment.Value.SequenceNumber} " +
+            $"startMs={completedSegment.Value.StartPtsMs} " +
+            $"endMs={completedSegment.Value.EndPtsMs}");
+
+        var exportPath = Path.Combine(outputDirectory, "flashback-rotated-export.mp4");
+        var exportResponse = await sendCommandAsync(
+                "FlashbackExport",
+                new Dictionary<string, object?> { ["seconds"] = 180, ["outputPath"] = exportPath },
+                300_000)
+            .ConfigureAwait(false);
+        actions.Add("flashback rotated export requested");
+
+        var exportMessage = AutomationSnapshotFormatter.Get(exportResponse, "Message", string.Empty);
+        if (!AutomationSnapshotFormatter.IsSuccess(exportResponse))
+        {
+            warnings.Add(
+                $"flashback rotated export: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
+            return;
+        }
+
+        var exportedSegments = TryParseFlashbackExportSegmentCount(exportMessage);
+        if (exportedSegments is null or < 2)
+        {
+            warnings.Add($"flashback rotated export: expected multi-segment export, got '{exportMessage}'");
+        }
+
+        var verifyResponse = await sendCommandAsync(
+                "VerifyFile",
+                new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                120_000)
+            .ConfigureAwait(false);
+        if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
+        {
+            warnings.Add(
+                $"flashback rotated export verification: {AutomationSnapshotFormatter.Get(verifyResponse, "Message", "verification failed")}");
+            return;
+        }
+
+        actions.Add("flashback rotated export verified");
+    }
+
+    private static int? TryParseFlashbackExportSegmentCount(string message)
+    {
+        const string marker = " from ";
+        var markerIndex = message.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (markerIndex < 0)
+        {
+            return null;
+        }
+
+        var digitsStart = markerIndex + marker.Length;
+        while (digitsStart < message.Length && char.IsWhiteSpace(message[digitsStart]))
+        {
+            digitsStart++;
+        }
+
+        var digitsEnd = digitsStart;
+        while (digitsEnd < message.Length && char.IsDigit(message[digitsEnd]))
+        {
+            digitsEnd++;
+        }
+
+        if (digitsEnd == digitsStart)
+        {
+            return null;
+        }
+
+        var suffix = message[digitsEnd..];
+        if (!suffix.Contains("segment", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        return int.TryParse(
+            message.AsSpan(digitsStart, digitsEnd - digitsStart),
+            NumberStyles.Integer,
+            CultureInfo.InvariantCulture,
+            out var value)
+            ? value
+            : null;
     }
 
     private static async Task<JsonElement?> SendCommandWithConnectRetryAsync(
@@ -3992,6 +4118,7 @@ public static class DiagnosticSessionRunner
             "flashback-export-playback" => Path.Combine(outputDirectory, "flashback-export-playback.mp4"),
             "flashback-range-export" => Path.Combine(outputDirectory, "flashback-range-export.mp4"),
             "flashback-disable-during-export" => Path.Combine(outputDirectory, "flashback-disable-during-export.mp4"),
+            "flashback-rotated-export" => Path.Combine(outputDirectory, "flashback-rotated-export.mp4"),
             "flashback-preview-cycle" => Path.Combine(outputDirectory, "flashback-preview-off-export.mp4"),
             _ => string.Empty
         };
@@ -4006,18 +4133,18 @@ public static class DiagnosticSessionRunner
             : scenario.Trim().ToLowerInvariant();
         return normalized switch
         {
-            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "flashback-export-rejected" or "combined" => normalized,
+            "observe" or "preview-only" or "recording-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "flashback-export-rejected" or "combined" => normalized,
             _ => throw new ArgumentException($"Unknown diagnostic session scenario '{scenario}'.", nameof(scenario))
         };
     }
 
     private static bool ScenarioNeedsPreview(string scenario)
-        => scenario is "preview-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
+        => scenario is "preview-only" or "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
     private static bool ScenarioNeedsRecording(string scenario)
         => scenario is "recording-only" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
     private static bool ScenarioNeedsFlashback(string scenario)
-        => scenario is "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
+        => scenario is "flashback" or "flashback-playback" or "flashback-stress" or "flashback-scrub-stress" or "flashback-restart-cycle" or "flashback-encoder-cycle" or "flashback-export-playback" or "flashback-segment-playback" or "flashback-range-export" or "flashback-lifecycle" or "flashback-export-concurrent" or "flashback-disable-during-export" or "flashback-rotated-export" or "flashback-preview-cycle" or "flashback-recording" or "flashback-recording-preview-cycle" or "flashback-recording-settings-deferred" or "flashback-recording-export-rejected" or "combined";
 
 }
