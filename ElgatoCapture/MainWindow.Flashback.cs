@@ -250,10 +250,18 @@ public sealed partial class MainWindow
     }
 
     private void FlashbackScrubArea_PointerCanceled(object sender, PointerRoutedEventArgs e)
-        => EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "cancelled");
+    {
+        var carriedPosition = _isFlashbackScrubbing ? ViewModel.FlashbackPlaybackPosition : (TimeSpan?)null;
+        Logger.Log($"FLASHBACK_SCRUB_END_CANCELED carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}");
+        EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "cancelled", carriedPosition);
+    }
 
     private void FlashbackScrubArea_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
-        => EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "capture_lost");
+    {
+        var carriedPosition = _isFlashbackScrubbing ? ViewModel.FlashbackPlaybackPosition : (TimeSpan?)null;
+        Logger.Log($"FLASHBACK_SCRUB_END_CAPTURE_LOST carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}");
+        EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "capture_lost", carriedPosition);
+    }
 
     private void EndFlashbackScrubInteraction(UIElement? element, Pointer pointer, string reason, TimeSpan? releasePosition = null)
     {

@@ -128,11 +128,16 @@ public sealed partial class MainWindow
         // Clean up scrub state if user is scrubbing when fullscreen triggers
         if (_isFlashbackScrubbing)
         {
+            var carriedPosition = ViewModel?.FlashbackPlaybackPosition;
+            Logger.Log($"FLASHBACK_SCRUB_END_FULLSCREEN carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}");
             _isFlashbackScrubbing = false;
             _lastScrubUpdateTick = 0;
-            if (ViewModel?.FlashbackEndScrub() == false)
+            var ended = carriedPosition.HasValue
+                ? ViewModel?.FlashbackEndScrubAt(carriedPosition.Value) ?? false
+                : ViewModel?.FlashbackEndScrub() ?? false;
+            if (!ended)
             {
-                ViewModel.ReportFlashbackPlaybackRejection("scrub end (fullscreen_enter)", "FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter");
+                ViewModel?.ReportFlashbackPlaybackRejection("scrub end (fullscreen_enter)", "FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter");
             }
         }
 
