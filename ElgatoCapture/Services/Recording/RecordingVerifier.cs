@@ -143,7 +143,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
 
         var mismatches = new List<string>();
         ValidateContainer(runtimeSnapshot, formatName, outputPath, mismatches);
-        ValidateCodec(runtimeSnapshot, codecName, mismatches);
+        ValidateCodec(runtimeSnapshot, codecName, outputPath, mismatches);
         ValidateDimensions(runtimeSnapshot, detectedWidth, detectedHeight, mismatches);
         ValidateFrameRate(runtimeSnapshot, detectedFrameRate, expectedFrameRate, mismatches);
         var hdrValidation = ValidateHdrMetadata(
@@ -525,7 +525,7 @@ public sealed class RecordingVerifier : IRecordingVerifier
         string outputPath,
         List<string> mismatches)
     {
-        var expectedFormat = runtimeSnapshot.RequestedFormat ?? string.Empty;
+        var expectedFormat = ResolveExpectedFormat(runtimeSnapshot, outputPath);
 
         if (string.IsNullOrWhiteSpace(detectedContainer))
         {
@@ -566,9 +566,10 @@ public sealed class RecordingVerifier : IRecordingVerifier
     private static void ValidateCodec(
         CaptureRuntimeSnapshot runtimeSnapshot,
         string? detectedCodec,
+        string outputPath,
         List<string> mismatches)
     {
-        var expectedFormat = runtimeSnapshot.RequestedFormat ?? string.Empty;
+        var expectedFormat = ResolveExpectedFormat(runtimeSnapshot, outputPath);
         if (expectedFormat.Length == 0 || string.IsNullOrWhiteSpace(detectedCodec))
         {
             if (string.IsNullOrWhiteSpace(detectedCodec))
@@ -592,6 +593,22 @@ public sealed class RecordingVerifier : IRecordingVerifier
         {
             mismatches.Add($"codec-mismatch(expected={expectedFormat},actual={detectedCodec})");
         }
+    }
+
+    private static string ResolveExpectedFormat(CaptureRuntimeSnapshot runtimeSnapshot, string? outputPath)
+    {
+        if (!string.IsNullOrWhiteSpace(outputPath) &&
+            !string.IsNullOrWhiteSpace(runtimeSnapshot.FlashbackExportOutputPath) &&
+            !string.IsNullOrWhiteSpace(runtimeSnapshot.FlashbackExportVerificationFormat) &&
+            string.Equals(
+                Path.GetFullPath(outputPath),
+                Path.GetFullPath(runtimeSnapshot.FlashbackExportOutputPath),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return runtimeSnapshot.FlashbackExportVerificationFormat;
+        }
+
+        return runtimeSnapshot.RequestedFormat ?? string.Empty;
     }
 
     private static void ValidateDimensions(

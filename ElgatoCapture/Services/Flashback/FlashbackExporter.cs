@@ -854,6 +854,115 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         segmentVideoFrameDurUs = ResolveFrameDurationUs(_activeInputContext->streams[videoStreamIndex]);
                     }
 
+                    // Flush segment-buffered packets (Phase 1 → Phase 2 transition or EOF rescue).
+                    // Captures per-iteration locals via closure so both the mid-loop trigger and
+                    // the EOF rescue path go through the same code.
+                    int FlushSegmentBufferedPackets(out bool stopFlushing)
+                    {
+                        int written = 0;
+                        stopFlushing = false;
+                        try
+                        {
+                            for (int bi = 0; bi < segBufferedPackets.Count; bi++)
+                            {
+                                var buffPkt = (AVPacket*)segBufferedPackets[bi];
+                                var si = segBufferedStreamIndices[bi];
+                                var oi = streamMap[si];
+                                var outStr = _activeOutputContext->streams[oi];
+
+                                // Check outPoint against absolute PTS BEFORE remapping
+                                // At this point buffPkt->pts is in outStr->time_base but still absolute encoder PTS
+                                if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
+                                {
+                                    var absPtsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
+                                    var comparePtsUs = useSegmentTimeline
+                                        ? absPtsUs - segMinBaseUs!.Value
+                                        : absPtsUs;
+                                    if (si == videoStreamIndex && absPtsUs > segAbsMaxPtsUs)
+                                        segAbsMaxPtsUs = absPtsUs;
+                                    if (useSegmentTimeline && comparePtsUs < segmentInOffsetUs)
+                                    {
+                                        ffmpeg.av_packet_free(&buffPkt);
+                                        segBufferedPackets[bi] = IntPtr.Zero;
+                                        continue;
+                                    }
+
+                                    if (segmentOutOffsetUs < long.MaxValue && comparePtsUs > segmentOutOffsetUs)
+                                    {
+                                        ffmpeg.av_packet_free(&buffPkt);
+                                        segBufferedPackets[bi] = IntPtr.Zero;
+                                        if (si == videoStreamIndex)
+                                            stopFlushing = true;
+                                        continue;
+                                    }
+                                }
+
+                                // Remap: subtract segment base, add cross-segment offset
+                                var segBaseTs = ffmpeg.av_rescale_q(segMinBaseUs!.Value, usTimeBase, outStr->time_base);
+                                var offsetTs = ffmpeg.av_rescale_q(outputPtsOffsetUs, usTimeBase, outStr->time_base);
+
+                                if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
+                                {
+                                    buffPkt->pts = buffPkt->pts - segBaseTs + offsetTs;
+                                    var ptsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
+                                    if (useSegmentTimeline && si == videoStreamIndex)
+                                    {
+                                        var repairUs = ResolveSegmentBoundaryTimestampRepairUs(
+                                            ptsUs,
+                                            outputPtsOffsetUs,
+                                            segmentVideoFrameDurUs,
+                                            segmentVideoPacketsSeen,
+                                            segmentVideoTimestampRepairUs);
+                                        if (repairUs > 0)
+                                        {
+                                            segmentVideoTimestampRepairUs += repairUs;
+                                            Logger.Log($"FLASHBACK_EXPORT_SEGMENT_PTS_REPAIR seg={segIdx} stream={si} repair_us={repairUs} total_repair_us={segmentVideoTimestampRepairUs}");
+                                        }
+
+                                        if (segmentVideoTimestampRepairUs > 0)
+                                        {
+                                            var repairTs = ffmpeg.av_rescale_q(segmentVideoTimestampRepairUs, usTimeBase, outStr->time_base);
+                                            buffPkt->pts -= repairTs;
+                                            ptsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
+                                        }
+
+                                        segmentVideoPacketsSeen++;
+                                    }
+
+                                    // Track max PTS for offset calculation
+                                    if (ptsUs > segMaxPtsUs) segMaxPtsUs = ptsUs;
+                                }
+                                if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
+                                {
+                                    buffPkt->dts = buffPkt->dts - segBaseTs + offsetTs;
+                                    if (useSegmentTimeline && si == videoStreamIndex && segmentVideoTimestampRepairUs > 0)
+                                    {
+                                        var repairTs = ffmpeg.av_rescale_q(segmentVideoTimestampRepairUs, usTimeBase, outStr->time_base);
+                                        buffPkt->dts -= repairTs;
+                                    }
+                                    if (oi < lastDtsPerStream.Length && lastDtsPerStream[oi] != long.MinValue && buffPkt->dts <= lastDtsPerStream[oi])
+                                        buffPkt->dts = lastDtsPerStream[oi] + 1;
+                                }
+                                if (oi < lastDtsPerStream.Length && buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
+                                    lastDtsPerStream[oi] = buffPkt->dts;
+
+                                NormalizePacketTimestampsBeforeWrite(buffPkt);
+                                buffPkt->pos = -1;
+                                buffPkt->stream_index = oi;
+                                ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
+                                written++;
+                                ffmpeg.av_packet_free(&buffPkt);
+                                segBufferedPackets[bi] = IntPtr.Zero;
+                            }
+                        }
+                        finally
+                        {
+                            FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);
+                        }
+
+                        return written;
+                    }
+
                     while (true)
                     {
                         ct.ThrowIfCancellationRequested();
@@ -930,107 +1039,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
                                 if (segAllBasesDiscovered)
                                 {
-                                    // Flush buffer
-                                    var stopFlushing = false;
-                                    try
-                                    {
-                                        for (int bi = 0; bi < segBufferedPackets.Count; bi++)
-                                        {
-                                            var buffPkt = (AVPacket*)segBufferedPackets[bi];
-                                            var si = segBufferedStreamIndices[bi];
-                                            var oi = streamMap[si];
-                                            var outStr = _activeOutputContext->streams[oi];
-
-                                            // Check outPoint against absolute PTS BEFORE remapping
-                                            // At this point buffPkt->pts is in outStr->time_base but still absolute encoder PTS
-                                            if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
-                                            {
-                                                var absPtsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
-                                                var comparePtsUs = useSegmentTimeline
-                                                    ? absPtsUs - segMinBaseUs!.Value
-                                                    : absPtsUs;
-                                                if (si == videoStreamIndex && absPtsUs > segAbsMaxPtsUs)
-                                                    segAbsMaxPtsUs = absPtsUs;
-                                                if (useSegmentTimeline && comparePtsUs < segmentInOffsetUs)
-                                                {
-                                                    ffmpeg.av_packet_free(&buffPkt);
-                                                    segBufferedPackets[bi] = IntPtr.Zero;
-                                                    continue;
-                                                }
-
-                                                if (segmentOutOffsetUs < long.MaxValue && comparePtsUs > segmentOutOffsetUs)
-                                                {
-                                                    ffmpeg.av_packet_free(&buffPkt);
-                                                    segBufferedPackets[bi] = IntPtr.Zero;
-                                                    if (si == videoStreamIndex)
-                                                        stopFlushing = true;
-                                                    continue;
-                                                }
-                                            }
-
-                                            // Remap: subtract segment base, add cross-segment offset
-                                            var segBaseTs = ffmpeg.av_rescale_q(segMinBaseUs!.Value, usTimeBase, outStr->time_base);
-                                            var offsetTs = ffmpeg.av_rescale_q(outputPtsOffsetUs, usTimeBase, outStr->time_base);
-
-                                            if (buffPkt->pts != ffmpeg.AV_NOPTS_VALUE)
-                                            {
-                                                buffPkt->pts = buffPkt->pts - segBaseTs + offsetTs;
-                                                var ptsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
-                                                if (useSegmentTimeline && si == videoStreamIndex)
-                                                {
-                                                    var repairUs = ResolveSegmentBoundaryTimestampRepairUs(
-                                                        ptsUs,
-                                                        outputPtsOffsetUs,
-                                                        segmentVideoFrameDurUs,
-                                                        segmentVideoPacketsSeen,
-                                                        segmentVideoTimestampRepairUs);
-                                                    if (repairUs > 0)
-                                                    {
-                                                        segmentVideoTimestampRepairUs += repairUs;
-                                                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_PTS_REPAIR seg={segIdx} stream={si} repair_us={repairUs} total_repair_us={segmentVideoTimestampRepairUs}");
-                                                    }
-
-                                                    if (segmentVideoTimestampRepairUs > 0)
-                                                    {
-                                                        var repairTs = ffmpeg.av_rescale_q(segmentVideoTimestampRepairUs, usTimeBase, outStr->time_base);
-                                                        buffPkt->pts -= repairTs;
-                                                        ptsUs = ffmpeg.av_rescale_q(buffPkt->pts, outStr->time_base, usTimeBase);
-                                                    }
-
-                                                    segmentVideoPacketsSeen++;
-                                                }
-
-                                                // Track max PTS for offset calculation
-                                                if (ptsUs > segMaxPtsUs) segMaxPtsUs = ptsUs;
-                                            }
-                                            if (buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
-                                            {
-                                                buffPkt->dts = buffPkt->dts - segBaseTs + offsetTs;
-                                                if (useSegmentTimeline && si == videoStreamIndex && segmentVideoTimestampRepairUs > 0)
-                                                {
-                                                    var repairTs = ffmpeg.av_rescale_q(segmentVideoTimestampRepairUs, usTimeBase, outStr->time_base);
-                                                    buffPkt->dts -= repairTs;
-                                                }
-                                                if (oi < lastDtsPerStream.Length && lastDtsPerStream[oi] != long.MinValue && buffPkt->dts <= lastDtsPerStream[oi])
-                                                    buffPkt->dts = lastDtsPerStream[oi] + 1;
-                                            }
-                                            if (oi < lastDtsPerStream.Length && buffPkt->dts != ffmpeg.AV_NOPTS_VALUE)
-                                                lastDtsPerStream[oi] = buffPkt->dts;
-
-                                            NormalizePacketTimestampsBeforeWrite(buffPkt);
-                                            buffPkt->pos = -1;
-                                            buffPkt->stream_index = oi;
-                                            ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
-                                            totalPackets++;
-                                            ffmpeg.av_packet_free(&buffPkt);
-                                            segBufferedPackets[bi] = IntPtr.Zero;
-                                        }
-                                    }
-                                    finally
-                                    {
-                                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);
-                                    }
-
+                                    totalPackets += FlushSegmentBufferedPackets(out var stopFlushing);
                                     if (stopFlushing)
                                         break;
                                 }
@@ -1121,8 +1130,26 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         }
                     }
 
-                    // Free any remaining buffered packets (EOF before all bases discovered)
-                    FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);
+                    // EOF: if Phase 1 never completed (some configured stream — typically a
+                    // silent mic — never produced packets and the buffer never reached the
+                    // 600-packet cap), flush whatever we have using a fallback base of 0.
+                    // Without this, every video packet in a short segment would be silently
+                    // discarded by the FreeBufferedPackets path that used to live here.
+                    if (!segAllBasesDiscovered && segBufferedPackets.Count > 0)
+                    {
+                        segMinBaseUs ??= 0;
+                        segAllBasesDiscovered = true;
+                        var discoveredCount = 0;
+                        for (var i = 0; i < streamCount; i++) { if (segHasTimestampBase[i]) discoveredCount++; }
+                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_PARTIAL_BASE_FLUSH seg={segIdx} buffered={segBufferedPackets.Count} streams_discovered={discoveredCount}/{streamCount}");
+                        totalPackets += FlushSegmentBufferedPackets(out _);
+                    }
+                    else
+                    {
+                        // Either Phase 1 completed inline (nothing to flush) or buffer is empty.
+                        // FreeBufferedPackets is a no-op on an empty list; safe in both cases.
+                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);
+                    }
 
                     // Update cross-segment offset: next segment's PTS starts after this segment's max + one frame
                     if (segMaxPtsUs > outputPtsOffsetUs)

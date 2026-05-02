@@ -502,6 +502,9 @@ public partial class CaptureService
             LastFinalizeStatus = _lastFinalizeStatus,
             LastFinalizeUtc = _lastFinalizeUtc,
             LastPreservedArtifacts = _lastPreservedArtifacts,
+            FlashbackExportOutputPath = _flashbackExportOutputPath,
+            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(requestedSettings, unifiedVideoCapture),
+            FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),
             SourceTelemetryAvailability = _latestSourceTelemetry.Availability.ToString(),
             SourceTelemetryOriginDetail = _latestSourceTelemetry.OriginDetail,
             SourceTelemetryConfidence = _latestSourceTelemetry.Confidence.ToString(),
@@ -1482,6 +1485,11 @@ public partial class CaptureService
             FlashbackExportOutPointMs = flashbackExportOutPointMs,
             FlashbackExportMessage = flashbackExportMessage,
             FlashbackExportFailureKind = flashbackExportFailureKind,
+            // Surface the silent codec/preset substitution alongside the existing
+            // export status so automation, the verifier, and (eventually) the UI
+            // can show what was actually encoded vs what the user requested.
+            FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(_currentSettings, unifiedVideoCapture),
+            FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(_currentSettings, unifiedVideoCapture),
             LastExportPath = _lastExportResult?.OutputPath,
             LastExportSuccess = _lastExportResult?.Succeeded,
             LastExportMessage = _lastExportResult?.StatusMessage,

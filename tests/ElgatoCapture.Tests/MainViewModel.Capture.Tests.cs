@@ -554,9 +554,31 @@ static partial class Program
             captureServiceText,
             "private FlashbackSessionContext CreateFlashbackSessionContext",
             "    private async Task EnsureFlashbackPreviewBackendAsync");
+        AssertContains(createFlashbackSessionContext, "var forceTransportStreamFlashback = UseTransportStreamFlashbackCodec(unifiedVideoCapture, settings, frameRate)");
+        AssertContains(createFlashbackSessionContext, "? \"hevc_nvenc\"");
+        AssertContains(captureServiceText, "private static bool UseTransportStreamFlashbackCodec(");
+        AssertContains(captureServiceText, "settings.Format == RecordingFormat.Av1Mp4");
+        AssertContains(captureServiceText, "private static string? ResolveFlashbackExportVerificationFormat(");
+        AssertContains(captureServiceText, "? RecordingFormat.HevcMp4.ToString()");
         AssertContains(createFlashbackSessionContext, "var flashbackNvencPreset = unifiedVideoCapture.IsSoftwareMjpegPipelineActive && frameRate >= 100");
         AssertContains(createFlashbackSessionContext, "? \"Fast\"");
         AssertContains(createFlashbackSessionContext, "NvencPreset = flashbackNvencPreset");
+        // Silent codec/preset substitutions are surfaced via a one-shot log line and the
+        // automation snapshot. The log line must include enough context to reproduce.
+        AssertContains(createFlashbackSessionContext, "var downgradeReason = ResolveFlashbackCodecDowngradeReason(settings, unifiedVideoCapture);");
+        AssertContains(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE requested_format={settings.Format}");
+        AssertContains(createFlashbackSessionContext, "FLASHBACK_CODEC_DOWNGRADE_CLEARED");
+        AssertContains(captureServiceText, "private static string? ResolveFlashbackCodecDowngradeReason(");
+        AssertContains(captureServiceText, "AV1->HEVC: software MJPEG pipeline at");
+        AssertContains(captureServiceText, "NVENC preset '");
+        // Snapshot field must be populated from the resolver so downstream consumers
+        // (verifier, automation, UI) all observe the same downgrade state.
+        var snapshotsText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.Snapshots.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(snapshotsText, "FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(requestedSettings, unifiedVideoCapture),");
+        var contractsText = ReadRepoFile("ElgatoCapture/Models/AutomationContracts.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(contractsText, "public string? FlashbackCodecDowngradeReason { get; init; }");
         AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
         AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_CANCELLED");
         AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_FAIL");

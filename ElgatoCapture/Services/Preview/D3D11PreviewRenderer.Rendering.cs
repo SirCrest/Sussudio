@@ -2347,13 +2347,29 @@ internal sealed partial class D3D11PreviewRenderer
     {
         // ISwapChainPanelNative.SetSwapChain must be called on the UI thread
         // because _panel is a XAML element. Marshal from the render thread.
-        using var done = new ManualResetEventSlim(false);
+        //
+        // Reinit deadlock guard: if the UI thread is blocked in StopRenderThread().Join()
+        // waiting for this render thread to exit, dispatching here would deadlock until
+        // the Join times out. Two safeguards: (a) the wait below polls _stopRequested in
+        // short chunks so it can bail early, (b) the queued lambda re-checks both
+        // _stopRequested and that _swapChain still equals the chain we are trying to
+        // bind — if either has changed, the renderer has been stopped or the chain
+        // superseded, and SetSwapChain on a stale (possibly disposed) chain would AV.
+        var done = new ManualResetEventSlim(false);
         Exception? uiError = null;
+        var aborted = false;
 
         var enqueued = _dispatcherQueue.TryEnqueue(() =>
         {
             try
             {
+                if (Volatile.Read(ref _stopRequested) != 0 ||
+                    !ReferenceEquals(_swapChain, swapChain))
+                {
+                    uiError = new OperationCanceledException(
+                        "Swap chain binding superseded before reaching the UI thread.");
+                    return;
+                }
                 if (_panel?.XamlRoot == null)
                 {
                     uiError = new InvalidOperationException(
@@ -2371,22 +2387,58 @@ internal sealed partial class D3D11PreviewRenderer
             }
             finally
             {
-                done.Set();
+                try { done.Set(); }
+                catch { /* race with dispose if we aborted; safe to ignore */ }
             }
         });
 
         if (!enqueued)
         {
+            done.Dispose();
             throw new InvalidOperationException("Failed to enqueue swap chain binding to UI thread.");
         }
 
-        if (!done.Wait(TimeSpan.FromSeconds(5)))
+        const int waitChunkMs = 50;
+        const int maxWaitMs = 5000;
+        var elapsedMs = 0;
+        var completed = false;
+        while (elapsedMs < maxWaitMs)
         {
+            if (done.Wait(waitChunkMs))
+            {
+                completed = true;
+                break;
+            }
+            elapsedMs += waitChunkMs;
+            if (Volatile.Read(ref _stopRequested) != 0)
+            {
+                aborted = true;
+                Logger.Log($"D3D11 preview swap-chain binding aborted at {elapsedMs}ms: stop requested during UI dispatcher wait.");
+                break;
+            }
+        }
+
+        if (!completed)
+        {
+            // Leave `done` undisposed — the queued lambda may still run later and
+            // call done.Set(). Disposing now would race with that and risk an
+            // ObjectDisposedException on the UI thread. The lambda's stale-chain
+            // guard above prevents it from binding a disposed swap chain.
+            if (aborted)
+            {
+                return;
+            }
             throw new TimeoutException("Swap chain binding to UI thread timed out.");
         }
 
+        done.Dispose();
         if (uiError != null)
         {
+            if (uiError is OperationCanceledException)
+            {
+                Logger.Log("D3D11 preview swap-chain binding cancelled on UI thread; renderer shutting down.");
+                return;
+            }
             throw new InvalidOperationException("Swap chain binding failed on UI thread.", uiError);
         }
     }

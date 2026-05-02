@@ -105,6 +105,18 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackExportOutPointMs { get; init; }
     public string FlashbackExportMessage { get; init; } = string.Empty;
     public string FlashbackExportFailureKind { get; init; } = string.Empty;
+    /// <summary>
+    /// The actual codec/container the next flashback export will produce. Differs
+    /// from the user-requested <c>SelectedRecordingFormat</c> when the runtime
+    /// silently downgrades (e.g. AV1->HEVC at 4K120 software MJPEG).
+    /// </summary>
+    public string? FlashbackExportVerificationFormat { get; init; }
+    /// <summary>
+    /// Non-null when the flashback codec/preset was substituted at session start
+    /// because the requested combination cannot be encoded in real time.
+    /// Composed string describes both what was changed and why.
+    /// </summary>
+    public string? FlashbackCodecDowngradeReason { get; init; }
     public string? LastExportPath { get; init; }
     public bool? LastExportSuccess { get; init; }
     public string? LastExportMessage { get; init; }

@@ -75,7 +75,19 @@ public sealed partial class MainWindow
         {
             Logger.Log("PREVIEW_REINIT_RENDERER_STOP: stopping render thread before pipeline teardown");
             ViewModel.SetPreviewFrameSink(null);
-            renderer.StopRenderThread();
+            try
+            {
+                renderer.StopRenderThread();
+            }
+            catch (TimeoutException ex)
+            {
+                // Render thread did not exit before its stop timeout. The renderer's
+                // StopRenderThread() has already logged details and BindSwapChainToPanel
+                // self-aborts on stale state, so the orphan thread will not bind a
+                // superseded swap chain. Swallow the exception so reinit can continue
+                // rather than crashing the UI thread mid-resolution-change.
+                Logger.Log($"PREVIEW_REINIT_RENDERER_STOP_TIMEOUT: {ex.Message}; continuing reinit with orphan render thread expected to exit shortly.");
+            }
         }
 
         return Task.CompletedTask;

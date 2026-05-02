@@ -286,7 +286,13 @@ public sealed partial class MainWindow
     }
     private void FlashbackInButton_Click(object sender, RoutedEventArgs e)
     {
-        var pos = ViewModel.FlashbackSetInPoint();
+        // Pass the visual playhead position (FlashbackPlaybackPosition is set by
+        // the timer to controller.PlaybackPosition during Playing, and by the
+        // PointerMoved handler to fraction*bufferDuration during Scrubbing).
+        // The parameterless overload reads controller.PlaybackPosition which is
+        // keyframe-snapped — clicking In mid-GOP would otherwise land hundreds of
+        // milliseconds before where the user is pointing.
+        var pos = ViewModel.FlashbackSetInPointAt(ViewModel.FlashbackPlaybackPosition);
         if (pos.HasValue)
         {
             ViewModel.FlashbackInPoint = pos.Value;
@@ -299,7 +305,7 @@ public sealed partial class MainWindow
     }
     private void FlashbackOutButton_Click(object sender, RoutedEventArgs e)
     {
-        var pos = ViewModel.FlashbackSetOutPoint();
+        var pos = ViewModel.FlashbackSetOutPointAt(ViewModel.FlashbackPlaybackPosition);
         if (pos.HasValue)
         {
             ViewModel.FlashbackOutPoint = pos.Value;

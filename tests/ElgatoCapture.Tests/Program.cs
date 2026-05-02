@@ -138,6 +138,9 @@ static partial class Program
                 "Recording verifier detects H264 codec when HEVC is expected",
                 RecordingVerifier_DetectsCodecMismatch_WhenH264InsteadOfHevc),
             await RunCheckAsync(
+                "Recording verifier uses flashback export verification format",
+                RecordingVerifier_UsesFlashbackExportVerificationFormat),
+            await RunCheckAsync(
                 "Recording verifier detects resolution mismatch",
                 RecordingVerifier_DetectsResolutionMismatch),
             await RunCheckAsync(

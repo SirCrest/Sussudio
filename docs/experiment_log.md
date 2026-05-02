@@ -2965,3 +2965,46 @@ I2C_WR 0x4A reg=0x0200 val=[07 00]   (finalize)
 **Change:** Default preview cadence policy now uses `ELGATOCAPTURE_PREVIEW_PRESENT_SYNC_INTERVAL=1`, `ELGATOCAPTURE_PREVIEW_DXGI_MAX_FRAME_LATENCY=1`, and `ELGATOCAPTURE_PREVIEW_SWAPCHAIN_BUFFER_COUNT=2` equivalents in `D3D11PreviewRenderer`. Env overrides remain available.
 
 **Conclusion:** The best current lever is the compositor/present queue, not additional MJPEG preview buffering. The new default sits just above the 8.47ms p99 target in the short run and should get longer preview-only and preview+record validation.
+
+## 2026-05-01 — Flashback hardening sweep across 5 subsystems
+
+Goal: harden flashback recording, previewing, scrubbing, export, playback to bulletproof. Started from a 24-day-old bug list and the in-flight AV1->HEVC verifier work in the working tree.
+
+### Approach
+1. Validated the in-flight work (build clean, all tests pass — left uncommitted for the user).
+2. Dispatched 4 parallel review agents to audit the 24-day-old bug list against current code (HDR reinit, multi-segment exporter, playback A/V, recent commit chains).
+3. Dispatched a 5th agent to audit scrubbing (not previously reviewed) once initial fixes landed.
+4. Verified each agent finding myself before fixing (per CLAUDE.md trust-but-verify).
+
+### Fixes shipped (all build clean, all 343+ tests pass)
+
+**Export — multi-segment EOF flush silently discarded video**
+`FlashbackExporter.cs:1124`. When a configured stream (typically a silent mic) never emitted packets in a short segment (< 600 packets total), the EOF path called bare `FreeBufferedPackets` and lost every video packet from that segment. Extracted the inline 100-line flush body into a `FlushSegmentBufferedPackets` local function inside `ExportSegmentsCore` so both the mid-loop Phase 1->2 trigger and the new EOF rescue (`segMinBaseUs ??= 0; flush()`) share the same code. Added `FLASHBACK_EXPORT_SEGMENT_PARTIAL_BASE_FLUSH` log line.
+
+**Preview — HDR reinit deadlock between HandleDeviceLost and StopRenderThread**
+`D3D11PreviewRenderer.Rendering.cs:2346`, `MainWindow.PropertyChanged.cs:78`. During reinit a render thread in `HandleDeviceLost -> InitializeD3D -> BindSwapChainToPanel` could wait up to 5s for the UI dispatcher while the UI thread was in `StopRenderThread().Join()` for 3s, throwing an uncaught `TimeoutException` that crashed the reinit. `BindSwapChainToPanel` now polls `_stopRequested` in 50ms chunks (bails early on stop) and the queued lambda re-checks `_stopRequested` + `ReferenceEquals(_swapChain, swapChain)` before calling `SetSwapChain` (prevents binding a superseded/disposed chain). MainWindow now wraps `StopRenderThread()` in try/catch on TimeoutException so reinit logs and continues.
+
+**Capture — silent flashback codec/preset substitutions**
+`CaptureService.cs:1582+`. When software MJPEG pipeline is active at >=100fps with AV1 requested, codec silently falls back to `hevc_nvenc` and the NVENC preset is silently coerced to `Fast`. Added `ResolveFlashbackCodecDowngradeReason` (pure, mirrors the existing predicates). Wired into snapshot via new `CaptureRuntimeSnapshot.FlashbackCodecDowngradeReason` field. One-shot `FLASHBACK_CODEC_DOWNGRADE` log on session start, deduped via `_lastLoggedFlashbackDowngradeReason`, with `FLASHBACK_CODEC_DOWNGRADE_CLEARED` when conditions resolve.
+
+**Playback — frame-skip catch-up loop using stale wall ticks**
+`FlashbackPlaybackController.cs:1602`. The catch-up loop captured `audioClockWall` once outside the loop but each skip can take 25ms (AV1 4K@120fps). After 10 skips the wall anchor is 250ms stale and the recomputed drift is wrong; loop could exit early or burn the full skip cap on a stale clock. Extracted `TryComputeAudioMasterDriftMs` helper that re-syncs from WASAPI on every call (matching the canonical resync in `PaceFrameInterval`) and enforces a 200ms staleness guard. Skip loop now calls it per iteration and breaks early if WASAPI underruns. Added `FLASHBACK_PLAYBACK_FRAME_SKIP_EOS` and `_BUDGET` log lines so partial skip progress isn't lost when the loop terminates via end-of-segment or software-budget snap-live.
+
+**Scrubbing — reentrant BeginScrub clobbering resume state**
+`FlashbackPlaybackController.cs:743`. A second BeginScrub arriving while State is already `Scrubbing` would sample `isPlaying=false` (set by prior BeginScrub) and clobber `_wasPlayingBeforeScrub`, so EndScrub later landed in Paused instead of resuming Playing/Live. Now guarded by `if (!isScrubbing)` so only the first transition into Scrubbing captures the resume state.
+
+**Scrubbing — In/Out markers landing on prior keyframe instead of visual playhead**
+`FlashbackPlaybackController.cs:350`. `SetInPoint()` read controller `PlaybackPosition` which is keyframe-snapped after each decoded frame, so clicking In mid-GOP placed the marker hundreds of milliseconds before where the user was visually pointing. Added `SetInPointAt(TimeSpan)`/`SetOutPointAt(TimeSpan)` overloads through controller -> coordinator -> VM. UI now passes `ViewModel.FlashbackPlaybackPosition` (the visual playhead, set by the timer during Playing and by the scrub PointerMoved handler during Scrubbing). Markers now match what the user clicks on. Logs source=`ui_override`/`playback`.
+
+**Scrubbing — long-held scrubs snapping to live after eviction**
+`FlashbackPlaybackController.cs:2244`. `ClampPosition` clamped to `BufferedDuration` (current coords) but scrub commands resolve via `SaturatingAdd(cmd.Position, frozenValidStart)` (frozen-at-BeginScrub coords). After eviction advanced `currentValidStart` past `frozenValidStart`, scrub-coord positions in the evicted gap resolved to file PTS that no longer existed; `EnsureFileOpen` failed and the user got a sudden snap-to-live mid-drag. Extended `ClampPosition` with optional `frozenValidStart` parameter; when supplied, promotes `min` to `currentValidStart - frozenValidStart` so positions in the evicted gap clamp up to the new oldest valid position. Backwards-compatible parameterless overload preserved for non-scrub callers.
+
+### Deferred (recorded as follow-ups)
+- `EnsureFileOpen` swallows decoder open exceptions silently leaving stale decoder.
+- `PointerReleased` seek-target carrying via `PlaybackPosition`.
+- `PlaybackPosition` 250ms staleness window on Paused after EndScrub.
+- `SeekAndDisplayKeyframe`'s reopen-and-retry doubling decoder cost near live edge.
+- 1% low warnings still decorative — no root-cause investigation in this pass.
+
+### Test discipline
+Every fix is accompanied by source-text test assertions (matching the existing pattern). The reentrant BeginScrub fix would benefit from an integration test that exercises the queue race, but no end-to-end harness exists for that yet.

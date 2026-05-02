@@ -347,7 +347,20 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- In/Out point helpers ---
 
-    public TimeSpan SetInPoint()
+    public TimeSpan SetInPoint() => SetInPointAt(null);
+
+    /// <summary>
+    /// Pin the in-point at an explicit user-intended position rather than the
+    /// controller's last decoded keyframe. The UI should pass the position the
+    /// user is visually pointing at (its FlashbackPlaybackPosition), which during
+    /// scrubbing is the user's drag target rather than the keyframe-snapped
+    /// PlaybackPosition the controller publishes after each decode. Without this
+    /// overload, mid-GOP "click In" landed on the prior keyframe and the marker
+    /// could appear hundreds of milliseconds before where the playhead sat.
+    /// </summary>
+    public TimeSpan SetInPointAt(TimeSpan position) => SetInPointAt((TimeSpan?)position);
+
+    private TimeSpan SetInPointAt(TimeSpan? overridePosition)
     {
         if (_disposedFlag != 0)
         {
@@ -356,7 +369,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
             return PlaybackPosition;
         }
 
-        var pos = PlaybackPosition;
+        var pos = overridePosition.HasValue
+            ? NormalizeMarkerPosition(overridePosition.Value)
+            : PlaybackPosition;
         ClearLastCommandFailure();
         InPoint = pos;
         var outTicks = Interlocked.Read(ref _outPointTicks);
@@ -366,11 +381,21 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Logger.Log("FLASHBACK_PLAYBACK_CLEAR_OUT invalid_range");
         }
 
-        Logger.Log($"FLASHBACK_PLAYBACK_SET_IN pos_ms={(long)pos.TotalMilliseconds}");
+        Logger.Log($"FLASHBACK_PLAYBACK_SET_IN pos_ms={(long)pos.TotalMilliseconds} source={(overridePosition.HasValue ? "ui_override" : "playback")}");
         return pos;
     }
 
-    public TimeSpan SetOutPoint()
+    public TimeSpan SetOutPoint() => SetOutPointAt(null);
+
+    /// <summary>
+    /// Pin the out-point at an explicit user-intended position. See
+    /// <see cref="SetInPointAt(TimeSpan)"/> for the rationale: the UI's visual
+    /// playhead and the controller's keyframe-snapped PlaybackPosition can
+    /// differ by hundreds of milliseconds during scrubbing.
+    /// </summary>
+    public TimeSpan SetOutPointAt(TimeSpan position) => SetOutPointAt((TimeSpan?)position);
+
+    private TimeSpan SetOutPointAt(TimeSpan? overridePosition)
     {
         if (_disposedFlag != 0)
         {
@@ -379,7 +404,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
             return PlaybackPosition;
         }
 
-        var pos = PlaybackPosition;
+        var pos = overridePosition.HasValue
+            ? NormalizeMarkerPosition(overridePosition.Value)
+            : PlaybackPosition;
         ClearLastCommandFailure();
         OutPoint = pos;
         var inTicks = Interlocked.Read(ref _inPointTicks);
@@ -389,7 +416,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Logger.Log("FLASHBACK_PLAYBACK_CLEAR_IN invalid_range");
         }
 
-        Logger.Log($"FLASHBACK_PLAYBACK_SET_OUT pos_ms={(long)pos.TotalMilliseconds}");
+        Logger.Log($"FLASHBACK_PLAYBACK_SET_OUT pos_ms={(long)pos.TotalMilliseconds} source={(overridePosition.HasValue ? "ui_override" : "playback")}");
         return pos;
     }
 
@@ -690,7 +717,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         SuppressLiveAudio();
                         SafePauseRendering("seek");
 
-                        cmd = cmd with { Position = ClampPosition(cmd.Position) };
+                        cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
                         if (!decoder.IsOpen)
@@ -740,7 +767,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         break;
 
                     case CommandKind.BeginScrub:
-                        _wasPlayingBeforeScrub = isPlaying || State == FlashbackPlaybackState.Live;
+                        // Only capture the resume-state on first entry into Scrubbing.
+                        // A second BeginScrub arriving while we're already scrubbing
+                        // (UI re-press race, MCP automation racing pointer-pressed)
+                        // would otherwise sample isPlaying=false (set by the prior
+                        // BeginScrub) and State=Scrubbing, clobbering the original
+                        // capture and causing EndScrub to land in Paused instead of
+                        // resuming Playing/Live.
+                        if (!isScrubbing)
+                        {
+                            _wasPlayingBeforeScrub = isPlaying || State == FlashbackPlaybackState.Live;
+                        }
                         isPlaying = false;
                         isScrubbing = true;
                         frozenValidStart = _bufferManager.ValidStartPts;
@@ -749,7 +786,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         SafePauseRendering("begin_scrub");
                         SetState(FlashbackPlaybackState.Scrubbing);
 
-                        cmd = cmd with { Position = ClampPosition(cmd.Position) };
+                        cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
                         if (!decoder.IsOpen)
@@ -790,7 +827,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             newer = newer with { Position = TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks)) };
                             cmd = newer;
                         }
-                        cmd = cmd with { Position = ClampPosition(cmd.Position) };
+                        cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
                         if (!decoder.IsOpen)
@@ -962,7 +999,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                     case CommandKind.Nudge:
                         var nudgedPos = SaturatingAdd(PlaybackPosition, cmd.Delta);
-                        nudgedPos = ClampPosition(nudgedPos);
+                        nudgedPos = ClampPosition(nudgedPos, frozenValidStart);
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));
                         if (!decoder.IsOpen)
@@ -1481,7 +1518,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         decoder.AudioChunkCallback = null;
         SafeFlushPlayback("seek_display_keyframe");
 
-        bufferPosition = ClampPosition(bufferPosition);
+        bufferPosition = ClampPosition(bufferPosition, validStartPts);
 
         if (!decoder.IsOpen)
         {
@@ -1597,48 +1634,59 @@ internal sealed class FlashbackPlaybackController : IDisposable
             // frames to catch up rather than falling further behind. This handles codecs
             // whose decode time exceeds the frame interval (e.g. AV1 at 4K@120fps where
             // each decode takes ~25ms but frame interval is 8.33ms).
+            //
+            // The drift recompute MUST re-sync the audio clock each iteration: a single
+            // skip can take ~25ms, during which the WASAPI render thread has likely
+            // advanced _audioClockPtsTicks. Extrapolating from the original capture
+            // diverges from the actual audio clock the longer the loop runs and can
+            // either exit early (false-recovered) or burn the full skip cap unnecessarily.
             const double FrameSkipThresholdMs = 500.0;
             const int MaxSkipFrames = 30; // cap to prevent infinite skip loops
-            var audioClockPts = Volatile.Read(ref _audioClockPtsTicks);
-            if (audioClockPts > 0)
+            if (TryComputeAudioMasterDriftMs(videoFrame.Pts.Ticks, out var driftMs) &&
+                driftMs < -FrameSkipThresholdMs)
             {
-                var audioClockWall = Volatile.Read(ref _audioClockWallTicks);
-                var wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
-                var wallElapsedTicks = (long)((double)wallElapsed / Stopwatch.Frequency * TimeSpan.TicksPerSecond);
-                var extrapolatedAudioTicks = audioClockPts + wallElapsedTicks;
-                var driftMs = (videoFrame.Pts.Ticks - extrapolatedAudioTicks) / (double)TimeSpan.TicksPerMillisecond;
-
-                if (driftMs < -FrameSkipThresholdMs)
+                var skipped = 0;
+                while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)
                 {
-                    var skipped = 0;
-                    while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)
-                    {
-                        cancellationToken.ThrowIfCancellationRequested();
-                        // Release the frame without displaying it
-                        ReleaseHeldFrameBestEffort(videoFrame, "av_sync_skip");
-                        RecordPlaybackDroppedFrame("av_sync_skip");
-                        skipped++;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    // Release the frame without displaying it
+                    ReleaseHeldFrameBestEffort(videoFrame, "av_sync_skip");
+                    RecordPlaybackDroppedFrame("av_sync_skip");
+                    skipped++;
 
-                        if (!TryDecodeNextVideoFrameWithMetrics(decoder, out videoFrame))
-                            return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
-                        if (ShouldSnapLiveForSoftwarePlaybackBudget(decoder, out _, out _))
+                    if (!TryDecodeNextVideoFrameWithMetrics(decoder, out videoFrame))
+                    {
+                        // EOS during skip — log partial progress so the diagnostic gap
+                        // doesn't hide a long catch-up burst that the user may notice.
+                        if (skipped > 0)
                         {
-                            ReleaseHeldFrameBestEffort(videoFrame, "software_decode_over_budget");
-                            SnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, "playback_skip");
-                            return false;
+                            Logger.Log($"FLASHBACK_PLAYBACK_FRAME_SKIP_EOS count={skipped} drift_at_eos_ms={driftMs:F1}");
                         }
-
-                        // Recompute drift with the new frame's PTS
-                        wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
-                        wallElapsedTicks = (long)((double)wallElapsed / Stopwatch.Frequency * TimeSpan.TicksPerSecond);
-                        extrapolatedAudioTicks = audioClockPts + wallElapsedTicks;
-                        driftMs = (videoFrame.Pts.Ticks - extrapolatedAudioTicks) / (double)TimeSpan.TicksPerMillisecond;
+                        return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
                     }
-
-                    if (skipped > 0)
+                    if (ShouldSnapLiveForSoftwarePlaybackBudget(decoder, out _, out _))
                     {
-                        Logger.Log($"FLASHBACK_PLAYBACK_FRAME_SKIP count={skipped} drift_after_ms={driftMs:F1}");
+                        if (skipped > 0)
+                        {
+                            Logger.Log($"FLASHBACK_PLAYBACK_FRAME_SKIP_BUDGET count={skipped} drift_at_budget_ms={driftMs:F1}");
+                        }
+                        ReleaseHeldFrameBestEffort(videoFrame, "software_decode_over_budget");
+                        SnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, "playback_skip");
+                        return false;
                     }
+
+                    // Recompute with a freshly-sampled audio clock; if WASAPI is now
+                    // stale or unavailable, exit the skip loop to avoid extrapolating
+                    // off a stale reference for the rest of the catch-up.
+                    if (!TryComputeAudioMasterDriftMs(videoFrame.Pts.Ticks, out driftMs))
+                    {
+                        break;
+                    }
+                }
+
+                if (skipped > 0)
+                {
+                    Logger.Log($"FLASHBACK_PLAYBACK_FRAME_SKIP count={skipped} drift_after_ms={driftMs:F1}");
                 }
             }
 
@@ -2067,6 +2115,45 @@ internal sealed class FlashbackPlaybackController : IDisposable
         WallClockPace(pacingStopwatch, frameDuration);
     }
 
+    /// <summary>
+    /// Re-syncs the cached audio clock from WASAPI (matching the resync done at the top
+    /// of <see cref="PaceFrameInterval"/>) and returns the extrapolated drift in
+    /// milliseconds (positive = video ahead of audio). Returns false if the audio clock
+    /// is unavailable, has never been sampled, or is stale (>200ms since last update) —
+    /// callers must fall back to wall-clock pacing in that case.
+    /// </summary>
+    private bool TryComputeAudioMasterDriftMs(long videoPtsTicks, out double driftMs)
+    {
+        driftMs = 0;
+
+        var audioPb = _audioPlayback;
+        var renderingPts = audioPb?.RenderingPtsTicks ?? 0;
+        if (renderingPts > 0 && renderingPts != Volatile.Read(ref _audioClockPtsTicks))
+        {
+            Interlocked.Exchange(ref _audioClockPtsTicks, renderingPts);
+            Interlocked.Exchange(ref _audioClockWallTicks, Stopwatch.GetTimestamp());
+        }
+
+        var audioClockPts = Volatile.Read(ref _audioClockPtsTicks);
+        if (audioClockPts <= 0)
+        {
+            return false;
+        }
+
+        var audioClockWall = Volatile.Read(ref _audioClockWallTicks);
+        var wallElapsed = Stopwatch.GetTimestamp() - audioClockWall;
+        var wallElapsedTicks = (long)((double)wallElapsed / Stopwatch.Frequency * TimeSpan.TicksPerSecond);
+        const long StaleThresholdTicks = TimeSpan.TicksPerMillisecond * 200;
+        if (wallElapsedTicks > StaleThresholdTicks)
+        {
+            return false;
+        }
+
+        var extrapolatedAudioTicks = audioClockPts + wallElapsedTicks;
+        driftMs = (videoPtsTicks - extrapolatedAudioTicks) / (double)TimeSpan.TicksPerMillisecond;
+        return true;
+    }
+
     private void WallClockPace(Stopwatch pacingStopwatch, TimeSpan frameDuration)
     {
         var targetTicks = (long)(frameDuration.TotalSeconds * Stopwatch.Frequency);
@@ -2181,7 +2268,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- Position mapping ---
 
-    private TimeSpan ClampPosition(TimeSpan position)
+    private TimeSpan ClampPosition(TimeSpan position) => ClampPosition(position, null);
+
+    /// <summary>
+    /// Clamp a scrub/seek position to the currently usable buffer range, optionally
+    /// account for segment eviction that has happened since a scrub session captured
+    /// its frozen reference. Without the eviction adjustment, a long-held scrub at
+    /// position 0 maps via SaturatingAdd(pos, frozenValidStart) to a file PTS that
+    /// has been evicted — EnsureFileOpen fails and the user gets a sudden snap-to-
+    /// live instead of clamping to the new oldest available position.
+    /// </summary>
+    private TimeSpan ClampPosition(TimeSpan position, TimeSpan? frozenValidStart)
     {
         var bufferDuration = _bufferManager.BufferedDuration;
         var inTicks = Interlocked.Read(ref _inPointTicks);
@@ -2189,6 +2286,23 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var outTicks = Interlocked.Read(ref _outPointTicks);
         var max = outTicks == long.MinValue ? bufferDuration : TimeSpan.FromTicks(outTicks);
         if (max > bufferDuration) max = bufferDuration;
+        if (frozenValidStart.HasValue)
+        {
+            // Eviction may have advanced ValidStartPts past the scrub session's
+            // captured reference. Positions in the evicted gap (in scrub coords)
+            // would resolve to file PTS values whose segments no longer exist.
+            // Promote min so those positions clamp up to the new oldest valid
+            // position rather than failing the file lookup downstream.
+            var currentValidStart = _bufferManager.ValidStartPts;
+            if (currentValidStart > frozenValidStart.Value)
+            {
+                var evictedDelta = currentValidStart - frozenValidStart.Value;
+                if (evictedDelta > min)
+                {
+                    min = evictedDelta;
+                }
+            }
+        }
         if (min > max) min = max;
         if (position < min) return min;
         if (position > max) return max;

@@ -299,6 +299,8 @@ static partial class Program
                 new("FlashbackExportOutPointMs", typeof(long)),
                 NonNullString("FlashbackExportMessage"),
                 NonNullString("FlashbackExportFailureKind"),
+                NullableString("FlashbackExportVerificationFormat"),
+                NullableString("FlashbackCodecDowngradeReason"),
                 NullableString("LastExportPath"),
                 new("LastExportSuccess", typeof(bool?)),
                 NullableString("LastExportMessage"),
@@ -393,6 +395,8 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackExportActive", true);
         SetPropertyOrBackingField(health, "FlashbackExportStatus", "Running");
         SetPropertyOrBackingField(health, "FlashbackExportFailureKind", "NoMediaWritten");
+        SetPropertyOrBackingField(health, "FlashbackExportVerificationFormat", "HevcMp4");
+        SetPropertyOrBackingField(health, "FlashbackCodecDowngradeReason", "AV1->HEVC");
         SetPropertyOrBackingField(health, "FlashbackExportPercent", 37.5d);
         SetPropertyOrBackingField(health, "FlashbackExportElapsedMs", 2000L);
         SetPropertyOrBackingField(health, "FlashbackExportLastProgressAgeMs", 100L);
@@ -448,6 +452,8 @@ static partial class Program
         AssertEqual(true, GetBoolProperty(health, "FlashbackExportActive"), "CaptureHealthSnapshot.FlashbackExportActive round-trip");
         AssertEqual("Running", GetStringProperty(health, "FlashbackExportStatus"), "CaptureHealthSnapshot.FlashbackExportStatus round-trip");
         AssertEqual("NoMediaWritten", GetStringProperty(health, "FlashbackExportFailureKind"), "CaptureHealthSnapshot.FlashbackExportFailureKind round-trip");
+        AssertEqual("HevcMp4", GetStringProperty(health, "FlashbackExportVerificationFormat"), "CaptureHealthSnapshot.FlashbackExportVerificationFormat round-trip");
+        AssertEqual("AV1->HEVC", GetStringProperty(health, "FlashbackCodecDowngradeReason"), "CaptureHealthSnapshot.FlashbackCodecDowngradeReason round-trip");
         AssertEqual(37.5d, GetDoubleProperty(health, "FlashbackExportPercent"), "CaptureHealthSnapshot.FlashbackExportPercent round-trip");
         AssertEqual(2000L, GetLongProperty(health, "FlashbackExportElapsedMs"), "CaptureHealthSnapshot.FlashbackExportElapsedMs round-trip");
         AssertEqual(100L, GetLongProperty(health, "FlashbackExportLastProgressAgeMs"), "CaptureHealthSnapshot.FlashbackExportLastProgressAgeMs round-trip");
@@ -482,6 +488,8 @@ static partial class Program
         AssertEqual("encoding_failed:InvalidOperationException", GetStringProperty(jsonRoundTrip, "FlashbackGpuQueueLastRejectReason"), "CaptureHealthSnapshot JSON FlashbackGpuQueueLastRejectReason");
         AssertEqual("Running", GetStringProperty(jsonRoundTrip, "FlashbackExportStatus"), "CaptureHealthSnapshot JSON FlashbackExportStatus");
         AssertEqual("NoMediaWritten", GetStringProperty(jsonRoundTrip, "FlashbackExportFailureKind"), "CaptureHealthSnapshot JSON FlashbackExportFailureKind");
+        AssertEqual("HevcMp4", GetStringProperty(jsonRoundTrip, "FlashbackExportVerificationFormat"), "CaptureHealthSnapshot JSON FlashbackExportVerificationFormat");
+        AssertEqual("AV1->HEVC", GetStringProperty(jsonRoundTrip, "FlashbackCodecDowngradeReason"), "CaptureHealthSnapshot JSON FlashbackCodecDowngradeReason");
         AssertEqual(1048576L, GetLongProperty(jsonRoundTrip, "FlashbackExportOutputBytes"), "CaptureHealthSnapshot JSON FlashbackExportOutputBytes");
         AssertEqual("YCbCr422", GetStringProperty(jsonRoundTrip, "SourceVideoFormat"), "CaptureHealthSnapshot JSON SourceVideoFormat");
         AssertEqual(1, GetCountProperty(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!), "CaptureHealthSnapshot JSON SourceTelemetryDetails count");

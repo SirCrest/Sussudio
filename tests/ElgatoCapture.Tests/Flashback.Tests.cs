@@ -896,12 +896,25 @@ static partial class Program
             sourceText,
             "var segmentVideoFrameDurUs = 33333L;",
             "// Update cross-segment offset:");
-        AssertContains(segmentLoopBlock, "// Free any remaining buffered packets (EOF before all bases discovered)\n                    FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
-        AssertContains(segmentLoopBlock, "finally\n                                    {\n                                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                                    }");
+        // The inline flush body was extracted into a local function FlushSegmentBufferedPackets
+        // so the EOF rescue path can call it too. Both call sites must exist.
+        AssertContains(segmentLoopBlock, "int FlushSegmentBufferedPackets(out bool stopFlushing)");
+        AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(out var stopFlushing);");
+        AssertContains(segmentLoopBlock, "totalPackets += FlushSegmentBufferedPackets(out _);");
+        // The local function's finally block must release buffered packets.
+        AssertContains(segmentLoopBlock, "finally\n                        {\n                            FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                        }");
         AssertOccursBefore(
             segmentLoopBlock,
             "ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), \"av_interleaved_write_frame\");",
-            "finally\n                                    {\n                                        FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                                    }");
+            "finally\n                        {\n                            FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);\n                        }");
+        // EOF rescue: when Phase 1 never completed because some configured stream never
+        // produced packets, flush whatever is buffered using a fallback base of 0 so we
+        // do not silently discard video. (Was: bare FreeBufferedPackets that dropped video.)
+        AssertContains(segmentLoopBlock, "if (!segAllBasesDiscovered && segBufferedPackets.Count > 0)");
+        AssertContains(segmentLoopBlock, "segMinBaseUs ??= 0;");
+        AssertContains(segmentLoopBlock, "FLASHBACK_EXPORT_SEGMENT_PARTIAL_BASE_FLUSH seg={segIdx}");
+        // The else branch still calls FreeBufferedPackets for the empty-buffer case.
+        AssertContains(segmentLoopBlock, "FreeBufferedPackets(segBufferedPackets, segBufferedStreamIndices);");
 
         var sharedFlushBlock = ExtractTextBetween(
             sourceText,
@@ -1489,9 +1502,23 @@ static partial class Program
 
         AssertContains(sourceText, "var outTicks = Interlocked.Read(ref _outPointTicks);\n        if (outTicks != long.MinValue && outTicks <= pos.Ticks)\n        {\n            OutPoint = null;\n            Logger.Log(\"FLASHBACK_PLAYBACK_CLEAR_OUT invalid_range\");\n        }");
         AssertContains(sourceText, "var inTicks = Interlocked.Read(ref _inPointTicks);\n        if (inTicks != long.MinValue && inTicks >= pos.Ticks)\n        {\n            InPoint = null;\n            Logger.Log(\"FLASHBACK_PLAYBACK_CLEAR_IN invalid_range\");\n        }");
-        AssertContains(sourceText, "var pos = PlaybackPosition;\n        ClearLastCommandFailure();\n        InPoint = pos;");
-        AssertContains(sourceText, "var pos = PlaybackPosition;\n        ClearLastCommandFailure();\n        OutPoint = pos;");
+        // SetInPointAt/SetOutPointAt accept an explicit user-intended position so
+        // mid-GOP scrub clicks don't snap markers to the prior keyframe. Both
+        // paths still default to PlaybackPosition when called without an override.
+        AssertContains(sourceText, "var pos = overridePosition.HasValue\n            ? NormalizeMarkerPosition(overridePosition.Value)\n            : PlaybackPosition;\n        ClearLastCommandFailure();\n        InPoint = pos;");
+        AssertContains(sourceText, "var pos = overridePosition.HasValue\n            ? NormalizeMarkerPosition(overridePosition.Value)\n            : PlaybackPosition;\n        ClearLastCommandFailure();\n        OutPoint = pos;");
+        AssertContains(sourceText, "public TimeSpan SetInPoint() => SetInPointAt(null);");
+        AssertContains(sourceText, "public TimeSpan SetInPointAt(TimeSpan position) => SetInPointAt((TimeSpan?)position);");
+        AssertContains(sourceText, "public TimeSpan SetOutPoint() => SetOutPointAt(null);");
+        AssertContains(sourceText, "public TimeSpan SetOutPointAt(TimeSpan position) => SetOutPointAt((TimeSpan?)position);");
         AssertContains(sourceText, "InPoint = null;\n        OutPoint = null;\n        ClearLastCommandFailure();");
+
+        // UI must call the explicit-position overload so the marker matches the
+        // visual playhead, not the controller's keyframe-snapped PlaybackPosition.
+        var mainWindowFlashback = ReadRepoFile("ElgatoCapture/MainWindow.Flashback.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(mainWindowFlashback, "ViewModel.FlashbackSetInPointAt(ViewModel.FlashbackPlaybackPosition)");
+        AssertContains(mainWindowFlashback, "ViewModel.FlashbackSetOutPointAt(ViewModel.FlashbackPlaybackPosition)");
 
         return Task.CompletedTask;
     }
@@ -1549,7 +1576,14 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "var bufferDuration = _bufferManager.BufferedDuration;\n        var inTicks = Interlocked.Read(ref _inPointTicks);");
-        AssertContains(sourceText, "var max = outTicks == long.MinValue ? bufferDuration : TimeSpan.FromTicks(outTicks);\n        if (max > bufferDuration) max = bufferDuration;\n        if (min > max) min = max;");
+        AssertContains(sourceText, "var max = outTicks == long.MinValue ? bufferDuration : TimeSpan.FromTicks(outTicks);\n        if (max > bufferDuration) max = bufferDuration;");
+        // Eviction-aware scrub clamp: ClampPosition(position, frozenValidStart) must
+        // promote min to currentValidStart - frozenValidStart so a scrub-frozen
+        // position 0 doesn't resolve to an evicted file PTS and snap-to-live.
+        AssertContains(sourceText, "private TimeSpan ClampPosition(TimeSpan position) => ClampPosition(position, null);");
+        AssertContains(sourceText, "private TimeSpan ClampPosition(TimeSpan position, TimeSpan? frozenValidStart)");
+        AssertContains(sourceText, "var currentValidStart = _bufferManager.ValidStartPts;");
+        AssertContains(sourceText, "var evictedDelta = currentValidStart - frozenValidStart.Value;");
 
         return Task.CompletedTask;
     }
@@ -1558,9 +1592,11 @@ static partial class Program
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
-        const string clampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position) };\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
+        // All three scrub-related command paths must clamp via the eviction-aware
+        // overload so a long-held scrub doesn't resolve to evicted file PTS.
+        const string clampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
 
-        AssertEqual(3, sourceText.Split(clampBeforeOpen, StringSplitOptions.None).Length - 1, "Seek, BeginScrub, and UpdateScrub clamp before file lookup");
+        AssertEqual(3, sourceText.Split(clampBeforeOpen, StringSplitOptions.None).Length - 1, "Seek, BeginScrub, and UpdateScrub clamp before file lookup with frozen reference");
 
         return Task.CompletedTask;
     }
@@ -1699,8 +1735,15 @@ static partial class Program
         AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");\n                            CleanupDecoder(ref decoder, ref fileOpen);\n                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
         AssertContains(sourceText, "PaceAndDecodeFrame(decoder, commandChannel, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token)");
         AssertContains(sourceText, "CancellationToken cancellationToken)\n    {\n        try\n        {\n            cancellationToken.ThrowIfCancellationRequested();");
-        AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n                    {\n                        cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n                {\n                    cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(sourceText, "const double FrameSkipThresholdMs = 500.0;");
+        // Frame-skip catch-up loop must re-sync the audio clock each iteration so a
+        // long catch-up burst does not extrapolate from a stale wall-time anchor.
+        AssertContains(sourceText, "private bool TryComputeAudioMasterDriftMs(long videoPtsTicks, out double driftMs)");
+        AssertContains(sourceText, "if (TryComputeAudioMasterDriftMs(videoFrame.Pts.Ticks, out var driftMs) &&\n                driftMs < -FrameSkipThresholdMs)");
+        AssertContains(sourceText, "if (!TryComputeAudioMasterDriftMs(videoFrame.Pts.Ticks, out driftMs))\n                    {\n                        break;\n                    }");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_FRAME_SKIP_EOS count={skipped}");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_FRAME_SKIP_BUDGET count={skipped}");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_FMP4_REOPEN_BEFORE_SEGMENT_SWITCH");
         AssertContains(sourceText, "nextSegmentStart.Value - lastFrameAbsPts > TimeSpan.FromMilliseconds(250)");
         AssertContains(sourceText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            throw;\n        }\n        catch (Exception ex)\n        {\n            SnapToLiveOnError(decoder, ex, ref fileOpen);");

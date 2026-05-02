@@ -1471,6 +1471,18 @@ public sealed class CaptureRuntimeSnapshot
     public string LastFinalizeStatus { get; init; } = "None";
     public DateTimeOffset? LastFinalizeUtc { get; init; }
     public IReadOnlyList<string> LastPreservedArtifacts { get; init; } = Array.Empty<string>();
+    public string? FlashbackExportOutputPath { get; init; }
+    public string? FlashbackExportVerificationFormat { get; init; }
+    /// <summary>
+    /// Non-null when the user-requested flashback codec/encoder settings were silently
+    /// substituted at session-start time (e.g. AV1 requested but software MJPEG at
+    /// >=100fps cannot encode AV1 in real time, so the encoder falls back to HEVC, or
+    /// NVENC preset coerced to "Fast" to keep up with high-frame-rate software decode).
+    /// Encodes both what was changed and why so downstream automation, the verifier,
+    /// and (eventually) the UI can surface it. Empty/null means user settings were
+    /// honored as-is.
+    /// </summary>
+    public string? FlashbackCodecDowngradeReason { get; init; }
 }
 
 public sealed class ViewModelRuntimeSnapshot

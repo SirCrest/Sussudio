@@ -407,10 +407,24 @@ public sealed class CaptureSessionCoordinator : IDisposable, IAsyncDisposable
             : null;
     }
 
+    internal TimeSpan? FlashbackSetInPointAt(TimeSpan position)
+    {
+        return TryGetActiveFlashback(nameof(FlashbackSetInPointAt), out var controller)
+            ? controller.SetInPointAt(position)
+            : null;
+    }
+
     internal TimeSpan? FlashbackSetOutPoint()
     {
         return TryGetActiveFlashback(nameof(FlashbackSetOutPoint), out var controller)
             ? controller.SetOutPoint()
+            : null;
+    }
+
+    internal TimeSpan? FlashbackSetOutPointAt(TimeSpan position)
+    {
+        return TryGetActiveFlashback(nameof(FlashbackSetOutPointAt), out var controller)
+            ? controller.SetOutPointAt(position)
             : null;
     }
 

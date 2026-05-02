@@ -93,6 +93,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private long _flashbackExportId;
     private string _flashbackExportStatus = "NotStarted";
     private string _flashbackExportOutputPath = string.Empty;
+    // Tracks the most recent codec-downgrade reason logged so we don't spam the
+    // FLASHBACK_CODEC_DOWNGRADE message every time CreateFlashbackSessionContext
+    // is rebuilt with the same inputs. Reset to null when conditions clear.
+    private string? _lastLoggedFlashbackDowngradeReason;
     private long _flashbackExportStartedUtcUnixMs;
     private long _flashbackExportLastProgressUtcUnixMs;
     private long _flashbackExportCompletedUtcUnixMs;
@@ -1587,7 +1591,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // Flashback requires real-time hardware encoding. For AV1, fall back to
         // HEVC NVENC if av1_nvenc isn't available (the UI enables AV1 when any
         // AV1 encoder is present, including software-only like libsvtav1).
-        var codecName = settings.Format switch
+        var frameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
+        var forceTransportStreamFlashback = UseTransportStreamFlashbackCodec(unifiedVideoCapture, settings, frameRate);
+        var codecName = forceTransportStreamFlashback
+            ? "hevc_nvenc"
+            : settings.Format switch
         {
             RecordingFormat.HevcMp4 => "hevc_nvenc",
             RecordingFormat.Av1Mp4 => _hasAv1Nvenc ? "av1_nvenc" : "hevc_nvenc",
@@ -1596,7 +1604,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         var audioDeviceId = settings.AudioEnabled
             ? (settings.UseCustomAudioInput ? settings.AudioDeviceId : (_audioDeviceId ?? _currentDevice?.AudioDeviceId))
             : null;
-        var frameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
         var d3dManager = unifiedVideoCapture.D3DManager;
         // When the software MJPEG decode pipeline is active, frames arrive as CPU NV12
         // buffers (not D3D11 textures). Passing D3D device pointers would cause the
@@ -1647,6 +1654,30 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             ? "Fast"
             : settings.NvencPreset;
 
+        // One-shot downgrade visibility. The codec/preset substitutions above happen
+        // silently inside the encoder pipeline; without a log line the user has no
+        // way to know they did not get the AV1/quality preset they configured. Emit
+        // when the resolved reason changes so we don't spam every flashback restart
+        // with the identical message.
+        var downgradeReason = ResolveFlashbackCodecDowngradeReason(settings, unifiedVideoCapture);
+        if (!string.IsNullOrEmpty(downgradeReason) &&
+            !string.Equals(downgradeReason, _lastLoggedFlashbackDowngradeReason, StringComparison.Ordinal))
+        {
+            Logger.Log(
+                $"FLASHBACK_CODEC_DOWNGRADE requested_format={settings.Format} resolved_codec={codecName} requested_preset={settings.NvencPreset} resolved_preset={flashbackNvencPreset} frame_rate={frameRate:0.###} software_mjpeg={unifiedVideoCapture.IsSoftwareMjpegPipelineActive} reason='{downgradeReason}'");
+            _lastLoggedFlashbackDowngradeReason = downgradeReason;
+        }
+        else if (string.IsNullOrEmpty(downgradeReason) &&
+                 !string.IsNullOrEmpty(_lastLoggedFlashbackDowngradeReason))
+        {
+            // Capture conditions changed — e.g. user dropped from 120fps to 60fps —
+            // and the prior downgrade no longer applies. Surface that too so the log
+            // tells a coherent story across reinit cycles.
+            Logger.Log(
+                $"FLASHBACK_CODEC_DOWNGRADE_CLEARED requested_format={settings.Format} resolved_codec={codecName} resolved_preset={flashbackNvencPreset} frame_rate={frameRate:0.###}");
+            _lastLoggedFlashbackDowngradeReason = null;
+        }
+
         return new FlashbackSessionContext
         {
             Width = Math.Max(1, unifiedVideoCapture.Width),
@@ -1668,6 +1699,67 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             AudioEnabled = settings.AudioEnabled && !string.IsNullOrWhiteSpace(audioDeviceId),
             MicrophoneEnabled = settings.MicrophoneEnabled && !string.IsNullOrWhiteSpace(settings.MicrophoneDeviceId)
         };
+    }
+
+    private static bool UseTransportStreamFlashbackCodec(
+        UnifiedVideoCapture unifiedVideoCapture,
+        CaptureSettings settings,
+        double frameRate)
+        =>
+            unifiedVideoCapture.IsSoftwareMjpegPipelineActive &&
+            frameRate >= 100 &&
+            settings.Format == RecordingFormat.Av1Mp4;
+
+    private static string? ResolveFlashbackExportVerificationFormat(
+        CaptureSettings? settings,
+        UnifiedVideoCapture? unifiedVideoCapture)
+    {
+        if (settings == null || unifiedVideoCapture == null)
+        {
+            return settings?.Format.ToString();
+        }
+
+        var frameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
+        return UseTransportStreamFlashbackCodec(unifiedVideoCapture, settings, frameRate)
+            ? RecordingFormat.HevcMp4.ToString()
+            : settings.Format.ToString();
+    }
+
+    /// <summary>
+    /// Surfaces silent flashback codec/encoder substitutions so the verifier, automation
+    /// snapshot, and (eventually) the UI can show what was actually encoded vs what the
+    /// user requested. Returns null when user settings are honored as-is.
+    /// </summary>
+    private static string? ResolveFlashbackCodecDowngradeReason(
+        CaptureSettings? settings,
+        UnifiedVideoCapture? unifiedVideoCapture)
+    {
+        if (settings == null || unifiedVideoCapture == null)
+        {
+            return null;
+        }
+
+        var frameRate = unifiedVideoCapture.Fps > 0 ? unifiedVideoCapture.Fps : settings.FrameRate;
+        var codecDowngraded = UseTransportStreamFlashbackCodec(unifiedVideoCapture, settings, frameRate);
+        var presetCoerced = unifiedVideoCapture.IsSoftwareMjpegPipelineActive
+            && frameRate >= 100
+            && !string.Equals(settings.NvencPreset, "Fast", StringComparison.OrdinalIgnoreCase);
+
+        if (!codecDowngraded && !presetCoerced)
+        {
+            return null;
+        }
+
+        var parts = new List<string>(2);
+        if (codecDowngraded)
+        {
+            parts.Add($"AV1->HEVC: software MJPEG pipeline at {frameRate:0.#}fps cannot encode AV1 in real time");
+        }
+        if (presetCoerced)
+        {
+            parts.Add($"NVENC preset '{settings.NvencPreset}'->'Fast' to keep up with software MJPEG decode at {frameRate:0.#}fps");
+        }
+        return string.Join("; ", parts);
     }
 
     private async Task EnsureFlashbackPreviewBackendAsync(
@@ -5167,5 +5259,3 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
     }
 }
-
-
