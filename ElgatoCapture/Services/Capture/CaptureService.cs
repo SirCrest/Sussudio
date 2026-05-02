@@ -3069,6 +3069,22 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (_unifiedVideoCapture != null &&
                 (_isRecording || _flashbackEnabled))
             {
+                // Guard: if an active flashback sink exists but its pixel format no longer
+                // matches the freshly negotiated UVC format, the fast path must not silently
+                // reuse the wrong backend. Fail hard so the caller tears down and rebuilds.
+                if (_flashbackSink?.IsP010 is bool sinkIsP010 &&
+                    sinkIsP010 != _unifiedVideoCapture.IsP010)
+                {
+                    Logger.Log(
+                        $"FLASHBACK_FAST_PATH_FORMAT_MISMATCH " +
+                        $"existing_p010={sinkIsP010} requested_p010={_unifiedVideoCapture.IsP010}");
+                    throw new InvalidOperationException(
+                        $"Flashback fast path: pixel-format mismatch — sink was built for " +
+                        $"{(sinkIsP010 ? "P010" : "NV12")} but UVC session negotiated " +
+                        $"{(_unifiedVideoCapture.IsP010 ? "P010" : "NV12")}. " +
+                        "Rebuild the flashback backend with the correct format.");
+                }
+
                 Logger.Log($"PREVIEW_START fast_path=1 recording={_isRecording} flashback_alive={_flashbackSink != null}");
                 _unifiedVideoCapture.SetPreviewSink(_previewFrameSink);
                 TryApplySharedPreviewDevice(_unifiedVideoCapture, _previewFrameSink);
@@ -3464,6 +3480,22 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 // --- Unified path: piggyback on existing flashback NVENC session ---
                 if (_flashbackEnabled && _flashbackSink != null)
                 {
+                    // Guard: if the existing flashback sink's pixel format no longer matches the
+                    // negotiated UVC format, reject the reuse path so the slow path rebuilds correctly.
+                    if (_flashbackSink.IsP010 is bool recSinkIsP010 &&
+                        _unifiedVideoCapture != null &&
+                        recSinkIsP010 != _unifiedVideoCapture.IsP010)
+                    {
+                        Logger.Log(
+                            $"FLASHBACK_FAST_PATH_FORMAT_MISMATCH " +
+                            $"existing_p010={recSinkIsP010} requested_p010={_unifiedVideoCapture.IsP010}");
+                        throw new InvalidOperationException(
+                            $"Flashback recording fast path: pixel-format mismatch — sink was built for " +
+                            $"{(recSinkIsP010 ? "P010" : "NV12")} but UVC session negotiated " +
+                            $"{(_unifiedVideoCapture.IsP010 ? "P010" : "NV12")}. " +
+                            "Rebuild the flashback backend with the correct format.");
+                    }
+
                     StorageFolder fbOutputFolder;
                     try
                     {

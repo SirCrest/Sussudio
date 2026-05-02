@@ -210,6 +210,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public int EncoderWidth => _width;
     public int EncoderHeight => _height;
     public double EncoderFrameRate => _sessionContext?.FrameRate ?? 0;
+    /// <summary>
+    /// True when this sink was started with a P010 (HDR) session context.
+    /// Used by CaptureService to detect pixel-format drift between UVC re-negotiations.
+    /// </summary>
+    public bool? IsP010 => _sessionContext?.IsP010;
     internal Task EncodingCompletionTask => _encodingTask ?? Task.CompletedTask;
 
     public Task StartAsync(FlashbackSessionContext context, CancellationToken cancellationToken = default, TimeSpan ptsBaseOffset = default)
