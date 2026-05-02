@@ -1646,6 +1646,19 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             ? "Fast"
             : settings.NvencPreset;
 
+        // Hard rail: HDR must never silently degrade. If the user requested HDR
+        // but UVC negotiation did not land on P010, fail the operation rather than
+        // allowing SDR data to be encoded as if it were HDR (or vice versa).
+        var hdrRequested = HdrOutputPolicy.IsEnabled(settings);
+        if (hdrRequested != isP010)
+        {
+            Logger.Log(
+                $"FLASHBACK_HDR_NEGOTIATION_FAIL requested={hdrRequested} negotiated_p010={isP010} resolved_codec={codecName}");
+            throw new InvalidOperationException(
+                $"Flashback HDR negotiation mismatch: HDR requested={hdrRequested} but UVC negotiated P010={isP010}. " +
+                "Operation aborted to prevent silent HDR degradation.");
+        }
+
         // One-shot downgrade visibility. The codec/preset substitutions above happen
         // silently inside the encoder pipeline; without a log line the user has no
         // way to know they did not get the AV1/quality preset they configured. Emit
@@ -1681,7 +1694,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             NvencPreset = flashbackNvencPreset,
             IsP010 = isP010,
             BitRate = settings.GetTargetBitrate(),
-            HdrEnabled = isP010,
+            HdrEnabled = hdrRequested,
             IsFullRangeInput = unifiedVideoCapture.IsHighFrameRateMjpegMode,
             HdrMasterDisplayMetadata = settings.HdrMasterDisplayMetadata,
             HdrMaxCll = settings.HdrMaxCll,
@@ -3298,6 +3311,15 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     private static bool CanReuseFlashbackBackend(CaptureSettings current, CaptureSettings next)
     {
+        var currentHdr = HdrOutputPolicy.IsEnabled(current);
+        var nextHdr = HdrOutputPolicy.IsEnabled(next);
+        if (currentHdr != nextHdr)
+        {
+            Logger.Log(
+                $"FLASHBACK_REUSE_REJECTED reason=hdr_mismatch existing={currentHdr} requested={nextHdr}");
+            return false;
+        }
+
         return current.Format == next.Format &&
                current.Quality == next.Quality &&
                Math.Abs(current.CustomBitrateMbps - next.CustomBitrateMbps) < 0.01 &&
