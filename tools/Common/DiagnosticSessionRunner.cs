@@ -3487,9 +3487,7 @@ public static class DiagnosticSessionRunner
     {
         var metrics = new FlashbackPlaybackSessionMetrics();
         var baselinePlaybackActive = IsPlaybackSnapshotActive(initialSnapshot);
-        var baselineFrameCount = baselinePlaybackActive
-            ? GetNullableLong(initialSnapshot, "FlashbackPlaybackFrameCount") ?? 0
-            : 0;
+        var baselineFrameCount = GetNullableLong(initialSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
         var baselineCommandsEnqueued = GetNullableLong(initialSnapshot, "FlashbackPlaybackCommandsEnqueued") ?? 0;
         var baselineCommandsProcessed = GetNullableLong(initialSnapshot, "FlashbackPlaybackCommandsProcessed") ?? 0;
         foreach (var sample in samples)
