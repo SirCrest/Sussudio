@@ -65,6 +65,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private TimeSpan _forceRotateOutPoint;
 
     private long _segmentStartBytes;
+    private long _segmentRotationFailures;
     private long _droppedVideoFrames;
     private long _encodedVideoFrames;
     private long _videoFramesEnqueued;
@@ -188,6 +189,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     public long GpuFramesDropped => Interlocked.Read(ref _gpuFramesDropped);
     public long GpuQueueRejectedFrames => Interlocked.Read(ref _gpuQueueRejectedFrames);
     public string? LastGpuQueueRejectReason => Volatile.Read(ref _lastGpuQueueRejectReason);
+    public long SegmentRotationFailures => Interlocked.Read(ref _segmentRotationFailures);
+
     public bool EncodingFailed => Volatile.Read(ref _encodingFailure) != null;
     public string? EncodingFailureType => Volatile.Read(ref _encodingFailure)?.GetType().Name;
     public string? EncodingFailureMessage => Volatile.Read(ref _encodingFailure)?.Message;
@@ -1245,6 +1248,37 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         {
             Logger.Log("FLASHBACK_SINK_ENCODING_LOOP_CANCELLED");
             CompletePendingForceRotateWithEmptyResult();
+
+            // Register the in-progress segment so the buffer index sees the live edge.
+            if (_tsFilePath != null)
+            {
+                try
+                {
+                    var cancelPts = ResolveEncoderPts();
+                    if (cancelPts > _segmentStartPts)
+                    {
+                        var cancelSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));
+                        _bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, cancelPts, cancelSegmentBytes);
+                        Logger.Log(
+                            $"FLASHBACK_SINK_ENCODING_LOOP_CANCELLED_SEGMENT_REGISTERED " +
+                            $"path='{_tsFilePath}' frames={_encoder.VideoPacketsWritten} " +
+                            $"start_ms={(long)_segmentStartPts.TotalMilliseconds} end_ms={(long)cancelPts.TotalMilliseconds}");
+                    }
+                    else
+                    {
+                        Logger.Log("FLASHBACK_SINK_ENCODING_LOOP_CANCELLED_NO_SEGMENT no frames encoded in current segment");
+                    }
+                }
+                catch (Exception segmentEx)
+                {
+                    Logger.Log($"FLASHBACK_SINK_CANCELLED_SEGMENT_REGISTER_FAIL type={segmentEx.GetType().Name} msg={segmentEx.Message}");
+                }
+            }
+            else
+            {
+                Logger.Log("FLASHBACK_SINK_ENCODING_LOOP_CANCELLED_NO_SEGMENT tsFilePath is null");
+            }
+
             ReturnAllRemainingQueuedBuffers();
         }
         catch (Exception ex)
@@ -1553,6 +1587,31 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             if (newPath != null && !encoderRotated)
             {
                 _bufferManager.AbandonGeneratedSegmentPath(newPath, completedPath);
+            }
+
+            Interlocked.Increment(ref _segmentRotationFailures);
+
+            // Register the segment that was open before the rotation attempt so its
+            // data remains visible in the buffer index even though rotation failed.
+            if (completedPath != null)
+            {
+                try
+                {
+                    var failPts = ResolveEncoderPts();
+                    if (failPts > _segmentStartPts)
+                    {
+                        var failSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));
+                        _bufferManager.OnSegmentCompleted(completedPath, _segmentStartPts, failPts, failSegmentBytes);
+                        Logger.Log(
+                            $"FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTERED " +
+                            $"path='{completedPath}' frames={_encoder.VideoPacketsWritten} " +
+                            $"start_ms={(long)_segmentStartPts.TotalMilliseconds} end_ms={(long)failPts.TotalMilliseconds}");
+                    }
+                }
+                catch (Exception segmentEx)
+                {
+                    Logger.Log($"FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTER_FAIL type={segmentEx.GetType().Name} msg={segmentEx.Message}");
+                }
             }
 
             // Advance _segmentStartPts to prevent infinite retry on every frame
