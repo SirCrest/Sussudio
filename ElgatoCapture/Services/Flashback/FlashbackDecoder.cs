@@ -28,6 +28,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     private const int MaxDecodedVideoDimension = 8192;
     private const int MaxDecodedVideoFrameBytes = 512 * 1024 * 1024;
     private const int MaxDecodedAudioFrameBytes = 16 * 1024 * 1024;
+    private const int MaxMpegTsProbeSizeBytes = 20 * 1024 * 1024;
+    private const int MaxMpegTsAnalyzeDurationUs = 5 * 1000 * 1000;
     private const int MaxHardwareConfigCount = 64;
     private const int AvCodecHwConfigMethodHwDeviceCtx = 0x01;
     private const int AvCodecHwConfigMethodHwFramesCtx = 0x02;
@@ -245,12 +247,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             _formatCtx = formatCtx;
             _formatCtx->flags |= ffmpeg.AVFMT_FLAG_GENPTS;
 
-            // Our own MPEG-TS files have known codecs (HEVC/H.264 + AAC) —
-            // reduce probing from defaults (5MB / 5s) but keep enough data for
-            // accurate frame rate computation (H.264 SPS timing is field-doubled,
-            // so FFmpeg must derive fps from actual PTS deltas, not SPS metadata).
-            _formatCtx->probesize = 256 * 1024;      // 256KB — need enough PTS samples for H.264 fps computation
-            _formatCtx->max_analyze_duration = 500000; // 0.5s instead of default 5s
+            // Rotated MPEG-TS segments can start mid-stream before the next IDR/SPS.
+            // Use the same larger probe window as the exporter so playback can recover
+            // dimensions and extradata from high-bitrate 4K120 flashback segments.
+            _formatCtx->probesize = MaxMpegTsProbeSizeBytes;
+            _formatCtx->max_analyze_duration = MaxMpegTsAnalyzeDurationUs;
 
             ThrowIfError(
                 ffmpeg.avformat_find_stream_info(_formatCtx, null),

@@ -2406,6 +2406,10 @@ static partial class Program
         AssertContains(sourceText, "private const int MaxSupportedInputStreams = 64;");
         AssertContains(sourceText, "private const int MaxDecodedVideoDimension = 8192;");
         AssertContains(sourceText, "private const int MaxDecodedVideoFrameBytes = 512 * 1024 * 1024;");
+        AssertContains(sourceText, "private const int MaxMpegTsProbeSizeBytes = 20 * 1024 * 1024;");
+        AssertContains(sourceText, "private const int MaxMpegTsAnalyzeDurationUs = 5 * 1000 * 1000;");
+        AssertContains(sourceText, "_formatCtx->probesize = MaxMpegTsProbeSizeBytes;");
+        AssertContains(sourceText, "_formatCtx->max_analyze_duration = MaxMpegTsAnalyzeDurationUs;");
         AssertContains(sourceText, "if (!TryGetInputStreamCount(_formatCtx, out var streamCount, out var streamCountFailure))");
         AssertContains(sourceText, "if (!IsValidStreamIndex(_videoStreamIndex, streamCount))");
         AssertContains(sourceText, "if (_audioStreamIndex >= 0 && !IsValidStreamIndex(_audioStreamIndex, streamCount))");
