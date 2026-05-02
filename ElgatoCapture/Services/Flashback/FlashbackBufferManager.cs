@@ -1327,29 +1327,52 @@ internal sealed class FlashbackBufferManager : IDisposable
                 return;
             }
 
-            // Delete completed segments
-            foreach (var seg in _completedSegments)
-            {
-                TryDeleteFile(seg.Path);
-            }
-            _completedSegments.Clear();
-            _completedSegmentBytes = 0;
-            _completedSegmentSequence = 0;
-
-            // Delete active segment
-            if (_activeSegmentPath != null)
-            {
-                TryDeleteFile(_activeSegmentPath);
-                _activeSegmentPath = null;
-            }
-            Interlocked.Exchange(ref _latestPtsTicks, 0);
-            Interlocked.Exchange(ref _validStartPtsTicks, 0);
-            _totalDiskBytes = 0;
-            _totalBytesWritten = 0;
-            _previousActiveSegmentBytes = 0;
-            Interlocked.Exchange(ref _evictionPauseCount, 0);
-            Logger.Log("FLASHBACK_BUFFER_PURGE");
+            PurgeAllSegmentsCore(); // return value unused here; FLASHBACK_BUFFER_PURGE log covers it
         }
+    }
+
+    /// <summary>
+    /// Deletes all segment files and resets all buffer state. Must be called under <see cref="_indexLock"/>.
+    /// Does not gate on <see cref="_disposed"/> — callers are responsible for that check.
+    /// Returns the number of segments purged and total bytes freed.
+    /// </summary>
+    private (int Segments, long FreedBytes) PurgeAllSegmentsCore()
+    {
+        // Must be called under _indexLock.
+        var segmentCount = _completedSegments.Count + (_activeSegmentPath != null ? 1 : 0);
+        long freedBytes = 0;
+
+        // Delete completed segments
+        foreach (var seg in _completedSegments)
+        {
+            if (TryDeleteFile(seg.Path))
+            {
+                freedBytes = AddNonNegativeSaturated(freedBytes, seg.SizeBytes);
+            }
+        }
+        _completedSegments.Clear();
+        _completedSegmentBytes = 0;
+        _completedSegmentSequence = 0;
+
+        // Delete active segment
+        if (_activeSegmentPath != null)
+        {
+            var activeBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);
+            if (TryDeleteFile(_activeSegmentPath))
+            {
+                freedBytes = AddNonNegativeSaturated(freedBytes, activeBytes);
+            }
+            _activeSegmentPath = null;
+        }
+        Interlocked.Exchange(ref _latestPtsTicks, 0);
+        Interlocked.Exchange(ref _validStartPtsTicks, 0);
+        _totalDiskBytes = 0;
+        _totalBytesWritten = 0;
+        _previousActiveSegmentBytes = 0;
+        // Clear under _indexLock so this is serialized with PauseEviction/ResumeEviction.
+        _evictionPauseCount = 0;
+        Logger.Log($"FLASHBACK_BUFFER_PURGE segments={segmentCount} freed_bytes={freedBytes}");
+        return (segmentCount, freedBytes);
     }
 
     private static long AddNonNegativeSaturated(long left, long right)
@@ -1430,8 +1453,16 @@ internal sealed class FlashbackBufferManager : IDisposable
                 return;
             }
 
-            _disposed = true;
             Logger.Log($"FLASHBACK_BUFFER_DISPOSE file={_activeSegmentPath != null} segments={_completedSegments.Count}");
+
+            // Purge segment files before marking disposed so PurgeAllSegmentsCore can
+            // run fully. This ensures the session directory is empty before the
+            // Directory.Delete call below, preventing orphaned multi-GB segment files.
+            var (purgedSegments, purgedBytes) = PurgeAllSegmentsCore();
+            Logger.Log($"FLASHBACK_BUFFER_DISPOSE_PURGE segments={purgedSegments} bytes={purgedBytes}");
+
+            _disposed = true;
+
             if (!string.IsNullOrWhiteSpace(_sessionDirectory))
             {
                 try
