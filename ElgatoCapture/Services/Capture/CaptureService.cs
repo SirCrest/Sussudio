@@ -1248,7 +1248,32 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 {
                     if (purgeSegments)
                     {
-                        try { bufferManager.PurgeAllSegments(); }
+                        try
+                        {
+                            bool lockAcquired = false;
+                            if (_flashbackExportOperationLock != null)
+                            {
+                                Logger.Log($"FLASHBACK_DEFERRED_PURGE_AWAITING_EXPORT_LOCK reason='{reason}'");
+                                var lockSw = System.Diagnostics.Stopwatch.StartNew();
+                                lockAcquired = await _flashbackExportOperationLock.WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false);
+                                lockSw.Stop();
+                                if (lockAcquired)
+                                    Logger.Log($"FLASHBACK_DEFERRED_PURGE_LOCK_ACQUIRED elapsed_ms={lockSw.ElapsedMilliseconds} reason='{reason}'");
+                                else
+                                    Logger.Log($"FLASHBACK_DEFERRED_PURGE_EXPORT_LOCK_TIMEOUT — proceeding without lock reason='{reason}'");
+                            }
+
+                            try { bufferManager.PurgeAllSegments(); }
+                            catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_DEFERRED_PURGE_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
+                            finally
+                            {
+                                if (lockAcquired)
+                                {
+                                    try { _flashbackExportOperationLock!.Release(); }
+                                    catch (Exception ex) { Logger.Log($"FLASHBACK_DEFERRED_PURGE_LOCK_RELEASE_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
+                                }
+                            }
+                        }
                         catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_DEFERRED_PURGE_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
                     }
 
