@@ -660,42 +660,45 @@ public static class DiagnosticSessionRunner
         var likelyStage = GetString(lastSnapshot, "DiagnosticLikelyStage") ?? "diagnostic_unavailable";
         var summary = GetString(lastSnapshot, "DiagnosticSummary") ?? string.Empty;
         var evidence = GetString(lastSnapshot, "DiagnosticEvidence") ?? string.Empty;
-        var playbackPendingAtEnd = GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands");
-        var playbackMaxPendingObserved = GetMaxSnapshotInt(samples, lastSnapshot, "FlashbackPlaybackMaxPendingCommands");
-        var playbackMaxLatencyObserved = GetMaxSnapshotInt(samples, lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs");
-        var playbackDroppedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsDropped") ?? 0;
-        var playbackSkippedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0;
-        var playbackScrubCoalescedAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackScrubUpdatesCoalesced") ?? 0;
-        var playbackLastCommandFailureAtEnd = GetString(lastSnapshot, "FlashbackPlaybackLastCommandFailure") ?? string.Empty;
-        var playbackLastCommandFailureUtcUnixMsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLastCommandFailureUtcUnixMs") ?? 0;
-        var playbackObservedFpsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackObservedFps");
-        var playbackAvgFrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackAvgFrameMs");
-        var playbackP99FrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackP99FrameMs");
-        var playbackMaxFrameMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackMaxFrameMs");
-        var playbackOnePercentLowFpsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackOnePercentLowFps");
-        var playbackDecodeAvgMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackDecodeAvgMs");
-        var playbackDecodeP95MsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackDecodeP95Ms");
-        var playbackDecodeP99MsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackDecodeP99Ms");
-        var playbackDecodeMaxMsAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackDecodeMaxMs");
-        var playbackFrameCountAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
-        var playbackLateFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLateFrames") ?? 0;
-        var playbackSlowFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSlowFrames") ?? 0;
-        var playbackSlowFramePercentAtEnd = GetDouble(lastSnapshot, "FlashbackPlaybackSlowFramePercent");
-        var playbackDroppedFramesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackDroppedFrames") ?? 0;
-        var playbackAudioMasterDelayDoublesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackAudioMasterDelayDoubles") ?? 0;
-        var playbackAudioMasterDelayShrinksAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackAudioMasterDelayShrinks") ?? 0;
-        var playbackAudioMasterFallbacksAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0;
-        var playbackSubmitFailuresAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSubmitFailures") ?? 0;
-        var playbackSegmentSwitchesAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackSegmentSwitches") ?? 0;
-        var playbackFmp4ReopensAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackFmp4Reopens") ?? 0;
-        var playbackWriteHeadWaitsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackWriteHeadWaits") ?? 0;
-        var playbackNearLiveSnapsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackNearLiveSnaps") ?? 0;
-        var playbackDecodeErrorSnapsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackDecodeErrorSnaps") ?? 0;
-        var playbackLastWriteHeadWaitGapMsAtEnd = GetNullableLong(lastSnapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs") ?? 0;
-        var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(samples, lastSnapshot);
+        var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(initialSnapshot, samples, lastSnapshot);
+        var playbackEndSnapshot = playbackSessionMetrics.EndSnapshot;
+        var playbackPendingAtEnd = playbackSessionMetrics.Observed
+            ? GetInt(playbackEndSnapshot, "FlashbackPlaybackPendingCommands")
+            : 0;
+        var playbackMaxPendingObserved = playbackSessionMetrics.MaxPendingCommandsObserved;
+        var playbackMaxLatencyObserved = playbackSessionMetrics.MaxCommandQueueLatencyMsObserved;
+        var playbackDroppedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackCommandsDropped") ?? 0 : 0;
+        var playbackSkippedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0 : 0;
+        var playbackScrubCoalescedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackScrubUpdatesCoalesced") ?? 0 : 0;
+        var playbackLastCommandFailureAtEnd = playbackSessionMetrics.Observed ? GetString(playbackEndSnapshot, "FlashbackPlaybackLastCommandFailure") ?? string.Empty : string.Empty;
+        var playbackLastCommandFailureUtcUnixMsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackLastCommandFailureUtcUnixMs") ?? 0 : 0;
+        var playbackObservedFpsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackObservedFps") : 0;
+        var playbackAvgFrameMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackAvgFrameMs") : 0;
+        var playbackP99FrameMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackP99FrameMs") : 0;
+        var playbackMaxFrameMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxFrameMs") : 0;
+        var playbackOnePercentLowFpsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackOnePercentLowFps") : 0;
+        var playbackDecodeAvgMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeAvgMs") : 0;
+        var playbackDecodeP95MsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeP95Ms") : 0;
+        var playbackDecodeP99MsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeP99Ms") : 0;
+        var playbackDecodeMaxMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeMaxMs") : 0;
+        var playbackFrameCountAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackFrameCount") ?? 0 : 0;
+        var playbackLateFramesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackLateFrames") ?? 0 : 0;
+        var playbackSlowFramesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSlowFrames") ?? 0 : 0;
+        var playbackSlowFramePercentAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackSlowFramePercent") : 0;
+        var playbackDroppedFramesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackDroppedFrames") ?? 0 : 0;
+        var playbackAudioMasterDelayDoublesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterDelayDoubles") ?? 0 : 0;
+        var playbackAudioMasterDelayShrinksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterDelayShrinks") ?? 0 : 0;
+        var playbackAudioMasterFallbacksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0 : 0;
+        var playbackSubmitFailuresAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSubmitFailures") ?? 0 : 0;
+        var playbackSegmentSwitchesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSegmentSwitches") ?? 0 : 0;
+        var playbackFmp4ReopensAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackFmp4Reopens") ?? 0 : 0;
+        var playbackWriteHeadWaitsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackWriteHeadWaits") ?? 0 : 0;
+        var playbackNearLiveSnapsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackNearLiveSnaps") ?? 0 : 0;
+        var playbackDecodeErrorSnapsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackDecodeErrorSnaps") ?? 0 : 0;
+        var playbackLastWriteHeadWaitGapMsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackLastWriteHeadWaitGapMs") ?? 0 : 0;
         if (runFlashbackPlayback)
         {
-            ValidateFlashbackPlaybackSession(lastSnapshot, playbackSessionMetrics, durationSeconds, warnings);
+            ValidateFlashbackPlaybackSession(playbackSessionMetrics.Observed ? playbackEndSnapshot : lastSnapshot, playbackSessionMetrics, durationSeconds, warnings);
         }
 
         var recordingMetrics = BuildFlashbackRecordingMetrics(samples);
@@ -3228,15 +3231,33 @@ public static class DiagnosticSessionRunner
     }
 
     private static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(
+        JsonElement initialSnapshot,
         IReadOnlyList<DiagnosticSessionSample> samples,
         JsonElement lastSnapshot)
     {
         var metrics = new FlashbackPlaybackSessionMetrics();
-        ObservePlaybackSnapshot(metrics, lastSnapshot);
+        var baselineFrameCount = GetNullableLong(initialSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
+        var baselineCommandsEnqueued = GetNullableLong(initialSnapshot, "FlashbackPlaybackCommandsEnqueued") ?? 0;
+        var baselineCommandsProcessed = GetNullableLong(initialSnapshot, "FlashbackPlaybackCommandsProcessed") ?? 0;
+        var baselinePlaybackActive = IsPlaybackSnapshotActive(initialSnapshot);
         foreach (var sample in samples)
         {
-            ObservePlaybackSnapshot(metrics, sample.Snapshot);
+            ObservePlaybackSnapshot(
+                metrics,
+                sample.Snapshot,
+                baselineFrameCount,
+                baselineCommandsEnqueued,
+                baselineCommandsProcessed,
+                baselinePlaybackActive);
         }
+
+        ObservePlaybackSnapshot(
+            metrics,
+            lastSnapshot,
+            baselineFrameCount,
+            baselineCommandsEnqueued,
+            baselineCommandsProcessed,
+            baselinePlaybackActive);
 
         if (double.IsPositiveInfinity(metrics.MinOnePercentLowFpsObserved))
         {
@@ -3251,9 +3272,39 @@ public static class DiagnosticSessionRunner
         return metrics;
     }
 
-    private static void ObservePlaybackSnapshot(FlashbackPlaybackSessionMetrics metrics, JsonElement snapshot)
+    private static void ObservePlaybackSnapshot(
+        FlashbackPlaybackSessionMetrics metrics,
+        JsonElement snapshot,
+        long baselineFrameCount,
+        long baselineCommandsEnqueued,
+        long baselineCommandsProcessed,
+        bool baselinePlaybackActive)
     {
         const long MinimumPlaybackFramesForLowPercentile = 240;
+
+        var frameCount = GetNullableLong(snapshot, "FlashbackPlaybackFrameCount") ?? 0;
+        var commandsEnqueued = GetNullableLong(snapshot, "FlashbackPlaybackCommandsEnqueued") ?? 0;
+        var commandsProcessed = GetNullableLong(snapshot, "FlashbackPlaybackCommandsProcessed") ?? 0;
+        var relevantToSession =
+            IsPlaybackSnapshotActive(snapshot) ||
+            GetInt(snapshot, "FlashbackPlaybackPendingCommands") > 0 ||
+            frameCount > baselineFrameCount ||
+            commandsEnqueued > baselineCommandsEnqueued ||
+            commandsProcessed > baselineCommandsProcessed ||
+            baselinePlaybackActive;
+        if (!relevantToSession)
+        {
+            return;
+        }
+
+        metrics.Observed = true;
+        metrics.EndSnapshot = snapshot;
+        metrics.MaxPendingCommandsObserved = Math.Max(
+            metrics.MaxPendingCommandsObserved,
+            GetInt(snapshot, "FlashbackPlaybackMaxPendingCommands"));
+        metrics.MaxCommandQueueLatencyMsObserved = Math.Max(
+            metrics.MaxCommandQueueLatencyMsObserved,
+            GetInt(snapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs"));
 
         var observedFps = GetDouble(snapshot, "FlashbackPlaybackObservedFps");
         if (observedFps > 0)
@@ -3262,7 +3313,6 @@ public static class DiagnosticSessionRunner
         }
 
         var onePercentLow = GetDouble(snapshot, "FlashbackPlaybackOnePercentLowFps");
-        var frameCount = GetNullableLong(snapshot, "FlashbackPlaybackFrameCount") ?? 0;
         if (onePercentLow > 0 && frameCount >= MinimumPlaybackFramesForLowPercentile)
         {
             metrics.MinOnePercentLowFpsObserved = Math.Min(metrics.MinOnePercentLowFpsObserved, onePercentLow);
@@ -3281,8 +3331,21 @@ public static class DiagnosticSessionRunner
         metrics.MaxAbsAvDriftMsObserved = Math.Max(metrics.MaxAbsAvDriftMsObserved, Math.Abs(GetDouble(snapshot, "FlashbackAvDriftMs")));
     }
 
+    private static bool IsPlaybackSnapshotActive(JsonElement snapshot)
+    {
+        var state = GetString(snapshot, "FlashbackPlaybackState") ?? string.Empty;
+        return GetBool(snapshot, "FlashbackPlaybackThreadAlive") ||
+               string.Equals(state, "Playing", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(state, "Paused", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(state, "Seeking", StringComparison.OrdinalIgnoreCase);
+    }
+
     private sealed class FlashbackPlaybackSessionMetrics
     {
+        public bool Observed { get; set; }
+        public JsonElement EndSnapshot { get; set; }
+        public int MaxPendingCommandsObserved { get; set; }
+        public int MaxCommandQueueLatencyMsObserved { get; set; }
         public double MinObservedFpsObserved { get; set; } = double.PositiveInfinity;
         public double MinOnePercentLowFpsObserved { get; set; } = double.PositiveInfinity;
         public double MaxP99FrameMsObserved { get; set; }
