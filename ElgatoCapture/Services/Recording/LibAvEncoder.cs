@@ -297,7 +297,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
                 ffmpeg.avcodec_parameters_from_context(_videoStream->codecpar, _videoCodecCtx),
                 "avcodec_parameters_from_context");
 
-            InitializeHdrBitstreamFilterIfNeeded(options);
+            InitializeVideoBitstreamFilterIfNeeded(options);
             InitializeAudioIfNeeded(options);
             InitializeMicrophoneIfNeeded(options);
 
@@ -931,6 +931,13 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
         var preset = MapNvencPreset(options.NvencPreset);
         ThrowIfError(ffmpeg.av_opt_set(codecContext->priv_data, "preset", preset, 0), "av_opt_set(preset)");
+
+        if (IsMpegTsParameterSetFilterCandidate(options))
+        {
+            ThrowIfError(
+                ffmpeg.av_opt_set_int(codecContext->priv_data, "forced-idr", 1, 0),
+                "av_opt_set_int(forced-idr)");
+        }
     }
 
     /// <summary>
@@ -1235,18 +1242,17 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
     }
 
-    private void InitializeHdrBitstreamFilterIfNeeded(LibAvEncoderOptions options)
+    private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)
     {
-        if (!options.HdrEnabled)
-        {
-            return;
-        }
-
-        var filterName = GetHdrBitstreamFilterName(options.CodecName);
+        var filterName = options.HdrEnabled
+            ? GetHdrBitstreamFilterName(options.CodecName)
+            : GetMpegTsParameterSetBitstreamFilterName(options);
         if (filterName == null)
         {
             return;
         }
+
+        var injectHdrMetadata = options.HdrEnabled;
 
         var filter = ffmpeg.av_bsf_get_by_name(filterName);
         if (filter == null)
@@ -1264,13 +1270,13 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         var optionTarget = _bsfCtx->priv_data != null ? _bsfCtx->priv_data : _bsfCtx;
         var searchFlags = ffmpeg.AV_OPT_SEARCH_CHILDREN;
 
-        if (filterName.Equals("hevc_metadata", StringComparison.OrdinalIgnoreCase))
+        if (injectHdrMetadata && filterName.Equals("hevc_metadata", StringComparison.OrdinalIgnoreCase))
         {
             ThrowIfError(ffmpeg.av_opt_set(optionTarget, "colour_primaries", "9", searchFlags), "av_opt_set(hevc_metadata.colour_primaries)");
             ThrowIfError(ffmpeg.av_opt_set(optionTarget, "transfer_characteristics", "16", searchFlags), "av_opt_set(hevc_metadata.transfer_characteristics)");
             ThrowIfError(ffmpeg.av_opt_set(optionTarget, "matrix_coefficients", "9", searchFlags), "av_opt_set(hevc_metadata.matrix_coefficients)");
         }
-        else
+        else if (injectHdrMetadata)
         {
             ThrowIfError(ffmpeg.av_opt_set(optionTarget, "color_primaries", "9", searchFlags), "av_opt_set(av1_metadata.color_primaries)");
             ThrowIfError(ffmpeg.av_opt_set(optionTarget, "transfer_characteristics", "16", searchFlags), "av_opt_set(av1_metadata.transfer_characteristics)");
@@ -1278,7 +1284,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         }
 
         ThrowIfError(ffmpeg.av_bsf_init(_bsfCtx), "av_bsf_init");
-        Logger.Log($"LIBAV_ENCODER_BSF_INIT codec='{options.CodecName}' filter='{filterName}'");
+        Logger.Log($"LIBAV_ENCODER_BSF_INIT codec='{options.CodecName}' filter='{filterName}' hdr={injectHdrMetadata}");
     }
 
     private void InitializeAudioIfNeeded(LibAvEncoderOptions options)
@@ -2424,7 +2430,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         ReinitializeVideoStream();
         ReinitializeAudioStream();
         ReinitializeMicrophoneStream();
-        ReinitializeHdrBitstreamFilter();
+        ReinitializeVideoBitstreamFilter();
 
         ThrowIfError(ffmpeg.avio_open2(&_formatCtx->pb, outputPath, ffmpeg.AVIO_FLAG_WRITE, null, null), "avio_open2(rotate)");
 
@@ -2525,7 +2531,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         _micStream->time_base = _micCodecCtx->time_base;
     }
 
-    private void ReinitializeHdrBitstreamFilter()
+    private void ReinitializeVideoBitstreamFilter()
     {
         if (_bsfCtx != null)
         {
@@ -2537,7 +2543,7 @@ internal sealed unsafe class LibAvEncoder : IDisposable
         var options = _options;
         if (options != null)
         {
-            InitializeHdrBitstreamFilterIfNeeded(options);
+            InitializeVideoBitstreamFilterIfNeeded(options);
         }
     }
 
@@ -2896,6 +2902,14 @@ ValidateHdrOptions:
 
         return null;
     }
+
+    private static string? GetMpegTsParameterSetBitstreamFilterName(LibAvEncoderOptions options)
+        => IsMpegTsParameterSetFilterCandidate(options) ? "dump_extra" : null;
+
+    private static bool IsMpegTsParameterSetFilterCandidate(LibAvEncoderOptions options)
+        => string.Equals(options.ContainerFormat, "mpegts", StringComparison.OrdinalIgnoreCase) &&
+           (options.CodecName.Contains("h264", StringComparison.OrdinalIgnoreCase) ||
+            options.CodecName.Contains("hevc", StringComparison.OrdinalIgnoreCase));
 
     private static int GetExpectedFrameSizeBytes(int width, int height, bool isP010)
         => isP010 ? width * height * 3 : (width * height * 3) / 2;

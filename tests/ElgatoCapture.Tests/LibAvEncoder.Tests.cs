@@ -278,4 +278,22 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task LibAvEncoder_MpegTsNvencDumpsHeadersForRotatedSegments()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Recording/LibAvEncoder.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");
+        AssertContains(sourceText, "GetMpegTsParameterSetBitstreamFilterName(options)");
+        AssertContains(sourceText, "IsMpegTsParameterSetFilterCandidate(options) ? \"dump_extra\" : null");
+        AssertContains(sourceText, "string.Equals(options.ContainerFormat, \"mpegts\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(sourceText, "options.CodecName.Contains(\"h264\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(sourceText, "options.CodecName.Contains(\"hevc\", StringComparison.OrdinalIgnoreCase)");
+        AssertContains(sourceText, "ffmpeg.av_opt_set_int(codecContext->priv_data, \"forced-idr\", 1, 0)");
+        AssertContains(sourceText, "av_opt_set_int(forced-idr)");
+        AssertDoesNotContain(sourceText, "\"repeat_headers\"");
+
+        return Task.CompletedTask;
+    }
 }

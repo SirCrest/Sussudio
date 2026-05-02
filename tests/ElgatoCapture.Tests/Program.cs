@@ -201,6 +201,9 @@ static partial class Program
                 "LibAv encoder fragments MP4 tightly for flashback playback",
                 LibAvEncoder_FragmentedMp4UsesShortFragmentsForPlayback),
             await RunCheckAsync(
+                "LibAv encoder dumps MPEG-TS headers for rotated flashback segments",
+                LibAvEncoder_MpegTsNvencDumpsHeadersForRotatedSegments),
+            await RunCheckAsync(
                 "Flashback integrity uses recording-scoped sequence gaps",
                 FlashbackRecordingIntegrity_UsesRecordingScopedSequenceGaps),
             await RunCheckAsync(
