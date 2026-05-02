@@ -795,10 +795,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!isScrubbing)
                         {
                             _wasPlayingBeforeScrub = isPlaying || State == FlashbackPlaybackState.Live;
+                            frozenValidStart = _bufferManager.ValidStartPts;
+                        }
+                        else
+                        {
+                            var proposedValidStart = _bufferManager.ValidStartPts;
+                            Logger.Log($"FLASHBACK_PLAYBACK_BEGIN_SCRUB_DUPLICATE existing_frozen_ms={frozenValidStart?.TotalMilliseconds:F0} new_proposed_ms={proposedValidStart.TotalMilliseconds:F0}");
                         }
                         isPlaying = false;
                         isScrubbing = true;
-                        frozenValidStart = _bufferManager.ValidStartPts;
                         SafeSuppressPreviewSubmission("begin_scrub");
                         SuppressLiveAudio();
                         SafePauseRendering("begin_scrub");
