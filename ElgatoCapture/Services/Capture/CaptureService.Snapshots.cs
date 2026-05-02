@@ -654,13 +654,19 @@ public partial class CaptureService
             mismatches.Add($"fps expected {expectedFrameRate.Value:0.###}, observed {telemetry.FrameRateExact.Value:0.###}");
         }
 
-        if (telemetry.IsHdr.HasValue && telemetry.IsHdr.Value != hdrRequested)
+        var sourceHdrExpectedSdrCapture = telemetry.IsHdr == true && !hdrRequested;
+        if (telemetry.IsHdr.HasValue && telemetry.IsHdr.Value != hdrRequested && !sourceHdrExpectedSdrCapture)
         {
             mismatches.Add($"hdr expected {hdrRequested}, observed {telemetry.IsHdr.Value}");
         }
 
         if (mismatches.Count == 0)
         {
+            if (sourceHdrExpectedSdrCapture)
+            {
+                return ("Aligned", "Source is HDR, but SDR capture was requested.");
+            }
+
             return ("Aligned", "Source telemetry matches requested capture settings.");
         }
 

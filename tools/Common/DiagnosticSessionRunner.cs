@@ -243,6 +243,22 @@ public static class DiagnosticSessionRunner
         string? flashbackRecordingSettingsDeferredTargetPreset = null;
         using var commandSendGate = new SemaphoreSlim(1, 1);
 
+        async Task<JsonElement> SendRawWithConnectRetryAsync(
+            string command,
+            Dictionary<string, object?>? payload,
+            int? responseTimeoutMs)
+        {
+            var response = await SendCommandWithConnectRetryAsync(
+                    sendCommandAsync,
+                    command,
+                    payload,
+                    responseTimeoutMs,
+                    TimeSpan.FromSeconds(30),
+                    cancellationToken)
+                .ConfigureAwait(false);
+            return response ?? BuildLocalFailureResponse(command, "no response after connect retry");
+        }
+
         var initialResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
         var initialSnapshot = TryGetSnapshot(initialResponse, out var initial)
             ? initial
@@ -329,7 +345,7 @@ public static class DiagnosticSessionRunner
                 flashbackScrubStressTask = RunFlashbackScrubStressAsync(
                     actions,
                     warnings,
-                    sendCommandAsync,
+                    SendRawWithConnectRetryAsync,
                     cancellationToken);
                 actions.Add("flashback scrub stress started");
             }
@@ -408,7 +424,7 @@ public static class DiagnosticSessionRunner
                     outputDirectory,
                     actions,
                     warnings,
-                    sendCommandAsync,
+                    SendRawWithConnectRetryAsync,
                     cancellationToken);
                 actions.Add("flashback concurrent export started");
             }
@@ -424,7 +440,7 @@ public static class DiagnosticSessionRunner
                     outputDirectory,
                     actions,
                     warnings,
-                    sendCommandAsync,
+                    SendRawWithConnectRetryAsync,
                     cancellationToken);
                 actions.Add("flashback disable during export started");
             }
@@ -951,7 +967,7 @@ public static class DiagnosticSessionRunner
             await commandSendGate.WaitAsync(cancellationToken).ConfigureAwait(false);
             try
             {
-                var response = await sendCommandAsync(command, payload, responseTimeoutMs).ConfigureAwait(false);
+                var response = await SendRawWithConnectRetryAsync(command, payload, responseTimeoutMs).ConfigureAwait(false);
                 if (!AutomationSnapshotFormatter.IsSuccess(response) && !allowFailure)
                 {
                     commandFailureCount++;
@@ -1516,10 +1532,13 @@ public static class DiagnosticSessionRunner
             60_000);
 
         await Task.Delay(100, cancellationToken).ConfigureAwait(false);
-        var disableTask = sendCommandAsync(
+        var disableTask = SendCommandWithConnectRetryAsync(
+            sendCommandAsync,
             "SetFlashbackEnabled",
             new Dictionary<string, object?> { ["enabled"] = false },
-            305_000);
+            305_000,
+            TimeSpan.FromSeconds(30),
+            cancellationToken);
         actions.Add("flashback disable/export requests issued");
 
         var exportResponse = await exportTask.ConfigureAwait(false);
@@ -1530,10 +1549,13 @@ public static class DiagnosticSessionRunner
                 $"flashback disable during export: export failed - {AutomationSnapshotFormatter.Get(exportResponse, "Message", "unknown error")}");
         }
 
-        if (!AutomationSnapshotFormatter.IsSuccess(disableResponse))
+        if (disableResponse is null || !AutomationSnapshotFormatter.IsSuccess(disableResponse.Value))
         {
+            var message = disableResponse is null
+                ? "no response"
+                : AutomationSnapshotFormatter.Get(disableResponse.Value, "Message", "unknown error");
             warnings.Add(
-                $"flashback disable during export: disable failed - {AutomationSnapshotFormatter.Get(disableResponse, "Message", "unknown error")}");
+                $"flashback disable during export: disable failed - {message}");
         }
 
         if (AutomationSnapshotFormatter.IsSuccess(exportResponse))
@@ -1550,7 +1572,7 @@ public static class DiagnosticSessionRunner
             }
         }
 
-        if (AutomationSnapshotFormatter.IsSuccess(disableResponse))
+        if (disableResponse.HasValue && AutomationSnapshotFormatter.IsSuccess(disableResponse.Value))
         {
             var inactiveSnapshot = await WaitForFlashbackActiveAsync(
                     sendCommandAsync,

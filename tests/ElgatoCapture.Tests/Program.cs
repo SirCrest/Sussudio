@@ -39,6 +39,9 @@ static partial class Program
                 "Telemetry unavailable maps to unavailable state",
                 GetRuntimeSnapshot_TelemetryAlignment_Unavailable_WhenTelemetryUnavailable),
             await RunCheckAsync(
+                "HDR truth treats HDR source with SDR request as expected",
+                Diagnostics_HdrTruthVerdict_TreatsHdrSourceSdrRequestAsExpected),
+            await RunCheckAsync(
                 "NativeXu telemetry accepts known 4K X product revisions",
                 NativeXuTelemetry_AcceptsKnown4kXProductRevisions),
             await RunCheckAsync(
@@ -1255,6 +1258,33 @@ static partial class Program
         AssertContains(GetStringProperty(snapshot, "TelemetryAlignmentReason"), "unavailable");
 
         await DisposeAsync(captureService).ConfigureAwait(false);
+    }
+
+    private static Task Diagnostics_HdrTruthVerdict_TreatsHdrSourceSdrRequestAsExpected()
+    {
+        var diagnosticsType = RequireType("ElgatoCapture.Services.Automation.AutomationDiagnosticsHub");
+        var runtimeType = RequireType("ElgatoCapture.Models.CaptureRuntimeSnapshot");
+        var verifierResultType = RequireType("ElgatoCapture.Models.RecordingVerificationResult");
+        var method = diagnosticsType.GetMethod(
+            "BuildHdrTruthVerdict",
+            BindingFlags.Static | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { runtimeType, typeof(bool), verifierResultType },
+            modifiers: null)
+            ?? throw new InvalidOperationException("BuildHdrTruthVerdict not found.");
+
+        var runtime = Activator.CreateInstance(runtimeType)!;
+        SetPropertyBackingField(runtime, "LatestObservedFramePixelFormat", "NV12");
+        SetPropertyBackingField(runtime, "ObservedNv12FrameCount", 1L);
+        SetPropertyBackingField(runtime, "SourceIsHdr", (bool?)true);
+
+        var verdict = method.Invoke(null, new object?[] { runtime, false, null })
+            ?? throw new InvalidOperationException("BuildHdrTruthVerdict returned null.");
+
+        AssertEqual("expected-sdr-capture", GetStringProperty(verdict, "SourceVsCaptureParity"), "SourceVsCaptureParity");
+        AssertEqual("sdr-8bit", GetStringProperty(verdict, "FinalClassification"), "FinalClassification");
+
+        return Task.CompletedTask;
     }
 
     private static async Task NativeXuTelemetry_AcceptsKnown4kXProductRevisions()

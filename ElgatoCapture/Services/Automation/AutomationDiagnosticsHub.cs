@@ -2989,6 +2989,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         {
             sourceVsCaptureParity = "match";
         }
+        else if (sourceHdr.Value && !captureHdrLike && !hdrEnabledInUi)
+        {
+            sourceVsCaptureParity = "expected-sdr-capture";
+            evidence.Add("source-hdr=true, capture-hdr-like=false, hdr-requested=false");
+        }
         else
         {
             sourceVsCaptureParity = "mismatch";

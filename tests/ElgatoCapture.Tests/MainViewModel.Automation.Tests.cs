@@ -813,11 +813,13 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback selected range export verified");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackLifecycleAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackExportConcurrentAsync(");
+        AssertContains(diagnosticSessionText, "async Task<JsonElement> SendRawWithConnectRetryAsync(");
         AssertContains(diagnosticSessionText, "var exportTaskA = sendCommandAsync(\"FlashbackExport\", exportPayloadA, 60_000);");
         AssertContains(diagnosticSessionText, "var exportTaskB = sendCommandAsync(\"FlashbackExport\", exportPayloadB, 60_000);");
         AssertContains(diagnosticSessionText, "flashback concurrent exports verified");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackDisableDuringExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-disable-during-export.mp4\"");
+        AssertContains(diagnosticSessionText, "var disableTask = SendCommandWithConnectRetryAsync(");
         AssertContains(diagnosticSessionText, "flashback disable/export requests issued");
         AssertContains(diagnosticSessionText, "flashback disable during export verified");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRotatedExportAsync(");

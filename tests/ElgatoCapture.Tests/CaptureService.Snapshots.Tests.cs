@@ -255,6 +255,19 @@ static partial class Program
         var status = alignedResult!.GetType().GetField("Item1")!.GetValue(alignedResult)?.ToString();
         AssertEqual("Aligned", status, "Matching telemetry → Aligned");
 
+        var hdrSourceSdrCaptureTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);
+        SetPropertyBackingField(hdrSourceSdrCaptureTelemetry, "Availability", Enum.Parse(availabilityType, "Available"));
+        SetPropertyBackingField(hdrSourceSdrCaptureTelemetry, "Width", (int?)1920);
+        SetPropertyBackingField(hdrSourceSdrCaptureTelemetry, "Height", (int?)1080);
+        SetPropertyBackingField(hdrSourceSdrCaptureTelemetry, "FrameRateExact", (double?)60.0);
+        SetPropertyBackingField(hdrSourceSdrCaptureTelemetry, "IsHdr", (bool?)true);
+
+        var hdrSourceSdrCaptureResult = method.Invoke(null, new object?[] { settings, hdrSourceSdrCaptureTelemetry, (uint?)1920, (uint?)1080, (double?)60.0, false });
+        var hdrSourceSdrCaptureStatus = hdrSourceSdrCaptureResult!.GetType().GetField("Item1")!.GetValue(hdrSourceSdrCaptureResult)?.ToString();
+        var hdrSourceSdrCaptureReason = hdrSourceSdrCaptureResult.GetType().GetField("Item2")!.GetValue(hdrSourceSdrCaptureResult)?.ToString() ?? string.Empty;
+        AssertEqual("Aligned", hdrSourceSdrCaptureStatus, "HDR source with SDR capture request -> Aligned");
+        AssertContains(hdrSourceSdrCaptureReason, "SDR capture was requested");
+
         // Unavailable telemetry
         var unavailTelemetry = RuntimeHelpers.GetUninitializedObject(telemetryType);
         SetPropertyBackingField(unavailTelemetry, "Availability", Enum.Parse(availabilityType, "Unavailable"));
