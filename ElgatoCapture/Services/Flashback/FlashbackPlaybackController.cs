@@ -1719,6 +1719,36 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 : null;
             if (nextFile != null && !IsSamePlaybackPath(nextFile, currentOpenFilePath))
             {
+                var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
+                if (currentOpenFilePath != null &&
+                    nextSegmentStart.HasValue &&
+                    nextSegmentStart.Value - lastFrameAbsPts > TimeSpan.FromMilliseconds(250))
+                {
+                    Interlocked.Increment(ref _playbackFmp4Reopens);
+                    Interlocked.Exchange(ref _lastFmp4ReopenUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                    Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_BEFORE_SEGMENT_SWITCH pos_ms={(long)pos.TotalMilliseconds} resumePts_ms={(long)lastFrameAbsPts.TotalMilliseconds} nextStart_ms={(long)nextSegmentStart.Value.TotalMilliseconds}");
+                    try
+                    {
+                        decoder.CloseFile();
+                        fileOpen = false;
+                        decoder.OpenFile(currentOpenFilePath);
+                        fileOpen = true;
+                        _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+                        var fmpAudioGate = Interlocked.Read(ref _lastAudioPtsTicks);
+                        decoder.AudioChunkCallback = null;
+                        if (decoder.SeekTo(lastFrameAbsPts))
+                        {
+                            RestoreAudioCallback(decoder, fmpAudioGate);
+                            pacingStopwatch.Restart();
+                            return true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_BEFORE_SEGMENT_SWITCH_ERROR path='{currentOpenFilePath}' type={ex.GetType().Name} msg='{ex.Message}'");
+                    }
+                }
+
                 Interlocked.Increment(ref _playbackSegmentSwitches);
                 Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
                 Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH pos_ms={(long)pos.TotalMilliseconds} next='{System.IO.Path.GetFileName(nextFile)}'");
@@ -1736,7 +1766,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     var audioGate = Interlocked.Read(ref _lastAudioPtsTicks);
                     decoder.AudioChunkCallback = null;
                     var segSwitchTarget = SaturatingAdd(pos, frozenValidStart);
-                    var nextSegmentStart = _bufferManager.GetSegmentStartPts(nextFile);
                     if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)
                         segSwitchTarget = nextSegmentStart.Value;
                     if (!decoder.SeekTo(segSwitchTarget))
