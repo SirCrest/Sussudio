@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Threading;
 using FFmpeg.AutoGen;
 using ElgatoCapture.Services.Audio;
 using ElgatoCapture.Services.Preview;
@@ -56,6 +57,10 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     // not discard it — stash it so the next TryDecodeNextVideoFrame() returns it.
     private DecodedVideoFrame _pendingVideoFrame;
     private bool _hasPendingVideoFrame;
+
+    // SeekTo forward-decode cap observability
+    private long _seekToCapHits;
+    private bool _lastSeekHitForwardDecodeCap;
 
     private bool _isOpen;
     private bool _disposed;
@@ -118,6 +123,19 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     public double FrameRate => _frameRate;
     public TimeSpan CurrentPosition => _currentPosition;
     public bool IsD3D11HwAccelerated => _isD3D11HwAccelerated;
+
+    /// <summary>
+    /// Total number of times SeekTo() hit the forward-decode cap AND the best frame
+    /// was more than one frame interval behind the seek target (i.e., a missed seek).
+    /// </summary>
+    public long SeekToForwardDecodeCapHits => Interlocked.Read(ref _seekToCapHits);
+
+    /// <summary>
+    /// True if the most recent SeekTo() call hit the forward-decode cap and the
+    /// returned frame's PTS was more than one frame interval behind the target.
+    /// Reset to false on each SeekTo() entry.
+    /// </summary>
+    public bool LastSeekHitForwardDecodeCap => _lastSeekHitForwardDecodeCap;
 
     /// <summary>
     /// Initializes the decoder with D3D11 device pointers for GPU-direct decode.
@@ -343,6 +361,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     public bool SeekTo(TimeSpan target)
     {
         ThrowIfNotOpen();
+        _lastSeekHitForwardDecodeCap = false;
 
         if (!SeekToKeyframe(target))
         {
@@ -396,7 +415,21 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             // Hit frame limit — return the closest frame we decoded
             if (bestFrame != null)
             {
-                Logger.Log($"FLASHBACK_DECODER_SEEK_FRAME_LIMIT target_ms={(long)target.TotalMilliseconds} best_ms={(long)bestFrame.Value.Pts.TotalMilliseconds} frames={maxForwardFrames}");
+                var bestMs = (long)bestFrame.Value.Pts.TotalMilliseconds;
+                var targetMs = (long)target.TotalMilliseconds;
+                var gapMs = targetMs - bestMs;
+                // One frame interval in ms (guard against zero/negative frame rate)
+                var frameIntervalMs = _frameRate > 0.0 ? (long)(1000.0 / _frameRate) : 0L;
+                if (gapMs > frameIntervalMs)
+                {
+                    _lastSeekHitForwardDecodeCap = true;
+                    Interlocked.Increment(ref _seekToCapHits);
+                    Logger.Log($"FLASHBACK_DECODER_SEEK_CAP_HIT target_ms={targetMs} best_ms={bestMs} gap_ms={gapMs} frames_decoded={maxForwardFrames}");
+                }
+                else
+                {
+                    Logger.Log($"FLASHBACK_DECODER_SEEK_FRAME_LIMIT target_ms={targetMs} best_ms={bestMs} frames={maxForwardFrames}");
+                }
                 _currentPosition = bestFrame.Value.Pts;
                 _pendingVideoFrame = bestFrame.Value;
                 _hasPendingVideoFrame = true;
