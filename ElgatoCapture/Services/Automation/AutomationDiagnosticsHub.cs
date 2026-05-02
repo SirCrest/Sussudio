@@ -256,7 +256,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         }
     }
 
-    public async Task<RecordingVerificationResult> VerifyFileAsync(string filePath, CancellationToken cancellationToken = default)
+    public async Task<RecordingVerificationResult> VerifyFileAsync(
+        string filePath,
+        CancellationToken cancellationToken = default,
+        string? verificationProfile = null)
     {
         await _verificationGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         Interlocked.Increment(ref _verificationInProgress);
@@ -265,6 +268,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             var runtimeSnapshot = await _viewModel
                 .GetCaptureRuntimeSnapshotAsync(cancellationToken)
                 .ConfigureAwait(false);
+            runtimeSnapshot = ApplyVerificationProfile(runtimeSnapshot, filePath, verificationProfile);
 
             var verification = await _recordingVerifier
                 .VerifyAsync(filePath, runtimeSnapshot, cancellationToken)
@@ -299,6 +303,43 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 }
             }
         }
+    }
+
+    private static CaptureRuntimeSnapshot ApplyVerificationProfile(
+        CaptureRuntimeSnapshot runtimeSnapshot,
+        string filePath,
+        string? verificationProfile)
+    {
+        if (!string.Equals(verificationProfile, "flashback-export", StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(runtimeSnapshot.FlashbackExportVerificationFormat))
+        {
+            return runtimeSnapshot;
+        }
+
+        return new CaptureRuntimeSnapshot
+        {
+            TimestampUtc = runtimeSnapshot.TimestampUtc,
+            RequestedWidth = runtimeSnapshot.RequestedWidth,
+            RequestedHeight = runtimeSnapshot.RequestedHeight,
+            RequestedFrameRate = runtimeSnapshot.RequestedFrameRate,
+            RequestedFrameRateArg = runtimeSnapshot.RequestedFrameRateArg,
+            RequestedFrameRateNumerator = runtimeSnapshot.RequestedFrameRateNumerator,
+            RequestedFrameRateDenominator = runtimeSnapshot.RequestedFrameRateDenominator,
+            RequestedFormat = runtimeSnapshot.RequestedFormat,
+            RequestedHdrEnabled = runtimeSnapshot.RequestedHdrEnabled,
+            RequestedHdrMasteringMetadata = runtimeSnapshot.RequestedHdrMasteringMetadata,
+            HdrOutputActive = runtimeSnapshot.HdrOutputActive,
+            HdrAutoDowngraded = runtimeSnapshot.HdrAutoDowngraded,
+            NegotiatedWidth = runtimeSnapshot.NegotiatedWidth,
+            NegotiatedHeight = runtimeSnapshot.NegotiatedHeight,
+            NegotiatedFrameRate = runtimeSnapshot.NegotiatedFrameRate,
+            NegotiatedFrameRateArg = runtimeSnapshot.NegotiatedFrameRateArg,
+            NegotiatedFrameRateNumerator = runtimeSnapshot.NegotiatedFrameRateNumerator,
+            NegotiatedFrameRateDenominator = runtimeSnapshot.NegotiatedFrameRateDenominator,
+            FlashbackExportOutputPath = filePath,
+            FlashbackExportVerificationFormat = runtimeSnapshot.FlashbackExportVerificationFormat,
+            FlashbackCodecDowngradeReason = runtimeSnapshot.FlashbackCodecDowngradeReason
+        };
     }
 
     public void Dispose()

@@ -771,6 +771,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "baselineExportActive && exportId == baselineExportId");
         AssertContains(diagnosticSessionText, "TryGetFlashbackExportVerificationPath(scenario, outputDirectory, out var exportVerificationPath)");
         AssertContains(diagnosticSessionText, "verificationCommand = \"VerifyFile\"");
+        AssertContains(diagnosticSessionText, "[\"verificationProfile\"] = \"flashback-export\"");
         AssertContains(diagnosticSessionText, "\"flashback-range-export\" => Path.Combine(outputDirectory, \"flashback-range-export.mp4\")");
         AssertContains(diagnosticSessionText, "\"flashback-rotated-export\" => Path.Combine(outputDirectory, \"flashback-rotated-export.mp4\")");
         AssertContains(diagnosticSessionText, "expected BufferInactive failure kind");
@@ -861,7 +862,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "foreach (var positionMs in new[] { 750, 1_250, 2_000, 3_250, 1_500 })");
         AssertContains(diagnosticSessionText, "actions.Add(\"flashback scrub burst requested\");");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"seconds\"] = 1, [\"outputPath\"] = exportPath }");
-        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"filePath\"] = exportPath, [\"strict\"] = true }");
+        AssertContains(diagnosticSessionText, "CreateFlashbackExportVerifyPayload(exportPath)");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s \"");
         AssertContains(diagnosticSessionText, "$\"maxPending={GetInt(lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")} \"");
         AssertContains(diagnosticSessionText, "$\"maxLatencyMs={GetInt(lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")}\"");

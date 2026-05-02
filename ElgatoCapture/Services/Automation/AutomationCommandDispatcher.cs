@@ -332,8 +332,11 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                 case AutomationCommandKind.VerifyFile:
                 {
                     var filePath = RequireString(payload, "filePath");
+                    var verificationProfile = GetString(payload, "verificationProfile");
                     var verifyStartedAt = Stopwatch.GetTimestamp();
-                    var verification = await _diagnosticsHub.VerifyFileAsync(filePath, cancellationToken).ConfigureAwait(false);
+                    var verification = await _diagnosticsHub
+                        .VerifyFileAsync(filePath, cancellationToken, verificationProfile)
+                        .ConfigureAwait(false);
                     var elapsedMs = (long)Math.Round(Stopwatch.GetElapsedTime(verifyStartedAt).TotalMilliseconds);
                     return CreateResponse(
                         correlationId,

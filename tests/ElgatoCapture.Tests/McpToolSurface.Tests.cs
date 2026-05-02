@@ -452,7 +452,8 @@ static partial class Program
                             verificationTools,
                             "verify_file",
                             pipeClient,
-                            @"C:\captures\clip.mp4")
+                            @"C:\captures\clip.mp4",
+                            "flashback-export")
                         .ConfigureAwait(false);
                     assertResult = await InvokeMcpToolStringAsync(
                             verificationTools,
@@ -469,7 +470,8 @@ static partial class Program
                             verificationTools,
                             "verify_file",
                             pipeClient,
-                            @"C:\captures\missing.mp4")
+                            @"C:\captures\missing.mp4",
+                            null)
                         .ConfigureAwait(false);
                 },
                 i => i switch
@@ -532,7 +534,7 @@ static partial class Program
             .ConfigureAwait(false);
 
         AssertCommandRequest(requests[0], "VerifyLastRecording");
-        AssertCommandRequest(requests[1], "VerifyFile", ("filePath", @"C:\captures\clip.mp4"));
+        AssertCommandRequest(requests[1], "VerifyFile", ("filePath", @"C:\captures\clip.mp4"), ("verificationProfile", "flashback-export"));
         AssertEqual(GetExpectedAutomationCommandValue("AssertSnapshot"), requests[2].GetProperty("command").GetInt32(), "AssertSnapshot command id");
         AssertCommandRequest(requests[3], "VerifyLastRecording");
         AssertCommandRequest(requests[4], "VerifyFile", ("filePath", @"C:\captures\missing.mp4"));

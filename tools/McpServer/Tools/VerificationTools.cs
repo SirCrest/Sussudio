@@ -107,9 +107,15 @@ public static class VerificationTools
     [McpServerTool, Description("Run ffprobe validation on an arbitrary file path. Checks codec, resolution, HDR metadata.")]
     public static async Task<string> verify_file(
         PipeClient pipeClient,
-        [Description("Absolute path to the media file to verify")] string filePath)
+        [Description("Absolute path to the media file to verify")] string filePath,
+        [Description("Optional verifier profile, e.g. flashback-export for Flashback exports whose codec may differ from the selected recording format.")] string? verificationProfile = null)
     {
         var payload = new Dictionary<string, object?> { ["filePath"] = filePath };
+        if (!string.IsNullOrWhiteSpace(verificationProfile))
+        {
+            payload["verificationProfile"] = verificationProfile;
+        }
+
         var response = await pipeClient.SendCommandAsync("VerifyFile", payload, responseTimeoutMs: 60000).ConfigureAwait(false);
         var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
 

@@ -693,7 +693,8 @@ public static class DiagnosticSessionRunner
                 verificationPayload = new Dictionary<string, object?>
                 {
                     ["filePath"] = exportVerificationPath,
-                    ["strict"] = true
+                    ["strict"] = true,
+                    ["verificationProfile"] = "flashback-export"
                 };
             }
 
@@ -1259,7 +1260,7 @@ public static class DiagnosticSessionRunner
         {
             await sendCommandAsync(
                     "VerifyFile",
-                    new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                    CreateFlashbackExportVerifyPayload(exportPath),
                     60_000)
                 .ConfigureAwait(false);
             actions.Add("flashback stress export verified");
@@ -1499,7 +1500,7 @@ public static class DiagnosticSessionRunner
 
             var verifyResponse = await sendCommandAsync(
                     "VerifyFile",
-                    new Dictionary<string, object?> { ["filePath"] = path, ["strict"] = true },
+                    CreateFlashbackExportVerifyPayload(path),
                     60_000)
                 .ConfigureAwait(false);
             if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
@@ -1562,7 +1563,7 @@ public static class DiagnosticSessionRunner
         {
             var verifyResponse = await sendCommandAsync(
                     "VerifyFile",
-                    new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                    CreateFlashbackExportVerifyPayload(exportPath),
                     60_000)
                 .ConfigureAwait(false);
             if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
@@ -1687,7 +1688,7 @@ public static class DiagnosticSessionRunner
 
         var verifyResponse = await sendCommandAsync(
                 "VerifyFile",
-                new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                CreateFlashbackExportVerifyPayload(exportPath),
                 120_000)
             .ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
@@ -1786,6 +1787,14 @@ public static class DiagnosticSessionRunner
         return document.RootElement.Clone();
     }
 
+    private static Dictionary<string, object?> CreateFlashbackExportVerifyPayload(string filePath) =>
+        new()
+        {
+            ["filePath"] = filePath,
+            ["strict"] = true,
+            ["verificationProfile"] = "flashback-export"
+        };
+
     private static async Task RunFlashbackPreviewCycleAsync(
         string outputDirectory,
         List<string> actions,
@@ -1871,7 +1880,7 @@ public static class DiagnosticSessionRunner
         {
             var verifyResponse = await sendCommandAsync(
                     "VerifyFile",
-                    new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                    CreateFlashbackExportVerifyPayload(exportPath),
                     60_000)
                 .ConfigureAwait(false);
             if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
@@ -2410,7 +2419,7 @@ public static class DiagnosticSessionRunner
 
         var verifyResponse = await sendCommandAsync(
                 "VerifyFile",
-                new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                CreateFlashbackExportVerifyPayload(exportPath),
                 60_000)
             .ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
@@ -2510,7 +2519,7 @@ public static class DiagnosticSessionRunner
 
             var verifyResponse = await sendCommandAsync(
                     "VerifyFile",
-                    new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                    CreateFlashbackExportVerifyPayload(exportPath),
                     60_000)
                 .ConfigureAwait(false);
             if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
@@ -2593,7 +2602,7 @@ public static class DiagnosticSessionRunner
 
         var verifyResponse = await sendCommandAsync(
                 "VerifyFile",
-                new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                CreateFlashbackExportVerifyPayload(exportPath),
                 60_000)
             .ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
@@ -3008,7 +3017,7 @@ public static class DiagnosticSessionRunner
 
         var verifyResponse = await sendCommandAsync(
                 "VerifyFile",
-                new Dictionary<string, object?> { ["filePath"] = exportPath, ["strict"] = true },
+                CreateFlashbackExportVerifyPayload(exportPath),
                 60_000)
             .ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(verifyResponse))
