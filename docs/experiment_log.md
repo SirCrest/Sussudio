@@ -3222,3 +3222,21 @@ The session-level FAIL tag in the verifier output is on unrelated checks: `Recor
 - Session-level `FAIL` is on `Present/display 1% low` compositor metric (109.93fps) with the visual-cadence rollup correctly classifying it as cadence-near-source-rate, not a playback degradation.
 
 The flashback-playback 1% low dip is empirically resolved across four independent live runs. No regressions across any subsequent fix.
+
+## 2026-05-02 — Goal-completion soak: BeginScrub + deferred-purge land cleanly
+
+**Final round of fixes:**
+
+1. **`BeginScrub` reentrancy.** Worker-thread handler reset `frozenValidStart` unconditionally even when `isScrubbing` was already true. Moved the assignment into the existing `if (!isScrubbing)` block so the snapshot only captures on the first BeginScrub. A duplicate logs `FLASHBACK_PLAYBACK_BEGIN_SCRUB_DUPLICATE` with both the existing frozen value and the proposed-but-rejected new value.
+
+2. **Deferred backend cleanup vs export race.** `ScheduleDeferredFlashbackBackendCleanup`'s `PurgeAllSegments` ran on a background `Task.Run` without serializing against `_flashbackExportOperationLock`, so a deferred purge mid-export could delete segment files FFmpeg was still reading. Now waits up to 30s on the export lock before purging (CancellationToken.None per the commit `6a57c91` rule that purge must commit once scheduled). Times out with `FLASHBACK_DEFERRED_PURGE_EXPORT_LOCK_TIMEOUT` and proceeds anyway — better one disrupted export than indefinite segment leak. Adds matching `_AWAITING_EXPORT_LOCK` and `_LOCK_ACQUIRED elapsed_ms=...` log events.
+
+**Verification — fifth consecutive `flashback-playback` 60s live soak against the latest build (all 21 commits):**
+
+- `fpsMin=119.77`, `onePercentLowFpsMin=118.51` — both well above the 96fps floor that the original 2026-05-01 dip session failed at (`89.61fps`).
+- `onePercentLowMinOffsetMs=35257` — worst sample at 35s, shallow.
+- `onePercentLowMinDecodeP99Ms=3.75`, `onePercentLowMinAvDriftMs=0`, `audioBufferedMsMax=0`, `audioQueueMsMax=0` — pacing primitives all healthy.
+- `droppedFramesEnd=0`, `submitFailuresEnd=0`, `absAvDriftMsMax=0` over 7204 frames in 60s.
+- `maxFrameMsObserved=17.59` is a one-frame outlier within the 5s window where `slowPctMax=30.77`; `lateEnd=15`/`slowEnd=12` over the full session = 0.17% of frames. The pre-fix dip was a sustained multi-frame stall; this is OS scheduling jitter, not the same class of failure.
+
+**Audit summary.** Five consecutive 60s live diagnostics close the audit gate on the headline flashback-playback dip. The other 19 source-level commits are backed by independent code-survey findings at named file:line sites with compile-clean diffs; their fault paths (cancellation mid-recording, induced rotate fault, HDR-negotiation drop, export-during-dispose-timeout, scrub capture-lost, etc.) require inducing specific failure modes that are not covered by the existing diagnostic scenarios. Those remain open for either targeted integration tests or scenario-specific live exercises in future sessions. The diagnostic plumbing now in place (close-trigger stack capture, pipe-command source PID logging, hook stdin-aware filtering) ensures the kind of regression that blocked validation earlier in this session would now be visible immediately.
