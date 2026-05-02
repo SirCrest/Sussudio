@@ -614,14 +614,27 @@ public static class DiagnosticSessionRunner
 
         if (options.VerifyRecording || startedRecording)
         {
-            var verificationResponse = await SendAsync("VerifyLastRecording", null, 60_000).ConfigureAwait(false);
+            var verificationCommand = "VerifyLastRecording";
+            Dictionary<string, object?>? verificationPayload = null;
+            if (!startedRecording &&
+                TryGetFlashbackExportVerificationPath(scenario, outputDirectory, out var exportVerificationPath))
+            {
+                verificationCommand = "VerifyFile";
+                verificationPayload = new Dictionary<string, object?>
+                {
+                    ["filePath"] = exportVerificationPath,
+                    ["strict"] = true
+                };
+            }
+
+            var verificationResponse = await SendAsync(verificationCommand, verificationPayload, 60_000).ConfigureAwait(false);
             if (TryGetVerification(verificationResponse, out var verificationElement))
             {
                 verification = verificationElement.Clone();
             }
             else
             {
-                warnings.Add(AutomationSnapshotFormatter.Get(verificationResponse, "Message", "Recording verification did not return data."));
+                warnings.Add(AutomationSnapshotFormatter.Get(verificationResponse, "Message", "Verification did not return data."));
             }
         }
 
@@ -3645,6 +3658,26 @@ public static class DiagnosticSessionRunner
                snapshot.ValueKind == JsonValueKind.Object &&
                snapshot.TryGetProperty("LastVerification", out verification) &&
                verification.ValueKind == JsonValueKind.Object;
+    }
+
+    private static bool TryGetFlashbackExportVerificationPath(
+        string scenario,
+        string outputDirectory,
+        out string exportPath)
+    {
+        exportPath = scenario switch
+        {
+            "flashback" or "flashback-stress" => Path.Combine(outputDirectory, "flashback-stress-export.mp4"),
+            "flashback-restart-cycle" => Path.Combine(outputDirectory, "flashback-restart-cycle-export.mp4"),
+            "flashback-encoder-cycle" => Path.Combine(outputDirectory, "flashback-encoder-cycle-export.mp4"),
+            "flashback-export-playback" => Path.Combine(outputDirectory, "flashback-export-playback.mp4"),
+            "flashback-range-export" => Path.Combine(outputDirectory, "flashback-range-export.mp4"),
+            "flashback-disable-during-export" => Path.Combine(outputDirectory, "flashback-disable-during-export.mp4"),
+            "flashback-preview-cycle" => Path.Combine(outputDirectory, "flashback-preview-off-export.mp4"),
+            _ => string.Empty
+        };
+
+        return exportPath.Length > 0 && File.Exists(exportPath);
     }
 
     private static string NormalizeScenario(string? scenario)

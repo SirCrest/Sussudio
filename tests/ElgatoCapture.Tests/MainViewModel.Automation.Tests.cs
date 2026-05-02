@@ -708,6 +708,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackExportMaxOutputBytesObserved");
         AssertContains(diagnosticSessionText, "FlashbackExportMaxThroughputBytesPerSecObserved");
         AssertContains(diagnosticSessionText, "BuildFlashbackExportSessionMetrics(samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "TryGetFlashbackExportVerificationPath(scenario, outputDirectory, out var exportVerificationPath)");
+        AssertContains(diagnosticSessionText, "verificationCommand = \"VerifyFile\"");
+        AssertContains(diagnosticSessionText, "\"flashback-range-export\" => Path.Combine(outputDirectory, \"flashback-range-export.mp4\")");
         AssertContains(diagnosticSessionText, "expected BufferInactive failure kind");
         AssertContains(diagnosticSessionText, "expected UnavailableDuringRecording failure kind");
         AssertContains(diagnosticSessionText, "Flashback Export:");
