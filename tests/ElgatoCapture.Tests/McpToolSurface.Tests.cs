@@ -771,6 +771,9 @@ static partial class Program
         AssertContains(source, "NonNegativeDelta");
         AssertContains(source, "Flashback P99:");
         AssertContains(source, "Flashback Decode:");
+        AssertContains(source, "phase={FormatOptional(last.FlashbackPlaybackMaxDecodePhase)}");
+        AssertContains(source, "send={last.FlashbackPlaybackMaxDecodeSendMs:F1}ms");
+        AssertContains(source, "audio={last.FlashbackPlaybackMaxDecodeAudioMs:F1}ms");
         AssertContains(source, "Flashback Cmds:");
         AssertContains(source, "Flashback Cmd Counters:");
         AssertContains(source, "lastQueued={FormatOptional(last.FlashbackPlaybackLastCommandQueued)}");

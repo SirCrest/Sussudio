@@ -394,6 +394,10 @@ static partial class Program
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackAudioMasterFallbackWarningRatio = 0.50;");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackAudioQueueBacklogWarningDepth = 24;");
         AssertContains(diagnosticsText, "decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms");
+        AssertContains(diagnosticsText, "decodePhase={health.FlashbackPlaybackMaxDecodePhase}");
+        AssertContains(diagnosticsText, "decodeSend={health.FlashbackPlaybackMaxDecodeSendMs:0.##}ms");
+        AssertContains(diagnosticsText, "decodeAudio={health.FlashbackPlaybackMaxDecodeAudioMs:0.##}ms");
+        AssertContains(diagnosticsText, "decodePhase={snapshot.FlashbackPlaybackMaxDecodePhase}");
         AssertContains(diagnosticsText, "audioMasterDouble={health.FlashbackPlaybackAudioMasterDelayDoubles}");
         AssertContains(diagnosticsText, "audioMasterDouble={snapshot.FlashbackPlaybackAudioMasterDelayDoubles}");
         AssertContains(diagnosticsText, "health.FlashbackPlaybackSubmitFailures > 0");
@@ -605,6 +609,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxSlowFramePercentObserved");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackDecodeAvgMsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackDecodeP99MsAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxDecodePhaseAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxDecodePhaseObserved");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxDecodeP99MsObserved");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxDecodeMsObserved");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackSlowFramePercentAtEnd");
@@ -673,6 +679,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "Flashback Playback Decode:");
         AssertContains(diagnosticSessionText, "p99MsMax={result.FlashbackPlaybackMaxDecodeP99MsObserved:0.##}");
         AssertContains(diagnosticSessionText, "maxMsObserved={result.FlashbackPlaybackMaxDecodeMsObserved:0.##}");
+        AssertContains(diagnosticSessionText, "phaseObserved={result.FlashbackPlaybackMaxDecodePhaseObserved}");
+        AssertContains(diagnosticSessionText, "sendMsObserved={result.FlashbackPlaybackMaxDecodeSendMsObserved:0.##}");
+        AssertContains(diagnosticSessionText, "audioMsObserved={result.FlashbackPlaybackMaxDecodeAudioMsObserved:0.##}");
         AssertContains(diagnosticSessionText, "Flashback Playback Stages:");
         AssertContains(diagnosticSessionText, "FlashbackRecordingBackendObserved");
         AssertContains(diagnosticSessionText, "PreviewD3DFrameStatsMissedRefreshDelta");

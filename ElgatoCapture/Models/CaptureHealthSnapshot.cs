@@ -67,6 +67,13 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public double FlashbackPlaybackDecodeP95Ms { get; init; }
     public double FlashbackPlaybackDecodeP99Ms { get; init; }
     public double FlashbackPlaybackDecodeMaxMs { get; init; }
+    public string FlashbackPlaybackMaxDecodePhase { get; init; } = string.Empty;
+    public double FlashbackPlaybackMaxDecodeReceiveMs { get; init; }
+    public double FlashbackPlaybackMaxDecodeFeedMs { get; init; }
+    public double FlashbackPlaybackMaxDecodeReadMs { get; init; }
+    public double FlashbackPlaybackMaxDecodeSendMs { get; init; }
+    public double FlashbackPlaybackMaxDecodeAudioMs { get; init; }
+    public double FlashbackPlaybackMaxDecodeConvertMs { get; init; }
     public double FlashbackAvDriftMs { get; init; }
     public bool FlashbackPlaybackThreadAlive { get; init; }
     public long FlashbackPlaybackCommandsEnqueued { get; init; }

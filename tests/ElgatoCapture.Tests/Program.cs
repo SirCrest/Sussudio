@@ -1727,6 +1727,13 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeP95Ms"), "AutomationSnapshot.FlashbackPlaybackDecodeP95Ms");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeP99Ms"), "AutomationSnapshot.FlashbackPlaybackDecodeP99Ms");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeMaxMs"), "AutomationSnapshot.FlashbackPlaybackDecodeMaxMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodePhase"), "AutomationSnapshot.FlashbackPlaybackMaxDecodePhase");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodeReceiveMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodeReceiveMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodeFeedMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodeFeedMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodeReadMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodeReadMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodeSendMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodeSendMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodeAudioMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodeAudioMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodeConvertMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodeConvertMs");
         AssertNotNull(snapshotType.GetProperty("CaptureCadenceP99IntervalMs"), "AutomationSnapshot.CaptureCadenceP99IntervalMs");
         AssertNotNull(snapshotType.GetProperty("CaptureCadenceOnePercentLowFps"), "AutomationSnapshot.CaptureCadenceOnePercentLowFps");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsEnqueued"), "AutomationSnapshot.FlashbackPlaybackCommandsEnqueued");

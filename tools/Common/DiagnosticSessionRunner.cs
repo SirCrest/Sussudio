@@ -65,8 +65,22 @@ public sealed class DiagnosticSessionResult
     public double FlashbackPlaybackDecodeP95MsAtEnd { get; init; }
     public double FlashbackPlaybackDecodeP99MsAtEnd { get; init; }
     public double FlashbackPlaybackDecodeMaxMsAtEnd { get; init; }
+    public string FlashbackPlaybackMaxDecodePhaseAtEnd { get; init; } = string.Empty;
+    public double FlashbackPlaybackMaxDecodeReceiveMsAtEnd { get; init; }
+    public double FlashbackPlaybackMaxDecodeFeedMsAtEnd { get; init; }
+    public double FlashbackPlaybackMaxDecodeReadMsAtEnd { get; init; }
+    public double FlashbackPlaybackMaxDecodeSendMsAtEnd { get; init; }
+    public double FlashbackPlaybackMaxDecodeAudioMsAtEnd { get; init; }
+    public double FlashbackPlaybackMaxDecodeConvertMsAtEnd { get; init; }
     public double FlashbackPlaybackMaxDecodeP99MsObserved { get; init; }
     public double FlashbackPlaybackMaxDecodeMsObserved { get; init; }
+    public string FlashbackPlaybackMaxDecodePhaseObserved { get; init; } = string.Empty;
+    public double FlashbackPlaybackMaxDecodeReceiveMsObserved { get; init; }
+    public double FlashbackPlaybackMaxDecodeFeedMsObserved { get; init; }
+    public double FlashbackPlaybackMaxDecodeReadMsObserved { get; init; }
+    public double FlashbackPlaybackMaxDecodeSendMsObserved { get; init; }
+    public double FlashbackPlaybackMaxDecodeAudioMsObserved { get; init; }
+    public double FlashbackPlaybackMaxDecodeConvertMsObserved { get; init; }
     public long FlashbackPlaybackFrameCountAtEnd { get; init; }
     public long FlashbackPlaybackLateFramesAtEnd { get; init; }
     public long FlashbackPlaybackSlowFramesAtEnd { get; init; }
@@ -703,6 +717,13 @@ public static class DiagnosticSessionRunner
         var playbackDecodeP95MsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeP95Ms") : 0;
         var playbackDecodeP99MsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeP99Ms") : 0;
         var playbackDecodeMaxMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackDecodeMaxMs") : 0;
+        var playbackMaxDecodePhaseAtEnd = playbackSessionMetrics.Observed ? GetString(playbackEndSnapshot, "FlashbackPlaybackMaxDecodePhase") ?? string.Empty : string.Empty;
+        var playbackMaxDecodeReceiveMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeReceiveMs") : 0;
+        var playbackMaxDecodeFeedMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeFeedMs") : 0;
+        var playbackMaxDecodeReadMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeReadMs") : 0;
+        var playbackMaxDecodeSendMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeSendMs") : 0;
+        var playbackMaxDecodeAudioMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeAudioMs") : 0;
+        var playbackMaxDecodeConvertMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackMaxDecodeConvertMs") : 0;
         var playbackFrameCountAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackFrameCount") ?? 0 : 0;
         var playbackLateFramesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackLateFrames") ?? 0 : 0;
         var playbackSlowFramesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSlowFrames") ?? 0 : 0;
@@ -796,8 +817,22 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackDecodeP95MsAtEnd = playbackDecodeP95MsAtEnd,
             FlashbackPlaybackDecodeP99MsAtEnd = playbackDecodeP99MsAtEnd,
             FlashbackPlaybackDecodeMaxMsAtEnd = playbackDecodeMaxMsAtEnd,
+            FlashbackPlaybackMaxDecodePhaseAtEnd = playbackMaxDecodePhaseAtEnd,
+            FlashbackPlaybackMaxDecodeReceiveMsAtEnd = playbackMaxDecodeReceiveMsAtEnd,
+            FlashbackPlaybackMaxDecodeFeedMsAtEnd = playbackMaxDecodeFeedMsAtEnd,
+            FlashbackPlaybackMaxDecodeReadMsAtEnd = playbackMaxDecodeReadMsAtEnd,
+            FlashbackPlaybackMaxDecodeSendMsAtEnd = playbackMaxDecodeSendMsAtEnd,
+            FlashbackPlaybackMaxDecodeAudioMsAtEnd = playbackMaxDecodeAudioMsAtEnd,
+            FlashbackPlaybackMaxDecodeConvertMsAtEnd = playbackMaxDecodeConvertMsAtEnd,
             FlashbackPlaybackMaxDecodeP99MsObserved = playbackSessionMetrics.MaxDecodeP99MsObserved,
             FlashbackPlaybackMaxDecodeMsObserved = playbackSessionMetrics.MaxDecodeMsObserved,
+            FlashbackPlaybackMaxDecodePhaseObserved = playbackSessionMetrics.MaxDecodePhaseObserved,
+            FlashbackPlaybackMaxDecodeReceiveMsObserved = playbackSessionMetrics.MaxDecodeReceiveMsObserved,
+            FlashbackPlaybackMaxDecodeFeedMsObserved = playbackSessionMetrics.MaxDecodeFeedMsObserved,
+            FlashbackPlaybackMaxDecodeReadMsObserved = playbackSessionMetrics.MaxDecodeReadMsObserved,
+            FlashbackPlaybackMaxDecodeSendMsObserved = playbackSessionMetrics.MaxDecodeSendMsObserved,
+            FlashbackPlaybackMaxDecodeAudioMsObserved = playbackSessionMetrics.MaxDecodeAudioMsObserved,
+            FlashbackPlaybackMaxDecodeConvertMsObserved = playbackSessionMetrics.MaxDecodeConvertMsObserved,
             FlashbackPlaybackFrameCountAtEnd = playbackFrameCountAtEnd,
             FlashbackPlaybackLateFramesAtEnd = playbackLateFramesAtEnd,
             FlashbackPlaybackSlowFramesAtEnd = playbackSlowFramesAtEnd,
@@ -1012,8 +1047,22 @@ public static class DiagnosticSessionRunner
             $"p95MsEnd={result.FlashbackPlaybackDecodeP95MsAtEnd:0.##} " +
             $"p99MsEnd={result.FlashbackPlaybackDecodeP99MsAtEnd:0.##} " +
             $"maxMsEnd={result.FlashbackPlaybackDecodeMaxMsAtEnd:0.##} " +
+            $"phaseEnd={result.FlashbackPlaybackMaxDecodePhaseAtEnd} " +
+            $"receiveMsEnd={result.FlashbackPlaybackMaxDecodeReceiveMsAtEnd:0.##} " +
+            $"feedMsEnd={result.FlashbackPlaybackMaxDecodeFeedMsAtEnd:0.##} " +
+            $"readMsEnd={result.FlashbackPlaybackMaxDecodeReadMsAtEnd:0.##} " +
+            $"sendMsEnd={result.FlashbackPlaybackMaxDecodeSendMsAtEnd:0.##} " +
+            $"audioMsEnd={result.FlashbackPlaybackMaxDecodeAudioMsAtEnd:0.##} " +
+            $"convertMsEnd={result.FlashbackPlaybackMaxDecodeConvertMsAtEnd:0.##} " +
             $"p99MsMax={result.FlashbackPlaybackMaxDecodeP99MsObserved:0.##} " +
-            $"maxMsObserved={result.FlashbackPlaybackMaxDecodeMsObserved:0.##}");
+            $"maxMsObserved={result.FlashbackPlaybackMaxDecodeMsObserved:0.##} " +
+            $"phaseObserved={result.FlashbackPlaybackMaxDecodePhaseObserved} " +
+            $"receiveMsObserved={result.FlashbackPlaybackMaxDecodeReceiveMsObserved:0.##} " +
+            $"feedMsObserved={result.FlashbackPlaybackMaxDecodeFeedMsObserved:0.##} " +
+            $"readMsObserved={result.FlashbackPlaybackMaxDecodeReadMsObserved:0.##} " +
+            $"sendMsObserved={result.FlashbackPlaybackMaxDecodeSendMsObserved:0.##} " +
+            $"audioMsObserved={result.FlashbackPlaybackMaxDecodeAudioMsObserved:0.##} " +
+            $"convertMsObserved={result.FlashbackPlaybackMaxDecodeConvertMsObserved:0.##}");
         builder.AppendLine(
             "Flashback Playback Stages: " +
             $"switchesEnd={result.FlashbackPlaybackSegmentSwitchesAtEnd} " +
@@ -3436,7 +3485,18 @@ public static class DiagnosticSessionRunner
         metrics.MaxFrameMsObserved = Math.Max(metrics.MaxFrameMsObserved, GetDouble(snapshot, "FlashbackPlaybackMaxFrameMs"));
         metrics.MaxSlowFramePercentObserved = Math.Max(metrics.MaxSlowFramePercentObserved, GetDouble(snapshot, "FlashbackPlaybackSlowFramePercent"));
         metrics.MaxDecodeP99MsObserved = Math.Max(metrics.MaxDecodeP99MsObserved, GetDouble(snapshot, "FlashbackPlaybackDecodeP99Ms"));
-        metrics.MaxDecodeMsObserved = Math.Max(metrics.MaxDecodeMsObserved, GetDouble(snapshot, "FlashbackPlaybackDecodeMaxMs"));
+        var decodeMaxMs = GetDouble(snapshot, "FlashbackPlaybackDecodeMaxMs");
+        if (decodeMaxMs >= metrics.MaxDecodeMsObserved)
+        {
+            metrics.MaxDecodeMsObserved = decodeMaxMs;
+            metrics.MaxDecodePhaseObserved = GetString(snapshot, "FlashbackPlaybackMaxDecodePhase") ?? string.Empty;
+            metrics.MaxDecodeReceiveMsObserved = GetDouble(snapshot, "FlashbackPlaybackMaxDecodeReceiveMs");
+            metrics.MaxDecodeFeedMsObserved = GetDouble(snapshot, "FlashbackPlaybackMaxDecodeFeedMs");
+            metrics.MaxDecodeReadMsObserved = GetDouble(snapshot, "FlashbackPlaybackMaxDecodeReadMs");
+            metrics.MaxDecodeSendMsObserved = GetDouble(snapshot, "FlashbackPlaybackMaxDecodeSendMs");
+            metrics.MaxDecodeAudioMsObserved = GetDouble(snapshot, "FlashbackPlaybackMaxDecodeAudioMs");
+            metrics.MaxDecodeConvertMsObserved = GetDouble(snapshot, "FlashbackPlaybackMaxDecodeConvertMs");
+        }
         metrics.MaxAudioMasterDelayDoublesObserved = Math.Max(metrics.MaxAudioMasterDelayDoublesObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterDelayDoubles") ?? 0);
         metrics.MaxAudioMasterDelayShrinksObserved = Math.Max(metrics.MaxAudioMasterDelayShrinksObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterDelayShrinks") ?? 0);
         metrics.MaxAudioMasterFallbacksObserved = Math.Max(metrics.MaxAudioMasterFallbacksObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0);
@@ -3475,6 +3535,13 @@ public static class DiagnosticSessionRunner
         public double MaxSlowFramePercentObserved { get; set; }
         public double MaxDecodeP99MsObserved { get; set; }
         public double MaxDecodeMsObserved { get; set; }
+        public string MaxDecodePhaseObserved { get; set; } = string.Empty;
+        public double MaxDecodeReceiveMsObserved { get; set; }
+        public double MaxDecodeFeedMsObserved { get; set; }
+        public double MaxDecodeReadMsObserved { get; set; }
+        public double MaxDecodeSendMsObserved { get; set; }
+        public double MaxDecodeAudioMsObserved { get; set; }
+        public double MaxDecodeConvertMsObserved { get; set; }
         public long MaxAudioMasterDelayDoublesObserved { get; set; }
         public long MaxAudioMasterDelayShrinksObserved { get; set; }
         public long MaxAudioMasterFallbacksObserved { get; set; }

@@ -119,6 +119,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private readonly double[] _playbackDecodeDurationsMs = new double[PlaybackCadenceSampleCapacity];
     private int _playbackDecodeDurationHead;
     private int _playbackDecodeDurationCount;
+    private double _playbackMaxDecodeTotalMs;
+    private double _playbackMaxDecodeReceiveMs;
+    private double _playbackMaxDecodeFeedMs;
+    private double _playbackMaxDecodeReadMs;
+    private double _playbackMaxDecodeSendMs;
+    private double _playbackMaxDecodeAudioMs;
+    private double _playbackMaxDecodeConvertMs;
+    private string _playbackMaxDecodePhase = string.Empty;
     private long _commandsEnqueued;
     private long _commandsProcessed;
     private long _commandsDropped;
@@ -2488,6 +2496,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public double PlaybackTargetFps => _playbackTargetFps;
     public double PlaybackObservedFps => _playbackObservedFps;
     public double PlaybackAvgFrameMs => _playbackAvgFrameMs;
+    public string PlaybackMaxDecodePhase => Volatile.Read(ref _playbackMaxDecodePhase);
+    public double PlaybackMaxDecodeReceiveMs => _playbackMaxDecodeReceiveMs;
+    public double PlaybackMaxDecodeFeedMs => _playbackMaxDecodeFeedMs;
+    public double PlaybackMaxDecodeReadMs => _playbackMaxDecodeReadMs;
+    public double PlaybackMaxDecodeSendMs => _playbackMaxDecodeSendMs;
+    public double PlaybackMaxDecodeAudioMs => _playbackMaxDecodeAudioMs;
+    public double PlaybackMaxDecodeConvertMs => _playbackMaxDecodeConvertMs;
     public long CommandsEnqueued => Interlocked.Read(ref _commandsEnqueued);
     public long CommandsProcessed => Interlocked.Read(ref _commandsProcessed);
     public long CommandsDropped => Interlocked.Read(ref _commandsDropped);
@@ -2771,13 +2786,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (decoded)
         {
             var elapsedMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;
-            TrackPlaybackDecodeDuration(elapsedMs);
+            TrackPlaybackDecodeDuration(elapsedMs, decoder.LastDecodePhaseTimings);
         }
 
         return decoded;
     }
 
-    private void TrackPlaybackDecodeDuration(double elapsedMs)
+    private void TrackPlaybackDecodeDuration(
+        double elapsedMs,
+        FlashbackDecoder.PlaybackDecodePhaseTimings phaseTimings)
     {
         if (elapsedMs <= 0 || double.IsNaN(elapsedMs) || double.IsInfinity(elapsedMs))
         {
@@ -2786,6 +2803,19 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         lock (_playbackDecodeLock)
         {
+            if (_playbackDecodeDurationCount == 0 ||
+                elapsedMs >= _playbackMaxDecodeTotalMs)
+            {
+                _playbackMaxDecodeTotalMs = elapsedMs;
+                _playbackMaxDecodeReceiveMs = phaseTimings.ReceiveMs;
+                _playbackMaxDecodeFeedMs = phaseTimings.FeedMs;
+                _playbackMaxDecodeReadMs = phaseTimings.ReadMs;
+                _playbackMaxDecodeSendMs = phaseTimings.SendMs;
+                _playbackMaxDecodeAudioMs = phaseTimings.AudioMs;
+                _playbackMaxDecodeConvertMs = phaseTimings.ConvertMs;
+                Volatile.Write(ref _playbackMaxDecodePhase, ResolveDominantDecodePhase(phaseTimings));
+            }
+
             _playbackDecodeDurationsMs[_playbackDecodeDurationHead] = elapsedMs;
             _playbackDecodeDurationHead = (_playbackDecodeDurationHead + 1) % _playbackDecodeDurationsMs.Length;
             if (_playbackDecodeDurationCount < _playbackDecodeDurationsMs.Length)
@@ -2793,6 +2823,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 _playbackDecodeDurationCount++;
             }
         }
+    }
+
+    private static string ResolveDominantDecodePhase(FlashbackDecoder.PlaybackDecodePhaseTimings phaseTimings)
+    {
+        var phase = "receive";
+        var max = phaseTimings.ReceiveMs;
+        if (phaseTimings.ReadMs > max) { phase = "read"; max = phaseTimings.ReadMs; }
+        if (phaseTimings.SendMs > max) { phase = "send"; max = phaseTimings.SendMs; }
+        if (phaseTimings.AudioMs > max) { phase = "audio"; max = phaseTimings.AudioMs; }
+        if (phaseTimings.ConvertMs > max) { phase = "convert"; }
+        return phase;
     }
 
     private static void UpdateMaxLong(ref long target, long value)
@@ -2870,6 +2911,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Array.Clear(_playbackDecodeDurationsMs);
             _playbackDecodeDurationHead = 0;
             _playbackDecodeDurationCount = 0;
+            _playbackMaxDecodeTotalMs = 0;
+            _playbackMaxDecodeReceiveMs = 0;
+            _playbackMaxDecodeFeedMs = 0;
+            _playbackMaxDecodeReadMs = 0;
+            _playbackMaxDecodeSendMs = 0;
+            _playbackMaxDecodeAudioMs = 0;
+            _playbackMaxDecodeConvertMs = 0;
+            Volatile.Write(ref _playbackMaxDecodePhase, string.Empty);
         }
     }
 
