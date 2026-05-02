@@ -277,16 +277,16 @@ public sealed partial class MainWindow : Window, IAutomationWindowControl
         var exePath = Environment.ProcessPath;
         if (string.IsNullOrWhiteSpace(exePath) || !File.Exists(exePath))
         {
-            return "SimpleCapture";
+            return "Simple Sussudio";
         }
 
         var buildTime = File.GetLastWriteTime(exePath);
         if (buildTime == DateTime.MinValue)
         {
-            return "SimpleCapture";
+            return "Simple Sussudio";
         }
 
-        return $"SimpleCapture (build {buildTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)})";
+        return $"Simple Sussudio (build {buildTime.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture)})";
     }
 
     private void ApplyWindowTitle()

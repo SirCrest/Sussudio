@@ -7,7 +7,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     mc:Ignorable="d"
-    Title="SimpleCapture">
+    Title="Simple Sussudio">
 
     <Window.SystemBackdrop>
         <MicaBackdrop />
@@ -1922,7 +1922,7 @@
                 <ScaleTransform x:Name="SplashScale" ScaleX="1" ScaleY="1"/>
             </Grid.RenderTransform>
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="6">
-                <TextBlock Text="SimpleCapture"
+                <TextBlock Text="Simple Sussudio"
                            FontSize="42"
                            FontWeight="Bold"
                            Foreground="White"
