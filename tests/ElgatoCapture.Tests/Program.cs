@@ -165,6 +165,9 @@ static partial class Program
                 "LibAv encoder HDR bitstream filters map codecs",
                 LibAvEncoder_GetHdrBitstreamFilterName_MapsCodecs),
             await RunCheckAsync(
+                "LibAv encoder chains HDR and MPEG-TS bitstream filters",
+                LibAvEncoder_VideoBitstreamFilterSpec_ChainsHdrAndMpegTsFilters),
+            await RunCheckAsync(
                 "LibAv encoder expected frame sizes match pixel formats",
                 LibAvEncoder_GetExpectedFrameSizeBytes_CalculatesCorrectly),
             await RunCheckAsync(

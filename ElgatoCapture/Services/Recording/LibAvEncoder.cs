@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -1244,47 +1245,26 @@ internal sealed unsafe class LibAvEncoder : IDisposable
 
     private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)
     {
-        var filterName = options.HdrEnabled
-            ? GetHdrBitstreamFilterName(options.CodecName)
-            : GetMpegTsParameterSetBitstreamFilterName(options);
-        if (filterName == null)
+        var filterSpec = GetVideoBitstreamFilterSpec(options);
+        if (filterSpec == null)
         {
             return;
         }
 
-        var injectHdrMetadata = options.HdrEnabled;
-
-        var filter = ffmpeg.av_bsf_get_by_name(filterName);
-        if (filter == null)
+        AVBSFContext* bsfCtx = null;
+        ThrowIfError(ffmpeg.av_bsf_list_parse_str(filterSpec, &bsfCtx), "av_bsf_list_parse_str");
+        if (bsfCtx == null)
         {
             throw CreateLibAvException(
-                $"LIBAV_ENCODER_BSF_INIT_FAIL codec='{options.CodecName}' filter='{filterName}' msg=Filter not available.");
+                $"LIBAV_ENCODER_BSF_INIT_FAIL codec='{options.CodecName}' filter='{filterSpec}' msg=Filter chain allocation returned null.");
         }
 
-        AVBSFContext* bsfCtx = null;
-        ThrowIfError(ffmpeg.av_bsf_alloc(filter, &bsfCtx), "av_bsf_alloc");
         _bsfCtx = bsfCtx;
         ThrowIfError(ffmpeg.avcodec_parameters_from_context(_bsfCtx->par_in, _videoCodecCtx), "avcodec_parameters_from_context(bsf)");
         _bsfCtx->time_base_in = _videoCodecCtx->time_base;
 
-        var optionTarget = _bsfCtx->priv_data != null ? _bsfCtx->priv_data : _bsfCtx;
-        var searchFlags = ffmpeg.AV_OPT_SEARCH_CHILDREN;
-
-        if (injectHdrMetadata && filterName.Equals("hevc_metadata", StringComparison.OrdinalIgnoreCase))
-        {
-            ThrowIfError(ffmpeg.av_opt_set(optionTarget, "colour_primaries", "9", searchFlags), "av_opt_set(hevc_metadata.colour_primaries)");
-            ThrowIfError(ffmpeg.av_opt_set(optionTarget, "transfer_characteristics", "16", searchFlags), "av_opt_set(hevc_metadata.transfer_characteristics)");
-            ThrowIfError(ffmpeg.av_opt_set(optionTarget, "matrix_coefficients", "9", searchFlags), "av_opt_set(hevc_metadata.matrix_coefficients)");
-        }
-        else if (injectHdrMetadata)
-        {
-            ThrowIfError(ffmpeg.av_opt_set(optionTarget, "color_primaries", "9", searchFlags), "av_opt_set(av1_metadata.color_primaries)");
-            ThrowIfError(ffmpeg.av_opt_set(optionTarget, "transfer_characteristics", "16", searchFlags), "av_opt_set(av1_metadata.transfer_characteristics)");
-            ThrowIfError(ffmpeg.av_opt_set(optionTarget, "matrix_coefficients", "9", searchFlags), "av_opt_set(av1_metadata.matrix_coefficients)");
-        }
-
         ThrowIfError(ffmpeg.av_bsf_init(_bsfCtx), "av_bsf_init");
-        Logger.Log($"LIBAV_ENCODER_BSF_INIT codec='{options.CodecName}' filter='{filterName}' hdr={injectHdrMetadata}");
+        Logger.Log($"LIBAV_ENCODER_BSF_INIT codec='{options.CodecName}' filter='{filterSpec}' hdr={options.HdrEnabled}");
     }
 
     private void InitializeAudioIfNeeded(LibAvEncoderOptions options)
@@ -2898,6 +2878,44 @@ ValidateHdrOptions:
         if (codecName.Contains("av1", StringComparison.OrdinalIgnoreCase))
         {
             return "av1_metadata";
+        }
+
+        return null;
+    }
+
+    private static string? GetVideoBitstreamFilterSpec(LibAvEncoderOptions options)
+    {
+        var filters = new List<string>();
+        if (options.HdrEnabled)
+        {
+            var hdrFilter = GetHdrBitstreamFilterSpec(options.CodecName);
+            if (hdrFilter != null)
+            {
+                filters.Add(hdrFilter);
+            }
+        }
+
+        var parameterSetFilter = GetMpegTsParameterSetBitstreamFilterName(options);
+        if (parameterSetFilter != null)
+        {
+            filters.Add(parameterSetFilter);
+        }
+
+        return filters.Count == 0
+            ? null
+            : string.Join(",", filters);
+    }
+
+    private static string? GetHdrBitstreamFilterSpec(string codecName)
+    {
+        if (codecName.Contains("hevc", StringComparison.OrdinalIgnoreCase))
+        {
+            return "hevc_metadata=colour_primaries=9:transfer_characteristics=16:matrix_coefficients=9";
+        }
+
+        if (codecName.Contains("av1", StringComparison.OrdinalIgnoreCase))
+        {
+            return "av1_metadata=color_primaries=9:transfer_characteristics=16:matrix_coefficients=9";
         }
 
         return null;

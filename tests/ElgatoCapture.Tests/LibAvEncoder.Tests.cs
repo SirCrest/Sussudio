@@ -34,6 +34,52 @@ static partial class Program
 
     // ── LibAvEncoder: GetExpectedFrameSizeBytes ──
 
+    private static Task LibAvEncoder_VideoBitstreamFilterSpec_ChainsHdrAndMpegTsFilters()
+    {
+        var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
+        var method = encoderType.GetMethod("GetVideoBitstreamFilterSpec",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("GetVideoBitstreamFilterSpec not found.");
+
+        var hdrHevcTs = CreateValidEncoderOptions();
+        SetPropertyBackingField(hdrHevcTs, "CodecName", "hevc_nvenc");
+        SetPropertyBackingField(hdrHevcTs, "ContainerFormat", "mpegts");
+        SetPropertyBackingField(hdrHevcTs, "HdrEnabled", true);
+        SetPropertyBackingField(hdrHevcTs, "IsP010", true);
+        AssertEqual(
+            "hevc_metadata=colour_primaries=9:transfer_characteristics=16:matrix_coefficients=9,dump_extra",
+            method.Invoke(null, new[] { hdrHevcTs })?.ToString(),
+            "HDR HEVC MPEG-TS chains HDR metadata and parameter-set filters");
+
+        var sdrHevcTs = CreateValidEncoderOptions();
+        SetPropertyBackingField(sdrHevcTs, "CodecName", "hevc_nvenc");
+        SetPropertyBackingField(sdrHevcTs, "ContainerFormat", "mpegts");
+        SetPropertyBackingField(sdrHevcTs, "HdrEnabled", false);
+        AssertEqual("dump_extra", method.Invoke(null, new[] { sdrHevcTs })?.ToString(), "SDR HEVC MPEG-TS dumps parameter sets");
+
+        var hdrHevcMp4 = CreateValidEncoderOptions();
+        SetPropertyBackingField(hdrHevcMp4, "CodecName", "hevc_nvenc");
+        SetPropertyBackingField(hdrHevcMp4, "ContainerFormat", "mp4");
+        SetPropertyBackingField(hdrHevcMp4, "HdrEnabled", true);
+        SetPropertyBackingField(hdrHevcMp4, "IsP010", true);
+        AssertEqual(
+            "hevc_metadata=colour_primaries=9:transfer_characteristics=16:matrix_coefficients=9",
+            method.Invoke(null, new[] { hdrHevcMp4 })?.ToString(),
+            "HDR HEVC MP4 keeps HDR metadata filter");
+
+        var hdrAv1Mp4 = CreateValidEncoderOptions();
+        SetPropertyBackingField(hdrAv1Mp4, "CodecName", "av1_nvenc");
+        SetPropertyBackingField(hdrAv1Mp4, "ContainerFormat", "mp4");
+        SetPropertyBackingField(hdrAv1Mp4, "HdrEnabled", true);
+        SetPropertyBackingField(hdrAv1Mp4, "IsP010", true);
+        AssertEqual(
+            "av1_metadata=color_primaries=9:transfer_characteristics=16:matrix_coefficients=9",
+            method.Invoke(null, new[] { hdrAv1Mp4 })?.ToString(),
+            "HDR AV1 MP4 keeps AV1 metadata filter");
+
+        return Task.CompletedTask;
+    }
+
     private static Task LibAvEncoder_GetExpectedFrameSizeBytes_CalculatesCorrectly()
     {
         var encoderType = RequireType("ElgatoCapture.Services.Recording.LibAvEncoder");
@@ -285,8 +331,14 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "private void InitializeVideoBitstreamFilterIfNeeded(LibAvEncoderOptions options)");
-        AssertContains(sourceText, "GetMpegTsParameterSetBitstreamFilterName(options)");
+        AssertContains(sourceText, "GetVideoBitstreamFilterSpec(options)");
+        AssertContains(sourceText, "ffmpeg.av_bsf_list_parse_str(filterSpec, &bsfCtx)");
+        AssertContains(sourceText, "string.Join(\",\", filters)");
+        AssertContains(sourceText, "filters.Add(hdrFilter)");
+        AssertContains(sourceText, "filters.Add(parameterSetFilter)");
         AssertContains(sourceText, "IsMpegTsParameterSetFilterCandidate(options) ? \"dump_extra\" : null");
+        AssertContains(sourceText, "hevc_metadata=colour_primaries=9:transfer_characteristics=16:matrix_coefficients=9");
+        AssertContains(sourceText, "av1_metadata=color_primaries=9:transfer_characteristics=16:matrix_coefficients=9");
         AssertContains(sourceText, "string.Equals(options.ContainerFormat, \"mpegts\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(sourceText, "options.CodecName.Contains(\"h264\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(sourceText, "options.CodecName.Contains(\"hevc\", StringComparison.OrdinalIgnoreCase)");
