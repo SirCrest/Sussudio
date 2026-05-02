@@ -121,6 +121,13 @@ public sealed class DiagnosticSessionResult
     public double PreviewD3DPresentCallMaxMsObserved { get; init; }
     public double PreviewD3DTotalFrameCpuP99MsAtEnd { get; init; }
     public double PreviewD3DTotalFrameCpuMaxMsObserved { get; init; }
+    public double VisualCadenceOutputFpsAtEnd { get; init; }
+    public double VisualCadenceChangeFpsAtEnd { get; init; }
+    public double VisualCadenceMinChangeFpsObserved { get; init; }
+    public double VisualCadenceRepeatPercentAtEnd { get; init; }
+    public double VisualCadenceMaxRepeatPercentObserved { get; init; }
+    public long VisualCadenceRepeatFramesAtEnd { get; init; }
+    public long VisualCadenceLongestRepeatRunAtEnd { get; init; }
     public double ProcessCpuPercentAtEnd { get; init; }
     public double ProcessCpuMaxPercentObserved { get; init; }
     public bool RecordingVerificationRun { get; init; }
@@ -705,6 +712,7 @@ public static class DiagnosticSessionRunner
         var exportMetrics = BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot);
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
+        var visualCadenceMetrics = BuildVisualCadenceSessionMetrics(samples, lastSnapshot);
         var processCpuMaxPercentObserved = samples
             .Select(sample => GetDouble(sample.Snapshot, "ProcessCpuPercent"))
             .Append(GetDouble(lastSnapshot, "ProcessCpuPercent"))
@@ -829,6 +837,13 @@ public static class DiagnosticSessionRunner
             PreviewD3DPresentCallMaxMsObserved = previewD3DMetrics.PresentCallMaxMsObserved,
             PreviewD3DTotalFrameCpuP99MsAtEnd = previewD3DMetrics.TotalFrameCpuP99MsAtEnd,
             PreviewD3DTotalFrameCpuMaxMsObserved = previewD3DMetrics.TotalFrameCpuMaxMsObserved,
+            VisualCadenceOutputFpsAtEnd = visualCadenceMetrics.OutputFpsAtEnd,
+            VisualCadenceChangeFpsAtEnd = visualCadenceMetrics.ChangeFpsAtEnd,
+            VisualCadenceMinChangeFpsObserved = visualCadenceMetrics.MinChangeFpsObserved,
+            VisualCadenceRepeatPercentAtEnd = visualCadenceMetrics.RepeatPercentAtEnd,
+            VisualCadenceMaxRepeatPercentObserved = visualCadenceMetrics.MaxRepeatPercentObserved,
+            VisualCadenceRepeatFramesAtEnd = visualCadenceMetrics.RepeatFramesAtEnd,
+            VisualCadenceLongestRepeatRunAtEnd = visualCadenceMetrics.LongestRepeatRunAtEnd,
             ProcessCpuPercentAtEnd = GetDouble(lastSnapshot, "ProcessCpuPercent"),
             ProcessCpuMaxPercentObserved = processCpuMaxPercentObserved,
             RecordingVerificationRun = verification.HasValue,
@@ -1018,6 +1033,15 @@ public static class DiagnosticSessionRunner
             $"presentCallMaxObserved={result.PreviewD3DPresentCallMaxMsObserved:0.##} " +
             $"totalFrameP99End={result.PreviewD3DTotalFrameCpuP99MsAtEnd:0.##} " +
             $"totalFrameMaxObserved={result.PreviewD3DTotalFrameCpuMaxMsObserved:0.##}");
+        builder.AppendLine(
+            "Preview Visual Cadence: " +
+            $"outputFpsEnd={result.VisualCadenceOutputFpsAtEnd:0.##} " +
+            $"changeFpsEnd={result.VisualCadenceChangeFpsAtEnd:0.##} " +
+            $"changeFpsMin={result.VisualCadenceMinChangeFpsObserved:0.##} " +
+            $"repeatPctEnd={result.VisualCadenceRepeatPercentAtEnd:0.###} " +
+            $"repeatPctMax={result.VisualCadenceMaxRepeatPercentObserved:0.###} " +
+            $"repeatFramesEnd={result.VisualCadenceRepeatFramesAtEnd} " +
+            $"longestRepeatRunEnd={result.VisualCadenceLongestRepeatRunAtEnd}");
         builder.AppendLine(
             "Process Perf: " +
             $"cpuPercentEnd={result.ProcessCpuPercentAtEnd:0.##} " +
@@ -3472,6 +3496,56 @@ public static class DiagnosticSessionRunner
     {
         public double OnePercentLowFpsAtEnd { get; init; }
         public double MinOnePercentLowFpsObserved { get; set; } = double.PositiveInfinity;
+    }
+
+    private static VisualCadenceSessionMetrics BuildVisualCadenceSessionMetrics(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement lastSnapshot)
+    {
+        var metrics = new VisualCadenceSessionMetrics
+        {
+            OutputFpsAtEnd = GetDouble(lastSnapshot, "VisualCadenceOutputObservedFps"),
+            ChangeFpsAtEnd = GetDouble(lastSnapshot, "VisualCadenceChangeObservedFps"),
+            RepeatPercentAtEnd = GetDouble(lastSnapshot, "VisualCadenceRepeatFramePercent"),
+            RepeatFramesAtEnd = GetNullableLong(lastSnapshot, "VisualCadenceRepeatFrameCount") ?? 0,
+            LongestRepeatRunAtEnd = GetNullableLong(lastSnapshot, "VisualCadenceLongestRepeatRun") ?? 0
+        };
+        ObserveVisualCadenceSnapshot(metrics, lastSnapshot);
+        foreach (var sample in samples)
+        {
+            ObserveVisualCadenceSnapshot(metrics, sample.Snapshot);
+        }
+
+        if (double.IsPositiveInfinity(metrics.MinChangeFpsObserved))
+        {
+            metrics.MinChangeFpsObserved = 0;
+        }
+
+        return metrics;
+    }
+
+    private static void ObserveVisualCadenceSnapshot(VisualCadenceSessionMetrics metrics, JsonElement snapshot)
+    {
+        var changeFps = GetDouble(snapshot, "VisualCadenceChangeObservedFps");
+        if (changeFps > 0)
+        {
+            metrics.MinChangeFpsObserved = Math.Min(metrics.MinChangeFpsObserved, changeFps);
+        }
+
+        metrics.MaxRepeatPercentObserved = Math.Max(
+            metrics.MaxRepeatPercentObserved,
+            GetDouble(snapshot, "VisualCadenceRepeatFramePercent"));
+    }
+
+    private sealed class VisualCadenceSessionMetrics
+    {
+        public double OutputFpsAtEnd { get; init; }
+        public double ChangeFpsAtEnd { get; init; }
+        public double MinChangeFpsObserved { get; set; } = double.PositiveInfinity;
+        public double RepeatPercentAtEnd { get; init; }
+        public double MaxRepeatPercentObserved { get; set; }
+        public long RepeatFramesAtEnd { get; init; }
+        public long LongestRepeatRunAtEnd { get; init; }
     }
 
     private static PreviewD3DMetrics BuildPreviewD3DMetrics(

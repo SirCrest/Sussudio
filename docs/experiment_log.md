@@ -3046,3 +3046,11 @@ Follow-up from the deferred list above.
 **Change:** `ScheduleDeferredFlashbackBackendCleanup` no longer accepts a cancellation token and always attempts the requested `PurgeAllSegments()` before disposing transferred flashback resources. Cancellation still propagates to the caller after the deferred cleanup is scheduled, but ownership cleanup is committed once the backend has been detached from the live service fields.
 
 **Verification:** `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore`, `dotnet build ElgatoCapture.slnx -c Debug --no-restore /nr:false`, and `git diff --check` passed after the fix.
+
+## 2026-05-01 — Diagnostic sessions surface visual cadence proof
+
+**Issue:** Present/display 1% lows can report jitter even when the decoded visual content is still changing at the expected 120fps. The diagnostic-session summary did not preserve the visual-cadence counters, so live A/B runs could not easily distinguish actual repeated frames from present-interval variance.
+
+**Change:** Added visual-cadence rollups to `DiagnosticSessionResult` and the session formatter: output FPS, change FPS, minimum observed change FPS, repeat-frame percent, maximum observed repeat percent, repeat-frame count, and longest repeat run. The session contract test now asserts those fields and formatter text stay wired.
+
+**Verification:** `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore`, `dotnet build tools\ecctl\ecctl.csproj -c Debug --no-restore /nr:false`, `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore /nr:false`, `dotnet build ElgatoCapture.slnx -c Debug --no-restore /nr:false`, and `git diff --check` passed. A 60s live preview-only diagnostic with 5s samples succeeded and persisted the new fields: visual output FPS 119.997, visual change FPS 119.997, minimum observed change FPS 119.338, repeat percent 0.100%, max repeat percent 0.126%, repeat frames 8, longest repeat run 1.
