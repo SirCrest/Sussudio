@@ -2503,6 +2503,26 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
 
         if (captureOnePercentLowDegraded)
         {
+            if (isPreviewing &&
+                visualCadenceHealthy &&
+                health.CaptureCadenceEstimatedDroppedFrames <= 0 &&
+                health.CaptureCadenceSevereGapCount <= 0 &&
+                health.CaptureCadenceEstimatedDropPercent <= 0)
+            {
+                return new DiagnosticEvaluation(
+                    "Healthy",
+                    "none",
+                    "Source/capture 1% low is below target, but sampled visual cadence confirms source-rate output.",
+                    $"{sourceLane} | {visualLane}",
+                    sourceLane,
+                    decodeLane,
+                    previewLane,
+                    renderLane,
+                    presentLane,
+                    recordingLane,
+                    audioLane);
+            }
+
             return new DiagnosticEvaluation(
                 "Warning",
                 "source_capture",
