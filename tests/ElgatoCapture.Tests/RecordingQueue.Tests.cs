@@ -302,7 +302,7 @@ static partial class Program
         AssertDoesNotContain(captureServiceSource, "System.Diagnostics.Trace.TraceWarning($\"Suppressed exception in CaptureService.StartRecordingAsync");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_CYCLE_OK mode=preserve_rebuild");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_DEFERRED_PURGE_WARN");
-        AssertContains(captureServiceSource, "FLASHBACK_BUFFER_DEFERRED_PURGE_SKIP");
+        AssertDoesNotContain(captureServiceSource, "FLASHBACK_BUFFER_DEFERRED_PURGE_SKIP");
         AssertContains(captureServiceSource, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n            {\n                throw;\n            }");
         var stopRecordingBackend = ExtractSourceBlock(
             captureServiceSource,
@@ -379,7 +379,6 @@ static partial class Program
             "private void OnFlashbackFrameEncoded");
         AssertContains(cycleFlashbackBuffer, "var committedCycleToken = CancellationToken.None;");
         AssertContains(cycleFlashbackBuffer, "FLASHBACK_CYCLE_STOP_CANCEL_DEFERRED");
-        AssertContains(cycleFlashbackBuffer, "cancellationToken: committedCycleToken");
         AssertContains(cycleFlashbackBuffer, "FLASHBACK_BUFFER_CYCLE_CANCEL_DEFERRED");
         AssertDoesNotContain(cycleFlashbackBuffer, "cancellationToken: cancellationToken");
         AssertOccursBefore(

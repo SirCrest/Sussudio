@@ -1230,8 +1230,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         FlashbackBufferManager? bufferManager,
         FlashbackExporter? flashbackExporter,
         string reason,
-        bool purgeSegments,
-        CancellationToken cancellationToken = default)
+        bool purgeSegments)
     {
         _ = Task.Run(async () =>
         {
@@ -1249,15 +1248,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 {
                     if (purgeSegments)
                     {
-                        if (cancellationToken.IsCancellationRequested)
-                        {
-                            Logger.Log($"FLASHBACK_BUFFER_DEFERRED_PURGE_SKIP reason='{reason}' canceled=true");
-                        }
-                        else
-                        {
-                            try { bufferManager.PurgeAllSegments(); }
-                            catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_DEFERRED_PURGE_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
-                        }
+                        try { bufferManager.PurgeAllSegments(); }
+                        catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_DEFERRED_PURGE_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
                     }
 
                     try { bufferManager.Dispose(); }
@@ -2008,8 +2000,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 flashbackBufferManager,
                 flashbackExporter,
                 reason: purgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
-                purgeSegments: purgeSegments,
-                cancellationToken: cancellationToken);
+                purgeSegments: purgeSegments);
             flashbackBufferManager = null;
             flashbackExporter = null;
             cancellationToken.ThrowIfCancellationRequested();
@@ -2158,8 +2149,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 bufferManager,
                 oldExporter,
                 reason: "buffer_cycle_deferred_cleanup",
-                purgeSegments: effectivePurgeSegments,
-                cancellationToken: committedCycleToken);
+                purgeSegments: effectivePurgeSegments);
 
             await EnsureFlashbackPreviewBackendAsync(unifiedVideoCapture, _currentSettings, committedCycleToken).ConfigureAwait(false);
             Logger.Log("FLASHBACK_BUFFER_CYCLE_OK mode=deferred_full_rebuild");

@@ -3038,3 +3038,11 @@ Follow-up from the deferred list above.
 **Change:** Added a 250ms near-live guard for active fMP4 reopen retries. If the seek target is at or within 250ms of the buffer write head, playback logs `FLASHBACK_PLAYBACK_REOPEN_SKIP_NEAR_LIVE`, skips the close/reopen retry, and lets the existing restore-live path recover. Older active-segment seeks still keep the reopen retry.
 
 **Verification:** `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore`, `dotnet build ElgatoCapture.slnx -c Debug --no-restore /nr:false`, and `git diff --check` passed after the fix.
+
+## 2026-05-01 — Deferred flashback backend cleanup commits purge after detach
+
+**Issue:** Once `DisposeFlashbackPreviewBackendCoreAsync` or buffer cycling detached the old flashback sink and transferred its buffer/exporter to deferred cleanup, that cleanup still honored the initiating cancellation token for segment purge. A cancellation after field teardown could therefore dispose the buffer manager but skip the requested purge, leaving old segments behind until a later startup cleanup.
+
+**Change:** `ScheduleDeferredFlashbackBackendCleanup` no longer accepts a cancellation token and always attempts the requested `PurgeAllSegments()` before disposing transferred flashback resources. Cancellation still propagates to the caller after the deferred cleanup is scheduled, but ownership cleanup is committed once the backend has been detached from the live service fields.
+
+**Verification:** `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore`, `dotnet build ElgatoCapture.slnx -c Debug --no-restore /nr:false`, and `git diff --check` passed after the fix.
