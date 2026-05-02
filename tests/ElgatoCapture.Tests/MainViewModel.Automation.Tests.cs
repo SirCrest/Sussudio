@@ -707,7 +707,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackExportMaxLastProgressAgeMsObserved");
         AssertContains(diagnosticSessionText, "FlashbackExportMaxOutputBytesObserved");
         AssertContains(diagnosticSessionText, "FlashbackExportMaxThroughputBytesPerSecObserved");
-        AssertContains(diagnosticSessionText, "BuildFlashbackExportSessionMetrics(samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "exportId > baselineExportId");
+        AssertContains(diagnosticSessionText, "baselineExportActive && exportId == baselineExportId");
         AssertContains(diagnosticSessionText, "TryGetFlashbackExportVerificationPath(scenario, outputDirectory, out var exportVerificationPath)");
         AssertContains(diagnosticSessionText, "verificationCommand = \"VerifyFile\"");
         AssertContains(diagnosticSessionText, "\"flashback-range-export\" => Path.Combine(outputDirectory, \"flashback-range-export.mp4\")");
@@ -726,6 +728,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackScrubStressAsync(");
         AssertContains(diagnosticSessionText, "flashback scrub stress seek burst requested");
+        AssertContains(diagnosticSessionText, "!GetBool(lastSnapshot, \"FlashbackPlaybackThreadAlive\")");
+        AssertContains(diagnosticSessionText, "GetString(lastSnapshot, \"FlashbackPlaybackState\")");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRestartCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback restart cycle export verified");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackEncoderCycleAsync(");

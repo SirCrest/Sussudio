@@ -699,7 +699,7 @@ public static class DiagnosticSessionRunner
         }
 
         var recordingMetrics = BuildFlashbackRecordingMetrics(samples);
-        var exportMetrics = BuildFlashbackExportSessionMetrics(samples, lastSnapshot);
+        var exportMetrics = BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot);
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
         var processCpuMaxPercentObserved = samples
@@ -1118,7 +1118,12 @@ public static class DiagnosticSessionRunner
             cancellationToken.ThrowIfCancellationRequested();
             var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
             if (TryGetSnapshot(snapshotResponse, out lastSnapshot) &&
-                GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands") == 0)
+                GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands") == 0 &&
+                !GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive") &&
+                string.Equals(
+                    GetString(lastSnapshot, "FlashbackPlaybackState"),
+                    "Live",
+                    StringComparison.OrdinalIgnoreCase))
             {
                 drained = true;
                 break;
@@ -3294,41 +3299,51 @@ public static class DiagnosticSessionRunner
     }
 
     private static FlashbackExportSessionMetrics BuildFlashbackExportSessionMetrics(
+        JsonElement initialSnapshot,
         IReadOnlyList<DiagnosticSessionSample> samples,
         JsonElement lastSnapshot)
     {
-        var metrics = new FlashbackExportSessionMetrics
-        {
-            ActiveAtEnd = GetBool(lastSnapshot, "FlashbackExportActive"),
-            StatusAtEnd = GetString(lastSnapshot, "FlashbackExportStatus") ?? string.Empty,
-            MessageAtEnd = GetString(lastSnapshot, "FlashbackExportMessage") ?? string.Empty,
-            FailureKindAtEnd = GetString(lastSnapshot, "FlashbackExportFailureKind") ?? string.Empty,
-            OutputPathAtEnd = GetString(lastSnapshot, "FlashbackExportOutputPath") ?? string.Empty,
-            LastSuccessAtEnd = GetString(lastSnapshot, "LastExportSuccess") ?? string.Empty,
-            LastMessageAtEnd = GetString(lastSnapshot, "LastExportMessage") ?? string.Empty
-        };
-        ObserveExportSnapshot(metrics, lastSnapshot);
+        var metrics = new FlashbackExportSessionMetrics();
+        var baselineExportId = GetNullableLong(initialSnapshot, "FlashbackExportId") ?? 0;
+        var baselineExportActive = GetBool(initialSnapshot, "FlashbackExportActive");
         foreach (var sample in samples)
         {
-            ObserveExportSnapshot(metrics, sample.Snapshot);
+            ObserveExportSnapshot(metrics, sample.Snapshot, baselineExportId, baselineExportActive);
         }
 
+        ObserveExportSnapshot(metrics, lastSnapshot, baselineExportId, baselineExportActive);
         return metrics;
     }
 
-    private static void ObserveExportSnapshot(FlashbackExportSessionMetrics metrics, JsonElement snapshot)
+    private static void ObserveExportSnapshot(
+        FlashbackExportSessionMetrics metrics,
+        JsonElement snapshot,
+        long baselineExportId,
+        bool baselineExportActive)
     {
         var exportId = GetNullableLong(snapshot, "FlashbackExportId") ?? 0;
         var status = GetString(snapshot, "FlashbackExportStatus") ?? string.Empty;
         var active = GetBool(snapshot, "FlashbackExportActive");
-        if (exportId > 0 ||
+        var relevantToSession =
             active ||
+            exportId > baselineExportId ||
+            baselineExportActive && exportId == baselineExportId ||
+            baselineExportId <= 0 &&
             !string.IsNullOrWhiteSpace(status) &&
-            !string.Equals(status, "NotStarted", StringComparison.OrdinalIgnoreCase))
+            !string.Equals(status, "NotStarted", StringComparison.OrdinalIgnoreCase);
+        if (!relevantToSession)
         {
-            metrics.Observed = true;
+            return;
         }
 
+        metrics.Observed = true;
+        metrics.ActiveAtEnd = active;
+        metrics.StatusAtEnd = status;
+        metrics.MessageAtEnd = GetString(snapshot, "FlashbackExportMessage") ?? string.Empty;
+        metrics.FailureKindAtEnd = GetString(snapshot, "FlashbackExportFailureKind") ?? string.Empty;
+        metrics.OutputPathAtEnd = GetString(snapshot, "FlashbackExportOutputPath") ?? string.Empty;
+        metrics.LastSuccessAtEnd = GetString(snapshot, "LastExportSuccess") ?? string.Empty;
+        metrics.LastMessageAtEnd = GetString(snapshot, "LastExportMessage") ?? string.Empty;
         metrics.MaxElapsedMsObserved = Math.Max(
             metrics.MaxElapsedMsObserved,
             GetNullableLong(snapshot, "FlashbackExportElapsedMs") ?? 0);
@@ -3346,13 +3361,13 @@ public static class DiagnosticSessionRunner
     private sealed class FlashbackExportSessionMetrics
     {
         public bool Observed { get; set; }
-        public bool ActiveAtEnd { get; init; }
-        public string StatusAtEnd { get; init; } = string.Empty;
-        public string MessageAtEnd { get; init; } = string.Empty;
-        public string FailureKindAtEnd { get; init; } = string.Empty;
-        public string OutputPathAtEnd { get; init; } = string.Empty;
-        public string LastSuccessAtEnd { get; init; } = string.Empty;
-        public string LastMessageAtEnd { get; init; } = string.Empty;
+        public bool ActiveAtEnd { get; set; }
+        public string StatusAtEnd { get; set; } = "NotStarted";
+        public string MessageAtEnd { get; set; } = string.Empty;
+        public string FailureKindAtEnd { get; set; } = string.Empty;
+        public string OutputPathAtEnd { get; set; } = string.Empty;
+        public string LastSuccessAtEnd { get; set; } = string.Empty;
+        public string LastMessageAtEnd { get; set; } = string.Empty;
         public long MaxElapsedMsObserved { get; set; }
         public long MaxLastProgressAgeMsObserved { get; set; }
         public long MaxOutputBytesObserved { get; set; }
