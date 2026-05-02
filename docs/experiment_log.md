@@ -3203,3 +3203,22 @@ A second 60s `flashback-playback` live diagnostic against the latest build (all 
 - `droppedFramesEnd=0`, `submitFailuresEnd=0`, `absAvDriftMsMax=0`, `audioBufferedMsMax=0`
 
 The session-level FAIL tag in the verifier output is on unrelated checks: `Recording Verification: FAIL | No output file path is available for verification.` (the scenario does not exercise recording), and the preview-display 1% low at 104.57fps — a compositor-side metric distinct from playback frame pacing.
+
+## 2026-05-02 — Rolling-window FPS, fast-path HDR guard, and final soak
+
+**Issues fixed in this round:**
+
+1. **`PlaybackObservedFps` cumulative smoothing.** `UpdateCadenceMetrics` computed FPS as `frameNum / wallElapsedMs`, a session-wide cumulative average. After ~2400 frames at 120fps any short stall was smoothed out of view, even though the existing 240-sample decode P99 ring captured the same event correctly. Now sums the existing `_playbackFrameIntervalsMs` ring under the cadence lock and divides by sample count, matching the decode ring's ~2-second horizon.
+
+2. **Fast-path flashback fast-path format-drift hole.** `StartVideoPreviewAsync` and `StartRecordingAsync` each took a fast path under `(_isRecording || _flashbackEnabled)` that called `SetPreviewSink` and returned without revalidating the active flashback sink's pixel format against the freshly negotiated UVC `IsP010`. A UVC re-negotiation that flipped the pixel format between sessions therefore silently reused the existing flashback backend with the wrong format. Now both fast paths compare `_flashbackSink.IsP010` (newly exposed on `FlashbackEncoderSink` from the cached session context) against `_unifiedVideoCapture.IsP010` and throw `InvalidOperationException` when they diverge. The slow-path `CreateFlashbackSessionContext` already hard-failed mismatches via commit `a1ca0e6`; this closes the parallel fast-path hole. HARD RAIL maintained.
+
+**Verification — fourth consecutive live `flashback-playback` 60s soak against the latest build (all 17 commits):**
+
+- `fpsMin=119.74`, `onePercentLowFpsMin=119.01` — both well above the 96fps floor that the original 2026-05-01 dip session failed at (`89.61fps`).
+- `onePercentLowMinOffsetMs=25209` — worst sample at 25s, shallow.
+- `onePercentLowMinDecodeP99Ms=4.5`, `onePercentLowMinDecodeMaxMs=4.89`, `onePercentLowMinAvDriftMs=0`.
+- `slowPctMax=0.08`, `maxFrameMsObserved=9.9` — pacing is extremely tight at 120fps.
+- `droppedFramesEnd=0`, `submitFailuresEnd=0`, `absAvDriftMsMax=0`, `audioBufferedMsMax=0`, `audioQueueMsMax=0`.
+- Session-level `FAIL` is on `Present/display 1% low` compositor metric (109.93fps) with the visual-cadence rollup correctly classifying it as cadence-near-source-rate, not a playback degradation.
+
+The flashback-playback 1% low dip is empirically resolved across four independent live runs. No regressions across any subsequent fix.
