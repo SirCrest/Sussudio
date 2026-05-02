@@ -3070,3 +3070,11 @@ Follow-up from the deferred list above.
 **Change:** Added session-local `PreviewSchedulerDroppedDelta`, `PreviewSchedulerDeadlineDropsDelta`, and `PreviewSchedulerUnderflowsDelta` fields while preserving the existing end counters. The formatter now prints both end and delta values.
 
 **Verification:** `dotnet build tools\ecctl\ecctl.csproj -c Debug --no-restore /nr:false`, `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore /nr:false`, `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore /nr:false /t:Rebuild`, `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore`, and `git diff --check` passed. A 60s live preview-only diagnostic with 5s samples succeeded and showed the intended distinction: `PreviewSchedulerUnderflowsAtEnd=1` but `PreviewSchedulerUnderflowsDelta=0`, with scheduler drop and deadline-drop deltas also zero.
+
+## 2026-05-01 — Flashback recording integrity warnings use session deltas
+
+**Issue:** Flashback recording diagnostic validation warned on absolute recording-integrity sequence-gap and queue-drop counters. A stale historical counter could therefore fail a new recording session even if no new integrity issue occurred during that run.
+
+**Change:** Added `FlashbackRecordingIntegritySequenceGapsDelta` and `FlashbackRecordingIntegrityQueueDroppedFramesDelta` to diagnostic-session summaries and changed Flashback recording validation warnings to fire only when those counters increase during the session. End counters remain in the summary for context.
+
+**Verification:** `dotnet build tools\ecctl\ecctl.csproj -c Debug --no-restore /nr:false`, `dotnet build tools\McpServer\McpServer.csproj -c Debug --no-restore /nr:false`, `dotnet build tools\NativeXuAudioProbe\NativeXuAudioProbe.csproj -c Debug --no-restore /nr:false /t:Rebuild`, `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore`, `dotnet build ElgatoCapture.slnx -c Debug --no-restore /nr:false`, and `git diff --check` passed. A 60s live `flashback-recording` diagnostic with 5s samples succeeded, strict recording verification passed, 7201 Flashback frames were submitted and 7201 encoder packets were written, and both integrity deltas were zero.

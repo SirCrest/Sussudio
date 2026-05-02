@@ -723,6 +723,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackRecordingVideoEncoderPacketsWrittenDelta");
         AssertContains(diagnosticSessionText, "FlashbackRecordingIntegritySequenceGapsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackRecordingIntegrityQueueDroppedFramesAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingIntegritySequenceGapsDelta");
+        AssertContains(diagnosticSessionText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta");
         AssertContains(diagnosticSessionText, "Flashback Recording:");
         AssertContains(diagnosticSessionText, "FlashbackExportMaxElapsedMsObserved");
         AssertContains(diagnosticSessionText, "FlashbackExportMessageAtEnd");
@@ -748,7 +750,11 @@ static partial class Program
         AssertContains(diagnosticSessionText, "lastMessageEnd={FormatOptional(result.LastExportMessageAtEnd)}");
         AssertContains(diagnosticSessionText, "pathEnd={FormatOptional(result.FlashbackExportOutputPathAtEnd)}");
         AssertContains(diagnosticSessionText, "maxThroughput={FormatBytes((long)result.FlashbackExportMaxThroughputBytesPerSecObserved)}/s");
-        AssertContains(diagnosticSessionText, "BuildFlashbackRecordingMetrics(samples)");
+        AssertContains(diagnosticSessionText, "BuildFlashbackRecordingMetrics(initialSnapshot, samples)");
+        AssertContains(diagnosticSessionText, "seqGapsDelta={result.FlashbackRecordingIntegritySequenceGapsDelta}");
+        AssertContains(diagnosticSessionText, "queueDropsDelta={result.FlashbackRecordingIntegrityQueueDroppedFramesDelta}");
+        AssertContains(diagnosticSessionText, "Flashback video sequence gaps increased delta={metrics.IntegritySequenceGapsDelta}");
+        AssertContains(diagnosticSessionText, "Flashback dropped frames increased delta={metrics.IntegrityQueueDroppedFramesDelta}");
         AssertContains(diagnosticSessionText, "metrics.MaxPendingCommandsObserved = Math.Max(");
         AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyMsObserved = Math.Max(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");

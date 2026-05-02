@@ -86,6 +86,8 @@ public sealed class DiagnosticSessionResult
     public long FlashbackRecordingVideoEncoderPacketsWrittenDelta { get; init; }
     public long FlashbackRecordingIntegritySequenceGapsAtEnd { get; init; }
     public long FlashbackRecordingIntegrityQueueDroppedFramesAtEnd { get; init; }
+    public long FlashbackRecordingIntegritySequenceGapsDelta { get; init; }
+    public long FlashbackRecordingIntegrityQueueDroppedFramesDelta { get; init; }
     public bool FlashbackExportObserved { get; init; }
     public bool FlashbackExportActiveAtEnd { get; init; }
     public string FlashbackExportStatusAtEnd { get; init; } = string.Empty;
@@ -650,7 +652,7 @@ public static class DiagnosticSessionRunner
 
         if (runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected)
         {
-            ValidateFlashbackRecordingSession(samples, warnings);
+            ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings);
         }
 
         var timelineResponse = await SendAsync(
@@ -711,7 +713,7 @@ public static class DiagnosticSessionRunner
             ValidateFlashbackPlaybackSession(playbackSessionMetrics.Observed ? playbackEndSnapshot : lastSnapshot, playbackSessionMetrics, durationSeconds, warnings);
         }
 
-        var recordingMetrics = BuildFlashbackRecordingMetrics(samples);
+        var recordingMetrics = BuildFlashbackRecordingMetrics(initialSnapshot, samples);
         var exportMetrics = BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot);
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
@@ -805,6 +807,8 @@ public static class DiagnosticSessionRunner
             FlashbackRecordingVideoEncoderPacketsWrittenDelta = recordingMetrics.VideoEncoderPacketsWrittenDelta,
             FlashbackRecordingIntegritySequenceGapsAtEnd = recordingMetrics.IntegritySequenceGapsAtEnd,
             FlashbackRecordingIntegrityQueueDroppedFramesAtEnd = recordingMetrics.IntegrityQueueDroppedFramesAtEnd,
+            FlashbackRecordingIntegritySequenceGapsDelta = recordingMetrics.IntegritySequenceGapsDelta,
+            FlashbackRecordingIntegrityQueueDroppedFramesDelta = recordingMetrics.IntegrityQueueDroppedFramesDelta,
             FlashbackExportObserved = exportMetrics.Observed,
             FlashbackExportActiveAtEnd = exportMetrics.ActiveAtEnd,
             FlashbackExportStatusAtEnd = exportMetrics.StatusAtEnd,
@@ -995,7 +999,9 @@ public static class DiagnosticSessionRunner
             $"submittedDelta={result.FlashbackRecordingVideoFramesSubmittedDelta} " +
             $"packetsDelta={result.FlashbackRecordingVideoEncoderPacketsWrittenDelta} " +
             $"seqGapsEnd={result.FlashbackRecordingIntegritySequenceGapsAtEnd} " +
-            $"queueDropsEnd={result.FlashbackRecordingIntegrityQueueDroppedFramesAtEnd}");
+            $"seqGapsDelta={result.FlashbackRecordingIntegritySequenceGapsDelta} " +
+            $"queueDropsEnd={result.FlashbackRecordingIntegrityQueueDroppedFramesAtEnd} " +
+            $"queueDropsDelta={result.FlashbackRecordingIntegrityQueueDroppedFramesDelta}");
         builder.AppendLine(
             "Flashback Export: " +
             $"observed={result.FlashbackExportObserved} " +
@@ -3115,10 +3121,11 @@ public static class DiagnosticSessionRunner
     }
 
     private static void ValidateFlashbackRecordingSession(
+        JsonElement initialSnapshot,
         IReadOnlyList<DiagnosticSessionSample> samples,
         List<string> warnings)
     {
-        var metrics = BuildFlashbackRecordingMetrics(samples);
+        var metrics = BuildFlashbackRecordingMetrics(initialSnapshot, samples);
         if (metrics.SampleCount == 0)
         {
             warnings.Add("flashback recording: no recording samples captured");
@@ -3145,14 +3152,14 @@ public static class DiagnosticSessionRunner
             warnings.Add("flashback recording: no Flashback encoder packets written");
         }
 
-        if (metrics.IntegritySequenceGapsAtEnd > 0)
+        if (metrics.IntegritySequenceGapsDelta > 0)
         {
-            warnings.Add("flashback recording: Flashback video sequence gaps were reported");
+            warnings.Add($"flashback recording: Flashback video sequence gaps increased delta={metrics.IntegritySequenceGapsDelta} end={metrics.IntegritySequenceGapsAtEnd}");
         }
 
-        if (metrics.IntegrityQueueDroppedFramesAtEnd > 0)
+        if (metrics.IntegrityQueueDroppedFramesDelta > 0)
         {
-            warnings.Add("flashback recording: Flashback dropped frames were reported");
+            warnings.Add($"flashback recording: Flashback dropped frames increased delta={metrics.IntegrityQueueDroppedFramesDelta} end={metrics.IntegrityQueueDroppedFramesAtEnd}");
         }
     }
 
@@ -3222,6 +3229,7 @@ public static class DiagnosticSessionRunner
     }
 
     private static FlashbackRecordingSessionMetrics BuildFlashbackRecordingMetrics(
+        JsonElement initialSnapshot,
         IReadOnlyList<DiagnosticSessionSample> samples)
     {
         var recordingSamples = samples
@@ -3248,7 +3256,9 @@ public static class DiagnosticSessionRunner
                 (GetNullableLong(finalRecordingSample, "FlashbackVideoEncoderPacketsWritten") ?? 0) -
                 (GetNullableLong(firstRecordingSample, "FlashbackVideoEncoderPacketsWritten") ?? 0),
             IntegritySequenceGapsAtEnd = GetNullableLong(finalRecordingSample, "RecordingIntegritySequenceGaps") ?? 0,
-            IntegrityQueueDroppedFramesAtEnd = GetNullableLong(finalRecordingSample, "RecordingIntegrityQueueDroppedFrames") ?? 0
+            IntegrityQueueDroppedFramesAtEnd = GetNullableLong(finalRecordingSample, "RecordingIntegrityQueueDroppedFrames") ?? 0,
+            IntegritySequenceGapsDelta = GetCounterDelta(finalRecordingSample, initialSnapshot, "RecordingIntegritySequenceGaps"),
+            IntegrityQueueDroppedFramesDelta = GetCounterDelta(finalRecordingSample, initialSnapshot, "RecordingIntegrityQueueDroppedFrames")
         };
     }
 
@@ -3261,6 +3271,8 @@ public static class DiagnosticSessionRunner
         public long VideoEncoderPacketsWrittenDelta { get; init; }
         public long IntegritySequenceGapsAtEnd { get; init; }
         public long IntegrityQueueDroppedFramesAtEnd { get; init; }
+        public long IntegritySequenceGapsDelta { get; init; }
+        public long IntegrityQueueDroppedFramesDelta { get; init; }
     }
 
     private static FlashbackPlaybackSessionMetrics BuildFlashbackPlaybackSessionMetrics(
