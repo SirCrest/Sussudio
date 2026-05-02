@@ -105,6 +105,9 @@ public sealed class DiagnosticSessionResult
     public long PreviewSchedulerDroppedAtEnd { get; init; }
     public long PreviewSchedulerDeadlineDropsAtEnd { get; init; }
     public long PreviewSchedulerUnderflowsAtEnd { get; init; }
+    public long PreviewSchedulerDroppedDelta { get; init; }
+    public long PreviewSchedulerDeadlineDropsDelta { get; init; }
+    public long PreviewSchedulerUnderflowsDelta { get; init; }
     public string PreviewSchedulerLastDropReasonAtEnd { get; init; } = string.Empty;
     public int PreviewD3DMaxRecentSlowFramesObserved { get; init; }
     public string PreviewD3DLatestSlowFrameReason { get; init; } = string.Empty;
@@ -819,6 +822,9 @@ public static class DiagnosticSessionRunner
             PreviewSchedulerDroppedAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterTotalDropped") ?? 0,
             PreviewSchedulerDeadlineDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterDeadlineDropCount") ?? 0,
             PreviewSchedulerUnderflowsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterUnderflowCount") ?? 0,
+            PreviewSchedulerDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterTotalDropped"),
+            PreviewSchedulerDeadlineDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterDeadlineDropCount"),
+            PreviewSchedulerUnderflowsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterUnderflowCount"),
             PreviewSchedulerLastDropReasonAtEnd = GetString(lastSnapshot, "MjpegPreviewJitterLastDropReason") ?? string.Empty,
             PreviewD3DFrameStatsMissedRefreshDelta = previewD3DMetrics.MissedRefreshDelta,
             PreviewD3DFrameStatsFailureDelta = previewD3DMetrics.StatsFailureDelta,
@@ -1007,8 +1013,11 @@ public static class DiagnosticSessionRunner
         builder.AppendLine(
             "Preview Scheduler: " +
             $"droppedEnd={result.PreviewSchedulerDroppedAtEnd} " +
+            $"droppedDelta={result.PreviewSchedulerDroppedDelta} " +
             $"deadlineDropsEnd={result.PreviewSchedulerDeadlineDropsAtEnd} " +
+            $"deadlineDropsDelta={result.PreviewSchedulerDeadlineDropsDelta} " +
             $"underflowsEnd={result.PreviewSchedulerUnderflowsAtEnd} " +
+            $"underflowsDelta={result.PreviewSchedulerUnderflowsDelta} " +
             $"lastDropReasonEnd={FormatOptional(result.PreviewSchedulerLastDropReasonAtEnd)}");
         builder.AppendLine(
             "Preview D3D Perf: " +
