@@ -117,6 +117,19 @@ public sealed partial class MainWindow
         Microsoft.UI.Windowing.AppWindow sender,
         Microsoft.UI.Windowing.AppWindowClosingEventArgs args)
     {
+        try
+        {
+            Logger.Log(
+                "WINDOW_CLOSING_TRIGGER " +
+                $"requested={Volatile.Read(ref _windowCloseRequested)} " +
+                $"isRecording={ViewModel.IsRecording} " +
+                $"stack=\n{new System.Diagnostics.StackTrace(true)}");
+        }
+        catch (Exception logEx)
+        {
+            System.Diagnostics.Trace.TraceWarning($"WINDOW_CLOSING_TRIGGER log failed: {logEx.Message}");
+        }
+
         if (Volatile.Read(ref _windowCloseCleanupStarted) != 0 ||
             Volatile.Read(ref _windowCloseAllowedAfterRecordingStop) != 0)
         {
@@ -212,6 +225,22 @@ public sealed partial class MainWindow
         if (Interlocked.Exchange(ref _windowCloseCleanupStarted, 1) != 0)
         {
             return;
+        }
+
+        try
+        {
+            Logger.Log(
+                "WINDOW_CLOSED_TRIGGER " +
+                $"requested={Volatile.Read(ref _windowCloseRequested)} " +
+                $"recordingStopInProgress={Volatile.Read(ref _windowCloseRecordingStopInProgress)} " +
+                $"allowedAfterRecordingStop={Volatile.Read(ref _windowCloseAllowedAfterRecordingStop)} " +
+                $"isRecording={ViewModel.IsRecording} " +
+                $"isPreviewing={ViewModel.IsPreviewing} " +
+                $"stack=\n{new System.Diagnostics.StackTrace(true)}");
+        }
+        catch (Exception logEx)
+        {
+            System.Diagnostics.Trace.TraceWarning($"WINDOW_CLOSED_TRIGGER log failed: {logEx.Message}");
         }
 
         CompleteWindowCloseRequest();

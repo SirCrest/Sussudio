@@ -278,6 +278,22 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
             }
             else
             {
+                uint clientPid = 0;
+                try
+                {
+                    var handle = server.SafePipeHandle.DangerousGetHandle();
+                    if (handle != IntPtr.Zero)
+                    {
+                        GetNamedPipeClientProcessId(handle, out clientPid);
+                    }
+                }
+                catch
+                {
+                    // PID lookup is best-effort.
+                }
+                Logger.Log(
+                    $"AUTOMATION_PIPE_RECV command={request.Command} correlationId={request.CorrelationId} clientPid={(clientPid == 0 ? "?" : clientPid.ToString())}");
+
                 var execution = await ExecuteCommandWithTimeoutAsync(
                     request,
                     requestTimeout,
@@ -547,6 +563,10 @@ public sealed class NamedPipeAutomationServer : IDisposable, IAsyncDisposable
         public IntPtr lpSecurityDescriptor;
         public int bInheritHandle;
     }
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetNamedPipeClientProcessId(IntPtr hPipe, out uint ClientProcessId);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     private static extern SafePipeHandle CreateNamedPipe(
