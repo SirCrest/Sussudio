@@ -91,6 +91,7 @@ static partial class Program
         AssertMemberContains(automationText, "FlashbackBeginScrub", "_sessionCoordinator.FlashbackBeginScrub(position)");
         AssertMemberContains(automationText, "FlashbackUpdateScrub", "return _sessionCoordinator.FlashbackUpdateScrub(position)");
         AssertMemberContains(automationText, "FlashbackEndScrub", "_sessionCoordinator.FlashbackEndScrub()");
+        AssertMemberContains(automationText, "FlashbackEndScrubAt", "_sessionCoordinator.FlashbackEndScrubAt(position)");
         AssertMemberContains(automationText, "FlashbackPlay", "_sessionCoordinator.FlashbackPlay()");
         AssertMemberContains(automationText, "FlashbackPause", "_sessionCoordinator.FlashbackPause()");
         AssertMemberContains(automationText, "FlashbackGoLive", "_sessionCoordinator.FlashbackGoLive()");
@@ -214,6 +215,7 @@ static partial class Program
             "FlashbackBeginScrub",
             "FlashbackUpdateScrub",
             "FlashbackEndScrub",
+            "FlashbackEndScrubAt",
             "FlashbackPlay",
             "FlashbackPause",
             "FlashbackGoLive",
@@ -271,13 +273,14 @@ static partial class Program
         AssertContains(xamlText, "PointerReleased=\"FlashbackScrubArea_PointerReleased\"");
         AssertContains(xamlText, "PointerCanceled=\"FlashbackScrubArea_PointerCanceled\"");
         AssertContains(xamlText, "PointerCaptureLost=\"FlashbackScrubArea_PointerCaptureLost\"");
-        AssertContains(flashbackWindowText, "private void EndFlashbackScrubInteraction(UIElement? element, Pointer pointer, string reason)");
+        AssertContains(flashbackWindowText, "private void EndFlashbackScrubInteraction(UIElement? element, Pointer pointer, string reason, TimeSpan? releasePosition = null)");
         AssertContains(flashbackWindowText, "if (!ViewModel.FlashbackBeginScrub(targetPosition))\n        {\n            ViewModel.ReportFlashbackPlaybackRejection(\"scrub begin\", \"FLASHBACK_UI_SCRUB_BEGIN_REJECTED\");\n            return;\n        }");
         AssertContains(flashbackWindowText, "if (!ViewModel.FlashbackUpdateScrub(targetPosition))\n        {\n            ViewModel.ReportFlashbackPlaybackRejection(\"scrub update\", \"FLASHBACK_UI_SCRUB_UPDATE_REJECTED\");\n            EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, \"update_rejected\");\n            return;\n        }");
         AssertContains(flashbackWindowText, "private void FlashbackScrubArea_PointerReleased(object sender, PointerRoutedEventArgs e)");
-        AssertContains(flashbackWindowText, "var targetPosition = ComputeFlashbackScrubPosition(e);\n            if (!ViewModel.FlashbackUpdateScrub(targetPosition))");
+        AssertContains(flashbackWindowText, "TimeSpan? releasePosition = null;\n        if (_isFlashbackScrubbing)");
+        AssertContains(flashbackWindowText, "var targetPosition = ComputeFlashbackScrubPosition(e);\n            releasePosition = targetPosition;\n            if (!ViewModel.FlashbackUpdateScrub(targetPosition))");
         AssertContains(flashbackWindowText, "ViewModel.ReportFlashbackPlaybackRejection(\"scrub release update\", \"FLASHBACK_UI_SCRUB_RELEASE_UPDATE_REJECTED\");");
-        AssertContains(flashbackWindowText, "EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, \"released\");");
+        AssertContains(flashbackWindowText, "EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, \"released\", releasePosition);");
         AssertContains(flashbackWindowText, "ReportFlashbackPlaybackRejection(\"set in point\", \"FLASHBACK_UI_SET_IN_REJECTED\")");
         AssertContains(flashbackWindowText, "ReportFlashbackPlaybackRejection(\"set out point\", \"FLASHBACK_UI_SET_OUT_REJECTED\")");
         AssertContains(flashbackWindowText, "ReportFlashbackPlaybackRejection(\"clear in/out\", \"FLASHBACK_UI_CLEAR_INOUT_REJECTED\")");
@@ -291,7 +294,7 @@ static partial class Program
         AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_PLAY\");");
         AssertContains(flashbackWindowText, "Logger.Log(\"FLASHBACK_UI_GOLIVE\");");
         AssertContains(flashbackWindowText, "_isFlashbackScrubbing = true;\n        _lastScrubUpdateTick = 0;\n        (sender as UIElement)?.CapturePointer(e.Pointer);");
-        AssertContains(flashbackWindowText, "if (!ViewModel.FlashbackEndScrub())\n        {\n            ViewModel.ReportFlashbackPlaybackRejection($\"scrub end ({reason})\", $\"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}\");\n        }");
+        AssertContains(flashbackWindowText, "var ended = releasePosition.HasValue\n            ? ViewModel.FlashbackEndScrubAt(releasePosition.Value)\n            : ViewModel.FlashbackEndScrub();\n        if (!ended)\n        {\n            ViewModel.ReportFlashbackPlaybackRejection($\"scrub end ({reason})\", $\"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}\");\n        }");
         AssertContains(flashbackWindowText, "_isFlashbackScrubbing = false;\n        _lastScrubUpdateTick = 0;\n        element?.ReleasePointerCapture(pointer);");
         AssertContains(flashbackWindowText, "FLASHBACK_UI_SCRUB_END");
         AssertContains(flashbackWindowText, "FlashbackScrubArea_PointerCanceled");

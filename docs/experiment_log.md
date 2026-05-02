@@ -3018,3 +3018,13 @@ Follow-up from the deferred list above.
 **Change:** `EnsureFileOpen` now closes any partially opened decoder in the exception path using `CloseDecoderFileBestEffort(..., "ensure_file_open_error")`. All command paths that call `EnsureFileOpen` now gate on `fileOpen && decoder.IsOpen` via `IsDecoderFileReady`, covering Seek, BeginScrub, UpdateScrub, Play, and Nudge.
 
 **Verification:** `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore`, `dotnet build ElgatoCapture.slnx -c Debug --no-restore /nr:false`, and `git diff --check` all passed after the fix.
+
+## 2026-05-01 — Flashback scrub release target hardening
+
+Follow-up from the deferred list above.
+
+**Issue:** Pointer release computed a final scrub position and queued a final `UpdateScrub`, but `EndScrub` itself carried no target. The playback thread resumed from `PlaybackPosition`, which may still be the prior keyframe/displayed decode position if the final update was coalesced or not yet reflected in controller state.
+
+**Change:** Added `EndScrubAt(TimeSpan)` through `FlashbackPlaybackController`, `CaptureSessionCoordinator`, and `MainViewModel`. Pointer release now passes the computed visual release position into `EndFlashbackScrubInteraction`, and the controller clamps/uses that position for the final resume seek. Cancel/capture-lost paths keep the targetless `EndScrub` behavior.
+
+**Verification:** `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore` and `dotnet build ElgatoCapture.slnx -c Debug --no-restore /nr:false` passed after the fix.

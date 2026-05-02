@@ -34,6 +34,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         public CommandKind Kind { get; init; }
         public TimeSpan Position { get; init; }
         public TimeSpan Delta { get; init; }
+        public bool HasPositionOverride { get; init; }
         public long QueuedTimestamp { get; init; }
     }
 
@@ -307,12 +308,25 @@ internal sealed class FlashbackPlaybackController : IDisposable
         return true;
     }
 
-    public bool EndScrub()
+    public bool EndScrub() => EndScrubAt(null);
+
+    public bool EndScrubAt(TimeSpan position) => EndScrubAt((TimeSpan?)position);
+
+    private bool EndScrubAt(TimeSpan? position)
     {
-        if (IsNotReady(CommandKind.EndScrub)) return false;
+        if (IsNotReady(CommandKind.EndScrub, position)) return false;
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
-        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, "thread_not_running", "thread_not_running", false);
-        return SendCommand(new PlaybackCommand { Kind = CommandKind.EndScrub });
+        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, "thread_not_running", "thread_not_running", false, position);
+        if (position.HasValue)
+        {
+            Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Value.Ticks);
+        }
+        return SendCommand(new PlaybackCommand
+        {
+            Kind = CommandKind.EndScrub,
+            Position = position.GetValueOrDefault(),
+            HasPositionOverride = position.HasValue
+        });
     }
 
     public bool Play()
@@ -461,6 +475,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Kind = command.Kind,
             Position = command.Position,
             Delta = command.Delta,
+            HasPositionOverride = command.HasPositionOverride,
             QueuedTimestamp = Stopwatch.GetTimestamp()
         };
 
@@ -851,6 +866,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                     case CommandKind.EndScrub:
                         if (!isScrubbing) break;
+                        var endScrubPosition = cmd.HasPositionOverride
+                            ? ClampPosition(cmd.Position, frozenValidStart)
+                            : PlaybackPosition;
+                        if (cmd.HasPositionOverride)
+                        {
+                            PlaybackPosition = endScrubPosition;
+                        }
                         isScrubbing = false;
                         isPlaying = _wasPlayingBeforeScrub;
                         if (isPlaying)
@@ -862,7 +884,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             // SeekTo forward-decodes from keyframe to target, which advances
                             // BOTH the video and audio codecs to the same PTS. Without this,
                             // the audio codec is stuck at the keyframe (~1s behind video).
-                            var endScrubTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
+                            var endScrubTarget = SaturatingAdd(endScrubPosition, frozenValidStart);
                             if (decoder is { IsOpen: true })
                             {
                                 decoder.AudioChunkCallback = null; // null during forward-decode

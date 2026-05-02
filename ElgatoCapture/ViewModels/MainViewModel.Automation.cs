@@ -90,6 +90,11 @@ public partial class MainViewModel
         return _sessionCoordinator.FlashbackEndScrub();
     }
 
+    public bool FlashbackEndScrubAt(TimeSpan position)
+    {
+        return _sessionCoordinator.FlashbackEndScrubAt(position);
+    }
+
     public bool FlashbackPlay()
     {
         return _sessionCoordinator.FlashbackPlay();

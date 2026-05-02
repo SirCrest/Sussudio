@@ -2204,6 +2204,13 @@ static partial class Program
         AssertContains(sourceText, "private long _latestScrubUpdateTicks;");
         AssertContains(sourceText, "private int _scrubUpdateCommandQueued;");
         AssertContains(sourceText, "private long _scrubUpdatesCoalesced;");
+        AssertContains(sourceText, "public bool HasPositionOverride { get; init; }");
+        AssertContains(sourceText, "public bool EndScrub() => EndScrubAt(null);");
+        AssertContains(sourceText, "public bool EndScrubAt(TimeSpan position) => EndScrubAt((TimeSpan?)position);");
+        AssertContains(sourceText, "private bool EndScrubAt(TimeSpan? position)");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Value.Ticks);");
+        AssertContains(sourceText, "HasPositionOverride = position.HasValue");
+        AssertContains(sourceText, "HasPositionOverride = command.HasPositionOverride");
         AssertContains(updateScrubMethod, "Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);");
         AssertContains(updateScrubMethod, "if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, \"thread_not_running\", \"thread_not_running\", false, position);");
         AssertContains(updateScrubMethod, "Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0");
@@ -2221,7 +2228,15 @@ static partial class Program
         AssertContains(updateScrubBlock, "SafeResumePreviewSubmission(\"scrub_update_no_file\")");
         AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live)");
         AssertContains(drainAbandonedCommands, "Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);");
-        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, \"thread_not_running\", \"thread_not_running\", false);");
+        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, \"thread_not_running\", \"thread_not_running\", false, position);");
+        var endScrubBlock = ExtractTextBetween(
+            sourceText,
+            "                    case CommandKind.EndScrub:",
+            "                    case CommandKind.Play:");
+        AssertContains(endScrubBlock, "var endScrubPosition = cmd.HasPositionOverride\n                            ? ClampPosition(cmd.Position, frozenValidStart)\n                            : PlaybackPosition;");
+        AssertContains(endScrubBlock, "if (cmd.HasPositionOverride)\n                        {\n                            PlaybackPosition = endScrubPosition;\n                        }");
+        AssertContains(endScrubBlock, "var endScrubTarget = SaturatingAdd(endScrubPosition, frozenValidStart);");
+        AssertDoesNotContain(endScrubBlock, "var endScrubTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);");
         AssertContains(sourceText, "private bool RejectCommand(\n        CommandKind kind,\n        string failure,\n        string reason,\n        bool returnValue,\n        TimeSpan? position = null)");
         AssertContains(sourceText, "SetLastCommandFailure($\"{failure}:{kind}{detail}\");");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_CMD_SKIP kind={kind} reason={reason}{detail}\");");

@@ -231,9 +231,11 @@ public sealed partial class MainWindow
     }
     private void FlashbackScrubArea_PointerReleased(object sender, PointerRoutedEventArgs e)
     {
+        TimeSpan? releasePosition = null;
         if (_isFlashbackScrubbing)
         {
             var targetPosition = ComputeFlashbackScrubPosition(e);
+            releasePosition = targetPosition;
             if (!ViewModel.FlashbackUpdateScrub(targetPosition))
             {
                 ViewModel.ReportFlashbackPlaybackRejection("scrub release update", "FLASHBACK_UI_SCRUB_RELEASE_UPDATE_REJECTED");
@@ -244,7 +246,7 @@ public sealed partial class MainWindow
             }
         }
 
-        EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "released");
+        EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "released", releasePosition);
     }
 
     private void FlashbackScrubArea_PointerCanceled(object sender, PointerRoutedEventArgs e)
@@ -253,7 +255,7 @@ public sealed partial class MainWindow
     private void FlashbackScrubArea_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
         => EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "capture_lost");
 
-    private void EndFlashbackScrubInteraction(UIElement? element, Pointer pointer, string reason)
+    private void EndFlashbackScrubInteraction(UIElement? element, Pointer pointer, string reason, TimeSpan? releasePosition = null)
     {
         if (!_isFlashbackScrubbing)
         {
@@ -263,7 +265,10 @@ public sealed partial class MainWindow
         _isFlashbackScrubbing = false;
         _lastScrubUpdateTick = 0;
         element?.ReleasePointerCapture(pointer);
-        if (!ViewModel.FlashbackEndScrub())
+        var ended = releasePosition.HasValue
+            ? ViewModel.FlashbackEndScrubAt(releasePosition.Value)
+            : ViewModel.FlashbackEndScrub();
+        if (!ended)
         {
             ViewModel.ReportFlashbackPlaybackRejection($"scrub end ({reason})", $"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}");
         }
