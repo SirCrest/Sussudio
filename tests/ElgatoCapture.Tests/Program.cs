@@ -3163,10 +3163,10 @@ static partial class Program
         abandonGenerated.Invoke(manager, new object?[] { activePath, null });
         finalizeCycle.Invoke(manager, null);
 
-        AssertEqual(true, File.Exists(completedPath), "Completed segment preserved after disposed purge");
-        AssertEqual(true, File.Exists(activePath), "Active segment preserved after disposed purge");
-        AssertEqual(2, GetIntProperty(manager, "SegmentCount"), "Disposed destructive operations do not clear indexed segments");
-        AssertEqual(activePath, GetStringProperty(manager, "ActiveFilePath"), "Disposed destructive operations do not clear active path");
+        AssertEqual(false, File.Exists(completedPath), "Dispose purges completed segment before post-dispose purge attempts");
+        AssertEqual(false, File.Exists(activePath), "Dispose purges active segment before post-dispose purge attempts");
+        AssertEqual(0, GetIntProperty(manager, "SegmentCount"), "Disposed destructive operations keep the disposed empty index stable");
+        AssertEqual(string.Empty, GetStringProperty(manager, "ActiveFilePath"), "Disposed destructive operations keep active path cleared");
 
         var source = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackBufferManager.cs")
             .Replace("\r\n", "\n");

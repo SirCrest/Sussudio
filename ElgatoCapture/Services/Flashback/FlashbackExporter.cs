@@ -201,13 +201,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         if (!lockAcquired)
         {
             Logger.Log("FLASHBACK_EXPORT_DISPOSE: timed out waiting for export lock (10s)");
-            Logger.Log("FLASHBACK_EXPORT_DISPOSE_TIMEOUT cleanup_invoked=true");
-            try { CleanupNativeState(); }
-            catch (Exception ex) { Logger.Log($"FLASHBACK_EXPORT_DISPOSE_TIMEOUT_CLEANUP_FAIL: {ex.Message}"); }
-            Logger.Log("FLASHBACK_EXPORT_DISPOSE_TIMEOUT_DONE");
-            var tmpPathOnTimeout = _activeTempPath;
-            if (!string.IsNullOrEmpty(tmpPathOnTimeout))
-                DeleteTempFileIfPresent(tmpPathOnTimeout);
+            Logger.Log("FLASHBACK_EXPORT_DISPOSE_TIMEOUT cleanup_invoked=false");
+            Logger.Log("FLASHBACK_EXPORT_DISPOSE_TIMEOUT_OK");
             DisposeLinkedCtsBestEffort(disposeCts, "dispose_timeout");
             ClearDisposeCtsReference(disposeCts);
             GC.SuppressFinalize(this);

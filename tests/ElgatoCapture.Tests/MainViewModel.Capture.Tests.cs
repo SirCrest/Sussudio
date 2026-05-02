@@ -307,7 +307,8 @@ static partial class Program
         AssertContains(flashbackWindowText, "private static bool IsUsableFlashbackDuration(TimeSpan value)\n        => double.IsFinite(value.TotalSeconds) && value > TimeSpan.Zero;");
         AssertContains(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge left\", \"FLASHBACK_UI_NUDGE_REJECTED direction=left\")");
         AssertContains(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"nudge right\", \"FLASHBACK_UI_NUDGE_REJECTED direction=right\")");
-        AssertContains(fullScreenWindowText, "_isFlashbackScrubbing = false;\n            _lastScrubUpdateTick = 0;\n            if (ViewModel?.FlashbackEndScrub() == false)");
+        AssertContains(fullScreenWindowText, "var carriedPosition = ViewModel?.FlashbackPlaybackPosition;\n            Logger.Log($\"FLASHBACK_SCRUB_END_FULLSCREEN carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}\");");
+        AssertContains(fullScreenWindowText, "var ended = carriedPosition.HasValue\n                ? ViewModel?.FlashbackEndScrubAt(carriedPosition.Value) ?? false\n                : ViewModel?.FlashbackEndScrub() ?? false;\n            if (!ended)");
         AssertContains(fullScreenWindowText, "ReportFlashbackPlaybackRejection(\"scrub end (fullscreen_enter)\", \"FLASHBACK_UI_SCRUB_END_REJECTED reason=fullscreen_enter\")");
 
         return Task.CompletedTask;
