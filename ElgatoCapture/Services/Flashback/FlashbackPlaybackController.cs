@@ -93,6 +93,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private long _playbackLateFrames;
     private long _playbackSegmentSwitches;
     private long _playbackFmp4Reopens;
+    private long _playbackReopenAudioNullWindowCount;
     private long _playbackWriteHeadWaits;
     private long _playbackNearLiveSnaps;
     private long _playbackDecodeErrorSnaps;
@@ -1842,11 +1843,18 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         decoder.OpenFile(currentOpenFilePath);
                         fileOpen = true;
                         _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
-                        var fmpAudioGate = Interlocked.Read(ref _lastAudioPtsTicks);
+                        var preReopenLastAudioPts = Interlocked.Read(ref _lastAudioPtsTicks);
+                        Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);
                         decoder.AudioChunkCallback = null;
                         if (decoder.SeekTo(lastFrameAbsPts))
                         {
-                            RestoreAudioCallback(decoder, fmpAudioGate);
+                            // Gate audio at the post-seek video PTS (seek target), not at
+                            // _lastAudioPtsTicks. _lastAudioPtsTicks reflects pre-seek state;
+                            // using it suppresses audio if the seek lands earlier, or creates
+                            // a gap if it lands later, causing WASAPI underruns and A/V desync.
+                            var audioGateTicks = lastFrameAbsPts.Ticks;
+                            Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_AUDIO_GATE gate_ms={(long)lastFrameAbsPts.TotalMilliseconds} source=PostSeekVideoPts last_audio_ms={preReopenLastAudioPts / TimeSpan.TicksPerMillisecond} seek_target_ms={(long)lastFrameAbsPts.TotalMilliseconds}");
+                            RestoreAudioCallback(decoder, audioGateTicks);
                             pacingStopwatch.Restart();
                             return true;
                         }
@@ -1915,7 +1923,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     decoder.OpenFile(currentOpenFilePath);
                     fileOpen = true;
                     _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
-                    var fmpAudioGate = Interlocked.Read(ref _lastAudioPtsTicks);
+                    var preReopenLastAudioPts = Interlocked.Read(ref _lastAudioPtsTicks);
+                    Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);
                     decoder.AudioChunkCallback = null;
                     if (!decoder.SeekTo(resumeTarget))
                     {
@@ -1924,7 +1933,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "fmp4_reopen_seek_failed");
                         return false;
                     }
-                    RestoreAudioCallback(decoder, fmpAudioGate);
+                    // Gate audio at the post-seek video PTS (seek target), not at
+                    // _lastAudioPtsTicks. _lastAudioPtsTicks reflects pre-seek state;
+                    // using it suppresses audio if the seek lands earlier, or creates
+                    // a gap if it lands later, causing WASAPI underruns and A/V desync.
+                    var audioGateTicks = resumeTarget.Ticks;
+                    Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_AUDIO_GATE gate_ms={(long)resumeTarget.TotalMilliseconds} source=PostSeekVideoPts last_audio_ms={preReopenLastAudioPts / TimeSpan.TicksPerMillisecond} seek_target_ms={(long)resumeTarget.TotalMilliseconds}");
+                    RestoreAudioCallback(decoder, audioGateTicks);
                     pacingStopwatch.Restart();
                     return true;
                 }
@@ -2444,6 +2459,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long PlaybackAudioMasterFallbacks => Interlocked.Read(ref _playbackAudioMasterFallbacks);
     public long PlaybackSegmentSwitches => Interlocked.Read(ref _playbackSegmentSwitches);
     public long PlaybackFmp4Reopens => Interlocked.Read(ref _playbackFmp4Reopens);
+    public long PlaybackReopenAudioNullWindowCount => Interlocked.Read(ref _playbackReopenAudioNullWindowCount);
     public long PlaybackWriteHeadWaits => Interlocked.Read(ref _playbackWriteHeadWaits);
     public long PlaybackNearLiveSnaps => Interlocked.Read(ref _playbackNearLiveSnaps);
     public long PlaybackDecodeErrorSnaps => Interlocked.Read(ref _playbackDecodeErrorSnaps);
