@@ -3162,3 +3162,23 @@ Separately, `BuildFlashbackPlaybackSessionMetrics` always treated `FlashbackPlay
 **Workaround for future sessions:** Either (a) batch all subagent compile-verifications until *after* live validation completes, (b) modify subagents to skip `dotnet build` and let the parent do a single batch build at the end, or (c) temporarily disable the pre-build hook during live diagnostic windows. Option (b) was used for the scrub-capture-lost and NV12-HDR fixes in this session and worked.
 
 **Status of live validation today:** The audio-gate fix (commit `b8acbce`) is the headline change and directly targets the 20s 1% low dip first observed 2026-05-01. Multiple attempted live `flashback-playback` 60s diagnostics today were aborted mid-session by the hook-driven shutdowns. Static evidence (source-line bug analysis, compile-clean diff, identical pattern caught in a second reopen path during implementation review) is the only validation available this session. Manual or next-session live validation is required to close the audit gate on the playback-dip line item.
+
+## 2026-05-02 — Live validation of the flashback audio-gate fix
+
+**Issue (the validation context):** The audio-gate fix at `FlashbackPlaybackController` fMP4 reopen (commit `b8acbce`) needed a runtime artifact to close the audit gate. Multiple attempts earlier in the session were aborted by an unrelated mid-session app shutdown.
+
+**Investigation of the shutdown trigger.** Added stack-capture logging to `MainWindow_Closing` and `MainWindow_Closed`. The captured stack showed `MainWindow.CloseAsync()` being invoked from the WinUI 3 dispatcher queue with no preceding `MainWindow_Closing` event — i.e. a programmatic `Window.Close()` rather than a user X-button. The only callsite for `CloseAsync` is `AutomationCommandDispatcher` for `WindowAction.Close`. Adding `AUTOMATION_PIPE_RECV command={...} clientPid={...}` logging at the pipe-server connection handler (using `GetNamedPipeClientProcessId` via P/Invoke since `NamedPipeServerStream` exposes no managed wrapper) revealed an `ArmClose` followed by `WindowAction` from a transient PID. Both commands together are the exact sequence emitted by the project's `tools/ecctl/CommandHandlers.cs` `window close` path.
+
+The only caller of `ecctl window close` in the repo is `.claude/hooks/pre_build_close_app.sh` — a PreToolUse hook intended to fire only on `Bash(dotnet build*)` per its `if` clause. Logging added inside that hook proved it was firing on every Bash command (including a plain `sleep 12; ...` Bash that contained no `dotnet build` substring), so the `if` filter was not being honored. The hook now also reads `tool_input.command` from the JSON payload Claude Code passes on stdin and exits immediately when the actual command does not match `(^|[[:space:];&|])dotnet[[:space:]]+build` regex. With that gate in place a 60s `flashback-playback` diagnostic ran end-to-end without the live app being killed.
+
+**Validation result.** Live `flashback-playback` 60s session with `--sample-ms 5000 --verify` against the new build (all 2026-05-02 fixes plus the diagnostic-context fields):
+
+- `fpsMin=117.14` (prior failing baseline `min=89.61fps`).
+- `onePercentLowFpsMin=118.27` — far above the 96fps floor; the prior dip is gone.
+- `onePercentLowMinOffsetMs=45322` — the worst 1% low sample now lands at ~45s and is shallow, not the prior ~20s deep dip.
+- `onePercentLowMinDecodeP99Ms=2.66`, `onePercentLowMinDecodeMaxMs=4.72` — decode is healthy.
+- `onePercentLowMinAvDriftMs=0`, `absAvDriftMsMax=0` — A/V pacing never lost the audio anchor.
+- `droppedFramesEnd=0`, `submitFailuresEnd=0`, `audioBufferedMsMax=0`, `audioQueueMsMax=0` — no frames lost, no audio queue buildup.
+- `Recording Verification: FAIL | No output file path is available for verification.` — expected, this scenario does not exercise recording. Session also flagged `present_display 1% low` at 110.15fps which is a separate compositor metric (visual cadence stayed at 119.95fps with 0.106% repeat — i.e. content really is changing every frame).
+
+The audio-gate fix is empirically validated. The hook fix protects future live-test sessions in this project from the same class of interference.
