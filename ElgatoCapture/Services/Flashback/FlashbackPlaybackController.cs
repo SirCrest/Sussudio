@@ -15,6 +15,8 @@ namespace ElgatoCapture.Services.Flashback;
 
 internal sealed class FlashbackPlaybackController : IDisposable
 {
+    private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);
+
     // --- Command types marshalled to the playback thread ---
     private enum CommandKind
     {
@@ -1277,6 +1279,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
         // MPEG-TS handles appended data via eof_reached reset and does not need reopening.
         if (IsActiveFmp4Segment(_currentOpenFilePath) && _currentOpenFilePath != null)
         {
+            if (ShouldSkipActiveFmp4ReopenNearLive(seekTarget, reason))
+            {
+                SetReopenFailure(reason, "near_live", seekTarget);
+                return false;
+            }
+
             return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason);
         }
 
@@ -1580,9 +1588,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 // Only for fMP4; .ts handles appended data via eof_reached reset.
                 if (IsActiveFmp4Segment(_currentOpenFilePath) && _currentOpenFilePath != null)
                 {
-                    Logger.Log($"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds}");
-                    if (TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, "seek_keyframe"))
-                        goto seekSuccess;
+                    if (!ShouldSkipActiveFmp4ReopenNearLive(filePts, "seek_keyframe"))
+                    {
+                        Logger.Log($"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds}");
+                        if (TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, "seek_keyframe"))
+                            goto seekSuccess;
+                    }
                 }
 
                 PlaybackPosition = bufferPosition;
@@ -1626,6 +1637,26 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_ERROR type={ex.GetType().Name} error='{ex.Message}'");
             return false;
         }
+    }
+
+    private bool ShouldSkipActiveFmp4ReopenNearLive(TimeSpan seekTarget, string reason)
+    {
+        var latestPts = _bufferManager.LatestPts;
+        if (latestPts <= TimeSpan.Zero)
+        {
+            return false;
+        }
+
+        var distanceFromLive = seekTarget >= latestPts
+            ? TimeSpan.Zero
+            : latestPts - seekTarget;
+        if (distanceFromLive > ActiveFmp4ReopenNearLiveGuard)
+        {
+            return false;
+        }
+
+        Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SKIP_NEAR_LIVE reason={reason} target_ms={(long)seekTarget.TotalMilliseconds} latest_ms={(long)latestPts.TotalMilliseconds} distance_ms={(long)distanceFromLive.TotalMilliseconds} guard_ms={(long)ActiveFmp4ReopenNearLiveGuard.TotalMilliseconds}");
+        return true;
     }
 
     /// <summary>

@@ -3028,3 +3028,13 @@ Follow-up from the deferred list above.
 **Change:** Added `EndScrubAt(TimeSpan)` through `FlashbackPlaybackController`, `CaptureSessionCoordinator`, and `MainViewModel`. Pointer release now passes the computed visual release position into `EndFlashbackScrubInteraction`, and the controller clamps/uses that position for the final resume seek. Cancel/capture-lost paths keep the targetless `EndScrub` behavior.
 
 **Verification:** `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore` and `dotnet build ElgatoCapture.slnx -c Debug --no-restore /nr:false` passed after the fix.
+
+## 2026-05-01 — Active fMP4 near-live reopen guard
+
+Follow-up from the deferred list above.
+
+**Issue:** When `SeekTo`/`SeekToKeyframe` failed on an active fMP4 segment, playback immediately closed/reopened the decoder and retried. That retry is useful for older active-fragment positions where the demuxer index is stale, but it is expensive and often futile right at the live edge, doubling seek/display work during the most latency-sensitive scrub/release path.
+
+**Change:** Added a 250ms near-live guard for active fMP4 reopen retries. If the seek target is at or within 250ms of the buffer write head, playback logs `FLASHBACK_PLAYBACK_REOPEN_SKIP_NEAR_LIVE`, skips the close/reopen retry, and lets the existing restore-live path recover. Older active-segment seeks still keep the reopen retry.
+
+**Verification:** `dotnet run --project tests\ElgatoCapture.Tests\ElgatoCapture.Tests.csproj --no-restore`, `dotnet build ElgatoCapture.slnx -c Debug --no-restore /nr:false`, and `git diff --check` passed after the fix.
