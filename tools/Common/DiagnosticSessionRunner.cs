@@ -50,6 +50,14 @@ public sealed class DiagnosticSessionResult
     public double FlashbackPlaybackMaxFrameMsAtEnd { get; init; }
     public double FlashbackPlaybackOnePercentLowFpsAtEnd { get; init; }
     public double FlashbackPlaybackMinOnePercentLowFpsObserved { get; init; }
+    public long FlashbackPlaybackMinOnePercentLowOffsetMs { get; init; }
+    public long FlashbackPlaybackMinOnePercentLowFrameCount { get; init; }
+    public double FlashbackPlaybackMinOnePercentLowP99FrameMs { get; init; }
+    public double FlashbackPlaybackMinOnePercentLowMaxFrameMs { get; init; }
+    public double FlashbackPlaybackMinOnePercentLowDecodeP99Ms { get; init; }
+    public double FlashbackPlaybackMinOnePercentLowDecodeMaxMs { get; init; }
+    public double FlashbackPlaybackMinOnePercentLowAvDriftMs { get; init; }
+    public long FlashbackPlaybackMinOnePercentLowAudioMasterFallbacks { get; init; }
     public double FlashbackPlaybackMaxP99FrameMsObserved { get; init; }
     public double FlashbackPlaybackMaxFrameMsObserved { get; init; }
     public double FlashbackPlaybackMaxSlowFramePercentObserved { get; init; }
@@ -773,6 +781,14 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackMaxFrameMsAtEnd = playbackMaxFrameMsAtEnd,
             FlashbackPlaybackOnePercentLowFpsAtEnd = playbackOnePercentLowFpsAtEnd,
             FlashbackPlaybackMinOnePercentLowFpsObserved = playbackSessionMetrics.MinOnePercentLowFpsObserved,
+            FlashbackPlaybackMinOnePercentLowOffsetMs = playbackSessionMetrics.MinOnePercentLowOffsetMs,
+            FlashbackPlaybackMinOnePercentLowFrameCount = playbackSessionMetrics.MinOnePercentLowFrameCount,
+            FlashbackPlaybackMinOnePercentLowP99FrameMs = playbackSessionMetrics.MinOnePercentLowP99FrameMs,
+            FlashbackPlaybackMinOnePercentLowMaxFrameMs = playbackSessionMetrics.MinOnePercentLowMaxFrameMs,
+            FlashbackPlaybackMinOnePercentLowDecodeP99Ms = playbackSessionMetrics.MinOnePercentLowDecodeP99Ms,
+            FlashbackPlaybackMinOnePercentLowDecodeMaxMs = playbackSessionMetrics.MinOnePercentLowDecodeMaxMs,
+            FlashbackPlaybackMinOnePercentLowAvDriftMs = playbackSessionMetrics.MinOnePercentLowAvDriftMs,
+            FlashbackPlaybackMinOnePercentLowAudioMasterFallbacks = playbackSessionMetrics.MinOnePercentLowAudioMasterFallbacks,
             FlashbackPlaybackMaxP99FrameMsObserved = playbackSessionMetrics.MaxP99FrameMsObserved,
             FlashbackPlaybackMaxFrameMsObserved = playbackSessionMetrics.MaxFrameMsObserved,
             FlashbackPlaybackMaxSlowFramePercentObserved = playbackSessionMetrics.MaxSlowFramePercentObserved,
@@ -962,6 +978,14 @@ public static class DiagnosticSessionRunner
             $"maxFrameMsEnd={result.FlashbackPlaybackMaxFrameMsAtEnd:0.##} " +
             $"onePercentLowFpsEnd={result.FlashbackPlaybackOnePercentLowFpsAtEnd:0.##} " +
             $"onePercentLowFpsMin={result.FlashbackPlaybackMinOnePercentLowFpsObserved:0.##} " +
+            $"onePercentLowMinOffsetMs={result.FlashbackPlaybackMinOnePercentLowOffsetMs} " +
+            $"onePercentLowMinFrames={result.FlashbackPlaybackMinOnePercentLowFrameCount} " +
+            $"onePercentLowMinP99FrameMs={result.FlashbackPlaybackMinOnePercentLowP99FrameMs:0.##} " +
+            $"onePercentLowMinMaxFrameMs={result.FlashbackPlaybackMinOnePercentLowMaxFrameMs:0.##} " +
+            $"onePercentLowMinDecodeP99Ms={result.FlashbackPlaybackMinOnePercentLowDecodeP99Ms:0.##} " +
+            $"onePercentLowMinDecodeMaxMs={result.FlashbackPlaybackMinOnePercentLowDecodeMaxMs:0.##} " +
+            $"onePercentLowMinAvDriftMs={result.FlashbackPlaybackMinOnePercentLowAvDriftMs:0.##} " +
+            $"onePercentLowMinAudioFallbacks={result.FlashbackPlaybackMinOnePercentLowAudioMasterFallbacks} " +
             $"p99FrameMsMax={result.FlashbackPlaybackMaxP99FrameMsObserved:0.##} " +
             $"maxFrameMsObserved={result.FlashbackPlaybackMaxFrameMsObserved:0.##} " +
             $"framesEnd={result.FlashbackPlaybackFrameCountAtEnd} " +
@@ -3287,15 +3311,18 @@ public static class DiagnosticSessionRunner
         JsonElement lastSnapshot)
     {
         var metrics = new FlashbackPlaybackSessionMetrics();
-        var baselineFrameCount = GetNullableLong(initialSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
+        var baselinePlaybackActive = IsPlaybackSnapshotActive(initialSnapshot);
+        var baselineFrameCount = baselinePlaybackActive
+            ? GetNullableLong(initialSnapshot, "FlashbackPlaybackFrameCount") ?? 0
+            : 0;
         var baselineCommandsEnqueued = GetNullableLong(initialSnapshot, "FlashbackPlaybackCommandsEnqueued") ?? 0;
         var baselineCommandsProcessed = GetNullableLong(initialSnapshot, "FlashbackPlaybackCommandsProcessed") ?? 0;
-        var baselinePlaybackActive = IsPlaybackSnapshotActive(initialSnapshot);
         foreach (var sample in samples)
         {
             ObservePlaybackSnapshot(
                 metrics,
                 sample.Snapshot,
+                sample.OffsetMs,
                 baselineFrameCount,
                 baselineCommandsEnqueued,
                 baselineCommandsProcessed,
@@ -3305,6 +3332,7 @@ public static class DiagnosticSessionRunner
         ObservePlaybackSnapshot(
             metrics,
             lastSnapshot,
+            samples.Count > 0 ? samples[^1].OffsetMs : 0,
             baselineFrameCount,
             baselineCommandsEnqueued,
             baselineCommandsProcessed,
@@ -3338,13 +3366,16 @@ public static class DiagnosticSessionRunner
     private static void ObservePlaybackSnapshot(
         FlashbackPlaybackSessionMetrics metrics,
         JsonElement snapshot,
+        long offsetMs,
         long baselineFrameCount,
         long baselineCommandsEnqueued,
         long baselineCommandsProcessed,
         bool baselinePlaybackActive)
     {
         var frameCount = GetNullableLong(snapshot, "FlashbackPlaybackFrameCount") ?? 0;
-        var sessionFrameCount = Math.Max(0, frameCount - baselineFrameCount);
+        var sessionFrameCount = frameCount >= baselineFrameCount
+            ? frameCount - baselineFrameCount
+            : frameCount;
         var targetFps = GetDouble(snapshot, "FlashbackPlaybackTargetFps");
         if (targetFps <= 0)
         {
@@ -3386,7 +3417,19 @@ public static class DiagnosticSessionRunner
         var onePercentLow = GetDouble(snapshot, "FlashbackPlaybackOnePercentLowFps");
         if (onePercentLow > 0 && sessionFrameCount >= minimumPlaybackFramesForLowPercentile)
         {
-            metrics.MinOnePercentLowFpsObserved = Math.Min(metrics.MinOnePercentLowFpsObserved, onePercentLow);
+            if (onePercentLow < metrics.MinOnePercentLowFpsObserved)
+            {
+                metrics.MinOnePercentLowFpsObserved = onePercentLow;
+                metrics.MinOnePercentLowOffsetMs = offsetMs;
+                metrics.MinOnePercentLowFrameCount = frameCount;
+                metrics.MinOnePercentLowP99FrameMs = GetDouble(snapshot, "FlashbackPlaybackP99FrameMs");
+                metrics.MinOnePercentLowMaxFrameMs = GetDouble(snapshot, "FlashbackPlaybackMaxFrameMs");
+                metrics.MinOnePercentLowDecodeP99Ms = GetDouble(snapshot, "FlashbackPlaybackDecodeP99Ms");
+                metrics.MinOnePercentLowDecodeMaxMs = GetDouble(snapshot, "FlashbackPlaybackDecodeMaxMs");
+                metrics.MinOnePercentLowAvDriftMs = GetDouble(snapshot, "FlashbackAvDriftMs");
+                metrics.MinOnePercentLowAudioMasterFallbacks =
+                    GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0;
+            }
         }
 
         metrics.MaxP99FrameMsObserved = Math.Max(metrics.MaxP99FrameMsObserved, GetDouble(snapshot, "FlashbackPlaybackP99FrameMs"));
@@ -3419,6 +3462,14 @@ public static class DiagnosticSessionRunner
         public int MaxCommandQueueLatencyMsObserved { get; set; }
         public double MinObservedFpsObserved { get; set; } = double.PositiveInfinity;
         public double MinOnePercentLowFpsObserved { get; set; } = double.PositiveInfinity;
+        public long MinOnePercentLowOffsetMs { get; set; }
+        public long MinOnePercentLowFrameCount { get; set; }
+        public double MinOnePercentLowP99FrameMs { get; set; }
+        public double MinOnePercentLowMaxFrameMs { get; set; }
+        public double MinOnePercentLowDecodeP99Ms { get; set; }
+        public double MinOnePercentLowDecodeMaxMs { get; set; }
+        public double MinOnePercentLowAvDriftMs { get; set; }
+        public long MinOnePercentLowAudioMasterFallbacks { get; set; }
         public double MaxP99FrameMsObserved { get; set; }
         public double MaxFrameMsObserved { get; set; }
         public double MaxSlowFramePercentObserved { get; set; }
