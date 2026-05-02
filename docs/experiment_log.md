@@ -3182,3 +3182,24 @@ The only caller of `ecctl window close` in the repo is `.claude/hooks/pre_build_
 - `Recording Verification: FAIL | No output file path is available for verification.` — expected, this scenario does not exercise recording. Session also flagged `present_display 1% low` at 110.15fps which is a separate compositor metric (visual cadence stayed at 119.95fps with 0.106% repeat — i.e. content really is changing every frame).
 
 The audio-gate fix is empirically validated. The hook fix protects future live-test sessions in this project from the same class of interference.
+
+## 2026-05-02 — Decoder forward-decode cap observability + revalidation
+
+**Issue:** `FlashbackDecoder.SeekTo` caps forward-decode at 960 frames (a safety bound on per-seek decode work) and silently returned `bestFrame` when the cap was reached, even when `bestFrame.Pts` was many frame intervals behind the seek target. On long active fMP4 segments with deep GOPs, the fMP4 reopen path then continued from a position multiple frames behind the requested PTS, producing a multi-frame late burst at every reopen that was invisible to the existing diagnostic counters (the within-tolerance case already logged `FLASHBACK_DECODER_SEEK_FRAME_LIMIT` but the missed-target case did not differentiate itself).
+
+**Change:** Added purely observational state to `FlashbackDecoder` so callers and diagnostics can detect a missed-target cap-hit without changing existing seek semantics:
+
+- `private long _seekToCapHits` Interlocked counter, exposed via `public long SeekToForwardDecodeCapHits`.
+- `private bool _lastSeekHitForwardDecodeCap` reset on each `SeekTo` entry, exposed via `public bool LastSeekHitForwardDecodeCap` so the fMP4 reopen caller can react in a follow-up patch.
+- New `FLASHBACK_DECODER_SEEK_CAP_HIT target_ms=... best_ms=... gap_ms=... frames_decoded=...` log event that fires only when `gap_ms > frameIntervalMs`. Existing within-tolerance log preserved.
+
+**Verification:** `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -c Debug -p:StageLatestBuild=false` succeeded clean (initial run failed with `CS0103 The name 'Interlocked' does not exist` in `FlashbackDecoder.cs` because the file lacked `using System.Threading;` — added in the same commit).
+
+A second 60s `flashback-playback` live diagnostic against the latest build (all today's fixes including this one) confirmed no regression in the audio-gate dip fix:
+
+- `fpsMin=119.94` (vs prior failing `89.61fps`)
+- `onePercentLowFpsMin=116.02` — well above the 96fps floor
+- `maxFrameMsObserved=9.14`, `slowPctMax=0.16` — pacing is extremely tight
+- `droppedFramesEnd=0`, `submitFailuresEnd=0`, `absAvDriftMsMax=0`, `audioBufferedMsMax=0`
+
+The session-level FAIL tag in the verifier output is on unrelated checks: `Recording Verification: FAIL | No output file path is available for verification.` (the scenario does not exercise recording), and the preview-display 1% low at 104.57fps — a compositor-side metric distinct from playback frame pacing.
