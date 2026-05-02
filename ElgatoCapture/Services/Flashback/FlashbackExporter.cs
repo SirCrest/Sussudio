@@ -201,6 +201,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         if (!lockAcquired)
         {
             Logger.Log("FLASHBACK_EXPORT_DISPOSE: timed out waiting for export lock (10s)");
+            Logger.Log("FLASHBACK_EXPORT_DISPOSE_TIMEOUT cleanup_invoked=true");
+            try { CleanupNativeState(); }
+            catch (Exception ex) { Logger.Log($"FLASHBACK_EXPORT_DISPOSE_TIMEOUT_CLEANUP_FAIL: {ex.Message}"); }
+            Logger.Log("FLASHBACK_EXPORT_DISPOSE_TIMEOUT_DONE");
+            var tmpPathOnTimeout = _activeTempPath;
+            if (!string.IsNullOrEmpty(tmpPathOnTimeout))
+                DeleteTempFileIfPresent(tmpPathOnTimeout);
             DisposeLinkedCtsBestEffort(disposeCts, "dispose_timeout");
             ClearDisposeCtsReference(disposeCts);
             GC.SuppressFinalize(this);
@@ -1962,17 +1969,34 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
     private static void DeleteTempFileIfPresent(string tmpPath)
     {
-        try
+        const int MaxRetries = 3;
+        const int RetryDelayMs = 200;
+        const int SharingViolationHResult = 32;
+
+        for (var attempt = 0; attempt <= MaxRetries; attempt++)
         {
-            if (File.Exists(tmpPath))
+            try
             {
-                File.Delete(tmpPath);
+                if (File.Exists(tmpPath))
+                {
+                    File.Delete(tmpPath);
+                }
+                return;
+            }
+            catch (IOException ioEx) when ((ioEx.HResult & 0xFFFF) == SharingViolationHResult && attempt < MaxRetries)
+            {
+                // Sharing violation (file locked by another process / AV scanner). Retry after back-off.
+                System.Threading.Thread.Sleep(RetryDelayMs);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+                return;
             }
         }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed' path='{tmpPath}' type={ex.GetType().Name} msg='{ex.Message}'");
-        }
+
+        // All retries exhausted on sharing violation — log and swallow.
+        Logger.Log($"FLASHBACK_EXPORT_WARN reason='delete_tmp_failed_sharing_violation' path='{tmpPath}'");
     }
 
     private static bool TryPrepareTempOutputFile(string tmpPath, string outputPath, out string failureMessage)
