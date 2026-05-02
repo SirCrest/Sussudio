@@ -20,6 +20,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
     private const int VideoQueueCapacity = 180;
     private const int AudioQueueCapacity = 1800;
     private const int GpuQueueCapacity = 8;
+    private const int VideoDrainBatchLimit = 24;
+    private const int GpuDrainBatchLimit = 16;
     private const int QueueBackpressureTimeoutMs = 250;
     private const double ForceRotateQueueGuardRatio = 0.65;
     private const int StopTimeoutMs = 30_000;
@@ -1084,9 +1086,9 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 // Video (existing drain methods, unchanged behavior)
                 if (gpuQueue != null)
                 {
-                    madeProgress = DrainGpuPackets(gpuQueue.Reader) || madeProgress;
+                    madeProgress = DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit) || madeProgress;
                 }
-                madeProgress = DrainVideoPackets(videoQueue.Reader) || madeProgress;
+                madeProgress = DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit) || madeProgress;
 
                 // Audio AGAIN — catch samples that arrived during video encoding
                 madeProgress = DrainAudioPackets(audioQueue.Reader) || madeProgress;
@@ -1283,7 +1285,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader)
+    private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)
     {
         var drainedAny = false;
         var w = _width;
@@ -1293,7 +1295,8 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             return false;
         }
 
-        while (true)
+        var drainedCount = 0;
+        while (drainedCount < maxPackets)
         {
             VideoFramePacket packet;
             lock (_videoQueueSync)
@@ -1334,15 +1337,17 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
 
             drainedAny = true;
+            drainedCount++;
         }
 
         return drainedAny;
     }
 
-    private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader)
+    private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)
     {
         var drainedAny = false;
-        while (reader.TryRead(out var packet))
+        var drainedCount = 0;
+        while (drainedCount < maxPackets && reader.TryRead(out var packet))
         {
             DecrementQueueDepth(ref _gpuQueueDepth, "gpu");
             try
@@ -1357,6 +1362,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
 
             drainedAny = true;
+            drainedCount++;
         }
 
         return drainedAny;

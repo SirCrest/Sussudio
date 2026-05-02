@@ -2025,14 +2025,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 // Video ahead: add a tiny correction without tanking HFR cadence.
                 Interlocked.Increment(ref _playbackAudioMasterDelayDoubles);
-                var correctionMs = Math.Min(diffMs - syncThresholdMs, Math.Min(1.0, nominalDelayMs * 0.1));
+                var correctionMs = Math.Min(diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));
                 adjustedDelayMs = nominalDelayMs + Math.Max(0, correctionMs);
             }
             else if (diffMs < -syncThresholdMs)
             {
                 // Video behind: shave a tiny correction without creating bursts.
                 Interlocked.Increment(ref _playbackAudioMasterDelayShrinks);
-                var correctionMs = Math.Min(-diffMs - syncThresholdMs, Math.Min(1.0, nominalDelayMs * 0.1));
+                var correctionMs = Math.Min(-diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));
                 adjustedDelayMs = Math.Max(0, nominalDelayMs - Math.Max(0, correctionMs));
                 if (adjustedDelayMs <= 0)
                     Interlocked.Increment(ref _playbackLateFrames);

@@ -550,6 +550,13 @@ static partial class Program
             captureServiceText,
             "private async Task EnsureFlashbackPreviewBackendAsync",
             "private async Task DisposeFlashbackPreviewBackendAsync");
+        var createFlashbackSessionContext = ExtractTextBetween(
+            captureServiceText,
+            "private FlashbackSessionContext CreateFlashbackSessionContext",
+            "    private async Task EnsureFlashbackPreviewBackendAsync");
+        AssertContains(createFlashbackSessionContext, "var flashbackNvencPreset = unifiedVideoCapture.IsSoftwareMjpegPipelineActive && frameRate >= 100");
+        AssertContains(createFlashbackSessionContext, "? \"Fast\"");
+        AssertContains(createFlashbackSessionContext, "NvencPreset = flashbackNvencPreset");
         AssertContains(ensureFlashbackPreviewBackend, "var failureToken = ex is OperationCanceledException && cancellationToken.IsCancellationRequested");
         AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_CANCELLED");
         AssertContains(ensureFlashbackPreviewBackend, "FLASHBACK_PREVIEW_INIT_FAIL");

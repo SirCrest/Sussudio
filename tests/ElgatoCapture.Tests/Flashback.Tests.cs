@@ -1853,6 +1853,35 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackEncoderSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches()
+    {
+        var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private const int VideoDrainBatchLimit = 24;");
+        AssertContains(sourceText, "private const int GpuDrainBatchLimit = 16;");
+        AssertContains(sourceText, "DrainGpuPackets(gpuQueue.Reader, GpuDrainBatchLimit)");
+        AssertContains(sourceText, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
+        AssertContains(sourceText, "private bool DrainVideoPackets(ChannelReader<VideoFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(sourceText, "while (drainedCount < maxPackets)");
+        AssertContains(sourceText, "private bool DrainGpuPackets(ChannelReader<GpuFramePacket> reader, int maxPackets = int.MaxValue)");
+        AssertContains(sourceText, "while (drainedCount < maxPackets && reader.TryRead(out var packet))");
+
+        var loopBlock = ExtractTextBetween(
+            sourceText,
+            "private void EncodingLoop(CancellationToken cancellationToken)",
+            "    private bool DrainVideoPackets");
+        AssertOccursBefore(loopBlock, "DrainAudioPackets(audioQueue.Reader)", "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)");
+        AssertOccursBefore(loopBlock, "DrainVideoPackets(videoQueue.Reader, VideoDrainBatchLimit)", "// Audio AGAIN");
+        var secondAudioDrainBlock = ExtractTextBetween(
+            loopBlock,
+            "// Audio AGAIN",
+            "// Handle force-rotate requests");
+        AssertContains(secondAudioDrainBlock, "DrainAudioPackets(audioQueue.Reader)");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackEncoderSink_EncoderPtsGuardsInvalidFrameRate()
     {
         var sourceText = ReadRepoFile("ElgatoCapture/Services/Flashback/FlashbackEncoderSink.cs")
@@ -2212,9 +2241,9 @@ static partial class Program
         AssertContains(sourceText, "const double syncThresholdMs = 100.0;");
         AssertContains(sourceText, "if (Math.Abs(diffMs) > MaxAudioMasterCorrectionMs)\n            {\n                // WASAPI render PTS can lag decoded video by the endpoint buffer/device");
         AssertContains(sourceText, "WallClockPace(pacingStopwatch, frameDuration);\n                return;");
-        AssertContains(sourceText, "var correctionMs = Math.Min(diffMs - syncThresholdMs, Math.Min(1.0, nominalDelayMs * 0.1));");
+        AssertContains(sourceText, "var correctionMs = Math.Min(diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));");
         AssertContains(sourceText, "adjustedDelayMs = nominalDelayMs + Math.Max(0, correctionMs);");
-        AssertContains(sourceText, "var correctionMs = Math.Min(-diffMs - syncThresholdMs, Math.Min(1.0, nominalDelayMs * 0.1));");
+        AssertContains(sourceText, "var correctionMs = Math.Min(-diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));");
         AssertContains(sourceText, "adjustedDelayMs = Math.Max(0, nominalDelayMs - Math.Max(0, correctionMs));");
         AssertDoesNotContain(sourceText, "adjustedDelayMs = nominalDelayMs * 2;");
         AssertDoesNotContain(sourceText, "adjustedDelayMs = Math.Max(0, nominalDelayMs + diffMs);");

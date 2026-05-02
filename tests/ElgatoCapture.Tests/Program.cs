@@ -940,6 +940,9 @@ static partial class Program
                 "Flashback encoder sink validates audio packets before rent",
                 FlashbackEncoderSink_AudioPacketsAreValidatedBeforeRent),
             await RunCheckAsync(
+                "Flashback encoder sink interleaves audio with bounded video batches",
+                FlashbackEncoderSink_NormalDrainLoopInterleavesAudioWithBoundedVideoBatches),
+            await RunCheckAsync(
                 "Flashback suppressed exceptions use app logs",
                 FlashbackSuppressedExceptionsUseAppLogs),
             await RunCheckAsync(

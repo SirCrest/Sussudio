@@ -1643,6 +1643,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         //     }
         // }
 
+        var flashbackNvencPreset = unifiedVideoCapture.IsSoftwareMjpegPipelineActive && frameRate >= 100
+            ? "Fast"
+            : settings.NvencPreset;
+
         return new FlashbackSessionContext
         {
             Width = Math.Max(1, unifiedVideoCapture.Width),
@@ -1651,6 +1655,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             FrameRateNumerator = fpsNum,
             FrameRateDenominator = fpsDen,
             CodecName = codecName,
+            NvencPreset = flashbackNvencPreset,
             IsP010 = isP010,
             BitRate = settings.GetTargetBitrate(),
             HdrEnabled = isP010,
