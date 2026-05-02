@@ -399,6 +399,10 @@ static partial class Program
         AssertContains(diagnosticsText, "health.FlashbackPlaybackSubmitFailures > 0");
         AssertContains(diagnosticsText, "\"flashback_export\"");
         AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
+        AssertContains(diagnosticsText, "UpdateD3DRendererRecentCounters(previewRuntime, nowTick)");
+        AssertContains(diagnosticsText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
+        AssertContains(diagnosticsText, "Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted)");
+        AssertContains(diagnosticsText, "recentSubmitted={recentRendererSubmitted} recentDropped={recentRenderer.Dropped}");
         AssertContains(diagnosticsText, "var previewLastDropReason = string.IsNullOrWhiteSpace(health.MjpegPreviewJitterLastDropReason)");
         AssertContains(diagnosticsText, "recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}");
         AssertContains(diagnosticsText, "UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick)");
@@ -423,7 +427,7 @@ static partial class Program
         AssertContains(diagnosticsText, "\"Source/capture 1% low is below target.\"");
         AssertContains(diagnosticsText, "if (previewOnePercentLowDegraded)");
         AssertContains(diagnosticsText, "\"Present/display 1% low is below target.\"");
-        AssertContains(diagnosticsText, "if (rendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&\n            rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)");
+        AssertContains(diagnosticsText, "if (recentRendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&\n            recentRendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)");
         AssertDoesNotContain(diagnosticsText, "rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||\n            previewRuntime.DisplayCadenceSlowFramePercent > 1.0");
 
         var captureServiceText = ReadRepoFile("ElgatoCapture/Services/Capture/CaptureService.cs")

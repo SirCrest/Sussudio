@@ -34,16 +34,17 @@ timeline, optionally capture PresentMon, and verify recordings when the
 scenario records.
 
 Do not treat a single live snapshot as proof of cadence, 1% lows, 5% lows, or
-steady-state A/V sync. Use at least a 30-second run for 4K120 preview/playback
-smoke validation, prefer 60 seconds when making optimization decisions from
-1%/5% lows, and include the run duration plus sample interval in any reported
-result.
+steady-state A/V sync. This is live data, so short samples can create false
+readings. Use at least a 30-second run for 4K120 preview/playback smoke
+validation, prefer 60 seconds when making optimization decisions from 1%/5%
+lows, and include the run duration, sample interval, cold/warm state, and
+workload context in any reported result.
 
 CLI:
 
 ```powershell
-dotnet tools/ecctl/bin/Debug/net8.0/ecctl.dll diagnostic-session --scenario preview-only --seconds 10 --sample-ms 500 --presentmon
-dotnet tools/ecctl/bin/Debug/net8.0/ecctl.dll diagnostic-session --scenario recording-only --seconds 10 --sample-ms 500
+dotnet tools/ecctl/bin/Debug/net8.0/ecctl.dll diagnostic-session --scenario preview-only --seconds 60 --sample-ms 5000 --presentmon
+dotnet tools/ecctl/bin/Debug/net8.0/ecctl.dll diagnostic-session --scenario recording-only --seconds 30 --sample-ms 5000
 ```
 
 MCP:

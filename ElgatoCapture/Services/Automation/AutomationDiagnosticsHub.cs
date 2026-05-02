@@ -37,6 +37,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private long _lastPreviewJitterUnderflows;
     private long _lastPreviewJitterDeadlineDrops;
     private long _lastPreviewJitterEvalTick;
+    private long _lastD3DFramesSubmitted;
+    private long _lastD3DFramesRendered;
+    private long _lastD3DFramesDropped;
+    private long _lastD3DRendererEvalTick;
     private long _lastD3DFrameStatsMissedRefreshes;
     private long _lastD3DFrameStatsFailures;
     private long _lastD3DFrameStatsEvalTick;
@@ -466,6 +470,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             captureCadenceDropPercent: health.CaptureCadenceEstimatedDropPercent,
             lastVerification: lastVerification);
         var (recentPreviewUnderflows, recentPreviewDeadlineDrops) = UpdatePreviewJitterRecentCounters(health, nowTick);
+        var recentRenderer = UpdateD3DRendererRecentCounters(previewRuntime, nowTick);
         var (recentD3DMissedRefreshes, recentD3DStatsFailures) = UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick);
         var diagnostic = BuildDiagnosticEvaluation(
             health,
@@ -476,6 +481,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             performance,
             recentPreviewUnderflows,
             recentPreviewDeadlineDrops,
+            recentRenderer,
             recentD3DMissedRefreshes,
             recentD3DStatsFailures);
         var hdrTruthVerdict = BuildHdrTruthVerdict(captureRuntime, viewModelSnapshot.IsHdrEnabled, lastVerification);
@@ -1451,6 +1457,29 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             Math.Max(0, deadlineDrops - previousDeadlineDrops));
     }
 
+    private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(
+        PreviewRuntimeSnapshot previewRuntime,
+        long nowTick)
+    {
+        var submitted = Math.Max(0, previewRuntime.D3DFramesSubmitted);
+        var rendered = Math.Max(0, previewRuntime.D3DFramesRendered);
+        var dropped = Math.Max(0, previewRuntime.D3DFramesDropped);
+        var previousTick = Interlocked.Exchange(ref _lastD3DRendererEvalTick, nowTick);
+        var previousSubmitted = Interlocked.Exchange(ref _lastD3DFramesSubmitted, submitted);
+        var previousRendered = Interlocked.Exchange(ref _lastD3DFramesRendered, rendered);
+        var previousDropped = Interlocked.Exchange(ref _lastD3DFramesDropped, dropped);
+
+        if (previousTick <= 0)
+        {
+            return D3DRendererRecentCounters.Empty;
+        }
+
+        return new D3DRendererRecentCounters(
+            Math.Max(0, submitted - previousSubmitted),
+            Math.Max(0, rendered - previousRendered),
+            Math.Max(0, dropped - previousDropped));
+    }
+
     private (long RecentMissedRefreshes, long RecentFailures) UpdateD3DFrameStatsRecentCounters(
         PreviewRuntimeSnapshot previewRuntime,
         long nowTick)
@@ -2013,6 +2042,14 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         public static FlashbackRecordingRecentCounters Empty { get; } = new(0, 0, 0, 0, 0);
     }
 
+    private readonly record struct D3DRendererRecentCounters(
+        long Submitted,
+        long Rendered,
+        long Dropped)
+    {
+        public static D3DRendererRecentCounters Empty { get; } = new(0, 0, 0);
+    }
+
     private static DiagnosticEvaluation BuildDiagnosticEvaluation(
         CaptureHealthSnapshot health,
         CaptureRuntimeSnapshot captureRuntime,
@@ -2022,6 +2059,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         PerformanceEvaluation performance,
         long recentPreviewUnderflows,
         long recentPreviewDeadlineDrops,
+        D3DRendererRecentCounters recentRenderer,
         long recentD3DMissedRefreshes,
         long recentD3DStatsFailures)
     {
@@ -2041,8 +2079,14 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             previewRuntime.D3DFramesSubmitted,
             previewRuntime.D3DFramesRendered + previewRuntime.D3DFramesDropped);
         var rendererDropPercent = DiagnosticThresholds.CalculatePercent(previewRuntime.D3DFramesDropped, rendererSubmitted);
+        var recentRendererSubmitted = Math.Max(
+            recentRenderer.Submitted,
+            recentRenderer.Rendered + recentRenderer.Dropped);
+        var recentRendererDropPercent = DiagnosticThresholds.CalculatePercent(recentRenderer.Dropped, recentRendererSubmitted);
         var renderLane =
-            $"render submitted={previewRuntime.D3DFramesSubmitted} rendered={previewRuntime.D3DFramesRendered} dropped={previewRuntime.D3DFramesDropped} ({rendererDropPercent:0.###}%) cpuP95={previewRuntime.D3DTotalFrameCpuP95Ms:0.##}ms cpuP99={previewRuntime.D3DTotalFrameCpuP99Ms:0.##}ms pipelineP95={previewRuntime.D3DPipelineLatencyP95Ms:0.##}ms pipelineP99={previewRuntime.D3DPipelineLatencyP99Ms:0.##}ms lastPipeline={previewRuntime.D3DLastRenderedPipelineLatencyMs:0.##}ms";
+            $"render submitted={previewRuntime.D3DFramesSubmitted} rendered={previewRuntime.D3DFramesRendered} dropped={previewRuntime.D3DFramesDropped} ({rendererDropPercent:0.###}%) " +
+            $"recentSubmitted={recentRendererSubmitted} recentDropped={recentRenderer.Dropped} ({recentRendererDropPercent:0.###}%) " +
+            $"cpuP95={previewRuntime.D3DTotalFrameCpuP95Ms:0.##}ms cpuP99={previewRuntime.D3DTotalFrameCpuP99Ms:0.##}ms pipelineP95={previewRuntime.D3DPipelineLatencyP95Ms:0.##}ms pipelineP99={previewRuntime.D3DPipelineLatencyP99Ms:0.##}ms lastPipeline={previewRuntime.D3DLastRenderedPipelineLatencyMs:0.##}ms";
         var presentTarget = previewRuntime.DisplayCadenceExpectedIntervalMs > 0
             ? $"{previewRuntime.DisplayCadenceExpectedIntervalMs:0.##}ms"
             : "n/a";
@@ -2451,8 +2495,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 audioLane);
         }
 
-        if (rendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&
-            rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)
+        if (recentRendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&
+            recentRendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)
         {
             return new DiagnosticEvaluation(
                 "Warning",
