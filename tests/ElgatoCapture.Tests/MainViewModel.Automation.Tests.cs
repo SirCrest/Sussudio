@@ -411,6 +411,8 @@ static partial class Program
         AssertContains(diagnosticsText, "\"Capture cadence 1% low is below target:");
         AssertContains(diagnosticsText, "\"preview-display-low-1pct\"");
         AssertContains(diagnosticsText, "\"Preview/display 1% low is below target:");
+        AssertContains(diagnosticsText, "FormatVisualCadenceAlertDetail(snapshot)");
+        AssertContains(diagnosticsText, "visualChanges={snapshot.VisualCadenceChangeObservedFps:0.##}fps");
         AssertContains(diagnosticsText, "var previewSubmitFailed = string.Equals(");
         AssertContains(diagnosticsText, "health.MjpegPreviewJitterLastDropReason,\n            \"submit-failed\"");
         AssertContains(diagnosticsText, "if (previewSubmitFailed ||\n            recentPreviewDeadlineDrops > 0 ||\n            recentPreviewUnderflows > 3)");
@@ -426,6 +428,13 @@ static partial class Program
         AssertContains(diagnosticsText, "if (captureOnePercentLowDegraded)");
         AssertContains(diagnosticsText, "\"Source/capture 1% low is below target.\"");
         AssertContains(diagnosticsText, "if (previewOnePercentLowDegraded)");
+        AssertContains(diagnosticsText, "var visualCadenceHealthy =\n            IsVisualCadenceHealthy(");
+        AssertContains(diagnosticsText, "Present/display 1% low is below target, but sampled visual cadence remains near source rate.");
+        AssertContains(diagnosticsText, "visualCadenceHealthy ? $\"{presentLane} | {visualLane}\" : presentLane");
+        AssertContains(diagnosticsText, "private static bool IsVisualCadenceHealthy(");
+        AssertContains(diagnosticsText, "changeObservedFps >= targetFrameRate * PreviewOnePercentLowWarningRatio");
+        AssertContains(diagnosticsText, "repeatFramePercent <= 1.0");
+        AssertContains(diagnosticsText, "longestRepeatRun <= 1");
         AssertContains(diagnosticsText, "\"Present/display 1% low is below target.\"");
         AssertContains(diagnosticsText, "if (recentRendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&\n            recentRendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)");
         AssertDoesNotContain(diagnosticsText, "rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||\n            previewRuntime.DisplayCadenceSlowFramePercent > 1.0");

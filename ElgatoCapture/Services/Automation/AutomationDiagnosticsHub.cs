@@ -1720,7 +1720,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"Preview/display 1% low is below target: onePercentLow={snapshot.PreviewCadenceOnePercentLowFps:0.##}fps " +
             $"target={(snapshot.PreviewCadenceExpectedIntervalMs > 0 ? 1000.0 / snapshot.PreviewCadenceExpectedIntervalMs : 0):0.##}fps " +
             $"avg={snapshot.PreviewCadenceObservedFps:0.##}fps p95={snapshot.PreviewCadenceP95IntervalMs:0.##}ms " +
-            $"p99={snapshot.PreviewCadenceP99IntervalMs:0.##}ms max={snapshot.PreviewCadenceMaxIntervalMs:0.##}ms{previewSlowFrameDetail}.",
+            $"p99={snapshot.PreviewCadenceP99IntervalMs:0.##}ms max={snapshot.PreviewCadenceMaxIntervalMs:0.##}ms{previewSlowFrameDetail}{FormatVisualCadenceAlertDetail(snapshot)}.",
             "Preview/display 1% low returned to target range.",
             throttleMs: 5000);
 
@@ -1958,6 +1958,16 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         return $" latestSlowFrameReason={reason} over={frame.WorstOverBudgetMs:0.##}ms interval={frame.PresentIntervalMs:0.##}ms inputUpload={frame.InputUploadCpuMs:0.##}ms renderSubmit={frame.RenderSubmitCpuMs:0.##}ms total={frame.TotalFrameCpuMs:0.##}ms presentCall={frame.PresentCallMs:0.##}ms pipeline={frame.PipelineLatencyMs:0.##}ms pending={frame.PendingFrameCount}";
     }
 
+    private static string FormatVisualCadenceAlertDetail(AutomationSnapshot snapshot)
+    {
+        if (snapshot.VisualCadenceSampleCount <= 0)
+        {
+            return string.Empty;
+        }
+
+        return $" visualChanges={snapshot.VisualCadenceChangeObservedFps:0.##}fps visualOutput={snapshot.VisualCadenceOutputObservedFps:0.##}fps repeat={snapshot.VisualCadenceRepeatFramePercent:0.###}% longestRepeatRun={snapshot.VisualCadenceLongestRepeatRun} confidence={snapshot.VisualCadenceMotionConfidence}";
+    }
+
     private static bool IsFlashbackPlaybackFrametimeDegraded(
         string state,
         double targetFrameRate,
@@ -1997,6 +2007,19 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var targetFrameRate = 1000.0 / expectedIntervalMs;
         return onePercentLowFps < targetFrameRate * PreviewOnePercentLowWarningRatio;
     }
+
+    private static bool IsVisualCadenceHealthy(
+        double targetFrameRate,
+        int sampleCount,
+        double changeObservedFps,
+        double repeatFramePercent,
+        long longestRepeatRun)
+        =>
+            targetFrameRate > 0 &&
+            sampleCount >= PreviewPerfectionMinSamples &&
+            changeObservedFps >= targetFrameRate * PreviewOnePercentLowWarningRatio &&
+            repeatFramePercent <= 1.0 &&
+            longestRepeatRun <= 1;
 
     private static bool IsFlashbackRecordingQueueBackedUp(
         int queueDepth,
@@ -2097,6 +2120,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 : string.Empty;
         var presentLane =
             $"present target={presentTarget} avg={previewRuntime.DisplayCadenceAverageIntervalMs:0.##}ms p95={previewRuntime.DisplayCadenceP95IntervalMs:0.##}ms p99={previewRuntime.DisplayCadenceP99IntervalMs:0.##}ms max={previewRuntime.DisplayCadenceMaxIntervalMs:0.##}ms slow={previewRuntime.DisplayCadenceSlowFramePercent:0.##}% rate={previewRuntime.DisplayCadenceObservedFps:0.##}fps 1pctLow={previewRuntime.DisplayCadenceOnePercentLowFps:0.##}fps sync={previewRuntime.D3DPresentSyncInterval} latency={previewRuntime.D3DMaxFrameLatency} buffers={previewRuntime.D3DSwapChainBufferCount} swap={previewRuntime.D3DSwapChainAddress}{dxgiStats}";
+        var visualLane =
+            $"visual crop samples={health.VisualCadenceSampleCount} output={health.VisualCadenceOutputObservedFps:0.##}fps changes={health.VisualCadenceChangeObservedFps:0.##}fps repeat={health.VisualCadenceRepeatFramePercent:0.###}% repeatFrames={health.VisualCadenceRepeatFrameCount} longestRepeatRun={health.VisualCadenceLongestRepeatRun} confidence={health.VisualCadenceMotionConfidence}";
         var recordingLane =
             $"recording integrity={captureRuntime.RecordingIntegrityStatus} complete={captureRuntime.RecordingIntegrityComplete} seqGaps={captureRuntime.RecordingIntegritySequenceGaps} queueDrops={captureRuntime.RecordingIntegrityQueueDroppedFrames}";
         var audioLane =
@@ -2156,6 +2181,13 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 previewRuntime.DisplayCadenceExpectedIntervalMs,
                 previewRuntime.DisplayCadenceSampleCount,
                 previewRuntime.DisplayCadenceOnePercentLowFps);
+        var visualCadenceHealthy =
+            IsVisualCadenceHealthy(
+                health.ExpectedFrameRate,
+                health.VisualCadenceSampleCount,
+                health.VisualCadenceChangeObservedFps,
+                health.VisualCadenceRepeatFramePercent,
+                health.VisualCadenceLongestRepeatRun);
         var flashbackTempPressure =
             health.FlashbackActive &&
             (health.FlashbackStartupCacheOverBudget ||
@@ -2540,8 +2572,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             return new DiagnosticEvaluation(
                 "Warning",
                 "present_display",
-                "Present/display 1% low is below target.",
-                presentLane,
+                visualCadenceHealthy
+                    ? "Present/display 1% low is below target, but sampled visual cadence remains near source rate."
+                    : "Present/display 1% low is below target.",
+                visualCadenceHealthy ? $"{presentLane} | {visualLane}" : presentLane,
                 sourceLane,
                 decodeLane,
                 previewLane,
