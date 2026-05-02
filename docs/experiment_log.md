@@ -3332,3 +3332,42 @@ The audio-gate dip fix is empirically validated across six independent live runs
 First attempt used `Key="Number188"` for `Ctrl+,` which fails XAML compile because `Windows.System.VirtualKey` does not name punctuation keys. Replaced with `Key="D"` (Ctrl+D) for the device/output settings shelf.
 
 **Verification.** `dotnet build ElgatoCapture/ElgatoCapture.csproj -p:Platform=x64 -p:StageLatestBuild=true` succeeded with 0 errors / 0 warnings (21.59s elapsed). Runtime smoke not exercised in this session — accelerators are XAML-only declarative bindings whose handlers were already present and unchanged.
+
+## 2026-05-02 — Renamed project to Simple Sussudio
+
+**Change.** Full identity rename of the project from `ElgatoCapture` to `Sussudio` (code identity) / `Simple Sussudio` (display name) ahead of a public open-source release on GitHub. The project started in January 2026 as an internal experiment and grew into something that warranted its own neutral identity. "Simple Sussudio" — Phil Collins reference, single-word `Sussudio` for namespace/assembly/pipe identifiers.
+
+**Scope.** Two atomic commits on Flashback branch:
+1. Pure structural moves via `git mv` (preserves rename history).
+   - `ElgatoCapture/` → `Sussudio/`, `ElgatoCapture.slnx` → `Sussudio.slnx`
+   - `tests/ElgatoCapture.{Tests,HdrLab,FfmpegEncodeLab}/` → `tests/Sussudio.*/`
+   - `tools/ecctl/` → `tools/ssctl/`
+2. Content rewrite (1545 replacements across 205 files).
+   - Namespaces, usings, `<RootNamespace>`, csproj `Compile Include` paths
+   - Pipe constant `ElgatoCaptureAutomation` → `SussudioAutomation`
+   - Env vars `ELGATOCAPTURE_*` → `SUSSUDIO_*`
+   - Log filenames `ElgatoCapture_Debug.log` → `Sussudio_Debug.log`, `ElgatoCapture_AutomationPipe.log` → `Sussudio_AutomationPipe.log`
+   - LocalAppData fallback `ElgatoCapture/logs` → `Sussudio/logs`
+   - AppxManifest: new package GUID `a77e8aeb-560c-4664-9698-4bb4b7eaead4`, DisplayName `Simple Sussudio`
+   - Repo marker file checks in `RuntimePaths.cs`
+   - `ServiceNamespace.Tests.cs` meta-test path/namespace assertions
+
+**Preserved as historical record (not rewritten):**
+- `docs/experiment_log.md` past entries (this file before today's entry)
+- `docs/duat/reports/`, `docs/qa/`, `docs/superpowers/specs/`
+- `docs/realtime-capture-engine-implementation-log.md`
+- `docs/code-review-2026-04-07.md`, `docs/bugs/2026-04-04-full-context-review.md`
+- `results/`, `artifacts/`
+
+These reference paths and names that were correct at the time. Pre-2026-05-02 entries that say `ElgatoCapture/Services/...` should be read as the historical equivalent of `Sussudio/Services/...`.
+
+**Preserved unchanged (legitimate hardware/vendor references):**
+- "Elgato 4K X" (device name) in `tools/CoreAudioEndpointProbe`, `tools/NativeXuAudioProbe`, `Sussudio/Services/Capture/DeviceService.cs`, tests
+- "Elgato Studio" / "Elgato" vendor strings in `tools/EgavdsAudioProbe`
+- All `AutomationProperties.AutomationId` strings (none contained `ElgatoCapture` — they use semantic names like `RecordButton`, `PreviewImage`)
+
+**Worktree directory** (`ElgatoCapture-Flashback/`) intentionally not renamed. The Flashback branch will eventually merge to main and replace it; the worktree-level rename will happen at that point to avoid double git plumbing churn.
+
+**Verification.** Full solution build (Sussudio + 3 tests + 4 standalone tools) — 0 warnings / 0 errors. Test runner — every PASS, including `ServiceNamespace.Tests` which asserts every renamed path and namespace. Runtime smoke: app launched, created `temp/logs/Sussudio_Debug.log` with new header `=== Sussudio Debug Log ===`, detected Elgato 4K X via NATIVEXU_AT, encoded 3063 Flashback frames to `C:\Users\crest\AppData\Local\Sussudio\Flashback\...`, closed cleanly with full subsystem teardown.
+
+**Safety net** (kept after rename): tag `pre-sussudio-rename` at commit `10b78b2`, branch `backup/pre-sussudio-rename` at same commit, zip backup at `../ElgatoCapture-Flashback-backup-2026-05-02-152452.zip`. Rollback: `git reset --hard pre-sussudio-rename`.
