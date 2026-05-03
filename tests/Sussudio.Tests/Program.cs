@@ -949,6 +949,9 @@ static partial class Program
                 "Flashback encoder sink restores active segment after rotation failure",
                 FlashbackEncoderSink_RotateFailureRestoresActiveSegment),
             await RunCheckAsync(
+                "Flashback encoder sink registers segments on cancellation and rotation failure",
+                FlashbackEncoderSink_RegistersSegmentsOnCancellationAndRotationFailure),
+            await RunCheckAsync(
                 "Flashback encoder sink rejects force rotate after encoder failure",
                 FlashbackEncoderSink_ForceRotateRejectsFailedEncoder),
             await RunCheckAsync(

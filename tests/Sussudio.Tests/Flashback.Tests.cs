@@ -2616,6 +2616,43 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackEncoderSink_RegistersSegmentsOnCancellationAndRotationFailure()
+    {
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
+            .Replace("\r\n", "\n");
+
+        var cancelBlock = ExtractTextBetween(
+            sourceText,
+            "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
+            "        catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_SINK_ENCODING_LOOP_FATAL");
+        AssertContains(cancelBlock, "Logger.Log(\"FLASHBACK_SINK_ENCODING_LOOP_CANCELLED\");");
+        AssertContains(cancelBlock, "CompletePendingForceRotateWithEmptyResult();");
+        AssertContains(cancelBlock, "var cancelPts = ResolveEncoderPts();");
+        AssertContains(cancelBlock, "if (cancelPts > _segmentStartPts)");
+        AssertContains(cancelBlock, "var cancelSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
+        AssertContains(cancelBlock, "_bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, cancelPts, cancelSegmentBytes);");
+        AssertContains(cancelBlock, "FLASHBACK_SINK_ENCODING_LOOP_CANCELLED_SEGMENT_REGISTERED");
+        AssertContains(cancelBlock, "FLASHBACK_SINK_CANCELLED_SEGMENT_REGISTER_FAIL");
+        AssertContains(cancelBlock, "ReturnAllRemainingQueuedBuffers();");
+        AssertOccursBefore(cancelBlock, "_bufferManager.OnSegmentCompleted(_tsFilePath, _segmentStartPts, cancelPts, cancelSegmentBytes);", "ReturnAllRemainingQueuedBuffers();");
+
+        var rotateFailureBlock = ExtractTextBetween(
+            sourceText,
+            "catch (Exception ex)\n        {\n            if (newPath != null && !encoderRotated)",
+            "    public IReadOnlyList<string> ForceRotateForExport");
+        AssertContains(rotateFailureBlock, "Interlocked.Increment(ref _segmentRotationFailures);");
+        AssertContains(rotateFailureBlock, "var failPts = ResolveEncoderPts();");
+        AssertContains(rotateFailureBlock, "if (failPts > _segmentStartPts)");
+        AssertContains(rotateFailureBlock, "var failSegmentBytes = NonNegativeByteDelta(_encoder.TotalBytesWritten, Interlocked.Read(ref _segmentStartBytes));");
+        AssertContains(rotateFailureBlock, "_bufferManager.OnSegmentCompleted(completedPath, _segmentStartPts, failPts, failSegmentBytes);");
+        AssertContains(rotateFailureBlock, "FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTERED");
+        AssertContains(rotateFailureBlock, "FLASHBACK_SINK_ROTATE_FAIL_SEGMENT_REGISTER_FAIL");
+        AssertContains(rotateFailureBlock, "_segmentStartPts = currentPts;");
+        AssertOccursBefore(rotateFailureBlock, "_bufferManager.OnSegmentCompleted(completedPath, _segmentStartPts, failPts, failSegmentBytes);", "_segmentStartPts = currentPts;");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackEncoderSink_ForceRotateRejectsFailedEncoder()
     {
         var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
