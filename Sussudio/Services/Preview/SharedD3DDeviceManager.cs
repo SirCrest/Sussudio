@@ -8,6 +8,7 @@ namespace Sussudio.Services.Preview;
 
 internal sealed class SharedD3DDeviceManager : IDisposable
 {
+    private readonly object _sync = new();
     private ID3D11Device? _device;
     private ID3D11Multithread? _multithread;
     private IntPtr _dxgiDeviceManagerPtr;
@@ -30,8 +31,11 @@ internal sealed class SharedD3DDeviceManager : IDisposable
     {
         get
         {
-            ThrowIfDisposed();
-            return _device ?? throw new ObjectDisposedException(nameof(SharedD3DDeviceManager));
+            lock (_sync)
+            {
+                ThrowIfDisposed();
+                return _device ?? throw new ObjectDisposedException(nameof(SharedD3DDeviceManager));
+            }
         }
     }
 
@@ -39,8 +43,11 @@ internal sealed class SharedD3DDeviceManager : IDisposable
     {
         get
         {
-            ThrowIfDisposed();
-            return _dxgiDeviceManagerPtr;
+            lock (_sync)
+            {
+                ThrowIfDisposed();
+                return _dxgiDeviceManagerPtr;
+            }
         }
     }
 
@@ -48,13 +55,50 @@ internal sealed class SharedD3DDeviceManager : IDisposable
     {
         get
         {
-            ThrowIfDisposed();
-            return _device?.ImmediateContext
-                ?? throw new ObjectDisposedException(nameof(SharedD3DDeviceManager));
+            lock (_sync)
+            {
+                ThrowIfDisposed();
+                return _device?.ImmediateContext
+                    ?? throw new ObjectDisposedException(nameof(SharedD3DDeviceManager));
+            }
         }
     }
 
     public uint ResetToken { get; private set; }
+
+    public bool TryCreateDeviceReference(out ID3D11Device? device, out string reason)
+    {
+        lock (_sync)
+        {
+            if (Volatile.Read(ref _disposed) != 0)
+            {
+                device = null;
+                reason = "disposed";
+                return false;
+            }
+
+            var currentDevice = _device;
+            if (currentDevice == null)
+            {
+                device = null;
+                reason = "missing_device";
+                return false;
+            }
+
+            var nativePointer = currentDevice.NativePointer;
+            if (nativePointer == IntPtr.Zero)
+            {
+                device = null;
+                reason = "null_device_pointer";
+                return false;
+            }
+
+            Marshal.AddRef(nativePointer);
+            device = new ID3D11Device(nativePointer);
+            reason = "ok";
+            return true;
+        }
+    }
 
     public void Dispose()
     {
@@ -63,16 +107,19 @@ internal sealed class SharedD3DDeviceManager : IDisposable
             return;
         }
 
-        if (_dxgiDeviceManagerPtr != IntPtr.Zero)
+        lock (_sync)
         {
-            Marshal.Release(_dxgiDeviceManagerPtr);
-            _dxgiDeviceManagerPtr = IntPtr.Zero;
-        }
+            if (_dxgiDeviceManagerPtr != IntPtr.Zero)
+            {
+                Marshal.Release(_dxgiDeviceManagerPtr);
+                _dxgiDeviceManagerPtr = IntPtr.Zero;
+            }
 
-        _multithread?.Dispose();
-        _multithread = null;
-        _device?.Dispose();
-        _device = null;
+            _multithread?.Dispose();
+            _multithread = null;
+            _device?.Dispose();
+            _device = null;
+        }
     }
 
     private void Initialize()

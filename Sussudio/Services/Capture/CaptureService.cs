@@ -4781,9 +4781,15 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // YcbcrFullG22LeftP709 instead of the default studio-range color space.
         renderer.FullRangeInput = capture.IsHighFrameRateMjpegMode;
 
-        var sharedDevice = capture.D3DManager?.Device;
-        if (sharedDevice == null)
+        var d3dManager = capture.D3DManager;
+        if (d3dManager == null)
         {
+            return;
+        }
+
+        if (!d3dManager.TryCreateDeviceReference(out var sharedDevice, out var reason) || sharedDevice == null)
+        {
+            Logger.Log($"UNIFIED_VIDEO_SHARED_DEVICE_APPLY_SKIP reason={reason}");
             return;
         }
 
@@ -4794,6 +4800,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         catch (Exception ex)
         {
             Logger.Log($"UNIFIED_VIDEO_SHARED_DEVICE_APPLY_WARN type={ex.GetType().Name} hr=0x{ex.HResult:X8} msg={ex.Message}");
+        }
+        finally
+        {
+            sharedDevice.Dispose();
         }
     }
 

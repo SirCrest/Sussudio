@@ -534,4 +534,43 @@ static partial class Program
 
         return Task.CompletedTask;
     }
+
+    private static Task SharedD3DDeviceManager_DuplicatesReferencesUnderLifecycleLock()
+    {
+        var managerType = RequireType("Sussudio.Services.Preview.SharedD3DDeviceManager");
+        AssertNotNull(
+            managerType.GetMethod("TryCreateDeviceReference", BindingFlags.Public | BindingFlags.Instance),
+            "SharedD3DDeviceManager.TryCreateDeviceReference");
+
+        var managerText = ReadRepoFile("Sussudio/Services/Preview/SharedD3DDeviceManager.cs")
+            .Replace("\r\n", "\n");
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
+        var duplicateMethod = ExtractTextBetween(
+            managerText,
+            "public bool TryCreateDeviceReference",
+            "\n    public void Dispose()");
+        var disposeMethod = ExtractTextBetween(
+            managerText,
+            "public void Dispose()",
+            "\n    private void Initialize()");
+        var applyMethod = ExtractTextBetween(
+            captureServiceText,
+            "private void TryApplySharedPreviewDevice",
+            "\n    private async Task DisposeTransientRecordingBackendAsync");
+
+        AssertContains(managerText, "private readonly object _sync = new();");
+        AssertContains(duplicateMethod, "lock (_sync)");
+        AssertContains(duplicateMethod, "if (Volatile.Read(ref _disposed) != 0)");
+        AssertContains(duplicateMethod, "var nativePointer = currentDevice.NativePointer;");
+        AssertContains(duplicateMethod, "Marshal.AddRef(nativePointer);");
+        AssertContains(duplicateMethod, "device = new ID3D11Device(nativePointer);");
+        AssertContains(disposeMethod, "lock (_sync)");
+        AssertContains(applyMethod, "d3dManager.TryCreateDeviceReference(out var sharedDevice, out var reason)");
+        AssertContains(applyMethod, "UNIFIED_VIDEO_SHARED_DEVICE_APPLY_SKIP reason={reason}");
+        AssertContains(applyMethod, "sharedDevice.Dispose();");
+        AssertDoesNotContain(applyMethod, "capture.D3DManager?.Device");
+
+        return Task.CompletedTask;
+    }
 }

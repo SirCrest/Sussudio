@@ -435,6 +435,9 @@ static partial class Program
                 "D3D preview frame capture cancellation clears pending request",
                 D3D11PreviewRenderer_FrameCaptureCancellationClearsPendingRequest),
             await RunCheckAsync(
+                "Shared D3D device references are duplicated under lifecycle lock",
+                SharedD3DDeviceManager_DuplicatesReferencesUnderLifecycleLock),
+            await RunCheckAsync(
                 "MCP raw app state keeps capture options separate",
                 McpToolSurface_KeepsCaptureOptionsSeparateFromRawState),
             await RunCheckAsync(
