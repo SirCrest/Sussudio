@@ -16,6 +16,7 @@ namespace Sussudio.Services.Flashback;
 internal sealed class FlashbackPlaybackController : IDisposable
 {
     private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);
+    private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);
 
     // --- Command types marshalled to the playback thread ---
     private enum CommandKind
@@ -1302,9 +1303,85 @@ internal sealed class FlashbackPlaybackController : IDisposable
             return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason);
         }
 
+        if (TrySeekAdjacentSegmentStart(decoder, ref fileOpen, seekTarget, reason, out _))
+        {
+            return true;
+        }
+
         SetReopenFailure(reason, "seek_failed", seekTarget);
         Logger.Log($"FLASHBACK_PLAYBACK_SEEK_FAIL reason={reason} offset_ms={(long)seekTarget.TotalMilliseconds}");
         return false;
+    }
+
+    private bool TrySeekAdjacentSegmentStart(
+        FlashbackDecoder decoder,
+        ref bool fileOpen,
+        TimeSpan seekTarget,
+        string reason,
+        out TimeSpan effectiveSeekTarget)
+    {
+        effectiveSeekTarget = seekTarget;
+        var currentPath = _currentOpenFilePath;
+        if (string.IsNullOrWhiteSpace(currentPath))
+        {
+            return false;
+        }
+
+        var nextPath = _bufferManager.GetNextSegmentFile(currentPath);
+        if (string.IsNullOrWhiteSpace(nextPath) || IsSamePlaybackPath(nextPath, currentPath))
+        {
+            return false;
+        }
+
+        var nextStart = _bufferManager.GetSegmentStartPts(nextPath);
+        if (!nextStart.HasValue)
+        {
+            return false;
+        }
+
+        var targetGap = (nextStart.Value - seekTarget).Duration();
+        if (targetGap > AdjacentSegmentSeekFallbackWindow)
+        {
+            return false;
+        }
+
+        effectiveSeekTarget = seekTarget < nextStart.Value ? nextStart.Value : seekTarget;
+        try
+        {
+            Logger.Log(
+                $"FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK reason={reason} " +
+                $"from='{System.IO.Path.GetFileName(currentPath)}' next='{System.IO.Path.GetFileName(nextPath)}' " +
+                $"target_ms={(long)seekTarget.TotalMilliseconds} effective_ms={(long)effectiveSeekTarget.TotalMilliseconds}");
+            if (decoder.IsOpen)
+            {
+                decoder.CloseFile();
+            }
+
+            fileOpen = false;
+            decoder.OpenFile(nextPath);
+            fileOpen = true;
+            _currentOpenFilePath = nextPath;
+            _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
+            if (decoder.SeekTo(effectiveSeekTarget))
+            {
+                Interlocked.Increment(ref _playbackSegmentSwitches);
+                Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                return true;
+            }
+
+            SetReopenFailure(reason, "adjacent_seek_failed", effectiveSeekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK_FAIL reason={reason} path='{nextPath}' offset_ms={(long)effectiveSeekTarget.TotalMilliseconds}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            SetReopenFailure(reason, ex.GetType().Name, effectiveSeekTarget);
+            Logger.Log($"FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK_ERROR reason={reason} path='{nextPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+            _decoderHwAccel = "N/A";
+            fileOpen = false;
+            _currentOpenFilePath = null;
+            return false;
+        }
     }
 
     private bool TryReopenCurrentFileAndSeek(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)
@@ -1618,6 +1695,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
             seekSuccess:
 
             var gotFrame = TryDecodeNextVideoFrameWithMetrics(decoder, out var frame);
+            if (!gotFrame &&
+                TrySeekAdjacentSegmentStart(decoder, ref fileOpen, filePts, $"seek_display:{kind}", out var adjacentFilePts))
+            {
+                filePts = adjacentFilePts;
+                gotFrame = TryDecodeNextVideoFrameWithMetrics(decoder, out frame);
+            }
+
             if (gotFrame)
             {
                 if (!TrySubmitAndHoldFrame(frame, "seek"))

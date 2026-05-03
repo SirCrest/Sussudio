@@ -2712,6 +2712,21 @@ public static class DiagnosticSessionRunner
             return;
         }
 
+        var headroomOk = await WaitForFlashbackSegmentPlaybackHeadroomAsync(
+                sendCommandAsync,
+                completedSegment.Value.EndPtsMs,
+                TimeSpan.FromSeconds(10),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (headroomOk)
+        {
+            actions.Add("flashback segment playback live headroom established");
+        }
+        else
+        {
+            warnings.Add("flashback segment playback: live headroom stayed below target before boundary playback");
+        }
+
         var seekPositionMs = Math.Max(0, completedSegment.Value.EndPtsMs - 500);
         await sendCommandAsync(
                 "FlashbackAction",
@@ -2835,6 +2850,33 @@ public static class DiagnosticSessionRunner
         }
 
         return lastSnapshot;
+    }
+
+    private static async Task<bool> WaitForFlashbackSegmentPlaybackHeadroomAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        long boundaryMs,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        const int requiredHeadroomMs = 8_000;
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started) < timeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(response, out var snapshot))
+            {
+                var bufferedDurationMs = GetNullableLong(snapshot, "FlashbackBufferedDurationMs") ?? 0;
+                if (bufferedDurationMs >= boundaryMs + requiredHeadroomMs)
+                {
+                    return true;
+                }
+            }
+
+            await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+        }
+
+        return false;
     }
 
     private static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(
