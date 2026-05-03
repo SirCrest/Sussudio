@@ -662,6 +662,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "ValidateFlashbackPlaybackSession(playbackSessionMetrics.Observed ? playbackEndSnapshot : lastSnapshot, playbackSessionMetrics, durationSeconds, warnings);");
         AssertContains(diagnosticSessionText, "private static void ValidateFlashbackPlaybackSession(");
         AssertContains(diagnosticSessionText, "flashback playback: no playback frames were observed");
+        AssertContains(diagnosticSessionText, "var frameCount = metrics.EndSessionFrameCount;");
+        AssertContains(diagnosticSessionText, "GetResetAwareCounterDelta(");
+        AssertContains(diagnosticSessionText, "public JsonElement BaselineSnapshot { get; init; }");
+        AssertContains(diagnosticSessionText, "public long EndSessionFrameCount { get; set; }");
         AssertContains(diagnosticSessionText, "flashback playback: observed FPS dipped below floor");
         AssertContains(diagnosticSessionText, "flashback playback: 1% low dipped below floor");
         AssertContains(diagnosticSessionText, "flashback playback: dropped frames increased delta={metrics.DroppedFramesDelta}");
@@ -676,6 +680,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var sessionFrameCount = frameCount >= baselineFrameCount");
         AssertContains(diagnosticSessionText, "? frameCount - baselineFrameCount");
         AssertContains(diagnosticSessionText, ": frameCount;");
+        AssertContains(diagnosticSessionText, "metrics.EndSessionFrameCount = sessionFrameCount;");
         AssertContains(diagnosticSessionText, "targetFps > 0 ? (long)Math.Ceiling(targetFps * 10.0) : 240");
         AssertContains(diagnosticSessionText, "onePercentLow > 0 && sessionFrameCount >= minimumPlaybackFramesForLowPercentile");
         AssertContains(diagnosticSessionText, "fpsMin={result.FlashbackPlaybackMinObservedFpsObserved:0.##}");

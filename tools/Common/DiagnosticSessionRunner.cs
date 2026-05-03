@@ -3814,7 +3814,7 @@ public static class DiagnosticSessionRunner
             targetFps = GetDouble(lastSnapshot, "SelectedExactFrameRate");
         }
 
-        var frameCount = GetNullableLong(lastSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
+        var frameCount = metrics.EndSessionFrameCount;
         if (frameCount <= 0)
         {
             warnings.Add("flashback playback: no playback frames were observed");
@@ -3941,7 +3941,7 @@ public static class DiagnosticSessionRunner
         IReadOnlyList<DiagnosticSessionSample> samples,
         JsonElement lastSnapshot)
     {
-        var metrics = new FlashbackPlaybackSessionMetrics();
+        var metrics = new FlashbackPlaybackSessionMetrics { BaselineSnapshot = initialSnapshot };
         var baselinePlaybackActive = IsPlaybackSnapshotActive(initialSnapshot);
         var baselineFrameCount = GetNullableLong(initialSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
         var baselineCommandsEnqueued = GetNullableLong(initialSnapshot, "FlashbackPlaybackCommandsEnqueued") ?? 0;
@@ -3979,11 +3979,11 @@ public static class DiagnosticSessionRunner
 
         if (metrics.Observed)
         {
-            metrics.DroppedFramesDelta = GetCounterDelta(
+            metrics.DroppedFramesDelta = GetResetAwareCounterDelta(
                 metrics.EndSnapshot,
                 initialSnapshot,
                 "FlashbackPlaybackDroppedFrames");
-            metrics.SubmitFailuresDelta = GetCounterDelta(
+            metrics.SubmitFailuresDelta = GetResetAwareCounterDelta(
                 metrics.EndSnapshot,
                 initialSnapshot,
                 "FlashbackPlaybackSubmitFailures");
@@ -4030,6 +4030,7 @@ public static class DiagnosticSessionRunner
 
         metrics.Observed = true;
         metrics.EndSnapshot = snapshot;
+        metrics.EndSessionFrameCount = sessionFrameCount;
         metrics.MaxPendingCommandsObserved = Math.Max(
             metrics.MaxPendingCommandsObserved,
             GetInt(snapshot, "FlashbackPlaybackMaxPendingCommands"));
@@ -4077,9 +4078,15 @@ public static class DiagnosticSessionRunner
             metrics.MaxDecodeAudioMsObserved = GetDouble(snapshot, "FlashbackPlaybackMaxDecodeAudioMs");
             metrics.MaxDecodeConvertMsObserved = GetDouble(snapshot, "FlashbackPlaybackMaxDecodeConvertMs");
         }
-        metrics.MaxAudioMasterDelayDoublesObserved = Math.Max(metrics.MaxAudioMasterDelayDoublesObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterDelayDoubles") ?? 0);
-        metrics.MaxAudioMasterDelayShrinksObserved = Math.Max(metrics.MaxAudioMasterDelayShrinksObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterDelayShrinks") ?? 0);
-        metrics.MaxAudioMasterFallbacksObserved = Math.Max(metrics.MaxAudioMasterFallbacksObserved, GetNullableLong(snapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0);
+        metrics.MaxAudioMasterDelayDoublesObserved = Math.Max(
+            metrics.MaxAudioMasterDelayDoublesObserved,
+            GetResetAwareCounterDelta(snapshot, metrics.BaselineSnapshot, "FlashbackPlaybackAudioMasterDelayDoubles"));
+        metrics.MaxAudioMasterDelayShrinksObserved = Math.Max(
+            metrics.MaxAudioMasterDelayShrinksObserved,
+            GetResetAwareCounterDelta(snapshot, metrics.BaselineSnapshot, "FlashbackPlaybackAudioMasterDelayShrinks"));
+        metrics.MaxAudioMasterFallbacksObserved = Math.Max(
+            metrics.MaxAudioMasterFallbacksObserved,
+            GetResetAwareCounterDelta(snapshot, metrics.BaselineSnapshot, "FlashbackPlaybackAudioMasterFallbacks"));
         metrics.MaxAudioBufferedDurationMsObserved = Math.Max(metrics.MaxAudioBufferedDurationMsObserved, GetDouble(snapshot, "WasapiPlaybackBufferedDurationMs"));
         metrics.MaxAudioQueueDurationMsObserved = Math.Max(metrics.MaxAudioQueueDurationMsObserved, GetDouble(snapshot, "WasapiPlaybackQueueDurationMs"));
         metrics.MaxAbsAvDriftMsObserved = Math.Max(metrics.MaxAbsAvDriftMsObserved, Math.Abs(GetDouble(snapshot, "FlashbackAvDriftMs")));
@@ -4097,7 +4104,9 @@ public static class DiagnosticSessionRunner
     private sealed class FlashbackPlaybackSessionMetrics
     {
         public bool Observed { get; set; }
+        public JsonElement BaselineSnapshot { get; init; }
         public JsonElement EndSnapshot { get; set; }
+        public long EndSessionFrameCount { get; set; }
         public int MaxPendingCommandsObserved { get; set; }
         public int MaxCommandQueueLatencyMsObserved { get; set; }
         public double MinObservedFpsObserved { get; set; } = double.PositiveInfinity;
@@ -4430,6 +4439,15 @@ public static class DiagnosticSessionRunner
             ? GetNullableLong(baselineSnapshot, propertyName) ?? 0
             : 0;
         return Math.Max(0, current - baseline);
+    }
+
+    private static long GetResetAwareCounterDelta(JsonElement snapshot, JsonElement baselineSnapshot, string propertyName)
+    {
+        var current = GetNullableLong(snapshot, propertyName) ?? 0;
+        var baseline = baselineSnapshot.ValueKind == JsonValueKind.Object
+            ? GetNullableLong(baselineSnapshot, propertyName) ?? 0
+            : 0;
+        return current >= baseline ? current - baseline : current;
     }
 
     private static string FormatOptional(string value)
