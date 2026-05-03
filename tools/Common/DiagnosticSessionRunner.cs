@@ -1367,11 +1367,29 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
         actions.Add("flashback play requested");
 
-        var baselineFrameCount = GetNullableLong(baselineSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
-        var baselineAudioFallbacks = GetNullableLong(baselineSnapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0;
-        var baselineAudioUnavailableFallbacks = GetNullableLong(baselineSnapshot, "FlashbackPlaybackAudioMasterUnavailableFallbacks") ?? 0;
-        var baselineAudioStaleFallbacks = GetNullableLong(baselineSnapshot, "FlashbackPlaybackAudioMasterStaleFallbacks") ?? 0;
-        var baselineAudioDriftOutlierFallbacks = GetNullableLong(baselineSnapshot, "FlashbackPlaybackAudioMasterDriftOutlierFallbacks") ?? 0;
+        var playbackBaselineSnapshot = await WaitForFlashbackPlaybackStateAsync(
+                sendCommandAsync,
+                "Playing",
+                TimeSpan.FromSeconds(5),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (playbackBaselineSnapshot?.ValueKind != JsonValueKind.Object ||
+            !string.Equals(
+                GetString(playbackBaselineSnapshot.Value, "FlashbackPlaybackState"),
+                "Playing",
+                StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add("flashback stress: playback did not enter Playing before warm sample");
+        }
+
+        var warmBaselineSnapshot = playbackBaselineSnapshot?.ValueKind == JsonValueKind.Object
+            ? playbackBaselineSnapshot.Value
+            : baselineSnapshot;
+        var baselineFrameCount = GetNullableLong(warmBaselineSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
+        var baselineAudioFallbacks = GetNullableLong(warmBaselineSnapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0;
+        var baselineAudioUnavailableFallbacks = GetNullableLong(warmBaselineSnapshot, "FlashbackPlaybackAudioMasterUnavailableFallbacks") ?? 0;
+        var baselineAudioStaleFallbacks = GetNullableLong(warmBaselineSnapshot, "FlashbackPlaybackAudioMasterStaleFallbacks") ?? 0;
+        var baselineAudioDriftOutlierFallbacks = GetNullableLong(warmBaselineSnapshot, "FlashbackPlaybackAudioMasterDriftOutlierFallbacks") ?? 0;
         var warmedPlaybackSnapshot = await WaitForFlashbackPlaybackWarmSampleAsync(
                 sendCommandAsync,
                 baselineFrameCount,

@@ -912,6 +912,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
         AssertContains(diagnosticSessionText, "private const double FlashbackStressPlaybackWarmSeconds = 10.0;");
         AssertContains(diagnosticSessionText, "private const long FlashbackStressAudioUnavailableFallbackAllowance = 2;");
+        AssertContains(diagnosticSessionText, "var playbackBaselineSnapshot = await WaitForFlashbackPlaybackStateAsync(");
+        AssertContains(diagnosticSessionText, "\"flashback stress: playback did not enter Playing before warm sample\"");
+        AssertContains(diagnosticSessionText, "var warmBaselineSnapshot = playbackBaselineSnapshot?.ValueKind == JsonValueKind.Object");
         AssertContains(diagnosticSessionText, "WaitForFlashbackPlaybackWarmSampleAsync(");
         AssertContains(diagnosticSessionText, "flashback playback warmed frames=");
         AssertContains(diagnosticSessionText, "audioFallbackDelta={warmedAudioFallbackDelta}");
