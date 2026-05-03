@@ -201,6 +201,12 @@ public static class DiagnosticSessionRunner
         long EndPtsMs,
         bool IsActive);
 
+    private readonly record struct FlashbackSegmentPlaybackTarget(
+        FlashbackSegmentProbe Segment,
+        long ValidStartPtsMs,
+        long BoundaryPositionMs,
+        long BufferedDurationMs);
+
     private readonly record struct PlaybackCommandHealth(
         long Dropped,
         long Skipped,
@@ -2754,13 +2760,13 @@ public static class DiagnosticSessionRunner
         var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
         TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
 
-        var completedSegment = await WaitForFlashbackCompletedSegmentAsync(
+        var playbackTarget = await WaitForFlashbackPlayableCompletedSegmentAsync(
                 sendCommandAsync,
                 TimeSpan.FromSeconds(5),
                 cancellationToken)
             .ConfigureAwait(false);
 
-        if (completedSegment is null)
+        if (playbackTarget is null)
         {
             var rotationOk = await CreateFlashbackCompletedSegmentViaRecordingAsync(
                     actions,
@@ -2773,35 +2779,27 @@ public static class DiagnosticSessionRunner
                 return;
             }
 
-            completedSegment = await WaitForFlashbackCompletedSegmentAsync(
+            playbackTarget = await WaitForFlashbackPlayableCompletedSegmentAsync(
                     sendCommandAsync,
                     TimeSpan.FromSeconds(20),
                     cancellationToken)
                 .ConfigureAwait(false);
         }
 
-        if (completedSegment is null)
+        if (playbackTarget is null)
         {
-            warnings.Add("flashback segment playback: no completed segment became available after recording-assisted rotation");
+            warnings.Add("flashback segment playback: no playable completed segment became available after recording-assisted rotation");
             return;
         }
 
-        var headroomOk = await WaitForFlashbackSegmentPlaybackHeadroomAsync(
-                sendCommandAsync,
-                completedSegment.Value.EndPtsMs,
-                TimeSpan.FromSeconds(10),
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (headroomOk)
-        {
-            actions.Add("flashback segment playback live headroom established");
-        }
-        else
-        {
-            warnings.Add("flashback segment playback: live headroom stayed below target before boundary playback");
-        }
+        var target = playbackTarget.Value;
+        var completedSegment = target.Segment;
+        actions.Add(
+            "flashback segment playback live headroom established " +
+            $"validStartMs={target.ValidStartPtsMs} boundaryPosMs={target.BoundaryPositionMs} " +
+            $"bufferedMs={target.BufferedDurationMs}");
 
-        var seekPositionMs = Math.Max(0, completedSegment.Value.EndPtsMs - 500);
+        var seekPositionMs = Math.Max(0, target.BoundaryPositionMs - 500);
         await sendCommandAsync(
                 "FlashbackAction",
                 new Dictionary<string, object?> { ["action"] = "pause" },
@@ -2819,11 +2817,12 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
         actions.Add(
             "flashback segment playback started near boundary " +
-            $"segment={completedSegment.Value.SequenceNumber} seekMs={seekPositionMs} endMs={completedSegment.Value.EndPtsMs}");
+            $"segment={completedSegment.SequenceNumber} seekMs={seekPositionMs} " +
+            $"boundaryPosMs={target.BoundaryPositionMs} endMs={completedSegment.EndPtsMs}");
 
         var playbackSnapshot = await WaitForFlashbackPlaybackBoundaryCrossAsync(
                 sendCommandAsync,
-                completedSegment.Value.EndPtsMs,
+                target.BoundaryPositionMs,
                 TimeSpan.FromSeconds(35),
                 cancellationToken)
             .ConfigureAwait(false);
@@ -2849,17 +2848,24 @@ public static class DiagnosticSessionRunner
             warnings.Add($"flashback segment playback: expected Playing after boundary playback, got {state}");
         }
 
-        if (positionMs < completedSegment.Value.EndPtsMs + 250)
+        if (positionMs < target.BoundaryPositionMs + 250)
         {
             warnings.Add(
                 "flashback segment playback: playback position did not cross completed segment boundary " +
-                $"positionMs={positionMs} boundaryMs={completedSegment.Value.EndPtsMs}");
+                $"positionMs={positionMs} boundaryMs={target.BoundaryPositionMs} " +
+                $"absoluteBoundaryMs={completedSegment.EndPtsMs} validStartMs={target.ValidStartPtsMs}");
         }
 
-        if (frameCount <= 0 || observedFps <= 1)
+        if (frameCount <= 0)
         {
             warnings.Add(
                 "flashback segment playback: playback frames did not advance " +
+                $"frames={frameCount} observedFps={observedFps:0.##}");
+        }
+        else if (frameCount >= 120 && observedFps <= 1)
+        {
+            warnings.Add(
+                "flashback segment playback: playback FPS did not warm after enough frames " +
                 $"frames={frameCount} observedFps={observedFps:0.##}");
         }
 
@@ -2924,6 +2930,54 @@ public static class DiagnosticSessionRunner
         }
 
         return lastSnapshot;
+    }
+
+    private static async Task<FlashbackSegmentPlaybackTarget?> WaitForFlashbackPlayableCompletedSegmentAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        const int requiredHeadroomMs = 8_000;
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started) < timeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var segmentsResponse = await sendCommandAsync("FlashbackGetSegments", null, null).ConfigureAwait(false);
+            var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetFlashbackSegments(segmentsResponse, out var segments) &&
+                TryGetSnapshot(snapshotResponse, out var snapshot))
+            {
+                var bufferedDurationMs = GetNullableLong(snapshot, "FlashbackBufferedDurationMs") ?? 0;
+                var latestPtsMs = segments.Count > 0
+                    ? segments.Max(segment => segment.EndPtsMs)
+                    : 0;
+                var validStartPtsMs = Math.Max(0, latestPtsMs - bufferedDurationMs);
+                var completed = segments
+                    .Where(segment => !segment.IsActive && segment.EndPtsMs > segment.StartPtsMs)
+                    .Select(segment => new
+                    {
+                        Segment = segment,
+                        BoundaryPositionMs = Math.Max(0, segment.EndPtsMs - validStartPtsMs)
+                    })
+                    .Where(candidate =>
+                        candidate.BoundaryPositionMs > 0 &&
+                        candidate.BoundaryPositionMs + requiredHeadroomMs <= bufferedDurationMs)
+                    .OrderByDescending(candidate => candidate.Segment.EndPtsMs)
+                    .FirstOrDefault();
+                if (completed is not null)
+                {
+                    return new FlashbackSegmentPlaybackTarget(
+                        completed.Segment,
+                        validStartPtsMs,
+                        completed.BoundaryPositionMs,
+                        bufferedDurationMs);
+                }
+            }
+
+            await Task.Delay(1_000, cancellationToken).ConfigureAwait(false);
+        }
+
+        return null;
     }
 
     private static async Task<bool> WaitForFlashbackSegmentPlaybackHeadroomAsync(
