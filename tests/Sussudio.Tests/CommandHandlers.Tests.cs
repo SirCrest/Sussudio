@@ -75,7 +75,12 @@ static partial class Program
         AssertContains(commandHandlersSource, "playPayload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
         AssertContains(commandHandlersSource, "return HandleSimpleCommandAsync(context, \"FlashbackAction\", playPayload, includeData: true);");
         AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback seek <ms>\"))");
-        AssertContains(commandHandlersSource, "}, includeData: true);\n            case \"set-in\":");
+        AssertContains(commandHandlersSource, "[\"action\"] = \"begin-scrub\"");
+        AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback begin-scrub <ms>\"))");
+        AssertContains(commandHandlersSource, "[\"action\"] = \"update-scrub\"");
+        AssertContains(commandHandlersSource, "[\"positionMs\"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, \"flashback update-scrub <ms>\"))");
+        AssertContains(commandHandlersSource, "var payload = new Dictionary<string, object?> { [\"action\"] = \"end-scrub\" };");
+        AssertContains(commandHandlersSource, "payload[\"positionMs\"] = ParseFlashbackPositionMs(context.Rest[1]);");
         AssertContains(commandHandlersSource, "? ParseFlashbackExportSeconds(context.Rest[1])");
         AssertContains(commandHandlersSource, "private static double ParseFlashbackPositionMs(string value)");
         AssertContains(commandHandlersSource, "Flashback position must be finite, non-negative, and within TimeSpan range.");

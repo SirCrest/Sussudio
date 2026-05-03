@@ -10,6 +10,9 @@ public enum AutomationFlashbackAction
     Pause,
     GoLive,
     Seek,
+    BeginScrub,
+    UpdateScrub,
+    EndScrub,
     SetInPoint,
     SetOutPoint,
     ClearInOutPoints

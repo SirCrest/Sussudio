@@ -161,6 +161,14 @@ public partial class MainViewModel
                 return FlashbackGoLive();
             case AutomationFlashbackAction.Seek:
                 return FlashbackSeek(position ?? TimeSpan.Zero);
+            case AutomationFlashbackAction.BeginScrub:
+                return FlashbackBeginScrub(position ?? TimeSpan.Zero);
+            case AutomationFlashbackAction.UpdateScrub:
+                return FlashbackUpdateScrub(position ?? TimeSpan.Zero);
+            case AutomationFlashbackAction.EndScrub:
+                return position.HasValue
+                    ? FlashbackEndScrubAt(position.Value)
+                    : FlashbackEndScrub();
             case AutomationFlashbackAction.SetInPoint:
                 return _sessionCoordinator.FlashbackSetInPoint().HasValue;
             case AutomationFlashbackAction.SetOutPoint:

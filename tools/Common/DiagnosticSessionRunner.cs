@@ -2239,34 +2239,69 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
         actions.Add("flashback scrub stress pause requested");
 
+        var beginResponse = await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "begin-scrub", ["positionMs"] = 500 },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback scrub stress begin requested");
+        if (!AutomationSnapshotFormatter.IsSuccess(beginResponse))
+        {
+            warnings.Add($"flashback scrub stress: begin-scrub failed - {AutomationSnapshotFormatter.Get(beginResponse, "Message", "unknown error")}");
+            return;
+        }
+
+        var scrubbingSnapshot = await WaitForFlashbackPlaybackStateAsync(
+                sendCommandAsync,
+                "Scrubbing",
+                TimeSpan.FromSeconds(5),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (scrubbingSnapshot is null)
+        {
+            warnings.Add("flashback scrub stress: playback did not report Scrubbing within 5s");
+        }
+
         var positions = new[]
         {
             250, 500, 750, 1_000, 1_250, 1_500, 1_750, 2_000,
             2_250, 2_500, 2_750, 3_000, 2_400, 1_800, 1_200, 600
         };
-        var seekTasks = new Task<JsonElement>[positions.Length];
+        var updateTasks = new Task<JsonElement>[positions.Length];
         for (var i = 0; i < positions.Length; i++)
         {
-            seekTasks[i] = sendCommandAsync(
+            updateTasks[i] = sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = positions[i] },
+                new Dictionary<string, object?> { ["action"] = "update-scrub", ["positionMs"] = positions[i] },
                 null);
         }
 
-        var seekResponses = await Task.WhenAll(seekTasks).ConfigureAwait(false);
-        actions.Add("flashback scrub stress seek burst requested");
-        var failedSeeks = 0;
-        foreach (var response in seekResponses)
+        var updateResponses = await Task.WhenAll(updateTasks).ConfigureAwait(false);
+        actions.Add("flashback scrub stress update burst requested");
+        var failedUpdates = 0;
+        foreach (var response in updateResponses)
         {
             if (!AutomationSnapshotFormatter.IsSuccess(response))
             {
-                failedSeeks++;
+                failedUpdates++;
             }
         }
 
-        if (failedSeeks > 0)
+        if (failedUpdates > 0)
         {
-            warnings.Add($"flashback scrub stress: {failedSeeks} seek command(s) failed");
+            warnings.Add($"flashback scrub stress: {failedUpdates} update-scrub command(s) failed");
+        }
+
+        var endResponse = await sendCommandAsync(
+                "FlashbackAction",
+                new Dictionary<string, object?> { ["action"] = "end-scrub", ["positionMs"] = positions[^1] },
+                null)
+            .ConfigureAwait(false);
+        actions.Add("flashback scrub stress end requested");
+        if (!AutomationSnapshotFormatter.IsSuccess(endResponse))
+        {
+            warnings.Add($"flashback scrub stress: end-scrub failed - {AutomationSnapshotFormatter.Get(endResponse, "Message", "unknown error")}");
+            return;
         }
 
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "play" }, null)

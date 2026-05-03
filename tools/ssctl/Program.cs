@@ -94,6 +94,9 @@ internal static class Program
         Console.WriteLine("  flashback pause");
         Console.WriteLine("  flashback go-live");
         Console.WriteLine("  flashback seek <ms>");
+        Console.WriteLine("  flashback begin-scrub <ms>");
+        Console.WriteLine("  flashback update-scrub <ms>");
+        Console.WriteLine("  flashback end-scrub [<ms>]");
         Console.WriteLine("  flashback set-in|set-out|clear-range");
         Console.WriteLine("  flashback export [seconds] [path] [--range]");
         Console.WriteLine("  flashback apply");

@@ -126,6 +126,9 @@ static partial class Program
         AssertContains(dispatcherText, "case AutomationFlashbackAction.SetInPoint:");
         AssertContains(dispatcherText, "case AutomationFlashbackAction.SetOutPoint:");
         AssertContains(dispatcherText, "case AutomationFlashbackAction.ClearInOutPoints:");
+        AssertContains(dispatcherText, "AutomationFlashbackAction.BeginScrub => RequireDouble(payload, \"positionMs\")");
+        AssertContains(dispatcherText, "AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, \"positionMs\")");
+        AssertContains(dispatcherText, "AutomationFlashbackAction.EndScrub => GetDouble(payload, \"positionMs\")");
         AssertContains(dispatcherText, "await _viewModel.SetFlashbackEnabledAsync(enabled, cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "await _viewModel.GetFlashbackSegmentsAsync(cancellationToken).ConfigureAwait(false)");
         AssertContains(dispatcherText, "await _viewModel.ProbeVideoSourceAsync(cancellationToken).ConfigureAwait(false)");
@@ -139,6 +142,12 @@ static partial class Program
         AssertContains(automationText, "case AutomationFlashbackAction.SetInPoint:");
         AssertContains(automationText, "case AutomationFlashbackAction.SetOutPoint:");
         AssertContains(automationText, "case AutomationFlashbackAction.ClearInOutPoints:");
+        AssertContains(automationText, "case AutomationFlashbackAction.BeginScrub:");
+        AssertContains(automationText, "return FlashbackBeginScrub(position ?? TimeSpan.Zero);");
+        AssertContains(automationText, "case AutomationFlashbackAction.UpdateScrub:");
+        AssertContains(automationText, "return FlashbackUpdateScrub(position ?? TimeSpan.Zero);");
+        AssertContains(automationText, "case AutomationFlashbackAction.EndScrub:");
+        AssertContains(automationText, "? FlashbackEndScrubAt(position.Value)\n                    : FlashbackEndScrub();");
         var automationPlayBlock = ExtractTextBetween(
             automationText,
             "case AutomationFlashbackAction.Play:",
@@ -794,7 +803,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "metrics.MaxCommandQueueLatencyMsObserved = Math.Max(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackStressAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackScrubStressAsync(");
-        AssertContains(diagnosticSessionText, "flashback scrub stress seek burst requested");
+        AssertContains(diagnosticSessionText, "flashback scrub stress begin requested");
+        AssertContains(diagnosticSessionText, "flashback scrub stress update burst requested");
+        AssertContains(diagnosticSessionText, "flashback scrub stress end requested");
         AssertContains(diagnosticSessionText, "!GetBool(lastSnapshot, \"FlashbackPlaybackThreadAlive\")");
         AssertContains(diagnosticSessionText, "GetString(lastSnapshot, \"FlashbackPlaybackState\")");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRestartCycleAsync(");
@@ -864,6 +875,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"seek\", [\"positionMs\"] = 500 }");
         AssertContains(diagnosticSessionText, "foreach (var positionMs in new[] { 750, 1_250, 2_000, 3_250, 1_500 })");
         AssertContains(diagnosticSessionText, "actions.Add(\"flashback scrub burst requested\");");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"begin-scrub\", [\"positionMs\"] = 500 }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"update-scrub\", [\"positionMs\"] = positions[i] }");
+        AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"end-scrub\", [\"positionMs\"] = positions[^1] }");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"seconds\"] = 1, [\"outputPath\"] = exportPath }");
         AssertContains(diagnosticSessionText, "CreateFlashbackExportVerifyPayload(exportPath)");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s \"");

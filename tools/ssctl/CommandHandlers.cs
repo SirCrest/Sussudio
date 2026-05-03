@@ -453,7 +453,7 @@ internal static class CommandHandlers
 
     private static Task<int> HandleFlashbackAsync(CommandContext context)
     {
-        var subcommand = RequireWord(context.Rest, 0, "flashback on|off|play|pause|go-live|seek|set-in|set-out|clear-range|export|segments|apply").ToLowerInvariant();
+        var subcommand = RequireWord(context.Rest, 0, "flashback on|off|play|pause|go-live|seek|begin-scrub|update-scrub|end-scrub|set-in|set-out|clear-range|export|segments|apply").ToLowerInvariant();
         switch (subcommand)
         {
             case "on":
@@ -489,6 +489,27 @@ internal static class CommandHandlers
                         ["action"] = "seek",
                         ["positionMs"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback seek <ms>"))
                     }, includeData: true);
+            case "begin-scrub":
+                return HandleSimpleCommandAsync(context, "FlashbackAction",
+                    new Dictionary<string, object?>
+                    {
+                        ["action"] = "begin-scrub",
+                        ["positionMs"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback begin-scrub <ms>"))
+                    }, includeData: true);
+            case "update-scrub":
+                return HandleSimpleCommandAsync(context, "FlashbackAction",
+                    new Dictionary<string, object?>
+                    {
+                        ["action"] = "update-scrub",
+                        ["positionMs"] = ParseFlashbackPositionMs(RequireWord(context.Rest, 1, "flashback update-scrub <ms>"))
+                    }, includeData: true);
+            case "end-scrub":
+            {
+                var payload = new Dictionary<string, object?> { ["action"] = "end-scrub" };
+                if (context.Rest.Count >= 2)
+                    payload["positionMs"] = ParseFlashbackPositionMs(context.Rest[1]);
+                return HandleSimpleCommandAsync(context, "FlashbackAction", payload, includeData: true);
+            }
             case "set-in":
             case "set-in-point":
                 EnsureArgCount(context.Rest, 1, "flashback set-in");
@@ -525,7 +546,7 @@ internal static class CommandHandlers
             case "segments":
                 return HandleSimpleCommandAsync(context, "FlashbackGetSegments", includeData: true);
             default:
-                throw new UsageException($"Unknown flashback command '{subcommand}'. Expected on, off, play, pause, go-live, seek, set-in, set-out, clear-range, export, or segments.");
+                throw new UsageException($"Unknown flashback command '{subcommand}'. Expected on, off, play, pause, go-live, seek, begin-scrub, update-scrub, end-scrub, set-in, set-out, clear-range, export, or segments.");
         }
     }
 

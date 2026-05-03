@@ -21,30 +21,33 @@ public static class FlashbackTools
             payload: new Dictionary<string, object?> { ["enabled"] = enabled }).ConfigureAwait(false);
     }
 
-    [McpServerTool, Description("Control flashback playback: play, pause, go_live, seek, set_in_point, set_out_point, or clear_in_out_points")]
+    [McpServerTool, Description("Control flashback playback: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points")]
     public static async Task<string> flashback_action(
         PipeClient pipeClient,
-        [Description("Action: play, pause, go_live, seek, set_in_point, set_out_point, clear_in_out_points")] string action,
-        [Description("Position in milliseconds (required for seek)")] double? positionMs = null)
+        [Description("Action: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points")] string action,
+        [Description("Position in milliseconds (required for seek, begin_scrub, and update_scrub; optional for end_scrub)")] double? positionMs = null)
     {
         if (string.IsNullOrWhiteSpace(action))
         {
             throw new ArgumentException(
-                "Flashback action is required. Expected play, pause, go_live, seek, set_in_point, set_out_point, or clear_in_out_points.",
+                "Flashback action is required. Expected play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points.",
                 nameof(action));
         }
 
         var normalizedAction = action.Replace("_", "-").ToLowerInvariant();
-        if (normalizedAction is not ("play" or "pause" or "go-live" or "seek" or "set-in-point" or "set-out-point" or "clear-in-out-points"))
+        if (normalizedAction is not ("play" or "pause" or "go-live" or "seek" or "begin-scrub" or "update-scrub" or "end-scrub" or "set-in-point" or "set-out-point" or "clear-in-out-points"))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(action),
-                "Flashback action must be one of: play, pause, go_live, seek, set_in_point, set_out_point, clear_in_out_points.");
+                "Flashback action must be one of: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points.");
         }
 
-        if (normalizedAction == "seek" && !positionMs.HasValue)
+        if ((normalizedAction == "seek" ||
+             normalizedAction == "begin-scrub" ||
+             normalizedAction == "update-scrub") &&
+            !positionMs.HasValue)
         {
-            throw new ArgumentException("Flashback seek requires positionMs.", nameof(positionMs));
+            throw new ArgumentException("Flashback seek, begin_scrub, and update_scrub require positionMs.", nameof(positionMs));
         }
 
         var payload = new Dictionary<string, object?>

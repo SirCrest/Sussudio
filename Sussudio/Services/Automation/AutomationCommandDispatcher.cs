@@ -242,6 +242,9 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                     {
                         AutomationFlashbackAction.Play => GetDouble(payload, "positionMs"),
                         AutomationFlashbackAction.Seek => GetDouble(payload, "positionMs") ?? 0,
+                        AutomationFlashbackAction.BeginScrub => RequireDouble(payload, "positionMs"),
+                        AutomationFlashbackAction.UpdateScrub => RequireDouble(payload, "positionMs"),
+                        AutomationFlashbackAction.EndScrub => GetDouble(payload, "positionMs"),
                         _ => null
                     };
                     if (positionMs.HasValue &&
@@ -277,6 +280,15 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
                             return CreateAcknowledgedResponse(correlationId, "Flashback go-live requested.");
                         case AutomationFlashbackAction.Seek:
                             return CreateAcknowledgedResponse(correlationId, $"Flashback seek to {positionMs:0}ms requested.");
+                        case AutomationFlashbackAction.BeginScrub:
+                            return CreateAcknowledgedResponse(correlationId, $"Flashback scrub begin at {positionMs:0}ms requested.");
+                        case AutomationFlashbackAction.UpdateScrub:
+                            return CreateAcknowledgedResponse(correlationId, $"Flashback scrub update to {positionMs:0}ms requested.");
+                        case AutomationFlashbackAction.EndScrub:
+                            return CreateAcknowledgedResponse(correlationId,
+                                positionMs.HasValue
+                                    ? $"Flashback scrub end at {positionMs.Value:0}ms requested."
+                                    : "Flashback scrub end requested.");
                         case AutomationFlashbackAction.SetInPoint:
                             return CreateAcknowledgedResponse(correlationId, "Flashback in point set.");
                         case AutomationFlashbackAction.SetOutPoint:
@@ -779,7 +791,7 @@ public sealed class AutomationCommandDispatcher : IAutomationCommandDispatcher
         }
 
         throw new InvalidOperationException(
-            $"Invalid flashback action: '{raw}'. Expected play, pause, go-live, seek, set-in-point, set-out-point, or clear-in-out-points.");
+            $"Invalid flashback action: '{raw}'. Expected play, pause, go-live, seek, begin-scrub, update-scrub, end-scrub, set-in-point, set-out-point, or clear-in-out-points.");
     }
 
     private static AutomationWaitCondition ParseWaitCondition(JsonElement payload)
