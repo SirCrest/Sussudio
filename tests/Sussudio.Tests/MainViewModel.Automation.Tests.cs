@@ -795,6 +795,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackRecordingIntegrityQueueDroppedFramesAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackRecordingIntegritySequenceGapsDelta");
         AssertContains(diagnosticSessionText, "FlashbackRecordingIntegrityQueueDroppedFramesDelta");
+        AssertContains(diagnosticSessionText, "firstRecordingSample,\n                \"RecordingIntegritySequenceGaps\")");
+        AssertContains(diagnosticSessionText, "firstRecordingSample,\n                \"RecordingIntegrityQueueDroppedFrames\")");
         AssertContains(diagnosticSessionText, "Flashback Recording:");
         AssertContains(diagnosticSessionText, "FlashbackExportMaxElapsedMsObserved");
         AssertContains(diagnosticSessionText, "FlashbackExportMessageAtEnd");

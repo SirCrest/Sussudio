@@ -3918,8 +3918,14 @@ public static class DiagnosticSessionRunner
                 (GetNullableLong(firstRecordingSample, "FlashbackVideoEncoderPacketsWritten") ?? 0),
             IntegritySequenceGapsAtEnd = GetNullableLong(finalRecordingSample, "RecordingIntegritySequenceGaps") ?? 0,
             IntegrityQueueDroppedFramesAtEnd = GetNullableLong(finalRecordingSample, "RecordingIntegrityQueueDroppedFrames") ?? 0,
-            IntegritySequenceGapsDelta = GetCounterDelta(finalRecordingSample, initialSnapshot, "RecordingIntegritySequenceGaps"),
-            IntegrityQueueDroppedFramesDelta = GetCounterDelta(finalRecordingSample, initialSnapshot, "RecordingIntegrityQueueDroppedFrames")
+            IntegritySequenceGapsDelta = GetResetAwareCounterDelta(
+                finalRecordingSample,
+                firstRecordingSample,
+                "RecordingIntegritySequenceGaps"),
+            IntegrityQueueDroppedFramesDelta = GetResetAwareCounterDelta(
+                finalRecordingSample,
+                firstRecordingSample,
+                "RecordingIntegrityQueueDroppedFrames")
         };
     }
 
