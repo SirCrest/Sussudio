@@ -697,6 +697,18 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackRecordingBackendObserved");
         AssertContains(diagnosticSessionText, "PreviewD3DFrameStatsMissedRefreshDelta");
         AssertContains(diagnosticSessionText, "PreviewD3DFrameStatsFailureDelta");
+        AssertContains(diagnosticSessionText, "SelectedResolutionAtEnd");
+        AssertContains(diagnosticSessionText, "SelectedFrameRateAtEnd");
+        AssertContains(diagnosticSessionText, "SelectedExactFrameRateArgAtEnd");
+        AssertContains(diagnosticSessionText, "SelectedVideoFormatAtEnd");
+        AssertContains(diagnosticSessionText, "VideoRequestedSubtypeAtEnd");
+        AssertContains(diagnosticSessionText, "VideoNegotiatedSubtypeAtEnd");
+        AssertContains(diagnosticSessionText, "DetectedSourceFrameRateAtEnd");
+        AssertContains(diagnosticSessionText, "DetectedSourceFrameRateArgAtEnd");
+        AssertContains(diagnosticSessionText, "SourceTelemetrySummaryAtEnd");
+        AssertContains(diagnosticSessionText, "Capture Mode:");
+        AssertContains(diagnosticSessionText, "selected={FormatOptional(result.SelectedResolutionAtEnd)}");
+        AssertContains(diagnosticSessionText, "source={result.SourceWidthAtEnd}x{result.SourceHeightAtEnd}");
         AssertContains(diagnosticSessionText, "PreviewSchedulerDroppedAtEnd");
         AssertContains(diagnosticSessionText, "PreviewSchedulerDeadlineDropsAtEnd");
         AssertContains(diagnosticSessionText, "PreviewSchedulerUnderflowsAtEnd");

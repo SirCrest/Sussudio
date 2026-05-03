@@ -35,6 +35,19 @@ public sealed class DiagnosticSessionResult
     public string LikelyStage { get; init; } = "diagnostic_unavailable";
     public string Summary { get; init; } = string.Empty;
     public string Evidence { get; init; } = string.Empty;
+    public string SelectedResolutionAtEnd { get; init; } = string.Empty;
+    public double SelectedFrameRateAtEnd { get; init; }
+    public string SelectedFriendlyFrameRateAtEnd { get; init; } = string.Empty;
+    public string SelectedExactFrameRateArgAtEnd { get; init; } = string.Empty;
+    public string SelectedVideoFormatAtEnd { get; init; } = string.Empty;
+    public string VideoRequestedSubtypeAtEnd { get; init; } = string.Empty;
+    public string VideoNegotiatedSubtypeAtEnd { get; init; } = string.Empty;
+    public int SourceWidthAtEnd { get; init; }
+    public int SourceHeightAtEnd { get; init; }
+    public double DetectedSourceFrameRateAtEnd { get; init; }
+    public string DetectedSourceFrameRateArgAtEnd { get; init; } = string.Empty;
+    public bool SourceIsHdrAtEnd { get; init; }
+    public string SourceTelemetrySummaryAtEnd { get; init; } = string.Empty;
     public int FlashbackPlaybackPendingCommandsAtEnd { get; init; }
     public int FlashbackPlaybackMaxPendingCommandsObserved { get; init; }
     public int FlashbackPlaybackMaxCommandQueueLatencyMsObserved { get; init; }
@@ -822,6 +835,19 @@ public static class DiagnosticSessionRunner
             LikelyStage = likelyStage,
             Summary = summary,
             Evidence = evidence,
+            SelectedResolutionAtEnd = GetString(lastSnapshot, "SelectedResolution") ?? string.Empty,
+            SelectedFrameRateAtEnd = GetDouble(lastSnapshot, "SelectedFrameRate"),
+            SelectedFriendlyFrameRateAtEnd = GetString(lastSnapshot, "SelectedFriendlyFrameRate") ?? string.Empty,
+            SelectedExactFrameRateArgAtEnd = GetString(lastSnapshot, "SelectedExactFrameRateArg") ?? string.Empty,
+            SelectedVideoFormatAtEnd = GetString(lastSnapshot, "SelectedVideoFormat") ?? string.Empty,
+            VideoRequestedSubtypeAtEnd = GetString(lastSnapshot, "VideoRequestedSubtype") ?? string.Empty,
+            VideoNegotiatedSubtypeAtEnd = GetString(lastSnapshot, "VideoNegotiatedSubtype") ?? string.Empty,
+            SourceWidthAtEnd = (int)(GetNullableLong(lastSnapshot, "SourceWidth") ?? 0),
+            SourceHeightAtEnd = (int)(GetNullableLong(lastSnapshot, "SourceHeight") ?? 0),
+            DetectedSourceFrameRateAtEnd = GetDouble(lastSnapshot, "DetectedSourceFrameRate"),
+            DetectedSourceFrameRateArgAtEnd = GetString(lastSnapshot, "DetectedSourceFrameRateArg") ?? string.Empty,
+            SourceIsHdrAtEnd = GetBool(lastSnapshot, "SourceIsHdr"),
+            SourceTelemetrySummaryAtEnd = GetString(lastSnapshot, "SourceTelemetrySummaryText") ?? string.Empty,
             FlashbackPlaybackPendingCommandsAtEnd = playbackPendingAtEnd,
             FlashbackPlaybackMaxPendingCommandsObserved = playbackMaxPendingObserved,
             FlashbackPlaybackMaxCommandQueueLatencyMsObserved = playbackMaxLatencyObserved,
@@ -1017,6 +1043,13 @@ public static class DiagnosticSessionRunner
         {
             builder.AppendLine($"Evidence: {result.Evidence}");
         }
+
+        builder.AppendLine(
+            "Capture Mode: " +
+            $"selected={FormatOptional(result.SelectedResolutionAtEnd)} @{FormatFrameRate(result.SelectedFrameRateAtEnd, result.SelectedFriendlyFrameRateAtEnd, result.SelectedExactFrameRateArgAtEnd)} " +
+            $"format={FormatOptional(result.SelectedVideoFormatAtEnd)} requested={FormatOptional(result.VideoRequestedSubtypeAtEnd)} negotiated={FormatOptional(result.VideoNegotiatedSubtypeAtEnd)} " +
+            $"source={result.SourceWidthAtEnd}x{result.SourceHeightAtEnd} @{FormatFrameRate(result.DetectedSourceFrameRateAtEnd, string.Empty, result.DetectedSourceFrameRateArgAtEnd)} " +
+            $"hdr={result.SourceIsHdrAtEnd} telemetry={FormatOptional(result.SourceTelemetrySummaryAtEnd)}");
 
         if (result.RecordingVerificationRun)
         {
@@ -4089,6 +4122,18 @@ public static class DiagnosticSessionRunner
     private static string FormatOptional(string value)
     {
         return string.IsNullOrWhiteSpace(value) ? "none" : value;
+    }
+
+    private static string FormatFrameRate(double fps, string friendlyFps, string exactArg)
+    {
+        var display = !string.IsNullOrWhiteSpace(friendlyFps)
+            ? friendlyFps
+            : fps > 0
+                ? fps.ToString("0.###", CultureInfo.InvariantCulture)
+                : "0";
+        return !string.IsNullOrWhiteSpace(exactArg)
+            ? $"{display}fps ({exactArg})"
+            : $"{display}fps";
     }
 
     private static async Task SampleLoopAsync(
