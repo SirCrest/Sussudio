@@ -204,6 +204,7 @@ public static class DiagnosticSessionRunner
     private const int FlashbackStressMaxPlaybackPendingCommands = 3;
     private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;
     private const double FlashbackStressPlaybackWarmSeconds = 10.0;
+    private const long FlashbackStressAudioUnavailableFallbackAllowance = 2;
     private const int FlashbackScrubStressMaxPlaybackPendingCommands = 20;
 
     private readonly record struct FlashbackSegmentProbe(
@@ -1368,6 +1369,9 @@ public static class DiagnosticSessionRunner
 
         var baselineFrameCount = GetNullableLong(baselineSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
         var baselineAudioFallbacks = GetNullableLong(baselineSnapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0;
+        var baselineAudioUnavailableFallbacks = GetNullableLong(baselineSnapshot, "FlashbackPlaybackAudioMasterUnavailableFallbacks") ?? 0;
+        var baselineAudioStaleFallbacks = GetNullableLong(baselineSnapshot, "FlashbackPlaybackAudioMasterStaleFallbacks") ?? 0;
+        var baselineAudioDriftOutlierFallbacks = GetNullableLong(baselineSnapshot, "FlashbackPlaybackAudioMasterDriftOutlierFallbacks") ?? 0;
         var warmedPlaybackSnapshot = await WaitForFlashbackPlaybackWarmSampleAsync(
                 sendCommandAsync,
                 baselineFrameCount,
@@ -1392,9 +1396,29 @@ public static class DiagnosticSessionRunner
 
             var warmedAudioFallbacks = GetNullableLong(warmedPlaybackSnapshot.Value, "FlashbackPlaybackAudioMasterFallbacks") ?? 0;
             var warmedAudioFallbackDelta = Math.Max(0, warmedAudioFallbacks - baselineAudioFallbacks);
+            var warmedAudioUnavailableDelta = Math.Max(
+                0,
+                (GetNullableLong(warmedPlaybackSnapshot.Value, "FlashbackPlaybackAudioMasterUnavailableFallbacks") ?? 0) -
+                baselineAudioUnavailableFallbacks);
+            var warmedAudioStaleDelta = Math.Max(
+                0,
+                (GetNullableLong(warmedPlaybackSnapshot.Value, "FlashbackPlaybackAudioMasterStaleFallbacks") ?? 0) -
+                baselineAudioStaleFallbacks);
+            var warmedAudioDriftOutlierDelta = Math.Max(
+                0,
+                (GetNullableLong(warmedPlaybackSnapshot.Value, "FlashbackPlaybackAudioMasterDriftOutlierFallbacks") ?? 0) -
+                baselineAudioDriftOutlierFallbacks);
+            var warmedAudioLastFallbackReason = GetString(
+                warmedPlaybackSnapshot.Value,
+                "FlashbackPlaybackAudioMasterLastFallbackReason") ?? string.Empty;
             actions.Add(
                 $"flashback playback warmed frames={Math.Max(0, warmedFrames - baselineFrameCount)} " +
-                $"fps={warmedObservedFps:0.##} onePercentLow={warmedOnePercentLow:0.##}");
+                $"fps={warmedObservedFps:0.##} onePercentLow={warmedOnePercentLow:0.##} " +
+                $"audioFallbackDelta={warmedAudioFallbackDelta} " +
+                $"unavailableDelta={warmedAudioUnavailableDelta} " +
+                $"staleDelta={warmedAudioStaleDelta} " +
+                $"driftOutlierDelta={warmedAudioDriftOutlierDelta} " +
+                $"lastAudioFallback={FormatOptional(warmedAudioLastFallbackReason)}");
             if (warmedTargetFps > 0)
             {
                 var observedFloor = warmedTargetFps * 0.95;
@@ -1412,7 +1436,24 @@ public static class DiagnosticSessionRunner
 
             if (warmedAudioFallbackDelta > 0)
             {
-                warnings.Add($"flashback stress: audio-master fallbacks increased during warmed playback delta={warmedAudioFallbackDelta}");
+                if (warmedAudioStaleDelta > 0 || warmedAudioDriftOutlierDelta > 0)
+                {
+                    warnings.Add(
+                        "flashback stress: audio-master harmful fallbacks increased during warmed playback " +
+                        $"staleDelta={warmedAudioStaleDelta} driftOutlierDelta={warmedAudioDriftOutlierDelta} " +
+                        $"totalDelta={warmedAudioFallbackDelta}");
+                }
+                else if (warmedAudioUnavailableDelta > FlashbackStressAudioUnavailableFallbackAllowance)
+                {
+                    warnings.Add(
+                        "flashback stress: audio-master unavailable fallbacks exceeded startup allowance " +
+                        $"unavailableDelta={warmedAudioUnavailableDelta} allowance={FlashbackStressAudioUnavailableFallbackAllowance} " +
+                        $"totalDelta={warmedAudioFallbackDelta}");
+                }
+                else if (warmedAudioUnavailableDelta <= 0)
+                {
+                    warnings.Add($"flashback stress: audio-master unclassified fallbacks increased during warmed playback delta={warmedAudioFallbackDelta}");
+                }
             }
         }
 

@@ -911,10 +911,16 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackPendingCommands = 3;");
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
         AssertContains(diagnosticSessionText, "private const double FlashbackStressPlaybackWarmSeconds = 10.0;");
+        AssertContains(diagnosticSessionText, "private const long FlashbackStressAudioUnavailableFallbackAllowance = 2;");
         AssertContains(diagnosticSessionText, "WaitForFlashbackPlaybackWarmSampleAsync(");
         AssertContains(diagnosticSessionText, "flashback playback warmed frames=");
+        AssertContains(diagnosticSessionText, "audioFallbackDelta={warmedAudioFallbackDelta}");
+        AssertContains(diagnosticSessionText, "staleDelta={warmedAudioStaleDelta}");
+        AssertContains(diagnosticSessionText, "driftOutlierDelta={warmedAudioDriftOutlierDelta}");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback did not warm for");
-        AssertContains(diagnosticSessionText, "\"flashback stress: audio-master fallbacks increased during warmed playback");
+        AssertContains(diagnosticSessionText, "\"flashback stress: audio-master harmful fallbacks increased during warmed playback \"");
+        AssertContains(diagnosticSessionText, "\"flashback stress: audio-master unavailable fallbacks exceeded startup allowance \"");
+        AssertContains(diagnosticSessionText, "\"flashback stress: audio-master unclassified fallbacks increased during warmed playback");
         AssertContains(diagnosticSessionText, "private static void ValidateFlashbackPreviewScheduler(");
         AssertContains(diagnosticSessionText, "\"flashback preview: scheduler deadline drops increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback preview: scheduler underflows increased delta=");
