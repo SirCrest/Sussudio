@@ -910,6 +910,11 @@ static partial class Program
         AssertContains(diagnosticSessionText, "$\"maxLatencyMs={GetInt(lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")}\"");
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackPendingCommands = 3;");
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
+        AssertContains(diagnosticSessionText, "private const double FlashbackStressPlaybackWarmSeconds = 10.0;");
+        AssertContains(diagnosticSessionText, "WaitForFlashbackPlaybackWarmSampleAsync(");
+        AssertContains(diagnosticSessionText, "flashback playback warmed frames=");
+        AssertContains(diagnosticSessionText, "\"flashback stress: playback did not warm for");
+        AssertContains(diagnosticSessionText, "\"flashback stress: audio-master fallbacks increased during warmed playback");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command latency exceeded threshold \"");
         AssertContains(diagnosticSessionText, "$\"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs}\"");
         AssertContains(diagnosticSessionText, "\"flashback-rejected-export.mp4\"");

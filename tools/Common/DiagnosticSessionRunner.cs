@@ -193,6 +193,7 @@ public static class DiagnosticSessionRunner
 {
     private const int FlashbackStressMaxPlaybackPendingCommands = 3;
     private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;
+    private const double FlashbackStressPlaybackWarmSeconds = 10.0;
     private const int FlashbackScrubStressMaxPlaybackPendingCommands = 20;
 
     private readonly record struct FlashbackSegmentProbe(
@@ -1288,7 +1289,56 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
         actions.Add("flashback play requested");
 
-        await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken).ConfigureAwait(false);
+        var baselineFrameCount = GetNullableLong(baselineSnapshot, "FlashbackPlaybackFrameCount") ?? 0;
+        var baselineAudioFallbacks = GetNullableLong(baselineSnapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0;
+        var warmedPlaybackSnapshot = await WaitForFlashbackPlaybackWarmSampleAsync(
+                sendCommandAsync,
+                baselineFrameCount,
+                FlashbackStressPlaybackWarmSeconds,
+                TimeSpan.FromSeconds(15),
+                cancellationToken)
+            .ConfigureAwait(false);
+        if (warmedPlaybackSnapshot?.ValueKind != JsonValueKind.Object)
+        {
+            warnings.Add($"flashback stress: playback did not warm for {FlashbackStressPlaybackWarmSeconds:0.#}s before go-live");
+        }
+        else
+        {
+            var warmedFrames = GetNullableLong(warmedPlaybackSnapshot.Value, "FlashbackPlaybackFrameCount") ?? 0;
+            var warmedObservedFps = GetDouble(warmedPlaybackSnapshot.Value, "FlashbackPlaybackObservedFps");
+            var warmedOnePercentLow = GetDouble(warmedPlaybackSnapshot.Value, "FlashbackPlaybackOnePercentLowFps");
+            var warmedTargetFps = GetDouble(warmedPlaybackSnapshot.Value, "FlashbackPlaybackTargetFps");
+            if (warmedTargetFps <= 0)
+            {
+                warmedTargetFps = GetDouble(warmedPlaybackSnapshot.Value, "SelectedExactFrameRate");
+            }
+
+            var warmedAudioFallbacks = GetNullableLong(warmedPlaybackSnapshot.Value, "FlashbackPlaybackAudioMasterFallbacks") ?? 0;
+            var warmedAudioFallbackDelta = Math.Max(0, warmedAudioFallbacks - baselineAudioFallbacks);
+            actions.Add(
+                $"flashback playback warmed frames={Math.Max(0, warmedFrames - baselineFrameCount)} " +
+                $"fps={warmedObservedFps:0.##} onePercentLow={warmedOnePercentLow:0.##}");
+            if (warmedTargetFps > 0)
+            {
+                var observedFloor = warmedTargetFps * 0.95;
+                if (warmedObservedFps > 0 && warmedObservedFps < observedFloor)
+                {
+                    warnings.Add($"flashback stress: warmed playback observed FPS below floor fps={warmedObservedFps:0.##} floor={observedFloor:0.##}");
+                }
+
+                var onePercentLowFloor = warmedTargetFps * 0.80;
+                if (warmedOnePercentLow > 0 && warmedOnePercentLow < onePercentLowFloor)
+                {
+                    warnings.Add($"flashback stress: warmed playback 1% low below floor fps={warmedOnePercentLow:0.##} floor={onePercentLowFloor:0.##}");
+                }
+            }
+
+            if (warmedAudioFallbackDelta > 0)
+            {
+                warnings.Add($"flashback stress: audio-master fallbacks increased during warmed playback delta={warmedAudioFallbackDelta}");
+            }
+        }
+
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null)
             .ConfigureAwait(false);
         actions.Add("flashback go-live requested");
@@ -3024,6 +3074,51 @@ public static class DiagnosticSessionRunner
                 lastSnapshot = snapshot;
                 var state = GetString(snapshot, "FlashbackPlaybackState") ?? "Unknown";
                 if (string.Equals(state, expectedState, StringComparison.OrdinalIgnoreCase))
+                {
+                    return snapshot;
+                }
+            }
+
+            await Task.Delay(250, cancellationToken).ConfigureAwait(false);
+        }
+
+        return lastSnapshot;
+    }
+
+    private static async Task<JsonElement?> WaitForFlashbackPlaybackWarmSampleAsync(
+        Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
+        long baselineFrameCount,
+        double minimumSeconds,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        JsonElement? lastSnapshot = null;
+        var started = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetElapsedTime(started) < timeout)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var response = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(response, out var snapshot))
+            {
+                lastSnapshot = snapshot;
+                var state = GetString(snapshot, "FlashbackPlaybackState") ?? "Unknown";
+                var frameCount = GetNullableLong(snapshot, "FlashbackPlaybackFrameCount") ?? 0;
+                var sessionFrameCount = frameCount >= baselineFrameCount
+                    ? frameCount - baselineFrameCount
+                    : frameCount;
+                var targetFps = GetDouble(snapshot, "FlashbackPlaybackTargetFps");
+                if (targetFps <= 0)
+                {
+                    targetFps = GetDouble(snapshot, "SelectedExactFrameRate");
+                }
+
+                var minimumFrames = Math.Max(
+                    240,
+                    targetFps > 0
+                        ? (long)Math.Ceiling(targetFps * minimumSeconds)
+                        : 240);
+                if (sessionFrameCount >= minimumFrames &&
+                    string.Equals(state, "Playing", StringComparison.OrdinalIgnoreCase))
                 {
                     return snapshot;
                 }
