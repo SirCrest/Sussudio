@@ -117,6 +117,10 @@ static partial class Program
         AssertContains(snapshotsText, "CaptureFlashbackRecordingIntegrityCountersSinceBaseline");
         AssertContains(snapshotsText, "videoCapture.FlashbackRecordingSequenceGaps");
         AssertContains(serviceText, "CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, flashbackVideoCapture)");
+        AssertContains(snapshotsText, "if (sink.TryGetEncoderAvSyncDrift(out var driftMs, out var correctionSamples))");
+        AssertContains(snapshotsText, "encoderAvSyncDriftMs = driftMs;");
+        AssertContains(snapshotsText, "encoderAvSyncCorrectionSamples = correctionSamples;");
+        AssertContains(snapshotsText, "avSyncDriftMs: null,\n            avSyncDriftRateMsPerSec: null,\n            encoderAvSyncDriftMs: null,\n            encoderAvSyncCorrectionSamples: null");
 
         return Task.CompletedTask;
     }

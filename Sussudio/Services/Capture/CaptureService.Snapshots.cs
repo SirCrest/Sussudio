@@ -1143,13 +1143,27 @@ public partial class CaptureService
         WasapiAudioCapture? capture,
         LibAvRecordingSink sink,
         CaptureSettings? settings)
-        => CreateRecordingAudioCounters(
+    {
+        double? encoderAvSyncDriftMs = null;
+        long? encoderAvSyncCorrectionSamples = null;
+        if (sink.TryGetEncoderAvSyncDrift(out var driftMs, out var correctionSamples))
+        {
+            encoderAvSyncDriftMs = driftMs;
+            encoderAvSyncCorrectionSamples = correctionSamples;
+        }
+
+        return CreateRecordingAudioCounters(
             capture,
             settings,
             audioFramesArrived: sink.AudioSamplesReceived,
             audioFramesWrittenToSink: sink.AudioSamplesReceived,
             audioSamplesEncoded: sink.AudioSamplesReceived,
-            audioDropEvents: SumNonNegative(sink.AudioDropsQueueSaturated, sink.AudioDropsBacklogEviction));
+            audioDropEvents: SumNonNegative(sink.AudioDropsQueueSaturated, sink.AudioDropsBacklogEviction),
+            avSyncDriftMs: null,
+            avSyncDriftRateMsPerSec: null,
+            encoderAvSyncDriftMs: encoderAvSyncDriftMs,
+            encoderAvSyncCorrectionSamples: encoderAvSyncCorrectionSamples);
+    }
 
     private RecordingAudioIntegrityCounterSnapshot CaptureRecordingAudioCounters(
         WasapiAudioCapture? capture,
@@ -1161,7 +1175,11 @@ public partial class CaptureService
             audioFramesArrived: sink.AudioSamplesReceived,
             audioFramesWrittenToSink: sink.AudioSamplesReceived,
             audioSamplesEncoded: sink.AudioSamplesReceived,
-            audioDropEvents: SumNonNegative(sink.AudioDropsQueueSaturated, sink.AudioDropsBacklogEviction));
+            audioDropEvents: SumNonNegative(sink.AudioDropsQueueSaturated, sink.AudioDropsBacklogEviction),
+            avSyncDriftMs: null,
+            avSyncDriftRateMsPerSec: null,
+            encoderAvSyncDriftMs: null,
+            encoderAvSyncCorrectionSamples: null);
 
     private RecordingAudioIntegrityCounterSnapshot CreateRecordingAudioCounters(
         WasapiAudioCapture? capture,
@@ -1169,7 +1187,11 @@ public partial class CaptureService
         long audioFramesArrived,
         long audioFramesWrittenToSink,
         long audioSamplesEncoded,
-        long audioDropEvents)
+        long audioDropEvents,
+        double? avSyncDriftMs,
+        double? avSyncDriftRateMsPerSec,
+        double? encoderAvSyncDriftMs,
+        long? encoderAvSyncCorrectionSamples)
     {
         var audioEnabled = settings?.AudioEnabled == true;
         if (!audioEnabled)
@@ -1177,8 +1199,6 @@ public partial class CaptureService
             return RecordingAudioIntegrityCounterSnapshot.Disabled;
         }
 
-        var (avSyncDriftMs, avSyncDriftRateMsPerSec) = ComputeAvSyncDrift();
-        var (encoderAvSyncDriftMs, encoderAvSyncCorrectionSamples) = GetEncoderAvSyncDrift();
         return new RecordingAudioIntegrityCounterSnapshot(
             AudioEnabled: true,
             AudioCaptureActive: capture?.IsCapturing == true,
