@@ -143,9 +143,11 @@ public sealed class DiagnosticSessionResult
     public long PreviewD3DFrameStatsFailureDelta { get; init; }
     public long PreviewSchedulerDroppedAtEnd { get; init; }
     public long PreviewSchedulerDeadlineDropsAtEnd { get; init; }
+    public long PreviewSchedulerClearedDropsAtEnd { get; init; }
     public long PreviewSchedulerUnderflowsAtEnd { get; init; }
     public long PreviewSchedulerDroppedDelta { get; init; }
     public long PreviewSchedulerDeadlineDropsDelta { get; init; }
+    public long PreviewSchedulerClearedDropsDelta { get; init; }
     public long PreviewSchedulerUnderflowsDelta { get; init; }
     public string PreviewSchedulerLastDropReasonAtEnd { get; init; } = string.Empty;
     public int PreviewD3DMaxRecentSlowFramesObserved { get; init; }
@@ -941,9 +943,11 @@ public static class DiagnosticSessionRunner
             PreviewCadenceMinOnePercentLowFpsObserved = previewCadenceMetrics.MinOnePercentLowFpsObserved,
             PreviewSchedulerDroppedAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterTotalDropped") ?? 0,
             PreviewSchedulerDeadlineDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterDeadlineDropCount") ?? 0,
+            PreviewSchedulerClearedDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterClearedDropCount") ?? 0,
             PreviewSchedulerUnderflowsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterUnderflowCount") ?? 0,
             PreviewSchedulerDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterTotalDropped"),
             PreviewSchedulerDeadlineDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterDeadlineDropCount"),
+            PreviewSchedulerClearedDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterClearedDropCount"),
             PreviewSchedulerUnderflowsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterUnderflowCount"),
             PreviewSchedulerLastDropReasonAtEnd = GetString(lastSnapshot, "MjpegPreviewJitterLastDropReason") ?? string.Empty,
             PreviewD3DFrameStatsMissedRefreshDelta = previewD3DMetrics.MissedRefreshDelta,
@@ -1167,6 +1171,8 @@ public static class DiagnosticSessionRunner
             "Preview Scheduler: " +
             $"droppedEnd={result.PreviewSchedulerDroppedAtEnd} " +
             $"droppedDelta={result.PreviewSchedulerDroppedDelta} " +
+            $"clearedDropsEnd={result.PreviewSchedulerClearedDropsAtEnd} " +
+            $"clearedDropsDelta={result.PreviewSchedulerClearedDropsDelta} " +
             $"deadlineDropsEnd={result.PreviewSchedulerDeadlineDropsAtEnd} " +
             $"deadlineDropsDelta={result.PreviewSchedulerDeadlineDropsDelta} " +
             $"underflowsEnd={result.PreviewSchedulerUnderflowsAtEnd} " +

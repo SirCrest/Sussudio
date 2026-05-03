@@ -1130,6 +1130,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             MjpegPreviewJitterLatencyP95Ms = health.MjpegPreviewJitterLatencyP95Ms,
             MjpegPreviewJitterLatencyMaxMs = health.MjpegPreviewJitterLatencyMaxMs,
             MjpegPreviewJitterDeadlineDropCount = health.MjpegPreviewJitterDeadlineDropCount,
+            MjpegPreviewJitterClearedDropCount = health.MjpegPreviewJitterClearedDropCount,
             MjpegPreviewJitterTargetIncreaseCount = health.MjpegPreviewJitterTargetIncreaseCount,
             MjpegPreviewJitterTargetDecreaseCount = health.MjpegPreviewJitterTargetDecreaseCount,
             MjpegPreviewJitterLastSelectedPreviewPresentId = health.MjpegPreviewJitterLastSelectedPreviewPresentId,
@@ -1360,6 +1361,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 MjpegPreviewJitterQueueDepth = snapshot.MjpegPreviewJitterQueueDepth,
                 MjpegPreviewJitterTotalDropped = snapshot.MjpegPreviewJitterTotalDropped,
                 MjpegPreviewJitterDeadlineDropCount = snapshot.MjpegPreviewJitterDeadlineDropCount,
+                MjpegPreviewJitterClearedDropCount = snapshot.MjpegPreviewJitterClearedDropCount,
                 MjpegPreviewJitterUnderflowCount = snapshot.MjpegPreviewJitterUnderflowCount,
                 MjpegPreviewJitterLatencyP95Ms = snapshot.MjpegPreviewJitterLatencyP95Ms,
                 MjpegPreviewJitterLatencyMaxMs = snapshot.MjpegPreviewJitterLatencyMaxMs,
@@ -2200,7 +2202,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             ? "none"
             : health.MjpegPreviewJitterLastDropReason;
         var previewLane =
-            $"preview scheduler target={health.MjpegPreviewJitterTargetDepth} depth={health.MjpegPreviewJitterQueueDepth}/{health.MjpegPreviewJitterMaxDepth} dropped={health.MjpegPreviewJitterTotalDropped} deadlineDrops={health.MjpegPreviewJitterDeadlineDropCount} underflows={health.MjpegPreviewJitterUnderflowCount} recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}";
+            $"preview scheduler target={health.MjpegPreviewJitterTargetDepth} depth={health.MjpegPreviewJitterQueueDepth}/{health.MjpegPreviewJitterMaxDepth} dropped={health.MjpegPreviewJitterTotalDropped} clearedDrops={health.MjpegPreviewJitterClearedDropCount} deadlineDrops={health.MjpegPreviewJitterDeadlineDropCount} underflows={health.MjpegPreviewJitterUnderflowCount} recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}";
         var rendererSubmitted = Math.Max(
             previewRuntime.D3DFramesSubmitted,
             previewRuntime.D3DFramesRendered + previewRuntime.D3DFramesDropped);

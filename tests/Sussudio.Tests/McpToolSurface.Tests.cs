@@ -742,6 +742,7 @@ static partial class Program
         AssertContains(source, "FlashbackExportLastProgressAgeMs");
         AssertContains(source, "MjpegPreviewJitterLatencyP95Ms");
         AssertContains(source, "MjpegPreviewJitterDeadlineDropCount");
+        AssertContains(source, "MjpegPreviewJitterClearedDropCount");
         AssertContains(source, "MjpegPreviewJitterLastDropReason");
         AssertContains(source, "JitD  | JitLat | JitDrop | JitUF | JitWhy");
         AssertContains(source, "FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail | FbStage");

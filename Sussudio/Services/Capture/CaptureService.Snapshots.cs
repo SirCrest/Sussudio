@@ -1730,6 +1730,7 @@ public partial class CaptureService
             MjpegPreviewJitterLatencyP95Ms = mjpegPreviewJitter.QueueLatencyP95Ms,
             MjpegPreviewJitterLatencyMaxMs = mjpegPreviewJitter.QueueLatencyMaxMs,
             MjpegPreviewJitterDeadlineDropCount = mjpegPreviewJitter.DeadlineDropCount,
+            MjpegPreviewJitterClearedDropCount = mjpegPreviewJitter.ClearedDropCount,
             MjpegPreviewJitterTargetIncreaseCount = mjpegPreviewJitter.TargetIncreaseCount,
             MjpegPreviewJitterTargetDecreaseCount = mjpegPreviewJitter.TargetDecreaseCount,
             MjpegPreviewJitterLastSelectedPreviewPresentId = mjpegPreviewJitter.LastSelectedPreviewPresentId,

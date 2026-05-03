@@ -849,6 +849,7 @@ static partial class Program
                 new("MjpegPreviewJitterLatencyP95Ms", typeof(double)),
                 new("MjpegPreviewJitterLatencyMaxMs", typeof(double)),
                 new("MjpegPreviewJitterDeadlineDropCount", typeof(long)),
+                new("MjpegPreviewJitterClearedDropCount", typeof(long)),
                 new("MjpegPreviewJitterTargetIncreaseCount", typeof(long)),
                 new("MjpegPreviewJitterTargetDecreaseCount", typeof(long)),
                 new("MjpegPreviewJitterLastSelectedPreviewPresentId", typeof(long)),

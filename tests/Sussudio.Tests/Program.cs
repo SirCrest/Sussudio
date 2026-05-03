@@ -1684,6 +1684,7 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedSourceSequenceNumber"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedSourceSequenceNumber");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedSourceLatencyMs"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedSourceLatencyMs");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastDroppedSourceSequenceNumber"), "AutomationSnapshot.MjpegPreviewJitterLastDroppedSourceSequenceNumber");
+        AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterClearedDropCount"), "AutomationSnapshot.MjpegPreviewJitterClearedDropCount");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastDropReason"), "AutomationSnapshot.MjpegPreviewJitterLastDropReason");
         AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameLatencyWaitTimeoutCount"), "AutomationSnapshot.PreviewD3DFrameLatencyWaitTimeoutCount");
         AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameLatencyWaitP95Ms"), "AutomationSnapshot.PreviewD3DFrameLatencyWaitP95Ms");

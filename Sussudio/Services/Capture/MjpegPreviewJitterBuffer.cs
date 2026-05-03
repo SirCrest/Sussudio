@@ -96,6 +96,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         double QueueLatencyP95Ms,
         double QueueLatencyMaxMs,
         long DeadlineDropCount,
+        long ClearedDropCount,
         long TargetIncreaseCount,
         long TargetDecreaseCount,
         long LastSelectedPreviewPresentId,
@@ -144,6 +145,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private long _totalSubmitted;
     private long _totalDropped;
     private long _deadlineDropCount;
+    private long _clearedDropCount;
     private long _underflowCount;
     private long _targetIncreaseCount;
     private long _targetDecreaseCount;
@@ -334,6 +336,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             QueueLatencyP95Ms: latencyMetrics.P95Ms,
             QueueLatencyMaxMs: latencyMetrics.MaxMs,
             DeadlineDropCount: Interlocked.Read(ref _deadlineDropCount),
+            ClearedDropCount: Interlocked.Read(ref _clearedDropCount),
             TargetIncreaseCount: Interlocked.Read(ref _targetIncreaseCount),
             TargetDecreaseCount: Interlocked.Read(ref _targetDecreaseCount),
             LastSelectedPreviewPresentId: Interlocked.Read(ref _lastSelectedPreviewPresentId),
@@ -734,6 +737,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 RecordDroppedFrame(frame.SequenceNumber, "cleared");
                 frame.Dispose();
                 Interlocked.Increment(ref _totalDropped);
+                Interlocked.Increment(ref _clearedDropCount);
             }
 
             _frames.Clear();
