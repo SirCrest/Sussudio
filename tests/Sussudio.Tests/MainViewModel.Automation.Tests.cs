@@ -915,6 +915,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback playback warmed frames=");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback did not warm for");
         AssertContains(diagnosticSessionText, "\"flashback stress: audio-master fallbacks increased during warmed playback");
+        AssertContains(diagnosticSessionText, "private static void ValidateFlashbackPreviewScheduler(");
+        AssertContains(diagnosticSessionText, "\"flashback preview: scheduler deadline drops increased delta=");
+        AssertContains(diagnosticSessionText, "\"flashback preview: scheduler underflows increased delta=");
+        AssertContains(diagnosticSessionText, "\"flashback preview: D3D frame stats failures increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command latency exceeded threshold \"");
         AssertContains(diagnosticSessionText, "$\"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs}\"");
         AssertContains(diagnosticSessionText, "\"flashback-rejected-export.mp4\"");

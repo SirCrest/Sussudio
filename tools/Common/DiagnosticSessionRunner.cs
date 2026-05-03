@@ -806,6 +806,42 @@ public static class DiagnosticSessionRunner
         var previewCadenceMetrics = BuildPreviewCadenceSessionMetrics(samples, lastSnapshot);
         var previewD3DMetrics = BuildPreviewD3DMetrics(initialSnapshot, lastSnapshot, samples);
         var visualCadenceMetrics = BuildVisualCadenceSessionMetrics(samples, lastSnapshot);
+        var previewSchedulerDroppedAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterTotalDropped") ?? 0;
+        var previewSchedulerDeadlineDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterDeadlineDropCount") ?? 0;
+        var previewSchedulerClearedDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterClearedDropCount") ?? 0;
+        var previewSchedulerUnderflowsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterUnderflowCount") ?? 0;
+        var previewSchedulerDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterTotalDropped");
+        var previewSchedulerDeadlineDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterDeadlineDropCount");
+        var previewSchedulerClearedDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterClearedDropCount");
+        var previewSchedulerUnderflowsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterUnderflowCount");
+        var isFlashbackScenario =
+            runFlashbackPlayback ||
+            runFlashbackStress ||
+            runFlashbackScrubStress ||
+            runFlashbackRestartCycle ||
+            runFlashbackEncoderCycle ||
+            runFlashbackExportPlayback ||
+            runFlashbackSegmentPlayback ||
+            runFlashbackRangeExport ||
+            runFlashbackLifecycle ||
+            runFlashbackExportConcurrent ||
+            runFlashbackDisableDuringExport ||
+            runFlashbackRotatedExport ||
+            runFlashbackPreviewCycle ||
+            runFlashbackRecording ||
+            runFlashbackRecordingPreviewCycle ||
+            runFlashbackRecordingSettingsDeferred ||
+            runFlashbackRecordingExportRejected ||
+            runFlashbackExportRejected;
+        if (isFlashbackScenario)
+        {
+            ValidateFlashbackPreviewScheduler(
+                previewSchedulerDeadlineDropsDelta,
+                previewSchedulerUnderflowsDelta,
+                previewD3DMetrics.StatsFailureDelta,
+                warnings);
+        }
+
         var processCpuMaxPercentObserved = samples
             .Select(sample => GetDouble(sample.Snapshot, "ProcessCpuPercent"))
             .Append(GetDouble(lastSnapshot, "ProcessCpuPercent"))
@@ -948,14 +984,14 @@ public static class DiagnosticSessionRunner
             FlashbackExportMaxThroughputBytesPerSecObserved = exportMetrics.MaxThroughputBytesPerSecObserved,
             PreviewCadenceOnePercentLowFpsAtEnd = previewCadenceMetrics.OnePercentLowFpsAtEnd,
             PreviewCadenceMinOnePercentLowFpsObserved = previewCadenceMetrics.MinOnePercentLowFpsObserved,
-            PreviewSchedulerDroppedAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterTotalDropped") ?? 0,
-            PreviewSchedulerDeadlineDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterDeadlineDropCount") ?? 0,
-            PreviewSchedulerClearedDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterClearedDropCount") ?? 0,
-            PreviewSchedulerUnderflowsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterUnderflowCount") ?? 0,
-            PreviewSchedulerDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterTotalDropped"),
-            PreviewSchedulerDeadlineDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterDeadlineDropCount"),
-            PreviewSchedulerClearedDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterClearedDropCount"),
-            PreviewSchedulerUnderflowsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterUnderflowCount"),
+            PreviewSchedulerDroppedAtEnd = previewSchedulerDroppedAtEnd,
+            PreviewSchedulerDeadlineDropsAtEnd = previewSchedulerDeadlineDropsAtEnd,
+            PreviewSchedulerClearedDropsAtEnd = previewSchedulerClearedDropsAtEnd,
+            PreviewSchedulerUnderflowsAtEnd = previewSchedulerUnderflowsAtEnd,
+            PreviewSchedulerDroppedDelta = previewSchedulerDroppedDelta,
+            PreviewSchedulerDeadlineDropsDelta = previewSchedulerDeadlineDropsDelta,
+            PreviewSchedulerClearedDropsDelta = previewSchedulerClearedDropsDelta,
+            PreviewSchedulerUnderflowsDelta = previewSchedulerUnderflowsDelta,
             PreviewSchedulerLastDropReasonAtEnd = GetString(lastSnapshot, "MjpegPreviewJitterLastDropReason") ?? string.Empty,
             PreviewD3DFrameStatsMissedRefreshDelta = previewD3DMetrics.MissedRefreshDelta,
             PreviewD3DFrameStatsFailureDelta = previewD3DMetrics.StatsFailureDelta,
@@ -3728,6 +3764,28 @@ public static class DiagnosticSessionRunner
         if (metrics.MaxAbsAvDriftMsObserved > maxHealthyAvDriftMs)
         {
             warnings.Add($"flashback playback: absolute A/V drift exceeded budget max={metrics.MaxAbsAvDriftMsObserved:0.##}ms budget={maxHealthyAvDriftMs:0.##}ms");
+        }
+    }
+
+    private static void ValidateFlashbackPreviewScheduler(
+        long deadlineDropsDelta,
+        long underflowsDelta,
+        long d3dStatsFailureDelta,
+        List<string> warnings)
+    {
+        if (deadlineDropsDelta > 0)
+        {
+            warnings.Add($"flashback preview: scheduler deadline drops increased delta={deadlineDropsDelta}");
+        }
+
+        if (underflowsDelta > 0)
+        {
+            warnings.Add($"flashback preview: scheduler underflows increased delta={underflowsDelta}");
+        }
+
+        if (d3dStatsFailureDelta > 0)
+        {
+            warnings.Add($"flashback preview: D3D frame stats failures increased delta={d3dStatsFailureDelta}");
         }
     }
 
