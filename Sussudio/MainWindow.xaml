@@ -1265,7 +1265,9 @@
                             Visibility="Collapsed" CornerRadius="1"
                             Canvas.Top="0"/>
                     <!-- Hit-test overlay for pointer events -->
-                    <Border x:Name="FlashbackScrubArea" Background="Transparent"
+                    <Border x:Name="FlashbackScrubArea"
+                            AutomationProperties.AutomationId="FlashbackScrubArea"
+                            Background="Transparent"
                             Canvas.Left="0" Canvas.Top="0"
                             PointerPressed="FlashbackScrubArea_PointerPressed"
                             PointerMoved="FlashbackScrubArea_PointerMoved"

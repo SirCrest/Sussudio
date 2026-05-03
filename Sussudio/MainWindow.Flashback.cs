@@ -39,6 +39,12 @@ public sealed partial class MainWindow
     private void AnimateFlashbackTimeline(bool show)
     {
         _isFlashbackTimelineAnimating = true;
+        if (show)
+        {
+            // First placement after the timeline panel becomes visible must
+            // snap; the previous Translation.X from a prior open is meaningless.
+            _snapFlashbackPlayheadOnNextUpdate = true;
+        }
         var durationMs = show ? 400 : 300;
         var easing = new CubicEase { EasingMode = show ? EasingMode.EaseOut : EasingMode.EaseIn };
         var duration = TimeSpan.FromMilliseconds(durationMs);
@@ -128,6 +134,7 @@ public sealed partial class MainWindow
         _flashbackStatusTimer.Stop();
         _flashbackStatusTimer.Tick -= FlashbackStatusTimer_Tick;
         StopFlashbackPlaybackPolling();
+        StopFlashbackCtiAnchorTimer();
     }
     private void StartFlashbackPlaybackPolling()
     {
@@ -192,9 +199,14 @@ public sealed partial class MainWindow
         // Live edge at right
         Canvas.SetLeft(FlashbackLiveEdge, w - 2);
 
+        // Track resized — playhead must jump to its new layout-correct position
+        // without sweeping through a stale Translation.X from the old width.
+        _snapFlashbackPlayheadOnNextUpdate = true;
+
         // Re-layout current positions
         UpdateFlashbackPositionUI();
         UpdateFlashbackMarkers();
+        RefreshFlashbackCtiMotion("size_changed");
     }
     private long _lastScrubUpdateTick;
     private void FlashbackScrubArea_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -281,6 +293,9 @@ public sealed partial class MainWindow
             ViewModel.ReportFlashbackPlaybackRejection($"scrub end ({reason})", $"FLASHBACK_UI_SCRUB_END_REJECTED reason={reason}");
         }
         Logger.Log($"FLASHBACK_UI_SCRUB_END reason={reason}");
+        // Hand the visual back to the extrapolation driver from wherever the
+        // pointer left it.
+        RefreshFlashbackCtiMotion("scrub_end");
     }
     private void UpdateFlashbackScrubVisual(PointerRoutedEventArgs e)
     {
@@ -289,7 +304,10 @@ public sealed partial class MainWindow
         if (!TryComputeFlashbackTimelineFraction(pos.X, width, out var fraction)) return;
 
         var x = Math.Clamp(fraction * width, 0, width);
-        PositionFlashbackPlayhead(x, width);
+        // Magnetic = ease-out toward the pointer; longer than the 16ms pointer
+        // throttle so successive events overlap into a single smooth trail
+        // rather than 16ms-stepped jitter.
+        PositionFlashbackPlayhead(x, width, FlashbackPlayheadMotion.Magnetic);
 
         var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
         if (IsUsableFlashbackDuration(bufferDuration))
@@ -441,12 +459,17 @@ public sealed partial class MainWindow
         FlashbackPlayPauseIcon.Glyph = state == FlashbackPlaybackState.Playing || state == FlashbackPlaybackState.Live ? "\uE769" : "\uE768";
         FlashbackGoLiveButton.IsEnabled = state != FlashbackPlaybackState.Live && state != FlashbackPlaybackState.Disabled;
 
-        // Start/stop the 30Hz playback position timer based on state.
-        // Playing needs smooth CTI; other states use the 250ms buffer status timer.
+        // Keep the 30Hz playback timer running during Playing \u2014 its writes to
+        // FlashbackPlaybackPosition still feed the floating-label text and any
+        // VM consumers. The CTI visual is no longer driven by these writes;
+        // it is driven by the long-horizon extrapolation re-anchored on state
+        // edges (which we are at now).
         if (state == FlashbackPlaybackState.Playing)
             StartFlashbackPlaybackPolling();
         else
             StopFlashbackPlaybackPolling();
+
+        RefreshFlashbackCtiMotion("state_change");
     }
     private void UpdateFlashbackBufferFill()
     {
@@ -466,14 +489,19 @@ public sealed partial class MainWindow
         }
         return unit >= 3 ? $"{value:F1} {units[unit]}" : $"{Math.Round(value):0} {units[unit]}";
     }
+    // Position-changed handler. The VISUAL motion is driven by
+    // RefreshFlashbackCtiMotion; this method only refreshes the floating
+    // label text (gap-from-live / total). For Paused/Live states a position
+    // change implies a seek or scrub-end, so we also trigger a re-anchor —
+    // during Playing the 30Hz tick stream would re-anchor 30 times per second
+    // (defeating the whole point), so we deliberately skip re-anchor there
+    // and let the extrapolation + 1Hz drift correction handle it.
     private void UpdateFlashbackPositionUI()
     {
-        var pos = ViewModel.FlashbackPlaybackPosition;
         var state = ViewModel.FlashbackState;
         var bufferDuration = ViewModel.FlashbackBufferFilledDuration;
         var isLive = state == FlashbackPlaybackState.Live;
 
-        // Format floating time label
         if (isLive)
         {
             FlashbackPlayheadTimeText.Text = "LIVE";
@@ -485,32 +513,272 @@ public sealed partial class MainWindow
             FlashbackPlayheadTimeText.Text = $"-{FormatFlashbackDuration(gapFromLive)} / {totalStr}";
         }
 
-        // Update playhead + handle + floating label position
-        // Live mode: pin to right edge. Otherwise: position fraction.
-        var trackWidth = FlashbackScrubArea.ActualWidth;
-        if (!IsUsableFlashbackTrackDimension(trackWidth)) return;
-
-        if (isLive)
+        if (!_isFlashbackScrubbing
+            && state != FlashbackPlaybackState.Playing
+            && state != FlashbackPlaybackState.Scrubbing)
         {
-            PositionFlashbackPlayhead(trackWidth, trackWidth);
-        }
-        else if (IsUsableFlashbackDuration(bufferDuration))
-        {
-            var fraction = pos.TotalSeconds / bufferDuration.TotalSeconds;
-            var x = Math.Clamp(fraction * trackWidth, 0, trackWidth);
-            PositionFlashbackPlayhead(x, trackWidth);
+            RefreshFlashbackCtiMotion("position_change");
         }
     }
-    private void PositionFlashbackPlayhead(double x, double trackWidth)
+    // CTI motion — the timeline UI is an abstraction over the video pipeline.
+    // The video pipeline ticks at 30Hz; the display refreshes at 60-144Hz. The
+    // playhead is therefore driven NOT by per-tick eases (which restart at
+    // every source update and reintroduce 30Hz stutter) but by a single long-
+    // horizon linear extrapolation that the compositor evaluates every frame.
+    //
+    // Anchor model. We trust the video layer's "current position" only at
+    // discrete moments — state edges (play/pause/seek/scrub-end/Live) plus a
+    // 1Hz drift correction. At each anchor we compute (fraction_now,
+    // fraction_in_60_seconds) and start a 60s linear ScalarKeyFrameAnimation
+    // on Translation.X. The implicit-start animation reads the visual's
+    // current Translation.X and tweens linearly to the horizon target —
+    // velocity is continuous across re-anchors, so the user sees smooth flow.
+    //
+    // During Playing in a live-recording buffer both position and buffer-end
+    // grow at 1ms/ms; the playhead moves slowly because the fraction barely
+    // changes. The 60s linear segment is a faithful local approximation of the
+    // exact (pos+t)/(buf+t) hyperbola for any reasonable buffer length.
+    //
+    // Active scrub is the one exception: each PointerMoved event fires a
+    // short Magnetic ease (60ms cubic ease-out) toward the pointer x. That
+    // looks tight under the finger and absorbs 16ms pointer jitter without
+    // visible step.
+    private enum FlashbackPlayheadMotion
     {
-        Canvas.SetLeft(FlashbackPlayhead, x - 1); // center 2px line
-        Canvas.SetLeft(FlashbackPlayheadHandle, x - 5); // center 10px circle
+        Snap,
+        Magnetic,
+    }
 
-        // Position floating time label, clamped to track bounds
+    private Visual? _flashbackPlayheadVisual;
+    private Visual? _flashbackPlayheadHandleVisual;
+    private Visual? _flashbackPlayheadLabelVisual;
+    private Compositor? _flashbackPlayheadCompositor;
+    private CompositionEasingFunction? _flashbackPlayheadEaseLinear;
+    private CompositionEasingFunction? _flashbackPlayheadEaseWeighted;
+    private bool _flashbackPlayheadVisualsReady;
+    private bool _snapFlashbackPlayheadOnNextUpdate;
+    private FlashbackPlaybackState? _flashbackLastCtiState;
+    private DispatcherQueueTimer? _flashbackCtiAnchorTimer;
+    private bool _flashbackCtiAnchorRunning;
+    private static readonly TimeSpan FlashbackPlayheadDurationMagnetic   = TimeSpan.FromMilliseconds(60);
+    private static readonly TimeSpan FlashbackCtiExtrapolationHorizon    = TimeSpan.FromSeconds(60);
+    private static readonly TimeSpan FlashbackCtiAnchorDriftCorrection   = TimeSpan.FromMilliseconds(1000);
+
+    private void EnsureFlashbackPlayheadVisuals()
+    {
+        if (_flashbackPlayheadVisualsReady) return;
+
+        _flashbackPlayheadVisual = ElementCompositionPreview.GetElementVisual(FlashbackPlayhead);
+        _flashbackPlayheadHandleVisual = ElementCompositionPreview.GetElementVisual(FlashbackPlayheadHandle);
+        _flashbackPlayheadLabelVisual = ElementCompositionPreview.GetElementVisual(FlashbackPlayheadTimeBorder);
+        _flashbackPlayheadCompositor = _flashbackPlayheadVisual.Compositor;
+        _flashbackPlayheadEaseLinear = _flashbackPlayheadCompositor.CreateLinearEasingFunction();
+        _flashbackPlayheadEaseWeighted = _flashbackPlayheadCompositor.CreateCubicBezierEasingFunction(
+            new Vector2(0.2f, 0.7f), new Vector2(0.1f, 1.0f));
+
+        ElementCompositionPreview.SetIsTranslationEnabled(FlashbackPlayhead, true);
+        ElementCompositionPreview.SetIsTranslationEnabled(FlashbackPlayheadHandle, true);
+        ElementCompositionPreview.SetIsTranslationEnabled(FlashbackPlayheadTimeBorder, true);
+
+        // Anchor Canvas.Left at 0; from now on Translation.X carries the position.
+        Canvas.SetLeft(FlashbackPlayhead, 0);
+        Canvas.SetLeft(FlashbackPlayheadHandle, 0);
+        Canvas.SetLeft(FlashbackPlayheadTimeBorder, 0);
+
+        _flashbackPlayheadVisualsReady = true;
+        // First placement after init must snap — otherwise the playhead would
+        // sweep from x=0 when the timeline opens.
+        _snapFlashbackPlayheadOnNextUpdate = true;
+    }
+
+    // Pointer-driven scrub uses this. Snap or short Magnetic ease toward an
+    // absolute x. Steady-state Playing/Paused/Live motion is driven by
+    // RefreshFlashbackCtiMotion, not this method.
+    private void PositionFlashbackPlayhead(double x, double trackWidth, FlashbackPlayheadMotion motion)
+    {
+        EnsureFlashbackPlayheadVisuals();
+
         FlashbackPlayheadTimeBorder.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
         var labelW = FlashbackPlayheadTimeBorder.DesiredSize.Width;
         var labelX = Math.Clamp(x - labelW / 2, 0, Math.Max(0, trackWidth - labelW));
-        Canvas.SetLeft(FlashbackPlayheadTimeBorder, labelX);
+
+        var lineX = (float)(x - 1);
+        var handleX = (float)(x - 5);
+        var labelTargetX = (float)labelX;
+
+        if (_snapFlashbackPlayheadOnNextUpdate)
+        {
+            _snapFlashbackPlayheadOnNextUpdate = false;
+            motion = FlashbackPlayheadMotion.Snap;
+        }
+
+        if (motion == FlashbackPlayheadMotion.Snap)
+        {
+            SnapFlashbackPlayheadX(_flashbackPlayheadVisual, lineX);
+            SnapFlashbackPlayheadX(_flashbackPlayheadHandleVisual, handleX);
+            SnapFlashbackPlayheadX(_flashbackPlayheadLabelVisual, labelTargetX);
+            return;
+        }
+
+        // Magnetic ease toward pointer.
+        AnimateFlashbackPlayheadX(_flashbackPlayheadVisual, lineX, _flashbackPlayheadEaseWeighted, FlashbackPlayheadDurationMagnetic);
+        AnimateFlashbackPlayheadX(_flashbackPlayheadHandleVisual, handleX, _flashbackPlayheadEaseWeighted, FlashbackPlayheadDurationMagnetic);
+        AnimateFlashbackPlayheadX(_flashbackPlayheadLabelVisual, labelTargetX, _flashbackPlayheadEaseWeighted, FlashbackPlayheadDurationMagnetic);
+    }
+
+    private void AnimateFlashbackPlayheadX(Visual? visual, float targetX, CompositionEasingFunction? easing, TimeSpan duration)
+    {
+        if (visual == null || _flashbackPlayheadCompositor == null || easing == null) return;
+        var anim = _flashbackPlayheadCompositor.CreateScalarKeyFrameAnimation();
+        anim.InsertKeyFrame(1f, targetX, easing);
+        anim.Duration = duration;
+        visual.StartAnimation("Translation.X", anim);
+    }
+
+    private static void SnapFlashbackPlayheadX(Visual? visual, float targetX)
+    {
+        if (visual == null) return;
+        visual.StopAnimation("Translation.X");
+        visual.Properties.InsertVector3("Translation", new Vector3(targetX, 0f, 0f));
+    }
+
+    // Continuous-time CTI motion. Drives the playhead, handle, and floating
+    // time label via a single 60-second linear ScalarKeyFrameAnimation on
+    // Translation.X. The compositor evaluates this animation at the display's
+    // refresh rate (60-144Hz), so motion is fluid regardless of the 30Hz
+    // playback-position polling cadence. Re-anchored only on:
+    //   - state edges (play/pause/Live/Scrubbing transitions)
+    //   - panel show / SizeChanged
+    //   - explicit seek (Paused/Live/Scrubbing position writes)
+    //   - 1Hz drift correction during Playing or Paused
+    // Active scrub is excluded — pointer events drive the visual via
+    // PositionFlashbackPlayhead(.., Magnetic).
+    private void RefreshFlashbackCtiMotion(string reason)
+    {
+        if (_isFlashbackScrubbing) return;
+        if (_isWindowClosing) return;
+
+        EnsureFlashbackPlayheadVisuals();
+
+        var trackW = FlashbackScrubArea.ActualWidth;
+        if (!IsUsableFlashbackTrackDimension(trackW)) return;
+
+        var state = ViewModel.FlashbackState;
+
+        // Anchor-timer lifecycle: only run during steady states with motion.
+        if (state == FlashbackPlaybackState.Playing || state == FlashbackPlaybackState.Paused)
+            StartFlashbackCtiAnchorTimer();
+        else
+            StopFlashbackCtiAnchorTimer();
+
+        var stateChanged = state != _flashbackLastCtiState;
+        _flashbackLastCtiState = state;
+
+        var explicitStart = stateChanged
+                          || _snapFlashbackPlayheadOnNextUpdate
+                          || reason == "size_changed"
+                          || reason == "panel_show"
+                          || reason == "scrub_end"
+                          || reason == "seek";
+        if (_snapFlashbackPlayheadOnNextUpdate) _snapFlashbackPlayheadOnNextUpdate = false;
+
+        if (state == FlashbackPlaybackState.Live)
+        {
+            // Right-edge pin. No motion to extrapolate.
+            SnapPlayheadVisualsToFraction(1.0, trackW);
+            return;
+        }
+
+        var bufferDurMs = ViewModel.FlashbackBufferFilledDuration.TotalMilliseconds;
+        if (bufferDurMs <= 0) return;
+
+        var posMs = ViewModel.FlashbackPlaybackPosition.TotalMilliseconds;
+
+        var posRate = state == FlashbackPlaybackState.Playing ? 1.0 : 0.0;
+        var bufRate = ViewModel.IsFlashbackEnabled ? 1.0 : 0.0;
+        var horizonMs = FlashbackCtiExtrapolationHorizon.TotalMilliseconds;
+
+        var posHorizon = Math.Max(0.0, posMs + posRate * horizonMs);
+        var bufHorizon = Math.Max(1.0, bufferDurMs + bufRate * horizonMs);
+
+        var fracNow = Math.Clamp(posMs / bufferDurMs, 0.0, 1.0);
+        var fracHorizon = Math.Clamp(posHorizon / bufHorizon, 0.0, 1.0);
+
+        StartLinearPlayheadExtrapolation(fracNow, fracHorizon, trackW, FlashbackCtiExtrapolationHorizon, explicitStart);
+    }
+
+    private void StartLinearPlayheadExtrapolation(double fracStart, double fracEnd, double trackW, TimeSpan duration, bool explicitStart)
+    {
+        if (_flashbackPlayheadCompositor == null) return;
+        var linear = _flashbackPlayheadEaseLinear;
+        if (linear == null) return;
+
+        var startX = fracStart * trackW;
+        var endX = fracEnd * trackW;
+
+        FlashbackPlayheadTimeBorder.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var labelW = FlashbackPlayheadTimeBorder.DesiredSize.Width;
+        var labelStart = (float)Math.Clamp(startX - labelW / 2, 0, Math.Max(0, trackW - labelW));
+        var labelEnd = (float)Math.Clamp(endX - labelW / 2, 0, Math.Max(0, trackW - labelW));
+
+        StartLinearKeyframe(_flashbackPlayheadVisual, (float)(startX - 1), (float)(endX - 1), duration, linear, explicitStart);
+        StartLinearKeyframe(_flashbackPlayheadHandleVisual, (float)(startX - 5), (float)(endX - 5), duration, linear, explicitStart);
+        StartLinearKeyframe(_flashbackPlayheadLabelVisual, labelStart, labelEnd, duration, linear, explicitStart);
+    }
+
+    private static void StartLinearKeyframe(Visual? v, float startX, float endX, TimeSpan duration, CompositionEasingFunction linear, bool explicitStart)
+    {
+        if (v == null) return;
+        var anim = v.Compositor.CreateScalarKeyFrameAnimation();
+        if (explicitStart) anim.InsertKeyFrame(0f, startX);
+        anim.InsertKeyFrame(1f, endX, linear);
+        anim.Duration = duration;
+        v.StartAnimation("Translation.X", anim);
+    }
+
+    private void SnapPlayheadVisualsToFraction(double frac, double trackW)
+    {
+        var x = frac * trackW;
+        SnapFlashbackPlayheadX(_flashbackPlayheadVisual, (float)(x - 1));
+        SnapFlashbackPlayheadX(_flashbackPlayheadHandleVisual, (float)(x - 5));
+
+        FlashbackPlayheadTimeBorder.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var labelW = FlashbackPlayheadTimeBorder.DesiredSize.Width;
+        var labelX = (float)Math.Clamp(x - labelW / 2, 0, Math.Max(0, trackW - labelW));
+        SnapFlashbackPlayheadX(_flashbackPlayheadLabelVisual, labelX);
+    }
+
+    private void StartFlashbackCtiAnchorTimer()
+    {
+        _flashbackCtiAnchorTimer ??= _dispatcherQueue.CreateTimer();
+        if (_flashbackCtiAnchorRunning) return;
+        _flashbackCtiAnchorTimer.Interval = FlashbackCtiAnchorDriftCorrection;
+        _flashbackCtiAnchorTimer.IsRepeating = true;
+        _flashbackCtiAnchorTimer.Tick -= FlashbackCtiAnchorTimer_Tick;
+        _flashbackCtiAnchorTimer.Tick += FlashbackCtiAnchorTimer_Tick;
+        _flashbackCtiAnchorTimer.Start();
+        _flashbackCtiAnchorRunning = true;
+    }
+
+    private void StopFlashbackCtiAnchorTimer()
+    {
+        if (_flashbackCtiAnchorTimer == null || !_flashbackCtiAnchorRunning) return;
+        _flashbackCtiAnchorTimer.Stop();
+        _flashbackCtiAnchorTimer.Tick -= FlashbackCtiAnchorTimer_Tick;
+        _flashbackCtiAnchorRunning = false;
+    }
+
+    private void FlashbackCtiAnchorTimer_Tick(DispatcherQueueTimer sender, object args)
+    {
+        try
+        {
+            if (_isWindowClosing) return;
+            RefreshFlashbackCtiMotion("anchor_tick");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_CTI_ANCHOR_TICK_FAIL type={ex.GetType().Name} msg={ex.Message}");
+        }
     }
     private static string FormatFlashbackDuration(TimeSpan ts)
     {

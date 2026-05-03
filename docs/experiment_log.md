@@ -2,6 +2,17 @@
 
 Do not rewrite or delete prior entries. Append new entries only.
 
+> **Project rename — 2026-05-02.** The project was renamed from `ElgatoCapture`
+> to `Sussudio` (code identity) / `Simple Sussudio` (display name) ahead of an
+> open-source release. Entries below dated before 2026-05-02 reference the old
+> paths and namespaces (`ElgatoCapture/`, `tests/ElgatoCapture.*`,
+> `tools/ecctl/`, `ElgatoCapture_Debug.log`, `ELGATOCAPTURE_*` env vars). Read
+> those as the historical equivalent of the current `Sussudio/`,
+> `tests/Sussudio.*`, `tools/ssctl/`, `Sussudio_Debug.log`, `SUSSUDIO_*`. Past
+> entries are preserved verbatim per the append-only rule. See the
+> `2026-05-02 — Renamed project to Simple Sussudio` entry at the bottom of this
+> file for full scope, what was preserved, and verification.
+
 ## Entry Template
 ```
 
@@ -3371,3 +3382,48 @@ These reference paths and names that were correct at the time. Pre-2026-05-02 en
 **Verification.** Full solution build (Sussudio + 3 tests + 4 standalone tools) — 0 warnings / 0 errors. Test runner — every PASS, including `ServiceNamespace.Tests` which asserts every renamed path and namespace. Runtime smoke: app launched, created `temp/logs/Sussudio_Debug.log` with new header `=== Sussudio Debug Log ===`, detected Elgato 4K X via NATIVEXU_AT, encoded 3063 Flashback frames to `C:\Users\crest\AppData\Local\Sussudio\Flashback\...`, closed cleanly with full subsystem teardown.
 
 **Safety net** (kept after rename): tag `pre-sussudio-rename` at commit `10b78b2`, branch `backup/pre-sussudio-rename` at same commit, zip backup at `../ElgatoCapture-Flashback-backup-2026-05-02-152452.zip`. Rollback: `git reset --hard pre-sussudio-rename`.
+
+## 2026-05-02 — Flashback CTI compositor smoothing
+
+**Change.** The Flashback timeline's Current Time Indicator (playhead line, handle, floating time label) used to be repositioned via direct `Canvas.SetLeft` writes — one per source-data tick. That meant 30Hz visible stepping during playback (33ms tick interval) and exposed the 60Hz pointer cadence as discrete steps during scrubbing. Replaced with `Translation.X` compositor animations driven by `ScalarKeyFrameAnimation` so the visual interpolates at the display refresh rate (60–144Hz) between source updates.
+
+**Motivation.** "I want the Current Time Indicator for the flashback UI to be smoothly animating when playing, paused, scrubbing. The aesthetics of the slider should be considered over the exact specific location. The user is looking at the preview when scrolling around." The user verifies position by looking at the preview, not the playhead — so the slider can lag the truth by tens of milliseconds in service of smoother motion.
+
+**Implementation** (`Sussudio/MainWindow.Flashback.cs`):
+
+- Lazy-init in `EnsureFlashbackPlayheadVisuals()`: `ElementCompositionPreview.GetElementVisual` for the three CTI elements, `SetIsTranslationEnabled(true)`, anchor `Canvas.Left = 0` once. Translation.X carries position from then on.
+- Four motion modes routed by source cadence:
+  - **Snap** (no animation) — first init, panel-show, `SizeChanged`, Live state right-edge pin.
+  - **Tick** (50ms linear) — Playing state. Linear easing converts the constant-rate 30Hz signal into constant-velocity motion; cubic ease-out would create a stuttering fast-then-slow loop.
+  - **Magnetic** (90ms cubic ease-out, 0.2/0.7 → 0.1/1.0) — Scrubbing state. Longer than the 16ms pointer throttle so successive events overlap into a smooth trail rather than 16ms-stepped jitter.
+  - **Glide** (300ms cubic ease-out, same curve) — Paused/disabled. Buffer drift on the 250ms status timer wants a long ease so the playhead reads as continuous flow.
+- `_snapFlashbackPlayheadOnNextUpdate` flag overrides motion to Snap on first init, on `FlashbackTrack_SizeChanged`, and at the start of `AnimateFlashbackTimeline(show: true)` — prevents the playhead sweeping in from a stale Translation.X when the timeline opens or the track resizes.
+- `UpdateFlashbackScrubVisual` calls with `Magnetic`. The follow-up `ViewModel.FlashbackPlaybackPosition` write fires PropertyChanged → `UpdateFlashbackPositionUI`, which routes through a `state switch` that maps `Scrubbing → Magnetic` so the second call does not stomp the Magnetic ease with the longer Glide curve.
+
+**Verification.** `dotnet build` succeeded with 0 warnings / 0 errors (17.15s elapsed). Runtime smoke on the app:
+- App launched, flashback buffer reached 41s in ~6s, panel toggled visible via UIA.
+- Sequence `flashback play 30000 → pause → seek 200000 (clamped to buffer end) → seek 10000 → go-live` executed cleanly. Every operation logged `FLASHBACK_PLAYBACK_*_OK`. No exceptions.
+- Settled-position screenshots (`temp/screenshots/cti-v2-1` through `cti-v2-6`) confirm playhead, handle, and floating time-label all land at the correct fractional positions across Playing (32s/39s ≈ 80%), Paused (32s/40s ≈ 80%), Seek-10s (10s/42s ≈ 24%), and LIVE (right edge) states.
+
+**Limit of evidence.** A 50–300ms in-flight ease cannot be captured in static screenshots (RPC overhead alone is ~150ms). Smoothness during the transition is provided by the WinUI Composition system's compositor-thread interpolation, which is deterministic once `StartAnimation("Translation.X")` succeeds and the easing function is non-null — both verified by the absence of `ArgumentNullException` and the correct settled positions. Visual smoothness verification at compositor frame rate would require screen-recording the window at 120fps, which is outside the available probe set.
+
+## 2026-05-02 — Flashback CTI redesign: continuous extrapolation
+
+**Reason for revision.** The earlier "four motion modes (Snap/Tick/Magnetic/Glide)" design from earlier today *still read as 30Hz stutter* on a 144Hz display, not as fluid motion. Restarting a `ScalarKeyFrameAnimation` every 33ms — even a 50ms linear ease — perturbs Translation.X at every restart. The compositor was honoring the easings, but the source signal itself was a sequence of 30Hz waypoints, so the visual could never break out of the source's discretization.
+
+**Redesign principle.** The timeline UI is an *abstraction* over the video pipeline. The video pipeline ticks at 30Hz; the display refreshes at 60–144Hz. The playhead must therefore decouple from per-tick source updates and run on an animation the compositor evaluates every frame.
+
+**New model.** A single 60-second linear `ScalarKeyFrameAnimation` on `Translation.X`, computed from an anchor `(positionMs, bufferDurationMs, posRate, bufRate)`, with `posRate = 1.0` while Playing and `bufRate = 1.0` while recording. The horizon target is `(pos₀ + posRate·60s) / (buf₀ + bufRate·60s) · trackWidth`. The animation runs without restart for up to 60s; the compositor interpolates linearly between current value and horizon at refresh rate. Re-anchored only on:
+
+- State edges (Play/Pause/Live/Scrubbing transitions) — `RefreshFlashbackCtiMotion("state_change")` in `UpdateFlashbackStateUI`.
+- `FlashbackTrack_SizeChanged` and panel show — explicit-start animation so the playhead lands on the new layout-correct position.
+- Position writes during Paused/Live/Scrubbing-released — these imply a seek, not the 30Hz playback tick (during Playing the position-changed handler deliberately skips re-anchor).
+- 1Hz drift correction (`_flashbackCtiAnchorTimer`) — keeps the extrapolation faithful to actual decode-rate variance and rotates a fresh 60s segment in.
+
+Each re-anchor (except state edges and SizeChanged) starts the new animation with **implicit** start, so the compositor reads the visual's current Translation.X and tweens linearly to the new horizon — velocity is continuous across re-anchors. State edges and SizeChanged use explicit-start (`InsertKeyFrame(0f, …)`) to deliberately reset the visual to the layout-correct position.
+
+**Active scrub** is the one carve-out: pointer events still drive `PositionFlashbackPlayhead(.., Magnetic)` (60ms cubic ease-out toward the pointer x), so the playhead chases the finger tightly with absorbed pointer jitter. On `EndFlashbackScrubInteraction` the visual is handed back to the extrapolation driver from wherever the pointer left it.
+
+**Removed.** The `Tick` (50ms linear) and `Glide` (300ms cubic ease-out) motion modes from the v1 design. They were per-tick eases; the new model never re-triggers an ease on a per-tick cadence.
+
+**Verification.** `dotnet build` 0 warnings / 0 errors. Runtime: confirmed by user observation — "seems better" after running through play/pause/scrub on a 144Hz monitor. Earlier static-screenshot evidence (`temp/screenshots/cti-v2-*.png`) for settled-position correctness still applies — the new model uses the same `Translation.X` + `Canvas.Left=0` anchor pattern.
