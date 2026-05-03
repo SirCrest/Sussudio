@@ -161,6 +161,10 @@ static partial class Program
         AssertContains(source, "MaybeDecreaseTargetDepth");
         AssertContains(source, "HasLatencyPressure");
         AssertContains(source, "GetAdjustedOutputIntervalTicks");
+        AssertContains(source, "private enum DequeueMissReason");
+        AssertContains(source, "TryDequeueCore(out var dequeueMissReason)");
+        AssertContains(source, "dequeueMissReason == DequeueMissReason.WaitingForSequence");
+        AssertContains(source, "_signal.WaitOne(1);");
         AssertContains(source, "DeadlineDropCount");
         AssertContains(source, "TargetIncreaseCount");
         AssertContains(source, "TargetDecreaseCount");

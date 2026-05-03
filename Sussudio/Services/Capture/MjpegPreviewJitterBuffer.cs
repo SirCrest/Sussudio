@@ -11,6 +11,13 @@ namespace Sussudio.Services.Capture;
 
 internal sealed class MjpegPreviewJitterBuffer : IDisposable
 {
+    private enum DequeueMissReason
+    {
+        None,
+        EmptyQueue,
+        WaitingForSequence
+    }
+
     public delegate void PreviewFrameProbe(
         ReadOnlySpan<byte> frame,
         int width,
@@ -456,9 +463,15 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             DropLatencyOverflowFrames(now);
             MaybeDecreaseTargetDepth(now);
 
-            var frame = TryDequeue();
+            var frame = TryDequeueCore(out var dequeueMissReason);
             if (frame == null)
             {
+                if (dequeueMissReason == DequeueMissReason.WaitingForSequence)
+                {
+                    _signal.WaitOne(1);
+                    continue;
+                }
+
                 Interlocked.Increment(ref _underflowCount);
                 RecordUnderflow(now);
                 IncreaseTargetDepth(now);
@@ -616,17 +629,23 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     }
 
     private BufferedFrame? TryDequeue()
+        => TryDequeueCore(out _);
+
+    private BufferedFrame? TryDequeueCore(out DequeueMissReason missReason)
     {
+        missReason = DequeueMissReason.None;
         lock (_sync)
         {
             if (_frames.Count == 0)
             {
+                missReason = DequeueMissReason.EmptyQueue;
                 return null;
             }
 
             var index = GetNextPreviewFrameIndex(Stopwatch.GetTimestamp(), allowDeadlineSkip: true);
             if (index < 0)
             {
+                missReason = DequeueMissReason.WaitingForSequence;
                 return null;
             }
 
