@@ -288,6 +288,9 @@ static partial class Program
                 "Automation UI settings persist through the settings path",
                 AutomationUiSettings_PersistThroughSettingsPath),
             await RunCheckAsync(
+                "Automation capture mode changes await reinitialization",
+                AutomationCaptureModeChanges_AwaitReinitialization),
+            await RunCheckAsync(
                 "Automation recording transitions use shared lifecycle gate",
                 MainViewModelAutomation_RoutesRecordingThroughSharedTransitionGate),
             await RunCheckAsync(
@@ -2081,6 +2084,27 @@ static partial class Program
         AssertContains(settingsPartialText, "partial void OnIsStatsVisibleChanged(bool value)");
         AssertContains(settingsPartialText, "partial void OnShowAllCaptureOptionsChanged(bool value)");
         AssertContains(settingsPartialText, "RebuildResolutionOptions();\n        SaveSettings();");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task AutomationCaptureModeChanges_AwaitReinitialization()
+    {
+        var viewModelText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.cs").Replace("\r\n", "\n");
+        var automationText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Automation.cs").Replace("\r\n", "\n");
+
+        AssertContains(viewModelText, "private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);");
+        AssertContains(automationText, "private async Task SetAutomationCaptureModeAsync(");
+        AssertContains(automationText, "await _automationCaptureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);");
+        AssertContains(automationText, "_suppressFormatChangeReinitialize = true;");
+        AssertContains(automationText, "_suppressFormatChangeReinitialize = false;");
+        AssertContains(automationText, "return wasPreviewing && SelectedFormat != null;");
+        AssertContains(automationText, "ReinitializeDeviceAsync($\"automation {reason}\")");
+        AssertContains(automationText, "_automationCaptureModeGate.Release();");
+        AssertContains(automationText, "return SetAutomationCaptureModeAsync(\"resolution\"");
+        AssertContains(automationText, "return SetAutomationCaptureModeAsync(\"frame rate\"");
+        AssertContains(automationText, "return SetAutomationCaptureModeAsync(\"video format\"");
+        AssertContains(automationText, "return SetAutomationCaptureModeAsync(\"mjpeg decoder count\"");
 
         return Task.CompletedTask;
     }

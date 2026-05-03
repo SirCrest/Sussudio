@@ -446,6 +446,7 @@ public partial class MainViewModel : ObservableObject, IDisposable, IAsyncDispos
     private long _micMeterLastTick;
     private int _disposeState;
     private readonly SemaphoreSlim _previewReinitializeGate = new(1, 1);
+    private readonly SemaphoreSlim _automationCaptureModeGate = new(1, 1);
     private int _previewReinitializeGeneration;
     private bool _cancelPreviewRestartAfterReinitialize;
     private Task? _pendingFlashbackCycleTask;

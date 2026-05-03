@@ -757,7 +757,7 @@ public partial class MainViewModel
 
     public Task SetResolutionAsync(string resolution, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        return SetAutomationCaptureModeAsync("resolution", () =>
         {
             var matched = AvailableResolutions.FirstOrDefault(r =>
                 string.Equals(r.Value, resolution, StringComparison.OrdinalIgnoreCase));
@@ -774,13 +774,12 @@ public partial class MainViewModel
             }
 
             SelectedResolution = matched.Value;
-            return Task.CompletedTask;
         }, cancellationToken);
     }
 
     public Task SetFrameRateAsync(double frameRate, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        return SetAutomationCaptureModeAsync("frame rate", () =>
         {
             if (AvailableFrameRates.Count == 0)
             {
@@ -804,7 +803,7 @@ public partial class MainViewModel
                 }
 
                 SelectAutoFrameRate();
-                return Task.CompletedTask;
+                return;
             }
 
             var requestedFriendly = Math.Round(frameRate);
@@ -825,13 +824,12 @@ public partial class MainViewModel
             }
 
             SelectedFrameRate = matched.Value;
-            return Task.CompletedTask;
         }, cancellationToken);
     }
 
     public Task SetVideoFormatAsync(string videoFormat, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        return SetAutomationCaptureModeAsync("video format", () =>
         {
             if (string.IsNullOrWhiteSpace(videoFormat))
             {
@@ -846,7 +844,6 @@ public partial class MainViewModel
             }
 
             SelectedVideoFormat = match;
-            return Task.CompletedTask;
         }, cancellationToken);
     }
 
@@ -920,11 +917,48 @@ public partial class MainViewModel
 
     public Task SetMjpegDecoderCountAsync(int decoderCount, CancellationToken cancellationToken = default)
     {
-        return InvokeOnUiThreadAsync(() =>
+        return SetAutomationCaptureModeAsync("mjpeg decoder count", () =>
         {
             MjpegDecoderCount = Math.Clamp(decoderCount, 1, 8);
-            return Task.CompletedTask;
         }, cancellationToken);
+    }
+
+    private async Task SetAutomationCaptureModeAsync(
+        string reason,
+        Action apply,
+        CancellationToken cancellationToken)
+    {
+        await _automationCaptureModeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var shouldReinitialize = await InvokeOnUiThreadAsync(() =>
+            {
+                var wasPreviewing = IsPreviewing && IsInitialized && SelectedDevice != null;
+                _suppressFormatChangeReinitialize = true;
+                try
+                {
+                    apply();
+                }
+                finally
+                {
+                    _suppressFormatChangeReinitialize = false;
+                }
+
+                return wasPreviewing && SelectedFormat != null;
+            }, cancellationToken).ConfigureAwait(false);
+
+            if (shouldReinitialize)
+            {
+                await InvokeOnUiThreadAsync(
+                        () => ReinitializeDeviceAsync($"automation {reason}"),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            _automationCaptureModeGate.Release();
+        }
     }
 
     public Task SetShowAllCaptureOptionsAsync(bool enabled, CancellationToken cancellationToken = default)
