@@ -64,6 +64,11 @@ public static class PerformanceTimelineTools
                 MjpegPreviewJitterLatencyP95Ms = AutomationSnapshotFormatter.GetDouble(item, "MjpegPreviewJitterLatencyP95Ms"),
                 MjpegPreviewJitterLatencyMaxMs = AutomationSnapshotFormatter.GetDouble(item, "MjpegPreviewJitterLatencyMaxMs"),
                 MjpegPreviewJitterLastDropReason = AutomationSnapshotFormatter.Get(item, "MjpegPreviewJitterLastDropReason"),
+                MjpegPreviewJitterLastUnderflowReason = AutomationSnapshotFormatter.Get(item, "MjpegPreviewJitterLastUnderflowReason"),
+                MjpegPreviewJitterLastUnderflowInputAgeMs = AutomationSnapshotFormatter.GetDouble(item, "MjpegPreviewJitterLastUnderflowInputAgeMs"),
+                MjpegPreviewJitterLastUnderflowOutputAgeMs = AutomationSnapshotFormatter.GetDouble(item, "MjpegPreviewJitterLastUnderflowOutputAgeMs"),
+                MjpegPreviewJitterMaxScheduleLateMs = AutomationSnapshotFormatter.GetDouble(item, "MjpegPreviewJitterMaxScheduleLateMs"),
+                MjpegPreviewJitterScheduleLateCount = AutomationSnapshotFormatter.GetLong(item, "MjpegPreviewJitterScheduleLateCount"),
                 PreviewD3DPending = AutomationSnapshotFormatter.GetInt(item, "PreviewD3DPendingFrameCount"),
                 PreviewD3DPresentP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DPresentCallP95Ms"),
                 PreviewD3DTotalP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewD3DTotalFrameCpuP95Ms"),
@@ -113,6 +118,11 @@ public static class PerformanceTimelineTools
                 FlashbackPlaybackLastSubmitFailureUtcUnixMs = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackLastSubmitFailureUtcUnixMs"),
                 FlashbackPlaybackLastSubmitFailure = AutomationSnapshotFormatter.Get(item, "FlashbackPlaybackLastSubmitFailure"),
                 FlashbackPlaybackDroppedFrames = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackDroppedFrames"),
+                FlashbackPlaybackAudioMasterUnavailableFallbacks = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackAudioMasterUnavailableFallbacks"),
+                FlashbackPlaybackAudioMasterStaleFallbacks = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackAudioMasterStaleFallbacks"),
+                FlashbackPlaybackAudioMasterDriftOutlierFallbacks = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackAudioMasterDriftOutlierFallbacks"),
+                FlashbackPlaybackAudioMasterLastFallbackReason = AutomationSnapshotFormatter.Get(item, "FlashbackPlaybackAudioMasterLastFallbackReason"),
+                FlashbackPlaybackAudioMasterLastFallbackClockAgeMs = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackAudioMasterLastFallbackClockAgeMs"),
                 FlashbackPlaybackSegmentSwitches = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackSegmentSwitches"),
                 FlashbackPlaybackFmp4Reopens = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackFmp4Reopens"),
                 FlashbackPlaybackWriteHeadWaits = AutomationSnapshotFormatter.GetLong(item, "FlashbackPlaybackWriteHeadWaits"),
@@ -182,7 +192,9 @@ public static class PerformanceTimelineTools
                 e.MjpegPreviewJitterLatencyP95Ms,
                 e.MjpegPreviewJitterTotalDropped,
                 e.MjpegPreviewJitterUnderflowCount,
-                CompactCell(e.MjpegPreviewJitterLastDropReason, 12),
+                CompactCell(string.IsNullOrWhiteSpace(e.MjpegPreviewJitterLastUnderflowReason)
+                    ? e.MjpegPreviewJitterLastDropReason
+                    : e.MjpegPreviewJitterLastUnderflowReason, 12),
                 e.PreviewD3DPending,
                 e.PreviewD3DPresentP95Ms,
                 e.PreviewD3DTotalP95Ms,
@@ -240,6 +252,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Jitter Depth:   {FormatJitterDepthCell(first)} -> {FormatJitterDepthCell(last)} enabled={last.MjpegPreviewJitterEnabled}");
             builder.AppendLine($"Jitter Latency: P95 {first.MjpegPreviewJitterLatencyP95Ms:F1}ms -> {last.MjpegPreviewJitterLatencyP95Ms:F1}ms, max latest={last.MjpegPreviewJitterLatencyMaxMs:F1}ms");
             builder.AppendLine($"Jitter Drops:   total {first.MjpegPreviewJitterTotalDropped} -> {last.MjpegPreviewJitterTotalDropped}, cleared {first.MjpegPreviewJitterClearedDropCount} -> {last.MjpegPreviewJitterClearedDropCount}, deadline {first.MjpegPreviewJitterDeadlineDropCount} -> {last.MjpegPreviewJitterDeadlineDropCount}, underflows {first.MjpegPreviewJitterUnderflowCount} -> {last.MjpegPreviewJitterUnderflowCount}, lastReason={FormatOptional(last.MjpegPreviewJitterLastDropReason)}");
+            builder.AppendLine($"Jitter Underflow: reason={FormatOptional(last.MjpegPreviewJitterLastUnderflowReason)} inputAge={last.MjpegPreviewJitterLastUnderflowInputAgeMs:F1}ms outputAge={last.MjpegPreviewJitterLastUnderflowOutputAgeMs:F1}ms scheduleLateMax={last.MjpegPreviewJitterMaxScheduleLateMs:F1}ms lateCountDelta={NonNegativeDelta(last.MjpegPreviewJitterScheduleLateCount, first.MjpegPreviewJitterScheduleLateCount)}");
             builder.AppendLine($"D3D Present P95:{first.PreviewD3DPresentP95Ms:F1}ms -> {last.PreviewD3DPresentP95Ms:F1}ms (delta: {last.PreviewD3DPresentP95Ms - first.PreviewD3DPresentP95Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"D3D Total P95:  {first.PreviewD3DTotalP95Ms:F1}ms -> {last.PreviewD3DTotalP95Ms:F1}ms (delta: {last.PreviewD3DTotalP95Ms - first.PreviewD3DTotalP95Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"D3D Input P99:  {first.PreviewD3DInputUploadP99Ms:F1}ms -> {last.PreviewD3DInputUploadP99Ms:F1}ms (delta: {last.PreviewD3DInputUploadP99Ms - first.PreviewD3DInputUploadP99Ms:+0.0;-0.0;0.0}ms)");
@@ -258,6 +271,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Flashback target:{first.FlashbackPlaybackTargetFps:F1}fps -> {last.FlashbackPlaybackTargetFps:F1}fps observed:{first.FlashbackPlaybackObservedFps:F1}fps -> {last.FlashbackPlaybackObservedFps:F1}fps 1%Low:{first.FlashbackPlaybackOnePercentLowFps:F1}fps -> {last.FlashbackPlaybackOnePercentLowFps:F1}fps");
             builder.AppendLine($"Flashback P99:  {first.FlashbackPlaybackP99FrameMs:F1}ms -> {last.FlashbackPlaybackP99FrameMs:F1}ms (max latest={last.FlashbackPlaybackMaxFrameMs:F1}ms)");
             builder.AppendLine($"Flashback Decode:{first.FlashbackPlaybackDecodeP99Ms:F1}ms -> {last.FlashbackPlaybackDecodeP99Ms:F1}ms (max latest={last.FlashbackPlaybackDecodeMaxMs:F1}ms phase={FormatOptional(last.FlashbackPlaybackMaxDecodePhase)} receive={last.FlashbackPlaybackMaxDecodeReceiveMs:F1}ms feed={last.FlashbackPlaybackMaxDecodeFeedMs:F1}ms read={last.FlashbackPlaybackMaxDecodeReadMs:F1}ms send={last.FlashbackPlaybackMaxDecodeSendMs:F1}ms audio={last.FlashbackPlaybackMaxDecodeAudioMs:F1}ms convert={last.FlashbackPlaybackMaxDecodeConvertMs:F1}ms)");
+            builder.AppendLine($"Flashback AudioMaster: unavailable={first.FlashbackPlaybackAudioMasterUnavailableFallbacks}->{last.FlashbackPlaybackAudioMasterUnavailableFallbacks} stale={first.FlashbackPlaybackAudioMasterStaleFallbacks}->{last.FlashbackPlaybackAudioMasterStaleFallbacks} driftOutlier={first.FlashbackPlaybackAudioMasterDriftOutlierFallbacks}->{last.FlashbackPlaybackAudioMasterDriftOutlierFallbacks} last={FormatOptional(last.FlashbackPlaybackAudioMasterLastFallbackReason)} age={last.FlashbackPlaybackAudioMasterLastFallbackClockAgeMs:F1}ms");
             builder.AppendLine($"Flashback Slow%:{first.FlashbackPlaybackSlowFramePercent:F1}% -> {last.FlashbackPlaybackSlowFramePercent:F1}%");
             builder.AppendLine($"Flashback Cmds: pending {first.FlashbackPlaybackPendingCommands} -> {last.FlashbackPlaybackPendingCommands}, maxPending latest={last.FlashbackPlaybackMaxPendingCommands}, maxLatency latest={last.FlashbackPlaybackMaxCommandQueueLatencyMs}ms, failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
             builder.AppendLine($"Flashback Cmd Counters: enqueued {first.FlashbackPlaybackCommandsEnqueued} -> {last.FlashbackPlaybackCommandsEnqueued}, processed {first.FlashbackPlaybackCommandsProcessed} -> {last.FlashbackPlaybackCommandsProcessed}, dropped {first.FlashbackPlaybackCommandsDropped} -> {last.FlashbackPlaybackCommandsDropped}, skippedNotReady {first.FlashbackPlaybackCommandsSkippedNotReady} -> {last.FlashbackPlaybackCommandsSkippedNotReady}, scrubCoalesced {first.FlashbackPlaybackScrubUpdatesCoalesced} -> {last.FlashbackPlaybackScrubUpdatesCoalesced}, lastQueued={FormatOptional(last.FlashbackPlaybackLastCommandQueued)}, lastProcessed={FormatOptional(last.FlashbackPlaybackLastCommandProcessed)}");
@@ -548,6 +562,11 @@ public static class PerformanceTimelineTools
         public double MjpegPreviewJitterLatencyP95Ms { get; init; }
         public double MjpegPreviewJitterLatencyMaxMs { get; init; }
         public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;
+        public string MjpegPreviewJitterLastUnderflowReason { get; init; } = string.Empty;
+        public double MjpegPreviewJitterLastUnderflowInputAgeMs { get; init; }
+        public double MjpegPreviewJitterLastUnderflowOutputAgeMs { get; init; }
+        public double MjpegPreviewJitterMaxScheduleLateMs { get; init; }
+        public long MjpegPreviewJitterScheduleLateCount { get; init; }
         public int PreviewD3DPending { get; init; }
         public double PreviewD3DPresentP95Ms { get; init; }
         public double PreviewD3DTotalP95Ms { get; init; }
@@ -597,6 +616,11 @@ public static class PerformanceTimelineTools
         public long FlashbackPlaybackLastSubmitFailureUtcUnixMs { get; init; }
         public string FlashbackPlaybackLastSubmitFailure { get; init; } = string.Empty;
         public long FlashbackPlaybackDroppedFrames { get; init; }
+        public long FlashbackPlaybackAudioMasterUnavailableFallbacks { get; init; }
+        public long FlashbackPlaybackAudioMasterStaleFallbacks { get; init; }
+        public long FlashbackPlaybackAudioMasterDriftOutlierFallbacks { get; init; }
+        public string FlashbackPlaybackAudioMasterLastFallbackReason { get; init; } = string.Empty;
+        public double FlashbackPlaybackAudioMasterLastFallbackClockAgeMs { get; init; }
         public long FlashbackPlaybackSegmentSwitches { get; init; }
         public long FlashbackPlaybackFmp4Reopens { get; init; }
         public long FlashbackPlaybackWriteHeadWaits { get; init; }

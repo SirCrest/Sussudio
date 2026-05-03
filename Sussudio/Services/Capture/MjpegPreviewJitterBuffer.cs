@@ -105,7 +105,15 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         double LastSelectedSourceLatencyMs,
         long LastDroppedSourceSequenceNumber,
         long LastDropQpc,
-        string LastDropReason);
+        string LastDropReason,
+        long LastUnderflowQpc,
+        string LastUnderflowReason,
+        int LastUnderflowQueueDepth,
+        double LastUnderflowInputAgeMs,
+        double LastUnderflowOutputAgeMs,
+        double LastScheduleLateMs,
+        double MaxScheduleLateMs,
+        long ScheduleLateCount);
 
     private readonly object _sync = new();
     private readonly List<BufferedFrame> _frames = new();
@@ -159,7 +167,15 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private long _lastDroppedSourceSequenceNumber = -1;
     private long _lastDropQpc;
     private long _lastDisplayClockPacedPresentTick;
+    private long _lastUnderflowQpc;
+    private long _lastUnderflowInputAgeTicks;
+    private long _lastUnderflowOutputAgeTicks;
+    private long _lastScheduleLateTicks;
+    private long _maxScheduleLateTicks;
+    private long _scheduleLateCount;
+    private int _lastUnderflowQueueDepth;
     private string _lastDropReason = string.Empty;
+    private string _lastUnderflowReason = string.Empty;
     private int _disposed;
     private readonly string _mmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_PREVIEW_JITTER_MMCSS_TASK") ?? "Playback";
     private readonly int _mmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_PREVIEW_JITTER_MMCSS_PRIORITY", 1, -2, 2);
@@ -345,7 +361,15 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             LastSelectedSourceLatencyMs: TicksToMs(Interlocked.Read(ref _lastSelectedSourceLatencyTicks)),
             LastDroppedSourceSequenceNumber: Interlocked.Read(ref _lastDroppedSourceSequenceNumber),
             LastDropQpc: Interlocked.Read(ref _lastDropQpc),
-            LastDropReason: Volatile.Read(ref _lastDropReason));
+            LastDropReason: Volatile.Read(ref _lastDropReason),
+            LastUnderflowQpc: Interlocked.Read(ref _lastUnderflowQpc),
+            LastUnderflowReason: Volatile.Read(ref _lastUnderflowReason),
+            LastUnderflowQueueDepth: Volatile.Read(ref _lastUnderflowQueueDepth),
+            LastUnderflowInputAgeMs: TicksToMs(Interlocked.Read(ref _lastUnderflowInputAgeTicks)),
+            LastUnderflowOutputAgeMs: TicksToMs(Interlocked.Read(ref _lastUnderflowOutputAgeTicks)),
+            LastScheduleLateMs: TicksToMs(Interlocked.Read(ref _lastScheduleLateTicks)),
+            MaxScheduleLateMs: TicksToMs(Interlocked.Read(ref _maxScheduleLateTicks)),
+            ScheduleLateCount: Interlocked.Read(ref _scheduleLateCount));
     }
 
     public void Dispose()
@@ -419,6 +443,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             }
 
             var scheduleLateTicks = Math.Max(0, now - nextDueTick);
+            RecordScheduleLate(scheduleLateTicks);
             var sink = clockSink ?? _getPreviewSink();
             if (sink == null || _isPreviewSuppressed())
             {
@@ -435,6 +460,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             if (frame == null)
             {
                 Interlocked.Increment(ref _underflowCount);
+                RecordUnderflow(now);
                 IncreaseTargetDepth(now);
                 primed = false;
                 continue;
@@ -981,6 +1007,54 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, sourceSequenceNumber);
         Interlocked.Exchange(ref _lastDropQpc, Stopwatch.GetTimestamp());
         Volatile.Write(ref _lastDropReason, reason);
+    }
+
+    private void RecordUnderflow(long nowTick)
+    {
+        string reason;
+        int depth;
+        lock (_sync)
+        {
+            depth = _frames.Count;
+            reason = depth == 0
+                ? "empty-queue"
+                : _nextPreviewSequence >= 0 &&
+                  _frames.FindIndex(frame => frame.SequenceNumber == _nextPreviewSequence) < 0
+                    ? "waiting-for-sequence"
+                    : "selection-blocked";
+        }
+
+        Interlocked.Exchange(ref _lastUnderflowQpc, nowTick);
+        Volatile.Write(ref _lastUnderflowQueueDepth, depth);
+        Volatile.Write(ref _lastUnderflowReason, reason);
+
+        var lastInputTick = Interlocked.Read(ref _lastInputTick);
+        var inputAgeTicks = lastInputTick > 0 && nowTick > lastInputTick ? nowTick - lastInputTick : 0;
+        Interlocked.Exchange(ref _lastUnderflowInputAgeTicks, inputAgeTicks);
+
+        var lastOutputTick = Interlocked.Read(ref _lastOutputTick);
+        var outputAgeTicks = lastOutputTick > 0 && nowTick > lastOutputTick ? nowTick - lastOutputTick : 0;
+        Interlocked.Exchange(ref _lastUnderflowOutputAgeTicks, outputAgeTicks);
+    }
+
+    private void RecordScheduleLate(long scheduleLateTicks)
+    {
+        Interlocked.Exchange(ref _lastScheduleLateTicks, scheduleLateTicks);
+        if (scheduleLateTicks <= _frameIntervalTicks / 2)
+        {
+            return;
+        }
+
+        Interlocked.Increment(ref _scheduleLateCount);
+        while (true)
+        {
+            var current = Interlocked.Read(ref _maxScheduleLateTicks);
+            if (scheduleLateTicks <= current ||
+                Interlocked.CompareExchange(ref _maxScheduleLateTicks, scheduleLateTicks, current) == current)
+            {
+                return;
+            }
+        }
     }
 
     private void RecordTimingSample(double[] window, ref int count, ref int index, double valueMs)

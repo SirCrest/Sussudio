@@ -145,6 +145,14 @@ public class CaptureDiagnosticsSnapshot
     public long MjpegPreviewJitterLastDroppedSourceSequenceNumber { get; init; }
     public long MjpegPreviewJitterLastDropQpc { get; init; }
     public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;
+    public long MjpegPreviewJitterLastUnderflowQpc { get; init; }
+    public string MjpegPreviewJitterLastUnderflowReason { get; init; } = string.Empty;
+    public int MjpegPreviewJitterLastUnderflowQueueDepth { get; init; }
+    public double MjpegPreviewJitterLastUnderflowInputAgeMs { get; init; }
+    public double MjpegPreviewJitterLastUnderflowOutputAgeMs { get; init; }
+    public double MjpegPreviewJitterLastScheduleLateMs { get; init; }
+    public double MjpegPreviewJitterMaxScheduleLateMs { get; init; }
+    public long MjpegPreviewJitterScheduleLateCount { get; init; }
     public int MjpegPacketHashSampleCount { get; init; }
     public long MjpegPacketHashUniqueFrameCount { get; init; }
     public long MjpegPacketHashDuplicateFrameCount { get; init; }

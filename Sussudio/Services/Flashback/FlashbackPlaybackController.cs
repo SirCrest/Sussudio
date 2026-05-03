@@ -88,6 +88,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private long _playbackAudioMasterDelayDoubles;
     private long _playbackAudioMasterDelayShrinks;
     private long _playbackAudioMasterFallbacks;
+    private long _playbackAudioMasterUnavailableFallbacks;
+    private long _playbackAudioMasterStaleFallbacks;
+    private long _playbackAudioMasterDriftOutlierFallbacks;
+    private string _playbackAudioMasterLastFallbackReason = string.Empty;
+    private double _playbackAudioMasterLastFallbackDriftMs;
+    private double _playbackAudioMasterLastFallbackClockAgeMs;
 
     // --- Playback cadence metrics (written on playback thread, read from UI/diag) ---
     private long _playbackFrameCount;
@@ -2235,7 +2241,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 // WASAPI render PTS can lag decoded video by the endpoint buffer/device
                 // latency after resume. Do not let that stale clock halve video cadence.
-                Interlocked.Increment(ref _playbackAudioMasterFallbacks);
+                RecordAudioMasterFallback("drift-outlier", diffMs, wallElapsedTicks);
                 WallClockPace(pacingStopwatch, frameDuration);
                 return;
             }
@@ -2283,8 +2289,32 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         // Fallback: no audio clock available — pure wall-clock pacing
-        Interlocked.Increment(ref _playbackAudioMasterFallbacks);
+        var fallbackReason = audioClockPts <= 0 ? "unavailable" : "stale-clock";
+        RecordAudioMasterFallback(fallbackReason, 0, audioClockPts <= 0 ? 0 : wallElapsedTicks);
         WallClockPace(pacingStopwatch, frameDuration);
+    }
+
+    private void RecordAudioMasterFallback(string reason, double driftMs, long clockAgeTicks)
+    {
+        Interlocked.Increment(ref _playbackAudioMasterFallbacks);
+        switch (reason)
+        {
+            case "unavailable":
+                Interlocked.Increment(ref _playbackAudioMasterUnavailableFallbacks);
+                break;
+            case "stale-clock":
+                Interlocked.Increment(ref _playbackAudioMasterStaleFallbacks);
+                break;
+            case "drift-outlier":
+                Interlocked.Increment(ref _playbackAudioMasterDriftOutlierFallbacks);
+                break;
+        }
+
+        Volatile.Write(ref _playbackAudioMasterLastFallbackReason, reason);
+        _playbackAudioMasterLastFallbackDriftMs = driftMs;
+        _playbackAudioMasterLastFallbackClockAgeMs = clockAgeTicks <= 0
+            ? 0
+            : clockAgeTicks / (double)TimeSpan.TicksPerMillisecond;
     }
 
     /// <summary>
@@ -2563,6 +2593,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long PlaybackAudioMasterDelayDoubles => Interlocked.Read(ref _playbackAudioMasterDelayDoubles);
     public long PlaybackAudioMasterDelayShrinks => Interlocked.Read(ref _playbackAudioMasterDelayShrinks);
     public long PlaybackAudioMasterFallbacks => Interlocked.Read(ref _playbackAudioMasterFallbacks);
+    public long PlaybackAudioMasterUnavailableFallbacks => Interlocked.Read(ref _playbackAudioMasterUnavailableFallbacks);
+    public long PlaybackAudioMasterStaleFallbacks => Interlocked.Read(ref _playbackAudioMasterStaleFallbacks);
+    public long PlaybackAudioMasterDriftOutlierFallbacks => Interlocked.Read(ref _playbackAudioMasterDriftOutlierFallbacks);
+    public string PlaybackAudioMasterLastFallbackReason => Volatile.Read(ref _playbackAudioMasterLastFallbackReason);
+    public double PlaybackAudioMasterLastFallbackDriftMs => _playbackAudioMasterLastFallbackDriftMs;
+    public double PlaybackAudioMasterLastFallbackClockAgeMs => _playbackAudioMasterLastFallbackClockAgeMs;
     public long PlaybackSegmentSwitches => Interlocked.Read(ref _playbackSegmentSwitches);
     public long PlaybackFmp4Reopens => Interlocked.Read(ref _playbackFmp4Reopens);
     public long PlaybackReopenAudioNullWindowCount => Interlocked.Read(ref _playbackReopenAudioNullWindowCount);
@@ -2971,6 +3007,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Exchange(ref _playbackAudioMasterDelayDoubles, 0);
         Interlocked.Exchange(ref _playbackAudioMasterDelayShrinks, 0);
         Interlocked.Exchange(ref _playbackAudioMasterFallbacks, 0);
+        Interlocked.Exchange(ref _playbackAudioMasterUnavailableFallbacks, 0);
+        Interlocked.Exchange(ref _playbackAudioMasterStaleFallbacks, 0);
+        Interlocked.Exchange(ref _playbackAudioMasterDriftOutlierFallbacks, 0);
+        Volatile.Write(ref _playbackAudioMasterLastFallbackReason, string.Empty);
+        _playbackAudioMasterLastFallbackDriftMs = 0;
+        _playbackAudioMasterLastFallbackClockAgeMs = 0;
         Volatile.Write(ref _lastPlaybackDropReason, string.Empty);
         Interlocked.Exchange(ref _lastPlaybackDropUtcUnixMs, 0);
         Interlocked.Exchange(ref _playbackSubmitFailures, 0);

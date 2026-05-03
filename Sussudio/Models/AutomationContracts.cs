@@ -746,6 +746,14 @@ public sealed class AutomationSnapshot
     public long MjpegPreviewJitterLastDroppedSourceSequenceNumber { get; init; }
     public long MjpegPreviewJitterLastDropQpc { get; init; }
     public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;
+    public long MjpegPreviewJitterLastUnderflowQpc { get; init; }
+    public string MjpegPreviewJitterLastUnderflowReason { get; init; } = string.Empty;
+    public int MjpegPreviewJitterLastUnderflowQueueDepth { get; init; }
+    public double MjpegPreviewJitterLastUnderflowInputAgeMs { get; init; }
+    public double MjpegPreviewJitterLastUnderflowOutputAgeMs { get; init; }
+    public double MjpegPreviewJitterLastScheduleLateMs { get; init; }
+    public double MjpegPreviewJitterMaxScheduleLateMs { get; init; }
+    public long MjpegPreviewJitterScheduleLateCount { get; init; }
     public int MjpegPacketHashSampleCount { get; init; }
     public long MjpegPacketHashUniqueFrameCount { get; init; }
     public long MjpegPacketHashDuplicateFrameCount { get; init; }
@@ -861,6 +869,12 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackAudioMasterDelayDoubles { get; init; }
     public long FlashbackPlaybackAudioMasterDelayShrinks { get; init; }
     public long FlashbackPlaybackAudioMasterFallbacks { get; init; }
+    public long FlashbackPlaybackAudioMasterUnavailableFallbacks { get; init; }
+    public long FlashbackPlaybackAudioMasterStaleFallbacks { get; init; }
+    public long FlashbackPlaybackAudioMasterDriftOutlierFallbacks { get; init; }
+    public string FlashbackPlaybackAudioMasterLastFallbackReason { get; init; } = string.Empty;
+    public double FlashbackPlaybackAudioMasterLastFallbackDriftMs { get; init; }
+    public double FlashbackPlaybackAudioMasterLastFallbackClockAgeMs { get; init; }
     public long FlashbackPlaybackSegmentSwitches { get; init; }
     public long FlashbackPlaybackFmp4Reopens { get; init; }
     public long FlashbackPlaybackWriteHeadWaits { get; init; }
@@ -976,6 +990,11 @@ public sealed class PerformanceTimelineEntry
     public double MjpegPreviewJitterLatencyP95Ms { get; init; }
     public double MjpegPreviewJitterLatencyMaxMs { get; init; }
     public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;
+    public string MjpegPreviewJitterLastUnderflowReason { get; init; } = string.Empty;
+    public double MjpegPreviewJitterLastUnderflowInputAgeMs { get; init; }
+    public double MjpegPreviewJitterLastUnderflowOutputAgeMs { get; init; }
+    public double MjpegPreviewJitterMaxScheduleLateMs { get; init; }
+    public long MjpegPreviewJitterScheduleLateCount { get; init; }
     public int PreviewD3DPendingFrameCount { get; init; }
     public double PreviewD3DPresentCallP95Ms { get; init; }
     public double PreviewD3DTotalFrameCpuP95Ms { get; init; }
@@ -1022,6 +1041,11 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackAudioMasterDelayDoubles { get; init; }
     public long FlashbackPlaybackAudioMasterDelayShrinks { get; init; }
     public long FlashbackPlaybackAudioMasterFallbacks { get; init; }
+    public long FlashbackPlaybackAudioMasterUnavailableFallbacks { get; init; }
+    public long FlashbackPlaybackAudioMasterStaleFallbacks { get; init; }
+    public long FlashbackPlaybackAudioMasterDriftOutlierFallbacks { get; init; }
+    public string FlashbackPlaybackAudioMasterLastFallbackReason { get; init; } = string.Empty;
+    public double FlashbackPlaybackAudioMasterLastFallbackClockAgeMs { get; init; }
     public long FlashbackPlaybackSegmentSwitches { get; init; }
     public long FlashbackPlaybackFmp4Reopens { get; init; }
     public long FlashbackPlaybackWriteHeadWaits { get; init; }

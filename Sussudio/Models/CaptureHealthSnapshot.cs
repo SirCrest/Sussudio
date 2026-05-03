@@ -39,6 +39,12 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackPlaybackAudioMasterDelayDoubles { get; init; }
     public long FlashbackPlaybackAudioMasterDelayShrinks { get; init; }
     public long FlashbackPlaybackAudioMasterFallbacks { get; init; }
+    public long FlashbackPlaybackAudioMasterUnavailableFallbacks { get; init; }
+    public long FlashbackPlaybackAudioMasterStaleFallbacks { get; init; }
+    public long FlashbackPlaybackAudioMasterDriftOutlierFallbacks { get; init; }
+    public string FlashbackPlaybackAudioMasterLastFallbackReason { get; init; } = string.Empty;
+    public double FlashbackPlaybackAudioMasterLastFallbackDriftMs { get; init; }
+    public double FlashbackPlaybackAudioMasterLastFallbackClockAgeMs { get; init; }
     public long FlashbackPlaybackSegmentSwitches { get; init; }
     public long FlashbackPlaybackFmp4Reopens { get; init; }
     public long FlashbackPlaybackWriteHeadWaits { get; init; }

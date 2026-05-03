@@ -103,6 +103,11 @@ public sealed class DiagnosticSessionResult
     public long FlashbackPlaybackAudioMasterDelayDoublesAtEnd { get; init; }
     public long FlashbackPlaybackAudioMasterDelayShrinksAtEnd { get; init; }
     public long FlashbackPlaybackAudioMasterFallbacksAtEnd { get; init; }
+    public long FlashbackPlaybackAudioMasterUnavailableFallbacksAtEnd { get; init; }
+    public long FlashbackPlaybackAudioMasterStaleFallbacksAtEnd { get; init; }
+    public long FlashbackPlaybackAudioMasterDriftOutlierFallbacksAtEnd { get; init; }
+    public string FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd { get; init; } = string.Empty;
+    public double FlashbackPlaybackAudioMasterLastFallbackClockAgeMsAtEnd { get; init; }
     public long FlashbackPlaybackMaxAudioMasterDelayDoublesObserved { get; init; }
     public long FlashbackPlaybackMaxAudioMasterDelayShrinksObserved { get; init; }
     public long FlashbackPlaybackMaxAudioMasterFallbacksObserved { get; init; }
@@ -150,6 +155,11 @@ public sealed class DiagnosticSessionResult
     public long PreviewSchedulerClearedDropsDelta { get; init; }
     public long PreviewSchedulerUnderflowsDelta { get; init; }
     public string PreviewSchedulerLastDropReasonAtEnd { get; init; } = string.Empty;
+    public string PreviewSchedulerLastUnderflowReasonAtEnd { get; init; } = string.Empty;
+    public double PreviewSchedulerLastUnderflowInputAgeMsAtEnd { get; init; }
+    public double PreviewSchedulerLastUnderflowOutputAgeMsAtEnd { get; init; }
+    public double PreviewSchedulerMaxScheduleLateMsObserved { get; init; }
+    public long PreviewSchedulerScheduleLateDelta { get; init; }
     public int PreviewD3DMaxRecentSlowFramesObserved { get; init; }
     public string PreviewD3DLatestSlowFrameReason { get; init; } = string.Empty;
     public double PreviewD3DLatestSlowFrameOverBudgetMs { get; init; }
@@ -789,6 +799,11 @@ public static class DiagnosticSessionRunner
         var playbackAudioMasterDelayDoublesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterDelayDoubles") ?? 0 : 0;
         var playbackAudioMasterDelayShrinksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterDelayShrinks") ?? 0 : 0;
         var playbackAudioMasterFallbacksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterFallbacks") ?? 0 : 0;
+        var playbackAudioMasterUnavailableFallbacksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterUnavailableFallbacks") ?? 0 : 0;
+        var playbackAudioMasterStaleFallbacksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterStaleFallbacks") ?? 0 : 0;
+        var playbackAudioMasterDriftOutlierFallbacksAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackAudioMasterDriftOutlierFallbacks") ?? 0 : 0;
+        var playbackAudioMasterLastFallbackReasonAtEnd = playbackSessionMetrics.Observed ? GetString(playbackEndSnapshot, "FlashbackPlaybackAudioMasterLastFallbackReason") ?? string.Empty : string.Empty;
+        var playbackAudioMasterLastFallbackClockAgeMsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackAudioMasterLastFallbackClockAgeMs") : 0;
         var playbackSubmitFailuresAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSubmitFailures") ?? 0 : 0;
         var playbackSegmentSwitchesAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSegmentSwitches") ?? 0 : 0;
         var playbackFmp4ReopensAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackFmp4Reopens") ?? 0 : 0;
@@ -814,6 +829,12 @@ public static class DiagnosticSessionRunner
         var previewSchedulerDeadlineDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterDeadlineDropCount");
         var previewSchedulerClearedDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterClearedDropCount");
         var previewSchedulerUnderflowsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterUnderflowCount");
+        var previewSchedulerScheduleLateDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterScheduleLateCount");
+        var previewSchedulerMaxScheduleLateMsObserved = samples
+            .Select(sample => GetDouble(sample.Snapshot, "MjpegPreviewJitterMaxScheduleLateMs"))
+            .Append(GetDouble(lastSnapshot, "MjpegPreviewJitterMaxScheduleLateMs"))
+            .DefaultIfEmpty(0)
+            .Max();
         var isFlashbackScenario =
             runFlashbackPlayback ||
             runFlashbackStress ||
@@ -948,6 +969,11 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackAudioMasterDelayDoublesAtEnd = playbackAudioMasterDelayDoublesAtEnd,
             FlashbackPlaybackAudioMasterDelayShrinksAtEnd = playbackAudioMasterDelayShrinksAtEnd,
             FlashbackPlaybackAudioMasterFallbacksAtEnd = playbackAudioMasterFallbacksAtEnd,
+            FlashbackPlaybackAudioMasterUnavailableFallbacksAtEnd = playbackAudioMasterUnavailableFallbacksAtEnd,
+            FlashbackPlaybackAudioMasterStaleFallbacksAtEnd = playbackAudioMasterStaleFallbacksAtEnd,
+            FlashbackPlaybackAudioMasterDriftOutlierFallbacksAtEnd = playbackAudioMasterDriftOutlierFallbacksAtEnd,
+            FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd = playbackAudioMasterLastFallbackReasonAtEnd,
+            FlashbackPlaybackAudioMasterLastFallbackClockAgeMsAtEnd = playbackAudioMasterLastFallbackClockAgeMsAtEnd,
             FlashbackPlaybackMaxAudioMasterDelayDoublesObserved = playbackSessionMetrics.MaxAudioMasterDelayDoublesObserved,
             FlashbackPlaybackMaxAudioMasterDelayShrinksObserved = playbackSessionMetrics.MaxAudioMasterDelayShrinksObserved,
             FlashbackPlaybackMaxAudioMasterFallbacksObserved = playbackSessionMetrics.MaxAudioMasterFallbacksObserved,
@@ -993,6 +1019,11 @@ public static class DiagnosticSessionRunner
             PreviewSchedulerClearedDropsDelta = previewSchedulerClearedDropsDelta,
             PreviewSchedulerUnderflowsDelta = previewSchedulerUnderflowsDelta,
             PreviewSchedulerLastDropReasonAtEnd = GetString(lastSnapshot, "MjpegPreviewJitterLastDropReason") ?? string.Empty,
+            PreviewSchedulerLastUnderflowReasonAtEnd = GetString(lastSnapshot, "MjpegPreviewJitterLastUnderflowReason") ?? string.Empty,
+            PreviewSchedulerLastUnderflowInputAgeMsAtEnd = GetDouble(lastSnapshot, "MjpegPreviewJitterLastUnderflowInputAgeMs"),
+            PreviewSchedulerLastUnderflowOutputAgeMsAtEnd = GetDouble(lastSnapshot, "MjpegPreviewJitterLastUnderflowOutputAgeMs"),
+            PreviewSchedulerMaxScheduleLateMsObserved = previewSchedulerMaxScheduleLateMsObserved,
+            PreviewSchedulerScheduleLateDelta = previewSchedulerScheduleLateDelta,
             PreviewD3DFrameStatsMissedRefreshDelta = previewD3DMetrics.MissedRefreshDelta,
             PreviewD3DFrameStatsFailureDelta = previewD3DMetrics.StatsFailureDelta,
             PreviewD3DMaxRecentSlowFramesObserved = previewD3DMetrics.MaxRecentSlowFramesObserved,
@@ -1151,6 +1182,11 @@ public static class DiagnosticSessionRunner
             $"audioMasterShrinkMax={result.FlashbackPlaybackMaxAudioMasterDelayShrinksObserved} " +
             $"audioMasterFallbackEnd={result.FlashbackPlaybackAudioMasterFallbacksAtEnd} " +
             $"audioMasterFallbackMax={result.FlashbackPlaybackMaxAudioMasterFallbacksObserved} " +
+            $"audioMasterUnavailableEnd={result.FlashbackPlaybackAudioMasterUnavailableFallbacksAtEnd} " +
+            $"audioMasterStaleEnd={result.FlashbackPlaybackAudioMasterStaleFallbacksAtEnd} " +
+            $"audioMasterDriftOutlierEnd={result.FlashbackPlaybackAudioMasterDriftOutlierFallbacksAtEnd} " +
+            $"audioMasterLastFallback={FormatOptional(result.FlashbackPlaybackAudioMasterLastFallbackReasonAtEnd)} " +
+            $"audioMasterLastFallbackAgeMs={result.FlashbackPlaybackAudioMasterLastFallbackClockAgeMsAtEnd:0.##} " +
             $"audioBufferedMsMax={result.FlashbackPlaybackMaxAudioBufferedDurationMsObserved:0.##} " +
             $"audioQueueMsMax={result.FlashbackPlaybackMaxAudioQueueDurationMsObserved:0.##} " +
             $"absAvDriftMsMax={result.FlashbackPlaybackMaxAbsAvDriftMsObserved:0.##} " +
@@ -1220,6 +1256,11 @@ public static class DiagnosticSessionRunner
             $"deadlineDropsDelta={result.PreviewSchedulerDeadlineDropsDelta} " +
             $"underflowsEnd={result.PreviewSchedulerUnderflowsAtEnd} " +
             $"underflowsDelta={result.PreviewSchedulerUnderflowsDelta} " +
+            $"lastUnderflowReasonEnd={FormatOptional(result.PreviewSchedulerLastUnderflowReasonAtEnd)} " +
+            $"lastUnderflowInputAgeMsEnd={result.PreviewSchedulerLastUnderflowInputAgeMsAtEnd:0.##} " +
+            $"lastUnderflowOutputAgeMsEnd={result.PreviewSchedulerLastUnderflowOutputAgeMsAtEnd:0.##} " +
+            $"scheduleLateMaxMsObserved={result.PreviewSchedulerMaxScheduleLateMsObserved:0.##} " +
+            $"scheduleLateDelta={result.PreviewSchedulerScheduleLateDelta} " +
             $"lastDropReasonEnd={FormatOptional(result.PreviewSchedulerLastDropReasonAtEnd)}");
         builder.AppendLine(
             "Preview D3D Perf: " +
