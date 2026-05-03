@@ -447,6 +447,15 @@ static partial class Program
         AssertContains(diagnosticsText, "var visualCadenceHealthy =\n            IsVisualCadenceHealthy(");
         AssertContains(diagnosticsText, "Present/display 1% low is below target, but sampled visual cadence confirms source-rate output.");
         AssertContains(diagnosticsText, "if (visualCadenceHealthy)\n            {\n                return new DiagnosticEvaluation(\n                    \"Healthy\",");
+        AssertContains(diagnosticsText, "private static bool IsMjpegDuplicateCadenceDetected(CaptureHealthSnapshot health)");
+        AssertContains(diagnosticsText, "health.MjpegPacketHashDuplicateFramePercent < 20.0");
+        AssertContains(diagnosticsText, "health.MjpegPacketHashUniqueObservedFps <= health.ExpectedFrameRate * 0.75");
+        AssertContains(diagnosticsText, "health.VisualCadenceChangeObservedFps <= health.ExpectedFrameRate * 0.75");
+        AssertContains(diagnosticsText, "health.SourceFrameRateExact.Value <= health.ExpectedFrameRate * 0.75");
+        AssertContains(diagnosticsText, "var mjpegDuplicateCadenceDetected = IsMjpegDuplicateCadenceDetected(health);");
+        AssertContains(diagnosticsText, "\"source_signal\"");
+        AssertContains(diagnosticsText, "\"Captured HFR MJPEG cadence contains repeated source frames.\"");
+        AssertContains(diagnosticsText, "$\"{mjpegDuplicateLane} | {visualLane} | {sourceSignalLane}\"");
         AssertContains(diagnosticsText, "!visualCadenceHealthy &&\n            IsPreviewOnePercentLowDegraded(");
         AssertContains(diagnosticsText, "private static bool IsVisualCadenceHealthy(");
         AssertContains(diagnosticsText, "changeObservedFps >= targetFrameRate * PreviewOnePercentLowWarningRatio");

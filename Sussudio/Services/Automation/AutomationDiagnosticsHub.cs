@@ -2042,6 +2042,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         return $" visualChanges={snapshot.VisualCadenceChangeObservedFps:0.##}fps visualOutput={snapshot.VisualCadenceOutputObservedFps:0.##}fps repeat={snapshot.VisualCadenceRepeatFramePercent:0.###}% longestRepeatRun={snapshot.VisualCadenceLongestRepeatRun} confidence={snapshot.VisualCadenceMotionConfidence}";
     }
 
+    private static string FormatMjpegDuplicateCadenceDetail(CaptureHealthSnapshot health)
+        =>
+            $"mjpg fingerprint samples={health.MjpegPacketHashSampleCount} input={health.MjpegPacketHashInputObservedFps:0.##}fps unique={health.MjpegPacketHashUniqueObservedFps:0.##}fps dup={health.MjpegPacketHashDuplicateFramePercent:0.###}% pattern={health.MjpegPacketHashPattern} longestDup={health.MjpegPacketHashLongestDuplicateRun}";
+
     private static bool IsFlashbackPlaybackFrametimeDegraded(
         string state,
         double targetFrameRate,
@@ -2094,6 +2098,31 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             changeObservedFps >= targetFrameRate * PreviewOnePercentLowWarningRatio &&
             repeatFramePercent <= 1.0 &&
             longestRepeatRun <= 1;
+
+    private static bool IsMjpegDuplicateCadenceDetected(CaptureHealthSnapshot health)
+    {
+        if (health.ExpectedFrameRate < 90 ||
+            health.MjpegPacketHashSampleCount < PreviewPerfectionMinSamples ||
+            health.MjpegPacketHashInputObservedFps < health.ExpectedFrameRate * 0.90 ||
+            health.MjpegPacketHashDuplicateFramePercent < 20.0)
+        {
+            return false;
+        }
+
+        var uniqueCadenceBelowTarget =
+            health.MjpegPacketHashUniqueObservedFps > 0 &&
+            health.MjpegPacketHashUniqueObservedFps <= health.ExpectedFrameRate * 0.75;
+        var visualCadenceBelowTarget =
+            health.VisualCadenceSampleCount >= PreviewPerfectionMinSamples &&
+            health.VisualCadenceChangeObservedFps > 0 &&
+            health.VisualCadenceChangeObservedFps <= health.ExpectedFrameRate * 0.75 &&
+            health.VisualCadenceRepeatFramePercent >= 20.0;
+        var telemetryBelowTarget =
+            health.SourceFrameRateExact is > 0 &&
+            health.SourceFrameRateExact.Value <= health.ExpectedFrameRate * 0.75;
+
+        return uniqueCadenceBelowTarget || visualCadenceBelowTarget || telemetryBelowTarget;
+    }
 
     private static bool IsFlashbackRecordingQueueBackedUp(
         int queueDepth,
@@ -2196,6 +2225,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"present target={presentTarget} avg={previewRuntime.DisplayCadenceAverageIntervalMs:0.##}ms p95={previewRuntime.DisplayCadenceP95IntervalMs:0.##}ms p99={previewRuntime.DisplayCadenceP99IntervalMs:0.##}ms max={previewRuntime.DisplayCadenceMaxIntervalMs:0.##}ms slow={previewRuntime.DisplayCadenceSlowFramePercent:0.##}% rate={previewRuntime.DisplayCadenceObservedFps:0.##}fps 1pctLow={previewRuntime.DisplayCadenceOnePercentLowFps:0.##}fps sync={previewRuntime.D3DPresentSyncInterval} latency={previewRuntime.D3DMaxFrameLatency} buffers={previewRuntime.D3DSwapChainBufferCount} swap={previewRuntime.D3DSwapChainAddress}{dxgiStats}";
         var visualLane =
             $"visual crop samples={health.VisualCadenceSampleCount} output={health.VisualCadenceOutputObservedFps:0.##}fps changes={health.VisualCadenceChangeObservedFps:0.##}fps repeat={health.VisualCadenceRepeatFramePercent:0.###}% repeatFrames={health.VisualCadenceRepeatFrameCount} longestRepeatRun={health.VisualCadenceLongestRepeatRun} confidence={health.VisualCadenceMotionConfidence}";
+        var mjpegDuplicateLane = FormatMjpegDuplicateCadenceDetail(health);
+        var sourceSignalLane =
+            $"{sourceLane} | source telemetry {health.SourceWidth ?? 0}x{health.SourceHeight ?? 0}@{(health.SourceFrameRateExact ?? 0):0.##}fps hdr={health.SourceIsHdr?.ToString() ?? "Unknown"} availability={health.SourceTelemetryAvailability}/{health.SourceTelemetryConfidence}";
         var recordingLane =
             $"recording integrity={captureRuntime.RecordingIntegrityStatus} complete={captureRuntime.RecordingIntegrityComplete} seqGaps={captureRuntime.RecordingIntegritySequenceGaps} queueDrops={captureRuntime.RecordingIntegrityQueueDroppedFrames}";
         var audioLane =
@@ -2262,6 +2294,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 health.VisualCadenceChangeObservedFps,
                 health.VisualCadenceRepeatFramePercent,
                 health.VisualCadenceLongestRepeatRun);
+        var mjpegDuplicateCadenceDetected = IsMjpegDuplicateCadenceDetected(health);
         var flashbackTempPressure =
             health.FlashbackActive &&
             (health.FlashbackStartupCacheOverBudget ||
@@ -2569,6 +2602,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 "source_capture",
                 "Source/capture 1% low is below target.",
                 sourceLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (mjpegDuplicateCadenceDetected)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "source_signal",
+                "Captured HFR MJPEG cadence contains repeated source frames.",
+                $"{mjpegDuplicateLane} | {visualLane} | {sourceSignalLane}",
                 sourceLane,
                 decodeLane,
                 previewLane,
