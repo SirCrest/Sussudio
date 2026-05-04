@@ -2576,7 +2576,9 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_UPDATE sink={previewSink != null} capture={videoCapture != null}");
         AssertContains(sourceText, "public void PrepareForPreviewDetach()");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_DETACH state={_state} thread_alive={PlaybackThreadAlive}");
-        AssertContains(sourceText, "if (!StopPlaybackThread())\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_PREVIEW_DETACH_ABORT reason=thread_stop_failed\");\n            return;\n        }\n\n        ReleasePlaybackFrameForLive(\"preview_detach\");");
+        AssertContains(sourceText, "if (!StopPlaybackThread())\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_PREVIEW_DETACH_ABORT reason=thread_stop_failed\");\n        }\n\n        ReleasePlaybackFrameForLive(\"preview_detach\");");
+        AssertOccursBefore(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_DETACH_ABORT reason=thread_stop_failed", "ReleasePlaybackFrameForLive(\"preview_detach\");");
+        AssertContains(sourceText, "RestoreLiveAudio();\n        SafeResumePreviewSubmission(\"preview_detach\");\n        SetState(FlashbackPlaybackState.Live);");
         AssertContains(sourceText, "var previewSink = Volatile.Read(ref _previewSink);");
         AssertContains(sourceText, "SetLastSubmitFailure($\"{operation}:missing_preview_sink\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_missing_preview_sink\");");
