@@ -68,6 +68,9 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackPlaybackSlowFrames { get; init; }
     public double FlashbackPlaybackSlowFramePercent { get; init; }
     public double FlashbackPlaybackOnePercentLowFps { get; init; }
+    public double FlashbackPlaybackFivePercentLowFps { get; init; }
+    public double FlashbackPlaybackSampleDurationMs { get; init; }
+    public double[] FlashbackPlaybackRecentFrameIntervalsMs { get; init; } = Array.Empty<double>();
     public long FlashbackPlaybackPtsCadenceMismatchCount { get; init; }
     public long FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs { get; init; }
     public double FlashbackPlaybackLastPtsCadenceDeltaMs { get; init; }

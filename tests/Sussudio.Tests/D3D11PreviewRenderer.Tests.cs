@@ -164,8 +164,8 @@ static partial class Program
         AssertContains(source, "public PipelineLatencyMetrics GetPipelineLatencyMetrics()");
         AssertContains(source, "public double GetEstimatedPipelineLatencyMs()\n    {\n        lock (_pipelineLatencyLock)");
         AssertDoesNotContain(source, "public double GetEstimatedPipelineLatencyMs()\n    {\n        return GetPipelineLatencyMetrics().AverageMs;\n    }");
-        AssertDoesNotContain(source, "(double[])samples.Clone();");
-        AssertContains(source, "Array.Sort(samples);");
+        AssertContains(source, "var sorted = (double[])samples.Clone();");
+        AssertContains(source, "Array.Sort(sorted);");
         AssertContains(source, "var frameCounter = Interlocked.Increment(ref _dxgiFrameStatisticsFrameCounter);");
         AssertContains(source, "frameCounter % _dxgiFrameStatisticsSampleIntervalFrames != 0");
         AssertContains(source, "_dxgiFrameStatisticsLastSampleFrameCounter = frameCounter;");

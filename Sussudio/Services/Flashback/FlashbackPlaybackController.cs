@@ -72,7 +72,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
         double MaxFrameMs,
         long SlowFrameCount,
         double SlowFramePercent,
-        double OnePercentLowFps);
+        double OnePercentLowFps,
+        double FivePercentLowFps,
+        double SampleDurationMs,
+        double[] RecentFrameIntervalsMs);
 
     public readonly record struct PlaybackDecodeMetrics(
         int SampleCount,
@@ -3439,7 +3442,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             if (_playbackFrameIntervalCount == 0)
             {
-                return new PlaybackCadenceMetrics(0, 0, 0, 0, Interlocked.Read(ref _playbackSlowFrameCount), 0, 0);
+                return new PlaybackCadenceMetrics(0, 0, 0, 0, Interlocked.Read(ref _playbackSlowFrameCount), 0, 0, 0, 0, Array.Empty<double>());
             }
 
             samples = new double[_playbackFrameIntervalCount];
@@ -3450,15 +3453,23 @@ internal sealed class FlashbackPlaybackController : IDisposable
             }
         }
 
-        Array.Sort(samples);
-        var p95 = PercentileFromSorted(samples, 0.95);
-        var p99 = PercentileFromSorted(samples, 0.99);
-        var max = samples[^1];
+        var sum = 0.0;
+        for (var i = 0; i < samples.Length; i++)
+        {
+            sum += samples[i];
+        }
+
+        var sorted = (double[])samples.Clone();
+        Array.Sort(sorted);
+        var p95 = PercentileFromSorted(sorted, 0.95);
+        var p99 = PercentileFromSorted(sorted, 0.99);
+        var max = sorted[^1];
         var slow = Interlocked.Read(ref _playbackSlowFrameCount);
         var totalFrames = Math.Max(1, Interlocked.Read(ref _playbackFrameCount));
         var slowPercent = slow * 100.0 / totalFrames;
         var onePercentLowFps = p99 > 0 ? 1000.0 / p99 : 0;
-        return new PlaybackCadenceMetrics(samples.Length, p95, p99, max, slow, slowPercent, onePercentLowFps);
+        var fivePercentLowFps = p95 > 0 ? 1000.0 / p95 : 0;
+        return new PlaybackCadenceMetrics(samples.Length, p95, p99, max, slow, slowPercent, onePercentLowFps, fivePercentLowFps, sum, samples);
     }
 
     public PlaybackDecodeMetrics GetPlaybackDecodeMetrics()

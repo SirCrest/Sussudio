@@ -50,6 +50,7 @@ static partial class Program
         AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPacketHashRecentInputIntervalsMs")!), "CaptureDiagnosticsSnapshot.MjpegPacketHashRecentInputIntervalsMs default count");
         AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPacketHashRecentUniqueIntervalsMs")!), "CaptureDiagnosticsSnapshot.MjpegPacketHashRecentUniqueIntervalsMs default count");
         AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "MjpegPacketHashRecentDuplicateFlags")!), "CaptureDiagnosticsSnapshot.MjpegPacketHashRecentDuplicateFlags default count");
+        AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "CaptureCadenceRecentIntervalsMs")!), "CaptureDiagnosticsSnapshot.CaptureCadenceRecentIntervalsMs default count");
         AssertNonNullStringValue(snapshot, "VisualCadenceMotionConfidence", "NoSamples", "CaptureDiagnosticsSnapshot.VisualCadenceMotionConfidence default");
         AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "VisualCadenceRecentOutputIntervalsMs")!), "CaptureDiagnosticsSnapshot.VisualCadenceRecentOutputIntervalsMs default count");
         AssertEqual(0, GetCountProperty(GetPropertyValue(snapshot, "VisualCadenceRecentChangeIntervalsMs")!), "CaptureDiagnosticsSnapshot.VisualCadenceRecentChangeIntervalsMs default count");
@@ -264,6 +265,9 @@ static partial class Program
                 new("FlashbackPlaybackSlowFrames", typeof(long)),
                 new("FlashbackPlaybackSlowFramePercent", typeof(double)),
                 new("FlashbackPlaybackOnePercentLowFps", typeof(double)),
+                new("FlashbackPlaybackFivePercentLowFps", typeof(double)),
+                new("FlashbackPlaybackSampleDurationMs", typeof(double)),
+                new("FlashbackPlaybackRecentFrameIntervalsMs", typeof(double[])),
                 new("FlashbackPlaybackPtsCadenceMismatchCount", typeof(long)),
                 new("FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs", typeof(long)),
                 new("FlashbackPlaybackLastPtsCadenceDeltaMs", typeof(double)),
@@ -820,6 +824,9 @@ static partial class Program
                 new("CaptureCadenceP99IntervalMs", typeof(double)),
                 new("CaptureCadenceMaxIntervalMs", typeof(double)),
                 new("CaptureCadenceOnePercentLowFps", typeof(double)),
+                new("CaptureCadenceFivePercentLowFps", typeof(double)),
+                new("CaptureCadenceSampleDurationMs", typeof(double)),
+                new("CaptureCadenceRecentIntervalsMs", typeof(double[])),
                 new("CaptureCadenceJitterStdDevMs", typeof(double)),
                 new("CaptureCadenceSevereGapCount", typeof(long)),
                 new("CaptureCadenceEstimatedDroppedFrames", typeof(long)),

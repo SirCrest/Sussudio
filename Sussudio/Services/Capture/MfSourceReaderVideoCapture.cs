@@ -99,6 +99,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         double P99IntervalMs,
         double MaxIntervalMs,
         double OnePercentLowFps,
+        double FivePercentLowFps,
+        double SampleDurationMs,
+        double[] RecentIntervalsMs,
         double JitterStdDevMs,
         long SevereGapCount,
         long EstimatedDroppedFrames,
@@ -677,6 +680,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
                     P99IntervalMs: 0,
                     MaxIntervalMs: 0,
                     OnePercentLowFps: 0,
+                    FivePercentLowFps: 0,
+                    SampleDurationMs: 0,
+                    RecentIntervalsMs: Array.Empty<double>(),
                     JitterStdDevMs: 0,
                     SevereGapCount: 0,
                     EstimatedDroppedFrames: 0,
@@ -736,6 +742,7 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
         var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
         var p99IntervalMs = sorted[Math.Clamp(p99Index, 0, sorted.Length - 1)];
         var onePercentLowFps = p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0;
+        var fivePercentLowFps = p95IntervalMs > double.Epsilon ? 1000.0 / p95IntervalMs : 0;
         var estimatedDropPercent = estimatedDroppedFrames * 100.0 / Math.Max(1, sampleCount + estimatedDroppedFrames);
 
         return new SourceCadenceMetrics(
@@ -747,6 +754,9 @@ public sealed class MfSourceReaderVideoCapture : IAsyncDisposable
             P99IntervalMs: p99IntervalMs,
             MaxIntervalMs: max,
             OnePercentLowFps: onePercentLowFps,
+            FivePercentLowFps: fivePercentLowFps,
+            SampleDurationMs: sum,
+            RecentIntervalsMs: samples,
             JitterStdDevMs: jitterStdDevMs,
             SevereGapCount: severeGapCount,
             EstimatedDroppedFrames: estimatedDroppedFrames,

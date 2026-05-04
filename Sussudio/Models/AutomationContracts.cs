@@ -472,6 +472,9 @@ public sealed class AutomationSnapshot
     public double PreviewCadenceP99IntervalMs { get; init; }
     public double PreviewCadenceMaxIntervalMs { get; init; }
     public double PreviewCadenceOnePercentLowFps { get; init; }
+    public double PreviewCadenceFivePercentLowFps { get; init; }
+    public double PreviewCadenceSampleDurationMs { get; init; }
+    public double[] PreviewCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();
     public double PreviewCadenceJitterStdDevMs { get; init; }
     public long PreviewCadenceSlowFrameCount { get; init; }
     public double PreviewCadenceSlowFramePercent { get; init; }
@@ -677,6 +680,9 @@ public sealed class AutomationSnapshot
     public double CaptureCadenceP99IntervalMs { get; init; }
     public double CaptureCadenceMaxIntervalMs { get; init; }
     public double CaptureCadenceOnePercentLowFps { get; init; }
+    public double CaptureCadenceFivePercentLowFps { get; init; }
+    public double CaptureCadenceSampleDurationMs { get; init; }
+    public double[] CaptureCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();
     public double CaptureCadenceJitterStdDevMs { get; init; }
     public long CaptureCadenceSevereGapCount { get; init; }
     public long CaptureCadenceEstimatedDroppedFrames { get; init; }
@@ -902,6 +908,9 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackSlowFrames { get; init; }
     public double FlashbackPlaybackSlowFramePercent { get; init; }
     public double FlashbackPlaybackOnePercentLowFps { get; init; }
+    public double FlashbackPlaybackFivePercentLowFps { get; init; }
+    public double FlashbackPlaybackSampleDurationMs { get; init; }
+    public double[] FlashbackPlaybackRecentFrameIntervalsMs { get; init; } = Array.Empty<double>();
     public long FlashbackPlaybackPtsCadenceMismatchCount { get; init; }
     public long FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs { get; init; }
     public double FlashbackPlaybackLastPtsCadenceDeltaMs { get; init; }
@@ -1243,6 +1252,9 @@ public sealed class PreviewRuntimeSnapshot
     public double DisplayCadenceP99IntervalMs { get; init; }
     public double DisplayCadenceMaxIntervalMs { get; init; }
     public double DisplayCadenceOnePercentLowFps { get; init; }
+    public double DisplayCadenceFivePercentLowFps { get; init; }
+    public double DisplayCadenceSampleDurationMs { get; init; }
+    public double[] DisplayCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();
     public double DisplayCadenceJitterStdDevMs { get; init; }
     public long DisplayCadenceSlowFrameCount { get; init; }
     public double DisplayCadenceSlowFramePercent { get; init; }

@@ -314,6 +314,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         double P99IntervalMs,
         double MaxIntervalMs,
         double OnePercentLowFps,
+        double FivePercentLowFps,
+        double SampleDurationMs,
+        double[] RecentIntervalsMs,
         double JitterStdDevMs,
         long SlowFrameCount,
         double SlowFramePercent);
@@ -1409,6 +1412,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                     P99IntervalMs: 0,
                     MaxIntervalMs: 0,
                     OnePercentLowFps: 0,
+                    FivePercentLowFps: 0,
+                    SampleDurationMs: 0,
+                    RecentIntervalsMs: Array.Empty<double>(),
                     JitterStdDevMs: 0,
                     SlowFrameCount: 0,
                     SlowFramePercent: 0);
@@ -1453,12 +1459,14 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         }
 
         var jitterStdDevMs = Math.Sqrt(varianceSum / sampleCount);
-        Array.Sort(samples);
-        var p95Index = (int)Math.Ceiling((samples.Length - 1) * 0.95);
-        var p95IntervalMs = samples[Math.Clamp(p95Index, 0, samples.Length - 1)];
-        var p99Index = (int)Math.Ceiling((samples.Length - 1) * 0.99);
-        var p99IntervalMs = samples[Math.Clamp(p99Index, 0, samples.Length - 1)];
+        var sorted = (double[])samples.Clone();
+        Array.Sort(sorted);
+        var p95Index = (int)Math.Ceiling((sorted.Length - 1) * 0.95);
+        var p95IntervalMs = sorted[Math.Clamp(p95Index, 0, sorted.Length - 1)];
+        var p99Index = (int)Math.Ceiling((sorted.Length - 1) * 0.99);
+        var p99IntervalMs = sorted[Math.Clamp(p99Index, 0, sorted.Length - 1)];
         var onePercentLowFps = p99IntervalMs > double.Epsilon ? 1000.0 / p99IntervalMs : 0;
+        var fivePercentLowFps = p95IntervalMs > double.Epsilon ? 1000.0 / p95IntervalMs : 0;
         var slowPercent = slowFrameCount <= 0
             ? 0
             : (double)slowFrameCount / Math.Max(1, sampleCount) * 100.0;
@@ -1472,6 +1480,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             P99IntervalMs: p99IntervalMs,
             MaxIntervalMs: max,
             OnePercentLowFps: onePercentLowFps,
+            FivePercentLowFps: fivePercentLowFps,
+            SampleDurationMs: sum,
+            RecentIntervalsMs: samples,
             JitterStdDevMs: jitterStdDevMs,
             SlowFrameCount: slowFrameCount,
             SlowFramePercent: slowPercent);

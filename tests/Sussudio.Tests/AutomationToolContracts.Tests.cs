@@ -199,6 +199,8 @@ static partial class Program
                 "FlashbackPlaybackLastCommandFailure": "not_ready:Pause",
                 "FlashbackPlaybackLastCommandFailureUtcUnixMs": 123456789,
                 "FlashbackPlaybackTargetFps": 120,
+                "FlashbackPlaybackFivePercentLowFps": 118,
+                "FlashbackPlaybackSampleDurationMs": 1000,
                 "FlashbackPlaybackDecodeSampleCount": 120,
                 "FlashbackPlaybackDecodeAvgMs": 1.25,
                 "FlashbackPlaybackDecodeP95Ms": 2.5,
@@ -316,6 +318,7 @@ static partial class Program
         AssertContains(formatted, "submitFailures=3");
         AssertContains(formatted, "Playback Commands: pending=1/256 maxPending=4 lastLatency=12ms maxLatency=87ms enq=12 proc=11 drop=0 skip=2 coalescedScrub=9 coalescedSeek=5 threadAlive=true lastQueued=UpdateScrub lastProcessed=BeginScrub failure=not_ready:Pause failureUtc=123456789");
         AssertContains(formatted, "Target: 120 fps");
+        AssertContains(formatted, "5% Low: 118 fps");
         AssertContains(formatted, "Playback Decode: avg=1.25ms P95=2.5ms P99=3.5ms max=4.5ms phase=audio receive=0.5ms feed=4.0ms read=0.75ms send=3.5ms audio=3.25ms convert=0.25ms maxPos=2345ms samples=120");
         AssertContains(formatted, "Export: active=true status=Running id=7 lastResultId=7 kind=NoMediaWritten progress=37.5% segments=3/8");
         AssertContains(formatted, "elapsed=2500ms progressAge=150ms bytes=1 MB throughput=409.6 KB/s");

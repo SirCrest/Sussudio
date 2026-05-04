@@ -73,6 +73,9 @@ public class CaptureDiagnosticsSnapshot
     public double CaptureCadenceP99IntervalMs { get; init; }
     public double CaptureCadenceMaxIntervalMs { get; init; }
     public double CaptureCadenceOnePercentLowFps { get; init; }
+    public double CaptureCadenceFivePercentLowFps { get; init; }
+    public double CaptureCadenceSampleDurationMs { get; init; }
+    public double[] CaptureCadenceRecentIntervalsMs { get; init; } = Array.Empty<double>();
     public double CaptureCadenceJitterStdDevMs { get; init; }
     public long CaptureCadenceSevereGapCount { get; init; }
     public long CaptureCadenceEstimatedDroppedFrames { get; init; }
