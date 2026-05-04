@@ -515,7 +515,16 @@ static partial class Program
         AssertContains(captureServiceText, "exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
         AssertContains(captureServiceText, "var forceRotateResult = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);");
         AssertContains(captureServiceText, "segmentPaths = forceRotateResult.SegmentPaths;");
+        AssertContains(captureServiceText, "forceRotateFailed = forceRotateResult.Status == FlashbackForceRotateStatus.Failed;");
         AssertContains(captureServiceText, "if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)");
+        var forceRotateFallbackBlock = ExtractTextBetween(
+            captureServiceText,
+            "if (segmentPaths.Count == 0)",
+            "// Fallback: single-file export if no segments available");
+        AssertContains(forceRotateFallbackBlock, "var fallbackReason = forceRotateFailed ? \"force_rotate_failed\" : \"force_rotate_timeout\";");
+        AssertContains(forceRotateFallbackBlock, "if (forceRotateFailed)\n                        {\n                            result = FinalizeResult.Failure(\n                                outputPath,\n                                \"Flashback export failed: live-edge segment rotation failed.\");");
+        AssertContains(forceRotateFallbackBlock, "FLASHBACK_EXPORT_FORCE_ROTATE_FAILED");
+        AssertOccursBefore(forceRotateFallbackBlock, "if (forceRotateFailed)", "segmentPaths = null;");
         AssertContains(captureServiceText, "evictionPaused = true;");
         AssertContains(captureServiceText, "if (exportId != 0)");
         AssertContains(captureServiceText, "if (evictionPaused)");
