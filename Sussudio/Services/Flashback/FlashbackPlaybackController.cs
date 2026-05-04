@@ -122,6 +122,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     // --- Playback cadence metrics (written on playback thread, read from UI/diag) ---
     private long _playbackFrameCount;
+    private long _playbackPreviewPresentId;
     private long _playbackLateFrames;
     private long _playbackSegmentSwitches;
     private long _playbackFmp4Reopens;
@@ -1931,7 +1932,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         try
         {
-            SubmitFrame(previewSink, frame);
+            var previewPresentId = Interlocked.Increment(ref _playbackPreviewPresentId);
+            SubmitFrame(previewSink, frame, previewPresentId);
             ReleasePreviousHeldFrame();
             _previousHeldFrame = frame;
             _hasPreviousHeldFrame = true;
@@ -2965,7 +2967,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     /// <summary>
     /// Submits a decoded frame to the preview renderer — GPU texture or raw CPU data.
     /// </summary>
-    private static void SubmitFrame(IPreviewFrameSink previewSink, DecodedVideoFrame frame)
+    private static void SubmitFrame(IPreviewFrameSink previewSink, DecodedVideoFrame frame, long previewPresentId)
     {
         var submitTick = Stopwatch.GetTimestamp();
         if (frame.IsD3D11Texture)
@@ -2977,13 +2979,23 @@ internal sealed class FlashbackPlaybackController : IDisposable
             }
             previewSink.SubmitTexture(
                 frame.TexturePtr, frame.SubresourceIndex,
-                frame.Width, frame.Height, frame.IsHdr, arrivalTick: submitTick, schedulerSubmitTick: submitTick);
+                frame.Width, frame.Height, frame.IsHdr,
+                arrivalTick: submitTick,
+                schedulerSubmitTick: submitTick,
+                sourceSequenceNumber: -1,
+                previewPresentId: previewPresentId,
+                sourcePtsTicks: frame.Pts.Ticks);
         }
         else
         {
             previewSink.SubmitRawFrame(
                 frame.Data, frame.DataLength,
-                frame.Width, frame.Height, frame.IsHdr, arrivalTick: submitTick, schedulerSubmitTick: submitTick);
+                frame.Width, frame.Height, frame.IsHdr,
+                arrivalTick: submitTick,
+                sourceSequenceNumber: -1,
+                previewPresentId: previewPresentId,
+                schedulerSubmitTick: submitTick,
+                sourcePtsTicks: frame.Pts.Ticks);
         }
     }
 
@@ -3557,6 +3569,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private void ResetPlaybackMetrics()
     {
         Interlocked.Exchange(ref _playbackFrameCount, 0);
+        Interlocked.Exchange(ref _playbackPreviewPresentId, 0);
         Interlocked.Exchange(ref _playbackLateFrames, 0);
         Interlocked.Exchange(ref _playbackDroppedFrames, 0);
         Interlocked.Exchange(ref _playbackAudioMasterDelayDoubles, 0);

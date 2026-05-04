@@ -34,7 +34,8 @@ internal interface IPreviewFrameSink
         long arrivalTick = 0,
         long sourceSequenceNumber = -1,
         long previewPresentId = 0,
-        long schedulerSubmitTick = 0);
+        long schedulerSubmitTick = 0,
+        long sourcePtsTicks = 0);
 
     /// <summary>
     /// Submit a leased CPU-resident frame. Callee owns and disposes the lease.
@@ -56,7 +57,10 @@ internal interface IPreviewFrameSink
         int height,
         bool isHdr,
         long arrivalTick = 0,
-        long schedulerSubmitTick = 0);
+        long schedulerSubmitTick = 0,
+        long sourceSequenceNumber = -1,
+        long previewPresentId = 0,
+        long sourcePtsTicks = 0);
 
     /// <summary>
     /// Submit split NV12 plane textures (Y + UV). Callee calls AddRef on
@@ -65,5 +69,15 @@ internal interface IPreviewFrameSink
     /// (e.g. NVDEC NV12 output from a P010 source) so the renderer can route
     /// the frame through the HDR shader path rather than the SDR VideoProcessor.
     /// </summary>
-    void SubmitNv12PlaneTextures(IntPtr yTexturePtr, IntPtr uvTexturePtr, int width, int height, bool isHdr = false, long arrivalTick = 0);
+    void SubmitNv12PlaneTextures(
+        IntPtr yTexturePtr,
+        IntPtr uvTexturePtr,
+        int width,
+        int height,
+        bool isHdr = false,
+        long arrivalTick = 0,
+        long schedulerSubmitTick = 0,
+        long sourceSequenceNumber = -1,
+        long previewPresentId = 0,
+        long sourcePtsTicks = 0);
 }

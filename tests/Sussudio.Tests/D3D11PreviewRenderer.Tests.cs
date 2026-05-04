@@ -190,6 +190,9 @@ static partial class Program
         AssertDoesNotContain(source, "_pendingFrames.Count");
         AssertDoesNotContain(source, "_pendingFrames.Enqueue(frame);\n            var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);");
         AssertContains(source, "private void TrackFrameDropped(PendingFrame frame, string reason)\n    {\n        Interlocked.Increment(ref _framesDropped);");
+        AssertContains(source, "Interlocked.Exchange(ref _lastSubmittedSourcePtsTicks, frame.SourcePtsTicks);");
+        AssertContains(source, "Interlocked.Exchange(ref _lastRenderedSourcePtsTicks, frame.SourcePtsTicks);");
+        AssertContains(source, "Interlocked.Exchange(ref _lastDroppedSourcePtsTicks, frame.SourcePtsTicks);");
         AssertDoesNotContain(source, "TrackFrameDropped(frame, \"renderer-stopped\");\n                frame.Dispose();\n                Interlocked.Increment(ref _framesDropped);");
         AssertDoesNotContain(source, "TrackFrameDropped(oldest, \"renderer-backlog\");\n                    oldest.Dispose();\n                    Interlocked.Increment(ref _framesDropped);");
         AssertDoesNotContain(renderSource, "_pendingFrames.TryDequeue");
@@ -232,18 +235,32 @@ static partial class Program
         }
 
         var ownershipMetricsType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer+FrameOwnershipMetrics");
+        var previewSinkType = RequireType("Sussudio.Services.Preview.IPreviewFrameSink");
+        var submitTexture = previewSinkType.GetMethod("SubmitTexture", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("IPreviewFrameSink.SubmitTexture was not found.");
+        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.Name == "sourceSequenceNumber"), "SubmitTexture source identity parameter");
+        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.Name == "previewPresentId"), "SubmitTexture present identity parameter");
+        AssertEqual(true, submitTexture.GetParameters().Any(parameter => parameter.Name == "sourcePtsTicks"), "SubmitTexture PTS identity parameter");
+        var submitNv12PlaneTextures = previewSinkType.GetMethod("SubmitNv12PlaneTextures", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("IPreviewFrameSink.SubmitNv12PlaneTextures was not found.");
+        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.Name == "sourceSequenceNumber"), "SubmitNv12PlaneTextures source identity parameter");
+        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.Name == "previewPresentId"), "SubmitNv12PlaneTextures present identity parameter");
+        AssertEqual(true, submitNv12PlaneTextures.GetParameters().Any(parameter => parameter.Name == "sourcePtsTicks"), "SubmitNv12PlaneTextures PTS identity parameter");
         foreach (var prop in new[]
                  {
                      "LastSubmittedPreviewPresentId",
                      "LastSubmittedSourceSequenceNumber",
+                     "LastSubmittedSourcePtsTicks",
                      "LastSubmittedUtcUnixMs",
                      "LastRenderedPreviewPresentId",
                      "LastRenderedSourceSequenceNumber",
+                     "LastRenderedSourcePtsTicks",
                      "LastRenderedUtcUnixMs",
                      "LastRenderedSchedulerToPresentMs",
                      "LastRenderedPipelineLatencyMs",
                      "LastDroppedPreviewPresentId",
                      "LastDroppedSourceSequenceNumber",
+                     "LastDroppedSourcePtsTicks",
                      "LastDroppedUtcUnixMs",
                      "LastDropReason"
                  })
@@ -322,14 +339,17 @@ static partial class Program
                      "D3DFrameStatsMissedRefreshCount",
                      "D3DLastSubmittedPreviewPresentId",
                      "D3DLastSubmittedSourceSequenceNumber",
+                     "D3DLastSubmittedSourcePtsTicks",
                      "D3DLastSubmittedUtcUnixMs",
                      "D3DLastRenderedPreviewPresentId",
                      "D3DLastRenderedSourceSequenceNumber",
+                     "D3DLastRenderedSourcePtsTicks",
                      "D3DLastRenderedUtcUnixMs",
                      "D3DLastRenderedSchedulerToPresentMs",
                      "D3DLastRenderedPipelineLatencyMs",
                      "D3DLastDroppedPreviewPresentId",
                      "D3DLastDroppedSourceSequenceNumber",
+                     "D3DLastDroppedSourcePtsTicks",
                      "D3DLastDroppedUtcUnixMs",
                      "D3DLastDropReason",
                      "D3DRecentSlowFrames"
@@ -419,14 +439,17 @@ static partial class Program
                      "PreviewD3DFrameStatsRecentFailureCount",
                      "PreviewD3DLastSubmittedPreviewPresentId",
                      "PreviewD3DLastSubmittedSourceSequenceNumber",
+                     "PreviewD3DLastSubmittedSourcePtsTicks",
                      "PreviewD3DLastSubmittedUtcUnixMs",
                      "PreviewD3DLastRenderedPreviewPresentId",
                      "PreviewD3DLastRenderedSourceSequenceNumber",
+                     "PreviewD3DLastRenderedSourcePtsTicks",
                      "PreviewD3DLastRenderedUtcUnixMs",
                      "PreviewD3DLastRenderedSchedulerToPresentMs",
                      "PreviewD3DLastRenderedPipelineLatencyMs",
                      "PreviewD3DLastDroppedPreviewPresentId",
                      "PreviewD3DLastDroppedSourceSequenceNumber",
+                     "PreviewD3DLastDroppedSourcePtsTicks",
                      "PreviewD3DLastDroppedUtcUnixMs",
                      "PreviewD3DLastDropReason",
                      "PreviewD3DRecentSlowFrames",

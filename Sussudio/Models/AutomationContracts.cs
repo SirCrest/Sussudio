@@ -558,16 +558,19 @@ public sealed class AutomationSnapshot
     public long PreviewD3DFrameStatsRecentFailureCount { get; init; }
     public long PreviewD3DLastSubmittedPreviewPresentId { get; init; }
     public long PreviewD3DLastSubmittedSourceSequenceNumber { get; init; }
+    public long PreviewD3DLastSubmittedSourcePtsTicks { get; init; }
     public long PreviewD3DLastSubmittedQpc { get; init; }
     public long PreviewD3DLastSubmittedUtcUnixMs { get; init; }
     public long PreviewD3DLastRenderedPreviewPresentId { get; init; }
     public long PreviewD3DLastRenderedSourceSequenceNumber { get; init; }
+    public long PreviewD3DLastRenderedSourcePtsTicks { get; init; }
     public long PreviewD3DLastRenderedQpc { get; init; }
     public long PreviewD3DLastRenderedUtcUnixMs { get; init; }
     public double PreviewD3DLastRenderedSchedulerToPresentMs { get; init; }
     public double PreviewD3DLastRenderedPipelineLatencyMs { get; init; }
     public long PreviewD3DLastDroppedPreviewPresentId { get; init; }
     public long PreviewD3DLastDroppedSourceSequenceNumber { get; init; }
+    public long PreviewD3DLastDroppedSourcePtsTicks { get; init; }
     public long PreviewD3DLastDroppedQpc { get; init; }
     public long PreviewD3DLastDroppedUtcUnixMs { get; init; }
     public string PreviewD3DLastDropReason { get; init; } = string.Empty;
@@ -1306,16 +1309,19 @@ public sealed class PreviewRuntimeSnapshot
     public long D3DFrameStatsMissedRefreshCount { get; init; }
     public long D3DLastSubmittedPreviewPresentId { get; init; }
     public long D3DLastSubmittedSourceSequenceNumber { get; init; }
+    public long D3DLastSubmittedSourcePtsTicks { get; init; }
     public long D3DLastSubmittedQpc { get; init; }
     public long D3DLastSubmittedUtcUnixMs { get; init; }
     public long D3DLastRenderedPreviewPresentId { get; init; }
     public long D3DLastRenderedSourceSequenceNumber { get; init; }
+    public long D3DLastRenderedSourcePtsTicks { get; init; }
     public long D3DLastRenderedQpc { get; init; }
     public long D3DLastRenderedUtcUnixMs { get; init; }
     public double D3DLastRenderedSchedulerToPresentMs { get; init; }
     public double D3DLastRenderedPipelineLatencyMs { get; init; }
     public long D3DLastDroppedPreviewPresentId { get; init; }
     public long D3DLastDroppedSourceSequenceNumber { get; init; }
+    public long D3DLastDroppedSourcePtsTicks { get; init; }
     public long D3DLastDroppedQpc { get; init; }
     public long D3DLastDroppedUtcUnixMs { get; init; }
     public string D3DLastDropReason { get; init; } = string.Empty;

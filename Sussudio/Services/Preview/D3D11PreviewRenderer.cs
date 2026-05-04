@@ -220,6 +220,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             long sourceSequenceNumber = -1,
             long previewPresentId = 0,
             long schedulerSubmitTick = 0,
+            long sourcePtsTicks = 0,
             PooledVideoFrameLease? frameLease = null,
             IntPtr d3dTextureY = default,
             IntPtr d3dTextureUV = default,
@@ -236,6 +237,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             ArrivalTick = arrivalTick;
             SourceSequenceNumber = sourceSequenceNumber;
             PreviewPresentId = previewPresentId;
+            SourcePtsTicks = sourcePtsTicks;
             SchedulerSubmitTick = schedulerSubmitTick;
             FrameLease = frameLease;
             D3DTextureY = d3dTextureY;
@@ -259,6 +261,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         public long ArrivalTick { get; }
         public long SourceSequenceNumber { get; }
         public long PreviewPresentId { get; }
+        public long SourcePtsTicks { get; }
         public long SchedulerSubmitTick { get; }
         public long SubmissionGeneration { get; set; }
 
@@ -349,16 +352,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     public readonly record struct FrameOwnershipMetrics(
         long LastSubmittedPreviewPresentId,
         long LastSubmittedSourceSequenceNumber,
+        long LastSubmittedSourcePtsTicks,
         long LastSubmittedQpc,
         long LastSubmittedUtcUnixMs,
         long LastRenderedPreviewPresentId,
         long LastRenderedSourceSequenceNumber,
+        long LastRenderedSourcePtsTicks,
         long LastRenderedQpc,
         long LastRenderedUtcUnixMs,
         double LastRenderedSchedulerToPresentMs,
         double LastRenderedPipelineLatencyMs,
         long LastDroppedPreviewPresentId,
         long LastDroppedSourceSequenceNumber,
+        long LastDroppedSourcePtsTicks,
         long LastDroppedQpc,
         long LastDroppedUtcUnixMs,
         string LastDropReason);
@@ -476,16 +482,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private bool _dxgiFrameStatisticsHasBaseline;
     private long _lastSubmittedPreviewPresentId;
     private long _lastSubmittedSourceSequenceNumber = -1;
+    private long _lastSubmittedSourcePtsTicks;
     private long _lastSubmittedQpc;
     private long _lastSubmittedUtcUnixMs;
     private long _lastRenderedPreviewPresentId;
     private long _lastRenderedSourceSequenceNumber = -1;
+    private long _lastRenderedSourcePtsTicks;
     private long _lastRenderedQpc;
     private long _lastRenderedUtcUnixMs;
     private long _lastRenderedSchedulerToPresentTicks;
     private long _lastRenderedPipelineLatencyTicks;
     private long _lastDroppedPreviewPresentId;
     private long _lastDroppedSourceSequenceNumber = -1;
+    private long _lastDroppedSourcePtsTicks;
     private long _lastDroppedQpc;
     private long _lastDroppedUtcUnixMs;
     private long _submissionGeneration;
@@ -979,7 +988,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         long arrivalTick = 0,
         long sourceSequenceNumber = -1,
         long previewPresentId = 0,
-        long schedulerSubmitTick = 0)
+        long schedulerSubmitTick = 0,
+        long sourcePtsTicks = 0)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1013,7 +1023,8 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             arrivalTick,
             sourceSequenceNumber,
             previewPresentId,
-            schedulerSubmitTick);
+            schedulerSubmitTick,
+            sourcePtsTicks);
         EnqueuePendingFrame(frame);
     }
 
@@ -1049,6 +1060,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             frame.SequenceNumber,
             previewPresentId,
             schedulerSubmitTick,
+            sourcePtsTicks: 0,
             frameLease: frame));
     }
 
@@ -1059,7 +1071,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         int height,
         bool isHdr,
         long arrivalTick = 0,
-        long schedulerSubmitTick = 0)
+        long schedulerSubmitTick = 0,
+        long sourceSequenceNumber = -1,
+        long previewPresentId = 0,
+        long sourcePtsTicks = 0)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1104,11 +1119,24 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             height,
             isHdr,
             arrivalTick,
-            schedulerSubmitTick: schedulerSubmitTick);
+            sourceSequenceNumber,
+            previewPresentId,
+            schedulerSubmitTick,
+            sourcePtsTicks);
         EnqueuePendingFrame(frame);
     }
 
-    public void SubmitNv12PlaneTextures(IntPtr yTexturePtr, IntPtr uvTexturePtr, int width, int height, bool isHdr = false, long arrivalTick = 0)
+    public void SubmitNv12PlaneTextures(
+        IntPtr yTexturePtr,
+        IntPtr uvTexturePtr,
+        int width,
+        int height,
+        bool isHdr = false,
+        long arrivalTick = 0,
+        long schedulerSubmitTick = 0,
+        long sourceSequenceNumber = -1,
+        long previewPresentId = 0,
+        long sourcePtsTicks = 0)
     {
         if (Volatile.Read(ref _disposed) != 0 || Volatile.Read(ref _stopRequested) != 0)
         {
@@ -1159,7 +1187,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             ownedUvTexturePtr = uvTexturePtr;
             uvTexture = new ID3D11Texture2D(ownedUvTexturePtr);
 
-            EnqueueNv12Frame(ownedYTexturePtr, yTexture, ownedUvTexturePtr, uvTexture, width, height, isHdr, arrivalTick);
+            EnqueueNv12Frame(
+                ownedYTexturePtr,
+                yTexture,
+                ownedUvTexturePtr,
+                uvTexture,
+                width,
+                height,
+                isHdr,
+                arrivalTick,
+                schedulerSubmitTick,
+                sourceSequenceNumber,
+                previewPresentId,
+                sourcePtsTicks);
         }
         catch
         {
@@ -1187,7 +1227,11 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         int width,
         int height,
         bool isHdr,
-        long arrivalTick)
+        long arrivalTick,
+        long schedulerSubmitTick,
+        long sourceSequenceNumber,
+        long previewPresentId,
+        long sourcePtsTicks)
     {
         var frame = new PendingFrame(
             d3dTexture: null,
@@ -1198,6 +1242,10 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
             height: height,
             isHdr: isHdr,
             arrivalTick: arrivalTick,
+            sourceSequenceNumber: sourceSequenceNumber,
+            previewPresentId: previewPresentId,
+            schedulerSubmitTick: schedulerSubmitTick,
+            sourcePtsTicks: sourcePtsTicks,
             d3dTextureY: yTexturePtr,
             d3dTextureUV: uvTexturePtr,
             d3dTextureYObject: yTexture,
@@ -1535,16 +1583,19 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         return new FrameOwnershipMetrics(
             LastSubmittedPreviewPresentId: Interlocked.Read(ref _lastSubmittedPreviewPresentId),
             LastSubmittedSourceSequenceNumber: Interlocked.Read(ref _lastSubmittedSourceSequenceNumber),
+            LastSubmittedSourcePtsTicks: Interlocked.Read(ref _lastSubmittedSourcePtsTicks),
             LastSubmittedQpc: Interlocked.Read(ref _lastSubmittedQpc),
             LastSubmittedUtcUnixMs: Interlocked.Read(ref _lastSubmittedUtcUnixMs),
             LastRenderedPreviewPresentId: Interlocked.Read(ref _lastRenderedPreviewPresentId),
             LastRenderedSourceSequenceNumber: Interlocked.Read(ref _lastRenderedSourceSequenceNumber),
+            LastRenderedSourcePtsTicks: Interlocked.Read(ref _lastRenderedSourcePtsTicks),
             LastRenderedQpc: Interlocked.Read(ref _lastRenderedQpc),
             LastRenderedUtcUnixMs: Interlocked.Read(ref _lastRenderedUtcUnixMs),
             LastRenderedSchedulerToPresentMs: schedulerToPresentTicks > 0 ? TicksToMs(schedulerToPresentTicks) : 0,
             LastRenderedPipelineLatencyMs: pipelineLatencyTicks > 0 ? TicksToMs(pipelineLatencyTicks) : 0,
             LastDroppedPreviewPresentId: Interlocked.Read(ref _lastDroppedPreviewPresentId),
             LastDroppedSourceSequenceNumber: Interlocked.Read(ref _lastDroppedSourceSequenceNumber),
+            LastDroppedSourcePtsTicks: Interlocked.Read(ref _lastDroppedSourcePtsTicks),
             LastDroppedQpc: Interlocked.Read(ref _lastDroppedQpc),
             LastDroppedUtcUnixMs: Interlocked.Read(ref _lastDroppedUtcUnixMs),
             LastDropReason: Volatile.Read(ref _lastDropReason));
@@ -1599,6 +1650,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     {
         Interlocked.Exchange(ref _lastSubmittedPreviewPresentId, frame.PreviewPresentId);
         Interlocked.Exchange(ref _lastSubmittedSourceSequenceNumber, frame.SourceSequenceNumber);
+        Interlocked.Exchange(ref _lastSubmittedSourcePtsTicks, frame.SourcePtsTicks);
         Interlocked.Exchange(ref _lastSubmittedQpc, Stopwatch.GetTimestamp());
         Interlocked.Exchange(ref _lastSubmittedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
     }
@@ -1607,6 +1659,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     {
         Interlocked.Exchange(ref _lastRenderedPreviewPresentId, frame.PreviewPresentId);
         Interlocked.Exchange(ref _lastRenderedSourceSequenceNumber, frame.SourceSequenceNumber);
+        Interlocked.Exchange(ref _lastRenderedSourcePtsTicks, frame.SourcePtsTicks);
         Interlocked.Exchange(ref _lastRenderedQpc, presentReturnTick);
         Interlocked.Exchange(ref _lastRenderedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         var schedulerToPresentTicks = frame.SchedulerSubmitTick > 0 && presentReturnTick > frame.SchedulerSubmitTick
@@ -1624,6 +1677,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         Interlocked.Increment(ref _framesDropped);
         Interlocked.Exchange(ref _lastDroppedPreviewPresentId, frame.PreviewPresentId);
         Interlocked.Exchange(ref _lastDroppedSourceSequenceNumber, frame.SourceSequenceNumber);
+        Interlocked.Exchange(ref _lastDroppedSourcePtsTicks, frame.SourcePtsTicks);
         Interlocked.Exchange(ref _lastDroppedQpc, Stopwatch.GetTimestamp());
         Interlocked.Exchange(ref _lastDroppedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         Volatile.Write(ref _lastDropReason, reason);

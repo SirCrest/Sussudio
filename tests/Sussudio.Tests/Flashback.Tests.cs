@@ -2444,11 +2444,17 @@ static partial class Program
         AssertContains(sourceText, "TrySubmitAndHoldFrame(frame, \"seek\")");
         AssertContains(sourceText, "TrySubmitAndHoldFrame(videoFrame, \"playback\")");
         AssertContains(sourceText, "var submitTick = Stopwatch.GetTimestamp();");
-        AssertContains(sourceText, "arrivalTick: submitTick, schedulerSubmitTick: submitTick");
+        AssertContains(sourceText, "var previewPresentId = Interlocked.Increment(ref _playbackPreviewPresentId);");
+        AssertContains(sourceText, "SubmitFrame(previewSink, frame, previewPresentId);");
+        AssertContains(sourceText, "sourceSequenceNumber: -1");
+        AssertContains(sourceText, "previewPresentId: previewPresentId");
+        AssertContains(sourceText, "sourcePtsTicks: frame.Pts.Ticks");
+        AssertContains(sourceText, "arrivalTick: submitTick");
+        AssertContains(sourceText, "schedulerSubmitTick: submitTick");
         AssertDoesNotContain(sourceText, "frame.Width, frame.Height, frame.IsHdr, arrivalTick: 0");
         AssertContains(sourceText, "if (!TrySubmitAndHoldFrame(videoFrame, \"playback\"))\n            {\n                SetState(FlashbackPlaybackState.Paused);\n                Logger.Log($\"FLASHBACK_PLAYBACK_SUBMIT_STOP pos_ms={(long)PlaybackPosition.TotalMilliseconds}\");\n                return false;\n            }");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n        try\n        {\n            SubmitFrame(frame);");
-        AssertContains(sourceText, "SubmitFrame(previewSink, frame);\n            ReleasePreviousHeldFrame();");
+        AssertContains(sourceText, "SubmitFrame(previewSink, frame, previewPresentId);\n            ReleasePreviousHeldFrame();");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n            SubmitFrame(videoFrame);");
 
         return Task.CompletedTask;
@@ -3149,6 +3155,7 @@ static partial class Program
             sourceText,
             "private void ResetPlaybackMetrics()",
             "private void RestoreAudioCallback");
+        AssertContains(resetMetricsBlock, "Interlocked.Exchange(ref _playbackPreviewPresentId, 0);");
         AssertContains(resetMetricsBlock, "lock (_playbackDecodeLock)");
         AssertContains(resetMetricsBlock, "Array.Clear(_playbackDecodeDurationsMs);");
         AssertContains(resetMetricsBlock, "_playbackDecodeDurationHead = 0;");

@@ -178,6 +178,36 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureSessionCoordinator_CommittedStopsDoNotPropagateRequestCancellation()
+    {
+        var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
+            .Replace("\r\n", "\n");
+        var stopVideo = ExtractTextBetween(
+            coordinatorText,
+            "public Task StopVideoPreviewAsync(CancellationToken cancellationToken = default)",
+            "public Task StopVideoPreviewWithTeardownAsync");
+        var stopVideoTeardown = ExtractTextBetween(
+            coordinatorText,
+            "public Task StopVideoPreviewWithTeardownAsync",
+            "public Task StartRecordingAsync");
+        var stopRecording = ExtractTextBetween(
+            coordinatorText,
+            "public Task StopRecordingAsync",
+            "public Task StartAudioPreviewAsync");
+        var cycleFlashbackEncoder = ExtractTextBetween(
+            coordinatorText,
+            "public Task CycleFlashbackEncoderSettingsAsync",
+            "public Task SetFlashbackEnabledAsync");
+
+        AssertDoesNotContain(stopVideo, "propagateCancellationToOperation: true");
+        AssertDoesNotContain(stopVideoTeardown, "propagateCancellationToOperation: true");
+        AssertDoesNotContain(stopRecording, "propagateCancellationToOperation: true");
+        AssertDoesNotContain(cycleFlashbackEncoder, "propagateCancellationToOperation: true");
+        AssertContains(cycleFlashbackEncoder, "coalesceLatest: true");
+
+        return Task.CompletedTask;
+    }
+
     private static Task CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections()
     {
         var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")

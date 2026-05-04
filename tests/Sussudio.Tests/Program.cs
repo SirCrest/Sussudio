@@ -336,6 +336,9 @@ static partial class Program
                 "Capture session coordinator propagates flashback mutation cancellation",
                 CaptureSessionCoordinator_FlashbackMutationsPropagateRequestCancellation),
             await RunCheckAsync(
+                "Capture session coordinator keeps committed stops uncancelable",
+                CaptureSessionCoordinator_CommittedStopsDoNotPropagateRequestCancellation),
+            await RunCheckAsync(
                 "Capture session coordinator logs inactive flashback command rejections",
                 CaptureSessionCoordinator_LogsInactiveFlashbackCommandRejections),
             await RunCheckAsync(
