@@ -886,6 +886,9 @@ static partial class Program
                 "Flashback encoder counters default to zero",
                 FlashbackEncoderSink_CountersDefaultToZero),
             await RunCheckAsync(
+                "Flashback encoder force-rotate drain rejects video enqueues",
+                FlashbackEncoderSink_ForceRotateDrainingRejectsVideoAndGpuEnqueues),
+            await RunCheckAsync(
                 "Flashback encoder start failure rolls back started state",
                 FlashbackEncoderSink_StartFailureRollsBackStartedState),
             await RunCheckAsync(

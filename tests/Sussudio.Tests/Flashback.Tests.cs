@@ -124,6 +124,36 @@ static partial class Program
 
     // ── FlashbackExporter ──
 
+    private static Task FlashbackEncoderSink_ForceRotateDrainingRejectsVideoAndGpuEnqueues()
+    {
+        var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
+        var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
+        var ctor = sinkType.GetConstructor(new[] { optionsType })
+            ?? throw new InvalidOperationException("FlashbackEncoderSink(FlashbackBufferOptions) constructor not found.");
+        var sink = ctor.Invoke(new object?[] { null })!;
+        var rejectReason = sinkType.GetMethod("GetVideoEnqueueRejectReason", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("GetVideoEnqueueRejectReason not found.");
+
+        try
+        {
+            SetPrivateField(sink, "_started", true);
+            SetPrivateField(sink, "_forceRotateDraining", true);
+
+            AssertEqual("force_rotate_draining", rejectReason.Invoke(sink, new object[] { false }) as string, "Force-rotate draining rejects CPU video");
+            AssertEqual("force_rotate_draining", rejectReason.Invoke(sink, new object[] { true }) as string, "Force-rotate draining rejects GPU video");
+
+            SetPrivateField(sink, "_forceRotateDraining", false);
+            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { false }) as string, "CPU video accepted after force-rotate drain clears");
+            AssertEqual<string?>(null, rejectReason.Invoke(sink, new object[] { true }) as string, "GPU video accepted after force-rotate drain clears");
+        }
+        finally
+        {
+            (sink as IDisposable)?.Dispose();
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackEncoderSink_StartFailureRollsBackStartedState()
     {
         var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackEncoderSink.cs")
@@ -1969,7 +1999,8 @@ static partial class Program
         AssertContains(sourceText, "private string? GetVideoEnqueueRejectReason(bool isGpu)");
         AssertContains(sourceText, "private string? GetVideoInputRejectReason(Channel<VideoFramePacket>? queue, int expectedSize, bool dataIsEmpty)");
         AssertContains(sourceText, "private string? GetGpuInputRejectReason(Channel<GpuFramePacket>? queue, IntPtr texture)");
-        AssertContains(sourceText, "return \"force_rotate_queue_guard\";");
+        AssertContains(sourceText, "return \"force_rotate_draining\";");
+        AssertDoesNotContain(sourceText, "return \"force_rotate_queue_guard\";");
         AssertContains(sourceText, "private static bool IsForceRotateQueueGuarded(int queueDepth, int queueCapacity)");
         AssertContains(sourceText, "queueDepth >= Math.Ceiling(queueCapacity * ForceRotateQueueGuardRatio)");
         AssertContains(sourceText, "return \"cancelled\";");

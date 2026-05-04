@@ -2299,14 +2299,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
         if (Volatile.Read(ref _forceRotateDraining))
         {
-            var queueDepth = isGpu
-                ? Volatile.Read(ref _gpuQueueDepth)
-                : Volatile.Read(ref _videoQueueDepth);
-            var queueCapacity = isGpu ? GpuQueueCapacity : VideoQueueCapacity;
-            if (IsForceRotateQueueGuarded(queueDepth, queueCapacity))
-            {
-                return "force_rotate_queue_guard";
-            }
+            return "force_rotate_draining";
         }
 
         var failure = Volatile.Read(ref _encodingFailure);
