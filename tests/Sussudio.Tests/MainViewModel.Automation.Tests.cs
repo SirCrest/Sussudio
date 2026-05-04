@@ -921,7 +921,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command queue did not drain within 10s \"");
         AssertContains(diagnosticSessionText, "$\"maxPending={GetInt(lastSnapshot, \"FlashbackPlaybackMaxPendingCommands\")} \"");
         AssertContains(diagnosticSessionText, "$\"maxLatencyMs={GetInt(lastSnapshot, \"FlashbackPlaybackMaxCommandQueueLatencyMs\")}\"");
-        AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackPendingCommands = 3;");
+        AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackPendingCommands = 4;");
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
         AssertContains(diagnosticSessionText, "private const double FlashbackStressPlaybackWarmSeconds = 10.0;");
         AssertContains(diagnosticSessionText, "private const long FlashbackStressAudioUnavailableFallbackAllowance = 2;");

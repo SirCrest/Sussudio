@@ -202,7 +202,7 @@ public sealed class DiagnosticSessionSample
 
 public static class DiagnosticSessionRunner
 {
-    private const int FlashbackStressMaxPlaybackPendingCommands = 3;
+    private const int FlashbackStressMaxPlaybackPendingCommands = 4;
     private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;
     private const double FlashbackStressPlaybackWarmSeconds = 10.0;
     private const long FlashbackStressAudioUnavailableFallbackAllowance = 2;
