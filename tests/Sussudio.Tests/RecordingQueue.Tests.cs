@@ -119,8 +119,11 @@ static partial class Program
         AssertContains(flashbackSource, "public bool CanBeginRecording");
         AssertContains(flashbackSource, "public bool IsRecordingActive");
         AssertContains(flashbackSource, "Volatile.Read(ref _recordingActive) == 0");
+        AssertContains(flashbackSource, "!_bufferManager.IsSessionPreservedForRecovery");
         AssertContains(flashbackSource, "Cannot begin recording: flashback recording is already active.");
+        AssertContains(flashbackSource, "Cannot begin recording: flashback session is preserved for recovery.");
         AssertOccursBefore(flashbackSource, "Cannot begin recording: flashback recording is already active.", "_bufferManager.PauseEviction();");
+        AssertOccursBefore(flashbackSource, "Cannot begin recording: flashback session is preserved for recovery.", "_bufferManager.PauseEviction();");
         AssertOccursBefore(flashbackSource, "_bufferManager.PauseEviction();", "Volatile.Write(ref _recordingActive, 1);");
         AssertContains(flashbackSource, "public bool IsForceRotateActive");
         AssertContains(flashbackSource, "public bool IsForceRotateRequested");
@@ -193,6 +196,7 @@ static partial class Program
         AssertDoesNotContain(flashbackBufferDispose, "PurgeAllSegments()");
         AssertContains(flashbackBufferSource, "RecoveryPreserveMarkerFileName");
         AssertContains(flashbackBufferSource, "MarkSessionPreservedForRecovery");
+        AssertContains(flashbackBufferSource, "public bool IsSessionPreservedForRecovery");
         AssertContains(flashbackBufferSource, "private bool _preserveSessionForRecovery;");
         AssertContains(flashbackBufferSource, "private bool IsSessionPreservedForRecoveryUnsafe()");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");

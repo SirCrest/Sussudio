@@ -482,6 +482,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                        _started &&
                        _encodingFailure == null &&
                        Volatile.Read(ref _recordingActive) == 0 &&
+                       !_bufferManager.IsSessionPreservedForRecovery &&
                        !IsForceRotateActive &&
                        _encodingTask?.IsCompleted != true;
             }
@@ -541,6 +542,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             if (Volatile.Read(ref _recordingActive) != 0)
             {
                 throw new InvalidOperationException("Cannot begin recording: flashback recording is already active.");
+            }
+
+            if (_bufferManager.IsSessionPreservedForRecovery)
+            {
+                throw new InvalidOperationException("Cannot begin recording: flashback session is preserved for recovery.");
             }
 
             _recordingOutputPath = outputPath ?? string.Empty;

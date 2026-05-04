@@ -137,6 +137,17 @@ internal sealed class FlashbackBufferManager : IDisposable
 
     public bool EvictionPaused => Volatile.Read(ref _evictionPauseCount) > 0;
 
+    public bool IsSessionPreservedForRecovery
+    {
+        get
+        {
+            lock (_indexLock)
+            {
+                return IsSessionPreservedForRecoveryUnsafe();
+            }
+        }
+    }
+
     public void MarkSessionPreservedForRecovery()
     {
         lock (_indexLock)

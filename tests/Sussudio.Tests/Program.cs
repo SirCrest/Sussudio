@@ -3459,6 +3459,7 @@ static partial class Program
             ?? throw new InvalidOperationException("FlashbackBufferManager.PurgeAllSegments not found.");
 
         markPreserved.Invoke(manager, null);
+        AssertEqual(true, GetBoolProperty(manager, "IsSessionPreservedForRecovery"), "Recovery-preserved manager exposes preserved state");
         SetPrivateField(manager, "_validStartPtsTicks", TimeSpan.FromSeconds(2).Ticks);
         InvokeNonPublicInstanceMethod(manager, "EvictOldestSegments", null);
 

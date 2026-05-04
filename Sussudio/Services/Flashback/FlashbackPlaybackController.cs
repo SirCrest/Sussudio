@@ -92,6 +92,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private long _playbackPositionTicks;
     private volatile bool _initialized;
     private volatile int _disposedFlag;
+    private int _previewDetachStopTimeoutActive;
+    private IPreviewFrameSink? _pendingPreviewSinkAfterDetachTimeout;
+    private ILiveVideoSource? _pendingVideoCaptureAfterDetachTimeout;
     private volatile string _decoderHwAccel = "N/A";
 
     /// <summary>
@@ -278,15 +281,30 @@ internal sealed class FlashbackPlaybackController : IDisposable
         WasapiAudioPlayback? audioPlayback,
         WasapiAudioCapture? audioCapture)
     {
+        var applyRouting = false;
         lock (_playbackThreadSync)
         {
             ObjectDisposedException.ThrowIf(_disposedFlag != 0, this);
+            if (TryDeferPreviewAttachAfterStopTimeoutUnsafe(previewSink, videoCapture, "init"))
+            {
+                _audioPlayback = audioPlayback;
+                _audioCapture = audioCapture;
+                return;
+            }
+
             _previewSink = previewSink ?? throw new ArgumentNullException(nameof(previewSink));
             _videoCapture = videoCapture ?? throw new ArgumentNullException(nameof(videoCapture));
             _audioPlayback = audioPlayback;
             _audioCapture = audioCapture;
             _initialized = true;
             Logger.Log("FLASHBACK_PLAYBACK_INIT");
+            applyRouting = true;
+        }
+
+        if (applyRouting)
+        {
+            ApplyPreviewRoutingForState("init");
+            ApplyAudioRoutingForState("init");
         }
     }
 
@@ -315,6 +333,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     public void UpdatePreviewComponents(IPreviewFrameSink? previewSink, ILiveVideoSource? videoCapture)
     {
+        var applyRouting = false;
         lock (_playbackThreadSync)
         {
             if (_disposedFlag != 0)
@@ -323,10 +342,21 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 return;
             }
 
+            if (TryDeferPreviewAttachAfterStopTimeoutUnsafe(previewSink, videoCapture, "update"))
+            {
+                return;
+            }
+
             _previewSink = previewSink;
             _videoCapture = videoCapture;
             _initialized = previewSink != null && videoCapture != null;
             Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_UPDATE sink={previewSink != null} capture={videoCapture != null}");
+            applyRouting = _initialized;
+        }
+
+        if (applyRouting)
+        {
+            ApplyPreviewRoutingForState("preview_update");
         }
     }
 
@@ -356,12 +386,37 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         lock (_playbackThreadSync)
         {
+            Volatile.Write(ref _previewDetachStopTimeoutActive, 1);
+            _pendingPreviewSinkAfterDetachTimeout = null;
+            _pendingVideoCaptureAfterDetachTimeout = null;
             _previewSink = null;
             _videoCapture = null;
             _initialized = false;
         }
 
         Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_DETACH_DEFER_OWNED_CLEANUP reason=thread_alive");
+    }
+
+    private bool TryDeferPreviewAttachAfterStopTimeoutUnsafe(
+        IPreviewFrameSink? previewSink,
+        ILiveVideoSource? videoCapture,
+        string operation)
+    {
+        if (previewSink == null || videoCapture == null)
+        {
+            return false;
+        }
+
+        if (Volatile.Read(ref _previewDetachStopTimeoutActive) == 0 || !PlaybackThreadAlive)
+        {
+            return false;
+        }
+
+        _pendingPreviewSinkAfterDetachTimeout = previewSink;
+        _pendingVideoCaptureAfterDetachTimeout = videoCapture;
+        _initialized = false;
+        Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER op={operation} reason=thread_alive_after_detach_timeout");
+        return true;
     }
 
     // --- State transitions (called from UI thread) ---
@@ -806,6 +861,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
             if (threadExited)
             {
+                ApplyDeferredPreviewAttachAfterStopTimeout();
                 DisposePlaybackCtsBestEffort(_playCts, "stop_thread");
                 _playCts = null;
                 _playbackThread = null;
@@ -1405,9 +1461,52 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 Volatile.Write(ref _playbackThreadStarted, 0);
             }
+            ApplyDeferredPreviewAttachAfterStopTimeout();
         }
 
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
+    }
+
+    private void ApplyDeferredPreviewAttachAfterStopTimeout()
+    {
+        IPreviewFrameSink? pendingSink;
+        ILiveVideoSource? pendingCapture;
+        var lockTaken = false;
+        try
+        {
+            Monitor.TryEnter(_playbackThreadSync, 0, ref lockTaken);
+            if (!lockTaken)
+            {
+                Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER_APPLY_SKIP reason=lock_busy");
+                return;
+            }
+
+            Volatile.Write(ref _previewDetachStopTimeoutActive, 0);
+            pendingSink = _pendingPreviewSinkAfterDetachTimeout;
+            pendingCapture = _pendingVideoCaptureAfterDetachTimeout;
+            _pendingPreviewSinkAfterDetachTimeout = null;
+            _pendingVideoCaptureAfterDetachTimeout = null;
+
+            if (_disposedFlag != 0 || pendingSink == null || pendingCapture == null)
+            {
+                return;
+            }
+
+            _previewSink = pendingSink;
+            _videoCapture = pendingCapture;
+            _initialized = true;
+        }
+        finally
+        {
+            if (lockTaken)
+            {
+                Monitor.Exit(_playbackThreadSync);
+            }
+        }
+
+        Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER_APPLIED reason=thread_exit");
+        ApplyPreviewRoutingForState("deferred_preview_attach");
+        ApplyAudioRoutingForState("deferred_preview_attach");
     }
 
     private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)
@@ -3864,6 +3963,23 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 SuppressLiveAudio();
                 SafePauseRendering(operation);
                 break;
+        }
+    }
+
+    private void ApplyPreviewRoutingForState(string operation)
+    {
+        if (_disposedFlag != 0)
+        {
+            return;
+        }
+
+        if (_state == FlashbackPlaybackState.Live)
+        {
+            SafeResumePreviewSubmission(operation);
+        }
+        else
+        {
+            SafeSuppressPreviewSubmission(operation);
         }
     }
 
