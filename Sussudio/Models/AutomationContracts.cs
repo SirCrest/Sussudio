@@ -899,6 +899,10 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackSlowFrames { get; init; }
     public double FlashbackPlaybackSlowFramePercent { get; init; }
     public double FlashbackPlaybackOnePercentLowFps { get; init; }
+    public long FlashbackPlaybackPtsCadenceMismatchCount { get; init; }
+    public long FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs { get; init; }
+    public double FlashbackPlaybackLastPtsCadenceDeltaMs { get; init; }
+    public double FlashbackPlaybackLastPtsCadenceExpectedMs { get; init; }
     public int FlashbackPlaybackDecodeSampleCount { get; init; }
     public double FlashbackPlaybackDecodeAvgMs { get; init; }
     public double FlashbackPlaybackDecodeP95Ms { get; init; }

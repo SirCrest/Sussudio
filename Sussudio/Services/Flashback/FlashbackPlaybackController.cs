@@ -140,6 +140,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private double _playbackTargetFps;
     private double _playbackObservedFps;
     private double _playbackAvgFrameMs;
+    private long _lastPlaybackCadencePtsTicks = -1;
+    private long _playbackPtsCadenceMismatchCount;
+    private long _lastPlaybackPtsCadenceMismatchUtcUnixMs;
+    private double _lastPlaybackPtsCadenceDeltaMs;
+    private double _lastPlaybackPtsCadenceExpectedMs;
     private readonly Stopwatch _playbackFpsClock = new();
     private const int PlaybackCadenceSampleCapacity = 240;
     private readonly object _playbackCadenceLock = new();
@@ -2228,6 +2233,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             // report doubled rates (e.g. 240 for 120fps) and the decoder's PTS calibration
             // needs ~10 frames to correct. The encode rate is authoritative from frame 1.
             frameDuration = ResolveFrameDuration(decoder);
+            TrackDecodedPtsCadence(videoFrame.Pts, frameDuration);
 
             PaceFrameInterval(pacingStopwatch, frameDuration, videoFrame.Pts.Ticks);
             UpdateCadenceMetrics(pacingStopwatch, frameDuration.TotalMilliseconds);
@@ -2751,6 +2757,60 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
+    private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)
+    {
+        if (pts <= TimeSpan.Zero || expectedFrameDuration <= TimeSpan.Zero)
+        {
+            return;
+        }
+
+        var currentTicks = pts.Ticks;
+        var previousTicks = Volatile.Read(ref _lastPlaybackCadencePtsTicks);
+        if (previousTicks <= 0)
+        {
+            Interlocked.Exchange(ref _lastPlaybackCadencePtsTicks, currentTicks);
+            return;
+        }
+
+        var deltaTicks = currentTicks - previousTicks;
+        var deltaMs = deltaTicks / (double)TimeSpan.TicksPerMillisecond;
+        var expectedMs = expectedFrameDuration.TotalMilliseconds;
+        var toleranceMs = Math.Max(2.0, expectedMs * 0.25);
+        if (deltaTicks <= 0)
+        {
+            RecordPlaybackPtsCadenceMismatch(deltaMs, expectedMs, toleranceMs, pts);
+            return;
+        }
+
+        Interlocked.Exchange(ref _lastPlaybackCadencePtsTicks, currentTicks);
+        if (deltaTicks > TimeSpan.TicksPerSecond)
+        {
+            return;
+        }
+
+        if (Math.Abs(deltaMs - expectedMs) <= toleranceMs)
+        {
+            return;
+        }
+
+        RecordPlaybackPtsCadenceMismatch(deltaMs, expectedMs, toleranceMs, pts);
+    }
+
+    private void RecordPlaybackPtsCadenceMismatch(double deltaMs, double expectedMs, double toleranceMs, TimeSpan pts)
+    {
+        var count = Interlocked.Increment(ref _playbackPtsCadenceMismatchCount);
+        _lastPlaybackPtsCadenceDeltaMs = deltaMs;
+        _lastPlaybackPtsCadenceExpectedMs = expectedMs;
+        Interlocked.Exchange(ref _lastPlaybackPtsCadenceMismatchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        if (count <= 3 || count % 120 == 0)
+        {
+            Logger.Log(
+                $"FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH count={count} " +
+                $"delta_ms={deltaMs:0.###} expected_ms={expectedMs:0.###} tolerance_ms={toleranceMs:0.###} " +
+                $"pts_ms={(long)pts.TotalMilliseconds} target_fps={_playbackTargetFps:0.###}");
+        }
+    }
+
     private void UpdateCadenceMetrics(Stopwatch pacingStopwatch, double expectedFrameMs)
     {
         var frameNum = Interlocked.Increment(ref _playbackFrameCount);
@@ -2990,6 +3050,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public double PlaybackTargetFps => _playbackTargetFps;
     public double PlaybackObservedFps => _playbackObservedFps;
     public double PlaybackAvgFrameMs => _playbackAvgFrameMs;
+    public long PlaybackPtsCadenceMismatchCount => Interlocked.Read(ref _playbackPtsCadenceMismatchCount);
+    public long LastPlaybackPtsCadenceMismatchUtcUnixMs => Interlocked.Read(ref _lastPlaybackPtsCadenceMismatchUtcUnixMs);
+    public double LastPlaybackPtsCadenceDeltaMs => _lastPlaybackPtsCadenceDeltaMs;
+    public double LastPlaybackPtsCadenceExpectedMs => _lastPlaybackPtsCadenceExpectedMs;
     public string PlaybackMaxDecodePhase => Volatile.Read(ref _playbackMaxDecodePhase);
     public double PlaybackMaxDecodeReceiveMs => _playbackMaxDecodeReceiveMs;
     public double PlaybackMaxDecodeFeedMs => _playbackMaxDecodeFeedMs;
@@ -3415,6 +3479,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
         _playbackTargetFps = 0;
         _playbackObservedFps = 0;
         _playbackAvgFrameMs = 0;
+        Interlocked.Exchange(ref _lastPlaybackCadencePtsTicks, -1);
+        Interlocked.Exchange(ref _playbackPtsCadenceMismatchCount, 0);
+        Interlocked.Exchange(ref _lastPlaybackPtsCadenceMismatchUtcUnixMs, 0);
+        _lastPlaybackPtsCadenceDeltaMs = 0;
+        _lastPlaybackPtsCadenceExpectedMs = 0;
         _playbackFpsClock.Reset();
         Interlocked.Exchange(ref _playbackSlowFrameCount, 0);
         lock (_playbackCadenceLock)

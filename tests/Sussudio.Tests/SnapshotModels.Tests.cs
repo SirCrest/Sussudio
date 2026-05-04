@@ -264,6 +264,10 @@ static partial class Program
                 new("FlashbackPlaybackSlowFrames", typeof(long)),
                 new("FlashbackPlaybackSlowFramePercent", typeof(double)),
                 new("FlashbackPlaybackOnePercentLowFps", typeof(double)),
+                new("FlashbackPlaybackPtsCadenceMismatchCount", typeof(long)),
+                new("FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs", typeof(long)),
+                new("FlashbackPlaybackLastPtsCadenceDeltaMs", typeof(double)),
+                new("FlashbackPlaybackLastPtsCadenceExpectedMs", typeof(double)),
                 new("FlashbackPlaybackDecodeSampleCount", typeof(int)),
                 new("FlashbackPlaybackDecodeAvgMs", typeof(double)),
                 new("FlashbackPlaybackDecodeP95Ms", typeof(double)),
@@ -391,6 +395,10 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastFmp4ReopenUtcUnixMs", 456L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackLastWriteHeadWaitGapMs", 789L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackTargetFps", 120d);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackPtsCadenceMismatchCount", 2L);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs", 123456700L);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackLastPtsCadenceDeltaMs", 16.67d);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackLastPtsCadenceExpectedMs", 8.33d);
         SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeSampleCount", 120);
         SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeAvgMs", 1.25d);
         SetPropertyOrBackingField(health, "FlashbackPlaybackDecodeP95Ms", 2.5d);
@@ -459,6 +467,10 @@ static partial class Program
         AssertEqual(456L, GetLongProperty(health, "FlashbackPlaybackLastFmp4ReopenUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastFmp4ReopenUtcUnixMs round-trip");
         AssertEqual(789L, GetLongProperty(health, "FlashbackPlaybackLastWriteHeadWaitGapMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastWriteHeadWaitGapMs round-trip");
         AssertEqual(120d, GetDoubleProperty(health, "FlashbackPlaybackTargetFps"), "CaptureHealthSnapshot.FlashbackPlaybackTargetFps round-trip");
+        AssertEqual(2L, GetLongProperty(health, "FlashbackPlaybackPtsCadenceMismatchCount"), "CaptureHealthSnapshot.FlashbackPlaybackPtsCadenceMismatchCount round-trip");
+        AssertEqual(123456700L, GetLongProperty(health, "FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastPtsCadenceMismatchUtcUnixMs round-trip");
+        AssertEqual(16.67d, GetDoubleProperty(health, "FlashbackPlaybackLastPtsCadenceDeltaMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastPtsCadenceDeltaMs round-trip");
+        AssertEqual(8.33d, GetDoubleProperty(health, "FlashbackPlaybackLastPtsCadenceExpectedMs"), "CaptureHealthSnapshot.FlashbackPlaybackLastPtsCadenceExpectedMs round-trip");
         AssertEqual(120, GetIntProperty(health, "FlashbackPlaybackDecodeSampleCount"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeSampleCount round-trip");
         AssertEqual(1.25d, GetDoubleProperty(health, "FlashbackPlaybackDecodeAvgMs"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeAvgMs round-trip");
         AssertEqual(2.5d, GetDoubleProperty(health, "FlashbackPlaybackDecodeP95Ms"), "CaptureHealthSnapshot.FlashbackPlaybackDecodeP95Ms round-trip");
@@ -525,6 +537,8 @@ static partial class Program
         AssertEqual("force_rotate_draining", GetStringProperty(jsonRoundTrip, "FlashbackVideoQueueLastRejectReason"), "CaptureHealthSnapshot JSON FlashbackVideoQueueLastRejectReason");
         AssertEqual(13L, GetLongProperty(jsonRoundTrip, "FlashbackGpuQueueRejectedFrames"), "CaptureHealthSnapshot JSON FlashbackGpuQueueRejectedFrames");
         AssertEqual("encoding_failed:InvalidOperationException", GetStringProperty(jsonRoundTrip, "FlashbackGpuQueueLastRejectReason"), "CaptureHealthSnapshot JSON FlashbackGpuQueueLastRejectReason");
+        AssertEqual(2L, GetLongProperty(jsonRoundTrip, "FlashbackPlaybackPtsCadenceMismatchCount"), "CaptureHealthSnapshot JSON FlashbackPlaybackPtsCadenceMismatchCount");
+        AssertEqual(16.67d, GetDoubleProperty(jsonRoundTrip, "FlashbackPlaybackLastPtsCadenceDeltaMs"), "CaptureHealthSnapshot JSON FlashbackPlaybackLastPtsCadenceDeltaMs");
         AssertEqual("Running", GetStringProperty(jsonRoundTrip, "FlashbackExportStatus"), "CaptureHealthSnapshot JSON FlashbackExportStatus");
         AssertEqual("NoMediaWritten", GetStringProperty(jsonRoundTrip, "FlashbackExportFailureKind"), "CaptureHealthSnapshot JSON FlashbackExportFailureKind");
         AssertEqual("HevcMp4", GetStringProperty(jsonRoundTrip, "FlashbackExportVerificationFormat"), "CaptureHealthSnapshot JSON FlashbackExportVerificationFormat");

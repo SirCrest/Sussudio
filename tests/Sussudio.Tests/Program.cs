@@ -312,6 +312,9 @@ static partial class Program
                 "Flashback lifecycle logs use outcome names",
                 CaptureService_FlashbackLifecycleLogs_UseOutcomeNames),
             await RunCheckAsync(
+                "Flashback frame-rate rational matches delivered cadence",
+                CaptureService_FlashbackFrameRateParts_PreserveOnlyDeliveredCadenceRational),
+            await RunCheckAsync(
                 "Flashback enable/disable preserves preview state",
                 CaptureService_FlashbackEnableDisable_PreservesPreviewState),
             await RunCheckAsync(
@@ -918,6 +921,9 @@ static partial class Program
             await RunCheckAsync(
                 "Flashback playback guards invalid decoder frame rates",
                 FlashbackPlaybackController_FrameDuration_GuardsInvalidDecoderFps),
+            await RunCheckAsync(
+                "Flashback playback PTS cadence telemetry tracks mismatches",
+                FlashbackPlaybackController_PtsCadenceTelemetry_TracksMismatches),
             await RunCheckAsync(
                 "Flashback nudge opens decoder after pause from live",
                 FlashbackPlaybackController_NudgeCreatesDecoderWhenPaused),
@@ -1811,6 +1817,9 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSlowFramePercent"), "AutomationSnapshot.FlashbackPlaybackSlowFramePercent");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackTargetFps"), "AutomationSnapshot.FlashbackPlaybackTargetFps");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackOnePercentLowFps"), "AutomationSnapshot.FlashbackPlaybackOnePercentLowFps");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackPtsCadenceMismatchCount"), "AutomationSnapshot.FlashbackPlaybackPtsCadenceMismatchCount");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastPtsCadenceDeltaMs"), "AutomationSnapshot.FlashbackPlaybackLastPtsCadenceDeltaMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackLastPtsCadenceExpectedMs"), "AutomationSnapshot.FlashbackPlaybackLastPtsCadenceExpectedMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeSampleCount"), "AutomationSnapshot.FlashbackPlaybackDecodeSampleCount");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeAvgMs"), "AutomationSnapshot.FlashbackPlaybackDecodeAvgMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackDecodeP95Ms"), "AutomationSnapshot.FlashbackPlaybackDecodeP95Ms");

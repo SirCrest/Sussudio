@@ -576,6 +576,13 @@ static partial class Program
             "private FlashbackSessionContext CreateFlashbackSessionContext",
             "    private async Task EnsureFlashbackPreviewBackendAsync");
         AssertContains(createFlashbackSessionContext, "var forceTransportStreamFlashback = UseTransportStreamFlashbackCodec(unifiedVideoCapture, settings, frameRate)");
+        AssertContains(createFlashbackSessionContext, "var frameRateParts = ResolveFlashbackSessionFrameRateParts(settings, frameRate);");
+        AssertContains(createFlashbackSessionContext, "frameRate = frameRateParts.EffectiveFrameRate;");
+        AssertContains(createFlashbackSessionContext, "FrameRateNumerator = fpsNum");
+        AssertContains(captureServiceText, "private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(");
+        AssertContains(captureServiceText, "FLASHBACK_FRAME_RATE_RATIONAL_ACCEPT");
+        AssertContains(captureServiceText, "FLASHBACK_FRAME_RATE_RATIONAL_REJECT");
+        AssertContains(captureServiceText, "deltaFps > toleranceFps");
         AssertContains(createFlashbackSessionContext, "? \"hevc_nvenc\"");
         AssertContains(captureServiceText, "private static bool UseTransportStreamFlashbackCodec(");
         AssertContains(captureServiceText, "settings.Format == RecordingFormat.Av1Mp4");
@@ -616,6 +623,55 @@ static partial class Program
             "_flashbackSink = null;");
 
         return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_FlashbackFrameRateParts_PreserveOnlyDeliveredCadenceRational()
+    {
+        var captureServiceType = RequireType("Sussudio.Services.Capture.CaptureService");
+        var method = captureServiceType.GetMethod(
+            "ResolveFlashbackSessionFrameRateParts",
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ResolveFlashbackSessionFrameRateParts not found.");
+
+        var integerResult = method.Invoke(null, new[] { BuildFrameRateSettings(120u, 1u), 120.0 })!;
+        AssertFlashbackFrameRateParts(integerResult, 120, 1, 120.0, "integer 120 delivered cadence");
+
+        var ntscDelivery = 120000d / 1001d;
+        var ntscResult = method.Invoke(null, new[] { BuildFrameRateSettings(120000u, 1001u), ntscDelivery })!;
+        AssertFlashbackFrameRateParts(ntscResult, 120000, 1001, ntscDelivery, "matching NTSC delivered cadence");
+
+        var mismatchedResult = method.Invoke(null, new[] { BuildFrameRateSettings(120000u, 1001u), 120.0 })!;
+        AssertFlashbackFrameRateParts(mismatchedResult, null, null, 120.0, "source NTSC rejected for integer USB cadence");
+
+        var missingResult = method.Invoke(null, new[] { BuildFrameRateSettings(null, null), 120.0 })!;
+        AssertFlashbackFrameRateParts(missingResult, null, null, 120.0, "missing rational falls back to delivered cadence");
+
+        return Task.CompletedTask;
+    }
+
+    private static object BuildFrameRateSettings(uint? numerator, uint? denominator)
+    {
+        var settings = CreateInstance("Sussudio.Models.CaptureSettings");
+        SetPropertyOrBackingField(settings, "RequestedFrameRateNumerator", numerator);
+        SetPropertyOrBackingField(settings, "RequestedFrameRateDenominator", denominator);
+        return settings;
+    }
+
+    private static void AssertFlashbackFrameRateParts(
+        object result,
+        int? expectedNumerator,
+        int? expectedDenominator,
+        double expectedFrameRate,
+        string fieldName)
+    {
+        var resultType = result.GetType();
+        var numerator = resultType.GetField("Item1")?.GetValue(result);
+        var denominator = resultType.GetField("Item2")?.GetValue(result);
+        var effectiveFrameRate = resultType.GetField("Item3")?.GetValue(result);
+
+        AssertEqual(expectedNumerator, numerator == null ? null : Convert.ToInt32(numerator), $"{fieldName} numerator");
+        AssertEqual(expectedDenominator, denominator == null ? null : Convert.ToInt32(denominator), $"{fieldName} denominator");
+        AssertNearlyEqual(expectedFrameRate, Convert.ToDouble(effectiveFrameRate), 0.000001, $"{fieldName} effective frame rate");
     }
 
     private static Task CaptureService_FlashbackEnableDisable_PreservesPreviewState()

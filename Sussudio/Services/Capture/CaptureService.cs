@@ -1691,44 +1691,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // frame into an nvenc context expecting D3D11 textures — crashing in the driver.
         var useGpuEncoding = !unifiedVideoCapture.IsSoftwareMjpegPipelineActive;
 
-        // NTSC rational frame rate correction — DISABLED.
-        // The HDMI source outputs 119.88fps but the capture card delivers at ~120fps
-        // over USB (its own clock). Using NTSC time_base (1001/120000) makes video PTS
-        // run ~1ms/sec ahead of audio, causing progressive A/V drift. The driver rate
-        // matches the actual frame delivery rate, so use it as-is for correct sync.
-        //
-        // The original comment claimed integer rates cause "NVENC ticks_per_frame=2"
-        // drift — that was a misdiagnosis. The actual issue was probesize starvation
-        // in FlashbackDecoder (fixed: probesize increased from 32KB to 256KB).
-        //
-        // TODO: Revisit when we can measure the true source rate vs delivery rate and
-        // handle the discrepancy properly (e.g., detect duplicate frames from the
-        // capture card, or use drift correction in the encoder).
-        int? fpsNum = null;
-        int? fpsDen = null;
-        // if (_actualFrameRateNumerator.HasValue && _actualFrameRateDenominator is > 1)
-        // {
-        //     fpsNum = (int)_actualFrameRateNumerator.Value;
-        //     fpsDen = (int)_actualFrameRateDenominator.Value;
-        // }
-        // else
-        // {
-        //     var telemetry = _latestSourceTelemetry;
-        //     if (telemetry.HasFrameRate && telemetry.FrameRateExact.HasValue)
-        //     {
-        //         var bucket = (int)Math.Round(frameRate, MidpointRounding.AwayFromZero);
-        //         if (bucket > 0)
-        //         {
-        //             var expectedNtsc = bucket * 1000.0 / 1001.0;
-        //             if (Math.Abs(telemetry.FrameRateExact.Value - expectedNtsc) <= 0.15)
-        //             {
-        //                 fpsNum = bucket * 1000;
-        //                 fpsDen = 1001;
-        //                 frameRate = (double)fpsNum.Value / fpsDen.Value;
-        //             }
-        //         }
-        //     }
-        // }
+        var frameRateParts = ResolveFlashbackSessionFrameRateParts(settings, frameRate);
+        frameRate = frameRateParts.EffectiveFrameRate;
+        var fpsNum = frameRateParts.Numerator;
+        var fpsDen = frameRateParts.Denominator;
 
         var flashbackNvencPreset = unifiedVideoCapture.IsSoftwareMjpegPipelineActive && frameRate >= 100
             ? "Fast"
@@ -1802,6 +1768,51 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             unifiedVideoCapture.IsSoftwareMjpegPipelineActive &&
             frameRate >= 100 &&
             settings.Format == RecordingFormat.Av1Mp4;
+
+    private static (int? Numerator, int? Denominator, double EffectiveFrameRate) ResolveFlashbackSessionFrameRateParts(
+        CaptureSettings settings,
+        double deliveryFrameRate)
+    {
+        // Preserve exact rationals only when they describe the actual delivered USB cadence.
+        // A source-reported 120000/1001 rate paired with ~120 delivered frames/sec causes A/V
+        // drift if we stamp Flashback video against the slower source clock.
+        if (!double.IsFinite(deliveryFrameRate) || deliveryFrameRate <= 0)
+        {
+            return (null, null, deliveryFrameRate);
+        }
+
+        if (settings.RequestedFrameRateNumerator is not uint numerator ||
+            settings.RequestedFrameRateDenominator is not uint denominator ||
+            numerator == 0 ||
+            denominator == 0 ||
+            numerator > int.MaxValue ||
+            denominator > int.MaxValue)
+        {
+            return (null, null, deliveryFrameRate);
+        }
+
+        var rationalFps = numerator / (double)denominator;
+        if (!double.IsFinite(rationalFps) || rationalFps <= 0)
+        {
+            return (null, null, deliveryFrameRate);
+        }
+
+        var deltaFps = Math.Abs(rationalFps - deliveryFrameRate);
+        var toleranceFps = Math.Max(0.01, deliveryFrameRate * 0.0001);
+        if (deltaFps > toleranceFps)
+        {
+            Logger.Log(
+                $"FLASHBACK_FRAME_RATE_RATIONAL_REJECT requested={numerator}/{denominator} " +
+                $"rational={rationalFps:0.######} delivery={deliveryFrameRate:0.######} " +
+                $"delta={deltaFps:0.######} tolerance={toleranceFps:0.######}");
+            return (null, null, deliveryFrameRate);
+        }
+
+        Logger.Log(
+            $"FLASHBACK_FRAME_RATE_RATIONAL_ACCEPT requested={numerator}/{denominator} " +
+            $"delivery={deliveryFrameRate:0.######} effective={rationalFps:0.######}");
+        return ((int)numerator, (int)denominator, rationalFps);
+    }
 
     private static string? ResolveFlashbackExportVerificationFormat(
         CaptureSettings? settings,

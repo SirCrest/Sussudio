@@ -2069,6 +2069,71 @@ static partial class Program
         AssertContains(sourceText, "_playbackTargetFps = fps;");
         AssertContains(sourceText, "public double PlaybackTargetFps => _playbackTargetFps;");
         AssertContains(sourceText, "return TimeSpan.FromSeconds(1.0 / fps);");
+        AssertContains(sourceText, "TrackDecodedPtsCadence(videoFrame.Pts, frameDuration);");
+        AssertContains(sourceText, "private void TrackDecodedPtsCadence(TimeSpan pts, TimeSpan expectedFrameDuration)");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_PTS_CADENCE_MISMATCH");
+        AssertContains(sourceText, "public long PlaybackPtsCadenceMismatchCount => Interlocked.Read(ref _playbackPtsCadenceMismatchCount);");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _playbackPtsCadenceMismatchCount, 0);");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackPlaybackController_PtsCadenceTelemetry_TracksMismatches()
+    {
+        var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
+        var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
+        var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
+        var ctor = controllerType.GetConstructor(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { bufferManagerType },
+            modifiers: null)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController constructor not found.");
+        var controller = ctor.Invoke(new[] { bufferManager });
+        var track = controllerType.GetMethod("TrackDecodedPtsCadence", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("TrackDecodedPtsCadence not found.");
+        var reset = controllerType.GetMethod("ResetPlaybackMetrics", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ResetPlaybackMetrics not found.");
+        var expected = TimeSpan.FromMilliseconds(1000.0 / 120.0);
+
+        try
+        {
+            track.Invoke(controller, new object[] { expected, expected });
+            track.Invoke(controller, new object[] { TimeSpan.FromMilliseconds(1000.0 / 60.0), expected });
+            AssertEqual(0L, GetLongProperty(controller, "PlaybackPtsCadenceMismatchCount"), "matching decoded PTS cadence count");
+
+            track.Invoke(controller, new object[] { TimeSpan.FromMilliseconds(1000.0 / 30.0), expected });
+            AssertEqual(1L, GetLongProperty(controller, "PlaybackPtsCadenceMismatchCount"), "slow decoded PTS cadence count");
+            AssertNearlyEqual(1000.0 / 60.0, GetDoubleProperty(controller, "LastPlaybackPtsCadenceDeltaMs"), 0.1, "slow decoded PTS cadence delta");
+            AssertNearlyEqual(expected.TotalMilliseconds, GetDoubleProperty(controller, "LastPlaybackPtsCadenceExpectedMs"), 0.1, "decoded PTS expected cadence");
+            if (GetLongProperty(controller, "LastPlaybackPtsCadenceMismatchUtcUnixMs") <= 0)
+            {
+                throw new InvalidOperationException("Expected decoded PTS cadence mismatch timestamp to be populated.");
+            }
+
+            track.Invoke(controller, new object[] { TimeSpan.FromMilliseconds(1000.0 / 30.0), expected });
+            AssertEqual(2L, GetLongProperty(controller, "PlaybackPtsCadenceMismatchCount"), "duplicate decoded PTS cadence count");
+            AssertNearlyEqual(0.0, GetDoubleProperty(controller, "LastPlaybackPtsCadenceDeltaMs"), 0.1, "duplicate decoded PTS cadence delta");
+
+            track.Invoke(controller, new object[] { TimeSpan.FromMilliseconds(25.0), expected });
+            AssertEqual(3L, GetLongProperty(controller, "PlaybackPtsCadenceMismatchCount"), "backward decoded PTS cadence count");
+            if (GetDoubleProperty(controller, "LastPlaybackPtsCadenceDeltaMs") >= 0)
+            {
+                throw new InvalidOperationException("Expected backward decoded PTS cadence delta to be negative.");
+            }
+
+            track.Invoke(controller, new object[] { TimeSpan.FromMilliseconds(1000.0 / 24.0), expected });
+            AssertEqual(3L, GetLongProperty(controller, "PlaybackPtsCadenceMismatchCount"), "valid cadence after backward PTS remains clean");
+
+            reset.Invoke(controller, null);
+            AssertEqual(0L, GetLongProperty(controller, "PlaybackPtsCadenceMismatchCount"), "decoded PTS cadence reset count");
+            AssertEqual(0.0, GetDoubleProperty(controller, "LastPlaybackPtsCadenceDeltaMs"), "decoded PTS cadence reset delta");
+        }
+        finally
+        {
+            (controller as IDisposable)?.Dispose();
+            (bufferManager as IDisposable)?.Dispose();
+        }
 
         return Task.CompletedTask;
     }

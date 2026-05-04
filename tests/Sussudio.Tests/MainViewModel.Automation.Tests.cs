@@ -346,6 +346,8 @@ static partial class Program
         AssertContains(diagnosticsText, "FlashbackPlaybackCommandQueueCapacity");
         AssertContains(diagnosticsText, "FlashbackPlaybackTargetFps = health.FlashbackPlaybackTargetFps");
         AssertContains(diagnosticsText, "FlashbackPlaybackTargetFps = snapshot.FlashbackPlaybackTargetFps");
+        AssertContains(diagnosticsText, "FlashbackPlaybackPtsCadenceMismatchCount = health.FlashbackPlaybackPtsCadenceMismatchCount");
+        AssertContains(diagnosticsText, "ptsMismatch={snapshot.FlashbackPlaybackPtsCadenceMismatchCount}");
         AssertContains(diagnosticsText, "private static double ResolveFlashbackPlaybackTargetFps(double flashbackPlaybackTargetFps, double fallbackFrameRate)");
         AssertContains(diagnosticsText, "var playbackTargetFps = ResolveFlashbackPlaybackTargetFps(\n            snapshot.FlashbackPlaybackTargetFps,\n            snapshot.SelectedExactFrameRate.GetValueOrDefault(snapshot.SelectedFrameRate));");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackObservedFps < playbackTargetFps * FlashbackPlaybackSlowFpsRatio");
@@ -413,6 +415,7 @@ static partial class Program
         AssertContains(diagnosticsText, "fps={health.FlashbackPlaybackObservedFps:0.##}/{playbackTargetFps:0.##}");
         AssertContains(diagnosticsText, "target={health.FlashbackPlaybackTargetFps:0.##}");
         AssertContains(diagnosticsText, "encoder={health.EncoderFrameRate:0.##} source={(health.SourceFrameRateExact ?? 0):0.##} present={previewRuntime.DisplayCadenceObservedFps:0.##}");
+        AssertContains(diagnosticsText, "ptsMismatch={health.FlashbackPlaybackPtsCadenceMismatchCount} ptsDelta={health.FlashbackPlaybackLastPtsCadenceDeltaMs:0.##}/{health.FlashbackPlaybackLastPtsCadenceExpectedMs:0.##}ms");
         AssertContains(diagnosticsText, "1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps");
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackAudioMasterFallbackWarningRatio = 0.50;");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackAudioQueueBacklogWarningDepth = 24;");
