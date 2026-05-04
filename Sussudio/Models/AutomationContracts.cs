@@ -919,6 +919,7 @@ public sealed class AutomationSnapshot
     public long FlashbackPlaybackCommandsDropped { get; init; }
     public long FlashbackPlaybackCommandsSkippedNotReady { get; init; }
     public long FlashbackPlaybackScrubUpdatesCoalesced { get; init; }
+    public long FlashbackPlaybackSeekCommandsCoalesced { get; init; }
     public int FlashbackPlaybackCommandQueueCapacity { get; init; }
     public int FlashbackPlaybackPendingCommands { get; init; }
     public int FlashbackPlaybackMaxPendingCommands { get; init; }
@@ -1036,6 +1037,7 @@ public sealed class PerformanceTimelineEntry
     public long FlashbackPlaybackMaxDecodePositionMs { get; init; }
     public int FlashbackPlaybackPendingCommands { get; init; }
     public int FlashbackPlaybackMaxPendingCommands { get; init; }
+    public long FlashbackPlaybackSeekCommandsCoalesced { get; init; }
     public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }
     public long FlashbackPlaybackSubmitFailures { get; init; }
     public long FlashbackPlaybackLastDropUtcUnixMs { get; init; }

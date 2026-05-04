@@ -942,6 +942,7 @@ static partial class Program
         AssertContains(source, "FlashbackPlaybackCommandsDropped");
         AssertContains(source, "FlashbackPlaybackCommandsSkippedNotReady");
         AssertContains(source, "FlashbackPlaybackScrubUpdatesCoalesced");
+        AssertContains(source, "FlashbackPlaybackSeekCommandsCoalesced");
         AssertContains(source, "FlashbackPlaybackLastCommandQueued");
         AssertContains(source, "FlashbackPlaybackLastCommandProcessed");
         AssertContains(source, "FlashbackPlaybackSubmitFailures");

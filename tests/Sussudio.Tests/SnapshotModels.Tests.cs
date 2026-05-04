@@ -285,6 +285,7 @@ static partial class Program
                 new("FlashbackPlaybackCommandsDropped", typeof(long)),
                 new("FlashbackPlaybackCommandsSkippedNotReady", typeof(long)),
                 new("FlashbackPlaybackScrubUpdatesCoalesced", typeof(long)),
+                new("FlashbackPlaybackSeekCommandsCoalesced", typeof(long)),
                 new("FlashbackPlaybackCommandQueueCapacity", typeof(int)),
                 new("FlashbackPlaybackPendingCommands", typeof(int)),
                 new("FlashbackPlaybackMaxPendingCommands", typeof(int)),
@@ -406,6 +407,7 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackPlaybackMaxDecodePositionMs", 2345L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackCommandsEnqueued", 9L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackScrubUpdatesCoalesced", 7L);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackSeekCommandsCoalesced", 8L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackCommandQueueCapacity", 256);
         SetPropertyOrBackingField(health, "FlashbackPlaybackPendingCommands", 2);
         SetPropertyOrBackingField(health, "FlashbackPlaybackMaxPendingCommands", 5);
@@ -473,6 +475,7 @@ static partial class Program
         AssertEqual(2345L, GetLongProperty(health, "FlashbackPlaybackMaxDecodePositionMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodePositionMs round-trip");
         AssertEqual(9L, GetLongProperty(health, "FlashbackPlaybackCommandsEnqueued"), "CaptureHealthSnapshot.FlashbackPlaybackCommandsEnqueued round-trip");
         AssertEqual(7L, GetLongProperty(health, "FlashbackPlaybackScrubUpdatesCoalesced"), "CaptureHealthSnapshot.FlashbackPlaybackScrubUpdatesCoalesced round-trip");
+        AssertEqual(8L, GetLongProperty(health, "FlashbackPlaybackSeekCommandsCoalesced"), "CaptureHealthSnapshot.FlashbackPlaybackSeekCommandsCoalesced round-trip");
         AssertEqual(256, GetIntProperty(health, "FlashbackPlaybackCommandQueueCapacity"), "CaptureHealthSnapshot.FlashbackPlaybackCommandQueueCapacity round-trip");
         AssertEqual(2, GetIntProperty(health, "FlashbackPlaybackPendingCommands"), "CaptureHealthSnapshot.FlashbackPlaybackPendingCommands round-trip");
         AssertEqual(5, GetIntProperty(health, "FlashbackPlaybackMaxPendingCommands"), "CaptureHealthSnapshot.FlashbackPlaybackMaxPendingCommands round-trip");

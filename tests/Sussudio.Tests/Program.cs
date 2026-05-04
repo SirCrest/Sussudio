@@ -907,6 +907,9 @@ static partial class Program
                 "Flashback scrub coalescing does not requeue control commands",
                 FlashbackPlaybackController_ScrubCoalescing_DoesNotRequeueControlCommands),
             await RunCheckAsync(
+                "Flashback seek slots preserve control command barriers",
+                FlashbackPlaybackController_SeekSlots_PreserveControlCommandBarriers),
+            await RunCheckAsync(
                 "Flashback playback transitions use best-effort audio preview guards",
                 FlashbackPlaybackController_PlaybackTransitions_UseBestEffortAudioPreviewGuards),
             await RunCheckAsync(
@@ -1801,6 +1804,7 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsDropped"), "AutomationSnapshot.FlashbackPlaybackCommandsDropped");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsSkippedNotReady"), "AutomationSnapshot.FlashbackPlaybackCommandsSkippedNotReady");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackScrubUpdatesCoalesced"), "AutomationSnapshot.FlashbackPlaybackScrubUpdatesCoalesced");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackSeekCommandsCoalesced"), "AutomationSnapshot.FlashbackPlaybackSeekCommandsCoalesced");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandQueueCapacity"), "AutomationSnapshot.FlashbackPlaybackCommandQueueCapacity");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackPendingCommands"), "AutomationSnapshot.FlashbackPlaybackPendingCommands");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxPendingCommands"), "AutomationSnapshot.FlashbackPlaybackMaxPendingCommands");

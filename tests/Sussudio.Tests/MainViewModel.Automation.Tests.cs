@@ -628,10 +628,13 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackCommandsDroppedAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackCommandsSkippedNotReadyAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackScrubUpdatesCoalescedAtEnd");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackSeekCommandsCoalescedAtEnd");
         AssertContains(diagnosticSessionText, "private readonly record struct PlaybackCommandHealth");
         AssertContains(diagnosticSessionText, "BuildPlaybackCommandHealth");
         AssertContains(diagnosticSessionText, "nonCoalescedDropped={commandHealth.NonCoalescedDropped}");
+        AssertContains(diagnosticSessionText, "coalescedSeek={commandHealth.CoalescedSeek}");
         AssertContains(diagnosticSessionText, "GetCounterDelta(snapshot, baselineSnapshot, \"FlashbackPlaybackSubmitFailures\")");
+        AssertContains(diagnosticSessionText, "GetCounterDelta(snapshot, baselineSnapshot, \"FlashbackPlaybackSeekCommandsCoalesced\")");
         AssertContains(diagnosticSessionText, "commandHealth.SubmitFailures > 0");
         AssertContains(diagnosticSessionText, "submitFailures={commandHealth.SubmitFailures}");
         AssertContains(diagnosticSessionText, "GetCounterDelta(snapshot, baselineSnapshot, \"FlashbackPlaybackCommandsDropped\")");
@@ -673,6 +676,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd");
         AssertContains(diagnosticSessionText, "Flashback Playback Commands:");
         AssertContains(diagnosticSessionText, "coalescedScrubEnd={result.FlashbackPlaybackScrubUpdatesCoalescedAtEnd}");
+        AssertContains(diagnosticSessionText, "coalescedSeekEnd={result.FlashbackPlaybackSeekCommandsCoalescedAtEnd}");
         AssertContains(diagnosticSessionText, "failureUtcEnd={result.FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd}");
         AssertContains(diagnosticSessionText, "Flashback Playback Perf:");
         AssertContains(diagnosticSessionText, "new Dictionary<string, object?> { [\"action\"] = \"play\", [\"positionMs\"] = 1000 }");

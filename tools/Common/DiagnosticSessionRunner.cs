@@ -61,6 +61,7 @@ public sealed class DiagnosticSessionResult
     public long FlashbackPlaybackCommandsDroppedAtEnd { get; init; }
     public long FlashbackPlaybackCommandsSkippedNotReadyAtEnd { get; init; }
     public long FlashbackPlaybackScrubUpdatesCoalescedAtEnd { get; init; }
+    public long FlashbackPlaybackSeekCommandsCoalescedAtEnd { get; init; }
     public string FlashbackPlaybackLastCommandFailureAtEnd { get; init; } = string.Empty;
     public long FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd { get; init; }
     public double FlashbackPlaybackObservedFpsAtEnd { get; init; }
@@ -236,6 +237,7 @@ public static class DiagnosticSessionRunner
         long Skipped,
         long SubmitFailures,
         long CoalescedScrub,
+        long CoalescedSeek,
         long NonCoalescedDropped);
 
     public static async Task<DiagnosticSessionResult> RunAsync(
@@ -934,6 +936,7 @@ public static class DiagnosticSessionRunner
         var playbackDroppedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackCommandsDropped") ?? 0 : 0;
         var playbackSkippedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackCommandsSkippedNotReady") ?? 0 : 0;
         var playbackScrubCoalescedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackScrubUpdatesCoalesced") ?? 0 : 0;
+        var playbackSeekCoalescedAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackSeekCommandsCoalesced") ?? 0 : 0;
         var playbackLastCommandFailureAtEnd = playbackSessionMetrics.Observed ? GetString(playbackEndSnapshot, "FlashbackPlaybackLastCommandFailure") ?? string.Empty : string.Empty;
         var playbackLastCommandFailureUtcUnixMsAtEnd = playbackSessionMetrics.Observed ? GetNullableLong(playbackEndSnapshot, "FlashbackPlaybackLastCommandFailureUtcUnixMs") ?? 0 : 0;
         var playbackObservedFpsAtEnd = playbackSessionMetrics.Observed ? GetDouble(playbackEndSnapshot, "FlashbackPlaybackObservedFps") : 0;
@@ -1094,6 +1097,7 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackCommandsDroppedAtEnd = playbackDroppedAtEnd,
             FlashbackPlaybackCommandsSkippedNotReadyAtEnd = playbackSkippedAtEnd,
             FlashbackPlaybackScrubUpdatesCoalescedAtEnd = playbackScrubCoalescedAtEnd,
+            FlashbackPlaybackSeekCommandsCoalescedAtEnd = playbackSeekCoalescedAtEnd,
             FlashbackPlaybackLastCommandFailureAtEnd = playbackLastCommandFailureAtEnd,
             FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd = playbackLastCommandFailureUtcUnixMsAtEnd,
             FlashbackPlaybackObservedFpsAtEnd = playbackObservedFpsAtEnd,
@@ -1579,6 +1583,7 @@ public static class DiagnosticSessionRunner
             $"droppedEnd={result.FlashbackPlaybackCommandsDroppedAtEnd} " +
             $"skippedEnd={result.FlashbackPlaybackCommandsSkippedNotReadyAtEnd} " +
             $"coalescedScrubEnd={result.FlashbackPlaybackScrubUpdatesCoalescedAtEnd} " +
+            $"coalescedSeekEnd={result.FlashbackPlaybackSeekCommandsCoalescedAtEnd} " +
             $"failureEnd={FormatOptional(result.FlashbackPlaybackLastCommandFailureAtEnd)} " +
             $"failureUtcEnd={result.FlashbackPlaybackLastCommandFailureUtcUnixMsAtEnd}");
         builder.AppendLine(
@@ -1975,7 +1980,7 @@ public static class DiagnosticSessionRunner
                 warnings.Add(
                     "flashback stress: " +
                     $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                    $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} " +
+                    $"coalescedScrub={commandHealth.CoalescedScrub} coalescedSeek={commandHealth.CoalescedSeek} skipped={commandHealth.Skipped} " +
                     $"submitFailures={commandHealth.SubmitFailures}");
             }
 
@@ -3078,7 +3083,7 @@ public static class DiagnosticSessionRunner
             warnings.Add(
                 "flashback scrub stress: " +
                 $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} " +
+                $"coalescedScrub={commandHealth.CoalescedScrub} coalescedSeek={commandHealth.CoalescedSeek} skipped={commandHealth.Skipped} " +
                 $"submitFailures={commandHealth.SubmitFailures}");
         }
 
@@ -3411,7 +3416,7 @@ public static class DiagnosticSessionRunner
             warnings.Add(
                 "flashback export playback: " +
                 $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} " +
+                $"coalescedScrub={commandHealth.CoalescedScrub} coalescedSeek={commandHealth.CoalescedSeek} skipped={commandHealth.Skipped} " +
                 $"submitFailures={commandHealth.SubmitFailures}");
         }
 
@@ -3555,7 +3560,7 @@ public static class DiagnosticSessionRunner
             warnings.Add(
                 "flashback segment playback: command queue unhealthy " +
                 $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} " +
+                $"coalescedScrub={commandHealth.CoalescedScrub} coalescedSeek={commandHealth.CoalescedSeek} skipped={commandHealth.Skipped} " +
                 $"submitFailures={commandHealth.SubmitFailures} pending={pending}");
         }
 
@@ -3974,7 +3979,7 @@ public static class DiagnosticSessionRunner
             warnings.Add(
                 "flashback range export: " +
                 $"dropped={commandHealth.Dropped} nonCoalescedDropped={commandHealth.NonCoalescedDropped} " +
-                $"coalescedScrub={commandHealth.CoalescedScrub} skipped={commandHealth.Skipped} " +
+                $"coalescedScrub={commandHealth.CoalescedScrub} coalescedSeek={commandHealth.CoalescedSeek} skipped={commandHealth.Skipped} " +
                 $"submitFailures={commandHealth.SubmitFailures}");
         }
 
@@ -4940,11 +4945,13 @@ public static class DiagnosticSessionRunner
         var skipped = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackCommandsSkippedNotReady");
         var submitFailures = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackSubmitFailures");
         var coalescedScrub = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackScrubUpdatesCoalesced");
+        var coalescedSeek = GetCounterDelta(snapshot, baselineSnapshot, "FlashbackPlaybackSeekCommandsCoalesced");
         return new PlaybackCommandHealth(
             dropped,
             skipped,
             submitFailures,
             coalescedScrub,
+            coalescedSeek,
             Math.Max(0, dropped - coalescedScrub));
     }
 

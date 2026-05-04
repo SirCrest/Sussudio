@@ -89,6 +89,7 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public long FlashbackPlaybackCommandsDropped { get; init; }
     public long FlashbackPlaybackCommandsSkippedNotReady { get; init; }
     public long FlashbackPlaybackScrubUpdatesCoalesced { get; init; }
+    public long FlashbackPlaybackSeekCommandsCoalesced { get; init; }
     public int FlashbackPlaybackCommandQueueCapacity { get; init; }
     public int FlashbackPlaybackPendingCommands { get; init; }
     public int FlashbackPlaybackMaxPendingCommands { get; init; }

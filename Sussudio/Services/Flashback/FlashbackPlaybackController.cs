@@ -39,7 +39,29 @@ internal sealed class FlashbackPlaybackController : IDisposable
         public TimeSpan Position { get; init; }
         public TimeSpan Delta { get; init; }
         public bool HasPositionOverride { get; init; }
+        public SeekIntentSlot? SeekSlot { get; init; }
+        public ScrubUpdateIntentSlot? ScrubUpdateSlot { get; init; }
         public long QueuedTimestamp { get; init; }
+    }
+
+    private sealed class SeekIntentSlot
+    {
+        public SeekIntentSlot(long ticks)
+        {
+            LatestTicks = ticks;
+        }
+
+        public long LatestTicks;
+    }
+
+    private sealed class ScrubUpdateIntentSlot
+    {
+        public ScrubUpdateIntentSlot(long ticks)
+        {
+            LatestTicks = ticks;
+        }
+
+        public long LatestTicks;
     }
 
     public readonly record struct PlaybackCadenceMetrics(
@@ -156,8 +178,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private int _activeCommandKind = -1;
     private long _activeCommandStartedTimestamp;
     private long _latestScrubUpdateTicks;
-    private int _scrubUpdateCommandQueued;
+    private readonly object _seekSlotSync = new();
+    private SeekIntentSlot? _queuedSeekSlot;
+    private ScrubUpdateIntentSlot? _queuedScrubUpdateSlot;
     private long _scrubUpdatesCoalesced;
+    private long _seekCommandsCoalesced;
 
     // --- Deferred frame release for D3D11VA (C1 fix) ---
     // The renderer's render thread hasn't copied the texture yet when we release.
@@ -303,6 +328,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (IsNotReady(CommandKind.BeginScrub, position)) return false;
         if (!EnsurePlaybackThread(CommandKind.BeginScrub)) return false;
+        Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
         return SendCommand(new PlaybackCommand { Kind = CommandKind.BeginScrub, Position = position });
     }
 
@@ -310,27 +336,64 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         if (IsNotReady(CommandKind.Seek, position)) return false;
         if (!EnsurePlaybackThread(CommandKind.Seek)) return false;
-        return SendCommand(new PlaybackCommand { Kind = CommandKind.Seek, Position = position });
+        return SendSeekCommand(position);
+    }
+
+    private bool SendSeekCommand(TimeSpan position)
+    {
+        lock (_seekSlotSync)
+        {
+            _queuedScrubUpdateSlot = null;
+
+            if (_queuedSeekSlot is { } queuedSlot)
+            {
+                queuedSlot.LatestTicks = position.Ticks;
+                TrackCoalescedSeekCommand();
+                return true;
+            }
+
+            var slot = new SeekIntentSlot(position.Ticks);
+            _queuedSeekSlot = slot;
+            if (!SendCommandCore(new PlaybackCommand { Kind = CommandKind.Seek, Position = position, SeekSlot = slot }))
+            {
+                ClearQueuedSeekSlotUnsafe(slot);
+                return false;
+            }
+
+            return true;
+        }
     }
 
     public bool UpdateScrub(TimeSpan position)
     {
         if (IsNotReady(CommandKind.UpdateScrub, position)) return false;
         if (!PlaybackThreadAlive) return RejectCommand(CommandKind.UpdateScrub, "thread_not_running", "thread_not_running", false, position);
-        Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
-        if (Interlocked.CompareExchange(ref _scrubUpdateCommandQueued, 1, 0) != 0)
+        return SendUpdateScrubCommand(position);
+    }
+
+    private bool SendUpdateScrubCommand(TimeSpan position)
+    {
+        lock (_seekSlotSync)
         {
-            TrackCoalescedScrubUpdate();
+            _queuedSeekSlot = null;
+            Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
+            if (_queuedScrubUpdateSlot is { } queuedSlot)
+            {
+                queuedSlot.LatestTicks = position.Ticks;
+                TrackCoalescedScrubUpdate();
+                return true;
+            }
+
+            var slot = new ScrubUpdateIntentSlot(position.Ticks);
+            _queuedScrubUpdateSlot = slot;
+            if (!SendCommandCore(new PlaybackCommand { Kind = CommandKind.UpdateScrub, Position = position, ScrubUpdateSlot = slot }))
+            {
+                ClearQueuedScrubUpdateSlotUnsafe(slot);
+                return false;
+            }
+
             return true;
         }
-
-        if (!SendCommand(new PlaybackCommand { Kind = CommandKind.UpdateScrub, Position = position }))
-        {
-            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
-            return false;
-        }
-
-        return true;
     }
 
     public bool EndScrub() => EndScrubAt(null);
@@ -342,16 +405,31 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (IsNotReady(CommandKind.EndScrub, position)) return false;
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
         if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, "thread_not_running", "thread_not_running", false, position);
-        if (position.HasValue)
+        return SendEndScrubCommand(position);
+    }
+
+    private bool SendEndScrubCommand(TimeSpan? position)
+    {
+        lock (_seekSlotSync)
         {
-            Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Value.Ticks);
+            var commandTicks = position?.Ticks ??
+                               _queuedScrubUpdateSlot?.LatestTicks ??
+                               Interlocked.Read(ref _latestScrubUpdateTicks);
+            var commandPosition = TimeSpan.FromTicks(commandTicks);
+            if (position.HasValue)
+            {
+                Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Value.Ticks);
+            }
+
+            _queuedSeekSlot = null;
+            _queuedScrubUpdateSlot = null;
+            return SendCommandCore(new PlaybackCommand
+            {
+                Kind = CommandKind.EndScrub,
+                Position = commandPosition,
+                HasPositionOverride = position.HasValue
+            });
         }
-        return SendCommand(new PlaybackCommand
-        {
-            Kind = CommandKind.EndScrub,
-            Position = position.GetValueOrDefault(),
-            HasPositionOverride = position.HasValue
-        });
     }
 
     public bool Play()
@@ -490,6 +568,24 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private bool SendCommand(PlaybackCommand command)
     {
+        lock (_seekSlotSync)
+        {
+            if (command.Kind != CommandKind.Seek)
+            {
+                _queuedSeekSlot = null;
+            }
+
+            if (command.Kind != CommandKind.UpdateScrub)
+            {
+                _queuedScrubUpdateSlot = null;
+            }
+
+            return SendCommandCore(command);
+        }
+    }
+
+    private bool SendCommandCore(PlaybackCommand command)
+    {
         if (_disposedFlag != 0 && command.Kind != CommandKind.Stop)
         {
             return RejectCommand(command.Kind, "disposed", "disposed", false);
@@ -501,6 +597,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Position = command.Position,
             Delta = command.Delta,
             HasPositionOverride = command.HasPositionOverride,
+            SeekSlot = command.SeekSlot,
+            ScrubUpdateSlot = command.ScrubUpdateSlot,
             QueuedTimestamp = Stopwatch.GetTimestamp()
         };
 
@@ -541,7 +639,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _playCts = null;
             _playbackThread = null;
             Interlocked.Exchange(ref _pendingCommands, 0);
-            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
+            ClearQueuedCommandSlotsBarrier();
             Volatile.Write(ref _playbackThreadStarted, 0);
         }
 
@@ -637,7 +735,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 _playCts = null;
                 _playbackThread = null;
                 Interlocked.Exchange(ref _pendingCommands, 0);
-                Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
+                ClearQueuedCommandSlotsBarrier();
                 Volatile.Write(ref _playbackThreadStarted, 0);
             }
         }
@@ -754,6 +852,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             return;
 
                         case CommandKind.Seek:
+                        cmd = ResolveSeekCommandPosition(cmd);
                         while (commandChannel.Reader.TryPeek(out var newerSeek) &&
                                newerSeek.Kind == CommandKind.Seek)
                         {
@@ -763,6 +862,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             }
 
                             TrackCommandDequeued(newerSeek);
+                            newerSeek = ResolveSeekCommandPosition(newerSeek);
                             cmd = newerSeek;
                         }
 
@@ -873,8 +973,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         break;
 
                     case CommandKind.UpdateScrub:
-                        Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
-                        cmd = cmd with { Position = TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks)) };
+                        cmd = ResolveScrubUpdateCommandPosition(cmd);
                         if (!isScrubbing) break;
                         // Drain stale UpdateScrub commands only. Leave control commands queued
                         // so their latency/accounting stays tied to the original command.
@@ -887,8 +986,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             }
 
                             TrackCommandDequeued(newer);
-                            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
-                            newer = newer with { Position = TimeSpan.FromTicks(Interlocked.Read(ref _latestScrubUpdateTicks)) };
+                            newer = ResolveScrubUpdateCommandPosition(newer);
                             cmd = newer;
                         }
                         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
@@ -916,13 +1014,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
                     case CommandKind.EndScrub:
                         if (!isScrubbing) break;
-                        var endScrubPosition = cmd.HasPositionOverride
-                            ? ClampPosition(cmd.Position, frozenValidStart)
-                            : PlaybackPosition;
-                        if (cmd.HasPositionOverride)
-                        {
-                            PlaybackPosition = endScrubPosition;
-                        }
+                        var endScrubPosition = ClampPosition(cmd.Position, frozenValidStart);
+                        PlaybackPosition = endScrubPosition;
                         isScrubbing = false;
                         isPlaying = _wasPlayingBeforeScrub;
                         if (isPlaying)
@@ -1224,7 +1317,72 @@ internal sealed class FlashbackPlaybackController : IDisposable
             Interlocked.Exchange(ref _pendingCommands, 0);
         }
 
-        Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
+        ClearQueuedCommandSlotsBarrier();
+    }
+
+    private PlaybackCommand ResolveSeekCommandPosition(PlaybackCommand command)
+    {
+        var slot = command.SeekSlot;
+        if (slot is null)
+        {
+            return command;
+        }
+
+        lock (_seekSlotSync)
+        {
+            var resolved = command with { Position = TimeSpan.FromTicks(slot.LatestTicks) };
+            if (ReferenceEquals(_queuedSeekSlot, slot))
+            {
+                _queuedSeekSlot = null;
+            }
+
+            return resolved;
+        }
+    }
+
+    private PlaybackCommand ResolveScrubUpdateCommandPosition(PlaybackCommand command)
+    {
+        var slot = command.ScrubUpdateSlot;
+        if (slot is null)
+        {
+            return command;
+        }
+
+        lock (_seekSlotSync)
+        {
+            var resolved = command with { Position = TimeSpan.FromTicks(slot.LatestTicks) };
+            if (ReferenceEquals(_queuedScrubUpdateSlot, slot))
+            {
+                _queuedScrubUpdateSlot = null;
+            }
+
+            return resolved;
+        }
+    }
+
+    private void ClearQueuedSeekSlotUnsafe(SeekIntentSlot slot)
+    {
+        if (ReferenceEquals(_queuedSeekSlot, slot))
+        {
+            _queuedSeekSlot = null;
+        }
+    }
+
+    private void ClearQueuedScrubUpdateSlotUnsafe(ScrubUpdateIntentSlot slot)
+    {
+        if (ReferenceEquals(_queuedScrubUpdateSlot, slot))
+        {
+            _queuedScrubUpdateSlot = null;
+        }
+    }
+
+    private void ClearQueuedCommandSlotsBarrier()
+    {
+        lock (_seekSlotSync)
+        {
+            _queuedSeekSlot = null;
+            _queuedScrubUpdateSlot = null;
+        }
     }
 
     // --- Decode helpers ---
@@ -2775,6 +2933,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public long CommandsDropped => Interlocked.Read(ref _commandsDropped);
     public long CommandsSkippedNotReady => Interlocked.Read(ref _commandsSkippedNotReady);
     public long ScrubUpdatesCoalesced => Interlocked.Read(ref _scrubUpdatesCoalesced);
+    public long SeekCommandsCoalesced => Interlocked.Read(ref _seekCommandsCoalesced);
     public int CommandQueueCapacityCommands => CommandQueueCapacity;
     public int PendingCommands => Volatile.Read(ref _pendingCommands);
     public int MaxPendingCommands => Volatile.Read(ref _maxPendingCommands);
@@ -2978,6 +3137,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (coalesced == 1 || coalesced % 120 == 0)
         {
             Logger.Log($"FLASHBACK_PLAYBACK_SCRUB_COALESCED count={coalesced} dropped={dropped}");
+        }
+    }
+
+    private void TrackCoalescedSeekCommand()
+    {
+        var coalesced = Interlocked.Increment(ref _seekCommandsCoalesced);
+        if (coalesced == 1 || coalesced % 120 == 0)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_SEEK_COALESCED count={coalesced}");
         }
     }
 

@@ -471,6 +471,7 @@ static partial class Program
                      "FlashbackPlaybackMaxDecodeAudioMs",
                      "FlashbackPlaybackMaxDecodeConvertMs",
                      "FlashbackPlaybackPendingCommands",
+                     "FlashbackPlaybackSeekCommandsCoalesced",
                      "FlashbackPlaybackSubmitFailures",
                      "FlashbackPlaybackLastDropUtcUnixMs",
                      "FlashbackPlaybackLastDropReason",
