@@ -136,6 +136,7 @@ public sealed class DiagnosticSessionResult
     public string FlashbackExportMessageAtEnd { get; init; } = string.Empty;
     public string FlashbackExportFailureKindAtEnd { get; init; } = string.Empty;
     public string FlashbackExportOutputPathAtEnd { get; init; } = string.Empty;
+    public long LastExportIdAtEnd { get; init; }
     public string LastExportSuccessAtEnd { get; init; } = string.Empty;
     public string LastExportMessageAtEnd { get; init; } = string.Empty;
     public long FlashbackExportMaxElapsedMsObserved { get; init; }
@@ -1003,6 +1004,7 @@ public static class DiagnosticSessionRunner
             FlashbackExportMessageAtEnd = exportMetrics.MessageAtEnd,
             FlashbackExportFailureKindAtEnd = exportMetrics.FailureKindAtEnd,
             FlashbackExportOutputPathAtEnd = exportMetrics.OutputPathAtEnd,
+            LastExportIdAtEnd = exportMetrics.LastExportIdAtEnd,
             LastExportSuccessAtEnd = exportMetrics.LastSuccessAtEnd,
             LastExportMessageAtEnd = exportMetrics.LastMessageAtEnd,
             FlashbackExportMaxElapsedMsObserved = exportMetrics.MaxElapsedMsObserved,
@@ -1240,6 +1242,7 @@ public static class DiagnosticSessionRunner
             $"statusEnd={FormatOptional(result.FlashbackExportStatusAtEnd)} " +
             $"failureKindEnd={FormatOptional(result.FlashbackExportFailureKindAtEnd)} " +
             $"messageEnd={FormatOptional(result.FlashbackExportMessageAtEnd)} " +
+            $"lastResultIdEnd={result.LastExportIdAtEnd} " +
             $"lastSuccessEnd={FormatOptional(result.LastExportSuccessAtEnd)} " +
             $"lastMessageEnd={FormatOptional(result.LastExportMessageAtEnd)} " +
             $"pathEnd={FormatOptional(result.FlashbackExportOutputPathAtEnd)} " +
@@ -4191,8 +4194,18 @@ public static class DiagnosticSessionRunner
         metrics.MessageAtEnd = GetString(snapshot, "FlashbackExportMessage") ?? string.Empty;
         metrics.FailureKindAtEnd = GetString(snapshot, "FlashbackExportFailureKind") ?? string.Empty;
         metrics.OutputPathAtEnd = GetString(snapshot, "FlashbackExportOutputPath") ?? string.Empty;
-        metrics.LastSuccessAtEnd = GetString(snapshot, "LastExportSuccess") ?? string.Empty;
-        metrics.LastMessageAtEnd = GetString(snapshot, "LastExportMessage") ?? string.Empty;
+        var lastExportId = GetNullableLong(snapshot, "LastExportId") ?? 0;
+        metrics.LastExportIdAtEnd = lastExportId;
+        if (!active && exportId > 0 && lastExportId == exportId)
+        {
+            metrics.LastSuccessAtEnd = GetString(snapshot, "LastExportSuccess") ?? string.Empty;
+            metrics.LastMessageAtEnd = GetString(snapshot, "LastExportMessage") ?? string.Empty;
+        }
+        else
+        {
+            metrics.LastSuccessAtEnd = string.Empty;
+            metrics.LastMessageAtEnd = string.Empty;
+        }
         metrics.MaxElapsedMsObserved = Math.Max(
             metrics.MaxElapsedMsObserved,
             GetNullableLong(snapshot, "FlashbackExportElapsedMs") ?? 0);
@@ -4215,6 +4228,7 @@ public static class DiagnosticSessionRunner
         public string MessageAtEnd { get; set; } = string.Empty;
         public string FailureKindAtEnd { get; set; } = string.Empty;
         public string OutputPathAtEnd { get; set; } = string.Empty;
+        public long LastExportIdAtEnd { get; set; }
         public string LastSuccessAtEnd { get; set; } = string.Empty;
         public string LastMessageAtEnd { get; set; } = string.Empty;
         public long MaxElapsedMsObserved { get; set; }

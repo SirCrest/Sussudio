@@ -130,6 +130,7 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     /// Composed string describes both what was changed and why.
     /// </summary>
     public string? FlashbackCodecDowngradeReason { get; init; }
+    public long LastExportId { get; init; }
     public string? LastExportPath { get; init; }
     public bool? LastExportSuccess { get; init; }
     public string? LastExportMessage { get; init; }

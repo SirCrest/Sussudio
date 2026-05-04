@@ -1824,6 +1824,7 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackExportOutPointMs"), "AutomationSnapshot.FlashbackExportOutPointMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportMessage"), "AutomationSnapshot.FlashbackExportMessage");
         AssertNotNull(snapshotType.GetProperty("FlashbackExportFailureKind"), "AutomationSnapshot.FlashbackExportFailureKind");
+        AssertNotNull(snapshotType.GetProperty("LastExportId"), "AutomationSnapshot.LastExportId");
         AssertNotNull(snapshotType.GetProperty("MjpegPacketHashSampleCount"), "AutomationSnapshot.MjpegPacketHashSampleCount");
         AssertNotNull(snapshotType.GetProperty("MjpegPacketHashInputObservedFps"), "AutomationSnapshot.MjpegPacketHashInputObservedFps");
         AssertNotNull(snapshotType.GetProperty("MjpegPacketHashUniqueObservedFps"), "AutomationSnapshot.MjpegPacketHashUniqueObservedFps");

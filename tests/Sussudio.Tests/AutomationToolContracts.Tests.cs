@@ -227,6 +227,7 @@ static partial class Program
                 "FlashbackExportOutputPath": "C:/tmp/flashback.mp4",
                 "FlashbackExportMessage": "copying packets",
                 "FlashbackExportFailureKind": "NoMediaWritten",
+                "LastExportId": 7,
                 "MjpegDecodeSampleCount": 1,
                 "MjpegDecoderCount": 1,
                 "MjpegPerDecoder": [
@@ -314,7 +315,7 @@ static partial class Program
         AssertContains(formatted, "Playback Commands: pending=1/256 maxPending=4 lastLatency=12ms maxLatency=87ms enq=12 proc=11 drop=0 skip=2 coalescedScrub=9 threadAlive=true lastQueued=UpdateScrub lastProcessed=BeginScrub failure=not_ready:Pause failureUtc=123456789");
         AssertContains(formatted, "Target: 120 fps");
         AssertContains(formatted, "Playback Decode: avg=1.25ms P95=2.5ms P99=3.5ms max=4.5ms phase=audio receive=0.5ms feed=4.0ms read=0.75ms send=3.5ms audio=3.25ms convert=0.25ms samples=120");
-        AssertContains(formatted, "Export: active=true status=Running id=7 kind=NoMediaWritten progress=37.5% segments=3/8");
+        AssertContains(formatted, "Export: active=true status=Running id=7 lastResultId=7 kind=NoMediaWritten progress=37.5% segments=3/8");
         AssertContains(formatted, "elapsed=2500ms progressAge=150ms bytes=1 MB throughput=409.6 KB/s");
         AssertContains(formatted, "== MJPEG Pipeline Timing ==");
         AssertContains(formatted, "Decoder[0]: avg=2.1ms");

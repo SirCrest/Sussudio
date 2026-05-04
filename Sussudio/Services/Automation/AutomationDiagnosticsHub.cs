@@ -1333,6 +1333,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             FlashbackExportOutPointMs = health.FlashbackExportOutPointMs,
             FlashbackExportMessage = health.FlashbackExportMessage,
             FlashbackExportFailureKind = health.FlashbackExportFailureKind,
+            LastExportId = health.LastExportId,
             LastExportPath = health.LastExportPath,
             LastExportSuccess = health.LastExportSuccess,
             LastExportMessage = health.LastExportMessage
@@ -2270,7 +2271,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             ? "None"
             : health.FlashbackExportFailureKind;
         var exportLane =
-            $"export active={health.FlashbackExportActive} status={health.FlashbackExportStatus} kind={exportFailureKind} id={health.FlashbackExportId} progress={health.FlashbackExportPercent:0.##}% segments={health.FlashbackExportSegmentsProcessed}/{health.FlashbackExportTotalSegments} elapsedMs={health.FlashbackExportElapsedMs} progressAgeMs={health.FlashbackExportLastProgressAgeMs} bytes={health.FlashbackExportOutputBytes} throughputBps={health.FlashbackExportThroughputBytesPerSec:0.##} lastProgressUtc={health.FlashbackExportLastProgressUtcUnixMs} completedUtc={health.FlashbackExportCompletedUtcUnixMs}";
+            $"export active={health.FlashbackExportActive} status={health.FlashbackExportStatus} kind={exportFailureKind} id={health.FlashbackExportId} lastResultId={health.LastExportId} progress={health.FlashbackExportPercent:0.##}% segments={health.FlashbackExportSegmentsProcessed}/{health.FlashbackExportTotalSegments} elapsedMs={health.FlashbackExportElapsedMs} progressAgeMs={health.FlashbackExportLastProgressAgeMs} bytes={health.FlashbackExportOutputBytes} throughputBps={health.FlashbackExportThroughputBytesPerSec:0.##} lastProgressUtc={health.FlashbackExportLastProgressUtcUnixMs} completedUtc={health.FlashbackExportCompletedUtcUnixMs}";
         var tempCacheLane =
             $"flashback temp freeBytes={health.FlashbackTempDriveFreeBytes} cacheBytes={health.FlashbackStartupCacheBytes} budgetBytes={health.FlashbackStartupCacheBudgetBytes} sessions={health.FlashbackStartupCacheSessionCount} deleted={health.FlashbackStartupCacheDeletedSessionCount} freedBytes={health.FlashbackStartupCacheFreedBytes} overBudget={health.FlashbackStartupCacheOverBudget}";
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();

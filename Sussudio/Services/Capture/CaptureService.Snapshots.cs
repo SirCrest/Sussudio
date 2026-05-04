@@ -1368,6 +1368,8 @@ public partial class CaptureService
         long flashbackExportOutPointMs;
         string flashbackExportMessage;
         string flashbackExportFailureKind;
+        long lastFlashbackExportResultId;
+        FinalizeResult? lastExportResult;
         lock (_flashbackExportDiagnosticsLock)
         {
             flashbackExportActive = _flashbackExportActive;
@@ -1384,6 +1386,8 @@ public partial class CaptureService
             flashbackExportOutPointMs = _flashbackExportOutPointMs;
             flashbackExportMessage = _flashbackExportMessage;
             flashbackExportFailureKind = _flashbackExportFailureKind;
+            lastFlashbackExportResultId = _lastFlashbackExportResultId;
+            lastExportResult = _lastExportResult;
         }
 
         var snapshotUtcUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -1400,7 +1404,7 @@ public partial class CaptureService
         var flashbackExportOutputBytes = GetFileLengthOrZero(
             !string.IsNullOrWhiteSpace(flashbackExportOutputPath)
                 ? flashbackExportOutputPath
-                : _lastExportResult?.OutputPath);
+                : lastExportResult?.OutputPath);
         var flashbackExportThroughputBytesPerSec = flashbackExportElapsedMs > 0
             ? flashbackExportOutputBytes / (flashbackExportElapsedMs / 1000.0)
             : 0;
@@ -1529,9 +1533,10 @@ public partial class CaptureService
             // can show what was actually encoded vs what the user requested.
             FlashbackExportVerificationFormat = ResolveFlashbackExportVerificationFormat(_currentSettings, unifiedVideoCapture),
             FlashbackCodecDowngradeReason = ResolveFlashbackCodecDowngradeReason(_currentSettings, unifiedVideoCapture),
-            LastExportPath = _lastExportResult?.OutputPath,
-            LastExportSuccess = _lastExportResult?.Succeeded,
-            LastExportMessage = _lastExportResult?.StatusMessage,
+            LastExportId = lastFlashbackExportResultId,
+            LastExportPath = lastExportResult?.OutputPath,
+            LastExportSuccess = lastExportResult?.Succeeded,
+            LastExportMessage = lastExportResult?.StatusMessage,
             RecordingElapsedMs = _isRecording ? _recordingStopwatch.ElapsedMilliseconds : 0,
             ExpectedFrameRate = _actualFrameRate ?? _currentSettings?.FrameRate ?? 0,
             NegotiatedWidth = _actualWidth,

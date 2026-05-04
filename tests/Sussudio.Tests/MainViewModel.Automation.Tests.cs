@@ -492,13 +492,16 @@ static partial class Program
         AssertContains(captureServiceText, "if (evictionPaused)");
         AssertContains(captureServiceText, "ResumeFlashbackEvictionBestEffort(bufferManager, \"flashback_export\");");
         AssertContains(captureServiceText, "ResumeFlashbackEvictionBestEffort(bufferManager, \"flashback_recording_finalize\");");
-        AssertContains(captureServiceText, "_lastExportResult = failure;");
+        AssertContains(captureServiceText, "RecordLastFlashbackExportResult(exportId, failure);");
+        AssertContains(captureServiceText, "private void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)");
+        AssertContains(captureServiceText, "Volatile.Write(ref _lastFlashbackExportResultId, exportId);");
         AssertContains(captureServiceText, "private FinalizeResult FailFlashbackExport(\n        string outputPath,\n        string statusMessage,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
         AssertContains(captureServiceText, "Logger.Log($\"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'\");");
         AssertContains(captureServiceText, "_lastExportResult = result;");
         AssertContains(captureServiceText, "RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
         AssertContains(captureServiceText, "private void RecordRejectedFlashbackExportDiagnostics(\n        string outputPath,\n        FinalizeResult result,\n        TimeSpan? inPoint = null,\n        TimeSpan? outPoint = null)");
         AssertContains(captureServiceText, "if (_flashbackExportActive)");
+        AssertContains(captureServiceText, "Volatile.Write(ref _lastFlashbackExportResultId, 0);");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_REJECTED_DIAGNOSTICS_DEFERRED");
         AssertContains(captureServiceText, "active_id={_flashbackExportId}");
         AssertContains(captureServiceText, "if (_flashbackExportId != exportId || !_flashbackExportActive)");
@@ -802,6 +805,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackExportMessageAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackExportFailureKindAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackExportOutputPathAtEnd");
+        AssertContains(diagnosticSessionText, "LastExportIdAtEnd");
         AssertContains(diagnosticSessionText, "LastExportSuccessAtEnd");
         AssertContains(diagnosticSessionText, "LastExportMessageAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackExportMaxLastProgressAgeMsObserved");
@@ -810,6 +814,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot)");
         AssertContains(diagnosticSessionText, "exportId > baselineExportId");
         AssertContains(diagnosticSessionText, "baselineExportActive && exportId == baselineExportId");
+        AssertContains(diagnosticSessionText, "lastExportId == exportId");
         AssertContains(diagnosticSessionText, "TryGetFlashbackExportVerificationPath(scenario, outputDirectory, out var exportVerificationPath)");
         AssertContains(diagnosticSessionText, "verificationCommand = \"VerifyFile\"");
         AssertContains(diagnosticSessionText, "[\"verificationProfile\"] = \"flashback-export\"");
@@ -822,6 +827,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "Flashback Export:");
         AssertContains(diagnosticSessionText, "failureKindEnd={FormatOptional(result.FlashbackExportFailureKindAtEnd)}");
         AssertContains(diagnosticSessionText, "messageEnd={FormatOptional(result.FlashbackExportMessageAtEnd)}");
+        AssertContains(diagnosticSessionText, "lastResultIdEnd={result.LastExportIdAtEnd}");
         AssertContains(diagnosticSessionText, "lastSuccessEnd={FormatOptional(result.LastExportSuccessAtEnd)}");
         AssertContains(diagnosticSessionText, "lastMessageEnd={FormatOptional(result.LastExportMessageAtEnd)}");
         AssertContains(diagnosticSessionText, "pathEnd={FormatOptional(result.FlashbackExportOutputPathAtEnd)}");

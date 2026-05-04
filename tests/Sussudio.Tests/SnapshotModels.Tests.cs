@@ -235,6 +235,12 @@ static partial class Program
                 new("FlashbackPlaybackAudioMasterDelayDoubles", typeof(long)),
                 new("FlashbackPlaybackAudioMasterDelayShrinks", typeof(long)),
                 new("FlashbackPlaybackAudioMasterFallbacks", typeof(long)),
+                new("FlashbackPlaybackAudioMasterUnavailableFallbacks", typeof(long)),
+                new("FlashbackPlaybackAudioMasterStaleFallbacks", typeof(long)),
+                new("FlashbackPlaybackAudioMasterDriftOutlierFallbacks", typeof(long)),
+                NonNullString("FlashbackPlaybackAudioMasterLastFallbackReason"),
+                new("FlashbackPlaybackAudioMasterLastFallbackDriftMs", typeof(double)),
+                new("FlashbackPlaybackAudioMasterLastFallbackClockAgeMs", typeof(double)),
                 new("FlashbackPlaybackSegmentSwitches", typeof(long)),
                 new("FlashbackPlaybackFmp4Reopens", typeof(long)),
                 new("FlashbackPlaybackWriteHeadWaits", typeof(long)),
@@ -308,6 +314,7 @@ static partial class Program
                 NonNullString("FlashbackExportFailureKind"),
                 NullableString("FlashbackExportVerificationFormat"),
                 NullableString("FlashbackCodecDowngradeReason"),
+                new("LastExportId", typeof(long)),
                 NullableString("LastExportPath"),
                 new("LastExportSuccess", typeof(bool?)),
                 NullableString("LastExportMessage"),
@@ -417,6 +424,7 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackExportOutputBytes", 1048576L);
         SetPropertyOrBackingField(health, "FlashbackExportThroughputBytesPerSec", 524288d);
         SetPropertyOrBackingField(health, "FlashbackExportSegmentsProcessed", 3);
+        SetPropertyOrBackingField(health, "LastExportId", 42L);
         SetPropertyOrBackingField(health, "SourceVideoFormat", "YCbCr422");
         SetPropertyOrBackingField(health, "SourceHdrTransferCode", 2);
         SetPropertyOrBackingField(health, "SourceTelemetryDetails", details);
@@ -481,6 +489,7 @@ static partial class Program
         AssertEqual(1048576L, GetLongProperty(health, "FlashbackExportOutputBytes"), "CaptureHealthSnapshot.FlashbackExportOutputBytes round-trip");
         AssertEqual(524288d, GetDoubleProperty(health, "FlashbackExportThroughputBytesPerSec"), "CaptureHealthSnapshot.FlashbackExportThroughputBytesPerSec round-trip");
         AssertEqual(3, GetIntProperty(health, "FlashbackExportSegmentsProcessed"), "CaptureHealthSnapshot.FlashbackExportSegmentsProcessed round-trip");
+        AssertEqual(42L, GetLongProperty(health, "LastExportId"), "CaptureHealthSnapshot.LastExportId round-trip");
         AssertEqual("YCbCr422", GetStringProperty(health, "SourceVideoFormat"), "CaptureHealthSnapshot.SourceVideoFormat round-trip");
         AssertEqual(2, Convert.ToInt32(GetPropertyValue(health, "SourceHdrTransferCode")), "CaptureHealthSnapshot.SourceHdrTransferCode round-trip");
         AssertEqual(1, GetCountProperty(GetPropertyValue(health, "SourceTelemetryDetails")!), "CaptureHealthSnapshot.SourceTelemetryDetails round-trip count");
@@ -512,6 +521,7 @@ static partial class Program
         AssertEqual("HevcMp4", GetStringProperty(jsonRoundTrip, "FlashbackExportVerificationFormat"), "CaptureHealthSnapshot JSON FlashbackExportVerificationFormat");
         AssertEqual("AV1->HEVC", GetStringProperty(jsonRoundTrip, "FlashbackCodecDowngradeReason"), "CaptureHealthSnapshot JSON FlashbackCodecDowngradeReason");
         AssertEqual(1048576L, GetLongProperty(jsonRoundTrip, "FlashbackExportOutputBytes"), "CaptureHealthSnapshot JSON FlashbackExportOutputBytes");
+        AssertEqual(42L, GetLongProperty(jsonRoundTrip, "LastExportId"), "CaptureHealthSnapshot JSON LastExportId");
         AssertEqual("YCbCr422", GetStringProperty(jsonRoundTrip, "SourceVideoFormat"), "CaptureHealthSnapshot JSON SourceVideoFormat");
         AssertEqual(1, GetCountProperty(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!), "CaptureHealthSnapshot JSON SourceTelemetryDetails count");
         AssertEqual("BT.2020", GetStringProperty(GetSingleEnumerableItem(GetPropertyValue(jsonRoundTrip, "SourceTelemetryDetails")!), "DisplayValue"), "CaptureHealthSnapshot JSON SourceTelemetryDetails DisplayValue");
@@ -859,6 +869,14 @@ static partial class Program
                 new("MjpegPreviewJitterLastDroppedSourceSequenceNumber", typeof(long)),
                 new("MjpegPreviewJitterLastDropQpc", typeof(long)),
                 NonNullString("MjpegPreviewJitterLastDropReason"),
+                new("MjpegPreviewJitterLastUnderflowQpc", typeof(long)),
+                NonNullString("MjpegPreviewJitterLastUnderflowReason"),
+                new("MjpegPreviewJitterLastUnderflowQueueDepth", typeof(int)),
+                new("MjpegPreviewJitterLastUnderflowInputAgeMs", typeof(double)),
+                new("MjpegPreviewJitterLastUnderflowOutputAgeMs", typeof(double)),
+                new("MjpegPreviewJitterLastScheduleLateMs", typeof(double)),
+                new("MjpegPreviewJitterMaxScheduleLateMs", typeof(double)),
+                new("MjpegPreviewJitterScheduleLateCount", typeof(long)),
                 new("MjpegPacketHashSampleCount", typeof(int)),
                 new("MjpegPacketHashUniqueFrameCount", typeof(long)),
                 new("MjpegPacketHashDuplicateFrameCount", typeof(long)),

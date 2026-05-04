@@ -125,6 +125,7 @@ static partial class Program
             SetPropertyOrBackingField(health, "FlashbackExportPercent", 37.5d);
             SetPropertyOrBackingField(health, "FlashbackExportElapsedMs", 2500L);
             SetPropertyOrBackingField(health, "FlashbackExportOutputBytes", 1048576L);
+            SetPropertyOrBackingField(health, "LastExportId", 42L);
             SetPropertyOrBackingField(health, "FlashbackOutputBytes", 123456L);
             SetPropertyOrBackingField(health, "SourceVideoFormat", "YCbCr422");
             SetPropertyOrBackingField(health, "SourceTelemetryDetails", details);
@@ -154,6 +155,7 @@ static partial class Program
             AssertJsonDouble(healthRoot, "FlashbackExportPercent", 37.5d, "CaptureHealthSnapshot source-gen JSON FlashbackExportPercent");
             AssertJsonInt64(healthRoot, "FlashbackExportElapsedMs", 2500L, "CaptureHealthSnapshot source-gen JSON FlashbackExportElapsedMs");
             AssertJsonInt64(healthRoot, "FlashbackExportOutputBytes", 1048576L, "CaptureHealthSnapshot source-gen JSON FlashbackExportOutputBytes");
+            AssertJsonInt64(healthRoot, "LastExportId", 42L, "CaptureHealthSnapshot source-gen JSON LastExportId");
             AssertJsonInt64(healthRoot, "FlashbackOutputBytes", 123456L, "CaptureHealthSnapshot source-gen JSON FlashbackOutputBytes");
             AssertJsonString(healthRoot, "SourceVideoFormat", "YCbCr422", "CaptureHealthSnapshot source-gen JSON SourceVideoFormat");
             var detailJson = AssertSingleJsonArrayItem(healthRoot, "SourceTelemetryDetails");

@@ -87,6 +87,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private RecordingAudioIntegrityCounterSnapshot? _recordingIntegrityAudioBaseline;
     private bool _lastUsePostMuxAudio;
     private FinalizeResult? _lastExportResult;
+    private long _lastFlashbackExportResultId;
     private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);
     private readonly object _flashbackExportDiagnosticsLock = new();
     private bool _flashbackExportActive;
@@ -668,7 +669,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     {
         var result = FinalizeResult.Failure(outputPath, statusMessage);
         Logger.Log($"FLASHBACK_EXPORT_REJECTED status='{statusMessage}' output='{outputPath}'");
-        _lastExportResult = result;
         RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);
         return result;
     }
@@ -726,7 +726,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                             outputPath,
                             "Flashback recording finalize failed: live-edge segment was not closed before timeout.",
                             preservedArtifacts);
-                        _lastExportResult = result;
+                        RecordLastFlashbackExportResult(exportId, result);
                         CompleteFlashbackExportDiagnostics(exportId, result);
                         Logger.Log(
                             "FLASHBACK_RECORDING_EXPORT_INCOMPLETE_FAIL " +
@@ -762,7 +762,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 if (string.IsNullOrWhiteSpace(tsPath))
                 {
                     result = FinalizeResult.Failure(outputPath, "Flashback buffer has no active file");
-                    _lastExportResult = result;
+                    RecordLastFlashbackExportResult(exportId, result);
                     CompleteFlashbackExportDiagnostics(exportId, result);
                     return result;
                 }
@@ -783,7 +783,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 OutputPath = outputPath,
             };
             result = await exporter.ExportAsync(request, diagnosticProgress, ct).ConfigureAwait(false);
-            _lastExportResult = result;
+            RecordLastFlashbackExportResult(exportId, result);
             CompleteFlashbackExportDiagnostics(exportId, result);
             return result;
         }
@@ -796,9 +796,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 $"FLASHBACK_EXPORT_CORE_FAIL id={exportId} type={ex.GetType().Name} " +
                 $"cancelled={ct.IsCancellationRequested} msg='{statusMessage}'");
             var failure = FinalizeResult.Failure(outputPath, statusMessage);
-            _lastExportResult = failure;
             if (exportId != 0)
             {
+                RecordLastFlashbackExportResult(exportId, failure);
                 CompleteFlashbackExportDiagnostics(exportId, failure);
             }
             else
@@ -933,6 +933,15 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             : position + offset;
     }
 
+    private void RecordLastFlashbackExportResult(long exportId, FinalizeResult result)
+    {
+        lock (_flashbackExportDiagnosticsLock)
+        {
+            _lastExportResult = result;
+            Volatile.Write(ref _lastFlashbackExportResultId, exportId);
+        }
+    }
+
     private long BeginFlashbackExportDiagnostics(TimeSpan inPoint, TimeSpan outPoint, string outputPath)
     {
         var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
@@ -968,6 +977,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             if (_flashbackExportActive)
             {
+                _lastExportResult = result;
+                Volatile.Write(ref _lastFlashbackExportResultId, 0);
                 Logger.Log(
                     "FLASHBACK_EXPORT_REJECTED_DIAGNOSTICS_DEFERRED " +
                     $"active_id={_flashbackExportId} status='{_flashbackExportStatus}' " +
@@ -992,6 +1003,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 : 0;
             _flashbackExportMessage = result.StatusMessage;
             _flashbackExportFailureKind = ClassifyFlashbackExportFailureKind(result.StatusMessage);
+            RecordLastFlashbackExportResult(exportId, result);
         }
     }
 
