@@ -702,6 +702,14 @@ static partial class Program
             method.Invoke(null, new object?[] { "Flashback export skipped a live-edge segment." })?.ToString(),
             "live-edge segment export failure is classified");
         AssertEqual(
+            "ForceRotateFailed",
+            method.Invoke(null, new object?[] { "Flashback export failed: live-edge segment rotation failed." })?.ToString(),
+            "live-edge force-rotate failure is classified");
+        AssertEqual(
+            "ForceRotateFailed",
+            method.Invoke(null, new object?[] { "Flashback export failed: rotation failed." })?.ToString(),
+            "generic rotation failure is classified");
+        AssertEqual(
             "SegmentUnavailable",
             method.Invoke(null, new object?[] { "Flashback export failed: no segment paths were readable." })?.ToString(),
             "missing segment export failure is classified");

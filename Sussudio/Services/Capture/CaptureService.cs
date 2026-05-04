@@ -1229,6 +1229,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             return "OutputWriteFailed";
         }
 
+        if (ContainsFlashbackExportFailureText(statusMessage, "rotation failed"))
+        {
+            return "ForceRotateFailed";
+        }
+
         if (ContainsFlashbackExportFailureText(statusMessage, "live-edge segment"))
         {
             return "IncompleteLiveEdge";
