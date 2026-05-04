@@ -1048,6 +1048,9 @@ static partial class Program
                 "Flashback exporter cleanup deletes orphaned temp files",
                 FlashbackExporter_CleanupOrphanedTempFiles_DeletesTempFiles),
             await RunCheckAsync(
+                "Flashback exporter cleans output directory orphaned temp files",
+                FlashbackExporter_CleansOutputDirectoryOrphanedTempFiles),
+            await RunCheckAsync(
                 "Flashback exporter task wrappers dispose linked cancellation",
                 FlashbackExporter_TaskRunWrappers_DisposeLinkedCancellation),
             await RunCheckAsync(

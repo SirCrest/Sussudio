@@ -259,6 +259,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, outputPathFailure);
         }
         outputPath = normalizedOutputPath;
+        CleanupOrphanedTempFilesNearOutput(outputPath);
 
         if (IsSamePath(inputTsPath, outputPath))
         {
@@ -608,6 +609,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return FinalizeResult.Failure(outputPath, outputPathFailure);
         }
         outputPath = normalizedOutputPath;
+        CleanupOrphanedTempFilesNearOutput(outputPath);
 
         if (segments.Any(segment => IsSamePath(segment.Path, outputPath)))
         {
@@ -2334,6 +2336,22 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_EXPORT_ORPHAN_SCAN_FAIL dir='{directory}' type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private static void CleanupOrphanedTempFilesNearOutput(string outputPath)
+    {
+        try
+        {
+            var outputDirectory = Path.GetDirectoryName(Path.GetFullPath(outputPath));
+            if (!string.IsNullOrWhiteSpace(outputDirectory))
+            {
+                CleanupOrphanedTempFiles(outputDirectory);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_ORPHAN_OUTPUT_SCAN_FAIL path='{outputPath}' type={ex.GetType().Name} msg='{ex.Message}'");
         }
     }
 

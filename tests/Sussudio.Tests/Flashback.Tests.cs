@@ -294,6 +294,32 @@ static partial class Program
 
     // ── FlashbackPlaybackController ──
 
+    private static Task FlashbackExporter_CleansOutputDirectoryOrphanedTempFiles()
+    {
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "private static void CleanupOrphanedTempFilesNearOutput(string outputPath)");
+        AssertContains(sourceText, "CleanupOrphanedTempFiles(outputDirectory);");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_ORPHAN_OUTPUT_SCAN_FAIL");
+
+        var singleExportBlock = ExtractTextBetween(
+            sourceText,
+            "private FinalizeResult ExportCore(",
+            "    private FinalizeResult ExportSegmentsCore(");
+        AssertContains(singleExportBlock, "outputPath = normalizedOutputPath;\n        CleanupOrphanedTempFilesNearOutput(outputPath);");
+        AssertOccursBefore(singleExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);", "var tmpPath = outputPath + \".tmp\";");
+
+        var segmentExportBlock = ExtractTextBetween(
+            sourceText,
+            "private FinalizeResult ExportSegmentsCore(",
+            "    private static long ResolveFrameDurationUs");
+        AssertContains(segmentExportBlock, "outputPath = normalizedOutputPath;\n        CleanupOrphanedTempFilesNearOutput(outputPath);");
+        AssertOccursBefore(segmentExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);", "var tmpPath = outputPath + \".tmp\";");
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackPlaybackController_InitialState_IsLive()
     {
         var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
