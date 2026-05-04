@@ -274,7 +274,7 @@ public static class DiagnosticSessionRunner
         var runFlashbackRecordingSettingsDeferred = scenario == "flashback-recording-settings-deferred";
         var runFlashbackRecordingExportRejected = scenario == "flashback-recording-export-rejected";
         var runFlashbackExportRejected = scenario == "flashback-export-rejected";
-        string? flashbackRecordingSettingsDeferredTargetPreset = null;
+        FlashbackRecordingSettingsDeferredPresetState flashbackRecordingSettingsDeferredPresetState = default;
         using var commandSendGate = new SemaphoreSlim(1, 1);
 
         async Task<JsonElement> SendRawWithConnectRetryAsync(
@@ -467,7 +467,7 @@ public static class DiagnosticSessionRunner
             Task? flashbackRotatedExportTask = null;
             Task? flashbackPreviewCycleTask = null;
             Task? flashbackRecordingPreviewCycleTask = null;
-            Task<string?>? flashbackRecordingSettingsDeferredTask = null;
+            Task<FlashbackRecordingSettingsDeferredPresetState>? flashbackRecordingSettingsDeferredTask = null;
             if (runFlashbackDisableDuringExport)
             {
                 flashbackDisableDuringExportTask = RunFlashbackDisableDuringExportAsync(
@@ -631,7 +631,7 @@ public static class DiagnosticSessionRunner
 
             if (flashbackRecordingSettingsDeferredTask is not null)
             {
-                flashbackRecordingSettingsDeferredTargetPreset = await flashbackRecordingSettingsDeferredTask.ConfigureAwait(false);
+                flashbackRecordingSettingsDeferredPresetState = await flashbackRecordingSettingsDeferredTask.ConfigureAwait(false);
             }
 
             if (runFlashbackExportRejected)
@@ -707,10 +707,10 @@ public static class DiagnosticSessionRunner
 
         if (runFlashbackRecordingSettingsDeferred)
         {
-            await VerifyFlashbackRecordingSettingsAppliedAfterStopAsync(
+            await VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(
                     actions,
                     warnings,
-                    flashbackRecordingSettingsDeferredTargetPreset,
+                    flashbackRecordingSettingsDeferredPresetState,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -2302,7 +2302,11 @@ public static class DiagnosticSessionRunner
         }
     }
 
-    private static async Task<string?> RunFlashbackRecordingSettingsDeferredAsync(
+    private readonly record struct FlashbackRecordingSettingsDeferredPresetState(
+        string? OriginalPreset,
+        string? DeferredPreset);
+
+    private static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(
         List<string> actions,
         List<string> warnings,
         Func<string, Dictionary<string, object?>?, int?, bool, Task<JsonElement>> sendCommandAsync,
@@ -2316,11 +2320,12 @@ public static class DiagnosticSessionRunner
         if (recordingReadySnapshot?.ValueKind != JsonValueKind.Object)
         {
             warnings.Add("flashback recording settings deferred: Flashback recording backend did not become ready");
-            return null;
+            return default;
         }
 
         var originalPreset = GetString(recordingReadySnapshot.Value, "SelectedPreset") ?? "P1";
         var cycledPreset = string.Equals(originalPreset, "P1", StringComparison.OrdinalIgnoreCase) ? "P2" : "P1";
+        var presetState = new FlashbackRecordingSettingsDeferredPresetState(originalPreset, cycledPreset);
         var originalFilePath = GetString(recordingReadySnapshot.Value, "FlashbackFilePath") ?? string.Empty;
         var submittedBefore = GetNullableLong(recordingReadySnapshot.Value, "FlashbackVideoFramesSubmittedToEncoder") ?? 0;
         var packetsBefore = GetNullableLong(recordingReadySnapshot.Value, "FlashbackVideoEncoderPacketsWritten") ?? 0;
@@ -2336,7 +2341,7 @@ public static class DiagnosticSessionRunner
         {
             warnings.Add(
                 $"flashback recording settings deferred: preset change failed - {AutomationSnapshotFormatter.Get(presetResponse, "Message", "unknown error")}");
-            return cycledPreset;
+            return presetState;
         }
 
         var restartResponse = await sendCommandAsync(
@@ -2384,7 +2389,7 @@ public static class DiagnosticSessionRunner
         if (!TryGetSnapshot(afterResponse, out var afterSnapshot))
         {
             warnings.Add("flashback recording settings deferred: no post-mutation recording snapshot returned");
-            return cycledPreset;
+            return presetState;
         }
 
         if (!GetBool(afterSnapshot, "IsRecording") ||
@@ -2408,17 +2413,17 @@ public static class DiagnosticSessionRunner
                 $"submitted={submittedBefore}->{submittedAfter} packets={packetsBefore}->{packetsAfter}");
         }
 
-        return cycledPreset;
+        return presetState;
     }
 
-    private static async Task VerifyFlashbackRecordingSettingsAppliedAfterStopAsync(
+    private static async Task VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(
         List<string> actions,
         List<string> warnings,
-        string? expectedPreset,
+        FlashbackRecordingSettingsDeferredPresetState presetState,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(expectedPreset))
+        if (string.IsNullOrWhiteSpace(presetState.DeferredPreset))
         {
             warnings.Add("flashback recording settings deferred: no expected preset was captured for post-stop verification");
             return;
@@ -2437,11 +2442,11 @@ public static class DiagnosticSessionRunner
             return;
         }
 
-        if (!string.Equals(GetString(snapshot, "SelectedPreset"), expectedPreset, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(GetString(snapshot, "SelectedPreset"), presetState.DeferredPreset, StringComparison.OrdinalIgnoreCase))
         {
             warnings.Add(
                 "flashback recording settings deferred: selected preset was not preserved after stop " +
-                $"expected={expectedPreset} actual={GetString(snapshot, "SelectedPreset") ?? "<null>"}");
+                $"expected={presetState.DeferredPreset} actual={GetString(snapshot, "SelectedPreset") ?? "<null>"}");
         }
 
         if (!GetBool(snapshot, "FlashbackActive"))
@@ -2456,6 +2461,45 @@ public static class DiagnosticSessionRunner
         }
 
         actions.Add("flashback recording settings deferred post-stop buffer verified");
+
+        if (string.IsNullOrWhiteSpace(presetState.OriginalPreset) ||
+            string.Equals(presetState.OriginalPreset, presetState.DeferredPreset, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var restoreResponse = await sendCommandAsync(
+                "SetPreset",
+                new Dictionary<string, object?> { ["preset"] = presetState.OriginalPreset },
+                null)
+            .ConfigureAwait(false);
+        actions.Add($"flashback recording settings deferred preset restored to {presetState.OriginalPreset}");
+        if (!AutomationSnapshotFormatter.IsSuccess(restoreResponse))
+        {
+            warnings.Add(
+                $"flashback recording settings deferred: preset restore failed - {AutomationSnapshotFormatter.Get(restoreResponse, "Message", "unknown error")}");
+            return;
+        }
+
+        if (!await WaitForFlashbackStressBufferReadyAsync(sendCommandAsync, cancellationToken).ConfigureAwait(false))
+        {
+            warnings.Add("flashback recording settings deferred: Flashback buffer did not become ready after preset restore");
+            return;
+        }
+
+        var restoredSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        if (!TryGetSnapshot(restoredSnapshotResponse, out var restoredSnapshot))
+        {
+            warnings.Add("flashback recording settings deferred: no post-restore snapshot returned");
+            return;
+        }
+
+        if (!string.Equals(GetString(restoredSnapshot, "SelectedPreset"), presetState.OriginalPreset, StringComparison.OrdinalIgnoreCase))
+        {
+            warnings.Add(
+                "flashback recording settings deferred: selected preset was not restored " +
+                $"expected={presetState.OriginalPreset} actual={GetString(restoredSnapshot, "SelectedPreset") ?? "<null>"}");
+        }
     }
 
     private static async Task RunFlashbackScrubStressAsync(

@@ -889,8 +889,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
         AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
-        AssertContains(diagnosticSessionText, "private static async Task<string?> RunFlashbackRecordingSettingsDeferredAsync(");
+        AssertContains(diagnosticSessionText, "private static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
         AssertContains(diagnosticSessionText, "flashback recording settings deferred post-stop buffer verified");
+        AssertContains(diagnosticSessionText, "flashback recording settings deferred preset restored to");
         AssertContains(diagnosticSessionText, "RestartFlashback unexpectedly succeeded during recording");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRecordingExportRejectedAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-recording-rejected-export.mp4\"");
