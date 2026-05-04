@@ -342,12 +342,26 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (!StopPlaybackThread())
         {
             Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_DETACH_ABORT reason=thread_stop_failed");
+            DetachPreviewComponentsAfterStopTimeout();
+            return;
         }
 
         ReleasePlaybackFrameForLive("preview_detach");
         RestoreLiveAudio();
         SafeResumePreviewSubmission("preview_detach");
         SetState(FlashbackPlaybackState.Live);
+    }
+
+    private void DetachPreviewComponentsAfterStopTimeout()
+    {
+        lock (_playbackThreadSync)
+        {
+            _previewSink = null;
+            _videoCapture = null;
+            _initialized = false;
+        }
+
+        Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_DETACH_DEFER_OWNED_CLEANUP reason=thread_alive");
     }
 
     // --- State transitions (called from UI thread) ---
