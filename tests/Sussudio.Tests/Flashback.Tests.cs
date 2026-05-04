@@ -294,28 +294,29 @@ static partial class Program
 
     // ── FlashbackPlaybackController ──
 
-    private static Task FlashbackExporter_CleansOutputDirectoryOrphanedTempFiles()
+    private static Task FlashbackExporter_DoesNotScanUserOutputDirectoryForOrphans()
     {
         var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(sourceText, "private static void CleanupOrphanedTempFilesNearOutput(string outputPath)");
-        AssertContains(sourceText, "CleanupOrphanedTempFiles(outputDirectory);");
-        AssertContains(sourceText, "FLASHBACK_EXPORT_ORPHAN_OUTPUT_SCAN_FAIL");
+        AssertDoesNotContain(sourceText, "private static void CleanupOrphanedTempFilesNearOutput(string outputPath)");
+        AssertDoesNotContain(sourceText, "FLASHBACK_EXPORT_ORPHAN_OUTPUT_SCAN_FAIL");
 
         var singleExportBlock = ExtractTextBetween(
             sourceText,
             "private FinalizeResult ExportCore(",
             "    private FinalizeResult ExportSegmentsCore(");
-        AssertContains(singleExportBlock, "outputPath = normalizedOutputPath;\n        CleanupOrphanedTempFilesNearOutput(outputPath);");
-        AssertOccursBefore(singleExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);", "var tmpPath = outputPath + \".tmp\";");
+        AssertContains(singleExportBlock, "var tmpPath = outputPath + \".tmp\";");
+        AssertDoesNotContain(singleExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);");
+        AssertContains(singleExportBlock, "TryPrepareTempOutputFile(tmpPath, outputPath, out var tempOutputFailure)");
 
         var segmentExportBlock = ExtractTextBetween(
             sourceText,
             "private FinalizeResult ExportSegmentsCore(",
             "    private static long ResolveFrameDurationUs");
-        AssertContains(segmentExportBlock, "outputPath = normalizedOutputPath;\n        CleanupOrphanedTempFilesNearOutput(outputPath);");
-        AssertOccursBefore(segmentExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);", "var tmpPath = outputPath + \".tmp\";");
+        AssertContains(segmentExportBlock, "var tmpPath = outputPath + \".tmp\";");
+        AssertDoesNotContain(segmentExportBlock, "CleanupOrphanedTempFilesNearOutput(outputPath);");
+        AssertContains(segmentExportBlock, "TryPrepareTempOutputFile(tmpPath, outputPath, out var tempOutputFailure)");
 
         return Task.CompletedTask;
     }
