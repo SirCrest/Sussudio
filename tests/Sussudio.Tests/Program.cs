@@ -1051,6 +1051,9 @@ static partial class Program
                 "Flashback exporter segment template validation guards missing video streams",
                 FlashbackExporter_SegmentTemplateValidation_GuardsMissingVideoStream),
             await RunCheckAsync(
+                "Flashback exporter fails when requested segments are skipped",
+                FlashbackExporter_FailsWhenRequestedSegmentsAreSkipped),
+            await RunCheckAsync(
                 "Flashback exporter returns cancellation result while waiting for export lock",
                 FlashbackExporter_ReturnsCancellationResult_WhenLockWaitCancelled),
             await RunCheckAsync(

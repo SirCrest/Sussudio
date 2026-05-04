@@ -680,6 +680,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             int[] streamMap = Array.Empty<int>();
             long totalPackets = 0;
             long bytesProcessed = 0;
+            var skippedRequestedSegmentCount = 0;
+            string? firstSkippedRequestedSegmentReason = null;
 
             // Cross-segment PTS tracking (in microseconds)
             long outputPtsOffsetUs = 0; // accumulated offset for output continuity
@@ -691,6 +693,17 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             var packet = ffmpeg.av_packet_alloc();
             if (packet == null)
                 throw new InvalidOperationException("Failed to allocate AVPacket.");
+
+            void TrackSkippedRequestedSegment(FlashbackExportSegment segment, string reason)
+            {
+                if (!SegmentOverlapsExportRange(segment, inPoint, outPoint))
+                {
+                    return;
+                }
+
+                skippedRequestedSegmentCount++;
+                firstSkippedRequestedSegmentReason ??= reason;
+            }
 
             try
             {
@@ -719,6 +732,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     if (!File.Exists(segPath))
                     {
                         Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='not_found'");
+                        TrackSkippedRequestedSegment(segment, "not_found");
                         continue;
                     }
 
@@ -731,6 +745,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                     if (!TryGetInputStreamCount(_activeInputContext, "segment_export", out var currentStreamCount, out var streamCountFailure))
                     {
                         Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='invalid_stream_count' detail='{streamCountFailure}'");
+                        TrackSkippedRequestedSegment(segment, "invalid_stream_count");
                         CloseActiveInput();
                         continue;
                     }
@@ -760,6 +775,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         if (videoStreamIndex < 0)
                         {
                             Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing' seg={segIdx} trying_next_segment={segIdx < segments.Count - 1}");
+                            TrackSkippedRequestedSegment(segment, "video_stream_missing");
                             CloseActiveInput();
                             if (segIdx < segments.Count - 1)
                             {
@@ -784,6 +800,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                 $"h={videoHeight} " +
                                 $"extradata={videoExtradataSize} " +
                                 $"trying_next_segment={segIdx < segments.Count - 1}");
+                            TrackSkippedRequestedSegment(segment, "video_params_incomplete");
                             CloseActiveInput();
                             if (segIdx < segments.Count - 1)
                             {
@@ -810,6 +827,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         if (segNbStreams != streamCount)
                         {
                             Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_count_mismatch' expected={streamCount} actual={segNbStreams}");
+                            TrackSkippedRequestedSegment(segment, "stream_count_mismatch");
                             CloseActiveInput();
                             continue;
                         }
@@ -822,6 +840,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         if (streamLayoutMismatch != null)
                         {
                             Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_layout_mismatch' detail='{streamLayoutMismatch}'");
+                            TrackSkippedRequestedSegment(segment, "stream_layout_mismatch");
                             CloseActiveInput();
                             continue;
                         }
@@ -1191,6 +1210,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             {
                 var packetToFree = packet;
                 ffmpeg.av_packet_free(&packetToFree);
+            }
+
+            if (skippedRequestedSegmentCount > 0)
+            {
+                var message = $"Flashback export failed: {skippedRequestedSegmentCount} requested segment(s) were skipped; first reason: {firstSkippedRequestedSegmentReason}.";
+                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
+                return FinalizeResult.Failure(outputPath, message);
             }
 
             if (totalPackets == 0)
@@ -1905,6 +1931,26 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         return -1;
+    }
+
+    private static bool SegmentOverlapsExportRange(
+        FlashbackExportSegment segment,
+        TimeSpan inPoint,
+        TimeSpan outPoint)
+    {
+        if (!segment.StartPts.HasValue || !segment.EndPts.HasValue)
+        {
+            return true;
+        }
+
+        var segmentStart = segment.StartPts.Value;
+        var segmentEnd = segment.EndPts.Value;
+        if (segmentEnd < segmentStart)
+        {
+            segmentEnd = segmentStart;
+        }
+
+        return segmentEnd > inPoint && segmentStart < outPoint;
     }
 
     private static bool TryValidateExportRange(TimeSpan inPoint, TimeSpan outPoint, out string failureMessage)

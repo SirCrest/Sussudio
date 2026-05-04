@@ -503,7 +503,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // read consistent references, not for the entire FFmpeg export.
         FlashbackBufferManager? bufferManager;
         FlashbackEncoderSink? flashbackSink;
-        TimeSpan fileInPoint, fileOutPoint;
         var sessionLockHeld = false;
         var backendLeaseHeld = false;
         try
@@ -521,19 +520,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             backendLeaseHeld = true;
             bufferManager = _flashbackBufferManager;
             flashbackSink = _flashbackSink;
-            fileInPoint = TimeSpan.Zero;
-            fileOutPoint = TimeSpan.MaxValue;
-            if (bufferManager != null)
-            {
-                var validStart = bufferManager.ValidStartPts;
-                var bufferedDuration = bufferManager.BufferedDuration;
-                var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);
-                var bufferOutPoint = outPoint.HasValue
-                    ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)
-                    : TimeSpan.MaxValue;
-                fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);
-                fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);
-            }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -556,14 +542,29 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         try
         {
-            if (bufferManager == null)
-                return FailFlashbackExport(outputPath, "Flashback buffer not active", fileInPoint, fileOutPoint);
-
-            if (fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint)
-                return FailFlashbackExport(outputPath, "Flashback export range is empty or invalid.", fileInPoint, fileOutPoint);
-
-            return await ExportFlashbackCoreAsync(fileInPoint, fileOutPoint, outputPath, progress, ct,
-                snapshotSink: flashbackSink, snapshotBufferManager: bufferManager).ConfigureAwait(false);
+            return await ExportFlashbackCoreAsync(
+                    TimeSpan.Zero,
+                    TimeSpan.MaxValue,
+                    outputPath,
+                    progress,
+                    ct,
+                    snapshotSink: flashbackSink,
+                    snapshotBufferManager: bufferManager,
+                    resolveRangeAfterEvictionPaused: manager =>
+                    {
+                        var validStart = manager.ValidStartPts;
+                        var bufferedDuration = manager.BufferedDuration;
+                        var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);
+                        var bufferOutPoint = outPoint.HasValue
+                            ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)
+                            : TimeSpan.MaxValue;
+                        var fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);
+                        var fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);
+                        return fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint
+                            ? (false, fileInPoint, fileOutPoint, "Flashback export range is empty or invalid.")
+                            : (true, fileInPoint, fileOutPoint, null);
+                    })
+                .ConfigureAwait(false);
         }
         finally
         {
@@ -588,7 +589,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // Same pattern: snapshot under lock, export outside it.
         FlashbackBufferManager? bufferManager;
         FlashbackEncoderSink? flashbackSink;
-        TimeSpan fileInPoint;
         var sessionLockHeld = false;
         var backendLeaseHeld = false;
         try
@@ -606,16 +606,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             backendLeaseHeld = true;
             bufferManager = _flashbackBufferManager;
             flashbackSink = _flashbackSink;
-            fileInPoint = TimeSpan.Zero;
-            if (bufferManager != null)
-            {
-                var bufferedDuration = bufferManager.BufferedDuration;
-                var validStart = bufferManager.ValidStartPts;
-                var rangeStart = bufferedDuration.TotalSeconds > seconds
-                    ? TimeSpan.FromSeconds(bufferedDuration.TotalSeconds - seconds)
-                    : TimeSpan.Zero;
-                fileInPoint = AddFlashbackPtsOffsetOrMax(rangeStart, validStart);
-            }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -638,11 +628,25 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         try
         {
-            if (bufferManager == null)
-                return FailFlashbackExport(outputPath, "Flashback buffer not active", fileInPoint, TimeSpan.MaxValue);
-
-            return await ExportFlashbackCoreAsync(fileInPoint, TimeSpan.MaxValue, outputPath, progress, ct,
-                snapshotSink: flashbackSink, snapshotBufferManager: bufferManager).ConfigureAwait(false);
+            return await ExportFlashbackCoreAsync(
+                    TimeSpan.Zero,
+                    TimeSpan.MaxValue,
+                    outputPath,
+                    progress,
+                    ct,
+                    snapshotSink: flashbackSink,
+                    snapshotBufferManager: bufferManager,
+                    resolveRangeAfterEvictionPaused: manager =>
+                    {
+                        var bufferedDuration = manager.BufferedDuration;
+                        var validStart = manager.ValidStartPts;
+                        var rangeStart = bufferedDuration.TotalSeconds > seconds
+                            ? TimeSpan.FromSeconds(bufferedDuration.TotalSeconds - seconds)
+                            : TimeSpan.Zero;
+                        var fileInPoint = AddFlashbackPtsOffsetOrMax(rangeStart, validStart);
+                        return (true, fileInPoint, TimeSpan.MaxValue, null);
+                    })
+                .ConfigureAwait(false);
         }
         finally
         {
@@ -681,7 +685,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         IProgress<ExportProgress>? progress, CancellationToken ct,
         FlashbackEncoderSink? snapshotSink = null,
         FlashbackBufferManager? snapshotBufferManager = null,
-        bool requireCompleteLiveEdge = false)
+        bool requireCompleteLiveEdge = false,
+        Func<FlashbackBufferManager, (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)>? resolveRangeAfterEvictionPaused = null)
     {
         var flashbackSink = snapshotSink ?? _flashbackSink;
         var bufferManager = snapshotBufferManager ?? _flashbackBufferManager;
@@ -701,13 +706,35 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 return FailFlashbackExport(outputPath, "Flashback export cancelled.", inPoint, outPoint);
             }
 
+            if (bufferManager == null)
+            {
+                return FailFlashbackExport(outputPath, "Flashback buffer not active", inPoint, outPoint);
+            }
+
+            // Pause eviction so segments aren't deleted while the exporter reads them.
+            // Range-based UI exports resolve relative buffer positions after this pause
+            // so queued exports cannot use a stale valid-start snapshot.
+            bufferManager.PauseEviction();
+            evictionPaused = true;
+
+            if (resolveRangeAfterEvictionPaused != null)
+            {
+                var resolvedRange = resolveRangeAfterEvictionPaused(bufferManager);
+                inPoint = resolvedRange.InPoint;
+                outPoint = resolvedRange.OutPoint;
+                if (!resolvedRange.Succeeded)
+                {
+                    return FailFlashbackExport(
+                        outputPath,
+                        resolvedRange.FailureMessage ?? "Flashback export range is empty or invalid.",
+                        inPoint,
+                        outPoint);
+                }
+            }
+
             var exporter = _flashbackExporter ??= new FlashbackExporter();
             exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);
             var diagnosticProgress = CreateFlashbackExportProgressSink(exportId, progress);
-
-            // Pause eviction so segments aren't deleted while the exporter reads them
-            bufferManager?.PauseEviction();
-            evictionPaused = bufferManager != null;
 
             FinalizeResult result;
             IReadOnlyList<string>? segmentPaths = null;
@@ -715,13 +742,32 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
             if (flashbackSink != null)
             {
-                segmentPaths = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);
+                var forceRotateResult = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);
+                segmentPaths = forceRotateResult.SegmentPaths;
+                if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)
+                {
+                    var preservedArtifacts = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
+                    result = FinalizeResult.Failure(
+                        outputPath,
+                        requireCompleteLiveEdge
+                            ? "Flashback recording finalize failed: live-edge segment was not closed before timeout."
+                            : "Flashback export failed: live-edge segment rotation committed but did not complete before timeout.",
+                        preservedArtifacts);
+                    RecordLastFlashbackExportResult(exportId, result);
+                    CompleteFlashbackExportDiagnostics(exportId, result);
+                    Logger.Log(
+                        "FLASHBACK_EXPORT_FORCE_ROTATE_COMMITTED_PENDING_FAIL " +
+                        $"preserved_segments={preservedArtifacts.Count} " +
+                        $"in_ms={(long)inPoint.TotalMilliseconds} " +
+                        $"out_ms={(long)outPoint.TotalMilliseconds}");
+                    return result;
+                }
+
                 if (segmentPaths.Count == 0)
                 {
                     if (requireCompleteLiveEdge)
                     {
-                        var preservedArtifacts = bufferManager?.GetValidSegmentPaths(inPoint, outPoint)
-                            ?? Array.Empty<string>();
+                        var preservedArtifacts = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
                         result = FinalizeResult.Failure(
                             outputPath,
                             "Flashback recording finalize failed: live-edge segment was not closed before timeout.",
@@ -2709,6 +2755,15 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             try
             {
                 transitionToken.ThrowIfCancellationRequested();
+                if (_isRecording)
+                {
+                    _micMonitorEnabled = enabled;
+                    _micMonitorDeviceId = deviceId;
+                    _micMonitorDeviceName = deviceName;
+                    Logger.Log("MIC_MONITOR_UPDATE_DEFERRED recording=true");
+                    return;
+                }
+
                 if (enabled && !_isRecording && _isVideoPreviewActive && !string.IsNullOrWhiteSpace(deviceId))
                 {
                     nextMicCapture = new WasapiAudioCapture();
@@ -4106,87 +4161,106 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             transitionToken.ThrowIfCancellationRequested();
             var previousDeviceId = _audioDeviceId;
-            _audioDeviceId = audioDeviceId;
-            _audioDeviceName = audioDeviceName;
+            var previousDeviceName = _audioDeviceName;
 
             if (string.Equals(previousDeviceId, audioDeviceId, StringComparison.OrdinalIgnoreCase))
             {
+                _audioDeviceName = audioDeviceName;
                 return;
             }
 
             if (_wasapiAudioCapture == null)
             {
+                _audioDeviceId = audioDeviceId;
+                _audioDeviceName = audioDeviceName;
                 return;
             }
 
             Logger.Log($"Live audio input switch: {audioDeviceName ?? "(card default)"}");
 
             var activeSink = _isRecording ? _recordingSink : null;
-            if (activeSink != null)
-            {
-                _wasapiAudioCapture.DetachRecordingSink();
-            }
-
             var oldCapture = _wasapiAudioCapture;
-            _wasapiAudioCapture = null;
-            DetachWasapiAudioCapture(oldCapture);
-            try
-            {
-                await oldCapture.DisposeAsync().ConfigureAwait(false);
-            }
-            catch (Exception ex)
-            {
-                Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
-            }
-
             var committedSwitchToken = CancellationToken.None;
 
             var resolvedId = audioDeviceId ?? _currentDevice?.AudioDeviceId;
             if (!string.IsNullOrEmpty(resolvedId))
             {
-                WasapiAudioCapture? newCapture = new WasapiAudioCapture();
+                var newCapture = new WasapiAudioCapture();
                 try
                 {
                     await newCapture.InitializeAsync(resolvedId, committedSwitchToken).ConfigureAwait(false);
                     newCapture.AudioLevelUpdated += OnWasapiAudioLevelUpdated;
                     newCapture.CaptureFailed += OnWasapiCaptureFailed;
                     newCapture.Start();
-                    _wasapiAudioCapture = newCapture;
-                    Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
-                    Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
-
-                    AttachFlashbackAudioIfSupported(newCapture, "audio_input_switch");
-
-                    if (activeSink != null)
+                }
+                catch
+                {
+                    _audioDeviceId = previousDeviceId;
+                    _audioDeviceName = previousDeviceName;
+                    try
                     {
-                        newCapture.AttachRecordingSink(activeSink);
+                        newCapture.AudioLevelUpdated -= OnWasapiAudioLevelUpdated;
+                        newCapture.CaptureFailed -= OnWasapiCaptureFailed;
+                        await newCapture.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
                     }
 
+                    throw;
+                }
+
+                DetachWasapiAudioCapture(oldCapture);
+                _wasapiAudioCapture = newCapture;
+                _audioDeviceId = audioDeviceId;
+                _audioDeviceName = audioDeviceName;
+                Volatile.Write(ref _wasapiAudioCaptureFaulted, false);
+                Volatile.Write(ref _wasapiAudioCaptureFaultMessage, null);
+
+                AttachFlashbackAudioIfSupported(newCapture, "audio_input_switch");
+
+                if (activeSink != null && !ReferenceEquals(activeSink, _flashbackSink))
+                {
+                    newCapture.AttachRecordingSink(activeSink);
+                }
+
+                try
+                {
                     if (_isAudioPreviewActive)
                     {
                         await StartWasapiPlaybackAsync(committedSwitchToken).ConfigureAwait(false);
                     }
 
                     Logger.Log($"Audio input switched to: {audioDeviceName ?? resolvedId}");
-                    newCapture = null;
                 }
                 finally
                 {
-                    if (newCapture != null && !ReferenceEquals(_wasapiAudioCapture, newCapture))
+                    try
                     {
-                        try
-                        {
-                            await newCapture.DisposeAsync().ConfigureAwait(false);
-                        }
-                        catch (Exception ex)
-                        {
-                            Logger.Log($"AUDIO_INPUT_SWITCH_NEW_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
-                        }
+                        await oldCapture.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
                     }
                 }
             }
             else
             {
+                _audioDeviceId = audioDeviceId;
+                _audioDeviceName = audioDeviceName;
+                _wasapiAudioCapture = null;
+                DetachWasapiAudioCapture(oldCapture);
+                try
+                {
+                    await oldCapture.DisposeAsync().ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log($"AUDIO_INPUT_SWITCH_OLD_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}");
+                }
+
                 Logger.Log("Audio input cleared — no device available");
                 AudioLevelUpdated?.Invoke(this, new AudioLevelEventArgs(0, 0, false));
             }

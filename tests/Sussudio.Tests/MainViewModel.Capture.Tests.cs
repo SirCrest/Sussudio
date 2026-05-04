@@ -434,8 +434,25 @@ static partial class Program
         AssertContains(updateAudioInput, "await StartWasapiPlaybackAsync(committedSwitchToken)");
         AssertOccursBefore(
             updateAudioInput,
+            "await newCapture.InitializeAsync(resolvedId, committedSwitchToken)",
+            "DetachWasapiAudioCapture(oldCapture);");
+        AssertContains(updateAudioInput, "_audioDeviceId = previousDeviceId;");
+        AssertContains(updateAudioInput, "_audioDeviceName = previousDeviceName;");
+        AssertContains(updateAudioInput, "activeSink != null && !ReferenceEquals(activeSink, _flashbackSink)");
+        AssertOccursBefore(
+            updateAudioInput,
             "newCapture.AttachRecordingSink(activeSink);",
             "await StartWasapiPlaybackAsync(committedSwitchToken)");
+        var updateMicrophoneMonitor = ExtractTextBetween(
+            captureServiceRawText,
+            "public Task UpdateMicrophoneMonitorAsync",
+            "private void OnWasapiCaptureFailed");
+        AssertContains(updateMicrophoneMonitor, "if (_isRecording)");
+        AssertContains(updateMicrophoneMonitor, "MIC_MONITOR_UPDATE_DEFERRED recording=true");
+        AssertOccursBefore(
+            updateMicrophoneMonitor,
+            "MIC_MONITOR_UPDATE_DEFERRED recording=true",
+            "await DisposeMicrophoneCaptureAsync()");
         var updateAudioInputRaw = ExtractTextBetween(
             captureServiceRawText,
             "public Task UpdateAudioInputAsync",

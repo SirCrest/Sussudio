@@ -675,9 +675,10 @@ static partial class Program
         var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export range is empty or invalid.\", fileInPoint, fileOutPoint);");
-        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", fileInPoint, fileOutPoint);");
-        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", fileInPoint, TimeSpan.MaxValue);");
+        AssertContains(captureServiceText, "resolveRangeAfterEvictionPaused: manager =>");
+        AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", inPoint, outPoint);");
+        AssertContains(captureServiceText, "resolvedRange.FailureMessage ?? \"Flashback export range is empty or invalid.\"");
+        AssertContains(captureServiceText, "fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint");
         AssertContains(captureServiceText, "RecordRejectedFlashbackExportDiagnostics(outputPath, result, inPoint, outPoint);");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_SNAPSHOT_FAIL op=range type={ex.GetType().Name} msg='{ex.Message}'");
         AssertContains(captureServiceText, "FLASHBACK_EXPORT_SNAPSHOT_FAIL op=last_n type={ex.GetType().Name} msg='{ex.Message}'");
@@ -1024,6 +1025,30 @@ static partial class Program
         AssertContains(sourceText, "inputCodec->sample_rate != templateCodec->sample_rate");
         AssertContains(sourceText, "inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels");
         AssertContains(sourceText, "inputCodec->format != templateCodec->format");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackExporter_FailsWhenRequestedSegmentsAreSkipped()
+    {
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
+            .Replace("\r\n", "\n");
+        var segmentExportCore = ExtractTextBetween(
+            sourceText,
+            "private FinalizeResult ExportSegmentsCore",
+            "    private static long ResolveFrameDurationUs");
+
+        AssertContains(segmentExportCore, "var skippedRequestedSegmentCount = 0;");
+        AssertContains(segmentExportCore, "void TrackSkippedRequestedSegment(FlashbackExportSegment segment, string reason)");
+        AssertContains(segmentExportCore, "SegmentOverlapsExportRange(segment, inPoint, outPoint)");
+        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"not_found\");");
+        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"invalid_stream_count\");");
+        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"video_stream_missing\");");
+        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"video_params_incomplete\");");
+        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"stream_count_mismatch\");");
+        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"stream_layout_mismatch\");");
+        AssertContains(segmentExportCore, "requested segment(s) were skipped");
+        AssertOccursBefore(segmentExportCore, "if (skippedRequestedSegmentCount > 0)", "if (totalPackets == 0)");
 
         return Task.CompletedTask;
     }
@@ -2977,7 +3002,7 @@ static partial class Program
         var rotateBlock = ExtractTextBetween(
             sinkText,
             "private bool RotateSegment(TimeSpan currentPts)",
-            "    public IReadOnlyList<string> ForceRotateForExport");
+            "    public FlashbackForceRotateResult ForceRotateForExport");
         AssertContains(rotateBlock, "string? completedPath = null;");
         AssertContains(rotateBlock, "string? newPath = null;");
         AssertContains(rotateBlock, "var encoderRotated = false;");
@@ -3025,7 +3050,7 @@ static partial class Program
         var rotateFailureBlock = ExtractTextBetween(
             sourceText,
             "catch (Exception ex)\n        {\n            if (newPath != null && !encoderRotated)",
-            "    public IReadOnlyList<string> ForceRotateForExport");
+            "    public FlashbackForceRotateResult ForceRotateForExport");
         AssertContains(rotateFailureBlock, "Interlocked.Increment(ref _segmentRotationFailures);");
         AssertContains(rotateFailureBlock, "var failPts = ResolveEncoderPts();");
         AssertContains(rotateFailureBlock, "if (failPts > _segmentStartPts)");
@@ -3046,7 +3071,7 @@ static partial class Program
 
         var forceRotateBlock = ExtractTextBetween(
             sourceText,
-            "public IReadOnlyList<string> ForceRotateForExport",
+            "public FlashbackForceRotateResult ForceRotateForExport",
             "    private bool TryCancelForceRotate");
         AssertContains(forceRotateBlock, "CancellationToken cancellationToken = default");
         AssertContains(forceRotateBlock, "cancellationToken.ThrowIfCancellationRequested();");
@@ -3056,7 +3081,7 @@ static partial class Program
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_INACTIVE");
         AssertContains(forceRotateBlock, "if (_encodingFailure != null || _encodingTask?.IsCompleted == true)");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED");
-        AssertContains(forceRotateBlock, "return Array.Empty<string>();");
+        AssertContains(forceRotateBlock, "return FlashbackForceRotateResult.Failed();");
         AssertContains(forceRotateBlock, "var request = new ForceRotateRequest();");
         AssertContains(forceRotateBlock, "if (!_started || _disposed || _encodingFailure != null || _encodingTask?.IsCompleted == true)");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_REJECTED_AFTER_LOCK");
@@ -3115,7 +3140,7 @@ static partial class Program
 
         var forceRotateBlock = ExtractTextBetween(
             sourceText,
-            "public IReadOnlyList<string> ForceRotateForExport",
+            "public FlashbackForceRotateResult ForceRotateForExport",
             "    private bool TryCancelForceRotate");
         AssertContains(forceRotateBlock, "if (!request.Task.Wait(TimeSpan.FromSeconds(timeoutSeconds), cancellationToken))");
         AssertContains(forceRotateBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
@@ -3123,10 +3148,12 @@ static partial class Program
         AssertContains(forceRotateBlock, "var cancelled = TryCancelForceRotate(request);");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT_COMMITTED");
         AssertContains(sourceText, "private const int ForceRotateCommittedGraceMs = 1_000;");
-        AssertContains(forceRotateBlock, "if (request.Task.Wait(TimeSpan.FromMilliseconds(ForceRotateCommittedGraceMs)))\n                    {\n                        return request.Task.GetAwaiter().GetResult();\n                    }");
+        AssertContains(forceRotateBlock, "if (request.Task.Wait(TimeSpan.FromMilliseconds(ForceRotateCommittedGraceMs)))\n                    {\n                        return FlashbackForceRotateResult.Completed(request.Task.GetAwaiter().GetResult());\n                    }");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT_COMMITTED_PENDING");
+        AssertContains(forceRotateBlock, "return FlashbackForceRotateResult.CommittedPending();");
         AssertContains(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_CANCELLED_COMMITTED");
-        AssertContains(forceRotateBlock, "return request.Task.GetAwaiter().GetResult();");
+        AssertContains(forceRotateBlock, "return FlashbackForceRotateResult.CanceledBeforeCommit();");
+        AssertContains(forceRotateBlock, "return FlashbackForceRotateResult.Completed(request.Task.GetAwaiter().GetResult());");
         AssertDoesNotContain(forceRotateBlock, "FLASHBACK_SINK_FORCE_ROTATE_CANCELLED_COMMITTED\");\n                _ = request.Task.GetAwaiter().GetResult();");
         AssertDoesNotContain(forceRotateBlock, "return request.Task.Result;");
         AssertDoesNotContain(sourceText, "_forceRotateTcs");

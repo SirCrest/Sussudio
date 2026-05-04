@@ -77,6 +77,43 @@ internal sealed record FlashbackExportSegment
     public TimeSpan? EndPts { get; init; }
 }
 
+internal enum FlashbackForceRotateStatus
+{
+    Completed,
+    CanceledBeforeCommit,
+    CommittedPending,
+    Failed
+}
+
+internal sealed record FlashbackForceRotateResult
+{
+    public required FlashbackForceRotateStatus Status { get; init; }
+    public required IReadOnlyList<string> SegmentPaths { get; init; }
+
+    public static FlashbackForceRotateResult Completed(IReadOnlyList<string> segmentPaths)
+        => new()
+        {
+            Status = FlashbackForceRotateStatus.Completed,
+            SegmentPaths = segmentPaths
+        };
+
+    public static FlashbackForceRotateResult CanceledBeforeCommit()
+        => Empty(FlashbackForceRotateStatus.CanceledBeforeCommit);
+
+    public static FlashbackForceRotateResult CommittedPending()
+        => Empty(FlashbackForceRotateStatus.CommittedPending);
+
+    public static FlashbackForceRotateResult Failed()
+        => Empty(FlashbackForceRotateStatus.Failed);
+
+    private static FlashbackForceRotateResult Empty(FlashbackForceRotateStatus status)
+        => new()
+        {
+            Status = status,
+            SegmentPaths = Array.Empty<string>()
+        };
+}
+
 /// <summary>
 /// Groups the parameters for a flashback export operation (single-file or multi-segment).
 /// </summary>

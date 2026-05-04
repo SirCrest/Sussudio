@@ -1753,7 +1753,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
         }
     }
 
-    public IReadOnlyList<string> ForceRotateForExport(
+    public FlashbackForceRotateResult ForceRotateForExport(
         TimeSpan inPoint,
         TimeSpan outPoint,
         CancellationToken cancellationToken = default)
@@ -1765,7 +1765,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             Logger.Log(
                 $"FLASHBACK_SINK_FORCE_ROTATE_REJECTED_RANGE in_ms={(long)inPoint.TotalMilliseconds} " +
                 $"out_ms={(long)outPoint.TotalMilliseconds}");
-            return Array.Empty<string>();
+            return FlashbackForceRotateResult.Failed();
         }
 
         lock (_sync)
@@ -1774,7 +1774,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             {
                 Logger.Log(
                     $"FLASHBACK_SINK_FORCE_ROTATE_REJECTED_INACTIVE started={_started} disposed={_disposed}");
-                return Array.Empty<string>();
+                return FlashbackForceRotateResult.Failed();
             }
 
             if (_encodingFailure != null || _encodingTask?.IsCompleted == true)
@@ -1782,7 +1782,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                 Logger.Log(
                     $"FLASHBACK_SINK_FORCE_ROTATE_REJECTED failed={_encodingFailure != null} " +
                     $"completed={_encodingTask?.IsCompleted == true} type={_encodingFailure?.GetType().Name ?? "None"}");
-                return Array.Empty<string>();
+                return FlashbackForceRotateResult.Failed();
             }
         }
 
@@ -1797,7 +1797,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     $"FLASHBACK_SINK_FORCE_ROTATE_REJECTED_AFTER_LOCK started={_started} disposed={_disposed} " +
                     $"failed={_encodingFailure != null} completed={_encodingTask?.IsCompleted == true} " +
                     $"type={_encodingFailure?.GetType().Name ?? "None"}");
-                return Array.Empty<string>();
+                return FlashbackForceRotateResult.Failed();
             }
 
             supersededRequest = _forceRotateRequest;
@@ -1831,14 +1831,14 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
                     Logger.Log("FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT_COMMITTED");
                     if (request.Task.Wait(TimeSpan.FromMilliseconds(ForceRotateCommittedGraceMs)))
                     {
-                        return request.Task.GetAwaiter().GetResult();
+                        return FlashbackForceRotateResult.Completed(request.Task.GetAwaiter().GetResult());
                     }
 
                     Logger.Log($"FLASHBACK_SINK_FORCE_ROTATE_TIMEOUT_COMMITTED_PENDING grace_ms={ForceRotateCommittedGraceMs}");
-                    return Array.Empty<string>();
+                    return FlashbackForceRotateResult.CommittedPending();
                 }
 
-                return Array.Empty<string>();
+                return FlashbackForceRotateResult.CanceledBeforeCommit();
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -1853,7 +1853,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             throw;
         }
 
-        return request.Task.GetAwaiter().GetResult();
+        return FlashbackForceRotateResult.Completed(request.Task.GetAwaiter().GetResult());
     }
 
     private bool TryCancelForceRotate(ForceRotateRequest request)
