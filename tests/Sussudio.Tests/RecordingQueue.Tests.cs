@@ -275,6 +275,13 @@ static partial class Program
         AssertContains(captureServiceSource, "exportResult.PreservedArtifacts.Concat(endResult.PreservedArtifacts)");
         AssertOccursBefore(captureServiceSource, "PreserveFlashbackEndArtifactsOnFailure(exportResult, endResult);", "FLASHBACK_RECORDING_EXPORT_OK");
         AssertContains(captureServiceSource, "FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING_DEFERRED");
+        var flashbackFailedFinalizeSettingsBranch = ExtractTextBetween(
+            captureServiceSource,
+            "if (!fbResult.Succeeded)",
+            "else if (_pendingFlashbackSettingsChange)");
+        AssertContains(flashbackFailedFinalizeSettingsBranch, "var hadPendingFlashbackSettingsChange = _pendingFlashbackSettingsChange;");
+        AssertContains(flashbackFailedFinalizeSettingsBranch, "_pendingFlashbackSettingsChange = false;");
+        AssertContains(flashbackFailedFinalizeSettingsBranch, "pending_settings={hadPendingFlashbackSettingsChange}");
         AssertOccursBefore(captureServiceSource, "if (!fbResult.Succeeded)", "else if (_pendingFlashbackSettingsChange)");
         AssertContains(captureServiceSource, "preserveFlashbackSegmentsAfterFailedRecordingFinalize");
         AssertContains(captureServiceSource, "FLASHBACK_CLEANUP_PRESERVE_SEGMENTS");

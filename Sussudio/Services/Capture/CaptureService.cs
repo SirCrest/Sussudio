@@ -4513,10 +4513,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 if (!fbResult.Succeeded)
                 {
+                    var hadPendingFlashbackSettingsChange = _pendingFlashbackSettingsChange;
+                    _pendingFlashbackSettingsChange = false;
                     PreserveFlashbackRecoverySegments("recording_finalize_failed");
                     Logger.Log(
                         "FLASHBACK_SETTINGS_APPLY_AFTER_RECORDING_DEFERRED " +
-                        "reason=recording_finalize_failed");
+                        $"reason=recording_finalize_failed pending_settings={hadPendingFlashbackSettingsChange}");
                 }
                 else if (_pendingFlashbackSettingsChange)
                 {
