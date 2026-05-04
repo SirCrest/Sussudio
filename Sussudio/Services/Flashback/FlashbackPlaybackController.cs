@@ -771,6 +771,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
+                        cts.Token.ThrowIfCancellationRequested();
                         if (!IsDecoderFileReady(decoder, fileOpen))
                         {
                             SetNoFileFailure(CommandKind.Seek, cmd.Position);
@@ -783,7 +784,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             break;
                         }
 
-                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.Seek))
+                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.Seek, cts.Token))
                         {
                             isPlaying = false;
                             isScrubbing = false;
@@ -797,7 +798,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             pacingStopwatch.Restart();
                             var coalescedSeekTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
                             decoder.AudioChunkCallback = null;
-                            if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, "seek_resume"))
+                            if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, "seek_resume", cts.Token))
                             {
                                 isPlaying = false;
                                 RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "seek_resume_failed");
@@ -845,6 +846,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
+                        cts.Token.ThrowIfCancellationRequested();
                         if (!IsDecoderFileReady(decoder, fileOpen))
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_SCRUB_NO_FILE — restoring live");
@@ -857,7 +859,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             SetState(FlashbackPlaybackState.Live);
                             break;
                         }
-                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub))
+                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub, cts.Token))
                         {
                             isScrubbing = false;
                             RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "begin_scrub_display_failed");
@@ -886,6 +888,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
+                        cts.Token.ThrowIfCancellationRequested();
                         if (!IsDecoderFileReady(decoder, fileOpen))
                         {
                             SetNoFileFailure(CommandKind.UpdateScrub, cmd.Position);
@@ -898,7 +901,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             Logger.Log($"FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE pos_ms={(long)cmd.Position.TotalMilliseconds}");
                             break;
                         }
-                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub))
+                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub, cts.Token))
                         {
                             isScrubbing = false;
                             RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "scrub_update_display_failed");
@@ -929,7 +932,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             if (decoder is { IsOpen: true })
                             {
                                 decoder.AudioChunkCallback = null; // null during forward-decode
-                                if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, "end_scrub"))
+                                if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, "end_scrub", cts.Token))
                                 {
                                     isPlaying = false;
                                     RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "end_scrub_seek_failed");
@@ -998,7 +1001,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             // the audio codec is clean and the next audio packet in the file
                             // is at the video target position. No suppression needed.
                             decoder.AudioChunkCallback = null;
-                            if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, "play"))
+                            if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, "play", cts.Token))
                             {
                                 isPlaying = false;
                                 RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "play_seek_failed");
@@ -1065,6 +1068,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         nudgedPos = ClampPosition(nudgedPos, frozenValidStart);
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));
+                        cts.Token.ThrowIfCancellationRequested();
                         if (!IsDecoderFileReady(decoder, fileOpen))
                         {
                             SetNoFileFailure(CommandKind.Nudge, nudgedPos);
@@ -1084,7 +1088,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         // backward nudge requires full seek (keyframe snap acceptable)
                         if (cmd.Delta.Ticks > 0)
                         {
-                            var got = TryDecodeNextVideoFrameWithMetrics(decoder, out var nudgeFrame);
+                            var got = TryDecodeNextVideoFrameWithMetrics(decoder, out var nudgeFrame, cts.Token);
                             if (got)
                             {
                                 if (!TrySubmitAndHoldFrame(nudgeFrame, "nudge"))
@@ -1098,7 +1102,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             }
                             // Forward decode failed (EOF) — fall through to full seek
                         }
-                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge))
+                        if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge, cts.Token))
                         {
                             isPlaying = false;
                             isScrubbing = false;
@@ -1349,9 +1353,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
             $"release_ms={releaseMs:0.###} close_ms={closeMs:0.###} dispose_ms={disposeMs:0.###} total_ms={totalMs:0.###}");
     }
 
-    private bool TrySeekWithActiveFmp4Reopen(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)
+    private bool TrySeekWithActiveFmp4Reopen(
+        FlashbackDecoder decoder,
+        ref bool fileOpen,
+        TimeSpan seekTarget,
+        string reason,
+        CancellationToken cancellationToken = default)
     {
-        if (decoder.SeekTo(seekTarget))
+        cancellationToken.ThrowIfCancellationRequested();
+        if (decoder.SeekTo(seekTarget, cancellationToken))
         {
             return true;
         }
@@ -1366,10 +1376,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 return false;
             }
 
-            return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason);
+            return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason, cancellationToken);
         }
 
-        if (TrySeekAdjacentSegmentStart(decoder, ref fileOpen, seekTarget, reason, out _))
+        if (TrySeekAdjacentSegmentStart(decoder, ref fileOpen, seekTarget, reason, out _, cancellationToken))
         {
             return true;
         }
@@ -1384,8 +1394,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
         ref bool fileOpen,
         TimeSpan seekTarget,
         string reason,
-        out TimeSpan effectiveSeekTarget)
+        out TimeSpan effectiveSeekTarget,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         effectiveSeekTarget = seekTarget;
         var currentPath = _currentOpenFilePath;
         if (string.IsNullOrWhiteSpace(currentPath))
@@ -1428,7 +1440,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             fileOpen = true;
             _currentOpenFilePath = nextPath;
             _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
-            if (decoder.SeekTo(effectiveSeekTarget))
+            cancellationToken.ThrowIfCancellationRequested();
+            if (decoder.SeekTo(effectiveSeekTarget, cancellationToken))
             {
                 Interlocked.Increment(ref _playbackSegmentSwitches);
                 Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
@@ -1438,6 +1451,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
             SetReopenFailure(reason, "adjacent_seek_failed", effectiveSeekTarget);
             Logger.Log($"FLASHBACK_PLAYBACK_ADJACENT_SEGMENT_SEEK_FAIL reason={reason} path='{nextPath}' offset_ms={(long)effectiveSeekTarget.TotalMilliseconds}");
             return false;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -1450,8 +1467,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private bool TryReopenCurrentFileAndSeek(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)
+    private bool TryReopenCurrentFileAndSeek(
+        FlashbackDecoder decoder,
+        ref bool fileOpen,
+        TimeSpan seekTarget,
+        string reason,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var currentPath = _currentOpenFilePath;
         if (string.IsNullOrWhiteSpace(currentPath))
         {
@@ -1473,7 +1496,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             fileOpen = true;
             _currentOpenFilePath = currentPath;
             _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
-            if (decoder.SeekTo(seekTarget))
+            cancellationToken.ThrowIfCancellationRequested();
+            if (decoder.SeekTo(seekTarget, cancellationToken))
             {
                 return true;
             }
@@ -1481,6 +1505,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
             SetReopenFailure(reason, "seek_failed", seekTarget);
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_SEEK_FAIL reason={reason} path='{currentPath}' offset_ms={(long)seekTarget.TotalMilliseconds}");
             return false;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -1493,8 +1521,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private bool TryReopenCurrentFileAndSeekKeyframe(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)
+    private bool TryReopenCurrentFileAndSeekKeyframe(
+        FlashbackDecoder decoder,
+        ref bool fileOpen,
+        TimeSpan seekTarget,
+        string reason,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var currentPath = _currentOpenFilePath;
         if (string.IsNullOrWhiteSpace(currentPath))
         {
@@ -1516,7 +1550,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             fileOpen = true;
             _currentOpenFilePath = currentPath;
             _decoderHwAccel = decoder.IsD3D11HwAccelerated ? "D3D11VA" : "Software";
-            if (decoder.SeekToKeyframe(seekTarget))
+            cancellationToken.ThrowIfCancellationRequested();
+            if (decoder.SeekToKeyframe(seekTarget, cancellationToken))
             {
                 return true;
             }
@@ -1524,6 +1559,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
             SetReopenFailure(reason, "keyframe_seek_failed", seekTarget);
             Logger.Log($"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_SEEK_FAIL reason={reason} path='{currentPath}' offset_ms={(long)seekTarget.TotalMilliseconds}");
             return false;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -1705,8 +1744,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
         ref bool fileOpen,
         TimeSpan bufferPosition,
         TimeSpan validStartPts,
-        CommandKind kind)
+        CommandKind kind,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         // Suppress audio delivery during scrub — prevents audio accumulation
         // in the WASAPI queue. Audio callback is re-enabled on Play/EndScrub.
         decoder.AudioChunkCallback = null;
@@ -1727,6 +1768,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             // Map buffer position to file PTS (offset by frozen valid start)
             var filePts = SaturatingAdd(bufferPosition, validStartPts);
+            cancellationToken.ThrowIfCancellationRequested();
 
             // Clamp to current valid range: if eviction advanced ValidStartPts past
             // frozenValidStart, positions near the left edge map to evicted data.
@@ -1738,8 +1780,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 if (bufferPosition < TimeSpan.Zero) bufferPosition = TimeSpan.Zero;
             }
 
-            if (!decoder.SeekToKeyframe(filePts))
+            if (!decoder.SeekToKeyframe(filePts, cancellationToken))
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 // Active fMP4 segment: demuxer caches fragment index at open time.
                 // New fragments written since open aren't visible — reopen and retry.
                 // Only for fMP4; .ts handles appended data via eof_reached reset.
@@ -1748,7 +1791,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     if (!ShouldSkipActiveFmp4ReopenNearLive(filePts, "seek_keyframe"))
                     {
                         Logger.Log($"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds}");
-                        if (TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, "seek_keyframe"))
+                        if (TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, "seek_keyframe", cancellationToken))
                             goto seekSuccess;
                     }
                 }
@@ -1759,39 +1802,60 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 return false;
             }
             seekSuccess:
+            cancellationToken.ThrowIfCancellationRequested();
 
-            var gotFrame = TryDecodeNextVideoFrameWithMetrics(decoder, out var frame);
-            if (!gotFrame &&
-                TrySeekAdjacentSegmentStart(decoder, ref fileOpen, filePts, $"seek_display:{kind}", out var adjacentFilePts))
+            var gotFrame = TryDecodeNextVideoFrameWithMetrics(decoder, out var frame, cancellationToken);
+            var frameOwned = gotFrame;
+            try
             {
-                filePts = adjacentFilePts;
-                gotFrame = TryDecodeNextVideoFrameWithMetrics(decoder, out frame);
-            }
-
-            if (gotFrame)
-            {
-                if (!TrySubmitAndHoldFrame(frame, "seek"))
+                if (!gotFrame &&
+                    TrySeekAdjacentSegmentStart(decoder, ref fileOpen, filePts, $"seek_display:{kind}", out var adjacentFilePts, cancellationToken))
                 {
-                    PlaybackPosition = bufferPosition;
-                    SetSeekDisplayFailure(kind, "submit_failed", bufferPosition);
-                    return false;
+                    filePts = adjacentFilePts;
+                    cancellationToken.ThrowIfCancellationRequested();
+                    gotFrame = TryDecodeNextVideoFrameWithMetrics(decoder, out frame, cancellationToken);
+                    frameOwned = gotFrame;
                 }
-                Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
 
-                // Set position to actual decoded frame PTS mapped back to buffer position
-                var actualPosition = SaturatingSubtract(frame.Pts, validStartPts);
-                if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
-                PlaybackPosition = actualPosition;
+                if (gotFrame)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var submitted = TrySubmitAndHoldFrame(frame, "seek");
+                    frameOwned = false;
+                    if (!submitted)
+                    {
+                        PlaybackPosition = bufferPosition;
+                        SetSeekDisplayFailure(kind, "submit_failed", bufferPosition);
+                        return false;
+                    }
+                    Interlocked.Exchange(ref _lastVideoPtsTicks, frame.Pts.Ticks);
+
+                    // Set position to actual decoded frame PTS mapped back to buffer position
+                    var actualPosition = SaturatingSubtract(frame.Pts, validStartPts);
+                    if (actualPosition < TimeSpan.Zero) actualPosition = TimeSpan.Zero;
+                    PlaybackPosition = actualPosition;
+                }
+                else
+                {
+                    // No frame decoded — use requested position as fallback
+                    PlaybackPosition = bufferPosition;
+                    SetSeekDisplayFailure(kind, "no_frame", bufferPosition);
+                }
             }
-            else
+            finally
             {
-                // No frame decoded — use requested position as fallback
-                PlaybackPosition = bufferPosition;
-                SetSeekDisplayFailure(kind, "no_frame", bufferPosition);
+                if (frameOwned)
+                {
+                    ReleaseHeldFrameBestEffort(frame, "seek_cancelled");
+                }
             }
 
             Logger.Log($"FLASHBACK_PLAYBACK_SEEK_OK pos_ms={(long)PlaybackPosition.TotalMilliseconds} file_pts_ms={(long)filePts.TotalMilliseconds} got_frame={gotFrame}");
             return gotFrame;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -1843,7 +1907,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (!TryDecodeNextVideoFrameWithMetrics(decoder, out var videoFrame))
+            if (!TryDecodeNextVideoFrameWithMetrics(decoder, out var videoFrame, cancellationToken))
             {
                 return HandleEndOfSegment(decoder, commandChannel, pacingStopwatch, frozenValidStart, ref fileOpen, cancellationToken);
             }
@@ -1878,7 +1942,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     RecordPlaybackDroppedFrame("av_sync_skip");
                     skipped++;
 
-                    if (!TryDecodeNextVideoFrameWithMetrics(decoder, out videoFrame))
+                    if (!TryDecodeNextVideoFrameWithMetrics(decoder, out videoFrame, cancellationToken))
                     {
                         // EOS during skip — log partial progress so the diagnostic gap
                         // doesn't hide a long catch-up burst that the user may notice.
@@ -2009,7 +2073,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         var preReopenLastAudioPts = Interlocked.Read(ref _lastAudioPtsTicks);
                         Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);
                         decoder.AudioChunkCallback = null;
-                        if (decoder.SeekTo(lastFrameAbsPts))
+                        cancellationToken.ThrowIfCancellationRequested();
+                        if (decoder.SeekTo(lastFrameAbsPts, cancellationToken))
                         {
                             // Gate audio at the post-seek video PTS (seek target), not at
                             // _lastAudioPtsTicks. _lastAudioPtsTicks reflects pre-seek state;
@@ -2021,6 +2086,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             pacingStopwatch.Restart();
                             return true;
                         }
+                    }
+                    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                    {
+                        throw;
                     }
                     catch (Exception ex)
                     {
@@ -2047,7 +2116,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     var segSwitchTarget = SaturatingAdd(pos, frozenValidStart);
                     if (nextSegmentStart.HasValue && segSwitchTarget < nextSegmentStart.Value)
                         segSwitchTarget = nextSegmentStart.Value;
-                    if (!decoder.SeekTo(segSwitchTarget))
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!decoder.SeekTo(segSwitchTarget, cancellationToken))
                     {
                         SetReopenFailure("segment_switch", "seek_failed", segSwitchTarget);
                         Logger.Log($"FLASHBACK_PLAYBACK_SEGMENT_SWITCH_SEEK_FAIL path='{nextFile}' offset_ms={(long)segSwitchTarget.TotalMilliseconds}");
@@ -2057,6 +2127,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     RestoreAudioCallback(decoder, audioGate);
                     pacingStopwatch.Restart();
                     return true;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -2089,7 +2163,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     var preReopenLastAudioPts = Interlocked.Read(ref _lastAudioPtsTicks);
                     Interlocked.Increment(ref _playbackReopenAudioNullWindowCount);
                     decoder.AudioChunkCallback = null;
-                    if (!decoder.SeekTo(resumeTarget))
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (!decoder.SeekTo(resumeTarget, cancellationToken))
                     {
                         SetReopenFailure("fmp4_reopen", "seek_failed", resumeTarget);
                         Logger.Log($"FLASHBACK_PLAYBACK_FMP4_REOPEN_SEEK_FAIL path='{currentOpenFilePath}' offset_ms={(long)resumeTarget.TotalMilliseconds}");
@@ -2105,6 +2180,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     RestoreAudioCallback(decoder, audioGateTicks);
                     pacingStopwatch.Restart();
                     return true;
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw;
                 }
                 catch (Exception ex)
                 {
@@ -2959,10 +3038,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private bool TryDecodeNextVideoFrameWithMetrics(FlashbackDecoder decoder, out DecodedVideoFrame frame)
+    private bool TryDecodeNextVideoFrameWithMetrics(
+        FlashbackDecoder decoder,
+        out DecodedVideoFrame frame,
+        CancellationToken cancellationToken = default)
     {
         var start = Stopwatch.GetTimestamp();
-        var decoded = decoder.TryDecodeNextVideoFrame(out frame);
+        var decoded = decoder.TryDecodeNextVideoFrame(out frame, cancellationToken);
         if (decoded)
         {
             var elapsedMs = (Stopwatch.GetTimestamp() - start) * 1000.0 / Stopwatch.Frequency;

@@ -330,13 +330,15 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     /// Seeks to the nearest keyframe at or before <paramref name="target"/>.
     /// Fast seek suitable for scrubbing.
     /// </summary>
-    public bool SeekToKeyframe(TimeSpan target)
+    public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)
     {
         ThrowIfNotOpen();
+        cancellationToken.ThrowIfCancellationRequested();
 
         var timestampUs = ToAvTimeBaseTimestamp(target);
         var result = ffmpeg.av_seek_frame(
             _formatCtx, -1, timestampUs, ffmpeg.AVSEEK_FLAG_BACKWARD);
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (result < 0)
         {
@@ -370,12 +372,13 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     /// Seeks to the exact frame at <paramref name="target"/> by first seeking to the
     /// nearest preceding keyframe, then decoding forward until the target PTS is reached.
     /// </summary>
-    public bool SeekTo(TimeSpan target)
+    public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)
     {
         ThrowIfNotOpen();
+        cancellationToken.ThrowIfCancellationRequested();
         _lastSeekHitForwardDecodeCap = false;
 
-        if (!SeekToKeyframe(target))
+        if (!SeekToKeyframe(target, cancellationToken))
         {
             return false;
         }
@@ -392,7 +395,8 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         {
             for (var i = 0; i < maxForwardFrames; i++)
             {
-                if (!TryDecodeNextVideoFrame(out var frame))
+                cancellationToken.ThrowIfCancellationRequested();
+                if (!TryDecodeNextVideoFrame(out var frame, cancellationToken))
                 {
                     // Reached EOF before target — return best frame if we have one
                     if (bestFrame != null)
@@ -464,10 +468,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     /// For D3D11VA: returns a <see cref="DecodedVideoFrame"/> with <see cref="DecodedVideoFrame.IsD3D11Texture"/> = true.
     /// For software: returns raw NV12/P010 data in <see cref="DecodedVideoFrame.Data"/>.
     /// </summary>
-    public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame)
+    public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)
     {
         frame = default;
         ThrowIfNotOpen();
+        cancellationToken.ThrowIfCancellationRequested();
         _lastDecodePhaseTimings = default;
 
         // Return stashed frame from SeekTo() before decoding new ones
@@ -481,6 +486,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
         while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             // First try to receive a frame from the decoder (may have buffered frames)
             var receiveStart = Stopwatch.GetTimestamp();
             var receiveResult = ffmpeg.avcodec_receive_frame(_videoCodecCtx, _videoFrame);
@@ -500,7 +506,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
             {
                 // Decoder needs more packets
                 var feedStart = Stopwatch.GetTimestamp();
-                if (!FeedNextVideoPacket())
+                if (!FeedNextVideoPacket(cancellationToken))
                 {
                     // Temporary EOF on live fMP4 — do NOT enter drain mode.
                     // The encoder is still appending; drain mode is permanent and
@@ -959,10 +965,11 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     /// Reads packets until a video packet is sent to the decoder.
     /// Audio packets are decoded inline via AudioChunkCallback.
     /// </summary>
-    private bool FeedNextVideoPacket()
+    private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)
     {
         while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             ffmpeg.av_packet_unref(_packet);
             var readStart = Stopwatch.GetTimestamp();
             var readResult = ffmpeg.av_read_frame(_formatCtx, _packet);

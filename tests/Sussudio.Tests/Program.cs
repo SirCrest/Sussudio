@@ -940,6 +940,9 @@ static partial class Program
                 "Flashback decoder held-frame cleanup is best effort",
                 FlashbackDecoder_HeldFrameCleanupIsBestEffort),
             await RunCheckAsync(
+                "Flashback decoder decode loops observe cancellation",
+                FlashbackDecoder_DecodeLoopsObserveCancellation),
+            await RunCheckAsync(
                 "Flashback decoder rejects initialize after dispose",
                 FlashbackDecoder_RejectsInitializeAfterDispose),
             await RunCheckAsync(

@@ -1747,6 +1747,14 @@ static partial class Program
         AssertContains(sourceText, "if (cts.IsCancellationRequested)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");");
         AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");\n                            CleanupDecoder(ref decoder, ref fileOpen);\n                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
         AssertContains(sourceText, "PaceAndDecodeFrame(decoder, commandChannel, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token)");
+        AssertContains(sourceText, "SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.Seek, cts.Token)");
+        AssertContains(sourceText, "SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub, cts.Token)");
+        AssertContains(sourceText, "SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub, cts.Token)");
+        AssertContains(sourceText, "SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge, cts.Token)");
+        AssertContains(sourceText, "TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, \"seek_resume\", cts.Token)");
+        AssertContains(sourceText, "TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, \"end_scrub\", cts.Token)");
+        AssertContains(sourceText, "TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, \"play\", cts.Token)");
+        AssertContains(sourceText, "TryDecodeNextVideoFrameWithMetrics(decoder, out var nudgeFrame, cts.Token)");
         AssertContains(sourceText, "CancellationToken cancellationToken)\n    {\n        try\n        {\n            cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n                {\n                    cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(sourceText, "const double FrameSkipThresholdMs = 500.0;");
@@ -2045,7 +2053,7 @@ static partial class Program
         AssertContains(nudgeBlock, "SafeResumePreviewSubmission(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "SafeResumeRendering(\"nudge_no_file\");");
         AssertContains(nudgeBlock, "SetState(FlashbackPlaybackState.Live);");
-        AssertContains(nudgeBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge))");
+        AssertContains(nudgeBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, nudgedPos, frozenValidStart, CommandKind.Nudge, cts.Token))");
         AssertContains(nudgeBlock, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"nudge_display_failed\");");
         AssertDoesNotContain(nudgeBlock, "if (decoder != null)");
 
@@ -2124,8 +2132,8 @@ static partial class Program
         var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeek(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)");
-        AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeekKeyframe(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)");
+        AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeek(");
+        AssertContains(sourceText, "private bool TryReopenCurrentFileAndSeekKeyframe(");
         AssertContains(sourceText, "private static readonly TimeSpan ActiveFmp4ReopenNearLiveGuard = TimeSpan.FromMilliseconds(250);");
         AssertContains(sourceText, "private static readonly TimeSpan AdjacentSegmentSeekFallbackWindow = TimeSpan.FromSeconds(3);");
         AssertContains(sourceText, "private bool ShouldSkipActiveFmp4ReopenNearLive(TimeSpan seekTarget, string reason)");
@@ -2148,13 +2156,13 @@ static partial class Program
         AssertContains(sourceText, "if (fileOpen && decoder.IsOpen && IsSamePlaybackPath(filePath, _currentOpenFilePath))\n            return;");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Paused && IsSamePlaybackPath(prevFile, _currentOpenFilePath))");
         AssertContains(sourceText, "fileOpen = false;\n            _currentOpenFilePath = null;\n            return false;");
-        AssertContains(sourceText, "private bool TrySeekWithActiveFmp4Reopen(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)");
-        AssertContains(sourceText, "if (decoder.SeekTo(seekTarget))\n        {\n            return true;\n        }");
-        AssertContains(sourceText, "if (ShouldSkipActiveFmp4ReopenNearLive(seekTarget, reason))\n            {\n                SetReopenFailure(reason, \"near_live\", seekTarget);\n                return false;\n            }\n\n            return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason);");
-        AssertContains(sourceText, "if (TrySeekAdjacentSegmentStart(decoder, ref fileOpen, seekTarget, reason, out _))\n        {\n            return true;\n        }\n\n        SetReopenFailure(reason, \"seek_failed\", seekTarget);");
-        AssertContains(sourceText, "if (decoder.SeekTo(seekTarget))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"seek_failed\", seekTarget);");
+        AssertContains(sourceText, "private bool TrySeekWithActiveFmp4Reopen(");
+        AssertContains(sourceText, "if (decoder.SeekTo(seekTarget, cancellationToken))\n        {\n            return true;\n        }");
+        AssertContains(sourceText, "if (ShouldSkipActiveFmp4ReopenNearLive(seekTarget, reason))\n            {\n                SetReopenFailure(reason, \"near_live\", seekTarget);\n                return false;\n            }\n\n            return TryReopenCurrentFileAndSeek(decoder, ref fileOpen, seekTarget, reason, cancellationToken);");
+        AssertContains(sourceText, "if (TrySeekAdjacentSegmentStart(decoder, ref fileOpen, seekTarget, reason, out _, cancellationToken))\n        {\n            return true;\n        }\n\n        SetReopenFailure(reason, \"seek_failed\", seekTarget);");
+        AssertContains(sourceText, "if (decoder.SeekTo(seekTarget, cancellationToken))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"seek_failed\", seekTarget);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_SEEK_FAIL");
-        AssertContains(sourceText, "if (decoder.SeekToKeyframe(seekTarget))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"keyframe_seek_failed\", seekTarget);");
+        AssertContains(sourceText, "if (decoder.SeekToKeyframe(seekTarget, cancellationToken))\n            {\n                return true;\n            }\n\n            SetReopenFailure(reason, \"keyframe_seek_failed\", seekTarget);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_SEEK_FAIL");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_REOPEN_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            _decoderHwAccel = \"N/A\";\n            fileOpen = false;");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_REOPEN_KEYFRAME_ERROR reason={reason} path='{currentPath}' type={ex.GetType().Name} msg='{ex.Message}'\");\n            _decoderHwAccel = \"N/A\";\n            fileOpen = false;");
@@ -2162,16 +2170,32 @@ static partial class Program
         AssertContains(sourceText, "SetReopenFailure(reason, ex.GetType().Name, seekTarget);");
         AssertContains(sourceText, "private void SetReopenFailure(string reason, string detail, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"reopen_failed:{reason}:{detail}{FormatCommandDetail(position: position)}\");");
-        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.Seek))");
-        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub))");
-        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub))");
+        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.Seek, cts.Token))");
+        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub, cts.Token))");
+        AssertContains(sourceText, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub, cts.Token))");
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"no_file\", bufferPosition);");
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"seek_failed\", bufferPosition);");
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"submit_failed\", bufferPosition);");
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, \"no_frame\", bufferPosition);");
         AssertContains(sourceText, "SetSeekDisplayFailure(kind, ex.GetType().Name, bufferPosition);");
         AssertContains(sourceText, "private bool SeekAndDisplayKeyframe(");
-        AssertContains(sourceText, "if (!gotFrame &&\n                TrySeekAdjacentSegmentStart(decoder, ref fileOpen, filePts, $\"seek_display:{kind}\", out var adjacentFilePts))");
+        var seekDisplayBlock = ExtractTextBetween(
+            sourceText,
+            "private bool SeekAndDisplayKeyframe(",
+            "    private bool ShouldSkipActiveFmp4ReopenNearLive");
+        AssertContains(seekDisplayBlock, "CancellationToken cancellationToken");
+        AssertContains(seekDisplayBlock, "cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(seekDisplayBlock, "decoder.SeekToKeyframe(filePts, cancellationToken)");
+        AssertContains(seekDisplayBlock, "TryDecodeNextVideoFrameWithMetrics(decoder, out var frame, cancellationToken)");
+        AssertContains(seekDisplayBlock, "var frameOwned = gotFrame;");
+        AssertContains(seekDisplayBlock, "frameOwned = false;");
+        AssertContains(seekDisplayBlock, "ReleaseHeldFrameBestEffort(frame, \"seek_cancelled\")");
+        AssertContains(seekDisplayBlock, "if (frameOwned)\n                {\n                    ReleaseHeldFrameBestEffort(frame, \"seek_cancelled\");\n                }");
+        AssertContains(seekDisplayBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
+        AssertContains(seekDisplayBlock, "throw;");
+        AssertOccursBefore(seekDisplayBlock, "cancellationToken.ThrowIfCancellationRequested();", "decoder.SeekToKeyframe(filePts, cancellationToken)");
+        AssertOccursBefore(seekDisplayBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)", "catch (Exception ex)");
+        AssertContains(seekDisplayBlock, "TrySeekAdjacentSegmentStart(decoder, ref fileOpen, filePts, $\"seek_display:{kind}\", out var adjacentFilePts, cancellationToken)");
         AssertContains(sourceText, "return gotFrame;");
         AssertContains(sourceText, "private void RestoreLiveAfterSeekDisplayFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
         AssertContains(sourceText, "CloseDecoderFileBestEffort(decoder, operation);\n        fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";\n        ReleasePlaybackFrameForLive(operation);");
@@ -2181,10 +2205,10 @@ static partial class Program
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"scrub_update_display_failed\");");
         AssertContains(sourceText, "private void SetSeekDisplayFailure(CommandKind kind, string detail, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"seek_display_failed:{kind}:{detail}{FormatCommandDetail(position: position)}\");");
-        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, \"seek_resume\"))\n                            {\n                                isPlaying = false;\n                                RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"seek_resume_failed\");\n                                break;\n                            }");
-        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, \"end_scrub\"))\n                                {\n                                    isPlaying = false;\n                                    RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"end_scrub_seek_failed\");\n                                    break;\n                                }");
-        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, \"play\"))\n                            {\n                                isPlaying = false;\n                                RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"play_seek_failed\");\n                                break;\n                            }");
-        AssertContains(sourceText, "if (!ShouldSkipActiveFmp4ReopenNearLive(filePts, \"seek_keyframe\"))\n                    {\n                        Logger.Log($\"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds}\");\n                        if (TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, \"seek_keyframe\"))\n                            goto seekSuccess;\n                    }");
+        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, \"seek_resume\", cts.Token))");
+        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, \"end_scrub\", cts.Token))");
+        AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, \"play\", cts.Token))");
+        AssertContains(sourceText, "if (!ShouldSkipActiveFmp4ReopenNearLive(filePts, \"seek_keyframe\"))\n                    {\n                        Logger.Log($\"FLASHBACK_PLAYBACK_SEEK_REOPEN_ACTIVE offset_ms={(long)filePts.TotalMilliseconds}\");\n                        if (TryReopenCurrentFileAndSeekKeyframe(decoder, ref fileOpen, filePts, \"seek_keyframe\", cancellationToken))\n                            goto seekSuccess;\n                    }");
         AssertContains(sourceText, "SetReopenFailure(\"segment_switch\", \"seek_failed\", segSwitchTarget);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_SEGMENT_SWITCH_SEEK_FAIL");
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"segment_switch_seek_failed\");");
@@ -2529,6 +2553,37 @@ static partial class Program
         AssertContains(sourceText, "bestFrameTransferred = true;\n                        return true;");
         AssertContains(sourceText, "finally\n        {\n            if (!bestFrameTransferred && bestFrame != null)\n            {\n                ReleaseHeldFrameBestEffort(bestFrame.Value, \"seek_best_abandoned\");\n            }\n        }");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_pendingVideoFrame, \"close_pending\");");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackDecoder_DecodeLoopsObserveCancellation()
+    {
+        var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackDecoder.cs")
+            .Replace("\r\n", "\n");
+
+        AssertContains(sourceText, "public bool SeekToKeyframe(TimeSpan target, CancellationToken cancellationToken = default)");
+        AssertContains(sourceText, "public bool SeekTo(TimeSpan target, CancellationToken cancellationToken = default)");
+        AssertContains(sourceText, "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame, CancellationToken cancellationToken = default)");
+        AssertContains(sourceText, "private bool FeedNextVideoPacket(CancellationToken cancellationToken = default)");
+        AssertContains(sourceText, "if (!SeekToKeyframe(target, cancellationToken))");
+        AssertContains(sourceText, "if (!TryDecodeNextVideoFrame(out var frame, cancellationToken))");
+        AssertContains(sourceText, "if (!FeedNextVideoPacket(cancellationToken))");
+        AssertContains(sourceText, "cancellationToken.ThrowIfCancellationRequested();");
+
+        var seekToBlock = ExtractTextBetween(
+            sourceText,
+            "public bool SeekTo(TimeSpan target",
+            "    /// <summary>\n    /// Decodes the next video frame.");
+        AssertContains(seekToBlock, "cancellationToken.ThrowIfCancellationRequested();");
+        AssertOccursBefore(seekToBlock, "cancellationToken.ThrowIfCancellationRequested();\n                if (!TryDecodeNextVideoFrame", "if (!TryDecodeNextVideoFrame(out var frame, cancellationToken))");
+
+        var decodeBlock = ExtractTextBetween(
+            sourceText,
+            "public bool TryDecodeNextVideoFrame(out DecodedVideoFrame frame",
+            "    public void Dispose()");
+        AssertContains(decodeBlock, "cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(decodeBlock, "if (!FeedNextVideoPacket(cancellationToken))");
 
         return Task.CompletedTask;
     }
