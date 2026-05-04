@@ -301,8 +301,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
             _audioPlayback = audioPlayback;
             _audioCapture = audioCapture;
-            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_UPDATE playback={audioPlayback != null} capture={audioCapture != null}");
+            Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_UPDATE playback={audioPlayback != null} capture={audioCapture != null} state={_state}");
         }
+
+        ApplyAudioRoutingForState("audio_update");
     }
 
     public void UpdatePreviewComponents(IPreviewFrameSink? previewSink, ILiveVideoSource? videoCapture)
@@ -331,7 +333,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_DETACH state={_state} thread_alive={PlaybackThreadAlive}");
-        StopPlaybackThread();
+        if (!StopPlaybackThread())
+        {
+            Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_DETACH_ABORT reason=thread_stop_failed");
+            return;
+        }
+
         ReleasePlaybackFrameForLive("preview_detach");
         RestoreLiveAudio();
         SafeResumePreviewSubmission("preview_detach");
@@ -696,7 +703,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private void StopPlaybackThread()
+    private bool StopPlaybackThread()
     {
         lock (_playbackThreadSync)
         {
@@ -754,6 +761,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 ClearQueuedCommandSlotsBarrier();
                 Volatile.Write(ref _playbackThreadStarted, 0);
             }
+
+            return threadExited;
         }
     }
 
@@ -2264,10 +2273,17 @@ internal sealed class FlashbackPlaybackController : IDisposable
             lastFrameAbsPts = SaturatingAdd(PlaybackPosition, frozenValidStart);
         var gapFromLive = SaturatingSubtract(latestAbsPts, lastFrameAbsPts).TotalMilliseconds;
         var pos = PlaybackPosition;
+        var currentOpenFilePath = _currentOpenFilePath;
+
+        if (IsActiveFmp4Segment(currentOpenFilePath) &&
+            CheckNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false))
+        {
+            pacingStopwatch.Restart();
+            return false;
+        }
 
         if (gapFromLive > 2000)
         {
-            var currentOpenFilePath = _currentOpenFilePath;
             var nextFile = currentOpenFilePath != null
                 ? _bufferManager.GetNextSegmentFile(currentOpenFilePath)
                 : null;
@@ -2448,11 +2464,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
         FlashbackDecoder decoder,
         TimeSpan absoluteFramePts,
         TimeSpan bufferPosition,
-        ref bool fileOpen)
+        ref bool fileOpen,
+        bool requireFrameWarmup = true)
     {
         var absoluteLatestPts = _bufferManager.LatestPts;
         var gapFromLive = SaturatingSubtract(absoluteLatestPts, absoluteFramePts);
-        if (Interlocked.Read(ref _playbackFrameCount) > 60 &&
+        if ((!requireFrameWarmup || Interlocked.Read(ref _playbackFrameCount) > 60) &&
             gapFromLive <= TimeSpan.FromMilliseconds(2000))
         {
             Interlocked.Increment(ref _playbackNearLiveSnaps);
@@ -3524,6 +3541,30 @@ internal sealed class FlashbackPlaybackController : IDisposable
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_PLAYBACK_AUDIO_RETURN_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
+        }
+    }
+
+    private void ApplyAudioRoutingForState(string operation)
+    {
+        if (_disposedFlag != 0)
+        {
+            return;
+        }
+
+        switch (_state)
+        {
+            case FlashbackPlaybackState.Live:
+                RestoreLiveAudio();
+                break;
+            case FlashbackPlaybackState.Playing:
+                SuppressLiveAudio();
+                SafeResumeRendering(operation);
+                break;
+            case FlashbackPlaybackState.Paused:
+            case FlashbackPlaybackState.Scrubbing:
+                SuppressLiveAudio();
+                SafePauseRendering(operation);
+                break;
         }
     }
 

@@ -1666,6 +1666,15 @@ static partial class Program
         AssertContains(sourceText, "if (nextFile != null && !IsSamePlaybackPath(nextFile, currentOpenFilePath))");
         AssertContains(sourceText, "_currentOpenFilePath = nextFile;\n                    _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";");
         AssertContains(sourceText, "decoder.OpenFile(currentOpenFilePath);\n                    fileOpen = true;\n                    _decoderHwAccel = decoder.IsD3D11HwAccelerated ? \"D3D11VA\" : \"Software\";");
+        AssertContains(sourceText, "CheckNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false)");
+        AssertOccursBefore(
+            sourceText,
+            "CheckNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false)",
+            "if (gapFromLive > 2000)");
+        AssertOccursBefore(
+            sourceText,
+            "CheckNearLiveEdge(decoder, lastFrameAbsPts, pos, ref fileOpen, requireFrameWarmup: false)",
+            "FLASHBACK_PLAYBACK_WRITE_HEAD_WAIT");
 
         return Task.CompletedTask;
     }
@@ -2111,7 +2120,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_UPDATE sink={previewSink != null} capture={videoCapture != null}");
         AssertContains(sourceText, "public void PrepareForPreviewDetach()");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_DETACH state={_state} thread_alive={PlaybackThreadAlive}");
-        AssertContains(sourceText, "StopPlaybackThread();\n        ReleasePlaybackFrameForLive(\"preview_detach\");\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(\"preview_detach\");\n        SetState(FlashbackPlaybackState.Live);");
+        AssertContains(sourceText, "if (!StopPlaybackThread())\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_PREVIEW_DETACH_ABORT reason=thread_stop_failed\");\n            return;\n        }\n\n        ReleasePlaybackFrameForLive(\"preview_detach\");");
         AssertContains(sourceText, "var previewSink = Volatile.Read(ref _previewSink);");
         AssertContains(sourceText, "SetLastSubmitFailure($\"{operation}:missing_preview_sink\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_missing_preview_sink\");");
@@ -2660,6 +2669,11 @@ static partial class Program
         AssertContains(sourceText, "private void SafePauseRendering(string operation)");
         AssertContains(sourceText, "private void SafeResumeRendering(string operation)");
         AssertContains(sourceText, "private void SafeFlushPlayback(string operation)");
+        AssertContains(sourceText, "ApplyAudioRoutingForState(\"audio_update\");");
+        AssertContains(sourceText, "private void ApplyAudioRoutingForState(string operation)");
+        AssertContains(sourceText, "case FlashbackPlaybackState.Live:\n                RestoreLiveAudio();");
+        AssertContains(sourceText, "case FlashbackPlaybackState.Playing:\n                SuppressLiveAudio();\n                SafeResumeRendering(operation);");
+        AssertContains(sourceText, "case FlashbackPlaybackState.Paused:\n            case FlashbackPlaybackState.Scrubbing:\n                SuppressLiveAudio();\n                SafePauseRendering(operation);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_WARN");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_WARN");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_WARN op=suppress operation={operation} type={ex.GetType().Name}");
@@ -2683,6 +2697,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_RETURN_WARN");
         AssertContains(sourceText, "ReturnPlaybackAudioChunkBestEffort(chunk, \"playback_audio_non_monotonic_pts\");");
         AssertContains(sourceText, "ReturnPlaybackAudioChunkBestEffort(chunk, \"playback_audio_before_gate\");");
+        AssertContains(sourceText, "pb.EnqueuePooledSamples(chunk.Samples, chunk.ValidLength, chunk.Pts.Ticks);");
         AssertContains(sourceText, "private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;");
         AssertContains(sourceText, "private bool TrySnapLiveForSoftwarePlaybackBudget(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
         AssertContains(sourceText, "private bool ShouldSnapLiveForSoftwarePlaybackBudget(");
