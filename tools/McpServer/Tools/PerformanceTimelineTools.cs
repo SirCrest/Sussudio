@@ -64,6 +64,7 @@ public static class PerformanceTimelineTools
                 MjpegPreviewJitterDeadlineDropCount = AutomationSnapshotFormatter.GetLong(item, "MjpegPreviewJitterDeadlineDropCount"),
                 MjpegPreviewJitterClearedDropCount = AutomationSnapshotFormatter.GetLong(item, "MjpegPreviewJitterClearedDropCount"),
                 MjpegPreviewJitterUnderflowCount = AutomationSnapshotFormatter.GetLong(item, "MjpegPreviewJitterUnderflowCount"),
+                MjpegPreviewJitterResumeReprimeCount = AutomationSnapshotFormatter.GetLong(item, "MjpegPreviewJitterResumeReprimeCount"),
                 MjpegPreviewJitterLatencyP95Ms = AutomationSnapshotFormatter.GetDouble(item, "MjpegPreviewJitterLatencyP95Ms"),
                 MjpegPreviewJitterLatencyMaxMs = AutomationSnapshotFormatter.GetDouble(item, "MjpegPreviewJitterLatencyMaxMs"),
                 MjpegPreviewJitterLastDropReason = AutomationSnapshotFormatter.Get(item, "MjpegPreviewJitterLastDropReason"),
@@ -255,7 +256,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Preview Slow%:  {first.PreviewSlowPct:F1}% -> {last.PreviewSlowPct:F1}% (delta: {last.PreviewSlowPct - first.PreviewSlowPct:+0.0;-0.0;0.0}%)");
             builder.AppendLine($"Jitter Depth:   {FormatJitterDepthCell(first)} -> {FormatJitterDepthCell(last)} enabled={last.MjpegPreviewJitterEnabled}");
             builder.AppendLine($"Jitter Latency: P95 {first.MjpegPreviewJitterLatencyP95Ms:F1}ms -> {last.MjpegPreviewJitterLatencyP95Ms:F1}ms, max latest={last.MjpegPreviewJitterLatencyMaxMs:F1}ms");
-            builder.AppendLine($"Jitter Drops:   total {first.MjpegPreviewJitterTotalDropped} -> {last.MjpegPreviewJitterTotalDropped}, cleared {first.MjpegPreviewJitterClearedDropCount} -> {last.MjpegPreviewJitterClearedDropCount}, deadline {first.MjpegPreviewJitterDeadlineDropCount} -> {last.MjpegPreviewJitterDeadlineDropCount}, underflows {first.MjpegPreviewJitterUnderflowCount} -> {last.MjpegPreviewJitterUnderflowCount}, lastReason={FormatOptional(last.MjpegPreviewJitterLastDropReason)}");
+            builder.AppendLine($"Jitter Drops:   total {first.MjpegPreviewJitterTotalDropped} -> {last.MjpegPreviewJitterTotalDropped}, cleared {first.MjpegPreviewJitterClearedDropCount} -> {last.MjpegPreviewJitterClearedDropCount}, deadline {first.MjpegPreviewJitterDeadlineDropCount} -> {last.MjpegPreviewJitterDeadlineDropCount}, underflows {first.MjpegPreviewJitterUnderflowCount} -> {last.MjpegPreviewJitterUnderflowCount}, resumeReprimes {first.MjpegPreviewJitterResumeReprimeCount} -> {last.MjpegPreviewJitterResumeReprimeCount}, lastReason={FormatOptional(last.MjpegPreviewJitterLastDropReason)}");
             builder.AppendLine($"Jitter Underflow: reason={FormatOptional(last.MjpegPreviewJitterLastUnderflowReason)} inputAge={last.MjpegPreviewJitterLastUnderflowInputAgeMs:F1}ms outputAge={last.MjpegPreviewJitterLastUnderflowOutputAgeMs:F1}ms scheduleLateMax={last.MjpegPreviewJitterMaxScheduleLateMs:F1}ms lateCountDelta={NonNegativeDelta(last.MjpegPreviewJitterScheduleLateCount, first.MjpegPreviewJitterScheduleLateCount)}");
             builder.AppendLine($"D3D Present P95:{first.PreviewD3DPresentP95Ms:F1}ms -> {last.PreviewD3DPresentP95Ms:F1}ms (delta: {last.PreviewD3DPresentP95Ms - first.PreviewD3DPresentP95Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"D3D Total P95:  {first.PreviewD3DTotalP95Ms:F1}ms -> {last.PreviewD3DTotalP95Ms:F1}ms (delta: {last.PreviewD3DTotalP95Ms - first.PreviewD3DTotalP95Ms:+0.0;-0.0;0.0}ms)");
@@ -455,7 +456,8 @@ public static class PerformanceTimelineTools
             $"jitterDropsDelta={NonNegativeDelta(last.MjpegPreviewJitterTotalDropped, first.MjpegPreviewJitterTotalDropped)} " +
             $"clearedDropsDelta={NonNegativeDelta(last.MjpegPreviewJitterClearedDropCount, first.MjpegPreviewJitterClearedDropCount)} " +
             $"deadlineDropsDelta={NonNegativeDelta(last.MjpegPreviewJitterDeadlineDropCount, first.MjpegPreviewJitterDeadlineDropCount)} " +
-            $"underflowsDelta={NonNegativeDelta(last.MjpegPreviewJitterUnderflowCount, first.MjpegPreviewJitterUnderflowCount)}");
+            $"underflowsDelta={NonNegativeDelta(last.MjpegPreviewJitterUnderflowCount, first.MjpegPreviewJitterUnderflowCount)} " +
+            $"resumeReprimesDelta={NonNegativeDelta(last.MjpegPreviewJitterResumeReprimeCount, first.MjpegPreviewJitterResumeReprimeCount)}");
 
         builder.AppendLine(
             "Flashback Pressure: " +
@@ -563,6 +565,7 @@ public static class PerformanceTimelineTools
         public long MjpegPreviewJitterDeadlineDropCount { get; init; }
         public long MjpegPreviewJitterClearedDropCount { get; init; }
         public long MjpegPreviewJitterUnderflowCount { get; init; }
+        public long MjpegPreviewJitterResumeReprimeCount { get; init; }
         public double MjpegPreviewJitterLatencyP95Ms { get; init; }
         public double MjpegPreviewJitterLatencyMaxMs { get; init; }
         public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;

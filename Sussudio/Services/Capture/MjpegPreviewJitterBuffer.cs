@@ -90,6 +90,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         long TotalSubmitted,
         long TotalDropped,
         long UnderflowCount,
+        long ResumeReprimeCount,
         int InputIntervalSampleCount,
         double InputIntervalAvgMs,
         double InputIntervalP95Ms,
@@ -162,6 +163,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private long _deadlineDropCount;
     private long _clearedDropCount;
     private long _underflowCount;
+    private long _resumeReprimeCount;
     private long _targetIncreaseCount;
     private long _targetDecreaseCount;
     private long _lastAdaptiveIssueTick;
@@ -180,7 +182,10 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     private long _lastScheduleLateTicks;
     private long _maxScheduleLateTicks;
     private long _scheduleLateCount;
+    private long _resumeReprimeStartTick;
     private int _lastUnderflowQueueDepth;
+    private int _previewSubmissionSuppressed;
+    private int _resumeReprimeMissBudget;
     private string _lastDropReason = string.Empty;
     private string _lastUnderflowReason = string.Empty;
     private int _disposed;
@@ -251,7 +256,11 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
     public void Enqueue(ReadOnlySpan<byte> nv12Data, int width, int height, long arrivalTick)
     {
-        if (Volatile.Read(ref _disposed) != 0 || nv12Data.IsEmpty || width <= 0 || height <= 0)
+        if (Volatile.Read(ref _disposed) != 0 ||
+            Volatile.Read(ref _previewSubmissionSuppressed) != 0 ||
+            nv12Data.IsEmpty ||
+            width <= 0 ||
+            height <= 0)
         {
             return;
         }
@@ -269,7 +278,11 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     {
         ArgumentNullException.ThrowIfNull(frame);
 
-        if (Volatile.Read(ref _disposed) != 0 || frame.Length <= 0 || frame.Width <= 0 || frame.Height <= 0)
+        if (Volatile.Read(ref _disposed) != 0 ||
+            Volatile.Read(ref _previewSubmissionSuppressed) != 0 ||
+            frame.Length <= 0 ||
+            frame.Width <= 0 ||
+            frame.Height <= 0)
         {
             frame.Dispose();
             return;
@@ -346,6 +359,7 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             TotalSubmitted: Interlocked.Read(ref _totalSubmitted),
             TotalDropped: Interlocked.Read(ref _totalDropped),
             UnderflowCount: Interlocked.Read(ref _underflowCount),
+            ResumeReprimeCount: Interlocked.Read(ref _resumeReprimeCount),
             InputIntervalSampleCount: inputMetrics.SampleCount,
             InputIntervalAvgMs: inputMetrics.AverageMs,
             InputIntervalP95Ms: inputMetrics.P95Ms,
@@ -410,12 +424,38 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
         _signal.Dispose();
         Logger.Log(
             $"MJPEG_PREVIEW_JITTER_DISPOSED queued={_totalQueued} submitted={_totalSubmitted} " +
-            $"dropped={_totalDropped} underflows={_underflowCount}");
+            $"dropped={_totalDropped} underflows={_underflowCount} resumeReprimes={_resumeReprimeCount}");
     }
 
     public void Clear()
     {
         ClearQueue();
+    }
+
+    public void ResetForPreviewSuppression()
+    {
+        Volatile.Write(ref _previewSubmissionSuppressed, 1);
+        Interlocked.Exchange(ref _resumeReprimeMissBudget, 1);
+        Interlocked.Exchange(ref _resumeReprimeStartTick, Stopwatch.GetTimestamp());
+        ClearQueue("suppressed");
+    }
+
+    public void ReprimeAfterPreviewResume()
+    {
+        Volatile.Write(ref _previewSubmissionSuppressed, 0);
+        Interlocked.Exchange(ref _resumeReprimeMissBudget, 1);
+        Interlocked.Exchange(ref _resumeReprimeStartTick, Stopwatch.GetTimestamp());
+        if (Volatile.Read(ref _disposed) == 0)
+        {
+            try
+            {
+                _signal.Set();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Dispose won the race; the resume marker is irrelevant now.
+            }
+        }
     }
 
     private void EmitLoop()
@@ -452,9 +492,16 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
             var scheduleLateTicks = Math.Max(0, now - nextDueTick);
             RecordScheduleLate(scheduleLateTicks);
             var sink = clockSink ?? _getPreviewSink();
-            if (sink == null || _isPreviewSuppressed())
+            if (sink == null)
             {
                 ClearQueue();
+                primed = false;
+                continue;
+            }
+
+            if (_isPreviewSuppressed())
+            {
+                ResetForPreviewSuppression();
                 primed = false;
                 continue;
             }
@@ -469,6 +516,13 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
                 if (dequeueMissReason == DequeueMissReason.WaitingForSequence)
                 {
                     _signal.WaitOne(1);
+                    continue;
+                }
+
+                if (dequeueMissReason == DequeueMissReason.EmptyQueue &&
+                    TryRecordResumeReprimeMiss(now))
+                {
+                    primed = false;
                     continue;
                 }
 
@@ -774,12 +828,15 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
     }
 
     private void ClearQueue()
+        => ClearQueue("cleared");
+
+    private void ClearQueue(string reason)
     {
         lock (_sync)
         {
             foreach (var frame in _frames)
             {
-                RecordDroppedFrame(frame.SequenceNumber, "cleared");
+                RecordDroppedFrame(frame.SequenceNumber, reason);
                 frame.Dispose();
                 Interlocked.Increment(ref _totalDropped);
                 Interlocked.Increment(ref _clearedDropCount);
@@ -787,6 +844,39 @@ internal sealed class MjpegPreviewJitterBuffer : IDisposable
 
             _frames.Clear();
             _nextPreviewSequence = -1;
+        }
+    }
+
+    private bool TryRecordResumeReprimeMiss(long nowTick)
+    {
+        while (true)
+        {
+            var budget = Volatile.Read(ref _resumeReprimeMissBudget);
+            if (budget <= 0)
+            {
+                return false;
+            }
+
+            var startTick = Interlocked.Read(ref _resumeReprimeStartTick);
+            var targetDepth = Math.Max(1, Volatile.Read(ref _targetDepth));
+            var maxReprimeAgeTicks = _frameIntervalTicks * Math.Max(2, targetDepth + 2);
+            if (startTick <= 0 ||
+                (nowTick >= startTick && nowTick - startTick > maxReprimeAgeTicks))
+            {
+                Interlocked.Exchange(ref _resumeReprimeMissBudget, 0);
+                return false;
+            }
+
+            if (Interlocked.CompareExchange(ref _resumeReprimeMissBudget, budget - 1, budget) == budget)
+            {
+                Interlocked.Increment(ref _resumeReprimeCount);
+                Interlocked.Exchange(ref _lastUnderflowQpc, nowTick);
+                Volatile.Write(ref _lastUnderflowQueueDepth, 0);
+                Volatile.Write(ref _lastUnderflowReason, "resume-reprime");
+                Interlocked.Exchange(ref _lastUnderflowInputAgeTicks, 0);
+                Interlocked.Exchange(ref _lastUnderflowOutputAgeTicks, 0);
+                return true;
+            }
         }
     }
 

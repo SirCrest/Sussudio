@@ -1731,6 +1731,7 @@ public partial class CaptureService
             MjpegPreviewJitterTotalSubmitted = mjpegPreviewJitter.TotalSubmitted,
             MjpegPreviewJitterTotalDropped = mjpegPreviewJitter.TotalDropped,
             MjpegPreviewJitterUnderflowCount = mjpegPreviewJitter.UnderflowCount,
+            MjpegPreviewJitterResumeReprimeCount = mjpegPreviewJitter.ResumeReprimeCount,
             MjpegPreviewJitterInputSampleCount = mjpegPreviewJitter.InputIntervalSampleCount,
             MjpegPreviewJitterInputAvgMs = mjpegPreviewJitter.InputIntervalAvgMs,
             MjpegPreviewJitterInputP95Ms = mjpegPreviewJitter.InputIntervalP95Ms,

@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Diagnostics;
+using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -172,6 +173,10 @@ static partial class Program
         AssertContains(source, "LastSelectedSourceSequenceNumber");
         AssertContains(source, "RecordSelectedFrame");
         AssertContains(source, "RecordDroppedFrame");
+        AssertContains(source, "ResetForPreviewSuppression");
+        AssertContains(source, "ReprimeAfterPreviewResume");
+        AssertContains(source, "TryRecordResumeReprimeMiss");
+        AssertContains(source, "ResumeReprimeCount");
         AssertContains(source, "if (AddFrameInOrder(frame))");
         AssertContains(source, "private bool AddFrameInOrder(BufferedFrame frame)");
         AssertContains(source, "return false;");
@@ -184,6 +189,8 @@ static partial class Program
         AssertContains(pipelineSource, "PreviewFrameCallback");
         AssertContains(pipelineSource, "NotifyPreviewFrameDecoded");
         AssertContains(captureSource, "OnMjpegPipelinePreviewFrameDecoded");
+        AssertContains(captureSource, "Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ResetForPreviewSuppression()");
+        AssertContains(captureSource, "Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ReprimeAfterPreviewResume()");
 
         return Task.CompletedTask;
     }
@@ -334,7 +341,8 @@ static partial class Program
         ((IDisposable)clearedOwner).Dispose();
         frames.Add(CreateLeaseBufferedFrame(bufferedFrameType, clearedLease, Stopwatch.GetTimestamp()));
 
-        InvokeNonPublicInstanceMethod(jitter, "ClearQueue", null);
+        jitterType.GetMethod("Clear", BindingFlags.Public | BindingFlags.Instance)!
+            .Invoke(jitter, Array.Empty<object>());
 
         AssertEqual(0, frames.Count, "clear drains queued preview frames");
         AssertEqual(-1L, GetLongPrivateField(jitter, "_nextPreviewSequence"), "clear resets preview sequence");
@@ -355,6 +363,75 @@ static partial class Program
 
         ((IDisposable)dequeued).Dispose();
         AssertEqual(2, pool.ReturnCount, "resumed preview lease return count");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task MjpegPreviewJitter_ReprimesAfterSuppressionResume()
+    {
+        var jitterType = RequireType("Sussudio.Services.Capture.MjpegPreviewJitterBuffer");
+        var frameType = RequireType("Sussudio.Services.Capture.PooledVideoFrame");
+        var formatType = RequireType("Sussudio.Services.Capture.PooledVideoPixelFormat");
+        var addLeaseMethod = frameType.GetMethod("AddLease", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("PooledVideoFrame.AddLease not found.");
+
+        var jitter = CreateUnstartedJitterBuffer(jitterType, targetDepth: 3);
+        SetPrivateField(jitter, "_nextPreviewSequence", 10L);
+        var frames = (IList)(GetPrivateField(jitter, "_frames")
+            ?? throw new InvalidOperationException("Jitter frame list missing."));
+        var bufferedFrameType = RequireNestedType(jitterType, "BufferedFrame");
+        var nv12 = Enum.Parse(formatType, "Nv12");
+        var pool = new TrackingArrayPool();
+
+        var staleOwner = CreatePooledVideoFrame(frameType, nv12, 10L, 100L, 200L, 16, 16, 384, pool);
+        var staleLease = addLeaseMethod.Invoke(staleOwner, Array.Empty<object>())
+            ?? throw new InvalidOperationException("AddLease returned null.");
+        ((IDisposable)staleOwner).Dispose();
+        frames.Add(CreateLeaseBufferedFrame(bufferedFrameType, staleLease, Stopwatch.GetTimestamp()));
+
+        jitterType.GetMethod("ResetForPreviewSuppression", BindingFlags.Public | BindingFlags.Instance)!
+            .Invoke(jitter, Array.Empty<object>());
+
+        AssertEqual(0, frames.Count, "suppression drains queued preview frames");
+        AssertEqual(-1L, GetLongPrivateField(jitter, "_nextPreviewSequence"), "suppression resets preview sequence");
+        AssertEqual("suppressed", GetStringPrivateField(jitter, "_lastDropReason"), "suppression drop reason");
+        AssertEqual(1, pool.ReturnCount, "suppressed preview lease return count");
+
+        var raceOwner = CreatePooledVideoFrame(frameType, nv12, 11L, 300L, 400L, 16, 16, 384, pool);
+        var raceLease = addLeaseMethod.Invoke(raceOwner, Array.Empty<object>())
+            ?? throw new InvalidOperationException("AddLease returned null.");
+        ((IDisposable)raceOwner).Dispose();
+        jitterType.GetMethod("Enqueue", new[] { raceLease.GetType() })!
+            .Invoke(jitter, new[] { raceLease });
+
+        AssertEqual(0, frames.Count, "suppressed enqueue is rejected");
+        AssertEqual(2, pool.ReturnCount, "suppressed enqueue returns raced preview lease");
+
+        jitterType.GetMethod("ReprimeAfterPreviewResume", BindingFlags.Public | BindingFlags.Instance)!
+            .Invoke(jitter, Array.Empty<object>());
+
+        var now = Stopwatch.GetTimestamp();
+        AssertEqual(
+            true,
+            (bool)(InvokeNonPublicInstanceMethod(jitter, "TryRecordResumeReprimeMiss", new object?[] { now })
+                   ?? throw new InvalidOperationException("TryRecordResumeReprimeMiss returned null.")),
+            "first resume miss is reclassified");
+        AssertEqual(1L, GetLongPrivateField(jitter, "_resumeReprimeCount"), "resume reprime count");
+        AssertEqual(0L, GetLongPrivateField(jitter, "_underflowCount"), "resume reprime does not increment underflows");
+        AssertEqual("resume-reprime", GetStringPrivateField(jitter, "_lastUnderflowReason"), "resume reprime reason");
+        AssertEqual(
+            false,
+            (bool)(InvokeNonPublicInstanceMethod(jitter, "TryRecordResumeReprimeMiss", new object?[] { now })
+                   ?? throw new InvalidOperationException("TryRecordResumeReprimeMiss returned null.")),
+            "resume reprime budget is single-use");
+        SetPrivateField(jitter, "_resumeReprimeMissBudget", 1);
+        SetPrivateField(jitter, "_resumeReprimeStartTick", now - Stopwatch.Frequency);
+        AssertEqual(
+            false,
+            (bool)(InvokeNonPublicInstanceMethod(jitter, "TryRecordResumeReprimeMiss", new object?[] { now })
+                   ?? throw new InvalidOperationException("TryRecordResumeReprimeMiss returned null.")),
+            "stale resume reprime budget does not mask later underflows");
+        AssertEqual(1L, GetLongPrivateField(jitter, "_resumeReprimeCount"), "stale reprime does not increment count");
 
         return Task.CompletedTask;
     }
@@ -481,6 +558,7 @@ static partial class Program
 
         SetPrivateField(jitter, "_sync", new object());
         SetPrivateField(jitter, "_frames", Activator.CreateInstance(listType));
+        SetPrivateField(jitter, "_signal", new AutoResetEvent(false));
         SetPrivateField(jitter, "_frameIntervalTicks", Math.Max(1L, Stopwatch.Frequency / 120L));
         SetPrivateField(jitter, "_minAdaptiveTargetDepth", 2);
         SetPrivateField(jitter, "_maxAdaptiveTargetDepth", 8);
@@ -564,6 +642,9 @@ static partial class Program
 
     private static int GetIntPrivateField(object instance, string fieldName)
         => Convert.ToInt32(GetPrivateField(instance, fieldName));
+
+    private static string GetStringPrivateField(object instance, string fieldName)
+        => Convert.ToString(GetPrivateField(instance, fieldName), CultureInfo.InvariantCulture) ?? string.Empty;
 
     private static void AssertAddLeaseThrows(MethodInfo addLeaseMethod, object frame)
     {

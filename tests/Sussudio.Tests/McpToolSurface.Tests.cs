@@ -1227,6 +1227,49 @@ static partial class Program
         }
     }
 
+    private static Task DiagnosticSessionRunner_ClassifiesFlashbackStressAudioMasterFallbacks()
+    {
+        var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+        var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
+            ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
+        var classify = runnerType.GetMethod(
+                "ClassifyFlashbackStressAudioMasterFallbackWarning",
+                BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException("Audio-master fallback classifier was not found.");
+
+        AssertEqual((string?)null, Invoke(0, 0, 0, 0), "no audio-master fallback warning");
+        AssertEqual((string?)null, Invoke(2, 2, 0, 0), "startup unavailable fallback allowance");
+
+        var unavailable = Invoke(3, 3, 0, 0)
+            ?? throw new InvalidOperationException("Expected unavailable fallback warning.");
+        AssertContains(unavailable, "audio-master unavailable fallbacks exceeded startup allowance");
+        AssertContains(unavailable, "unavailableDelta=3");
+        AssertContains(unavailable, "allowance=2");
+        AssertContains(unavailable, "totalDelta=3");
+
+        var stale = Invoke(2, 0, 1, 0)
+            ?? throw new InvalidOperationException("Expected stale fallback warning.");
+        AssertContains(stale, "audio-master harmful fallbacks increased during warmed playback");
+        AssertContains(stale, "staleDelta=1");
+        AssertContains(stale, "driftOutlierDelta=0");
+
+        var driftOutlier = Invoke(2, 0, 0, 1)
+            ?? throw new InvalidOperationException("Expected drift-outlier fallback warning.");
+        AssertContains(driftOutlier, "audio-master harmful fallbacks increased during warmed playback");
+        AssertContains(driftOutlier, "staleDelta=0");
+        AssertContains(driftOutlier, "driftOutlierDelta=1");
+
+        var unclassified = Invoke(2, 0, 0, 0)
+            ?? throw new InvalidOperationException("Expected unclassified fallback warning.");
+        AssertContains(unclassified, "audio-master unclassified fallbacks increased during warmed playback");
+        AssertContains(unclassified, "delta=2");
+
+        return Task.CompletedTask;
+
+        string? Invoke(long totalDelta, long unavailableDelta, long staleDelta, long driftOutlierDelta)
+            => classify.Invoke(null, new object?[] { totalDelta, unavailableDelta, staleDelta, driftOutlierDelta }) as string;
+    }
+
     private static Task McpPerformanceTimelineTool_ExposesD3DP99StageTiming()
     {
         var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
@@ -1291,6 +1334,7 @@ static partial class Program
         AssertContains(source, "MjpegPreviewJitterLatencyP95Ms");
         AssertContains(source, "MjpegPreviewJitterDeadlineDropCount");
         AssertContains(source, "MjpegPreviewJitterClearedDropCount");
+        AssertContains(source, "MjpegPreviewJitterResumeReprimeCount");
         AssertContains(source, "MjpegPreviewJitterLastDropReason");
         AssertContains(source, "JitD  | JitLat | JitDrop | JitUF | JitWhy");
         AssertContains(source, "FbState | Fb1%  | FbP99 | FbDec | FbCmd | FbFail | FbStage");

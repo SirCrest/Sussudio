@@ -439,6 +439,7 @@ static partial class Program
                      "MjpegPreviewJitterDeadlineDropCount",
                      "MjpegPreviewJitterClearedDropCount",
                      "MjpegPreviewJitterUnderflowCount",
+                     "MjpegPreviewJitterResumeReprimeCount",
                      "MjpegPreviewJitterLatencyP95Ms",
                      "MjpegPreviewJitterLatencyMaxMs",
                      "MjpegPreviewJitterLastDropReason",

@@ -163,10 +163,12 @@ public sealed class DiagnosticSessionResult
     public long PreviewSchedulerDeadlineDropsAtEnd { get; init; }
     public long PreviewSchedulerClearedDropsAtEnd { get; init; }
     public long PreviewSchedulerUnderflowsAtEnd { get; init; }
+    public long PreviewSchedulerResumeReprimesAtEnd { get; init; }
     public long PreviewSchedulerDroppedDelta { get; init; }
     public long PreviewSchedulerDeadlineDropsDelta { get; init; }
     public long PreviewSchedulerClearedDropsDelta { get; init; }
     public long PreviewSchedulerUnderflowsDelta { get; init; }
+    public long PreviewSchedulerResumeReprimesDelta { get; init; }
     public string PreviewSchedulerLastDropReasonAtEnd { get; init; } = string.Empty;
     public string PreviewSchedulerLastUnderflowReasonAtEnd { get; init; } = string.Empty;
     public double PreviewSchedulerLastUnderflowInputAgeMsAtEnd { get; init; }
@@ -998,10 +1000,12 @@ public static class DiagnosticSessionRunner
         var previewSchedulerDeadlineDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterDeadlineDropCount") ?? 0;
         var previewSchedulerClearedDropsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterClearedDropCount") ?? 0;
         var previewSchedulerUnderflowsAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterUnderflowCount") ?? 0;
+        var previewSchedulerResumeReprimesAtEnd = GetNullableLong(lastSnapshot, "MjpegPreviewJitterResumeReprimeCount") ?? 0;
         var previewSchedulerDroppedDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterTotalDropped");
         var previewSchedulerDeadlineDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterDeadlineDropCount");
         var previewSchedulerClearedDropsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterClearedDropCount");
         var previewSchedulerUnderflowsDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterUnderflowCount");
+        var previewSchedulerResumeReprimesDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterResumeReprimeCount");
         var previewSchedulerScheduleLateDelta = GetCounterDelta(lastSnapshot, initialSnapshot, "MjpegPreviewJitterScheduleLateCount");
         var previewSchedulerMaxScheduleLateMsObserved = samples
             .Select(sample => GetDouble(sample.Snapshot, "MjpegPreviewJitterMaxScheduleLateMs"))
@@ -1217,10 +1221,12 @@ public static class DiagnosticSessionRunner
             PreviewSchedulerDeadlineDropsAtEnd = previewSchedulerDeadlineDropsAtEnd,
             PreviewSchedulerClearedDropsAtEnd = previewSchedulerClearedDropsAtEnd,
             PreviewSchedulerUnderflowsAtEnd = previewSchedulerUnderflowsAtEnd,
+            PreviewSchedulerResumeReprimesAtEnd = previewSchedulerResumeReprimesAtEnd,
             PreviewSchedulerDroppedDelta = previewSchedulerDroppedDelta,
             PreviewSchedulerDeadlineDropsDelta = previewSchedulerDeadlineDropsDelta,
             PreviewSchedulerClearedDropsDelta = previewSchedulerClearedDropsDelta,
             PreviewSchedulerUnderflowsDelta = previewSchedulerUnderflowsDelta,
+            PreviewSchedulerResumeReprimesDelta = previewSchedulerResumeReprimesDelta,
             PreviewSchedulerLastDropReasonAtEnd = GetString(lastSnapshot, "MjpegPreviewJitterLastDropReason") ?? string.Empty,
             PreviewSchedulerLastUnderflowReasonAtEnd = GetString(lastSnapshot, "MjpegPreviewJitterLastUnderflowReason") ?? string.Empty,
             PreviewSchedulerLastUnderflowInputAgeMsAtEnd = GetDouble(lastSnapshot, "MjpegPreviewJitterLastUnderflowInputAgeMs"),
@@ -1722,6 +1728,8 @@ public static class DiagnosticSessionRunner
             $"deadlineDropsDelta={result.PreviewSchedulerDeadlineDropsDelta} " +
             $"underflowsEnd={result.PreviewSchedulerUnderflowsAtEnd} " +
             $"underflowsDelta={result.PreviewSchedulerUnderflowsDelta} " +
+            $"resumeReprimesEnd={result.PreviewSchedulerResumeReprimesAtEnd} " +
+            $"resumeReprimesDelta={result.PreviewSchedulerResumeReprimesDelta} " +
             $"lastUnderflowReasonEnd={FormatOptional(result.PreviewSchedulerLastUnderflowReasonAtEnd)} " +
             $"lastUnderflowInputAgeMsEnd={result.PreviewSchedulerLastUnderflowInputAgeMsAtEnd:0.##} " +
             $"lastUnderflowOutputAgeMsEnd={result.PreviewSchedulerLastUnderflowOutputAgeMsAtEnd:0.##} " +
@@ -1918,26 +1926,14 @@ public static class DiagnosticSessionRunner
                 }
             }
 
-            if (warmedAudioFallbackDelta > 0)
+            var audioMasterFallbackWarning = ClassifyFlashbackStressAudioMasterFallbackWarning(
+                warmedAudioFallbackDelta,
+                warmedAudioUnavailableDelta,
+                warmedAudioStaleDelta,
+                warmedAudioDriftOutlierDelta);
+            if (audioMasterFallbackWarning is { Length: > 0 })
             {
-                if (warmedAudioStaleDelta > 0 || warmedAudioDriftOutlierDelta > 0)
-                {
-                    warnings.Add(
-                        "flashback stress: audio-master harmful fallbacks increased during warmed playback " +
-                        $"staleDelta={warmedAudioStaleDelta} driftOutlierDelta={warmedAudioDriftOutlierDelta} " +
-                        $"totalDelta={warmedAudioFallbackDelta}");
-                }
-                else if (warmedAudioUnavailableDelta > FlashbackStressAudioUnavailableFallbackAllowance)
-                {
-                    warnings.Add(
-                        "flashback stress: audio-master unavailable fallbacks exceeded startup allowance " +
-                        $"unavailableDelta={warmedAudioUnavailableDelta} allowance={FlashbackStressAudioUnavailableFallbackAllowance} " +
-                        $"totalDelta={warmedAudioFallbackDelta}");
-                }
-                else if (warmedAudioUnavailableDelta <= 0)
-                {
-                    warnings.Add($"flashback stress: audio-master unclassified fallbacks increased during warmed playback delta={warmedAudioFallbackDelta}");
-                }
+                warnings.Add(audioMasterFallbackWarning);
             }
         }
 
@@ -2030,6 +2026,41 @@ public static class DiagnosticSessionRunner
                 warnings.Add("flashback stress: playback worker still alive after drain wait");
             }
         }
+    }
+
+    private static string? ClassifyFlashbackStressAudioMasterFallbackWarning(
+        long totalDelta,
+        long unavailableDelta,
+        long staleDelta,
+        long driftOutlierDelta)
+    {
+        if (totalDelta <= 0)
+        {
+            return null;
+        }
+
+        if (staleDelta > 0 || driftOutlierDelta > 0)
+        {
+            return
+                "flashback stress: audio-master harmful fallbacks increased during warmed playback " +
+                $"staleDelta={staleDelta} driftOutlierDelta={driftOutlierDelta} " +
+                $"totalDelta={totalDelta}";
+        }
+
+        if (unavailableDelta > FlashbackStressAudioUnavailableFallbackAllowance)
+        {
+            return
+                "flashback stress: audio-master unavailable fallbacks exceeded startup allowance " +
+                $"unavailableDelta={unavailableDelta} allowance={FlashbackStressAudioUnavailableFallbackAllowance} " +
+                $"totalDelta={totalDelta}";
+        }
+
+        if (unavailableDelta <= 0)
+        {
+            return $"flashback stress: audio-master unclassified fallbacks increased during warmed playback delta={totalDelta}";
+        }
+
+        return null;
     }
 
     private static async Task RunFlashbackExportRejectedAsync(

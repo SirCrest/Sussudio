@@ -492,6 +492,9 @@ static partial class Program
                 "Diagnostic session runner retries synthetic pipe connect failures",
                 DiagnosticSessionRunner_RetriesSyntheticPipeConnectFailures),
             await RunCheckAsync(
+                "Diagnostic session runner classifies flashback stress audio-master fallbacks",
+                DiagnosticSessionRunner_ClassifiesFlashbackStressAudioMasterFallbacks),
+            await RunCheckAsync(
                 "MCP performance timeline exposes D3D P99 stage timing",
                 McpPerformanceTimelineTool_ExposesD3DP99StageTiming),
             await RunCheckAsync(
@@ -587,6 +590,9 @@ static partial class Program
             await RunCheckAsync(
                 "MJPEG preview jitter clear resets preview sequence",
                 MjpegPreviewJitter_ClearResetsPreviewSequence),
+            await RunCheckAsync(
+                "MJPEG preview jitter reprimes after suppression resume",
+                MjpegPreviewJitter_ReprimesAfterSuppressionResume),
             await RunCheckAsync(
                 "D3D preview pending frame releases queued lease",
                 D3DPreviewPendingFrame_ReleasesQueuedLease),
@@ -1718,6 +1724,7 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastSelectedSourceLatencyMs"), "AutomationSnapshot.MjpegPreviewJitterLastSelectedSourceLatencyMs");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastDroppedSourceSequenceNumber"), "AutomationSnapshot.MjpegPreviewJitterLastDroppedSourceSequenceNumber");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterClearedDropCount"), "AutomationSnapshot.MjpegPreviewJitterClearedDropCount");
+        AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterResumeReprimeCount"), "AutomationSnapshot.MjpegPreviewJitterResumeReprimeCount");
         AssertNotNull(snapshotType.GetProperty("MjpegPreviewJitterLastDropReason"), "AutomationSnapshot.MjpegPreviewJitterLastDropReason");
         AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameLatencyWaitTimeoutCount"), "AutomationSnapshot.PreviewD3DFrameLatencyWaitTimeoutCount");
         AssertNotNull(snapshotType.GetProperty("PreviewD3DFrameLatencyWaitP95Ms"), "AutomationSnapshot.PreviewD3DFrameLatencyWaitP95Ms");

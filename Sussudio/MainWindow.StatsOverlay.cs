@@ -1243,10 +1243,10 @@ public sealed partial class MainWindow
             health.MjpegPreviewJitterQueueDepth < health.MjpegPreviewJitterTargetDepth;
         if (previewQueueBelowTarget &&
             (health.MjpegPreviewJitterDeadlineDropCount > 0 ||
-             health.MjpegPreviewJitterUnderflowCount > 3))
+            health.MjpegPreviewJitterUnderflowCount > 3))
         {
             var previewEvidence =
-                $"scheduler target={health.MjpegPreviewJitterTargetDepth} depth={health.MjpegPreviewJitterQueueDepth}/{health.MjpegPreviewJitterMaxDepth} deadlineDrops={health.MjpegPreviewJitterDeadlineDropCount} underflows={health.MjpegPreviewJitterUnderflowCount}";
+                $"scheduler target={health.MjpegPreviewJitterTargetDepth} depth={health.MjpegPreviewJitterQueueDepth}/{health.MjpegPreviewJitterMaxDepth} deadlineDrops={health.MjpegPreviewJitterDeadlineDropCount} underflows={health.MjpegPreviewJitterUnderflowCount} resumeReprimes={health.MjpegPreviewJitterResumeReprimeCount}";
             return ("Warning", "preview_scheduler", previewEvidence);
         }
 

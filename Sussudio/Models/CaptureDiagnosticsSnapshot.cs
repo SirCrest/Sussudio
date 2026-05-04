@@ -122,6 +122,7 @@ public class CaptureDiagnosticsSnapshot
     public long MjpegPreviewJitterTotalSubmitted { get; init; }
     public long MjpegPreviewJitterTotalDropped { get; init; }
     public long MjpegPreviewJitterUnderflowCount { get; init; }
+    public long MjpegPreviewJitterResumeReprimeCount { get; init; }
     public int MjpegPreviewJitterInputSampleCount { get; init; }
     public double MjpegPreviewJitterInputAvgMs { get; init; }
     public double MjpegPreviewJitterInputP95Ms { get; init; }

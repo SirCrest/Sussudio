@@ -855,6 +855,7 @@ static partial class Program
                 new("MjpegPreviewJitterTotalSubmitted", typeof(long)),
                 new("MjpegPreviewJitterTotalDropped", typeof(long)),
                 new("MjpegPreviewJitterUnderflowCount", typeof(long)),
+                new("MjpegPreviewJitterResumeReprimeCount", typeof(long)),
                 new("MjpegPreviewJitterInputSampleCount", typeof(int)),
                 new("MjpegPreviewJitterInputAvgMs", typeof(double)),
                 new("MjpegPreviewJitterInputP95Ms", typeof(double)),

@@ -425,7 +425,7 @@ static partial class Program
         AssertContains(diagnosticsText, "recentSubmitted={recentRendererSubmitted} recentDropped={recentRenderer.Dropped}");
         AssertContains(diagnosticsText, "var previewLastDropReason = string.IsNullOrWhiteSpace(health.MjpegPreviewJitterLastDropReason)");
         AssertContains(diagnosticsText, "clearedDrops={health.MjpegPreviewJitterClearedDropCount}");
-        AssertContains(diagnosticsText, "recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}");
+        AssertContains(diagnosticsText, "resumeReprimes={health.MjpegPreviewJitterResumeReprimeCount} recentDeadlineDrops={recentPreviewDeadlineDrops} recentUnderflows={recentPreviewUnderflows} lastDropReason={previewLastDropReason}");
         AssertContains(diagnosticsText, "UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick)");
         AssertContains(diagnosticsText, "recentMissed={recentD3DMissedRefreshes} recentFail={recentD3DStatsFailures}");
         AssertContains(diagnosticsText, "\"capture-cadence-low-1pct\"");
@@ -759,16 +759,19 @@ static partial class Program
         AssertContains(diagnosticSessionText, "PreviewSchedulerDeadlineDropsAtEnd");
         AssertContains(diagnosticSessionText, "PreviewSchedulerClearedDropsAtEnd");
         AssertContains(diagnosticSessionText, "PreviewSchedulerUnderflowsAtEnd");
+        AssertContains(diagnosticSessionText, "PreviewSchedulerResumeReprimesAtEnd");
         AssertContains(diagnosticSessionText, "PreviewSchedulerDroppedDelta");
         AssertContains(diagnosticSessionText, "PreviewSchedulerDeadlineDropsDelta");
         AssertContains(diagnosticSessionText, "PreviewSchedulerClearedDropsDelta");
         AssertContains(diagnosticSessionText, "PreviewSchedulerUnderflowsDelta");
+        AssertContains(diagnosticSessionText, "PreviewSchedulerResumeReprimesDelta");
         AssertContains(diagnosticSessionText, "PreviewSchedulerLastDropReasonAtEnd");
         AssertContains(diagnosticSessionText, "Preview Scheduler:");
         AssertContains(diagnosticSessionText, "droppedDelta={result.PreviewSchedulerDroppedDelta}");
         AssertContains(diagnosticSessionText, "clearedDropsDelta={result.PreviewSchedulerClearedDropsDelta}");
         AssertContains(diagnosticSessionText, "deadlineDropsDelta={result.PreviewSchedulerDeadlineDropsDelta}");
         AssertContains(diagnosticSessionText, "underflowsDelta={result.PreviewSchedulerUnderflowsDelta}");
+        AssertContains(diagnosticSessionText, "resumeReprimesDelta={result.PreviewSchedulerResumeReprimesDelta}");
         AssertContains(diagnosticSessionText, "lastDropReasonEnd={FormatOptional(result.PreviewSchedulerLastDropReasonAtEnd)}");
         AssertContains(diagnosticSessionText, "PreviewD3DLatestSlowFrameReason");
         AssertContains(diagnosticSessionText, "PreviewD3DInputUploadCpuP99MsAtEnd");

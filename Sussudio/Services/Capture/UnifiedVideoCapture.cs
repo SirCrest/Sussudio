@@ -350,9 +350,17 @@ internal sealed class UnifiedVideoCapture : IAsyncDisposable, ILiveVideoSource
         Volatile.Write(ref _previewSink, sink);
     }
 
-    public void SuppressPreviewSubmission() => _previewSuppressed = true;
+    public void SuppressPreviewSubmission()
+    {
+        _previewSuppressed = true;
+        Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ResetForPreviewSuppression();
+    }
 
-    public void ResumePreviewSubmission() => _previewSuppressed = false;
+    public void ResumePreviewSubmission()
+    {
+        _previewSuppressed = false;
+        Volatile.Read(ref _mjpegPreviewJitterBuffer)?.ReprimeAfterPreviewResume();
+    }
 
     public void SetFlashbackSink(FlashbackEncoderSink? sink)
     {

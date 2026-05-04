@@ -723,6 +723,7 @@ public sealed class AutomationSnapshot
     public long MjpegPreviewJitterTotalSubmitted { get; init; }
     public long MjpegPreviewJitterTotalDropped { get; init; }
     public long MjpegPreviewJitterUnderflowCount { get; init; }
+    public long MjpegPreviewJitterResumeReprimeCount { get; init; }
     public int MjpegPreviewJitterInputSampleCount { get; init; }
     public double MjpegPreviewJitterInputAvgMs { get; init; }
     public double MjpegPreviewJitterInputP95Ms { get; init; }
@@ -991,6 +992,7 @@ public sealed class PerformanceTimelineEntry
     public long MjpegPreviewJitterDeadlineDropCount { get; init; }
     public long MjpegPreviewJitterClearedDropCount { get; init; }
     public long MjpegPreviewJitterUnderflowCount { get; init; }
+    public long MjpegPreviewJitterResumeReprimeCount { get; init; }
     public double MjpegPreviewJitterLatencyP95Ms { get; init; }
     public double MjpegPreviewJitterLatencyMaxMs { get; init; }
     public string MjpegPreviewJitterLastDropReason { get; init; } = string.Empty;
