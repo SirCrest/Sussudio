@@ -442,6 +442,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             Interlocked.Exchange(ref _startupCacheSessionCount, cacheCleanup.SessionCount);
             Interlocked.Exchange(ref _startupCacheDeletedSessionCount, cacheCleanup.DeletedSessionCount);
             Interlocked.Exchange(ref _startupCacheFreedBytes, cacheCleanup.FreedBytes);
+            _recordingStartPts = TimeSpan.Zero;
+            _recordingEndPts = TimeSpan.Zero;
             _previousActiveSegmentBytes = 0;
             Interlocked.Exchange(ref _evictionPauseCount, 0);
             _preserveSessionForRecovery = false;

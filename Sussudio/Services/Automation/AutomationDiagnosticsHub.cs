@@ -71,6 +71,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const int VerificationPerfectionMinSamples = 120;
     private const int TimelineCapacity = 240;
     private const int FlashbackPlaybackCommandStallThresholdMs = 1000;
+    private const int FlashbackPlaybackCommandFailureRecentMs = 30000;
     private const int FlashbackExportStallThresholdMs = 30000;
     private const double FlashbackPlaybackSlowFpsRatio = 0.75;
     private const double CaptureOnePercentLowWarningRatio = 0.98;
@@ -1704,6 +1705,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var playbackCommandFailure = string.IsNullOrWhiteSpace(snapshot.FlashbackPlaybackLastCommandFailure)
             ? "None"
             : snapshot.FlashbackPlaybackLastCommandFailure;
+        var playbackCommandFailedRecently =
+            playbackCommandFailureAgeMs > 0 &&
+            playbackCommandFailureAgeMs <= FlashbackPlaybackCommandFailureRecentMs;
         var playbackTargetFps = ResolveFlashbackPlaybackTargetFps(
             snapshot.FlashbackPlaybackTargetFps,
             snapshot.SelectedExactFrameRate.GetValueOrDefault(snapshot.SelectedFrameRate));
@@ -1944,6 +1948,18 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"lastQueued={snapshot.FlashbackPlaybackLastCommandQueued}, lastProcessed={snapshot.FlashbackPlaybackLastCommandProcessed}, " +
             $"lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs}, threadAlive={snapshot.FlashbackPlaybackThreadAlive}).",
             "Flashback playback command queue drained.",
+            throttleMs: 1000);
+
+        SetAlertState(
+            "flashback-playback-command-failed",
+            playbackCommandFailedRecently,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback playback command failed recently: lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs} " +
+            $"pending={snapshot.FlashbackPlaybackPendingCommands}/{snapshot.FlashbackPlaybackCommandQueueCapacity} " +
+            $"lastQueued={snapshot.FlashbackPlaybackLastCommandQueued} lastProcessed={snapshot.FlashbackPlaybackLastCommandProcessed} " +
+            $"threadAlive={snapshot.FlashbackPlaybackThreadAlive} state={snapshot.FlashbackPlaybackState}.",
+            "Flashback playback command failures cleared.",
             throttleMs: 1000);
 
         SetAlertState(
@@ -2357,6 +2373,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var playbackCommandFailure = string.IsNullOrWhiteSpace(health.FlashbackPlaybackLastCommandFailure)
             ? "None"
             : health.FlashbackPlaybackLastCommandFailure;
+        var playbackCommandFailedRecently =
+            playbackCommandFailureAgeMs > 0 &&
+            playbackCommandFailureAgeMs <= FlashbackPlaybackCommandFailureRecentMs;
         var playbackTargetFps = ResolveFlashbackPlaybackTargetFps(
             health.FlashbackPlaybackTargetFps,
             health.ExpectedFrameRate);
@@ -2533,6 +2552,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 "Warning",
                 "flashback_playback",
                 "Flashback playback command queue is stalled.",
+                playbackCommandLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (playbackCommandFailedRecently)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "flashback_playback",
+                "Flashback playback command failed recently.",
                 playbackCommandLane,
                 sourceLane,
                 decodeLane,

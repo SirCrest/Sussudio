@@ -43,6 +43,51 @@ static partial class Program
 
     // ── FlashbackEncoderSink pure logic ──
 
+    private static Task FlashbackBufferManager_InitializeClearsRecordingPts()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_init_pts_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var optionsType = RequireType("Sussudio.Models.FlashbackBufferOptions");
+            var options = RuntimeHelpers.GetUninitializedObject(optionsType);
+            SetPropertyBackingField(options, "BufferDuration", TimeSpan.FromMinutes(5));
+            SetPropertyBackingField(options, "TempDirectory", tempDir);
+            SetPropertyBackingField(options, "SegmentDuration", TimeSpan.FromMinutes(10));
+
+            var managerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
+            var manager = Activator.CreateInstance(managerType, new[] { options })
+                ?? throw new InvalidOperationException("FlashbackBufferManager construction failed.");
+            using var disposableManager = manager as IDisposable;
+
+            managerType.GetMethod("Initialize")!.Invoke(manager, new object[] { "session-a" });
+            managerType.GetMethod("UpdateLatestPts")!.Invoke(manager, new object[] { TimeSpan.FromSeconds(10) });
+            managerType.GetMethod("PauseEviction")!.Invoke(manager, null);
+            managerType.GetMethod("UpdateLatestPts")!.Invoke(manager, new object[] { TimeSpan.FromSeconds(20) });
+            managerType.GetMethod("ResumeEviction")!.Invoke(manager, null);
+
+            AssertEqual(TimeSpan.FromSeconds(10), (TimeSpan)GetPropertyValue(manager, "RecordingStartPts")!, "RecordingStartPts before reinitialize");
+            AssertEqual(TimeSpan.FromSeconds(20), (TimeSpan)GetPropertyValue(manager, "RecordingEndPts")!, "RecordingEndPts before reinitialize");
+
+            managerType.GetMethod("Initialize")!.Invoke(manager, new object[] { "session-b" });
+            AssertEqual(TimeSpan.Zero, (TimeSpan)GetPropertyValue(manager, "RecordingStartPts")!, "RecordingStartPts resets on Initialize");
+            AssertEqual(TimeSpan.Zero, (TimeSpan)GetPropertyValue(manager, "RecordingEndPts")!, "RecordingEndPts resets on Initialize");
+
+            var activePath = (string)managerType.GetMethod("GetFilePath", Type.EmptyTypes)!.Invoke(manager, null)!;
+            File.WriteAllBytes(activePath, new byte[] { 1, 2, 3, 4 });
+            var segmentInfo = (System.Collections.IEnumerable)managerType.GetMethod("GetSegmentInfoList")!.Invoke(manager, null)!;
+            var activeInfo = segmentInfo.Cast<object>().Single(info => (bool)GetPropertyValue(info, "IsActive")!);
+            AssertEqual(0L, (long)GetPropertyValue(activeInfo, "StartPtsMs")!, "Active segment start PTS resets on Initialize");
+            AssertEqual(0L, (long)GetPropertyValue(activeInfo, "EndPtsMs")!, "Active segment end PTS resets on Initialize");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackEncoderSink_ResolveFrameRateParts_ParsesFractionalRates()
     {
         var sinkType = RequireType("Sussudio.Services.Flashback.FlashbackEncoderSink");
@@ -2452,7 +2497,9 @@ static partial class Program
         AssertContains(sourceText, "arrivalTick: submitTick");
         AssertContains(sourceText, "schedulerSubmitTick: submitTick");
         AssertDoesNotContain(sourceText, "frame.Width, frame.Height, frame.IsHdr, arrivalTick: 0");
-        AssertContains(sourceText, "if (!TrySubmitAndHoldFrame(videoFrame, \"playback\"))\n            {\n                SetState(FlashbackPlaybackState.Paused);\n                Logger.Log($\"FLASHBACK_PLAYBACK_SUBMIT_STOP pos_ms={(long)PlaybackPosition.TotalMilliseconds}\");\n                return false;\n            }");
+        AssertContains(sourceText, "if (!TrySubmitAndHoldFrame(videoFrame, \"playback\"))\n            {\n                Logger.Log($\"FLASHBACK_PLAYBACK_SUBMIT_STOP pos_ms={(long)PlaybackPosition.TotalMilliseconds}\");\n                RestoreLiveAfterPlaybackSubmitFailure(decoder, ref fileOpen, \"playback_submit_failed\");\n                return false;\n            }");
+        AssertContains(sourceText, "private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)");
+        AssertContains(sourceText, "ReleasePlaybackFrameForLive(operation);\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(operation);\n        SafeResumeRendering(operation);\n        SetState(FlashbackPlaybackState.Live);");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n        try\n        {\n            SubmitFrame(frame);");
         AssertContains(sourceText, "SubmitFrame(previewSink, frame, previewPresentId);\n            ReleasePreviousHeldFrame();");
         AssertDoesNotContain(sourceText, "ReleasePreviousHeldFrame();\n            SubmitFrame(videoFrame);");

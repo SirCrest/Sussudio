@@ -289,6 +289,11 @@ static partial class Program
         AssertContains(diagnosticsText, "Flashback export completed: status={status}");
         AssertContains(diagnosticsText, "\"flashback-playback-command-stalled\"");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackCommandStallThresholdMs = 1000;");
+        AssertContains(diagnosticsText, "\"flashback-playback-command-failed\"");
+        AssertContains(diagnosticsText, "private const int FlashbackPlaybackCommandFailureRecentMs = 30000;");
+        AssertContains(diagnosticsText, "playbackCommandFailureAgeMs <= FlashbackPlaybackCommandFailureRecentMs");
+        AssertContains(diagnosticsText, "Flashback playback command failed recently:");
+        AssertContains(diagnosticsText, "\"Flashback playback command failed recently.\"");
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackSlowFpsRatio = 0.75;");
         AssertContains(diagnosticsText, "private const double CaptureOnePercentLowWarningRatio = 0.98;");
         AssertContains(diagnosticsText, "private const double PreviewOnePercentLowWarningRatio = 0.98;");

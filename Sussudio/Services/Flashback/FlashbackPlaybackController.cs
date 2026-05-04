@@ -1909,6 +1909,19 @@ internal sealed class FlashbackPlaybackController : IDisposable
         SetState(FlashbackPlaybackState.Live);
     }
 
+    private void RestoreLiveAfterPlaybackSubmitFailure(FlashbackDecoder decoder, ref bool fileOpen, string operation)
+    {
+        CloseDecoderFileBestEffort(decoder, operation);
+        fileOpen = false;
+        _currentOpenFilePath = null;
+        _decoderHwAccel = "N/A";
+        ReleasePlaybackFrameForLive(operation);
+        RestoreLiveAudio();
+        SafeResumePreviewSubmission(operation);
+        SafeResumeRendering(operation);
+        SetState(FlashbackPlaybackState.Live);
+    }
+
     private bool TrySubmitAndHoldFrame(DecodedVideoFrame frame, string operation)
     {
         var previewSink = Volatile.Read(ref _previewSink);
@@ -2278,8 +2291,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
             if (!TrySubmitAndHoldFrame(videoFrame, "playback"))
             {
-                SetState(FlashbackPlaybackState.Paused);
                 Logger.Log($"FLASHBACK_PLAYBACK_SUBMIT_STOP pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
+                RestoreLiveAfterPlaybackSubmitFailure(decoder, ref fileOpen, "playback_submit_failed");
                 return false;
             }
             Interlocked.Exchange(ref _lastVideoPtsTicks, videoFrame.Pts.Ticks);

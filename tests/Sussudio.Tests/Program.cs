@@ -691,6 +691,9 @@ static partial class Program
 
             // --- FlashbackBufferManager ---
             await RunCheckAsync(
+                "FlashbackBufferManager Initialize clears recording PTS",
+                FlashbackBufferManager_InitializeClearsRecordingPts),
+            await RunCheckAsync(
                 "FlashbackBufferManager segment lookup returns correct file for position",
                 FlashbackBufferManager_GetSegmentFileForPosition_ReturnsCorrectSegment),
             await RunCheckAsync(
