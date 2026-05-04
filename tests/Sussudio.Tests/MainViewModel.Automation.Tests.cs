@@ -334,6 +334,8 @@ static partial class Program
         AssertContains(diagnosticsText, "FlashbackCleanupInProgress = health.FlashbackCleanupInProgress");
         AssertContains(diagnosticsText, "recentBackpressureEvents={flashbackRecordingRecent.BackpressureEvents}");
         AssertContains(diagnosticsText, "\"flashback-playback-slow\"");
+        AssertContains(diagnosticsText, "\"flashback-playback-target-below-selection\"");
+        AssertContains(diagnosticsText, "\"flashback-playback-present-capped\"");
         AssertContains(diagnosticsText, "\"flashback-playback-frametime-degraded\"");
         AssertContains(diagnosticsText, "\"flashback-playback-audio-master-fallback\"");
         AssertContains(diagnosticsText, "\"flashback-playback-audio-queue-backlog\"");
@@ -347,6 +349,8 @@ static partial class Program
         AssertContains(diagnosticsText, "private static double ResolveFlashbackPlaybackTargetFps(double flashbackPlaybackTargetFps, double fallbackFrameRate)");
         AssertContains(diagnosticsText, "var playbackTargetFps = ResolveFlashbackPlaybackTargetFps(\n            snapshot.FlashbackPlaybackTargetFps,\n            snapshot.SelectedExactFrameRate.GetValueOrDefault(snapshot.SelectedFrameRate));");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackObservedFps < playbackTargetFps * FlashbackPlaybackSlowFpsRatio");
+        AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackTargetFps <= selectedCaptureFps * FlashbackPlaybackSlowFpsRatio");
+        AssertContains(diagnosticsText, "snapshot.PreviewCadenceObservedFps <= snapshot.FlashbackPlaybackTargetFps * FlashbackPlaybackSlowFpsRatio");
         AssertContains(diagnosticsText, "IsFlashbackPlaybackFrametimeDegraded(\n                snapshot.FlashbackPlaybackState");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackState,\n                playbackTargetFps,\n                snapshot.FlashbackPlaybackFrameCount");
         AssertContains(diagnosticsText, "IsCaptureOnePercentLowDegraded(\n                snapshot.ExpectedCaptureFrameRate");
@@ -372,6 +376,8 @@ static partial class Program
         AssertContains(diagnosticsText, "Flashback playback is using wall-clock pacing instead of audio-master pacing");
         AssertContains(diagnosticsText, "Flashback playback audio queue is backing up");
         AssertContains(diagnosticsText, "Flashback playback is below target rate");
+        AssertContains(diagnosticsText, "Flashback playback target is below the selected capture rate");
+        AssertContains(diagnosticsText, "Flashback playback is targeting HFR but D3D present cadence is below target");
         AssertContains(diagnosticsText, "Flashback playback frametime degraded");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackLastCommandQueuedUtcUnixMs > snapshot.FlashbackPlaybackLastCommandProcessedUtcUnixMs");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackLastCommandFailureUtcUnixMs > 0");
@@ -406,6 +412,7 @@ static partial class Program
         AssertContains(diagnosticsText, "playback perf state={health.FlashbackPlaybackState}");
         AssertContains(diagnosticsText, "fps={health.FlashbackPlaybackObservedFps:0.##}/{playbackTargetFps:0.##}");
         AssertContains(diagnosticsText, "target={health.FlashbackPlaybackTargetFps:0.##}");
+        AssertContains(diagnosticsText, "encoder={health.EncoderFrameRate:0.##} source={(health.SourceFrameRateExact ?? 0):0.##} present={previewRuntime.DisplayCadenceObservedFps:0.##}");
         AssertContains(diagnosticsText, "1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps");
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackAudioMasterFallbackWarningRatio = 0.50;");
         AssertContains(diagnosticsText, "private const int FlashbackPlaybackAudioQueueBacklogWarningDepth = 24;");

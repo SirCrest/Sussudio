@@ -1693,8 +1693,24 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var playbackTargetFps = ResolveFlashbackPlaybackTargetFps(
             snapshot.FlashbackPlaybackTargetFps,
             snapshot.SelectedExactFrameRate.GetValueOrDefault(snapshot.SelectedFrameRate));
+        var selectedCaptureFps = snapshot.SelectedExactFrameRate.GetValueOrDefault(snapshot.SelectedFrameRate);
+        var playbackActive =
+            string.Equals(snapshot.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase);
+        var playbackTargetBelowSelection =
+            playbackActive &&
+            selectedCaptureFps >= 90 &&
+            snapshot.FlashbackPlaybackTargetFps > 0 &&
+            snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
+            snapshot.FlashbackPlaybackTargetFps <= selectedCaptureFps * FlashbackPlaybackSlowFpsRatio;
+        var playbackPresentCadenceCapped =
+            playbackActive &&
+            snapshot.FlashbackPlaybackTargetFps >= 90 &&
+            snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
+            snapshot.PreviewCadenceSampleCount >= PreviewPerfectionMinSamples &&
+            snapshot.PreviewCadenceObservedFps > 0 &&
+            snapshot.PreviewCadenceObservedFps <= snapshot.FlashbackPlaybackTargetFps * FlashbackPlaybackSlowFpsRatio;
         var playbackSlow =
-            string.Equals(snapshot.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
+            playbackActive &&
             playbackTargetFps > 0 &&
             snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
             snapshot.FlashbackPlaybackObservedFps > 0 &&
@@ -1707,11 +1723,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 snapshot.FlashbackPlaybackCadenceSampleCount,
                 snapshot.FlashbackPlaybackOnePercentLowFps);
         var playbackAudioMasterFallbackDominant =
-            string.Equals(snapshot.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
+            playbackActive &&
             snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
             snapshot.FlashbackPlaybackAudioMasterFallbacks >= snapshot.FlashbackPlaybackFrameCount * FlashbackPlaybackAudioMasterFallbackWarningRatio;
         var playbackAudioQueueBacklog =
-            string.Equals(snapshot.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
+            playbackActive &&
             snapshot.FlashbackPlaybackFrameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
             snapshot.WasapiPlaybackQueueDepth >= FlashbackPlaybackAudioQueueBacklogWarningDepth;
         var captureOnePercentLowDegraded =
@@ -1917,11 +1933,36 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             throttleMs: 1000);
 
         SetAlertState(
+            "flashback-playback-target-below-selection",
+            playbackTargetBelowSelection,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback playback target is below the selected capture rate: playbackTarget={snapshot.FlashbackPlaybackTargetFps:0.##}fps " +
+            $"selected={selectedCaptureFps:0.##}fps encoder={snapshot.EncoderFrameRate:0.##}fps expected={snapshot.ExpectedCaptureFrameRate:0.##}fps " +
+            $"source={(snapshot.DetectedSourceFrameRate ?? 0):0.##}fps observed={snapshot.FlashbackPlaybackObservedFps:0.##}fps frames={snapshot.FlashbackPlaybackFrameCount}.",
+            "Flashback playback target matches the selected capture rate.",
+            throttleMs: 5000);
+
+        SetAlertState(
+            "flashback-playback-present-capped",
+            playbackPresentCadenceCapped,
+            DiagnosticsSeverity.Warning,
+            DiagnosticsCategory.Flashback,
+            $"Flashback playback is targeting HFR but D3D present cadence is below target: target={snapshot.FlashbackPlaybackTargetFps:0.##}fps " +
+            $"playbackObserved={snapshot.FlashbackPlaybackObservedFps:0.##}fps presentObserved={snapshot.PreviewCadenceObservedFps:0.##}fps " +
+            $"present1pctLow={snapshot.PreviewCadenceOnePercentLowFps:0.##}fps sync={snapshot.PreviewD3DPresentSyncInterval} " +
+            $"latency={snapshot.PreviewD3DMaxFrameLatency} buffers={snapshot.PreviewD3DSwapChainBufferCount} " +
+            $"renderDrops={snapshot.PreviewD3DFramesDropped} lastDrop={snapshot.PreviewD3DLastDropReason}.",
+            "Flashback playback present cadence returned to the HFR target range.",
+            throttleMs: 5000);
+
+        SetAlertState(
             "flashback-playback-slow",
             playbackSlow,
             DiagnosticsSeverity.Warning,
             DiagnosticsCategory.Flashback,
             $"Flashback playback is below target rate: observed={snapshot.FlashbackPlaybackObservedFps:0.##}fps target={playbackTargetFps:0.##}fps " +
+            $"selected={selectedCaptureFps:0.##}fps encoder={snapshot.EncoderFrameRate:0.##}fps present={snapshot.PreviewCadenceObservedFps:0.##}fps " +
             $"frames={snapshot.FlashbackPlaybackFrameCount} late={snapshot.FlashbackPlaybackLateFrames} dropped={snapshot.FlashbackPlaybackDroppedFrames} submitFailures={snapshot.FlashbackPlaybackSubmitFailures} " +
             $"audioMasterDouble={snapshot.FlashbackPlaybackAudioMasterDelayDoubles} audioMasterShrink={snapshot.FlashbackPlaybackAudioMasterDelayShrinks} audioMasterFallback={snapshot.FlashbackPlaybackAudioMasterFallbacks} " +
             $"switches={snapshot.FlashbackPlaybackSegmentSwitches} fmp4Reopens={snapshot.FlashbackPlaybackFmp4Reopens} writeHeadWaits={snapshot.FlashbackPlaybackWriteHeadWaits}.",
@@ -2307,7 +2348,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var playbackCommandLane =
             $"playback commands pending={health.FlashbackPlaybackPendingCommands}/{health.FlashbackPlaybackCommandQueueCapacity} maxPending={health.FlashbackPlaybackMaxPendingCommands} lastLatency={health.FlashbackPlaybackLastCommandQueueLatencyMs}ms maxLatency={health.FlashbackPlaybackMaxCommandQueueLatencyMs}ms lastQueued={health.FlashbackPlaybackLastCommandQueued} lastProcessed={health.FlashbackPlaybackLastCommandProcessed} queuedAge={playbackCommandQueueAgeMs}ms lastFailure={playbackCommandFailure} failureAgeMs={playbackCommandFailureAgeMs} threadAlive={health.FlashbackPlaybackThreadAlive}";
         var playbackPerfLane =
-            $"playback perf state={health.FlashbackPlaybackState} fps={health.FlashbackPlaybackObservedFps:0.##}/{playbackTargetFps:0.##} target={health.FlashbackPlaybackTargetFps:0.##} 1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps p99={health.FlashbackPlaybackP99FrameMs:0.##}ms max={health.FlashbackPlaybackMaxFrameMs:0.##}ms slow={health.FlashbackPlaybackSlowFramePercent:0.##}% decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={health.FlashbackPlaybackDecodeMaxMs:0.##}ms decodePhase={health.FlashbackPlaybackMaxDecodePhase} decodeReceive={health.FlashbackPlaybackMaxDecodeReceiveMs:0.##}ms decodeFeed={health.FlashbackPlaybackMaxDecodeFeedMs:0.##}ms decodeRead={health.FlashbackPlaybackMaxDecodeReadMs:0.##}ms decodeSend={health.FlashbackPlaybackMaxDecodeSendMs:0.##}ms decodeAudio={health.FlashbackPlaybackMaxDecodeAudioMs:0.##}ms decodeConvert={health.FlashbackPlaybackMaxDecodeConvertMs:0.##}ms decodeMaxPos={health.FlashbackPlaybackMaxDecodePositionMs}ms samples={health.FlashbackPlaybackCadenceSampleCount} frames={health.FlashbackPlaybackFrameCount} late={health.FlashbackPlaybackLateFrames} dropped={health.FlashbackPlaybackDroppedFrames} audioMasterDouble={health.FlashbackPlaybackAudioMasterDelayDoubles} audioMasterShrink={health.FlashbackPlaybackAudioMasterDelayShrinks} audioMasterFallback={health.FlashbackPlaybackAudioMasterFallbacks} submitFailures={health.FlashbackPlaybackSubmitFailures} switches={health.FlashbackPlaybackSegmentSwitches} fmp4Reopens={health.FlashbackPlaybackFmp4Reopens} writeHeadWaits={health.FlashbackPlaybackWriteHeadWaits} nearLiveSnaps={health.FlashbackPlaybackNearLiveSnaps} decodeErrorSnaps={health.FlashbackPlaybackDecodeErrorSnaps}";
+            $"playback perf state={health.FlashbackPlaybackState} fps={health.FlashbackPlaybackObservedFps:0.##}/{playbackTargetFps:0.##} target={health.FlashbackPlaybackTargetFps:0.##} encoder={health.EncoderFrameRate:0.##} source={(health.SourceFrameRateExact ?? 0):0.##} present={previewRuntime.DisplayCadenceObservedFps:0.##} " +
+            $"1pctLow={health.FlashbackPlaybackOnePercentLowFps:0.##}fps p99={health.FlashbackPlaybackP99FrameMs:0.##}ms max={health.FlashbackPlaybackMaxFrameMs:0.##}ms slow={health.FlashbackPlaybackSlowFramePercent:0.##}% decodeP99={health.FlashbackPlaybackDecodeP99Ms:0.##}ms decodeMax={health.FlashbackPlaybackDecodeMaxMs:0.##}ms decodePhase={health.FlashbackPlaybackMaxDecodePhase} decodeReceive={health.FlashbackPlaybackMaxDecodeReceiveMs:0.##}ms decodeFeed={health.FlashbackPlaybackMaxDecodeFeedMs:0.##}ms decodeRead={health.FlashbackPlaybackMaxDecodeReadMs:0.##}ms decodeSend={health.FlashbackPlaybackMaxDecodeSendMs:0.##}ms decodeAudio={health.FlashbackPlaybackMaxDecodeAudioMs:0.##}ms decodeConvert={health.FlashbackPlaybackMaxDecodeConvertMs:0.##}ms decodeMaxPos={health.FlashbackPlaybackMaxDecodePositionMs}ms samples={health.FlashbackPlaybackCadenceSampleCount} frames={health.FlashbackPlaybackFrameCount} late={health.FlashbackPlaybackLateFrames} dropped={health.FlashbackPlaybackDroppedFrames} audioMasterDouble={health.FlashbackPlaybackAudioMasterDelayDoubles} audioMasterShrink={health.FlashbackPlaybackAudioMasterDelayShrinks} audioMasterFallback={health.FlashbackPlaybackAudioMasterFallbacks} submitFailures={health.FlashbackPlaybackSubmitFailures} switches={health.FlashbackPlaybackSegmentSwitches} fmp4Reopens={health.FlashbackPlaybackFmp4Reopens} writeHeadWaits={health.FlashbackPlaybackWriteHeadWaits} nearLiveSnaps={health.FlashbackPlaybackNearLiveSnaps} decodeErrorSnaps={health.FlashbackPlaybackDecodeErrorSnaps}";
         var playbackSlow =
             string.Equals(health.FlashbackPlaybackState, "Playing", StringComparison.OrdinalIgnoreCase) &&
             playbackTargetFps > 0 &&
