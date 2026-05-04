@@ -690,10 +690,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             var lastDtsPerStream = new long[64]; // indexed by OUTPUT stream index
             for (int i = 0; i < lastDtsPerStream.Length; i++) lastDtsPerStream[i] = long.MinValue;
 
-            var packet = ffmpeg.av_packet_alloc();
-            if (packet == null)
-                throw new InvalidOperationException("Failed to allocate AVPacket.");
-
             void TrackSkippedRequestedSegment(FlashbackExportSegment segment, string reason)
             {
                 if (!SegmentOverlapsExportRange(segment, inPoint, outPoint))
@@ -704,6 +700,90 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 skippedRequestedSegmentCount++;
                 firstSkippedRequestedSegmentReason ??= reason;
             }
+
+            bool TryInitializeSegmentOutputTemplate(
+                out int selectedStreamCount,
+                out int selectedVideoStreamIndex,
+                out int[] selectedStreamMap,
+                out string failureMessage)
+            {
+                selectedStreamCount = 0;
+                selectedVideoStreamIndex = -1;
+                selectedStreamMap = Array.Empty<int>();
+                failureMessage = "Flashback export failed: no usable segment template was found.";
+
+                for (var templateSegIdx = 0; templateSegIdx < segments.Count; templateSegIdx++)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    var templatePath = segments[templateSegIdx].Path;
+                    if (!File.Exists(templatePath))
+                    {
+                        continue;
+                    }
+
+                    OpenInput(templatePath);
+                    try
+                    {
+                        ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
+                        if (!TryGetInputStreamCount(_activeInputContext, "segment_template", out var candidateStreamCount, out var streamCountFailure))
+                        {
+                            Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP path='{Path.GetFileName(templatePath)}' reason='invalid_stream_count' detail='{streamCountFailure}'");
+                            continue;
+                        }
+
+                        var candidateVideoStreamIndex = FindVideoStreamIndex(_activeInputContext);
+                        LogInputStreams(_activeInputContext, candidateStreamCount);
+                        if (candidateVideoStreamIndex < 0)
+                        {
+                            Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing' seg={templateSegIdx} trying_next_segment={templateSegIdx < segments.Count - 1}");
+                            failureMessage = "Flashback export failed: no usable video stream was found in any segment.";
+                            continue;
+                        }
+
+                        var videoStream = _activeInputContext->streams[candidateVideoStreamIndex];
+                        var videoWidth = videoStream->codecpar->width;
+                        var videoHeight = videoStream->codecpar->height;
+                        var videoExtradataSize = videoStream->codecpar->extradata_size;
+                        var videoHasValidParams = videoWidth > 0 && videoHeight > 0;
+
+                        if (!videoHasValidParams)
+                        {
+                            Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_params_incomplete' seg={templateSegIdx} " +
+                                $"w={videoWidth} " +
+                                $"h={videoHeight} " +
+                                $"extradata={videoExtradataSize} " +
+                                $"trying_next_segment={templateSegIdx < segments.Count - 1}");
+                            failureMessage = "Flashback export failed: no segment had complete video parameters.";
+                            continue;
+                        }
+
+                        CreateOutputContext(tmpPath, fastStart);
+                        selectedStreamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext, candidateStreamCount);
+                        Logger.Log($"FLASHBACK_EXPORT_STREAM_MAP video_idx={candidateVideoStreamIndex} map=[{string.Join(",", selectedStreamMap)}]");
+                        OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
+                        selectedStreamCount = candidateStreamCount;
+                        selectedVideoStreamIndex = candidateVideoStreamIndex;
+                        Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SELECTED seg={templateSegIdx} path='{Path.GetFileName(templatePath)}'");
+                        return true;
+                    }
+                    finally
+                    {
+                        CloseActiveInput();
+                    }
+                }
+
+                return false;
+            }
+
+            if (!TryInitializeSegmentOutputTemplate(out streamCount, out videoStreamIndex, out streamMap, out var templateFailure))
+            {
+                Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{templateFailure}'");
+                return FinalizeResult.Failure(outputPath, templateFailure);
+            }
+
+            var packet = ffmpeg.av_packet_alloc();
+            if (packet == null)
+                throw new InvalidOperationException("Failed to allocate AVPacket.");
 
             try
             {
@@ -736,9 +816,6 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         continue;
                     }
 
-                    var isFirst = segIdx == 0 || _activeOutputContext == null;
-                    var isLast = segIdx == segments.Count - 1;
-
                     // Open this segment
                     OpenInput(segPath);
                     ThrowIfError(ffmpeg.avformat_find_stream_info(_activeInputContext, null), "avformat_find_stream_info");
@@ -750,104 +827,33 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         continue;
                     }
 
-                    if (isFirst)
+                    // Validate that this segment's stream layout matches the selected template.
+                    // Mismatched layouts (e.g. microphone toggled mid-capture) would cause
+                    // packet->stream_index to map incorrectly, producing corrupt output.
+                    var segNbStreams = currentStreamCount;
+                    if (segNbStreams != streamCount)
                     {
-                        // Create output from first segment's streams
-                        videoStreamIndex = FindVideoStreamIndex(_activeInputContext);
-
-                        // Log input stream details for diagnostics
-                        var inputNbStreams = currentStreamCount;
-                        for (var si = 0; si < inputNbStreams; si++)
-                        {
-                            var inStr = _activeInputContext->streams[si];
-                            var codecId = inStr->codecpar->codec_id;
-                            var codecType = inStr->codecpar->codec_type;
-                            Logger.Log($"FLASHBACK_EXPORT_INPUT_STREAM idx={si} type={codecType} codec_id={codecId} " +
-                                $"w={inStr->codecpar->width} h={inStr->codecpar->height} " +
-                                $"extradata_size={inStr->codecpar->extradata_size} " +
-                                $"sample_rate={inStr->codecpar->sample_rate} channels={inStr->codecpar->ch_layout.nb_channels}");
-                        }
-
-                        // If the video stream has incomplete params (width=0 or height=0),
-                        // the TS segment likely started mid-stream without SPS/PPS (H.264
-                        // from RotateOutput with NVENC pipeline latency). Try the next
-                        // segment as the template source instead.
-                        if (videoStreamIndex < 0)
-                        {
-                            Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing' seg={segIdx} trying_next_segment={segIdx < segments.Count - 1}");
-                            TrackSkippedRequestedSegment(segment, "video_stream_missing");
-                            CloseActiveInput();
-                            if (segIdx < segments.Count - 1)
-                            {
-                                continue;
-                            }
-
-                            const string message = "Flashback export failed: no usable video stream was found in any segment.";
-                            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-                            return FinalizeResult.Failure(outputPath, message);
-                        }
-
-                        var videoStream = _activeInputContext->streams[videoStreamIndex];
-                        var videoWidth = videoStream->codecpar->width;
-                        var videoHeight = videoStream->codecpar->height;
-                        var videoExtradataSize = videoStream->codecpar->extradata_size;
-                        var videoHasValidParams = videoWidth > 0 && videoHeight > 0;
-
-                        if (!videoHasValidParams)
-                        {
-                            Logger.Log($"FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_params_incomplete' seg={segIdx} " +
-                                $"w={videoWidth} " +
-                                $"h={videoHeight} " +
-                                $"extradata={videoExtradataSize} " +
-                                $"trying_next_segment={segIdx < segments.Count - 1}");
-                            TrackSkippedRequestedSegment(segment, "video_params_incomplete");
-                            CloseActiveInput();
-                            if (segIdx < segments.Count - 1)
-                            {
-                                continue;
-                            }
-
-                            const string message = "Flashback export failed: no segment had complete video parameters.";
-                            Logger.Log($"FLASHBACK_EXPORT_FAIL reason='{message}'");
-                            return FinalizeResult.Failure(outputPath, message);
-                        }
-
-                        CreateOutputContext(tmpPath, fastStart);
-                        streamMap = CopyTemplateStreams(_activeInputContext, _activeOutputContext, inputNbStreams);
-                        Logger.Log($"FLASHBACK_EXPORT_STREAM_MAP video_idx={videoStreamIndex} map=[{string.Join(",", streamMap)}]");
-                        OpenOutputIoAndWriteHeader(_activeOutputContext, tmpPath, fastStart);
-                        streamCount = inputNbStreams;
+                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_count_mismatch' expected={streamCount} actual={segNbStreams}");
+                        TrackSkippedRequestedSegment(segment, "stream_count_mismatch");
+                        CloseActiveInput();
+                        continue;
                     }
-                    else
-                    {
-                        // Validate that this segment's stream layout matches the first segment's.
-                        // Mismatched layouts (e.g. microphone toggled mid-capture) would cause
-                        // packet->stream_index to map incorrectly, producing corrupt output.
-                        var segNbStreams = currentStreamCount;
-                        if (segNbStreams != streamCount)
-                        {
-                            Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_count_mismatch' expected={streamCount} actual={segNbStreams}");
-                            TrackSkippedRequestedSegment(segment, "stream_count_mismatch");
-                            CloseActiveInput();
-                            continue;
-                        }
 
-                        var streamLayoutMismatch = FindSegmentStreamLayoutMismatch(
-                            _activeInputContext,
-                            _activeOutputContext,
-                            streamMap,
-                            segNbStreams);
-                        if (streamLayoutMismatch != null)
-                        {
-                            Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_layout_mismatch' detail='{streamLayoutMismatch}'");
-                            TrackSkippedRequestedSegment(segment, "stream_layout_mismatch");
-                            CloseActiveInput();
-                            continue;
-                        }
+                    var streamLayoutMismatch = FindSegmentStreamLayoutMismatch(
+                        _activeInputContext,
+                        _activeOutputContext,
+                        streamMap,
+                        segNbStreams);
+                    if (streamLayoutMismatch != null)
+                    {
+                        Logger.Log($"FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='stream_layout_mismatch' detail='{streamLayoutMismatch}'");
+                        TrackSkippedRequestedSegment(segment, "stream_layout_mismatch");
+                        CloseActiveInput();
+                        continue;
                     }
 
                     // Seek to inPoint in first segment
-                    if (isFirst && inPoint > TimeSpan.Zero && !useSegmentTimeline)
+                    if (segIdx == 0 && inPoint > TimeSpan.Zero && !useSegmentTimeline)
                     {
                         var seekTimestamp = ToAvTimeBaseTimestamp(inPoint);
                         var seekResult = ffmpeg.av_seek_frame(_activeInputContext, -1, seekTimestamp, ffmpeg.AVSEEK_FLAG_BACKWARD);
@@ -1464,6 +1470,20 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         return true;
     }
 
+    private static void LogInputStreams(AVFormatContext* inputContext, int inputStreamCount)
+    {
+        for (var si = 0; si < inputStreamCount; si++)
+        {
+            var inStr = inputContext->streams[si];
+            var codecId = inStr->codecpar->codec_id;
+            var codecType = inStr->codecpar->codec_type;
+            Logger.Log($"FLASHBACK_EXPORT_INPUT_STREAM idx={si} type={codecType} codec_id={codecId} " +
+                $"w={inStr->codecpar->width} h={inStr->codecpar->height} " +
+                $"extradata_size={inStr->codecpar->extradata_size} " +
+                $"sample_rate={inStr->codecpar->sample_rate} channels={inStr->codecpar->ch_layout.nb_channels}");
+        }
+    }
+
     private static void LogTimestampBaseDrift(long[] timestampBasesUs, bool[] hasTimestampBase)
     {
         // All values are already in microseconds — find min/max to detect drift
@@ -1644,7 +1664,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
             if (inputCodec->codec_type == AVMediaType.AVMEDIA_TYPE_VIDEO)
             {
-                if (inputCodec->width != templateCodec->width || inputCodec->height != templateCodec->height)
+                if (!VideoDimensionsMatchOrCanUseTemplate(inputCodec, templateCodec))
                 {
                     return $"stream={streamIndex} video_size expected={templateCodec->width}x{templateCodec->height} actual={inputCodec->width}x{inputCodec->height}";
                 }
@@ -1669,6 +1689,18 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         return null;
+    }
+
+    private static bool VideoDimensionsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)
+    {
+        if (inputCodec->width == templateCodec->width && inputCodec->height == templateCodec->height)
+        {
+            return true;
+        }
+
+        var inputHasCompleteDimensions = inputCodec->width > 0 && inputCodec->height > 0;
+        var templateHasCompleteDimensions = templateCodec->width > 0 && templateCodec->height > 0;
+        return !inputHasCompleteDimensions && templateHasCompleteDimensions;
     }
 
     private static void OpenOutputIoAndWriteHeader(AVFormatContext* outputContext, string tmpPath, bool fastStart)

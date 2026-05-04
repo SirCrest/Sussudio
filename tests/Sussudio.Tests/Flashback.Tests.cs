@@ -1108,10 +1108,11 @@ static partial class Program
         AssertContains(sourceText, "streamCount = (int)nativeStreamCount;");
         AssertContains(sourceText, "if (!TryGetInputStreamCount(_activeInputContext, \"single_export\", out var streamCount, out var streamCountFailure))");
         AssertContains(sourceText, "Logger.Log($\"FLASHBACK_EXPORT_FAIL reason='{streamCountFailure}'\");");
+        AssertContains(sourceText, "if (!TryGetInputStreamCount(_activeInputContext, \"segment_template\", out var candidateStreamCount, out var streamCountFailure))");
         AssertContains(sourceText, "if (!TryGetInputStreamCount(_activeInputContext, \"segment_export\", out var currentStreamCount, out var streamCountFailure))");
         AssertContains(sourceText, "FLASHBACK_EXPORT_SEGMENT_SKIP path='{Path.GetFileName(segPath)}' reason='invalid_stream_count'");
         AssertContains(sourceText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, streamCount)");
-        AssertContains(sourceText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, inputNbStreams)");
+        AssertContains(sourceText, "CopyTemplateStreams(_activeInputContext, _activeOutputContext, candidateStreamCount)");
         AssertContains(sourceText, "private static int[] CopyTemplateStreams(AVFormatContext* inputContext, AVFormatContext* outputContext, int inputStreamCount)");
         AssertDoesNotContain(sourceText, "checked((int)_activeInputContext->nb_streams)");
         AssertDoesNotContain(sourceText, "checked((int)inputContext->nb_streams)");
@@ -1124,19 +1125,23 @@ static partial class Program
         var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackExporter.cs")
             .Replace("\r\n", "\n");
 
-        var missingVideoBlock = ExtractTextBetween(
+        var templateSelectionBlock = ExtractTextBetween(
             sourceText,
-            "if (videoStreamIndex < 0)",
-            "                        var videoStream = _activeInputContext->streams[videoStreamIndex];");
+            "bool TryInitializeSegmentOutputTemplate(",
+            "            if (!TryInitializeSegmentOutputTemplate");
         var incompleteVideoParamsBlock = ExtractTextBetween(
             sourceText,
-            "var videoStream = _activeInputContext->streams[videoStreamIndex];",
+            "var videoStream = _activeInputContext->streams[candidateVideoStreamIndex];",
             "                        CreateOutputContext(tmpPath, fastStart);");
 
-        AssertDoesNotContain(missingVideoBlock, "streams[videoStreamIndex]");
-        AssertContains(missingVideoBlock, "FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing'");
-        AssertContains(missingVideoBlock, "no usable video stream was found in any segment");
-        AssertContains(incompleteVideoParamsBlock, "var videoStream = _activeInputContext->streams[videoStreamIndex];");
+        AssertDoesNotContain(templateSelectionBlock, "TrackSkippedRequestedSegment(segment, \"video_stream_missing\");");
+        AssertDoesNotContain(templateSelectionBlock, "TrackSkippedRequestedSegment(segment, \"video_params_incomplete\");");
+        AssertContains(templateSelectionBlock, "var candidateVideoStreamIndex = FindVideoStreamIndex(_activeInputContext);");
+        AssertContains(templateSelectionBlock, "LogInputStreams(_activeInputContext, candidateStreamCount);");
+        AssertContains(templateSelectionBlock, "FLASHBACK_EXPORT_TEMPLATE_SKIP reason='video_stream_missing'");
+        AssertContains(templateSelectionBlock, "no usable video stream was found in any segment");
+        AssertContains(templateSelectionBlock, "FLASHBACK_EXPORT_TEMPLATE_SELECTED");
+        AssertContains(incompleteVideoParamsBlock, "var videoStream = _activeInputContext->streams[candidateVideoStreamIndex];");
         AssertContains(incompleteVideoParamsBlock, "var videoHasValidParams = videoWidth > 0 && videoHeight > 0;");
         AssertContains(incompleteVideoParamsBlock, "no segment had complete video parameters");
         AssertContains(sourceText, "var streamLayoutMismatch = FindSegmentStreamLayoutMismatch(");
@@ -1144,7 +1149,8 @@ static partial class Program
         AssertContains(sourceText, "private static string? FindSegmentStreamLayoutMismatch(");
         AssertContains(sourceText, "inputCodec->codec_type != templateCodec->codec_type");
         AssertContains(sourceText, "inputCodec->codec_id != templateCodec->codec_id");
-        AssertContains(sourceText, "inputCodec->width != templateCodec->width || inputCodec->height != templateCodec->height");
+        AssertContains(sourceText, "private static bool VideoDimensionsMatchOrCanUseTemplate(AVCodecParameters* inputCodec, AVCodecParameters* templateCodec)");
+        AssertContains(sourceText, "return !inputHasCompleteDimensions && templateHasCompleteDimensions;");
         AssertContains(sourceText, "inputCodec->sample_rate != templateCodec->sample_rate");
         AssertContains(sourceText, "inputCodec->ch_layout.nb_channels != templateCodec->ch_layout.nb_channels");
         AssertContains(sourceText, "inputCodec->format != templateCodec->format");
@@ -1166,10 +1172,12 @@ static partial class Program
         AssertContains(segmentExportCore, "SegmentOverlapsExportRange(segment, inPoint, outPoint)");
         AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"not_found\");");
         AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"invalid_stream_count\");");
-        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"video_stream_missing\");");
-        AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"video_params_incomplete\");");
         AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"stream_count_mismatch\");");
         AssertContains(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"stream_layout_mismatch\");");
+        AssertDoesNotContain(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"video_stream_missing\");");
+        AssertDoesNotContain(segmentExportCore, "TrackSkippedRequestedSegment(segment, \"video_params_incomplete\");");
+        AssertContains(segmentExportCore, "if (!TryInitializeSegmentOutputTemplate(out streamCount, out videoStreamIndex, out streamMap, out var templateFailure))");
+        AssertOccursBefore(segmentExportCore, "if (!TryInitializeSegmentOutputTemplate(out streamCount, out videoStreamIndex, out streamMap, out var templateFailure))", "for (var segIdx = 0; segIdx < segments.Count; segIdx++)");
         AssertContains(segmentExportCore, "requested segment(s) were skipped");
         AssertOccursBefore(segmentExportCore, "if (skippedRequestedSegmentCount > 0)", "if (totalPackets == 0)");
 
