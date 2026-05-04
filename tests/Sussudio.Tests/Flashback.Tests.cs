@@ -1915,7 +1915,8 @@ static partial class Program
 
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n            {\n                SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n            }");
         AssertContains(sourceText, "case CommandKind.Stop:\n                            isPlaying = false;\n                            isScrubbing = false;\n                            pendingExactResumeTarget = null;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
-        AssertContains(sourceText, "Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);\n                            RestoreLiveAudio();\n                            SafeResumePreviewSubmission(\"thread_stop\");\n                            SetState(FlashbackPlaybackState.Live);");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n                            RestoreLiveAudio();\n                            SafeResumePreviewSubmission(\"thread_stop\");\n                            SetState(FlashbackPlaybackState.Live);");
+        AssertDoesNotContain(sourceText, "_suppressAudioUntilPtsTicks");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.GoLive, \"live_thread_not_running\");\n            return true;\n        }");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.Nudge, \"live_thread_not_running\", delta: delta);\n            return true;\n        }");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_CMD_NOOP kind={kind} reason={reason}{FormatCommandDetail(position, delta)}");
@@ -1974,7 +1975,7 @@ static partial class Program
         AssertContains(sourceText, "private static string FormatActiveCommandKind(int rawKind)");
         AssertContains(sourceText, "private double GetActiveCommandElapsedMs(long nowTimestamp)");
         AssertContains(sourceText, "if (cts.IsCancellationRequested)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");");
-        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");\n                            CleanupDecoder(ref decoder, ref fileOpen);\n                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
+        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");\n                            CleanupDecoder(ref decoder, ref fileOpen);\n                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);");
         AssertContains(sourceText, "PaceAndDecodeFrame(decoder, commandChannel, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token)");
         AssertContains(sourceText, "SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.Seek, cts.Token)");
         AssertContains(sourceText, "SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub, cts.Token)");
@@ -1998,8 +1999,8 @@ static partial class Program
         AssertContains(sourceText, "nextSegmentStart.Value - lastFrameAbsPts > TimeSpan.FromMilliseconds(250)");
         AssertContains(sourceText, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n        {\n            throw;\n        }\n        catch (Exception ex)\n        {\n            SnapToLiveOnError(decoder, ex, ref fileOpen);");
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"thread_cancelled\");");
-        AssertContains(sourceText, "catch (OperationCanceledException)\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_CANCELLED\");\n            CleanupDecoder(ref decoder, ref fileOpen);\n            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
-        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_FATAL type={ex.GetType().Name} error='{ex.Message}'\");\n            CleanupDecoder(ref decoder, ref fileOpen);\n            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
+        AssertContains(sourceText, "catch (OperationCanceledException)\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_CANCELLED\");\n            CleanupDecoder(ref decoder, ref fileOpen);\n            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);");
+        AssertContains(sourceText, "Logger.Log($\"FLASHBACK_PLAYBACK_FATAL type={ex.GetType().Name} error='{ex.Message}'\");\n            CleanupDecoder(ref decoder, ref fileOpen);\n            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);");
         AssertContains(sourceText, "var decoderToDispose = decoder;\n            decoder = null;");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=close");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=dispose");
@@ -2416,7 +2417,7 @@ static partial class Program
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(_previousHeldFrame, \"previous_frame\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip\");");
         AssertContains(sourceText, "private void ReleasePlaybackFrameForLive(string operation)");
-        AssertContains(sourceText, "private void ReleasePlaybackFrameForLive(string operation)\n    {\n        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n        Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
+        AssertContains(sourceText, "private void ReleasePlaybackFrameForLive(string operation)\n    {\n        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_RELEASE_HELD_FOR_LIVE op={operation}");
         AssertContains(sourceText, "ReleasePlaybackFrameForLive(\"seek_no_file\");");
         AssertContains(sourceText, "SetNoFileFailure(CommandKind.Seek, cmd.Position);");

@@ -195,10 +195,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private DecodedVideoFrame _previousHeldFrame;
     private bool _hasPreviousHeldFrame;
 
-    // --- Audio PTS suppression (H2/H3 fix) ---
-    // After seek, suppress audio chunks with PTS < target to avoid stale GOP audio
-    private long _suppressAudioUntilPtsTicks;
-
     // --- Scrub state restoration (M16 fix) ---
     private bool _wasPlayingBeforeScrub;
 
@@ -827,7 +823,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             CleanupDecoder(ref decoder, ref fileOpen);
                             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
                             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("thread_cancelled");
                             SetState(FlashbackPlaybackState.Live);
@@ -857,7 +852,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             CleanupDecoder(ref decoder, ref fileOpen);
                             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
                             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("channel_closed");
                             SetState(FlashbackPlaybackState.Live);
@@ -871,7 +865,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             CleanupDecoder(ref decoder, ref fileOpen);
                             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
                             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("thread_disposed");
                             SetState(FlashbackPlaybackState.Live);
@@ -899,7 +892,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             CleanupDecoder(ref decoder, ref fileOpen);
                             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
                             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("thread_stop");
                             SetState(FlashbackPlaybackState.Live);
@@ -1280,7 +1272,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         CleanupDecoder(ref decoder, ref fileOpen);
                         Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
                         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                        Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0); // F8 fix: clear stale suppression
                         RestoreLiveAudio();
                         SafeResumePreviewSubmission("go_live");
                         SetState(FlashbackPlaybackState.Live);
@@ -1351,7 +1342,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
             CleanupDecoder(ref decoder, ref fileOpen);
             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
             RestoreLiveAudio();
             SafeResumePreviewSubmission("thread_cancelled");
             SetState(FlashbackPlaybackState.Live);
@@ -1363,7 +1353,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
             CleanupDecoder(ref decoder, ref fileOpen);
             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
             RestoreLiveAudio();
             SafeResumePreviewSubmission("thread_fatal");
             SetState(FlashbackPlaybackState.Live);
@@ -1897,7 +1886,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-        Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
 
         if (_hasPreviousHeldFrame)
         {
@@ -2563,7 +2551,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _decoderHwAccel = "N/A";
             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
             ReleasePlaybackFrameForLive("near_live");
             RestoreLiveAudio();
             SafeResumePreviewSubmission("near_live");
@@ -2957,7 +2944,6 @@ internal sealed class FlashbackPlaybackController : IDisposable
         _decoderHwAccel = "N/A";
         Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-        Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
         ReleasePlaybackFrameForLive("decode_error");
         RestoreLiveAudio();
         SafeResumePreviewSubmission("decode_error");
