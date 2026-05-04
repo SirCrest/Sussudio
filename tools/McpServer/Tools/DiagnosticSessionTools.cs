@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -8,7 +9,7 @@ namespace McpServer.Tools;
 public static class DiagnosticSessionTools
 {
     [McpServerTool, Description("Run a timed capture diagnostic session, write snapshot/frame-ledger/timeline artifacts, and optionally verify recording or capture PresentMon.")]
-    public static async Task<string> run_diagnostic_session(
+    public static async Task<CallToolResult> run_diagnostic_session(
         PipeClient pipeClient,
         [Description("Session scenario: observe, preview-only, recording-only, flashback, flashback-playback, flashback-stress, flashback-scrub-stress, flashback-restart-cycle, flashback-encoder-cycle, flashback-export-playback, flashback-segment-playback, flashback-range-export, flashback-lifecycle, flashback-export-concurrent, flashback-disable-during-export, flashback-rotated-export, flashback-preview-cycle, flashback-recording, flashback-recording-preview-cycle, flashback-recording-settings-deferred, flashback-recording-export-rejected, flashback-export-rejected, or combined.")] string scenario = "observe",
         [Description("Session duration in seconds. Use 0 for a single snapshot sample.")] int seconds = 10,
@@ -34,6 +35,10 @@ public static class DiagnosticSessionTools
                 (command, payload, responseTimeoutMs) => pipeClient.SendCommandAsync(command, payload, responseTimeoutMs))
             .ConfigureAwait(false);
 
-        return DiagnosticSessionRunner.Format(result);
+        return new CallToolResult
+        {
+            Content = [new TextContentBlock { Text = DiagnosticSessionRunner.Format(result) }],
+            IsError = !result.Success
+        };
     }
 }

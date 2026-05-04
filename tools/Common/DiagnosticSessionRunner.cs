@@ -240,6 +240,13 @@ public static class DiagnosticSessionRunner
         long CoalescedSeek,
         long NonCoalescedDropped);
 
+    private readonly record struct DiagnosticHealthObservation(
+        string HealthStatus,
+        string LikelyStage,
+        string Evidence,
+        long OffsetMs,
+        int Severity);
+
     public static async Task<DiagnosticSessionResult> RunAsync(
         DiagnosticSessionOptions options,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
@@ -337,9 +344,9 @@ public static class DiagnosticSessionRunner
             return response ?? BuildLocalFailureResponse(command, "no response after connect retry");
         }
 
-        await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         JsonElement initialSnapshot = CreateEmptyJsonObject();
         var initialSnapshotKnown = false;
+        await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         try
         {
             SetStage("initial-snapshot");
@@ -1029,6 +1036,18 @@ public static class DiagnosticSessionRunner
                 warnings);
         }
 
+        var diagnosticHealthObservation = BuildWorstDiagnosticHealthObservation(samples, healthSnapshot);
+        var diagnosticHealthSucceeded = !IsFailingDiagnosticHealthSeverity(diagnosticHealthObservation.Severity);
+        if (!diagnosticHealthSucceeded)
+        {
+            warnings.Add(
+                "diagnostic health degraded during session: " +
+                $"health={diagnosticHealthObservation.HealthStatus} " +
+                $"stage={diagnosticHealthObservation.LikelyStage} " +
+                $"offsetMs={diagnosticHealthObservation.OffsetMs} " +
+                $"evidence={FormatOptional(diagnosticHealthObservation.Evidence)}");
+        }
+
         var processCpuMaxPercentObserved = samples
             .Select(sample => GetDouble(sample.Snapshot, "ProcessCpuPercent"))
             .Append(GetDouble(lastSnapshot, "ProcessCpuPercent"))
@@ -1056,9 +1075,10 @@ public static class DiagnosticSessionRunner
             Scenario = scenario,
             Success = commandFailureCount == 0 &&
                       terminalException is null &&
+                      diagnosticHealthSucceeded &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
-                      (!(runFlashbackPlayback || runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackRotatedExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0),
+                      (!isFlashbackScenario || warnings.Count == 0),
             StartedUtc = startedUtc,
             CompletedUtc = completedUtc,
             TerminalState = terminalState,
@@ -1324,6 +1344,9 @@ public static class DiagnosticSessionRunner
         {
             try
             {
+                var liveHealthSnapshot = samples.Count > 0
+                    ? samples[^1].Snapshot
+                    : initialSnapshot;
                 await WriteJsonAsync(
                         livePath,
                         new
@@ -1339,7 +1362,11 @@ public static class DiagnosticSessionRunner
                             OutputDirectory = outputDirectory,
                             SummaryPath = Path.Combine(outputDirectory, "summary.json"),
                             SampleCount = samples.Count,
+                            HealthStatus = GetDiagnosticHealthStatus(liveHealthSnapshot),
+                            LikelyStage = GetDiagnosticLikelyStage(liveHealthSnapshot),
                             CommandFailureCount = commandFailureCount,
+                            WarningCount = warnings.Count,
+                            LastWarning = warnings.Count > 0 ? warnings[^1] : string.Empty,
                             UnhandledException = terminalException is null ? null : FormatTerminalException(terminalException)
                         },
                         CancellationToken.None)
@@ -4976,6 +5003,58 @@ public static class DiagnosticSessionRunner
     private static string FormatOptional(string value)
     {
         return string.IsNullOrWhiteSpace(value) ? "none" : value;
+    }
+
+    private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservation(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement finalSnapshot)
+    {
+        var worst = BuildDiagnosticHealthObservation(
+            finalSnapshot,
+            samples.Count > 0 ? samples[^1].OffsetMs : 0);
+        foreach (var sample in samples)
+        {
+            var observation = BuildDiagnosticHealthObservation(sample.Snapshot, sample.OffsetMs);
+            if (observation.Severity > worst.Severity ||
+                (observation.Severity == worst.Severity && observation.OffsetMs > worst.OffsetMs))
+            {
+                worst = observation;
+            }
+        }
+
+        return worst;
+    }
+
+    private static DiagnosticHealthObservation BuildDiagnosticHealthObservation(JsonElement snapshot, long offsetMs)
+    {
+        var healthStatus = GetDiagnosticHealthStatus(snapshot);
+        return new DiagnosticHealthObservation(
+            healthStatus,
+            GetDiagnosticLikelyStage(snapshot),
+            GetString(snapshot, "DiagnosticEvidence") ?? string.Empty,
+            offsetMs,
+            GetDiagnosticHealthSeverity(healthStatus));
+    }
+
+    private static string GetDiagnosticHealthStatus(JsonElement snapshot)
+        => GetString(snapshot, "DiagnosticHealthStatus") ?? "Unknown";
+
+    private static string GetDiagnosticLikelyStage(JsonElement snapshot)
+        => GetString(snapshot, "DiagnosticLikelyStage") ?? "diagnostic_unavailable";
+
+    private static bool IsFailingDiagnosticHealthSeverity(int severity)
+        => severity >= 2;
+
+    private static int GetDiagnosticHealthSeverity(string? healthStatus)
+    {
+        return (healthStatus ?? string.Empty).Trim().ToLowerInvariant() switch
+        {
+            "critical" or "failed" or "faulted" or "error" => 4,
+            "degraded" => 3,
+            "warning" => 2,
+            "warmingup" => 1,
+            _ => 0
+        };
     }
 
     private static string FormatFrameRate(double fps, string friendlyFps, string exactArg)

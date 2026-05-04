@@ -973,7 +973,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
         AssertContains(diagnosticSessionText, "actions.Add(\n            \"flashback segment playback observed \"");
         AssertDoesNotContain(diagnosticSessionText, "flashback segment playback: excessive late frames");
-        AssertContains(diagnosticSessionText, "(!(runFlashbackPlayback || runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackRotatedExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0)");
+        AssertContains(diagnosticSessionText, "var diagnosticHealthObservation = BuildWorstDiagnosticHealthObservation(samples, healthSnapshot);");
+        AssertContains(diagnosticSessionText, "diagnosticHealthSucceeded &&");
+        AssertContains(diagnosticSessionText, "(!isFlashbackScenario || warnings.Count == 0)");
         AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-playback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-encoder-cycle\" or \"flashback-export-playback\" or \"flashback-segment-playback\" or \"flashback-range-export\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-rotated-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-settings-deferred\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
 
         var ssctlProgramText = ReadRepoFile("tools/ssctl/Program.cs")

@@ -474,6 +474,9 @@ static partial class Program
                 "MCP diagnostic session tool records snapshot artifacts",
                 McpDiagnosticSessionTool_RecordsSnapshotArtifacts),
             await RunCheckAsync(
+                "MCP diagnostic session tool surfaces diagnostic failures",
+                McpDiagnosticSessionTool_SurfacesDiagnosticFailureAsToolError),
+            await RunCheckAsync(
                 "Diagnostic session runner writes terminal artifacts on final snapshot failure",
                 DiagnosticSessionRunner_FinalSnapshotFailureWritesTerminalArtifacts),
             await RunCheckAsync(
