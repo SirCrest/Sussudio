@@ -214,11 +214,13 @@ public sealed partial class MainWindow
         var targetPosition = ComputeFlashbackScrubPosition(e);
         if (!ViewModel.FlashbackBeginScrub(targetPosition))
         {
+            _lastScrubPointerPosition = null;
             ViewModel.ReportFlashbackPlaybackRejection("scrub begin", "FLASHBACK_UI_SCRUB_BEGIN_REJECTED");
             return;
         }
 
         _isFlashbackScrubbing = true;
+        _lastScrubPointerPosition = targetPosition;
         _lastScrubUpdateTick = 0;
         (sender as UIElement)?.CapturePointer(e.Pointer);
         UpdateFlashbackScrubVisual(e);
@@ -239,6 +241,7 @@ public sealed partial class MainWindow
             EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "update_rejected");
             return;
         }
+        _lastScrubPointerPosition = targetPosition;
         UpdateFlashbackScrubVisual(e);
     }
     private void FlashbackScrubArea_PointerReleased(object sender, PointerRoutedEventArgs e)
@@ -248,6 +251,7 @@ public sealed partial class MainWindow
         {
             var targetPosition = ComputeFlashbackScrubPosition(e);
             releasePosition = targetPosition;
+            _lastScrubPointerPosition = targetPosition;
             if (!ViewModel.FlashbackUpdateScrub(targetPosition))
             {
                 ViewModel.ReportFlashbackPlaybackRejection("scrub release update", "FLASHBACK_UI_SCRUB_RELEASE_UPDATE_REJECTED");
@@ -263,14 +267,14 @@ public sealed partial class MainWindow
 
     private void FlashbackScrubArea_PointerCanceled(object sender, PointerRoutedEventArgs e)
     {
-        var carriedPosition = _isFlashbackScrubbing ? ViewModel.FlashbackPlaybackPosition : (TimeSpan?)null;
+        var carriedPosition = _isFlashbackScrubbing ? _lastScrubPointerPosition : null;
         Logger.Log($"FLASHBACK_SCRUB_END_CANCELED carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}");
         EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "cancelled", carriedPosition);
     }
 
     private void FlashbackScrubArea_PointerCaptureLost(object sender, PointerRoutedEventArgs e)
     {
-        var carriedPosition = _isFlashbackScrubbing ? ViewModel.FlashbackPlaybackPosition : (TimeSpan?)null;
+        var carriedPosition = _isFlashbackScrubbing ? _lastScrubPointerPosition : null;
         Logger.Log($"FLASHBACK_SCRUB_END_CAPTURE_LOST carried_position_ms={(long?)carriedPosition?.TotalMilliseconds}");
         EndFlashbackScrubInteraction(sender as UIElement, e.Pointer, "capture_lost", carriedPosition);
     }
@@ -284,6 +288,7 @@ public sealed partial class MainWindow
 
         _isFlashbackScrubbing = false;
         _lastScrubUpdateTick = 0;
+        _lastScrubPointerPosition = null;
         element?.ReleasePointerCapture(pointer);
         var ended = releasePosition.HasValue
             ? ViewModel.FlashbackEndScrubAt(releasePosition.Value)

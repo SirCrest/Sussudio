@@ -433,7 +433,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)
         {
             MarkCommandNoOp(CommandKind.EndScrub, "live_thread_not_running", position);
-            return true;
+            return false;
         }
         if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, "thread_not_running", "thread_not_running", false, position);
         return SendEndScrubCommand(position);
@@ -488,7 +488,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)
         {
             MarkCommandNoOp(CommandKind.GoLive, "live_thread_not_running");
-            return true;
+            return false;
         }
         if (!EnsurePlaybackThread(CommandKind.GoLive)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });
@@ -500,7 +500,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)
         {
             MarkCommandNoOp(CommandKind.Nudge, "live_thread_not_running", delta: delta);
-            return true;
+            return false;
         }
         if (!EnsurePlaybackThread(CommandKind.Nudge)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Nudge, Delta = delta });
