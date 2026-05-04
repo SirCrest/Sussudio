@@ -1085,8 +1085,9 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
 
     private DecodedVideoFrame ConvertAndOutputVideoFrame()
     {
-        // Calculate PTS first (used by both paths)
-        var pts = DecodePtsToTimeSpan(_videoFrame->pts, _videoTimeBase);
+        // Calculate PTS first (used by both paths). MPEG-TS frames can have
+        // AV_NOPTS_VALUE in pts even when FFmpeg recovered a usable timestamp.
+        var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_videoFrame), _videoTimeBase);
 
         _currentPosition = pts;
 
@@ -1492,6 +1493,21 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
         return TimeSpan.FromSeconds(seconds);
     }
 
+    private static long ResolveBestEffortFrameTimestamp(AVFrame* frame)
+    {
+        if (frame == null)
+        {
+            return ffmpeg.AV_NOPTS_VALUE;
+        }
+
+        if (frame->best_effort_timestamp != ffmpeg.AV_NOPTS_VALUE)
+        {
+            return frame->best_effort_timestamp;
+        }
+
+        return frame->pts;
+    }
+
     private static long ToAvTimeBaseTimestamp(TimeSpan value)
     {
         if (value <= TimeSpan.Zero)
@@ -1513,7 +1529,7 @@ internal sealed unsafe class FlashbackDecoder : IDisposable
     private DecodedAudioChunk ConvertAndOutputAudioFrame()
     {
         var inputSamples = _audioFrame->nb_samples;
-        var pts = DecodePtsToTimeSpan(_audioFrame->pts, _audioTimeBase);
+        var pts = DecodePtsToTimeSpan(ResolveBestEffortFrameTimestamp(_audioFrame), _audioTimeBase);
         byte[]? result = null;
         var returnResultToPool = true;
 

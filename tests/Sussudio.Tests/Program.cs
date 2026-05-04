@@ -949,6 +949,9 @@ static partial class Program
                 "Flashback end-of-segment open failures snap live",
                 FlashbackPlaybackController_EndOfSegmentOpenFailuresSnapLive),
             await RunCheckAsync(
+                "Flashback normal playback uses tight near-live snap",
+                FlashbackPlaybackController_NormalPlaybackUsesTightNearLiveSnap),
+            await RunCheckAsync(
                 "Flashback snap-live clears open file identity",
                 FlashbackPlaybackController_SnapLiveClearsOpenFileIdentity),
             await RunCheckAsync(
@@ -3456,6 +3459,11 @@ static partial class Program
             ?? throw new InvalidOperationException("FlashbackBufferManager.PurgeAllSegments not found.");
 
         markPreserved.Invoke(manager, null);
+        SetPrivateField(manager, "_validStartPtsTicks", TimeSpan.FromSeconds(2).Ticks);
+        InvokeNonPublicInstanceMethod(manager, "EvictOldestSegments", null);
+
+        AssertEqual(true, File.Exists(completedPath), "Recovery-preserved completed segment survives normal eviction");
+
         purgeAll.Invoke(manager, null);
 
         AssertEqual(true, File.Exists(completedPath), "Recovery-preserved completed segment survives explicit purge");
@@ -3473,6 +3481,7 @@ static partial class Program
         AssertContains(source, "private bool _preserveSessionForRecovery;");
         AssertContains(source, "private bool IsSessionPreservedForRecoveryUnsafe()");
         AssertContains(source, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
+        AssertContains(source, "FLASHBACK_BUFFER_EVICT_SKIP reason=recovery_preserved");
         AssertContains(source, "FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY");
 
         try { Directory.Delete(tempDir, recursive: true); } catch { }

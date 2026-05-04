@@ -227,6 +227,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private const int CommandQueueCapacity = 256;
     private const double FallbackPlaybackFrameRate = 60.0;
     private const double MaxPlaybackFrameRate = 1000.0;
+    private const double ContinuousPlaybackNearLiveSnapFrames = 3.0;
+    private static readonly TimeSpan ContinuousPlaybackNearLiveSnapMinimum = TimeSpan.FromMilliseconds(100);
+    private static readonly TimeSpan RecoveryNearLiveSnapThreshold = TimeSpan.FromMilliseconds(2000);
     private const double MaxContinuousSoftwarePlaybackPixelRate = 3840.0 * 2160.0 * 60.0;
     private readonly object _playbackThreadSync = new();
     private Thread? _playbackThread;
@@ -2620,12 +2623,15 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         var absoluteLatestPts = _bufferManager.LatestPts;
         var gapFromLive = SaturatingSubtract(absoluteLatestPts, absoluteFramePts);
+        var snapThreshold = requireFrameWarmup
+            ? ResolveContinuousPlaybackNearLiveSnapThreshold()
+            : RecoveryNearLiveSnapThreshold;
         if ((!requireFrameWarmup || Interlocked.Read(ref _playbackFrameCount) > 60) &&
-            gapFromLive <= TimeSpan.FromMilliseconds(2000))
+            gapFromLive <= snapThreshold)
         {
             Interlocked.Increment(ref _playbackNearLiveSnaps);
             var gapMs = gapFromLive.TotalMilliseconds;
-            Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)bufferPosition.TotalMilliseconds} framePts_ms={(long)absoluteFramePts.TotalMilliseconds} latestPts_ms={(long)absoluteLatestPts.TotalMilliseconds} gapFromLive_ms={gapMs:F0} frameCount={_playbackFrameCount}");
+            Logger.Log($"FLASHBACK_PLAYBACK_NEAR_LIVE_SNAP pos_ms={(long)bufferPosition.TotalMilliseconds} framePts_ms={(long)absoluteFramePts.TotalMilliseconds} latestPts_ms={(long)absoluteLatestPts.TotalMilliseconds} gapFromLive_ms={gapMs:F0} threshold_ms={(long)snapThreshold.TotalMilliseconds} frameCount={_playbackFrameCount}");
             CloseDecoderFileBestEffort(decoder, "near_live");
             fileOpen = false;
             _currentOpenFilePath = null;
@@ -2639,6 +2645,25 @@ internal sealed class FlashbackPlaybackController : IDisposable
             return true;
         }
         return false;
+    }
+
+    private TimeSpan ResolveContinuousPlaybackNearLiveSnapThreshold()
+    {
+        var fps = _playbackTargetFps;
+        if (!double.IsFinite(fps) || fps <= 0)
+        {
+            fps = _bufferManager.EncodeFrameRate;
+        }
+
+        if (!double.IsFinite(fps) || fps <= 0)
+        {
+            fps = FallbackPlaybackFrameRate;
+        }
+
+        var framesThreshold = TimeSpan.FromSeconds(ContinuousPlaybackNearLiveSnapFrames / Math.Min(fps, MaxPlaybackFrameRate));
+        return framesThreshold > ContinuousPlaybackNearLiveSnapMinimum
+            ? framesThreshold
+            : ContinuousPlaybackNearLiveSnapMinimum;
     }
 
     private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)

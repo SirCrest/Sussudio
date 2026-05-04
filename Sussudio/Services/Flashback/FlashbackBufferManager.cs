@@ -1629,6 +1629,12 @@ internal sealed class FlashbackBufferManager : IDisposable
     private void EvictOldestSegments()
     {
         // Must be called under _indexLock
+        if (IsSessionPreservedForRecoveryUnsafe())
+        {
+            Logger.Log($"FLASHBACK_BUFFER_EVICT_SKIP reason=recovery_preserved dir='{_sessionDirectory}' segments={_completedSegments.Count}");
+            return;
+        }
+
         var validStart = TimeSpan.FromTicks(Interlocked.Read(ref _validStartPtsTicks));
         var evictedCount = 0;
         long evictedBytes = 0;
