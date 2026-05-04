@@ -456,6 +456,9 @@ static partial class Program
                 "MCP host tool schema uses PipeClient as a service",
                 McpHostToolSchema_UsesPipeClientAsService),
             await RunCheckAsync(
+                "MCP PipeClient honors Sussudio pipe environment",
+                McpPipeClient_HonorsSussudioAutomationPipeEnvironment),
+            await RunCheckAsync(
                 "MCP host tool invocation returns pipe failures",
                 McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport),
             await RunCheckAsync(
@@ -503,6 +506,9 @@ static partial class Program
             await RunCheckAsync(
                 "MCP performance timeline exposes D3D P99 stage timing",
                 McpPerformanceTimelineTool_ExposesD3DP99StageTiming),
+            await RunCheckAsync(
+                "MCP performance timeline renders flashback command counters",
+                McpPerformanceTimelineTool_RendersFlashbackCommandCounters),
             await RunCheckAsync(
                 "MCP wait tool routes condition waits",
                 McpWaitTools_RouteConditionWaits),

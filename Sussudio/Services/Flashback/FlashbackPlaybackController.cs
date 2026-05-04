@@ -371,13 +371,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         lock (_seekSlotSync)
         {
-            _queuedScrubUpdateSlot = null;
-
             if (_queuedSeekSlot is { } queuedSlot)
             {
+                _queuedScrubUpdateSlot = null;
                 queuedSlot.LatestTicks = position.Ticks;
                 TrackCoalescedSeekCommand();
-                MarkCommandAccepted(CommandKind.Seek);
+                ClearLastCommandFailure();
                 return true;
             }
 
@@ -389,6 +388,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 return false;
             }
 
+            _queuedScrubUpdateSlot = null;
             return true;
         }
     }
@@ -404,13 +404,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         lock (_seekSlotSync)
         {
-            _queuedSeekSlot = null;
             Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);
             if (_queuedScrubUpdateSlot is { } queuedSlot)
             {
+                _queuedSeekSlot = null;
                 queuedSlot.LatestTicks = position.Ticks;
                 TrackCoalescedScrubUpdate();
-                MarkCommandAccepted(CommandKind.UpdateScrub);
+                ClearLastCommandFailure();
                 return true;
             }
 
@@ -422,6 +422,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 return false;
             }
 
+            _queuedSeekSlot = null;
             return true;
         }
     }
@@ -455,14 +456,19 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Value.Ticks);
             }
 
-            _queuedSeekSlot = null;
-            _queuedScrubUpdateSlot = null;
-            return SendCommandCore(new PlaybackCommand
+            if (!SendCommandCore(new PlaybackCommand
             {
                 Kind = CommandKind.EndScrub,
                 Position = commandPosition,
                 HasPositionOverride = position.HasValue
-            });
+            }))
+            {
+                return false;
+            }
+
+            _queuedSeekSlot = null;
+            _queuedScrubUpdateSlot = null;
+            return true;
         }
     }
 
@@ -612,6 +618,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         lock (_seekSlotSync)
         {
+            if (!SendCommandCore(command))
+            {
+                return false;
+            }
+
             if (command.Kind != CommandKind.Seek)
             {
                 _queuedSeekSlot = null;
@@ -622,7 +633,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 _queuedScrubUpdateSlot = null;
             }
 
-            return SendCommandCore(command);
+            return true;
         }
     }
 
@@ -657,7 +668,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         Interlocked.Increment(ref _commandsEnqueued);
         UpdateMaxPendingCommands(pending);
-        MarkCommandAccepted(command.Kind);
+        MarkCommandQueued(command.Kind);
         return true;
     }
 
@@ -1360,17 +1371,23 @@ internal sealed class FlashbackPlaybackController : IDisposable
         finally
         {
             timeEndPeriod(1);
+            CompleteCommandChannelForThreadExit(commandChannel);
             DrainAbandonedCommandsOnThreadExit(commandChannel);
-            if (ReferenceEquals(Thread.CurrentThread, _playbackThread))
+            var ownsPlaybackThread = ReferenceEquals(Thread.CurrentThread, _playbackThread);
+            var ownsCts = ReferenceEquals(cts, _playCts);
+            if (ownsPlaybackThread)
             {
                 _playbackThread = null;
             }
-            if (ReferenceEquals(cts, _playCts))
+            if (ownsCts)
             {
                 _playCts = null;
             }
             DisposePlaybackCtsBestEffort(cts, "thread_exit");
-            Volatile.Write(ref _playbackThreadStarted, 0);
+            if (ownsPlaybackThread || ownsCts)
+            {
+                Volatile.Write(ref _playbackThreadStarted, 0);
+            }
         }
 
         Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
@@ -1433,6 +1450,18 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
 
         ClearQueuedCommandSlotsBarrier();
+    }
+
+    private static void CompleteCommandChannelForThreadExit(Channel<PlaybackCommand> commandChannel)
+    {
+        try
+        {
+            commandChannel.Writer.TryComplete();
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_CHANNEL_COMPLETE_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 
     private PlaybackCommand ResolveSeekCommandPosition(PlaybackCommand command)
@@ -3311,7 +3340,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
     }
 
-    private void MarkCommandAccepted(CommandKind kind)
+    private void MarkCommandQueued(CommandKind kind)
     {
         Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
         Volatile.Write(ref _lastCommandQueued, kind.ToString());

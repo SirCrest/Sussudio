@@ -15,9 +15,12 @@ public sealed class PipeClient
 
     internal PipeClient(string? pipeName)
     {
-        _pipeName = string.IsNullOrWhiteSpace(pipeName)
-            ? AutomationPipeProtocol.DefaultPipeName
+        var configuredPipeName = string.IsNullOrWhiteSpace(pipeName)
+            ? Environment.GetEnvironmentVariable("SUSSUDIO_AUTOMATION_PIPE")
             : pipeName;
+        _pipeName = string.IsNullOrWhiteSpace(configuredPipeName)
+            ? AutomationPipeProtocol.DefaultPipeName
+            : configuredPipeName;
     }
 
     public async Task<JsonElement> SendCommandAsync(

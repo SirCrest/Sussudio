@@ -366,19 +366,23 @@ static partial class Program
         try
         {
             AssertEqual(true, (bool)sendSeek.Invoke(controller, new object[] { TimeSpan.FromSeconds(1) })!, "Initial seek enqueues");
+            var initialSeekQueuedUtc = GetLongProperty(controller, "LastCommandQueuedUtcUnixMs");
             SeedCommandFailure(controller, "old_failure:Seek");
             AssertEqual(true, (bool)sendSeek.Invoke(controller, new object[] { TimeSpan.FromSeconds(2) })!, "Coalesced seek succeeds");
             AssertEqual(string.Empty, GetStringProperty(controller, "LastCommandFailure"), "Coalesced seek clears stale failure");
             AssertEqual(0L, GetLongProperty(controller, "LastCommandFailureUtcUnixMs"), "Coalesced seek clears stale failure UTC");
-            AssertEqual("Seek", GetStringProperty(controller, "LastCommandQueued"), "Coalesced seek records accepted intent");
+            AssertEqual("Seek", GetStringProperty(controller, "LastCommandQueued"), "Coalesced seek keeps physical queued-command name");
+            AssertEqual(initialSeekQueuedUtc, GetLongProperty(controller, "LastCommandQueuedUtcUnixMs"), "Coalesced seek does not refresh queued-command timestamp");
             AssertEqual(1L, GetLongProperty(controller, "SeekCommandsCoalesced"), "Coalesced seek counter");
 
             AssertEqual(true, (bool)sendUpdateScrub.Invoke(controller, new object[] { TimeSpan.FromSeconds(3) })!, "Initial scrub update enqueues");
+            var initialScrubQueuedUtc = GetLongProperty(controller, "LastCommandQueuedUtcUnixMs");
             SeedCommandFailure(controller, "old_failure:UpdateScrub");
             AssertEqual(true, (bool)sendUpdateScrub.Invoke(controller, new object[] { TimeSpan.FromSeconds(4) })!, "Coalesced scrub update succeeds");
             AssertEqual(string.Empty, GetStringProperty(controller, "LastCommandFailure"), "Coalesced scrub update clears stale failure");
             AssertEqual(0L, GetLongProperty(controller, "LastCommandFailureUtcUnixMs"), "Coalesced scrub update clears stale failure UTC");
-            AssertEqual("UpdateScrub", GetStringProperty(controller, "LastCommandQueued"), "Coalesced scrub update records accepted intent");
+            AssertEqual("UpdateScrub", GetStringProperty(controller, "LastCommandQueued"), "Coalesced scrub update keeps physical queued-command name");
+            AssertEqual(initialScrubQueuedUtc, GetLongProperty(controller, "LastCommandQueuedUtcUnixMs"), "Coalesced scrub update does not refresh queued-command timestamp");
             AssertEqual(1L, GetLongProperty(controller, "ScrubUpdatesCoalesced"), "Coalesced scrub update counter");
         }
         finally
@@ -1949,19 +1953,24 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_COMPLETE was_open={wasOpen}");
         AssertContains(sourceText, "release_ms={releaseMs:0.###} close_ms={closeMs:0.###} dispose_ms={disposeMs:0.###} total_ms={totalMs:0.###}");
         AssertContains(sourceText, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
-        AssertContains(sourceText, "DrainAbandonedCommandsOnThreadExit(commandChannel);");
+        AssertContains(sourceText, "CompleteCommandChannelForThreadExit(commandChannel);\n            DrainAbandonedCommandsOnThreadExit(commandChannel);");
+        AssertContains(sourceText, "private static void CompleteCommandChannelForThreadExit(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(sourceText, "commandChannel.Writer.TryComplete();");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_CHANNEL_COMPLETE_WARN");
         AssertContains(sourceText, "Interlocked.Add(ref _commandsDropped, abandoned);");
         AssertContains(sourceText, "if (string.IsNullOrEmpty(Volatile.Read(ref _lastCommandFailure)))\n            {\n                SetLastCommandFailure($\"abandoned_on_exit:{abandoned}\");\n            }");
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);");
-        AssertContains(sourceText, "ReferenceEquals(Thread.CurrentThread, _playbackThread)");
+        AssertContains(sourceText, "var ownsPlaybackThread = ReferenceEquals(Thread.CurrentThread, _playbackThread);");
+        AssertContains(sourceText, "var ownsCts = ReferenceEquals(cts, _playCts);");
+        AssertContains(sourceText, "if (ownsPlaybackThread)\n            {\n                _playbackThread = null;\n            }");
         AssertContains(sourceText, "_playbackThread = null;");
         AssertContains(sourceText, "StopPlaybackThread();\n        _initialized = false;\n        Logger.Log(\"FLASHBACK_PLAYBACK_DISPOSED\");");
         AssertContains(sourceText, "if (_disposedFlag != 0 && command.Kind != CommandKind.Stop)\n        {\n            return RejectCommand(command.Kind, \"disposed\", \"disposed\", false);\n        }");
-        AssertContains(sourceText, "if (ReferenceEquals(cts, _playCts))\n            {\n                _playCts = null;\n            }\n            DisposePlaybackCtsBestEffort(cts, \"thread_exit\");");
+        AssertContains(sourceText, "if (ownsCts)\n            {\n                _playCts = null;\n            }\n            DisposePlaybackCtsBestEffort(cts, \"thread_exit\");");
         AssertContains(sourceText, "private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_CTS_DISPOSE_WARN");
-        AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);");
-        AssertContains(sourceText, "Interlocked.Increment(ref _commandsEnqueued);\n        UpdateMaxPendingCommands(pending);\n        MarkCommandAccepted(command.Kind);\n        return true;");
+        AssertContains(sourceText, "if (ownsPlaybackThread || ownsCts)\n            {\n                Volatile.Write(ref _playbackThreadStarted, 0);\n            }");
+        AssertContains(sourceText, "Interlocked.Increment(ref _commandsEnqueued);\n        UpdateMaxPendingCommands(pending);\n        MarkCommandQueued(command.Kind);\n        return true;");
 
         return Task.CompletedTask;
     }
@@ -2552,21 +2561,21 @@ static partial class Program
         AssertContains(seekMethod, "if (_queuedSeekSlot is { } queuedSlot)");
         AssertContains(seekMethod, "queuedSlot.LatestTicks = position.Ticks;");
         AssertContains(seekMethod, "TrackCoalescedSeekCommand();");
-        AssertContains(seekMethod, "MarkCommandAccepted(CommandKind.Seek);");
+        AssertContains(seekMethod, "ClearLastCommandFailure();");
         AssertContains(seekMethod, "return true;");
         AssertContains(seekMethod, "var slot = new SeekIntentSlot(position.Ticks);");
         AssertContains(seekMethod, "_queuedSeekSlot = slot;");
         AssertContains(seekMethod, "SeekSlot = slot");
         AssertContains(seekMethod, "ClearQueuedSeekSlotUnsafe(slot);");
         AssertContains(seekMethod, "return false;");
-        AssertContains(sourceText, "private bool SendCommand(PlaybackCommand command)\n    {\n        lock (_seekSlotSync)\n        {\n            if (command.Kind != CommandKind.Seek)\n            {\n                _queuedSeekSlot = null;\n            }\n\n            if (command.Kind != CommandKind.UpdateScrub)\n            {\n                _queuedScrubUpdateSlot = null;\n            }\n\n            return SendCommandCore(command);\n        }\n    }");
+        AssertContains(sourceText, "private bool SendCommand(PlaybackCommand command)\n    {\n        lock (_seekSlotSync)\n        {\n            if (!SendCommandCore(command))\n            {\n                return false;\n            }\n\n            if (command.Kind != CommandKind.Seek)\n            {\n                _queuedSeekSlot = null;\n            }\n\n            if (command.Kind != CommandKind.UpdateScrub)\n            {\n                _queuedScrubUpdateSlot = null;\n            }\n\n            return true;\n        }\n    }");
         AssertContains(updateScrubMethod, "return SendUpdateScrubCommand(position);");
         AssertContains(sourceText, "private bool SendUpdateScrubCommand(TimeSpan position)");
-        AssertContains(sourceText, "_queuedSeekSlot = null;\n            Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);");
         AssertContains(sourceText, "if (_queuedScrubUpdateSlot is { } queuedSlot)");
         AssertContains(sourceText, "queuedSlot.LatestTicks = position.Ticks;");
-        AssertContains(sourceText, "MarkCommandAccepted(CommandKind.UpdateScrub);");
+        AssertContains(sourceText, "ClearLastCommandFailure();");
         AssertContains(sourceText, "var slot = new ScrubUpdateIntentSlot(position.Ticks);");
         AssertContains(sourceText, "_queuedScrubUpdateSlot = slot;");
         AssertContains(sourceText, "ScrubUpdateSlot = slot");
@@ -2602,7 +2611,7 @@ static partial class Program
         AssertContains(sourceText, "return $\" pos_ms={position.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "return $\" delta_ms={delta.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "private void SetLastCommandFailure(string failure)\n    {\n        Volatile.Write(ref _lastCommandFailure, failure);\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());\n    }");
-        AssertContains(sourceText, "private void MarkCommandAccepted(CommandKind kind)");
+        AssertContains(sourceText, "private void MarkCommandQueued(CommandKind kind)");
         AssertContains(sourceText, "private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)");
         AssertContains(sourceText, "private void ClearLastCommandFailure()\n    {\n        Volatile.Write(ref _lastCommandFailure, string.Empty);\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);\n    }");
         AssertContains(sourceText, "private void TrackCoalescedScrubUpdate()");
@@ -2845,6 +2854,93 @@ static partial class Program
         AssertEqual(threeSeconds, (TimeSpan)GetPropertyValue(resolvedThirdScrubQueued, "Position")!, "Post-barrier producer scrub update keeps its own position");
         AssertEqual(false, TryReadQueuedPlaybackCommand(scrubChannel, commandType, out _), "No extra producer scrub commands are queued");
 
+        var failedBarrierController = Activator.CreateInstance(
+                controllerType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                args: new[] { bufferManager },
+                culture: null)
+            ?? throw new InvalidOperationException("Failed barrier FlashbackPlaybackController construction failed.");
+        using var disposableFailedBarrierController = failedBarrierController as IDisposable;
+
+        AssertEqual(true, (bool)sendSeek.Invoke(failedBarrierController, new object[] { oneSecond })!, "Failed-barrier setup seek enqueues");
+        var failedBarrierSlot = queuedSeekSlotField.GetValue(failedBarrierController)
+            ?? throw new InvalidOperationException("Failed-barrier seek slot missing.");
+        var failedBarrierChannel = commandChannelField.GetValue(failedBarrierController)
+            ?? throw new InvalidOperationException("Failed-barrier command channel missing.");
+        CompleteQueuedPlaybackCommands(failedBarrierChannel);
+        AssertEqual(false, (bool)sendCommand.Invoke(failedBarrierController, new[] { playCommand })!, "Rejected play barrier reports failure");
+        if (!ReferenceEquals(failedBarrierSlot, queuedSeekSlotField.GetValue(failedBarrierController)))
+        {
+            throw new InvalidOperationException("Rejected play barrier should preserve the active seek slot.");
+        }
+
+        var failedSeekController = Activator.CreateInstance(
+                controllerType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                args: new[] { bufferManager },
+                culture: null)
+            ?? throw new InvalidOperationException("Failed seek FlashbackPlaybackController construction failed.");
+        using var disposableFailedSeekController = failedSeekController as IDisposable;
+
+        AssertEqual(true, (bool)sendUpdateScrub.Invoke(failedSeekController, new object[] { oneSecond })!, "Failed-seek setup scrub update enqueues");
+        var failedSeekScrubSlot = queuedScrubSlotField.GetValue(failedSeekController)
+            ?? throw new InvalidOperationException("Failed-seek scrub slot missing.");
+        var failedSeekChannel = commandChannelField.GetValue(failedSeekController)
+            ?? throw new InvalidOperationException("Failed-seek command channel missing.");
+        CompleteQueuedPlaybackCommands(failedSeekChannel);
+        AssertEqual(false, (bool)sendSeek.Invoke(failedSeekController, new object[] { twoSeconds })!, "Rejected seek barrier reports failure");
+        if (!ReferenceEquals(failedSeekScrubSlot, queuedScrubSlotField.GetValue(failedSeekController)))
+        {
+            throw new InvalidOperationException("Rejected seek should preserve the active scrub slot.");
+        }
+        AssertEqual(null, queuedSeekSlotField.GetValue(failedSeekController), "Rejected seek clears only its own newly-created seek slot");
+
+        var failedScrubUpdateController = Activator.CreateInstance(
+                controllerType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                args: new[] { bufferManager },
+                culture: null)
+            ?? throw new InvalidOperationException("Failed scrub update FlashbackPlaybackController construction failed.");
+        using var disposableFailedScrubUpdateController = failedScrubUpdateController as IDisposable;
+
+        AssertEqual(true, (bool)sendSeek.Invoke(failedScrubUpdateController, new object[] { oneSecond })!, "Failed-scrub-update setup seek enqueues");
+        var failedScrubUpdateSeekSlot = queuedSeekSlotField.GetValue(failedScrubUpdateController)
+            ?? throw new InvalidOperationException("Failed-scrub-update seek slot missing.");
+        var failedScrubUpdateChannel = commandChannelField.GetValue(failedScrubUpdateController)
+            ?? throw new InvalidOperationException("Failed-scrub-update command channel missing.");
+        CompleteQueuedPlaybackCommands(failedScrubUpdateChannel);
+        AssertEqual(false, (bool)sendUpdateScrub.Invoke(failedScrubUpdateController, new object[] { twoSeconds })!, "Rejected scrub update barrier reports failure");
+        if (!ReferenceEquals(failedScrubUpdateSeekSlot, queuedSeekSlotField.GetValue(failedScrubUpdateController)))
+        {
+            throw new InvalidOperationException("Rejected scrub update should preserve the active seek slot.");
+        }
+        AssertEqual(null, queuedScrubSlotField.GetValue(failedScrubUpdateController), "Rejected scrub update clears only its own newly-created scrub slot");
+
+        var failedEndScrubController = Activator.CreateInstance(
+                controllerType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                args: new[] { bufferManager },
+                culture: null)
+            ?? throw new InvalidOperationException("Failed end scrub FlashbackPlaybackController construction failed.");
+        using var disposableFailedEndScrubController = failedEndScrubController as IDisposable;
+
+        AssertEqual(true, (bool)sendUpdateScrub.Invoke(failedEndScrubController, new object[] { oneSecond })!, "Failed-end-scrub setup update enqueues");
+        AssertEqual(true, (bool)sendUpdateScrub.Invoke(failedEndScrubController, new object[] { twoSeconds })!, "Failed-end-scrub setup update coalesces");
+        var failedEndScrubSlot = queuedScrubSlotField.GetValue(failedEndScrubController)
+            ?? throw new InvalidOperationException("Failed-end-scrub slot missing.");
+        var failedEndScrubChannel = commandChannelField.GetValue(failedEndScrubController)
+            ?? throw new InvalidOperationException("Failed-end-scrub command channel missing.");
+        CompleteQueuedPlaybackCommands(failedEndScrubChannel);
+        AssertEqual(false, (bool)sendEndScrub.Invoke(failedEndScrubController, new object?[] { null })!, "Rejected end scrub barrier reports failure");
+        if (!ReferenceEquals(failedEndScrubSlot, queuedScrubSlotField.GetValue(failedEndScrubController)))
+        {
+            throw new InvalidOperationException("Rejected end scrub should preserve the active scrub slot.");
+        }
+
         return Task.CompletedTask;
 
         static object ReadQueuedPlaybackCommand(object channel, Type commandType, string label)
@@ -2872,6 +2968,20 @@ static partial class Program
             var result = (bool)tryRead.Invoke(reader, args)!;
             command = args[0];
             return result;
+        }
+
+        static void CompleteQueuedPlaybackCommands(object channel)
+        {
+            var writer = channel.GetType().GetProperty("Writer")?.GetValue(channel)
+                ?? throw new InvalidOperationException("Command channel writer missing.");
+            var tryComplete = writer.GetType().GetMethod(
+                    "TryComplete",
+                    BindingFlags.Instance | BindingFlags.Public,
+                    binder: null,
+                    types: new[] { typeof(Exception) },
+                    modifiers: null)
+                ?? throw new InvalidOperationException("Command channel TryComplete not found.");
+            _ = (bool)tryComplete.Invoke(writer, new object?[] { null })!;
         }
     }
 

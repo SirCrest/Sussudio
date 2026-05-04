@@ -111,6 +111,38 @@ static partial class Program
         }
     }
 
+    private static async Task McpPipeClient_HonorsSussudioAutomationPipeEnvironment()
+    {
+        var pipeName = NewMcpToolPipeName("env");
+        var previousPipeName = Environment.GetEnvironmentVariable("SUSSUDIO_AUTOMATION_PIPE");
+        Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_PIPE", pipeName);
+        try
+        {
+            var pipeClient = CreateDefaultMcpPipeClient();
+            var appStateTools = RequireMcpType("McpServer.Tools.AppStateTools");
+
+            var requests = await CapturePipeRequestsAsync(
+                    pipeName,
+                    expectedCount: 1,
+                    async () =>
+                    {
+                        _ = await InvokeMcpToolResultAsync(
+                                appStateTools,
+                                "get_app_state_raw",
+                                pipeClient)
+                            .ConfigureAwait(false);
+                    },
+                    _ => "{\"Success\":true,\"Snapshot\":{\"SessionState\":\"Ready\"}}")
+                .ConfigureAwait(false);
+
+            AssertCommandRequest(requests[0], "GetSnapshot");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("SUSSUDIO_AUTOMATION_PIPE", previousPipeName);
+        }
+    }
+
     private static async Task McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport()
     {
         var assemblyPath = Path.Combine("tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll");
@@ -1273,6 +1305,8 @@ static partial class Program
     private static Task McpPerformanceTimelineTool_ExposesD3DP99StageTiming()
     {
         var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
+        var diagnosticsHubSource = ReadRepoFile("Sussudio/Services/Automation/AutomationDiagnosticsHub.cs");
+        var entryType = RequireType("Sussudio.Models.PerformanceTimelineEntry");
 
         AssertContains(source, "PreviewD3DInputUploadCpuP99Ms");
         AssertContains(source, "targetOnePercentLowFps");
@@ -1373,6 +1407,21 @@ static partial class Program
         AssertContains(source, "Flashback Cmd Counters:");
         AssertContains(source, "lastQueued={FormatOptional(last.FlashbackPlaybackLastCommandQueued)}");
         AssertContains(source, "lastProcessed={FormatOptional(last.FlashbackPlaybackLastCommandProcessed)}");
+        foreach (var propertyName in new[]
+                 {
+                     "FlashbackPlaybackCommandsEnqueued",
+                     "FlashbackPlaybackCommandsProcessed",
+                     "FlashbackPlaybackCommandsDropped",
+                     "FlashbackPlaybackCommandsSkippedNotReady",
+                     "FlashbackPlaybackScrubUpdatesCoalesced",
+                     "FlashbackPlaybackSeekCommandsCoalesced",
+                     "FlashbackPlaybackLastCommandQueued",
+                     "FlashbackPlaybackLastCommandProcessed"
+                 })
+        {
+            AssertNotNull(entryType.GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance), $"PerformanceTimelineEntry.{propertyName}");
+            AssertContains(diagnosticsHubSource, $"{propertyName} = snapshot.{propertyName}");
+        }
         AssertContains(source, "Flashback Failure:");
         AssertContains(source, "Flashback Stages:");
         AssertContains(source, "failureUtc latest={last.FlashbackPlaybackLastCommandFailureUtcUnixMs}");
@@ -1387,6 +1436,63 @@ static partial class Program
         AssertContains(source, "Export Output:");
 
         return Task.CompletedTask;
+    }
+
+    private static async Task McpPerformanceTimelineTool_RendersFlashbackCommandCounters()
+    {
+        var pipeName = NewMcpToolPipeName("timeline-counters");
+        var pipeClient = CreateMcpPipeClient(pipeName);
+        var timelineTools = RequireMcpType("McpServer.Tools.PerformanceTimelineTools");
+
+        var requests = await CapturePipeRequestsAsync(
+                pipeName,
+                expectedCount: 1,
+                async () =>
+                {
+                    var output = await InvokeMcpToolStringAsync(
+                            timelineTools,
+                            "get_performance_timeline",
+                            pipeClient,
+                            2,
+                            118d)
+                        .ConfigureAwait(false);
+
+                    AssertContains(output, "Flashback Cmd Counters: enqueued 1 -> 9, processed 0 -> 8, dropped 0 -> 2, skippedNotReady 0 -> 1, scrubCoalesced 0 -> 4, seekCoalesced 0 -> 3, lastQueued=Seek, lastProcessed=Pause");
+                    AssertContains(output, "cmdDropsDelta=2");
+                },
+                _ => """
+                     {
+                       "Success": true,
+                       "Data": [
+                         {
+                           "TimestampUtc": "2026-05-04T12:00:00Z",
+                           "FlashbackPlaybackCommandsEnqueued": 1,
+                           "FlashbackPlaybackCommandsProcessed": 0,
+                           "FlashbackPlaybackCommandsDropped": 0,
+                           "FlashbackPlaybackCommandsSkippedNotReady": 0,
+                           "FlashbackPlaybackScrubUpdatesCoalesced": 0,
+                           "FlashbackPlaybackSeekCommandsCoalesced": 0,
+                           "FlashbackPlaybackLastCommandQueued": "Play",
+                           "FlashbackPlaybackLastCommandProcessed": "None"
+                         },
+                         {
+                           "TimestampUtc": "2026-05-04T12:00:01Z",
+                           "FlashbackPlaybackPendingCommands": 2,
+                           "FlashbackPlaybackCommandsEnqueued": 9,
+                           "FlashbackPlaybackCommandsProcessed": 8,
+                           "FlashbackPlaybackCommandsDropped": 2,
+                           "FlashbackPlaybackCommandsSkippedNotReady": 1,
+                           "FlashbackPlaybackScrubUpdatesCoalesced": 4,
+                           "FlashbackPlaybackSeekCommandsCoalesced": 3,
+                           "FlashbackPlaybackLastCommandQueued": "Seek",
+                           "FlashbackPlaybackLastCommandProcessed": "Pause"
+                         }
+                       ]
+                     }
+                     """)
+            .ConfigureAwait(false);
+
+        AssertCommandRequest(requests[0], "GetPerformanceTimeline", ("maxEntries", 2));
     }
 
     private static async Task McpWaitTools_RouteConditionWaits()
@@ -2071,6 +2177,13 @@ static partial class Program
                    args: new object?[] { pipeName },
                    culture: null)
                ?? throw new InvalidOperationException("Failed to create MCP PipeClient.");
+    }
+
+    private static object CreateDefaultMcpPipeClient()
+    {
+        var type = RequireMcpType("McpServer.PipeClient");
+        return Activator.CreateInstance(type)
+               ?? throw new InvalidOperationException("Failed to create default MCP PipeClient.");
     }
 
     private static async Task<string> InvokeMcpToolStringAsync(Type type, string methodName, params object?[] args)
