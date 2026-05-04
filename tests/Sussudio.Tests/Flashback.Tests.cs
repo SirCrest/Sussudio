@@ -1689,9 +1689,9 @@ static partial class Program
         var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
 
-        AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n        {\n            SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n        }");
-        AssertContains(sourceText, "case CommandKind.Stop:\n                        isPlaying = false;\n                        isScrubbing = false;\n                        CleanupDecoder(ref decoder, ref fileOpen);");
-        AssertContains(sourceText, "Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);\n                        RestoreLiveAudio();\n                        SafeResumePreviewSubmission(\"thread_stop\");\n                        SetState(FlashbackPlaybackState.Live);");
+        AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n            {\n                SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n            }");
+        AssertContains(sourceText, "case CommandKind.Stop:\n                            isPlaying = false;\n                            isScrubbing = false;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);\n                            RestoreLiveAudio();\n                            SafeResumePreviewSubmission(\"thread_stop\");\n                            SetState(FlashbackPlaybackState.Live);");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!EnsurePlaybackThread(CommandKind.GoLive)) return false;\n        return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
         AssertContains(sourceText, "private bool EnsurePlaybackThread(CommandKind commandKind)");
         AssertContains(sourceText, "private readonly object _playbackThreadSync = new();");
@@ -1727,15 +1727,23 @@ static partial class Program
         AssertContains(sourceText, "if (_disposedFlag != 0)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT\");\n                            isScrubbing = false;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
         AssertContains(sourceText, "SafeResumePreviewSubmission(\"thread_disposed\");\n                            SetState(FlashbackPlaybackState.Live);\n                            return;\n                        }");
         AssertContains(sourceText, "catch (OperationCanceledException)\n        {\n            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_CANCELLED\");");
-        AssertContains(sourceText, "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_PLAYBACK_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'\");\n        }");
+        AssertContains(sourceText, "catch (Exception ex)\n            {\n                Logger.Log($\"FLASHBACK_PLAYBACK_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'\");\n            }");
         AssertContains(sourceText, "finally\n        {\n            timeEndPeriod(1);");
         AssertContains(sourceText, "var threadExited = true;");
-        AssertContains(sourceText, "if (ReferenceEquals(Thread.CurrentThread, thread))\n            {\n                Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self\");\n                SetLastCommandFailure(\"thread_join_skipped:self\");\n                threadExited = false;\n            }");
-        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT\");\n                SetLastCommandFailure(\"thread_join_timeout\");\n                threadExited = false;");
+        AssertContains(sourceText, "if (ReferenceEquals(Thread.CurrentThread, thread))\n                {\n                    Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self\");\n                    SetLastCommandFailure(\"thread_join_skipped:self\");\n                    threadExited = false;\n                }");
+        AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT\");\n                    SetLastCommandFailure(\"thread_join_timeout\");\n                    threadExited = false;");
         AssertContains(sourceText, "SetLastCommandFailure(\"thread_join_skipped:self\");");
         AssertContains(sourceText, "SetLastCommandFailure(\"thread_join_timeout\");");
-        AssertContains(sourceText, "if (threadExited)\n        {\n            DisposePlaybackCtsBestEffort(_playCts, \"stop_thread\");");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_STOP_THREAD_COMPLETE duration_ms=");
+        AssertContains(sourceText, "thread_was_alive={threadWasAlive} thread_exited={threadExited}");
+        AssertContains(sourceText, "active_at_request={activeKindAtRequest} active_ms_at_request={activeElapsedMsAtRequest:0.###}");
+        AssertContains(sourceText, "if (threadExited)\n            {\n                DisposePlaybackCtsBestEffort(_playCts, \"stop_thread\");");
         AssertContains(sourceText, "Interlocked.Exchange(ref _pendingCommands, 0);\n            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);\n            Volatile.Write(ref _playbackThreadStarted, 0);");
+        AssertContains(sourceText, "Volatile.Write(ref _activeCommandKind, (int)cmd.Kind);");
+        AssertContains(sourceText, "Volatile.Write(ref _activeCommandStartedTimestamp, commandStarted);");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_CMD_COMPLETE kind={cmd.Kind} duration_ms={commandElapsedMs:0.###}");
+        AssertContains(sourceText, "private static string FormatActiveCommandKind(int rawKind)");
+        AssertContains(sourceText, "private double GetActiveCommandElapsedMs(long nowTimestamp)");
         AssertContains(sourceText, "if (cts.IsCancellationRequested)\n                        {\n                            Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");");
         AssertContains(sourceText, "Logger.Log(\"FLASHBACK_PLAYBACK_THREAD_EXIT cancellation_requested\");\n                            CleanupDecoder(ref decoder, ref fileOpen);\n                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);\n                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);\n                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);");
         AssertContains(sourceText, "PaceAndDecodeFrame(decoder, commandChannel, pacingStopwatch, ref frameDuration, ref fileOpen, frozenValidStart, cts.Token)");
@@ -1758,6 +1766,8 @@ static partial class Program
         AssertContains(sourceText, "var decoderToDispose = decoder;\n            decoder = null;");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=close");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=dispose");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_DECODER_CLEANUP_COMPLETE was_open={wasOpen}");
+        AssertContains(sourceText, "release_ms={releaseMs:0.###} close_ms={closeMs:0.###} dispose_ms={disposeMs:0.###} total_ms={totalMs:0.###}");
         AssertContains(sourceText, "fileOpen = false;\n        _currentOpenFilePath = null;\n        _decoderHwAccel = \"N/A\";");
         AssertContains(sourceText, "DrainAbandonedCommandsOnThreadExit(commandChannel);");
         AssertContains(sourceText, "Interlocked.Add(ref _commandsDropped, abandoned);");
@@ -2024,7 +2034,7 @@ static partial class Program
         var nudgeBlock = ExtractTextBetween(
             sourceText,
             "case CommandKind.Nudge:",
-            "                        break;\n                }");
+            "                        break;\n                    }\n                }\n                finally");
 
         AssertContains(nudgeBlock, "decoder ??= CreateDecoder();");
         AssertContains(nudgeBlock, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));");

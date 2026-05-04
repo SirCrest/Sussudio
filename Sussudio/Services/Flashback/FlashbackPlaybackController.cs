@@ -148,6 +148,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private string _lastCommandQueued = "None";
     private string _lastCommandProcessed = "None";
     private string _lastCommandFailure = string.Empty;
+    private int _activeCommandKind = -1;
+    private long _activeCommandStartedTimestamp;
     private long _latestScrubUpdateTicks;
     private int _scrubUpdateCommandQueued;
     private long _scrubUpdatesCoalesced;
@@ -579,49 +581,60 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         lock (_playbackThreadSync)
         {
-        var thread = _playbackThread;
-        if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })
-        {
-            SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });
-        }
-
-        _commandChannel.Writer.TryComplete();
-
-        try
-        {
-            _playCts?.Cancel();
-        }
-        catch (Exception ex)
-        {
-            Logger.Log($"FLASHBACK_PLAYBACK_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'");
-        }
-
-        var threadExited = true;
-        if (thread is { IsAlive: true })
-        {
-            if (ReferenceEquals(Thread.CurrentThread, thread))
+            var stopStarted = Stopwatch.GetTimestamp();
+            var thread = _playbackThread;
+            var threadWasAlive = Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true };
+            var activeKindAtRequest = FormatActiveCommandKind(Volatile.Read(ref _activeCommandKind));
+            var activeElapsedMsAtRequest = GetActiveCommandElapsedMs(stopStarted);
+            if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })
             {
-                Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self");
-                SetLastCommandFailure("thread_join_skipped:self");
-                threadExited = false;
+                SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });
             }
-            else if (!thread.Join(TimeSpan.FromSeconds(3)))
-            {
-                Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT");
-                SetLastCommandFailure("thread_join_timeout");
-                threadExited = false;
-            }
-        }
 
-        if (threadExited)
-        {
-            DisposePlaybackCtsBestEffort(_playCts, "stop_thread");
-            _playCts = null;
-            _playbackThread = null;
-            Interlocked.Exchange(ref _pendingCommands, 0);
-            Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
-            Volatile.Write(ref _playbackThreadStarted, 0);
-        }
+            _commandChannel.Writer.TryComplete();
+
+            try
+            {
+                _playCts?.Cancel();
+            }
+            catch (Exception ex)
+            {
+                Logger.Log($"FLASHBACK_PLAYBACK_CANCEL_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+
+            var threadExited = true;
+            if (thread is { IsAlive: true })
+            {
+                if (ReferenceEquals(Thread.CurrentThread, thread))
+                {
+                    Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_SKIP reason=self");
+                    SetLastCommandFailure("thread_join_skipped:self");
+                    threadExited = false;
+                }
+                else if (!thread.Join(TimeSpan.FromSeconds(3)))
+                {
+                    Logger.Log("FLASHBACK_PLAYBACK_THREAD_JOIN_TIMEOUT");
+                    SetLastCommandFailure("thread_join_timeout");
+                    threadExited = false;
+                }
+            }
+
+            var stopElapsedMs = Stopwatch.GetElapsedTime(stopStarted).TotalMilliseconds;
+            Logger.Log(
+                $"FLASHBACK_PLAYBACK_STOP_THREAD_COMPLETE duration_ms={stopElapsedMs:0.###} " +
+                $"thread_was_alive={threadWasAlive} thread_exited={threadExited} " +
+                $"active_at_request={activeKindAtRequest} active_ms_at_request={activeElapsedMsAtRequest:0.###} " +
+                $"pending={Volatile.Read(ref _pendingCommands)}");
+
+            if (threadExited)
+            {
+                DisposePlaybackCtsBestEffort(_playCts, "stop_thread");
+                _playCts = null;
+                _playbackThread = null;
+                Interlocked.Exchange(ref _pendingCommands, 0);
+                Interlocked.Exchange(ref _scrubUpdateCommandQueued, 0);
+                Volatile.Write(ref _playbackThreadStarted, 0);
+            }
         }
     }
 
@@ -714,22 +727,27 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     TrackCommandDequeued(cmd);
                 }
 
-                switch (cmd.Kind)
+                var commandStarted = Stopwatch.GetTimestamp();
+                Volatile.Write(ref _activeCommandKind, (int)cmd.Kind);
+                Volatile.Write(ref _activeCommandStartedTimestamp, commandStarted);
+                try
                 {
-                    case CommandKind.Stop:
-                        isPlaying = false;
-                        isScrubbing = false;
-                        CleanupDecoder(ref decoder, ref fileOpen);
-                        Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
-                        Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
-                        Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
-                        RestoreLiveAudio();
-                        SafeResumePreviewSubmission("thread_stop");
-                        SetState(FlashbackPlaybackState.Live);
-                        Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
-                        return;
+                    switch (cmd.Kind)
+                    {
+                        case CommandKind.Stop:
+                            isPlaying = false;
+                            isScrubbing = false;
+                            CleanupDecoder(ref decoder, ref fileOpen);
+                            Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
+                            Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
+                            Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);
+                            RestoreLiveAudio();
+                            SafeResumePreviewSubmission("thread_stop");
+                            SetState(FlashbackPlaybackState.Live);
+                            Logger.Log("FLASHBACK_PLAYBACK_THREAD_EXIT");
+                            return;
 
-                    case CommandKind.Seek:
+                        case CommandKind.Seek:
                         while (commandChannel.Reader.TryPeek(out var newerSeek) &&
                                newerSeek.Kind == CommandKind.Seek)
                         {
@@ -1087,6 +1105,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "nudge_display_failed");
                         }
                         break;
+                    }
+                }
+                finally
+                {
+                    var commandElapsedMs = Stopwatch.GetElapsedTime(commandStarted).TotalMilliseconds;
+                    Volatile.Write(ref _activeCommandStartedTimestamp, 0);
+                    Volatile.Write(ref _activeCommandKind, -1);
+                    Logger.Log($"FLASHBACK_PLAYBACK_CMD_COMPLETE kind={cmd.Kind} duration_ms={commandElapsedMs:0.###}");
                 }
             }
         }
@@ -1144,6 +1170,21 @@ internal sealed class FlashbackPlaybackController : IDisposable
         {
             Logger.Log($"FLASHBACK_PLAYBACK_CTS_DISPOSE_WARN op={operation} type={ex.GetType().Name} msg='{ex.Message}'");
         }
+    }
+
+    private static string FormatActiveCommandKind(int rawKind)
+    {
+        if (rawKind < 0) return "None";
+        return Enum.IsDefined(typeof(CommandKind), rawKind)
+            ? ((CommandKind)rawKind).ToString()
+            : rawKind.ToString(CultureInfo.InvariantCulture);
+    }
+
+    private double GetActiveCommandElapsedMs(long nowTimestamp)
+    {
+        var started = Volatile.Read(ref _activeCommandStartedTimestamp);
+        if (started <= 0) return 0;
+        return Stopwatch.GetElapsedTime(started, nowTimestamp).TotalMilliseconds;
     }
 
     private void DrainAbandonedCommandsOnThreadExit(Channel<PlaybackCommand> commandChannel)
@@ -1260,33 +1301,52 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
     private void CleanupDecoder(ref FlashbackDecoder? decoder, ref bool fileOpen)
     {
-        Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLEANUP was_open={decoder?.IsOpen ?? false}");
+        var cleanupStarted = Stopwatch.GetTimestamp();
+        var wasOpen = decoder?.IsOpen ?? false;
+        Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLEANUP was_open={wasOpen}");
+        var releaseStarted = Stopwatch.GetTimestamp();
         ReleasePreviousHeldFrame();
+        var releaseMs = Stopwatch.GetElapsedTime(releaseStarted).TotalMilliseconds;
+        var closeMs = 0d;
+        var disposeMs = 0d;
         if (decoder != null)
         {
             var decoderToDispose = decoder;
             decoder = null;
             try
             {
-                if (decoderToDispose.IsOpen) decoderToDispose.CloseFile();
+                if (decoderToDispose.IsOpen)
+                {
+                    var closeStarted = Stopwatch.GetTimestamp();
+                    decoderToDispose.CloseFile();
+                    closeMs = Stopwatch.GetElapsedTime(closeStarted).TotalMilliseconds;
+                }
             }
             catch (Exception ex)
             {
+                closeMs = Stopwatch.GetElapsedTime(cleanupStarted).TotalMilliseconds;
                 Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=close type={ex.GetType().Name} msg='{ex.Message}'");
             }
 
             try
             {
+                var disposeStarted = Stopwatch.GetTimestamp();
                 decoderToDispose.Dispose();
+                disposeMs = Stopwatch.GetElapsedTime(disposeStarted).TotalMilliseconds;
             }
             catch (Exception ex)
             {
+                disposeMs = Stopwatch.GetElapsedTime(cleanupStarted).TotalMilliseconds;
                 Logger.Log($"FLASHBACK_PLAYBACK_DECODER_CLEANUP_WARN op=dispose type={ex.GetType().Name} msg='{ex.Message}'");
             }
         }
         fileOpen = false;
         _currentOpenFilePath = null;
         _decoderHwAccel = "N/A";
+        var totalMs = Stopwatch.GetElapsedTime(cleanupStarted).TotalMilliseconds;
+        Logger.Log(
+            $"FLASHBACK_PLAYBACK_DECODER_CLEANUP_COMPLETE was_open={wasOpen} " +
+            $"release_ms={releaseMs:0.###} close_ms={closeMs:0.###} dispose_ms={disposeMs:0.###} total_ms={totalMs:0.###}");
     }
 
     private bool TrySeekWithActiveFmp4Reopen(FlashbackDecoder decoder, ref bool fileOpen, TimeSpan seekTarget, string reason)
