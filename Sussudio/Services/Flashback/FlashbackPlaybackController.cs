@@ -377,6 +377,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 queuedSlot.LatestTicks = position.Ticks;
                 TrackCoalescedSeekCommand();
+                MarkCommandAccepted(CommandKind.Seek);
                 return true;
             }
 
@@ -409,6 +410,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 queuedSlot.LatestTicks = position.Ticks;
                 TrackCoalescedScrubUpdate();
+                MarkCommandAccepted(CommandKind.UpdateScrub);
                 return true;
             }
 
@@ -431,7 +433,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private bool EndScrubAt(TimeSpan? position)
     {
         if (IsNotReady(CommandKind.EndScrub, position)) return false;
-        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
+        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)
+        {
+            MarkCommandNoOp(CommandKind.EndScrub, "live_thread_not_running", position);
+            return true;
+        }
         if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, "thread_not_running", "thread_not_running", false, position);
         return SendEndScrubCommand(position);
     }
@@ -477,7 +483,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public bool GoLive()
     {
         if (IsNotReady(CommandKind.GoLive)) return false;
-        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
+        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)
+        {
+            MarkCommandNoOp(CommandKind.GoLive, "live_thread_not_running");
+            return true;
+        }
         if (!EnsurePlaybackThread(CommandKind.GoLive)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });
     }
@@ -485,7 +495,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public bool NudgePosition(TimeSpan delta)
     {
         if (IsNotReady(CommandKind.Nudge)) return false;
-        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;
+        if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)
+        {
+            MarkCommandNoOp(CommandKind.Nudge, "live_thread_not_running", delta: delta);
+            return true;
+        }
         if (!EnsurePlaybackThread(CommandKind.Nudge)) return false;
         return SendCommand(new PlaybackCommand { Kind = CommandKind.Nudge, Delta = delta });
     }
@@ -643,9 +657,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         Interlocked.Increment(ref _commandsEnqueued);
         UpdateMaxPendingCommands(pending);
-        Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
-        Volatile.Write(ref _lastCommandQueued, command.Kind.ToString());
-        ClearLastCommandFailure();
+        MarkCommandAccepted(command.Kind);
         return true;
     }
 
@@ -1019,7 +1031,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     case CommandKind.UpdateScrub:
                         pendingExactResumeTarget = null;
                         cmd = ResolveScrubUpdateCommandPosition(cmd);
-                        if (!isScrubbing) break;
+                        if (!isScrubbing)
+                        {
+                            MarkCommandNoOp(CommandKind.UpdateScrub, "not_scrubbing", cmd.Position);
+                            break;
+                        }
                         // Drain stale UpdateScrub commands only. Leave control commands queued
                         // so their latency/accounting stays tied to the original command.
                         while (commandChannel.Reader.TryPeek(out var newer) &&
@@ -1060,7 +1076,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         break;
 
                     case CommandKind.EndScrub:
-                        if (!isScrubbing) break;
+                        if (!isScrubbing)
+                        {
+                            MarkCommandNoOp(CommandKind.EndScrub, "not_scrubbing", cmd.Position);
+                            break;
+                        }
                         var endScrubPosition = ClampPosition(cmd.Position, frozenValidStart);
                         PlaybackPosition = endScrubPosition;
                         isScrubbing = false;
@@ -1110,7 +1130,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         break;
 
                     case CommandKind.Play:
-                        if (isPlaying) break;
+                        if (isPlaying)
+                        {
+                            MarkCommandNoOp(CommandKind.Play, "already_playing");
+                            break;
+                        }
                         isScrubbing = false;
                         isPlaying = true;
                         SafeSuppressPreviewSubmission("play");
@@ -3238,6 +3262,19 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         Volatile.Write(ref _lastCommandFailure, failure);
         Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+    }
+
+    private void MarkCommandAccepted(CommandKind kind)
+    {
+        Interlocked.Exchange(ref _lastCommandQueuedUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+        Volatile.Write(ref _lastCommandQueued, kind.ToString());
+        ClearLastCommandFailure();
+    }
+
+    private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)
+    {
+        ClearLastCommandFailure();
+        Logger.Log($"FLASHBACK_PLAYBACK_CMD_NOOP kind={kind} reason={reason}{FormatCommandDetail(position, delta)}");
     }
 
     private void SetLastSubmitFailure(string failure)

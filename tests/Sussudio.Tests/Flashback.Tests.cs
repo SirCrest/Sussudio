@@ -270,6 +270,93 @@ static partial class Program
 
     // ── FlashbackExporter: early-exit error paths ──
 
+    private static Task FlashbackPlaybackController_SuccessfulNoOps_ClearStaleCommandFailure()
+    {
+        var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
+        var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
+        var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
+        var ctor = controllerType.GetConstructor(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { bufferManagerType },
+            modifiers: null)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController constructor not found.");
+        var controller = ctor.Invoke(new[] { bufferManager });
+        SetPrivateField(controller, "_initialized", true);
+
+        try
+        {
+            SeedCommandFailure(controller, "old_failure:EndScrub");
+            AssertEqual(true, (bool)controllerType.GetMethod("EndScrub")!.Invoke(controller, null)!, "EndScrub live/no-thread no-op succeeds");
+            AssertEqual(string.Empty, GetStringProperty(controller, "LastCommandFailure"), "EndScrub no-op clears stale failure");
+            AssertEqual(0L, GetLongProperty(controller, "LastCommandFailureUtcUnixMs"), "EndScrub no-op clears stale failure UTC");
+
+            SeedCommandFailure(controller, "old_failure:GoLive");
+            AssertEqual(true, (bool)controllerType.GetMethod("GoLive")!.Invoke(controller, null)!, "GoLive live/no-thread no-op succeeds");
+            AssertEqual(string.Empty, GetStringProperty(controller, "LastCommandFailure"), "GoLive no-op clears stale failure");
+            AssertEqual(0L, GetLongProperty(controller, "LastCommandFailureUtcUnixMs"), "GoLive no-op clears stale failure UTC");
+
+            SeedCommandFailure(controller, "old_failure:Nudge");
+            AssertEqual(true, (bool)controllerType.GetMethod("NudgePosition")!.Invoke(controller, new object[] { TimeSpan.FromMilliseconds(8.33) })!, "Nudge live/no-thread no-op succeeds");
+            AssertEqual(string.Empty, GetStringProperty(controller, "LastCommandFailure"), "Nudge no-op clears stale failure");
+            AssertEqual(0L, GetLongProperty(controller, "LastCommandFailureUtcUnixMs"), "Nudge no-op clears stale failure UTC");
+        }
+        finally
+        {
+            (controller as IDisposable)?.Dispose();
+            (bufferManager as IDisposable)?.Dispose();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackPlaybackController_CoalescedCommands_ClearStaleCommandFailure()
+    {
+        var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
+        var bufferManager = Activator.CreateInstance(bufferManagerType, new object?[] { null })!;
+        var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
+        var ctor = controllerType.GetConstructor(
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+            binder: null,
+            types: new[] { bufferManagerType },
+            modifiers: null)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController constructor not found.");
+        var controller = ctor.Invoke(new[] { bufferManager });
+        var sendSeek = controllerType.GetMethod("SendSeekCommand", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("SendSeekCommand not found.");
+        var sendUpdateScrub = controllerType.GetMethod("SendUpdateScrubCommand", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("SendUpdateScrubCommand not found.");
+
+        try
+        {
+            AssertEqual(true, (bool)sendSeek.Invoke(controller, new object[] { TimeSpan.FromSeconds(1) })!, "Initial seek enqueues");
+            SeedCommandFailure(controller, "old_failure:Seek");
+            AssertEqual(true, (bool)sendSeek.Invoke(controller, new object[] { TimeSpan.FromSeconds(2) })!, "Coalesced seek succeeds");
+            AssertEqual(string.Empty, GetStringProperty(controller, "LastCommandFailure"), "Coalesced seek clears stale failure");
+            AssertEqual(0L, GetLongProperty(controller, "LastCommandFailureUtcUnixMs"), "Coalesced seek clears stale failure UTC");
+            AssertEqual("Seek", GetStringProperty(controller, "LastCommandQueued"), "Coalesced seek records accepted intent");
+            AssertEqual(1L, GetLongProperty(controller, "SeekCommandsCoalesced"), "Coalesced seek counter");
+
+            AssertEqual(true, (bool)sendUpdateScrub.Invoke(controller, new object[] { TimeSpan.FromSeconds(3) })!, "Initial scrub update enqueues");
+            SeedCommandFailure(controller, "old_failure:UpdateScrub");
+            AssertEqual(true, (bool)sendUpdateScrub.Invoke(controller, new object[] { TimeSpan.FromSeconds(4) })!, "Coalesced scrub update succeeds");
+            AssertEqual(string.Empty, GetStringProperty(controller, "LastCommandFailure"), "Coalesced scrub update clears stale failure");
+            AssertEqual(0L, GetLongProperty(controller, "LastCommandFailureUtcUnixMs"), "Coalesced scrub update clears stale failure UTC");
+            AssertEqual("UpdateScrub", GetStringProperty(controller, "LastCommandQueued"), "Coalesced scrub update records accepted intent");
+            AssertEqual(1L, GetLongProperty(controller, "ScrubUpdatesCoalesced"), "Coalesced scrub update counter");
+        }
+        finally
+        {
+            (controller as IDisposable)?.Dispose();
+            (bufferManager as IDisposable)?.Dispose();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static void SeedCommandFailure(object controller, string failure)
+        => InvokeNonPublicInstanceMethod(controller, "SetLastCommandFailure", new object[] { failure });
+
     private static async Task FlashbackExporter_ExportAsync_ReturnsFailure_WhenInputFileNotFound()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
@@ -1728,7 +1815,9 @@ static partial class Program
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n            {\n                SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n            }");
         AssertContains(sourceText, "case CommandKind.Stop:\n                            isPlaying = false;\n                            isScrubbing = false;\n                            pendingExactResumeTarget = null;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);\n                            RestoreLiveAudio();\n                            SafeResumePreviewSubmission(\"thread_stop\");\n                            SetState(FlashbackPlaybackState.Live);");
-        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!EnsurePlaybackThread(CommandKind.GoLive)) return false;\n        return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
+        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.GoLive, \"live_thread_not_running\");\n            return true;\n        }");
+        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.Nudge, \"live_thread_not_running\", delta: delta);\n            return true;\n        }");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_CMD_NOOP kind={kind} reason={reason}{FormatCommandDetail(position, delta)}");
         AssertContains(sourceText, "private bool EnsurePlaybackThread(CommandKind commandKind)");
         AssertContains(sourceText, "private readonly object _playbackThreadSync = new();");
         AssertContains(sourceText, "lock (_playbackThreadSync)");
@@ -1828,7 +1917,7 @@ static partial class Program
         AssertContains(sourceText, "private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_CTS_DISPOSE_WARN");
         AssertContains(sourceText, "Volatile.Write(ref _playbackThreadStarted, 0);");
-        AssertContains(sourceText, "Volatile.Write(ref _lastCommandQueued, command.Kind.ToString());\n        ClearLastCommandFailure();\n        return true;");
+        AssertContains(sourceText, "Interlocked.Increment(ref _commandsEnqueued);\n        UpdateMaxPendingCommands(pending);\n        MarkCommandAccepted(command.Kind);\n        return true;");
 
         return Task.CompletedTask;
     }
@@ -2403,6 +2492,7 @@ static partial class Program
         AssertContains(seekMethod, "if (_queuedSeekSlot is { } queuedSlot)");
         AssertContains(seekMethod, "queuedSlot.LatestTicks = position.Ticks;");
         AssertContains(seekMethod, "TrackCoalescedSeekCommand();");
+        AssertContains(seekMethod, "MarkCommandAccepted(CommandKind.Seek);");
         AssertContains(seekMethod, "return true;");
         AssertContains(seekMethod, "var slot = new SeekIntentSlot(position.Ticks);");
         AssertContains(seekMethod, "_queuedSeekSlot = slot;");
@@ -2416,6 +2506,7 @@ static partial class Program
         AssertContains(sourceText, "Interlocked.Exchange(ref _latestScrubUpdateTicks, position.Ticks);");
         AssertContains(sourceText, "if (_queuedScrubUpdateSlot is { } queuedSlot)");
         AssertContains(sourceText, "queuedSlot.LatestTicks = position.Ticks;");
+        AssertContains(sourceText, "MarkCommandAccepted(CommandKind.UpdateScrub);");
         AssertContains(sourceText, "var slot = new ScrubUpdateIntentSlot(position.Ticks);");
         AssertContains(sourceText, "_queuedScrubUpdateSlot = slot;");
         AssertContains(sourceText, "ScrubUpdateSlot = slot");
@@ -2432,7 +2523,7 @@ static partial class Program
         AssertContains(updateScrubBlock, "SafeResumePreviewSubmission(\"scrub_update_no_file\")");
         AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live)");
         AssertContains(drainAbandonedCommands, "ClearQueuedCommandSlotsBarrier();");
-        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!PlaybackThreadAlive) return RejectCommand(CommandKind.EndScrub, \"thread_not_running\", \"thread_not_running\", false, position);");
+        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.EndScrub, \"live_thread_not_running\", position);\n            return true;\n        }");
         var endScrubBlock = ExtractTextBetween(
             sourceText,
             "                    case CommandKind.EndScrub:",
@@ -2451,6 +2542,8 @@ static partial class Program
         AssertContains(sourceText, "return $\" pos_ms={position.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "return $\" delta_ms={delta.Value.TotalMilliseconds.ToString(\"0.###\", CultureInfo.InvariantCulture)}\";");
         AssertContains(sourceText, "private void SetLastCommandFailure(string failure)\n    {\n        Volatile.Write(ref _lastCommandFailure, failure);\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());\n    }");
+        AssertContains(sourceText, "private void MarkCommandAccepted(CommandKind kind)");
+        AssertContains(sourceText, "private void MarkCommandNoOp(CommandKind kind, string reason, TimeSpan? position = null, TimeSpan? delta = null)");
         AssertContains(sourceText, "private void ClearLastCommandFailure()\n    {\n        Volatile.Write(ref _lastCommandFailure, string.Empty);\n        Interlocked.Exchange(ref _lastCommandFailureUtcUnixMs, 0);\n    }");
         AssertContains(sourceText, "private void TrackCoalescedScrubUpdate()");
         AssertContains(sourceText, "Interlocked.Increment(ref _scrubUpdatesCoalesced);");

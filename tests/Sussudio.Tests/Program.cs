@@ -868,6 +868,12 @@ static partial class Program
                 "Flashback playback commands no-op before initialize",
                 FlashbackPlaybackController_CommandsNoOpBeforeInitialize),
             await RunCheckAsync(
+                "Flashback playback successful no-ops clear stale failures",
+                FlashbackPlaybackController_SuccessfulNoOps_ClearStaleCommandFailure),
+            await RunCheckAsync(
+                "Flashback playback coalesced commands clear stale failures",
+                FlashbackPlaybackController_CoalescedCommands_ClearStaleCommandFailure),
+            await RunCheckAsync(
                 "Flashback playback worker exit rearms future commands",
                 FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart),
             await RunCheckAsync(
