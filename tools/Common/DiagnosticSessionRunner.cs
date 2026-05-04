@@ -849,20 +849,26 @@ public static class DiagnosticSessionRunner
             }
         }
 
-        if (options.VerifyRecording || startedRecording)
+        var hasFlashbackExportVerificationPath = TryGetFlashbackExportVerificationPath(
+            scenario,
+            outputDirectory,
+            out var flashbackExportVerificationPath);
+        var shouldRunVerification =
+            startedRecording ||
+            (options.VerifyRecording && hasFlashbackExportVerificationPath);
+        if (shouldRunVerification)
         {
             try
             {
                 SetStage("recording-verification");
                 var verificationCommand = "VerifyLastRecording";
                 Dictionary<string, object?>? verificationPayload = null;
-                if (!startedRecording &&
-                    TryGetFlashbackExportVerificationPath(scenario, outputDirectory, out var exportVerificationPath))
+                if (!startedRecording)
                 {
                     verificationCommand = "VerifyFile";
                     verificationPayload = new Dictionary<string, object?>
                     {
-                        ["filePath"] = exportVerificationPath,
+                        ["filePath"] = flashbackExportVerificationPath,
                         ["strict"] = true,
                         ["verificationProfile"] = "flashback-export"
                     };
@@ -882,6 +888,10 @@ public static class DiagnosticSessionRunner
             {
                 RecordTerminalException(ex, "recording-verification");
             }
+        }
+        else if (options.VerifyRecording)
+        {
+            actions.Add("recording verification skipped: scenario does not produce a recording or export artifact");
         }
 
         if (runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected)
@@ -3149,7 +3159,12 @@ public static class DiagnosticSessionRunner
             cancellationToken.ThrowIfCancellationRequested();
             var snapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
             if (TryGetSnapshot(snapshotResponse, out lastSnapshot) &&
-                GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands") == 0)
+                GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands") == 0 &&
+                !GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive") &&
+                string.Equals(
+                    GetString(lastSnapshot, "FlashbackPlaybackState"),
+                    "Live",
+                    StringComparison.OrdinalIgnoreCase))
             {
                 drained = true;
                 break;
@@ -3163,6 +3178,8 @@ public static class DiagnosticSessionRunner
             warnings.Add(
                 "flashback scrub stress: playback command queue did not drain within 10s " +
                 $"pending={GetInt(lastSnapshot, "FlashbackPlaybackPendingCommands")} " +
+                $"state={GetString(lastSnapshot, "FlashbackPlaybackState") ?? "Unknown"} " +
+                $"threadAlive={GetBool(lastSnapshot, "FlashbackPlaybackThreadAlive")} " +
                 $"maxPending={GetInt(lastSnapshot, "FlashbackPlaybackMaxPendingCommands")} " +
                 $"lastLatencyMs={GetInt(lastSnapshot, "FlashbackPlaybackLastCommandQueueLatencyMs")} " +
                 $"maxLatencyMs={GetInt(lastSnapshot, "FlashbackPlaybackMaxCommandQueueLatencyMs")}");

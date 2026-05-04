@@ -905,7 +905,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "exportId > baselineExportId");
         AssertContains(diagnosticSessionText, "baselineExportActive && exportId == baselineExportId");
         AssertContains(diagnosticSessionText, "lastExportId == exportId");
-        AssertContains(diagnosticSessionText, "TryGetFlashbackExportVerificationPath(scenario, outputDirectory, out var exportVerificationPath)");
+        AssertContains(diagnosticSessionText, "TryGetFlashbackExportVerificationPath(\n            scenario,\n            outputDirectory,\n            out var flashbackExportVerificationPath)");
+        AssertContains(diagnosticSessionText, "var shouldRunVerification =");
+        AssertContains(diagnosticSessionText, "recording verification skipped: scenario does not produce a recording or export artifact");
         AssertContains(diagnosticSessionText, "verificationCommand = \"VerifyFile\"");
         AssertContains(diagnosticSessionText, "[\"verificationProfile\"] = \"flashback-export\"");
         AssertContains(diagnosticSessionText, "\"flashback-range-export\" => Path.Combine(outputDirectory, \"flashback-range-export.mp4\")");
@@ -934,6 +936,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "flashback scrub stress begin requested");
         AssertContains(diagnosticSessionText, "flashback scrub stress update burst requested");
         AssertContains(diagnosticSessionText, "flashback scrub stress end requested");
+        AssertContains(diagnosticSessionText, "GetInt(lastSnapshot, \"FlashbackPlaybackPendingCommands\") == 0 &&\n                !GetBool(lastSnapshot, \"FlashbackPlaybackThreadAlive\")");
+        AssertContains(diagnosticSessionText, "state={GetString(lastSnapshot, \"FlashbackPlaybackState\") ?? \"Unknown\"}");
         AssertContains(diagnosticSessionText, "!GetBool(lastSnapshot, \"FlashbackPlaybackThreadAlive\")");
         AssertContains(diagnosticSessionText, "GetString(lastSnapshot, \"FlashbackPlaybackState\")");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRestartCycleAsync(");
