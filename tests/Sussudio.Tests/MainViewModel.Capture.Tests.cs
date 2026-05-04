@@ -343,6 +343,8 @@ static partial class Program
             .Replace("\r\n", "\n");
         var coordinatorText = ReadRepoFile("Sussudio/Services/Capture/CaptureSessionCoordinator.cs")
             .Replace("\r\n", "\n");
+        var viewModelCaptureText = ReadRepoFile("Sussudio/ViewModels/MainViewModel.Capture.cs")
+            .Replace("\r\n", "\n");
         var startVideoPreview = ExtractTextBetween(
             captureServiceText,
             "public Task StartVideoPreviewAsync",
@@ -478,9 +480,20 @@ static partial class Program
             captureServiceText,
             "private Task StopVideoPreviewCoreAsync",
             "private bool CanReuseVideoCaptureForPreview");
-        AssertContains(stopVideoPreviewCore, "_isVideoPreviewActive = false;");
-        AssertContains(stopVideoPreviewCore, "if (!_isRecording) await StopTelemetryPollAsync().ConfigureAwait(false);");
+        AssertContains(stopVideoPreviewCore, "var commitStoppedState = false;");
+        AssertContains(stopVideoPreviewCore, "catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)");
+        AssertContains(stopVideoPreviewCore, "commitStoppedState = true;");
+        AssertContains(stopVideoPreviewCore, "if (commitStoppedState)\n                {\n                    _isVideoPreviewActive = false;");
+        AssertContains(stopVideoPreviewCore, "await StopTelemetryPollAsync().ConfigureAwait(false);");
+        AssertContains(stopVideoPreviewCore, "catch (Exception ex) when (stopFailure != null)");
         AssertDoesNotContain(stopVideoPreviewCore, "!keepPipelineAlive) StopTelemetryPoll()");
+        var stopPreviewBlock = ExtractTextBetween(
+            viewModelCaptureText,
+            "public async Task StopPreviewAsync(bool userInitiated, bool teardownPipeline, CancellationToken cancellationToken)",
+            "    public Task ToggleRecordingAsync()");
+        AssertContains(stopPreviewBlock, "var commitStoppedState = false;");
+        AssertContains(stopPreviewBlock, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)");
+        AssertContains(stopPreviewBlock, "if (commitStoppedState)\n            {\n                IsPreviewing = false;\n            }");
         AssertOccursBefore(
             ExtractTextBetween(
                 captureServiceText,

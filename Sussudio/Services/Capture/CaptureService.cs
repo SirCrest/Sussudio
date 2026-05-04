@@ -3403,24 +3403,57 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (!_isVideoPreviewActive) return;
             transitionToken.ThrowIfCancellationRequested();
 
-            // Invariant: preview lifecycle must not affect the recording/flashback pipeline.
-            // Keep the capture + flashback backend alive across preview toggles unless the
-            // caller explicitly requests a full teardown (reinit, shutdown, settings change).
-            var keepPipelineAlive = !teardownPipeline &&
-                (_isRecording || (_flashbackEnabled && _flashbackSink != null));
-
-            if (keepPipelineAlive)
+            var commitStoppedState = false;
+            Exception? stopFailure = null;
+            try
             {
-                Logger.Log($"PREVIEW_STOP keep_pipeline_alive=1 recording={_isRecording} flashback_alive={_flashbackSink != null}");
-                _unifiedVideoCapture?.SetPreviewSink(null);
+                // Invariant: preview lifecycle must not affect the recording/flashback pipeline.
+                // Keep the capture + flashback backend alive across preview toggles unless the
+                // caller explicitly requests a full teardown (reinit, shutdown, settings change).
+                var keepPipelineAlive = !teardownPipeline &&
+                    (_isRecording || (_flashbackEnabled && _flashbackSink != null));
+
+                if (keepPipelineAlive)
+                {
+                    Logger.Log($"PREVIEW_STOP keep_pipeline_alive=1 recording={_isRecording} flashback_alive={_flashbackSink != null}");
+                    _unifiedVideoCapture?.SetPreviewSink(null);
+                }
+                else
+                {
+                    await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);
+                }
+
+                commitStoppedState = true;
             }
-            else
+            catch (OperationCanceledException) when (transitionToken.IsCancellationRequested)
             {
-                await DisposePreviewPipelineAsync(transitionToken, purgeFlashbackSegments: false).ConfigureAwait(false);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                stopFailure = ex;
+                commitStoppedState = true;
+                throw;
+            }
+            finally
+            {
+                if (commitStoppedState)
+                {
+                    _isVideoPreviewActive = false;
+                    if (!_isRecording)
+                    {
+                        try
+                        {
+                            await StopTelemetryPollAsync().ConfigureAwait(false);
+                        }
+                        catch (Exception ex) when (stopFailure != null)
+                        {
+                            Logger.Log($"PREVIEW_STOP_TELEMETRY_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+                        }
+                    }
+                }
             }
 
-            _isVideoPreviewActive = false;
-            if (!_isRecording) await StopTelemetryPollAsync().ConfigureAwait(false);
             StatusChanged?.Invoke(this, "Preview stopped");
         }, cancellationToken);
 

@@ -116,15 +116,36 @@ public partial class MainViewModel
         }
 
         PreviewStopRequested?.Invoke(this, EventArgs.Empty);
-        if (teardownPipeline)
+        var commitStoppedState = false;
+        try
         {
-            await _sessionCoordinator.StopVideoPreviewWithTeardownAsync(cancellationToken);
+            if (teardownPipeline)
+            {
+                await _sessionCoordinator.StopVideoPreviewWithTeardownAsync(cancellationToken);
+            }
+            else
+            {
+                await _sessionCoordinator.StopVideoPreviewAsync(cancellationToken);
+            }
+
+            commitStoppedState = true;
         }
-        else
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            await _sessionCoordinator.StopVideoPreviewAsync(cancellationToken);
+            throw;
         }
-        IsPreviewing = false;
+        catch
+        {
+            commitStoppedState = true;
+            throw;
+        }
+        finally
+        {
+            if (commitStoppedState)
+            {
+                IsPreviewing = false;
+            }
+        }
 
         // Stop audio preview
         if (_captureService.IsAudioPreviewActive)
