@@ -255,8 +255,6 @@ public partial class MainViewModel
         {
             if (FlashbackState != FlashbackPlaybackState.Live)
                 FlashbackState = FlashbackPlaybackState.Live;
-            FlashbackInPoint = null;
-            FlashbackOutPoint = null;
         }
 
     }

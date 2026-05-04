@@ -107,6 +107,13 @@ static partial class Program
         AssertMemberContains(automationText, "UpdateFlashbackBufferStatus", "FlashbackOutPoint = null;");
         AssertMemberContains(automationText, "UpdateFlashbackBufferStatus", "if (FlashbackState != FlashbackPlaybackState.Live)");
         AssertMemberContains(automationText, "UpdateFlashbackBufferStatus", "FlashbackState = FlashbackPlaybackState.Live;");
+        var updateFlashbackBufferStatus = ExtractMemberCode(automationText, "UpdateFlashbackBufferStatus");
+        var inactivePlaybackSnapshotBranch = ExtractTextBetween(
+            updateFlashbackBufferStatus,
+            "else\n        {\n            if (FlashbackState != FlashbackPlaybackState.Live)",
+            "\n        }\n\n    }");
+        AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackInPoint = null;");
+        AssertDoesNotContain(inactivePlaybackSnapshotBranch, "FlashbackOutPoint = null;");
         AssertMemberContains(automationText, "UpdateFlashbackBitrate", "_sessionCoordinator.FlashbackTotalBytesWritten");
         AssertContains(captureServiceText, "public long FlashbackTotalBytesWritten => _flashbackBufferManager?.TotalBytesWritten ?? 0;");
         AssertContains(captureServiceText, "ReferenceEquals(sender, _wasapiAudioCapture)");
