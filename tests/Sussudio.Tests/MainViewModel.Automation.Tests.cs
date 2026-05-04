@@ -433,6 +433,9 @@ static partial class Program
         AssertContains(diagnosticsText, "audioMasterDouble={snapshot.FlashbackPlaybackAudioMasterDelayDoubles}");
         AssertContains(diagnosticsText, "health.FlashbackPlaybackSubmitFailures > 0");
         AssertContains(diagnosticsText, "\"flashback_export\"");
+        AssertContains(diagnosticsText, "var flashbackForceRotateRejectWithoutDamage =");
+        AssertContains(diagnosticsText, "!flashbackForceRotateRejectWithoutDamage &&\n              health.FlashbackVideoSequenceGaps > 0");
+        AssertContains(diagnosticsText, "health.FlashbackExportActive ||\n             health.FlashbackForceRotateActive ||\n             health.FlashbackForceRotateRequested ||\n             health.FlashbackForceRotateDraining");
         AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
         AssertContains(diagnosticsText, "UpdateD3DRendererRecentCounters(previewRuntime, nowTick)");
         AssertContains(diagnosticsText, "private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(");
@@ -1012,7 +1015,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackPendingCommands = 4;");
         AssertContains(diagnosticSessionText, "private const int FlashbackStressMaxPlaybackCommandLatencyMs = 750;");
         AssertContains(diagnosticSessionText, "private const double FlashbackStressPlaybackWarmSeconds = 10.0;");
-        AssertContains(diagnosticSessionText, "private const long FlashbackStressAudioUnavailableFallbackAllowance = 2;");
+        AssertContains(diagnosticSessionText, "private const long FlashbackStressAudioUnavailableFallbackAllowance = 4;");
         AssertContains(diagnosticSessionText, "var playbackBaselineSnapshot = await WaitForFlashbackPlaybackStateAsync(");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback did not enter Playing before warm sample\"");
         AssertContains(diagnosticSessionText, "var warmBaselineSnapshot = playbackBaselineSnapshot?.ValueKind == JsonValueKind.Object");

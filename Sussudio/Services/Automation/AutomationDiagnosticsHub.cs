@@ -2437,21 +2437,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             health.FlashbackActive &&
             (health.FlashbackStartupCacheOverBudget ||
              (health.FlashbackTempDriveFreeBytes >= 0 && health.FlashbackTempDriveFreeBytes < FlashbackTempDriveLowFreeBytes));
-        var flashbackRecordingDegraded =
-            health.FlashbackActive &&
-            (health.FlashbackDroppedFrames > 0 ||
-             health.FlashbackVideoEncoderDroppedFrames > 0 ||
-             health.FlashbackVideoSequenceGaps > 0 ||
-             health.FlashbackGpuFramesDropped > 0 ||
-             health.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs ||
-             IsFlashbackRecordingQueueBackedUp(
-                 health.FlashbackVideoQueueDepth,
-                 health.FlashbackVideoQueueCapacity,
-                 health.FlashbackVideoQueueOldestFrameAgeMs) ||
-             IsFlashbackAudioQueueBackedUp(
-                 health.FlashbackAudioQueueDepth,
-                 health.FlashbackAudioQueueCapacity));
-        var flashbackExportRotationGap =
+        var flashbackForceRotateRejectWithoutDamage =
             health.FlashbackActive &&
             health.FlashbackVideoSequenceGaps > 0 &&
             health.FlashbackVideoQueueRejectedFrames > 0 &&
@@ -2464,6 +2450,27 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 health.FlashbackVideoQueueCapacity,
                 health.FlashbackVideoQueueOldestFrameAgeMs) &&
             IsFlashbackForceRotateRejectReason(health.FlashbackVideoQueueLastRejectReason);
+        var flashbackRecordingDegraded =
+            health.FlashbackActive &&
+            (health.FlashbackDroppedFrames > 0 ||
+             health.FlashbackVideoEncoderDroppedFrames > 0 ||
+             (!flashbackForceRotateRejectWithoutDamage &&
+              health.FlashbackVideoSequenceGaps > 0) ||
+             health.FlashbackGpuFramesDropped > 0 ||
+             health.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs ||
+             IsFlashbackRecordingQueueBackedUp(
+                 health.FlashbackVideoQueueDepth,
+                 health.FlashbackVideoQueueCapacity,
+                 health.FlashbackVideoQueueOldestFrameAgeMs) ||
+             IsFlashbackAudioQueueBackedUp(
+                 health.FlashbackAudioQueueDepth,
+                 health.FlashbackAudioQueueCapacity));
+        var flashbackExportRotationGap =
+            flashbackForceRotateRejectWithoutDamage &&
+            (health.FlashbackExportActive ||
+             health.FlashbackForceRotateActive ||
+             health.FlashbackForceRotateRequested ||
+             health.FlashbackForceRotateDraining);
         var exportLastProgressAgeMs = health.FlashbackExportActive
             ? Math.Max(0, health.FlashbackExportLastProgressAgeMs)
             : 0;

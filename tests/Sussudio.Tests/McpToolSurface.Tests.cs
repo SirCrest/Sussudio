@@ -1338,14 +1338,14 @@ static partial class Program
             ?? throw new InvalidOperationException("Audio-master fallback classifier was not found.");
 
         AssertEqual((string?)null, Invoke(0, 0, 0, 0), "no audio-master fallback warning");
-        AssertEqual((string?)null, Invoke(2, 2, 0, 0), "startup unavailable fallback allowance");
+        AssertEqual((string?)null, Invoke(4, 4, 0, 0), "startup unavailable fallback allowance");
 
-        var unavailable = Invoke(3, 3, 0, 0)
+        var unavailable = Invoke(5, 5, 0, 0)
             ?? throw new InvalidOperationException("Expected unavailable fallback warning.");
         AssertContains(unavailable, "audio-master unavailable fallbacks exceeded startup allowance");
-        AssertContains(unavailable, "unavailableDelta=3");
-        AssertContains(unavailable, "allowance=2");
-        AssertContains(unavailable, "totalDelta=3");
+        AssertContains(unavailable, "unavailableDelta=5");
+        AssertContains(unavailable, "allowance=4");
+        AssertContains(unavailable, "totalDelta=5");
 
         var stale = Invoke(2, 0, 1, 0)
             ?? throw new InvalidOperationException("Expected stale fallback warning.");

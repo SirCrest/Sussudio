@@ -3045,7 +3045,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     }
 
     private static bool IsTransientAudioMasterFallbackCandidate(string reason)
-        => string.Equals(reason, "stale-clock", StringComparison.Ordinal) ||
+        => string.Equals(reason, "unavailable", StringComparison.Ordinal) ||
+           string.Equals(reason, "stale-clock", StringComparison.Ordinal) ||
            string.Equals(reason, "drift-outlier", StringComparison.Ordinal);
 
     private void ClearPendingAudioMasterFallback()
