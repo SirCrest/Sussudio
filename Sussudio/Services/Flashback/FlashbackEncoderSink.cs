@@ -290,6 +290,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             throw new ArgumentOutOfRangeException(nameof(ptsBaseOffset), "PTS base offset must not be negative.");
         }
         cancellationToken.ThrowIfCancellationRequested();
+        string? startupGeneratedSegmentPath = null;
 
         lock (_sync)
         {
@@ -314,7 +315,11 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             }
             _bufferManager.SetSegmentExtension(GetSegmentExtension(sessionContext.CodecName));
 
-            var tsPath = _bufferManager.GetFilePath();
+            var tsPath = _bufferManager.GetFilePath(out var startupGeneratedSegment);
+            if (startupGeneratedSegment)
+            {
+                startupGeneratedSegmentPath = tsPath;
+            }
             _tsFilePath = tsPath;
             _recordingOutputPath = string.Empty;
 
@@ -439,11 +444,15 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _ptsBaseOffset = TimeSpan.Zero;
             Interlocked.Exchange(ref _segmentStartBytes, 0);
 
+            DisposeEncoderBestEffort("start_fail");
             if (_ownsBufferManager)
             {
                 _bufferManager.PurgeAllSegments();
             }
-            DisposeEncoderBestEffort("start_fail");
+            else if (startupGeneratedSegmentPath != null)
+            {
+                _bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);
+            }
             throw;
         }
     }

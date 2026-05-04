@@ -178,6 +178,12 @@ static partial class Program
         AssertEqual(1, startCatchBlock.Split("_started = false;", StringSplitOptions.None).Length - 1, "Start failure rollback clears started state once");
         AssertOccursBefore(sourceText, "_started = false;", "            throw;\n        }\n    }\n\n    Task IRecordingSink.StartAsync");
         AssertContains(startCatchBlock, "_tsFilePath = null;\n            _recordingOutputPath = string.Empty;\n            _segmentStartPts = TimeSpan.Zero;\n            _segmentDuration = TimeSpan.Zero;\n            _ptsBaseOffset = TimeSpan.Zero;\n            Interlocked.Exchange(ref _segmentStartBytes, 0);");
+        AssertContains(sourceText, "var tsPath = _bufferManager.GetFilePath(out var startupGeneratedSegment);");
+        AssertContains(sourceText, "startupGeneratedSegmentPath = tsPath;");
+        AssertContains(startCatchBlock, "DisposeEncoderBestEffort(\"start_fail\");");
+        AssertContains(startCatchBlock, "else if (startupGeneratedSegmentPath != null)\n            {\n                _bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);\n            }");
+        AssertOccursBefore(startCatchBlock, "DisposeEncoderBestEffort(\"start_fail\");", "_bufferManager.PurgeAllSegments();");
+        AssertOccursBefore(startCatchBlock, "DisposeEncoderBestEffort(\"start_fail\");", "_bufferManager.AbandonGeneratedSegmentPath(startupGeneratedSegmentPath, restoreActivePath: null);");
 
         return Task.CompletedTask;
     }

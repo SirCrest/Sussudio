@@ -745,11 +745,17 @@ static partial class Program
                 "FlashbackBufferManager eviction pause and resume are balanced",
                 FlashbackBufferManager_EvictionPauseResume_Balanced),
             await RunCheckAsync(
+                "FlashbackBufferManager abandons startup-generated segment paths",
+                FlashbackBufferManager_AbandonsStartupGeneratedSegmentPath),
+            await RunCheckAsync(
                 "FlashbackBufferManager purge forgets active segment path",
                 FlashbackBufferManager_PurgeCompletedSegments_ForgetsActivePath),
             await RunCheckAsync(
                 "FlashbackBufferManager partial purge accounts for deleted active segment",
                 FlashbackBufferManager_PurgeCompletedSegments_AccountsForActiveBytesOnPartialPurge),
+            await RunCheckAsync(
+                "FlashbackBufferManager full purge reports active bytes once",
+                FlashbackBufferManager_PurgeAllSegmentsCore_ReportsActiveBytesOnce),
             await RunCheckAsync(
                 "FlashbackBufferManager removes stale legacy root segments",
                 FlashbackBufferManager_RemovesStaleLegacyRootSegments),
@@ -3846,6 +3852,52 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackBufferManager_AbandonsStartupGeneratedSegmentPath()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_startup_abandon_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        try
+        {
+            SetPrivateField(manager, "_activeSegmentPath", null);
+            var startingIndex = (int)GetPrivateField(manager, "_nextSegmentIndex")!;
+            var getFilePath = manager.GetType().GetMethod("GetFilePath", new[] { typeof(bool).MakeByRefType() })
+                ?? throw new InvalidOperationException("FlashbackBufferManager.GetFilePath(out bool) not found.");
+            var abandonGenerated = manager.GetType().GetMethod("AbandonGeneratedSegmentPath")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.AbandonGeneratedSegmentPath not found.");
+
+            object?[] args = { false };
+            var generatedPath = (string)getFilePath.Invoke(manager, args)!;
+            AssertEqual(true, (bool)args[0]!, "Fresh GetFilePath reports generated path");
+            AssertEqual(generatedPath, (string)GetPrivateField(manager, "_activeSegmentPath")!, "Generated path becomes raw active segment");
+            AssertEqual(startingIndex + 1, (int)GetPrivateField(manager, "_nextSegmentIndex")!, "Generated path advances segment index");
+
+            File.WriteAllBytes(generatedPath, new byte[17]);
+            abandonGenerated.Invoke(manager, new object?[] { generatedPath, null });
+
+            AssertEqual<string?>(null, (string?)GetPrivateField(manager, "_activeSegmentPath"), "Abandon clears startup-generated active path");
+            AssertEqual(false, File.Exists(generatedPath), "Abandon deletes partial startup segment file");
+            AssertEqual(startingIndex, (int)GetPrivateField(manager, "_nextSegmentIndex")!, "Abandon rolls back generated segment index");
+
+            object?[] retryArgs = { false };
+            var retryPath = (string)getFilePath.Invoke(manager, retryArgs)!;
+            AssertEqual(true, (bool)retryArgs[0]!, "Retry after abandon generates a fresh path");
+            AssertEqual(generatedPath, retryPath, "Retry reuses the rolled-back segment slot");
+        }
+        finally
+        {
+            if (manager is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
     private static Task FlashbackBufferManager_RemovesStaleLegacyRootSegments()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), $"fb_legacy_cleanup_{Guid.NewGuid():N}");
@@ -3908,6 +3960,57 @@ static partial class Program
             purgeBlock,
             "if (_activeSegmentPath != null)\n            {\n                var activeSegmentBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);\n                if (TryDeleteFile(_activeSegmentPath))\n                {\n                    freedBytes = AddNonNegativeSaturated(freedBytes, activeSegmentBytes);\n                }\n                _activeSegmentPath = null; // Force new path generation on next GetFilePath()\n                _previousActiveSegmentBytes = 0;\n            }");
         AssertDoesNotContain(purgeBlock, "if (_activeSegmentPath != null && TryDeleteFile(_activeSegmentPath))");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_PurgeAllSegmentsCore_ReportsActiveBytesOnce()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_full_purge_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        try
+        {
+            var completedPath = Path.Combine(tempDir, "completed.ts");
+            var activePath = (string)GetPrivateField(manager, "_activeSegmentPath")!;
+            File.WriteAllBytes(completedPath, new byte[300]);
+            File.WriteAllBytes(activePath, new byte[50]);
+            AddCompletedSegment(manager, completedPath, TimeSpan.Zero, TimeSpan.FromSeconds(1), 300L);
+            SetPrivateField(manager, "_completedSegmentBytes", 300L);
+            SetPrivateField(manager, "_totalDiskBytes", 350L);
+
+            var purgeCore = manager.GetType().GetMethod("PurgeAllSegmentsCore", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?? throw new InvalidOperationException("FlashbackBufferManager.PurgeAllSegmentsCore not found.");
+            var result = purgeCore.Invoke(manager, null)!;
+            var segments = Convert.ToInt32(result.GetType().GetField("Item1")!.GetValue(result));
+            var freedBytes = Convert.ToInt64(result.GetType().GetField("Item2")!.GetValue(result));
+
+            AssertEqual(2, segments, "Full purge reports completed plus active segment");
+            AssertEqual(350L, freedBytes, "Full purge reports completed plus active bytes exactly once");
+            AssertEqual(false, File.Exists(completedPath), "Full purge deletes completed segment");
+            AssertEqual(false, File.Exists(activePath), "Full purge deletes active segment");
+            AssertEqual(0L, GetLongProperty(manager, "TotalDiskBytes"), "Full purge resets total disk bytes");
+            AssertEqual(0L, GetLongProperty(manager, "TotalBytesWritten"), "Full purge resets monotonic bytes for a new buffer session");
+
+            var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
+                .Replace("\r\n", "\n");
+            var purgeCoreBlock = ExtractTextBetween(
+                source,
+                "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()",
+                "    private static long AddNonNegativeSaturated");
+            AssertOccursBefore(purgeCoreBlock, "var activeBytes = _activeSegmentPath != null", "_completedSegmentBytes = 0;");
+            AssertOccursBefore(purgeCoreBlock, "var activeBytes = _activeSegmentPath != null", "if (_activeSegmentPath != null)");
+        }
+        finally
+        {
+            if (manager is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
 
         return Task.CompletedTask;
     }

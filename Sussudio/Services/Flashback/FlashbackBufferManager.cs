@@ -449,10 +449,14 @@ internal sealed class FlashbackBufferManager : IDisposable
     /// Gets the active .ts segment path for this session. Generates the first segment on first call.
     /// </summary>
     public string GetFilePath()
+        => GetFilePath(out _);
+
+    public string GetFilePath(out bool generated)
     {
         lock (_indexLock)
         {
             ThrowIfDisposed();
+            generated = false;
 
             if (string.IsNullOrWhiteSpace(_sessionId))
             {
@@ -461,6 +465,7 @@ internal sealed class FlashbackBufferManager : IDisposable
 
             if (_activeSegmentPath == null)
             {
+                generated = true;
                 return GenerateSegmentPath();
             }
 
@@ -1427,6 +1432,9 @@ internal sealed class FlashbackBufferManager : IDisposable
     {
         // Must be called under _indexLock.
         var segmentCount = _completedSegments.Count + (_activeSegmentPath != null ? 1 : 0);
+        var activeBytes = _activeSegmentPath != null
+            ? Math.Max(0, _totalDiskBytes - _completedSegmentBytes)
+            : 0;
         long freedBytes = 0;
 
         // Delete completed segments
@@ -1444,7 +1452,6 @@ internal sealed class FlashbackBufferManager : IDisposable
         // Delete active segment
         if (_activeSegmentPath != null)
         {
-            var activeBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);
             if (TryDeleteFile(_activeSegmentPath))
             {
                 freedBytes = AddNonNegativeSaturated(freedBytes, activeBytes);
