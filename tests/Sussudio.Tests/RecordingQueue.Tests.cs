@@ -224,7 +224,8 @@ static partial class Program
         AssertContains(captureServiceSource, "libAvSink.OnEncodingFailed = OnRecordingBackendFatalError");
         AssertContains(captureServiceSource, "flashbackSink.SetFatalErrorCallback(OnFlashbackBackendFatalError)");
         AssertContains(captureServiceSource, "newSink.SetFatalErrorCallback(OnFlashbackBackendFatalError)");
-        AssertContains(captureServiceSource, "if (sink == null && controller is { IsDisposed: false, IsInitialized: true })\n        {\n            controller.PrepareForPreviewDetach();\n        }");
+        AssertContains(captureServiceSource, "if (sink == null && controller is { IsDisposed: false, IsInitialized: true })");
+        AssertContains(captureServiceSource, "controller.PrepareForPreviewDetach();");
         AssertOccursBefore(captureServiceSource, "controller.PrepareForPreviewDetach();", "_unifiedVideoCapture?.SetPreviewSink(sink);");
         AssertContains(captureServiceSource, "controller.UpdatePreviewComponents(sink, _unifiedVideoCapture);");
         AssertContains(captureServiceSource, "FLASHBACK_PLAYBACK_LATE_INIT via SetPreviewFrameSink");
@@ -315,7 +316,7 @@ static partial class Program
             "await _artifactManager.RollbackAsync(recordingContext)");
         AssertDoesNotContain(captureServiceSource, "System.Diagnostics.Trace.TraceWarning($\"Suppressed exception in CaptureService.StartRecordingAsync");
         AssertContains(captureServiceSource, "FLASHBACK_BUFFER_CYCLE_OK mode=preserve_rebuild");
-        AssertContains(captureServiceSource, "FLASHBACK_BUFFER_DEFERRED_PURGE_WARN");
+        AssertContains(captureServiceSource, "FLASHBACK_BUFFER_CLEANUP_PURGE_WARN");
         AssertDoesNotContain(captureServiceSource, "FLASHBACK_BUFFER_DEFERRED_PURGE_SKIP");
         AssertContains(captureServiceSource, "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)\n            {\n                throw;\n            }");
         var stopRecordingBackend = ExtractSourceBlock(
@@ -378,7 +379,7 @@ static partial class Program
             captureServiceSource,
             "private async Task DisposeFlashbackPreviewBackendCoreAsync",
             "private async Task CycleFlashbackBufferAsync");
-        AssertOccursBefore(disposeFlashbackPreviewBackendCore, "cancellationToken.ThrowIfCancellationRequested();", "flashbackBufferManager.PurgeAllSegments();");
+        AssertOccursBefore(disposeFlashbackPreviewBackendCore, "cancellationToken.ThrowIfCancellationRequested();", "CleanupFlashbackBackendArtifactsAfterExportAsync(");
         AssertOccursBefore(disposeFlashbackPreviewBackendCore, "_flashbackPlaybackController = null;", "flashbackPlaybackController.GoLive();");
         AssertContains(disposeFlashbackPreviewBackendCore, "FLASHBACK_PREVIEW_DETACH_WARN target=microphone");
         AssertContains(disposeFlashbackPreviewBackendCore, "FLASHBACK_PREVIEW_DETACH_WARN target=audio");
@@ -387,6 +388,22 @@ static partial class Program
         AssertOccursBefore(disposeFlashbackPreviewBackendCore, "FLASHBACK_PREVIEW_DETACH_WARN target=video", "await flashbackSink.StopAsync(CancellationToken.None).ConfigureAwait(false);");
         AssertOccursBefore(disposeFlashbackPreviewBackendCore, "_flashbackBackendSettings = null;", "cancellationToken.ThrowIfCancellationRequested();");
         AssertOccursBefore(disposeFlashbackPreviewBackendCore, "ScheduleDeferredFlashbackBackendCleanup(", "cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(disposeFlashbackPreviewBackendCore, "var cleanupCompleted = await CleanupFlashbackBackendArtifactsAfterExportAsync(");
+        AssertContains(disposeFlashbackPreviewBackendCore, "ScheduleDeferredFlashbackBackendCleanup(\n                Task.Delay(TimeSpan.FromSeconds(1)),");
+        var deferredFlashbackBackendCleanup = ExtractSourceBlock(
+            captureServiceSource,
+            "private void ScheduleDeferredFlashbackBackendCleanup",
+            "private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+        AssertContains(deferredFlashbackBackendCleanup, "CleanupFlashbackBackendArtifactsAfterExportAsync(");
+        var flashbackBackendArtifactCleanup = ExtractSourceBlock(
+            captureServiceSource,
+            "private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync",
+            "private Task ScheduleDeferredUnifiedVideoCaptureCleanup");
+        AssertContains(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "flashbackExporter.Dispose();", "bufferManager.PurgeAllSegments();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "flashbackExporter.Dispose();", "bufferManager.Dispose();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)", "flashbackExporter.Dispose();");
+        AssertOccursBefore(flashbackBackendArtifactCleanup, "WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)", "bufferManager.PurgeAllSegments();");
         var cycleFlashbackBuffer = ExtractSourceBlock(
             captureServiceSource,
             "private async Task CycleFlashbackBufferAsync",

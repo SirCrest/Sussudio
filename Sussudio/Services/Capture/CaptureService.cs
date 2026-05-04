@@ -1328,52 +1328,82 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             finally
             {
-                if (bufferManager != null)
-                {
-                    if (purgeSegments)
-                    {
-                        try
-                        {
-                            bool lockAcquired = false;
-                            if (_flashbackExportOperationLock != null)
-                            {
-                                Logger.Log($"FLASHBACK_DEFERRED_PURGE_AWAITING_EXPORT_LOCK reason='{reason}'");
-                                var lockSw = System.Diagnostics.Stopwatch.StartNew();
-                                lockAcquired = await _flashbackExportOperationLock.WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None).ConfigureAwait(false);
-                                lockSw.Stop();
-                                if (lockAcquired)
-                                    Logger.Log($"FLASHBACK_DEFERRED_PURGE_LOCK_ACQUIRED elapsed_ms={lockSw.ElapsedMilliseconds} reason='{reason}'");
-                                else
-                                    Logger.Log($"FLASHBACK_DEFERRED_PURGE_EXPORT_LOCK_TIMEOUT — proceeding without lock reason='{reason}'");
-                            }
+                _ = await CleanupFlashbackBackendArtifactsAfterExportAsync(
+                        bufferManager,
+                        flashbackExporter,
+                        reason,
+                        purgeSegments,
+                        "deferred")
+                    .ConfigureAwait(false);
 
-                            try { bufferManager.PurgeAllSegments(); }
-                            catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_DEFERRED_PURGE_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
-                            finally
-                            {
-                                if (lockAcquired)
-                                {
-                                    try { _flashbackExportOperationLock!.Release(); }
-                                    catch (Exception ex) { Logger.Log($"FLASHBACK_DEFERRED_PURGE_LOCK_RELEASE_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
-                                }
-                            }
-                        }
-                        catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_DEFERRED_PURGE_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
-                    }
-
-                    try { bufferManager.Dispose(); }
-                    catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_DEFERRED_DISPOSE_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
-                }
-
-                if (flashbackExporter != null)
-                {
-                    try { flashbackExporter.Dispose(); }
-                    catch (Exception ex) { Logger.Log($"FLASHBACK_EXPORTER_DEFERRED_DISPOSE_WARN reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
-                }
 
                 Logger.Log($"FLASHBACK_BACKEND_DEFERRED_CLEANUP_OK reason='{reason}'");
             }
         });
+    }
+
+    private async Task<bool> CleanupFlashbackBackendArtifactsAfterExportAsync(
+        FlashbackBufferManager? bufferManager,
+        FlashbackExporter? flashbackExporter,
+        string reason,
+        bool purgeSegments,
+        string mode)
+    {
+        if (bufferManager == null && flashbackExporter == null)
+        {
+            return true;
+        }
+
+        var lockAcquired = false;
+        try
+        {
+            Logger.Log($"FLASHBACK_BACKEND_CLEANUP_AWAITING_EXPORT_LOCK mode={mode} reason='{reason}'");
+            var lockSw = System.Diagnostics.Stopwatch.StartNew();
+            lockAcquired = await _flashbackExportOperationLock
+                .WaitAsync(TimeSpan.FromSeconds(30), CancellationToken.None)
+                .ConfigureAwait(false);
+            lockSw.Stop();
+
+            if (!lockAcquired)
+            {
+                Logger.Log($"FLASHBACK_BACKEND_CLEANUP_EXPORT_LOCK_TIMEOUT mode={mode} reason='{reason}' preserve_segments=true");
+                return false;
+            }
+
+            Logger.Log($"FLASHBACK_BACKEND_CLEANUP_LOCK_ACQUIRED mode={mode} elapsed_ms={lockSw.ElapsedMilliseconds} reason='{reason}'");
+
+            if (flashbackExporter != null)
+            {
+                try { flashbackExporter.Dispose(); }
+                catch (Exception ex) { Logger.Log($"FLASHBACK_EXPORTER_CLEANUP_DISPOSE_WARN mode={mode} reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
+            }
+
+            if (bufferManager != null)
+            {
+                if (purgeSegments)
+                {
+                    try { bufferManager.PurgeAllSegments(); }
+                    catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_CLEANUP_PURGE_WARN mode={mode} reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
+                }
+
+                try { bufferManager.Dispose(); }
+                catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_CLEANUP_DISPOSE_WARN mode={mode} reason='{reason}' type={ex.GetType().Name} msg={ex.Message}"); }
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_BACKEND_CLEANUP_WARN mode={mode} reason='{reason}' type={ex.GetType().Name} msg={ex.Message}");
+            return false;
+        }
+        finally
+        {
+            if (lockAcquired)
+            {
+                ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, $"flashback_backend_cleanup_{mode}");
+            }
+        }
     }
 
     private Task ScheduleDeferredUnifiedVideoCaptureCleanup(
@@ -2145,23 +2175,27 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             cancellationToken.ThrowIfCancellationRequested();
         }
 
-        if (flashbackBufferManager != null)
+        if (purgeSegments)
         {
-            if (purgeSegments)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                try { flashbackBufferManager.PurgeAllSegments(); }
-                catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_PURGE_WARN type={ex.GetType().Name} msg={ex.Message}"); }
-            }
-
-            try { flashbackBufferManager.Dispose(); }
-            catch (Exception ex) { Logger.Log($"FLASHBACK_BUFFER_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}"); }
+            cancellationToken.ThrowIfCancellationRequested();
         }
 
-        if (flashbackExporter != null)
+        var cleanupCompleted = await CleanupFlashbackBackendArtifactsAfterExportAsync(
+                flashbackBufferManager,
+                flashbackExporter,
+                purgeSegments ? "preview_backend_dispose_purge" : "preview_backend_dispose",
+                purgeSegments,
+                "preview_backend_dispose")
+            .ConfigureAwait(false);
+
+        if (!cleanupCompleted)
         {
-            try { flashbackExporter.Dispose(); }
-            catch (Exception ex) { Logger.Log($"FLASHBACK_EXPORTER_DISPOSE_WARN type={ex.GetType().Name} msg={ex.Message}"); }
+            ScheduleDeferredFlashbackBackendCleanup(
+                Task.Delay(TimeSpan.FromSeconds(1)),
+                flashbackBufferManager,
+                flashbackExporter,
+                reason: purgeSegments ? "preview_backend_dispose_purge_retry" : "preview_backend_dispose_retry",
+                purgeSegments: purgeSegments);
         }
 
         Logger.Log($"FLASHBACK_PREVIEW_DISPOSE_OK purge={purgeSegments}");
