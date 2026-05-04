@@ -1029,6 +1029,13 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback preview: scheduler deadline drops increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback preview: scheduler underflows increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback preview: D3D frame stats failures increased delta=");
+        AssertContains(diagnosticSessionText, "\"flashback preview: present/display pressure \"");
+        AssertContains(diagnosticSessionText, "var onePercentLowFloor = targetFps * 0.80;");
+        AssertContains(diagnosticSessionText, "var presentP99BudgetMs = targetFrameMs * 1.25;");
+        AssertContains(diagnosticSessionText, "var totalP99BudgetMs = targetFrameMs * 1.35;");
+        AssertContains(diagnosticSessionText, "latestSlowReason={FormatOptional(previewD3DMetrics.LatestSlowFrameReason)}");
+        AssertContains(diagnosticSessionText, "latestSlowPresentCallMs={previewD3DMetrics.LatestSlowFramePresentCallMs:0.##}");
+        AssertContains(diagnosticSessionText, "latestSlowPending={previewD3DMetrics.LatestSlowFramePendingFrameCount}");
         AssertContains(diagnosticSessionText, "\"flashback stress: playback command latency exceeded threshold \"");
         AssertContains(diagnosticSessionText, "$\"maxLatencyMs={maxLatencyMs}/{FlashbackStressMaxPlaybackCommandLatencyMs}\"");
         AssertContains(diagnosticSessionText, "\"flashback-rejected-export.mp4\"");
