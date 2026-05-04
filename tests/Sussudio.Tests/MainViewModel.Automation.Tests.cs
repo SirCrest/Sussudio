@@ -496,6 +496,18 @@ static partial class Program
         AssertContains(captureServiceText, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);");
         AssertContains(captureServiceText, "private void ReleaseFlashbackBackendLeaseIfHeld(ref bool backendLeaseHeld)");
         AssertContains(captureServiceText, "backendLeaseHeld = false;\n        ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, \"flashback_backend_lease\");");
+        var exportRangeMethod = ExtractTextBetween(
+            captureServiceText,
+            "internal async Task<FinalizeResult> ExportFlashbackRangeAsync",
+            "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
+        var exportLastNMethod = ExtractTextBetween(
+            captureServiceText,
+            "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
+            "private void ReleaseFlashbackBackendLeaseIfHeld");
+        AssertContains(exportRangeMethod, "try\n        {\n            return await ExportFlashbackCoreAsync(");
+        AssertContains(exportRangeMethod, "finally\n        {\n            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n        }");
+        AssertContains(exportLastNMethod, "try\n        {\n            return await ExportFlashbackCoreAsync(");
+        AssertContains(exportLastNMethod, "finally\n        {\n            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n        }");
         AssertContains(captureServiceText, "outerPauseApplied = bufferManager != null;");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", inPoint, outPoint);");
         AssertContains(captureServiceText, "var exportId = 0L;");
