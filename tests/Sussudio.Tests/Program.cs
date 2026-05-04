@@ -931,8 +931,8 @@ static partial class Program
                 "Flashback snap-live clears open file identity",
                 FlashbackPlaybackController_SnapLiveClearsOpenFileIdentity),
             await RunCheckAsync(
-                "Flashback pause from live does not block on exact seek",
-                FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek),
+                "Flashback pause from live displays a buffered frame before paused",
+                FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused),
             await RunCheckAsync(
                 "Flashback playback guards invalid decoder frame rates",
                 FlashbackPlaybackController_FrameDuration_GuardsInvalidDecoderFps),

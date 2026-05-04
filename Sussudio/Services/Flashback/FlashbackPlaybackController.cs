@@ -1230,12 +1230,35 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             SafePauseRendering("pause_from_live");
 
                             frozenValidStart = _bufferManager.ValidStartPts;
-                            var pausePos = _bufferManager.BufferedDuration;
-                            PlaybackPosition = pausePos;
-                            pendingExactResumeTarget = null;
+                            var pauseTarget = ResolvePauseFromLiveTarget(frozenValidStart);
+                            var pausePos = ClampPosition(SaturatingSubtract(pauseTarget, frozenValidStart), frozenValidStart);
+                            decoder ??= CreateDecoder();
+                            EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(pausePos, frozenValidStart));
+                            cts.Token.ThrowIfCancellationRequested();
+                            if (!IsDecoderFileReady(decoder, fileOpen))
+                            {
+                                pendingExactResumeTarget = null;
+                                SetNoFileFailure(CommandKind.Pause, pausePos);
+                                ReleasePlaybackFrameForLive("pause_from_live_no_file");
+                                RestoreLiveAudio();
+                                SafeResumePreviewSubmission("pause_from_live_no_file");
+                                SafeResumeRendering("pause_from_live_no_file");
+                                SetState(FlashbackPlaybackState.Live);
+                                Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE_NO_FILE pos_ms={(long)pausePos.TotalMilliseconds}");
+                                break;
+                            }
+
+                            if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, pausePos, frozenValidStart, CommandKind.Pause, cts.Token))
+                            {
+                                pendingExactResumeTarget = null;
+                                RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "pause_from_live_display_failed");
+                                break;
+                            }
+
+                            pendingExactResumeTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
 
                             SetState(FlashbackPlaybackState.Paused);
-                            Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)pausePos.TotalMilliseconds} frozen_preview=true");
+                            Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)PlaybackPosition.TotalMilliseconds} target_ms={(long)pauseTarget.TotalMilliseconds} frozen_frame=true");
                         }
                         break;
 
@@ -2519,6 +2542,30 @@ internal sealed class FlashbackPlaybackController : IDisposable
             return true;
         }
         return false;
+    }
+
+    private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)
+    {
+        var latestPts = _bufferManager.LatestPts;
+        if (latestPts <= frozenValidStart)
+        {
+            return frozenValidStart;
+        }
+
+        var fps = _bufferManager.EncodeFrameRate;
+        if (!double.IsFinite(fps) || fps <= 0)
+        {
+            fps = FallbackPlaybackFrameRate;
+        }
+
+        fps = Math.Min(fps, MaxPlaybackFrameRate);
+        var backoff = TimeSpan.FromSeconds(1.0 / fps);
+        if (latestPts - frozenValidStart <= backoff)
+        {
+            return latestPts;
+        }
+
+        return latestPts - backoff;
     }
 
     private TimeSpan ResolveFrameDuration(FlashbackDecoder decoder)

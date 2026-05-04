@@ -1846,7 +1846,7 @@ static partial class Program
         AssertDoesNotContain(sourceText, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));\n                        if (!decoder.IsOpen)");
         AssertDoesNotContain(sourceText, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(PlaybackPosition, frozenValidStart));\n                        if (!decoder.IsOpen)");
         AssertDoesNotContain(sourceText, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(nudgedPos, frozenValidStart));\n                        if (!decoder.IsOpen)");
-        AssertEqual(5, sourceText.Split("if (!IsDecoderFileReady(decoder, fileOpen))", StringSplitOptions.None).Length - 1, "All EnsureFileOpen callers gate on fileOpen and decoder.IsOpen");
+        AssertEqual(6, sourceText.Split("if (!IsDecoderFileReady(decoder, fileOpen))", StringSplitOptions.None).Length - 1, "All EnsureFileOpen callers gate on fileOpen and decoder.IsOpen");
 
         return Task.CompletedTask;
     }
@@ -2165,22 +2165,37 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackPlaybackController_PauseFromLive_DoesNotBlockOnExactSeek()
+    private static Task FlashbackPlaybackController_PauseFromLive_DisplaysBufferedFrameBeforePaused()
     {
         var sourceText = ReadRepoFile("Sussudio/Services/Flashback/FlashbackPlaybackController.cs")
             .Replace("\r\n", "\n");
+        var publicPauseBlock = ExtractTextBetween(
+            sourceText,
+            "public bool Pause()",
+            "    public bool GoLive()");
 
         var pauseFromLiveBlock = ExtractTextBetween(
             sourceText,
             "else if (State == FlashbackPlaybackState.Live)",
             "                        break;\n\n                    case CommandKind.GoLive:");
 
+        AssertContains(publicPauseBlock, "return SendCommand(new PlaybackCommand { Kind = CommandKind.Pause });");
+        AssertDoesNotContain(publicPauseBlock, "SeekAndDisplay");
         AssertContains(pauseFromLiveBlock, "SafeSuppressPreviewSubmission(\"pause_from_live\");");
         AssertContains(pauseFromLiveBlock, "SafePauseRendering(\"pause_from_live\");");
-        AssertContains(pauseFromLiveBlock, "PlaybackPosition = pausePos;");
+        AssertContains(pauseFromLiveBlock, "var pauseTarget = ResolvePauseFromLiveTarget(frozenValidStart);");
+        AssertContains(pauseFromLiveBlock, "EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(pausePos, frozenValidStart));");
+        AssertContains(pauseFromLiveBlock, "if (!IsDecoderFileReady(decoder, fileOpen))");
+        AssertContains(pauseFromLiveBlock, "SetNoFileFailure(CommandKind.Pause, pausePos);");
+        AssertContains(pauseFromLiveBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, pausePos, frozenValidStart, CommandKind.Pause, cts.Token))");
+        AssertContains(pauseFromLiveBlock, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"pause_from_live_display_failed\");");
+        AssertContains(pauseFromLiveBlock, "pendingExactResumeTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);");
         AssertContains(pauseFromLiveBlock, "SetState(FlashbackPlaybackState.Paused);");
-        AssertContains(pauseFromLiveBlock, "frozen_preview=true");
-        AssertDoesNotContain(pauseFromLiveBlock, "EnsureFileOpen");
+        AssertContains(pauseFromLiveBlock, "frozen_frame=true");
+        AssertOccursBefore(pauseFromLiveBlock, "if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, pausePos, frozenValidStart, CommandKind.Pause, cts.Token))", "SetState(FlashbackPlaybackState.Paused);");
+        AssertContains(sourceText, "private TimeSpan ResolvePauseFromLiveTarget(TimeSpan frozenValidStart)");
+        AssertContains(sourceText, "var backoff = TimeSpan.FromSeconds(1.0 / fps);");
+        AssertContains(sourceText, "return latestPts - backoff;");
         AssertDoesNotContain(pauseFromLiveBlock, "SeekAndDisplayExactFrame");
         AssertDoesNotContain(sourceText, "private void SeekAndDisplayExactFrame");
 
