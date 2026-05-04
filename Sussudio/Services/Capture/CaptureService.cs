@@ -2216,6 +2216,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // Close playback before cycling the sink so active decoders release segment files.
         var oldPlaybackController = _flashbackPlaybackController;
         _flashbackPlaybackController = null;
+        var preservedInPoint = !effectivePurgeSegments ? oldPlaybackController?.InPoint : null;
+        var preservedOutPoint = !effectivePurgeSegments ? oldPlaybackController?.OutPoint : null;
         if (oldPlaybackController != null)
         {
             try
@@ -2346,6 +2348,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
             var playbackController = new FlashbackPlaybackController(bufferManager);
             playbackController.GpuDecodeEnabled = _currentSettings.FlashbackGpuDecode;
+            playbackController.InPoint = preservedInPoint;
+            playbackController.OutPoint = preservedOutPoint;
             if (_previewFrameSink != null)
             {
                 playbackController.Initialize(_previewFrameSink, unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);

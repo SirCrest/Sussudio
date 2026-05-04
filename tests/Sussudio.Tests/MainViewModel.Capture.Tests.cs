@@ -590,6 +590,12 @@ static partial class Program
             captureServiceText,
             "private async Task CycleFlashbackBufferAsync",
             "    private void OnFlashbackFrameEncoded");
+        AssertContains(cycleBuffer, "var preservedInPoint = !effectivePurgeSegments ? oldPlaybackController?.InPoint : null;");
+        AssertContains(cycleBuffer, "var preservedOutPoint = !effectivePurgeSegments ? oldPlaybackController?.OutPoint : null;");
+        AssertDoesNotContain(cycleBuffer, "var preservedInPoint = oldPlaybackController?.InPoint;");
+        AssertDoesNotContain(cycleBuffer, "var preservedOutPoint = oldPlaybackController?.OutPoint;");
+        AssertContains(cycleBuffer, "playbackController.InPoint = preservedInPoint;");
+        AssertContains(cycleBuffer, "playbackController.OutPoint = preservedOutPoint;");
         var ensureFlashbackPreviewBackend = ExtractTextBetween(
             captureServiceText,
             "private async Task EnsureFlashbackPreviewBackendAsync",
