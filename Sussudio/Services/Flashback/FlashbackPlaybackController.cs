@@ -125,6 +125,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private string _playbackAudioMasterLastFallbackReason = string.Empty;
     private double _playbackAudioMasterLastFallbackDriftMs;
     private double _playbackAudioMasterLastFallbackClockAgeMs;
+    private string _pendingAudioMasterFallbackReason = string.Empty;
+    private double _pendingAudioMasterFallbackDriftMs;
+    private long _pendingAudioMasterFallbackClockAgeTicks;
     private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK") ?? "Playback";
     private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY", 1, -2, 2);
 
@@ -2970,6 +2973,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 return;
             }
 
+            ClearPendingAudioMasterFallback();
+
             double adjustedDelayMs;
             if (diffMs > syncThresholdMs)
             {
@@ -3019,6 +3024,52 @@ internal sealed class FlashbackPlaybackController : IDisposable
     }
 
     private void RecordAudioMasterFallback(string reason, double driftMs, long clockAgeTicks)
+    {
+        if (!IsTransientAudioMasterFallbackCandidate(reason))
+        {
+            CommitPendingAudioMasterFallback();
+            CommitAudioMasterFallback(reason, driftMs, clockAgeTicks);
+            return;
+        }
+
+        if (string.IsNullOrEmpty(_pendingAudioMasterFallbackReason))
+        {
+            _pendingAudioMasterFallbackReason = reason;
+            _pendingAudioMasterFallbackDriftMs = driftMs;
+            _pendingAudioMasterFallbackClockAgeTicks = clockAgeTicks;
+            return;
+        }
+
+        CommitPendingAudioMasterFallback();
+        CommitAudioMasterFallback(reason, driftMs, clockAgeTicks);
+    }
+
+    private static bool IsTransientAudioMasterFallbackCandidate(string reason)
+        => string.Equals(reason, "stale-clock", StringComparison.Ordinal) ||
+           string.Equals(reason, "drift-outlier", StringComparison.Ordinal);
+
+    private void ClearPendingAudioMasterFallback()
+    {
+        _pendingAudioMasterFallbackReason = string.Empty;
+        _pendingAudioMasterFallbackDriftMs = 0;
+        _pendingAudioMasterFallbackClockAgeTicks = 0;
+    }
+
+    private void CommitPendingAudioMasterFallback()
+    {
+        if (string.IsNullOrEmpty(_pendingAudioMasterFallbackReason))
+        {
+            return;
+        }
+
+        CommitAudioMasterFallback(
+            _pendingAudioMasterFallbackReason,
+            _pendingAudioMasterFallbackDriftMs,
+            _pendingAudioMasterFallbackClockAgeTicks);
+        ClearPendingAudioMasterFallback();
+    }
+
+    private void CommitAudioMasterFallback(string reason, double driftMs, long clockAgeTicks)
     {
         Interlocked.Increment(ref _playbackAudioMasterFallbacks);
         switch (reason)
@@ -3844,6 +3895,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Volatile.Write(ref _playbackAudioMasterLastFallbackReason, string.Empty);
         _playbackAudioMasterLastFallbackDriftMs = 0;
         _playbackAudioMasterLastFallbackClockAgeMs = 0;
+        ClearPendingAudioMasterFallback();
         Volatile.Write(ref _lastPlaybackDropReason, string.Empty);
         Interlocked.Exchange(ref _lastPlaybackDropUtcUnixMs, 0);
         Interlocked.Exchange(ref _playbackSubmitFailures, 0);

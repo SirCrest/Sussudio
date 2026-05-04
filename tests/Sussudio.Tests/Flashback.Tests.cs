@@ -3323,8 +3323,17 @@ static partial class Program
         AssertContains(sourceText, "private void UpdateDecoderHwAccel(FlashbackDecoder decoder)");
         AssertContains(sourceText, "const double MaxAudioMasterCorrectionMs = 250.0;");
         AssertContains(sourceText, "const double syncThresholdMs = 100.0;");
+        AssertContains(sourceText, "private string _pendingAudioMasterFallbackReason = string.Empty;");
+        AssertContains(sourceText, "private static bool IsTransientAudioMasterFallbackCandidate(string reason)");
+        AssertContains(sourceText, "string.Equals(reason, \"stale-clock\", StringComparison.Ordinal)");
+        AssertContains(sourceText, "string.Equals(reason, \"drift-outlier\", StringComparison.Ordinal)");
+        AssertContains(sourceText, "ClearPendingAudioMasterFallback();");
+        AssertContains(sourceText, "CommitPendingAudioMasterFallback();");
+        AssertContains(sourceText, "CommitAudioMasterFallback(");
         AssertContains(sourceText, "if (Math.Abs(diffMs) > MaxAudioMasterCorrectionMs)\n            {\n                // WASAPI render PTS can lag decoded video by the endpoint buffer/device");
         AssertContains(sourceText, "WallClockPace(pacingStopwatch, frameDuration);\n                return;");
+        AssertContains(sourceText, "if (string.IsNullOrEmpty(_pendingAudioMasterFallbackReason))\n            {\n                _pendingAudioMasterFallbackReason = reason;");
+        AssertContains(sourceText, "CommitAudioMasterFallback(\n                _pendingAudioMasterFallbackReason,");
         AssertContains(sourceText, "var correctionMs = Math.Min(diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));");
         AssertContains(sourceText, "adjustedDelayMs = nominalDelayMs + Math.Max(0, correctionMs);");
         AssertContains(sourceText, "var correctionMs = Math.Min(-diffMs - syncThresholdMs, Math.Min(0.1, nominalDelayMs * 0.02));");
