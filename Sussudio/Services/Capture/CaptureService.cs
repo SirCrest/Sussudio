@@ -4537,6 +4537,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 fbResult = FinalizeResult.Failure(fbOutputPath, $"Flashback recording finalize failed: {ex.Message}");
             }
 
+            if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))
+            {
+                flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
+            }
+
             var flashbackVideoCapture = _unifiedVideoCapture;
             var recordingFramesDelivered = 0L;
             var recordingFramesEnqueued = 0L;
@@ -4971,6 +4976,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         return result;
     }
+
+    private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)
+        => !result.Succeeded &&
+           (string.Equals(result.StatusMessage, "Flashback export cancelled.", StringComparison.Ordinal) ||
+            string.Equals(result.StatusMessage, "Flashback recording finalize cancelled.", StringComparison.Ordinal));
 
     private void TryApplySharedPreviewDevice(UnifiedVideoCapture? capture, IPreviewFrameSink? sink)
     {

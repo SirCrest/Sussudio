@@ -325,6 +325,8 @@ static partial class Program
             "private async Task DisposeTransientRecordingBackendAsync");
         AssertContains(stopRecordingBackend, "OperationCanceledException? flashbackCancellationException = null;");
         AssertContains(stopRecordingBackend, "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");");
+        AssertContains(stopRecordingBackend, "if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))");
+        AssertContains(stopRecordingBackend, "flashbackCancellationException ??= new OperationCanceledException(cancellationToken);");
         AssertContains(stopRecordingBackend, "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(stopRecordingBackend, "FLASHBACK_BUFFER_CYCLE_FAIL type={ex.GetType().Name} error='{ex.Message}'");
         AssertContains(stopRecordingBackend, "FLASHBACK_MIC_RESTART_WARN type={ex.GetType().Name} error='{ex.Message}'");
@@ -332,6 +334,10 @@ static partial class Program
             stopRecordingBackend,
             "catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)",
             "FLASHBACK_UNIFIED_RECORDING_FINALIZE_FAIL");
+        AssertOccursBefore(
+            stopRecordingBackend,
+            "if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))",
+            "var flashbackVideoCapture = _unifiedVideoCapture;");
         AssertOccursBefore(
             stopRecordingBackend,
             "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");",
@@ -362,6 +368,9 @@ static partial class Program
             "micCapture.SetAudioWriter(samples => fbSink.WriteMicrophoneAudioAsync(samples));",
             "_microphoneCapture = micCapture;");
         AssertContains(flashbackMicMonitorRestart, "_microphoneCapture = micCapture;\n                        micCapture = null;");
+        AssertContains(captureServiceSource, "private static bool IsFlashbackFinalizeCancellationResult(FinalizeResult result)");
+        AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback export cancelled.\", StringComparison.Ordinal)");
+        AssertContains(captureServiceSource, "string.Equals(result.StatusMessage, \"Flashback recording finalize cancelled.\", StringComparison.Ordinal)");
         var standardMicMonitorRestart = ExtractSourceBlock(
             stopRecordingBackend,
             "var wasapiAudioCaptureFaulted = Volatile.Read(ref _wasapiAudioCaptureFaulted);",
