@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -9,7 +10,7 @@ namespace McpServer.Tools;
 public static class WindowScreenshotTools
 {
     [McpServerTool, Description("Capture the entire application window (including UI chrome, margins, letterbox areas, and video preview) as a PNG screenshot. Use .bmp extension for uncompressed BMP.")]
-    public static async Task<string> capture_window_screenshot(
+    public static async Task<CallToolResult> capture_window_screenshot(
         PipeClient pipeClient,
         [Description("Optional output path for the screenshot. Use .png (default) for compressed or .bmp for uncompressed.")] string? outputPath = null)
     {
@@ -25,12 +26,12 @@ public static class WindowScreenshotTools
         var response = await pipeClient.SendCommandAsync("CaptureWindowScreenshot", payload).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return AutomationSnapshotFormatter.Get(response, "Message", "Screenshot failed.");
+            return McpToolResultFactory.FromResponse(response, AutomationSnapshotFormatter.Get(response, "Message", "Screenshot failed."));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Object)
         {
-            return "No screenshot data returned.";
+            return McpToolResultFactory.FromText("No screenshot data returned.", isError: true);
         }
 
         var filePath = AutomationSnapshotFormatter.Get(data, "FilePath", "N/A");
@@ -38,7 +39,9 @@ public static class WindowScreenshotTools
         var height = AutomationSnapshotFormatter.Get(data, "CapturedHeight", "?");
         var fileSize = AutomationSnapshotFormatter.Get(data, "FileSizeBytes", "0");
 
-        return $"Window screenshot saved: {filePath} ({width}x{height}, {fileSize} bytes)";
+        return McpToolResultFactory.FromResponse(
+            response,
+            $"Window screenshot saved: {filePath} ({width}x{height}, {fileSize} bytes)");
     }
 
 }

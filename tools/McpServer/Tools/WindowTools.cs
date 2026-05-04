@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Linq;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -8,7 +9,7 @@ namespace McpServer.Tools;
 public static class WindowTools
 {
     [McpServerTool, Description("Control the application window: minimize, maximize, restore, close (requires arm_close), snap_left, snap_right, snap_top_left, snap_top_right, snap_bottom_left, snap_bottom_right, center, move (requires x,y), resize (requires width,height)")]
-    public static async Task<string> window_action(
+    public static async Task<CallToolResult> window_action(
         PipeClient pipeClient,
         [Description("Window action: minimize, maximize, restore, close, snap_left, snap_right, snap_top_left, snap_top_right, snap_bottom_left, snap_bottom_right, center, move, resize")] string action,
         [Description("Arm window close before sending a close action")] bool armClose = false,
@@ -29,7 +30,12 @@ public static class WindowTools
             {
                 ["armed"] = true
             };
-            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "ArmClose", "ArmClose", armPayload).ConfigureAwait(false));
+            var armResponse = await pipeClient.SendCommandAsync("ArmClose", armPayload).ConfigureAwait(false);
+            results.Add(ToolCommandFormatter.FormatCommandResponse(armResponse, "ArmClose"));
+            if (!Sussudio.Tools.AutomationSnapshotFormatter.IsSuccess(armResponse))
+            {
+                return McpToolResultFactory.FromText(string.Join(Environment.NewLine, results), isError: true);
+            }
         }
 
         var actionPayload = new Dictionary<string, object?>
@@ -42,9 +48,10 @@ public static class WindowTools
         if (width.HasValue) actionPayload["width"] = width.Value;
         if (height.HasValue) actionPayload["height"] = height.Value;
 
-        results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "WindowAction", "WindowAction", actionPayload).ConfigureAwait(false));
+        var actionResponse = await pipeClient.SendCommandAsync("WindowAction", actionPayload).ConfigureAwait(false);
+        results.Add(ToolCommandFormatter.FormatCommandResponse(actionResponse, "WindowAction"));
 
-        return string.Join(Environment.NewLine, results);
+        return McpToolResultFactory.FromResponse(actionResponse, string.Join(Environment.NewLine, results));
     }
 
 }

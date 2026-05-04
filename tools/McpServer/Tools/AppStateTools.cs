@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -9,15 +10,17 @@ namespace McpServer.Tools;
 public static class AppStateTools
 {
     [McpServerTool, Description("Get the full application state snapshot including device, preview, recording, HDR, audio, and performance status")]
-    public static async Task<string> get_app_state(PipeClient pipeClient)
+    public static async Task<CallToolResult> get_app_state(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return GetMessage(response);
+            return McpToolResultFactory.FromResponse(response, GetMessage(response));
         }
 
-        return AutomationSnapshotFormatter.FormatSnapshot(response, includeFlashback: true);
+        return McpToolResultFactory.FromResponse(
+            response,
+            AutomationSnapshotFormatter.FormatSnapshot(response, includeFlashback: true));
     }
 
     [McpServerTool(UseStructuredContent = true), Description("Get the raw structured application state snapshot for agent consumption.")]

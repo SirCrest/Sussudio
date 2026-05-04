@@ -2449,15 +2449,24 @@ public static class DiagnosticSessionRunner
     {
         var started = Stopwatch.GetTimestamp();
         AutomationPipeConnectException? lastConnectException = null;
+        string? lastSyntheticConnectFailureMessage = null;
         while (Stopwatch.GetElapsedTime(started) < timeout)
         {
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                return (await sendCommandAsync(command, payload, responseTimeoutMs)
+                var response = (await sendCommandAsync(command, payload, responseTimeoutMs)
                         .WaitAsync(cancellationToken)
                         .ConfigureAwait(false))
                     .Clone();
+                if (IsSyntheticPipeConnectFailure(response))
+                {
+                    lastSyntheticConnectFailureMessage = GetString(response, "Message") ?? "pipe connect failed";
+                    await Task.Delay(500, cancellationToken).ConfigureAwait(false);
+                    continue;
+                }
+
+                return response;
             }
             catch (AutomationPipeConnectException ex)
             {
@@ -2479,7 +2488,23 @@ public static class DiagnosticSessionRunner
             return BuildLocalFailureResponse(command, lastConnectException.Message);
         }
 
+        if (!string.IsNullOrWhiteSpace(lastSyntheticConnectFailureMessage))
+        {
+            return BuildLocalFailureResponse(command, lastSyntheticConnectFailureMessage);
+        }
+
         return BuildLocalFailureResponse(command, "command was not attempted before retry timeout elapsed");
+    }
+
+    private static bool IsSyntheticPipeConnectFailure(JsonElement response)
+    {
+        if (IsSuccess(response))
+        {
+            return false;
+        }
+
+        var errorCode = GetString(response, "ErrorCode");
+        return string.Equals(errorCode, "pipe-connect-failed", StringComparison.OrdinalIgnoreCase);
     }
 
     private static JsonElement CreateEmptyJsonObject()

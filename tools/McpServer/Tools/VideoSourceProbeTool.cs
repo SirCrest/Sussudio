@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -10,17 +11,17 @@ namespace McpServer.Tools;
 public static class VideoSourceProbeTool
 {
     [McpServerTool, Description("Query the live video source's supported formats during preview. Shows P010/NV12 availability, current format, memory preference, and full format table without starting recording.")]
-    public static async Task<string> probe_video_source(PipeClient pipeClient)
+    public static async Task<CallToolResult> probe_video_source(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("ProbeVideoSource").ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return GetMessage(response);
+            return McpToolResultFactory.FromResponse(response, GetMessage(response));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Object)
         {
-            return "No probe data returned.";
+            return McpToolResultFactory.FromText("No probe data returned.", isError: true);
         }
 
         var builder = new StringBuilder();
@@ -32,7 +33,7 @@ public static class VideoSourceProbeTool
         if (string.Equals(sessionActive, "false", StringComparison.OrdinalIgnoreCase))
         {
             builder.AppendLine("No active ingest session. Start preview first.");
-            return builder.ToString().TrimEnd();
+            return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
         }
 
         builder.AppendLine($"Memory Preference: {Get(data, "MemoryPreference")}");
@@ -72,7 +73,7 @@ public static class VideoSourceProbeTool
             }
         }
 
-        return builder.ToString().TrimEnd();
+        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
 
     private static string GetMessage(JsonElement response)

@@ -489,6 +489,9 @@ static partial class Program
                 "Diagnostic session runner fails unknown initial snapshot without mutating state",
                 DiagnosticSessionRunner_UnknownInitialSnapshotFailsWithoutMutatingState),
             await RunCheckAsync(
+                "Diagnostic session runner retries synthetic pipe connect failures",
+                DiagnosticSessionRunner_RetriesSyntheticPipeConnectFailures),
+            await RunCheckAsync(
                 "MCP performance timeline exposes D3D P99 stage timing",
                 McpPerformanceTimelineTool_ExposesD3DP99StageTiming),
             await RunCheckAsync(

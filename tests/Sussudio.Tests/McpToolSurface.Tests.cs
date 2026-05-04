@@ -156,9 +156,24 @@ static partial class Program
                 .ConfigureAwait(false);
 
             using var response = await ReadJsonRpcResponseAsync(process, 2, cts.Token).ConfigureAwait(false);
-            var content = response.RootElement.GetProperty("result").GetProperty("content");
+            var resultElement = response.RootElement.GetProperty("result");
+            AssertEqual(true, resultElement.GetProperty("isError").GetBoolean(), "get_app_state pipe failure MCP isError");
+            var content = resultElement.GetProperty("content");
             var text = content[0].GetProperty("text").GetString() ?? string.Empty;
             AssertContains(text, "Sussudio is not running or not responding.");
+
+            await WriteJsonRpcLineAsync(
+                    process,
+                    """
+                    {"jsonrpc":"2.0","id":3,"method":"tools/list","params":{}}
+                    """,
+                    cts.Token)
+                .ConfigureAwait(false);
+            using var toolsListResponse = await ReadJsonRpcResponseAsync(process, 3, cts.Token).ConfigureAwait(false);
+            AssertEqual(
+                true,
+                toolsListResponse.RootElement.GetProperty("result").GetProperty("tools").GetArrayLength() > 0,
+                "MCP transport remains open after pipe failure");
         }
         finally
         {
@@ -1109,6 +1124,109 @@ static partial class Program
         }
     }
 
+    private static async Task DiagnosticSessionRunner_RetriesSyntheticPipeConnectFailures()
+    {
+        var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"diagnostic-session-connect-retry-test-{Guid.NewGuid():N}");
+        var getSnapshotAttempts = 0;
+
+        try
+        {
+            var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+            var optionsType = assembly.GetType("Sussudio.Tools.DiagnosticSessionOptions")
+                ?? throw new InvalidOperationException("DiagnosticSessionOptions type was not found.");
+            var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
+            var options = Activator.CreateInstance(optionsType)
+                ?? throw new InvalidOperationException("DiagnosticSessionOptions instance could not be created.");
+            optionsType.GetProperty("Scenario")!.SetValue(options, "observe");
+            optionsType.GetProperty("DurationSeconds")!.SetValue(options, 0);
+            optionsType.GetProperty("SampleIntervalMs")!.SetValue(options, 100);
+            optionsType.GetProperty("OutputDirectory")!.SetValue(options, outputDirectory);
+
+            Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommand = (command, _, _) =>
+            {
+                if (command == "GetSnapshot")
+                {
+                    getSnapshotAttempts++;
+                    if (getSnapshotAttempts <= 2)
+                    {
+                        return Task.FromResult(ParseDiagnosticSessionJson("""
+                            {
+                              "Success": false,
+                              "Status": "error",
+                              "CommandLifecycle": "failed",
+                              "Message": "Sussudio is not running or not responding. Start the app and try again.",
+                              "ErrorCode": "pipe-connect-failed"
+                            }
+                            """));
+                    }
+
+                    return Task.FromResult(ParseDiagnosticSessionJson("""
+                        {
+                          "Success": true,
+                          "Snapshot": {
+                            "IsPreviewing": false,
+                            "IsRecording": false,
+                            "FlashbackActive": false,
+                            "DiagnosticHealthStatus": "Healthy",
+                            "DiagnosticLikelyStage": "none",
+                            "DiagnosticSummary": "No degraded frame lane detected.",
+                            "DiagnosticEvidence": "All monitored frame lanes are within current thresholds.",
+                            "FrameLedgerRecentEvents": []
+                          }
+                        }
+                        """));
+                }
+
+                if (command == "GetPerformanceTimeline")
+                {
+                    return Task.FromResult(ParseDiagnosticSessionJson("""
+                        {
+                          "Success": true,
+                          "Data": []
+                        }
+                        """));
+                }
+
+                return Task.FromResult(ParseDiagnosticSessionJson("""
+                    {
+                      "Success": true,
+                      "Message": "ok"
+                    }
+                    """));
+            };
+
+            var runAsync = runnerType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .FirstOrDefault(method => method.Name == "RunAsync" && method.GetParameters().Length == 3)
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync overload was not found.");
+            var task = runAsync.Invoke(null, new object?[] { options, sendCommand, CancellationToken.None }) as Task
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync did not return a Task.");
+            await task.ConfigureAwait(false);
+            var result = task.GetType().GetProperty("Result")!.GetValue(task)
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync returned null.");
+
+            AssertEqual(true, GetBoolProperty(result, "Success"), "diagnostic synthetic connect retry result success");
+            AssertEqual(true, getSnapshotAttempts >= 3, "diagnostic synthetic connect failure was retried");
+
+            using var summaryDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "summary.json")));
+            AssertEqual(true, summaryDocument.RootElement.GetProperty("Success").GetBoolean(), "diagnostic synthetic connect retry summary success");
+            AssertEqual("completed", summaryDocument.RootElement.GetProperty("TerminalState").GetString(), "diagnostic synthetic connect retry terminal state");
+        }
+        finally
+        {
+            if (Directory.Exists(outputDirectory))
+            {
+                Directory.Delete(outputDirectory, recursive: true);
+            }
+        }
+
+        static JsonElement ParseDiagnosticSessionJson(string json)
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.Clone();
+        }
+    }
+
     private static Task McpPerformanceTimelineTool_ExposesD3DP99StageTiming()
     {
         var source = ReadRepoFile("tools/McpServer/Tools/PerformanceTimelineTools.cs");
@@ -1915,9 +2033,14 @@ static partial class Program
     {
         var method = type.GetMethod(methodName, BindingFlags.Static | BindingFlags.Public)
             ?? throw new InvalidOperationException($"{type.FullName}.{methodName} was not found.");
-        var task = method.Invoke(null, args) as Task<string>
-            ?? throw new InvalidOperationException($"{type.FullName}.{methodName} did not return Task<string>.");
-        return await task.ConfigureAwait(false);
+        var task = method.Invoke(null, args) as Task
+            ?? throw new InvalidOperationException($"{type.FullName}.{methodName} did not return a Task.");
+        await task.ConfigureAwait(false);
+        var result = task.GetType().GetProperty("Result")?.GetValue(task)
+            ?? throw new InvalidOperationException($"{type.FullName}.{methodName} returned null.");
+        return result is string text
+            ? text
+            : GetMcpToolResultText(result);
     }
 
     private static async Task<object> InvokeMcpToolResultAsync(Type type, string methodName, params object?[] args)

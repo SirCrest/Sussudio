@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -11,7 +12,7 @@ namespace McpServer.Tools;
 public static class PerformanceTimelineTools
 {
     [McpServerTool, Description("Get a time-series performance timeline showing capture/preview frame times, D3D present CPU timing, DXGI missed refreshes, queue depths, drops, memory, GC, and thread pool metrics over the last ~2 minutes (240 samples at 500ms intervals). Use to identify trends, regressions, stutter, present-call blocking, and GC pressure.")]
-    public static async Task<string> get_performance_timeline(
+    public static async Task<CallToolResult> get_performance_timeline(
         PipeClient pipeClient,
         [Description("Maximum number of timeline entries to return (default: 240, which is ~2 minutes)")] int maxEntries = 240,
         [Description("Target 1% low FPS for preview/playback budget diagnostics (default: 118).")] double targetOnePercentLowFps = 118)
@@ -24,12 +25,14 @@ public static class PerformanceTimelineTools
         var response = await pipeClient.SendCommandAsync("GetPerformanceTimeline", payload).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return GetMessage(response);
+            return McpToolResultFactory.FromResponse(response, GetMessage(response));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Array)
         {
-            return "No timeline data available. The app may not have been running long enough to collect samples.";
+            return McpToolResultFactory.FromText(
+                "No timeline data available. The app may not have been running long enough to collect samples.",
+                isError: true);
         }
 
         var entries = new List<TimelineRow>();
@@ -167,7 +170,7 @@ public static class PerformanceTimelineTools
 
         if (entries.Count == 0)
         {
-            return "No timeline entries collected yet.";
+            return McpToolResultFactory.FromText("No timeline entries collected yet.");
         }
 
         var builder = new StringBuilder();
@@ -305,7 +308,7 @@ public static class PerformanceTimelineTools
             }
         }
 
-        return builder.ToString().TrimEnd();
+        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
 
     private static string GetMessage(JsonElement response)

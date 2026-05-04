@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -7,48 +8,30 @@ namespace McpServer.Tools;
 public static class UiSettingsTools
 {
     [McpServerTool, Description("Configure UI-facing settings that matter to automation: show-all capture options, preview monitoring volume, and stats panel visibility. Only provided parameters are changed.")]
-    public static async Task<string> configure_ui(
+    public static async Task<CallToolResult> configure_ui(
         PipeClient pipeClient,
         [Description("Enable or disable the expanded capture options view")] bool? showAllCaptureOptions = null,
         [Description("Preview volume percentage from 0 to 100")] double? previewVolumePercent = null,
         [Description("Show or hide the stats panel")] bool? statsVisible = null)
-    {
-        var results = new List<string>();
-
-        if (showAllCaptureOptions.HasValue)
-        {
-            var payload = new Dictionary<string, object?> { ["enabled"] = showAllCaptureOptions.Value };
-            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetShowAllCaptureOptions", "SetShowAllCaptureOptions", payload).ConfigureAwait(false));
-        }
-
-        if (previewVolumePercent.HasValue)
-        {
-            var payload = new Dictionary<string, object?> { ["previewVolumePercent"] = previewVolumePercent.Value };
-            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetPreviewVolume", "SetPreviewVolume", payload).ConfigureAwait(false));
-        }
-
-        if (statsVisible.HasValue)
-        {
-            var payload = new Dictionary<string, object?> { ["visible"] = statsVisible.Value };
-            results.Add(await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetStatsVisible", "SetStatsVisible", payload).ConfigureAwait(false));
-        }
-
-        return results.Count == 0
-            ? "No UI setting changes requested."
-            : string.Join(Environment.NewLine, results);
-    }
+        => await ToolCommandFormatter.ExecuteBatchResultAsync(
+                pipeClient,
+                "No UI setting changes requested.",
+                ToolCommandFormatter.Optional("SetShowAllCaptureOptions", "SetShowAllCaptureOptions", "enabled", showAllCaptureOptions),
+                ToolCommandFormatter.Optional("SetPreviewVolume", "SetPreviewVolume", "previewVolumePercent", previewVolumePercent),
+                ToolCommandFormatter.Optional("SetStatsVisible", "SetStatsVisible", "visible", statsVisible))
+            .ConfigureAwait(false);
 
     [McpServerTool, Description("Show or hide the settings panel")]
-    public static async Task<string> configure_settings_panel(
+    public static async Task<CallToolResult> configure_settings_panel(
         PipeClient pipeClient,
         [Description("True to show the settings panel, false to hide it")] bool visible)
     {
         var payload = new Dictionary<string, object?> { ["visible"] = visible };
-        return await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetSettingsVisible", "SetSettingsVisible", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetSettingsVisible", "SetSettingsVisible", payload).ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Show or hide a specific stats section by name")]
-    public static async Task<string> configure_stats_section(
+    public static async Task<CallToolResult> configure_stats_section(
         PipeClient pipeClient,
         [Description("Section name (e.g. Capture, Audio, Pipeline, Recording, Flashback, Performance, Memory, Preview, Source)")] string section,
         [Description("True to show the section, false to hide it")] bool visible)
@@ -58,7 +41,7 @@ public static class UiSettingsTools
             ["section"] = section,
             ["visible"] = visible
         };
-        return await ToolCommandFormatter.ExecuteAndFormatAsync(pipeClient, "SetStatsSectionVisible", "SetStatsSectionVisible", payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(pipeClient, "SetStatsSectionVisible", "SetStatsSectionVisible", payload).ConfigureAwait(false);
     }
 
 }

@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -10,18 +11,18 @@ namespace McpServer.Tools;
 public static class MemoryDiagnosticsTools
 {
     [McpServerTool, Description("Get memory, GC, and thread pool diagnostics for the running application. Shows working set, managed heap, GC collection counts, pause time, fragmentation, and thread pool utilization.")]
-    public static async Task<string> get_memory_diagnostics(PipeClient pipeClient)
+    public static async Task<CallToolResult> get_memory_diagnostics(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("GetSnapshot").ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return GetMessage(response);
+            return McpToolResultFactory.FromResponse(response, GetMessage(response));
         }
 
         if (!response.TryGetProperty("Snapshot", out var snapshot) ||
             snapshot.ValueKind != JsonValueKind.Object)
         {
-            return "Snapshot data not available.";
+            return McpToolResultFactory.FromText("Snapshot data not available.", isError: true);
         }
 
         var builder = new StringBuilder();
@@ -43,7 +44,7 @@ public static class MemoryDiagnosticsTools
         builder.AppendLine($"Worker Threads: {AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolWorkerAvailable")} available / {AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolWorkerMax")} max");
         builder.AppendLine($"IO Threads:     {AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolIoAvailable")} available / {AutomationSnapshotFormatter.Get(snapshot, "ThreadPoolIoMax")} max");
 
-        return builder.ToString().TrimEnd();
+        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
 
     private static string GetMessage(JsonElement response)

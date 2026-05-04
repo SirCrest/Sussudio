@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -11,17 +12,17 @@ namespace McpServer.Tools;
 public static class PreviewColorProbeTool
 {
     [McpServerTool, Description("Probe the active preview renderer mode, negotiated subtype, and available color metadata. Reports D3D11 input/output color spaces when available; extended MF attributes are shown only when provided by the active pipeline.")]
-    public static async Task<string> probe_preview_color(PipeClient pipeClient)
+    public static async Task<CallToolResult> probe_preview_color(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("ProbePreviewColor").ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return GetMessage(response);
+            return McpToolResultFactory.FromResponse(response, GetMessage(response));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Object)
         {
-            return "No probe data returned.";
+            return McpToolResultFactory.FromText("No probe data returned.", isError: true);
         }
 
         var builder = new StringBuilder();
@@ -33,7 +34,7 @@ public static class PreviewColorProbeTool
         if (string.Equals(sessionActive, "false", StringComparison.OrdinalIgnoreCase))
         {
             builder.AppendLine("No active preview session. Start preview first.");
-            return builder.ToString().TrimEnd();
+            return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
         }
 
         builder.AppendLine($"Renderer: {Get(data, "RendererMode")}");
@@ -116,7 +117,7 @@ public static class PreviewColorProbeTool
             }
         }
 
-        return builder.ToString().TrimEnd();
+        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
 
     private static string GetMessage(JsonElement response)

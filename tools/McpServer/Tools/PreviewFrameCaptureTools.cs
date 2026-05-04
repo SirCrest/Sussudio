@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -12,7 +13,7 @@ namespace McpServer.Tools;
 public static class PreviewFrameCaptureTools
 {
     [McpServerTool, Description("Capture the next rendered preview frame from the D3D11 swap chain back buffer, save it as BMP or 16-bit RGB PNG, and report frame statistics with diagnosis hints.")]
-    public static async Task<string> capture_preview_frame(
+    public static async Task<CallToolResult> capture_preview_frame(
         PipeClient pipeClient,
         [Description("Optional output path. Use .png for 16-bit RGB capture; other paths use BMP. Defaults to ./temp/preview_capture.bmp")] string? outputPath = null)
     {
@@ -28,12 +29,12 @@ public static class PreviewFrameCaptureTools
         var response = await pipeClient.SendCommandAsync("CapturePreviewFrame", payload).ConfigureAwait(false);
         if (!AutomationSnapshotFormatter.IsSuccess(response))
         {
-            return AutomationSnapshotFormatter.Get(response, "Message", "Command failed.");
+            return McpToolResultFactory.FromResponse(response, AutomationSnapshotFormatter.Get(response, "Message", "Command failed."));
         }
 
         if (!response.TryGetProperty("Data", out var data) || data.ValueKind != JsonValueKind.Object)
         {
-            return "No frame capture data returned.";
+            return McpToolResultFactory.FromText("No frame capture data returned.", isError: true);
         }
 
         var builder = new StringBuilder();
@@ -151,7 +152,7 @@ public static class PreviewFrameCaptureTools
             }
         }
 
-        return builder.ToString().TrimEnd();
+        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
 
     private static bool IsNear(double value, double target, double tolerance)

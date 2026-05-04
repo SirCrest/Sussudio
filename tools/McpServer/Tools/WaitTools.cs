@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -10,7 +11,7 @@ namespace McpServer.Tools;
 public static class WaitTools
 {
     [McpServerTool, Description("Wait for a condition to be met. Blocks until satisfied or timeout. Conditions: PreviewFramesActive, PreviewRendererHealthy, AudioSignalPresent, RecordingFileGrowing, RecordingStopped, VerificationReady, HdrModeApplied, PerformancePerfectionMet, HdrVerificationReady, AudioFramesFlowing, VideoFramesFlowing")]
-    public static async Task<string> wait_for_condition(
+    public static async Task<CallToolResult> wait_for_condition(
         PipeClient pipeClient,
         [Description("Condition name to wait for")] string condition,
         [Description("Timeout in milliseconds (default: 10000)")] int timeoutMs = 10000,
@@ -38,7 +39,7 @@ public static class WaitTools
             builder.AppendLine($"PollMs: {AutomationSnapshotFormatter.Get(data, "pollMs")}");
         }
 
-        return builder.ToString().TrimEnd();
+        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
 
 }

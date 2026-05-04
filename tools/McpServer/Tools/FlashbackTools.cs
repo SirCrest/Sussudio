@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Text;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -10,19 +11,20 @@ namespace McpServer.Tools;
 public static class FlashbackTools
 {
     [McpServerTool, Description("Enable or disable the Flashback rolling buffer. Disable it before dedicated LibAv recording verification.")]
-    public static async Task<string> flashback_enabled(
+    public static async Task<CallToolResult> flashback_enabled(
         PipeClient pipeClient,
         [Description("True to enable Flashback, false to disable it")] bool enabled)
     {
-        return await ToolCommandFormatter.ExecuteAndFormatAsync(
-            pipeClient,
-            commandName: "SetFlashbackEnabled",
-            label: "SetFlashbackEnabled",
-            payload: new Dictionary<string, object?> { ["enabled"] = enabled }).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
+                pipeClient,
+                commandName: "SetFlashbackEnabled",
+                label: "SetFlashbackEnabled",
+                payload: new Dictionary<string, object?> { ["enabled"] = enabled })
+            .ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Control flashback playback: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, or clear_in_out_points")]
-    public static async Task<string> flashback_action(
+    public static async Task<CallToolResult> flashback_action(
         PipeClient pipeClient,
         [Description("Action: play, pause, go_live, seek, begin_scrub, update_scrub, end_scrub, set_in_point, set_out_point, clear_in_out_points")] string action,
         [Description("Position in milliseconds (required for seek, begin_scrub, and update_scrub; optional for end_scrub)")] double? positionMs = null)
@@ -67,15 +69,16 @@ public static class FlashbackTools
             payload["positionMs"] = positionMs.Value;
         }
 
-        return await ToolCommandFormatter.ExecuteAndFormatAsync(
-            pipeClient,
-            commandName: "FlashbackAction",
-            label: $"FlashbackAction({normalizedAction})",
-            payload: payload).ConfigureAwait(false);
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
+                pipeClient,
+                commandName: "FlashbackAction",
+                label: $"FlashbackAction({normalizedAction})",
+                payload: payload)
+            .ConfigureAwait(false);
     }
 
     [McpServerTool, Description("Export flashback buffer to an MP4 file. Exports the most recent N seconds of the rolling buffer.")]
-    public static async Task<string> flashback_export(
+    public static async Task<CallToolResult> flashback_export(
         PipeClient pipeClient,
         [Description("Number of seconds to export from the buffer (default: 300)")] double seconds = 300,
         [Description("Output file path (default: temp/flashback_export_<timestamp>.mp4)")] string? outputPath = null,
@@ -122,11 +125,11 @@ public static class FlashbackTools
             builder.AppendLine($"Data: {data}");
         }
 
-        return builder.ToString().TrimEnd();
+        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
 
     [McpServerTool, Description("List all flashback buffer segments with their file paths, durations, and frame counts")]
-    public static async Task<string> flashback_segments(PipeClient pipeClient)
+    public static async Task<CallToolResult> flashback_segments(PipeClient pipeClient)
     {
         var response = await pipeClient.SendCommandAsync("FlashbackGetSegments").ConfigureAwait(false);
         var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
@@ -140,6 +143,6 @@ public static class FlashbackTools
             builder.AppendLine($"Data: {data}");
         }
 
-        return builder.ToString().TrimEnd();
+        return McpToolResultFactory.FromResponse(response, builder.ToString().TrimEnd());
     }
 }

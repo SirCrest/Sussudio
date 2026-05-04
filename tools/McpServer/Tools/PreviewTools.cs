@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -9,7 +10,7 @@ namespace McpServer.Tools;
 public static class PreviewTools
 {
     [McpServerTool, Description("Start or stop the live preview")]
-    public static async Task<string> control_preview(
+    public static async Task<CallToolResult> control_preview(
         PipeClient pipeClient,
         [Description("True to start preview, false to stop")] bool enabled)
     {
@@ -18,10 +19,12 @@ public static class PreviewTools
             ["enabled"] = enabled
         };
 
-        var response = await pipeClient.SendCommandAsync("SetPreviewEnabled", payload).ConfigureAwait(false);
-        var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
-        var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
-        return $"[{status}] SetPreviewEnabled: {message}";
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
+                pipeClient,
+                "SetPreviewEnabled",
+                "SetPreviewEnabled",
+                payload)
+            .ConfigureAwait(false);
     }
 
 }

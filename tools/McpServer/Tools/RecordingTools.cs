@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Text.Json;
 using Sussudio.Tools;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 
 namespace McpServer.Tools;
@@ -9,7 +10,7 @@ namespace McpServer.Tools;
 public static class RecordingTools
 {
     [McpServerTool, Description("Start or stop recording")]
-    public static async Task<string> control_recording(
+    public static async Task<CallToolResult> control_recording(
         PipeClient pipeClient,
         [Description("True to start recording, false to stop")] bool enabled)
     {
@@ -18,10 +19,12 @@ public static class RecordingTools
             ["enabled"] = enabled
         };
 
-        var response = await pipeClient.SendCommandAsync("SetRecordingEnabled", payload).ConfigureAwait(false);
-        var status = AutomationSnapshotFormatter.IsSuccess(response) ? "OK" : "ERROR";
-        var message = AutomationSnapshotFormatter.Get(response, "Message", "No message.");
-        return $"[{status}] SetRecordingEnabled: {message}";
+        return await ToolCommandFormatter.ExecuteAndFormatResultAsync(
+                pipeClient,
+                "SetRecordingEnabled",
+                "SetRecordingEnabled",
+                payload)
+            .ConfigureAwait(false);
     }
 
 }
