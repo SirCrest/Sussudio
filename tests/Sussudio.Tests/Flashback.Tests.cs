@@ -2612,7 +2612,13 @@ static partial class Program
         AssertContains(sourceText, "private void ApplyDeferredPreviewAttachAfterStopTimeout()");
         AssertContains(sourceText, "Monitor.TryEnter(_playbackThreadSync, 0, ref lockTaken);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER_APPLY_SKIP reason=lock_busy");
+        AssertContains(sourceText, "ScheduleDeferredPreviewAttachApplyRetry();");
+        AssertContains(sourceText, "private void ScheduleDeferredPreviewAttachApplyRetry()");
+        AssertContains(sourceText, "Interlocked.CompareExchange(ref _deferredPreviewAttachApplyRetryScheduled, 1, 0)");
+        AssertContains(sourceText, "await Task.Delay(25).ConfigureAwait(false);");
+        AssertContains(sourceText, "if (Volatile.Read(ref _previewDetachStopTimeoutActive) != 0)");
         AssertContains(sourceText, "Volatile.Write(ref _previewDetachStopTimeoutActive, 0);");
+        AssertContains(sourceText, "Interlocked.Exchange(ref _deferredPreviewAttachApplyRetryScheduled, 0);");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER_APPLIED reason=thread_exit");
         AssertContains(sourceText, "ApplyPreviewRoutingForState(\"deferred_preview_attach\");");
         AssertContains(sourceText, "private void ApplyPreviewRoutingForState(string operation)");

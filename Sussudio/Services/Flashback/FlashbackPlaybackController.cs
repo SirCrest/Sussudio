@@ -6,6 +6,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Channels;
+using System.Threading.Tasks;
 using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Preview;
@@ -93,6 +94,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private volatile bool _initialized;
     private volatile int _disposedFlag;
     private int _previewDetachStopTimeoutActive;
+    private int _deferredPreviewAttachApplyRetryScheduled;
     private IPreviewFrameSink? _pendingPreviewSinkAfterDetachTimeout;
     private ILiveVideoSource? _pendingVideoCaptureAfterDetachTimeout;
     private volatile string _decoderHwAccel = "N/A";
@@ -1478,10 +1480,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
             if (!lockTaken)
             {
                 Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER_APPLY_SKIP reason=lock_busy");
+                ScheduleDeferredPreviewAttachApplyRetry();
                 return;
             }
 
             Volatile.Write(ref _previewDetachStopTimeoutActive, 0);
+            Interlocked.Exchange(ref _deferredPreviewAttachApplyRetryScheduled, 0);
             pendingSink = _pendingPreviewSinkAfterDetachTimeout;
             pendingCapture = _pendingVideoCaptureAfterDetachTimeout;
             _pendingPreviewSinkAfterDetachTimeout = null;
@@ -1507,6 +1511,37 @@ internal sealed class FlashbackPlaybackController : IDisposable
         Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER_APPLIED reason=thread_exit");
         ApplyPreviewRoutingForState("deferred_preview_attach");
         ApplyAudioRoutingForState("deferred_preview_attach");
+    }
+
+    private void ScheduleDeferredPreviewAttachApplyRetry()
+    {
+        if (Volatile.Read(ref _previewDetachStopTimeoutActive) == 0)
+        {
+            return;
+        }
+
+        if (Interlocked.CompareExchange(ref _deferredPreviewAttachApplyRetryScheduled, 1, 0) != 0)
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(25).ConfigureAwait(false);
+                Interlocked.Exchange(ref _deferredPreviewAttachApplyRetryScheduled, 0);
+                if (Volatile.Read(ref _previewDetachStopTimeoutActive) != 0)
+                {
+                    ApplyDeferredPreviewAttachAfterStopTimeout();
+                }
+            }
+            catch (Exception ex)
+            {
+                Interlocked.Exchange(ref _deferredPreviewAttachApplyRetryScheduled, 0);
+                Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_ATTACH_DEFER_RETRY_WARN type={ex.GetType().Name} msg='{ex.Message}'");
+            }
+        });
     }
 
     private static void DisposePlaybackCtsBestEffort(CancellationTokenSource? cts, string operation)
