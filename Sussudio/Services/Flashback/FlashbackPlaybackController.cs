@@ -10,6 +10,7 @@ using Sussudio.Models;
 using Sussudio.Services.Audio;
 using Sussudio.Services.Preview;
 using Sussudio.Services.Recording;
+using Sussudio.Services.Runtime;
 
 namespace Sussudio.Services.Flashback;
 
@@ -94,6 +95,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private string _playbackAudioMasterLastFallbackReason = string.Empty;
     private double _playbackAudioMasterLastFallbackDriftMs;
     private double _playbackAudioMasterLastFallbackClockAgeMs;
+    private readonly string _playbackMmcssTask = Environment.GetEnvironmentVariable("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_TASK") ?? "Playback";
+    private readonly int _playbackMmcssPriority = EnvironmentHelpers.GetIntFromEnv("SUSSUDIO_FLASHBACK_PLAYBACK_MMCSS_PRIORITY", 1, -2, 2);
 
     // --- Playback cadence metrics (written on playback thread, read from UI/diag) ---
     private long _playbackFrameCount;
@@ -653,6 +656,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         // Set 1ms timer resolution for accurate Thread.Sleep pacing.
         // Without this, Sleep(8) at 120fps sleeps ~15ms (default granularity) → half-speed.
         timeBeginPeriod(1);
+        using var mmcss = MmcssThreadRegistration.TryRegister(_playbackMmcssTask, _playbackMmcssPriority, message => Logger.Log(message));
         try
         {
             Logger.Log("FLASHBACK_PLAYBACK_THREAD_ENTER");
