@@ -503,6 +503,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // read consistent references, not for the entire FFmpeg export.
         FlashbackBufferManager? bufferManager;
         FlashbackEncoderSink? flashbackSink;
+        FlashbackExporter? flashbackExporter;
         var sessionLockHeld = false;
         var backendLeaseHeld = false;
         try
@@ -520,6 +521,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             backendLeaseHeld = true;
             bufferManager = _flashbackBufferManager;
             flashbackSink = _flashbackSink;
+            flashbackExporter = bufferManager != null
+                ? _flashbackExporter ??= new FlashbackExporter()
+                : _flashbackExporter;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -534,42 +538,37 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         finally
         {
+            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
             if (sessionLockHeld)
             {
                 ReleaseSemaphoreBestEffort(_sessionTransitionLock, "flashback_export_snapshot_session");
             }
         }
 
-        try
-        {
-            return await ExportFlashbackCoreAsync(
-                    TimeSpan.Zero,
-                    TimeSpan.MaxValue,
-                    outputPath,
-                    progress,
-                    ct,
-                    snapshotSink: flashbackSink,
-                    snapshotBufferManager: bufferManager,
-                    resolveRangeAfterEvictionPaused: manager =>
-                    {
-                        var validStart = manager.ValidStartPts;
-                        var bufferedDuration = manager.BufferedDuration;
-                        var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);
-                        var bufferOutPoint = outPoint.HasValue
-                            ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)
-                            : TimeSpan.MaxValue;
-                        var fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);
-                        var fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);
-                        return fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint
-                            ? (false, fileInPoint, fileOutPoint, "Flashback export range is empty or invalid.")
-                            : (true, fileInPoint, fileOutPoint, null);
-                    })
-                .ConfigureAwait(false);
-        }
-        finally
-        {
-            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
-        }
+        return await ExportFlashbackCoreAsync(
+                TimeSpan.Zero,
+                TimeSpan.MaxValue,
+                outputPath,
+                progress,
+                ct,
+                snapshotSink: flashbackSink,
+                snapshotBufferManager: bufferManager,
+                snapshotExporter: flashbackExporter,
+                resolveRangeAfterEvictionPaused: manager =>
+                {
+                    var validStart = manager.ValidStartPts;
+                    var bufferedDuration = manager.BufferedDuration;
+                    var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);
+                    var bufferOutPoint = outPoint.HasValue
+                        ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)
+                        : TimeSpan.MaxValue;
+                    var fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);
+                    var fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);
+                    return fileOutPoint != TimeSpan.MaxValue && fileOutPoint <= fileInPoint
+                        ? (false, fileInPoint, fileOutPoint, "Flashback export range is empty or invalid.")
+                        : (true, fileInPoint, fileOutPoint, null);
+                })
+            .ConfigureAwait(false);
     }
 
     internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync(
@@ -589,6 +588,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         // Same pattern: snapshot under lock, export outside it.
         FlashbackBufferManager? bufferManager;
         FlashbackEncoderSink? flashbackSink;
+        FlashbackExporter? flashbackExporter;
         var sessionLockHeld = false;
         var backendLeaseHeld = false;
         try
@@ -606,6 +606,9 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             backendLeaseHeld = true;
             bufferManager = _flashbackBufferManager;
             flashbackSink = _flashbackSink;
+            flashbackExporter = bufferManager != null
+                ? _flashbackExporter ??= new FlashbackExporter()
+                : _flashbackExporter;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -620,38 +623,33 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
         finally
         {
+            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
             if (sessionLockHeld)
             {
                 ReleaseSemaphoreBestEffort(_sessionTransitionLock, "flashback_export_last_n_snapshot_session");
             }
         }
 
-        try
-        {
-            return await ExportFlashbackCoreAsync(
-                    TimeSpan.Zero,
-                    TimeSpan.MaxValue,
-                    outputPath,
-                    progress,
-                    ct,
-                    snapshotSink: flashbackSink,
-                    snapshotBufferManager: bufferManager,
-                    resolveRangeAfterEvictionPaused: manager =>
-                    {
-                        var bufferedDuration = manager.BufferedDuration;
-                        var validStart = manager.ValidStartPts;
-                        var rangeStart = bufferedDuration.TotalSeconds > seconds
-                            ? TimeSpan.FromSeconds(bufferedDuration.TotalSeconds - seconds)
-                            : TimeSpan.Zero;
-                        var fileInPoint = AddFlashbackPtsOffsetOrMax(rangeStart, validStart);
-                        return (true, fileInPoint, TimeSpan.MaxValue, null);
-                    })
-                .ConfigureAwait(false);
-        }
-        finally
-        {
-            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
-        }
+        return await ExportFlashbackCoreAsync(
+                TimeSpan.Zero,
+                TimeSpan.MaxValue,
+                outputPath,
+                progress,
+                ct,
+                snapshotSink: flashbackSink,
+                snapshotBufferManager: bufferManager,
+                snapshotExporter: flashbackExporter,
+                resolveRangeAfterEvictionPaused: manager =>
+                {
+                    var bufferedDuration = manager.BufferedDuration;
+                    var validStart = manager.ValidStartPts;
+                    var rangeStart = bufferedDuration.TotalSeconds > seconds
+                        ? TimeSpan.FromSeconds(bufferedDuration.TotalSeconds - seconds)
+                        : TimeSpan.Zero;
+                    var fileInPoint = AddFlashbackPtsOffsetOrMax(rangeStart, validStart);
+                    return (true, fileInPoint, TimeSpan.MaxValue, null);
+                })
+            .ConfigureAwait(false);
     }
 
     private void ReleaseFlashbackBackendLeaseIfHeld(ref bool backendLeaseHeld)
@@ -685,6 +683,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         IProgress<ExportProgress>? progress, CancellationToken ct,
         FlashbackEncoderSink? snapshotSink = null,
         FlashbackBufferManager? snapshotBufferManager = null,
+        FlashbackExporter? snapshotExporter = null,
         bool requireCompleteLiveEdge = false,
         Func<FlashbackBufferManager, (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)>? resolveRangeAfterEvictionPaused = null)
     {
@@ -711,6 +710,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 return FailFlashbackExport(outputPath, "Flashback buffer not active", inPoint, outPoint);
             }
 
+            var exporter = snapshotExporter;
+            if (exporter == null)
+            {
+                exporter = _flashbackExporter ??= new FlashbackExporter();
+            }
+
             // Pause eviction so segments aren't deleted while the exporter reads them.
             // Range-based UI exports resolve relative buffer positions after this pause
             // so queued exports cannot use a stale valid-start snapshot.
@@ -732,7 +737,6 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 }
             }
 
-            var exporter = _flashbackExporter ??= new FlashbackExporter();
             exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);
             var diagnosticProgress = CreateFlashbackExportProgressSink(exportId, progress);
 

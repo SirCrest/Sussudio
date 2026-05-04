@@ -306,6 +306,9 @@ static partial class Program
                 "Flashback mutations route through capture coordinator",
                 MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator),
             await RunCheckAsync(
+                "Flashback exports release backend lease before native export",
+                CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport),
+            await RunCheckAsync(
                 "Retained flashback preview pipeline recycles on settings changes",
                 CaptureService_RecyclesRetainedFlashbackPreviewPipeline_WhenSettingsChange),
             await RunCheckAsync(

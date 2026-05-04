@@ -490,8 +490,9 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(captureServiceText, "private readonly SemaphoreSlim _flashbackExportOperationLock = new(1, 1);");
         AssertContains(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);");
-        AssertContains(captureServiceText, "var exporter = _flashbackExporter ??= new FlashbackExporter();");
-        AssertOccursBefore(captureServiceText, "await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);", "var exporter = _flashbackExporter ??= new FlashbackExporter();");
+        AssertContains(captureServiceText, "FlashbackExporter? snapshotExporter = null,");
+        AssertContains(captureServiceText, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");
+        AssertOccursBefore(captureServiceText, "if (bufferManager == null)", "var exporter = snapshotExporter;");
         AssertContains(captureServiceText, "var sessionLockHeld = false;");
         AssertContains(captureServiceText, "sessionLockHeld = true;");
         AssertContains(captureServiceText, "if (sessionLockHeld)");
@@ -509,10 +510,16 @@ static partial class Program
             captureServiceText,
             "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
             "private void ReleaseFlashbackBackendLeaseIfHeld");
-        AssertContains(exportRangeMethod, "try\n        {\n            return await ExportFlashbackCoreAsync(");
-        AssertContains(exportRangeMethod, "finally\n        {\n            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n        }");
-        AssertContains(exportLastNMethod, "try\n        {\n            return await ExportFlashbackCoreAsync(");
-        AssertContains(exportLastNMethod, "finally\n        {\n            ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n        }");
+        AssertContains(exportRangeMethod, "FlashbackExporter? flashbackExporter;");
+        AssertContains(exportRangeMethod, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
+        AssertContains(exportRangeMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
+        AssertOccursBefore(exportRangeMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
+        AssertContains(exportRangeMethod, "snapshotExporter: flashbackExporter,");
+        AssertContains(exportLastNMethod, "FlashbackExporter? flashbackExporter;");
+        AssertContains(exportLastNMethod, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
+        AssertContains(exportLastNMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
+        AssertOccursBefore(exportLastNMethod, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
+        AssertContains(exportLastNMethod, "snapshotExporter: flashbackExporter,");
         AssertContains(captureServiceText, "outerPauseApplied = bufferManager != null;");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback export cancelled.\", inPoint, outPoint);");
         AssertContains(captureServiceText, "var exportId = 0L;");
@@ -572,7 +579,12 @@ static partial class Program
         AssertContains(captureServiceText, "return \"NoMediaWritten\";");
         AssertContains(captureServiceText, "return FailFlashbackExport(outputPath, \"Flashback buffer not active\", inPoint, outPoint);");
         AssertContains(captureServiceText, "resolveRangeAfterEvictionPaused: manager =>");
-        AssertContains(captureServiceText, "var bufferedDuration = manager.BufferedDuration;\n                        var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);\n                        var bufferOutPoint = outPoint.HasValue\n                            ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)\n                            : TimeSpan.MaxValue;\n                        var fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);\n                        var fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);");
+        AssertContains(captureServiceText, "var validStart = manager.ValidStartPts;");
+        AssertContains(captureServiceText, "var bufferedDuration = manager.BufferedDuration;");
+        AssertContains(captureServiceText, "var bufferInPoint = ClampFlashbackBufferPosition(inPoint ?? TimeSpan.Zero, bufferedDuration);");
+        AssertContains(captureServiceText, "var bufferOutPoint = outPoint.HasValue\n                        ? ClampFlashbackBufferPosition(outPoint.Value, bufferedDuration)\n                        : TimeSpan.MaxValue;");
+        AssertContains(captureServiceText, "var fileInPoint = AddFlashbackPtsOffsetOrMax(bufferInPoint, validStart);");
+        AssertContains(captureServiceText, "var fileOutPoint = AddFlashbackPtsOffsetOrMax(bufferOutPoint, validStart);");
         AssertContains(captureServiceText, ".Select(segment => (Key: TryGetFullPath(segment.Path), Segment: segment))");
         AssertContains(captureServiceText, "var pathKey = TryGetFullPath(path);");
         AssertContains(captureServiceText, "segmentInfo.TryGetValue(pathKey, out var info)");

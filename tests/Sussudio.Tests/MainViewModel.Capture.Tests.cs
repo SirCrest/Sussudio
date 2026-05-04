@@ -37,6 +37,42 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task CaptureService_FlashbackExportsReleaseBackendLeaseBeforeNativeExport()
+    {
+        var captureServiceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
+
+        var rangeExport = ExtractTextBetween(
+            captureServiceText,
+            "internal async Task<FinalizeResult> ExportFlashbackRangeAsync",
+            "    internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync");
+        AssertContains(rangeExport, "FlashbackExporter? flashbackExporter;");
+        AssertContains(rangeExport, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
+        AssertContains(rangeExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
+        AssertOccursBefore(rangeExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
+        AssertContains(rangeExport, "snapshotExporter: flashbackExporter,");
+
+        var lastNExport = ExtractTextBetween(
+            captureServiceText,
+            "internal async Task<FinalizeResult> ExportFlashbackLastNSecondsAsync",
+            "    private void ReleaseFlashbackBackendLeaseIfHeld");
+        AssertContains(lastNExport, "FlashbackExporter? flashbackExporter;");
+        AssertContains(lastNExport, "flashbackExporter = bufferManager != null\n                ? _flashbackExporter ??= new FlashbackExporter()\n                : _flashbackExporter;");
+        AssertContains(lastNExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);\n            if (sessionLockHeld)");
+        AssertOccursBefore(lastNExport, "ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);", "return await ExportFlashbackCoreAsync(");
+        AssertContains(lastNExport, "snapshotExporter: flashbackExporter,");
+
+        var exportCore = ExtractTextBetween(
+            captureServiceText,
+            "private async Task<FinalizeResult> ExportFlashbackCoreAsync",
+            "    private static IReadOnlyList<FlashbackExportSegment>?");
+        AssertContains(exportCore, "FlashbackExporter? snapshotExporter = null,");
+        AssertOccursBefore(exportCore, "if (bufferManager == null)", "var exporter = snapshotExporter;");
+        AssertContains(exportCore, "var exporter = snapshotExporter;\n            if (exporter == null)\n            {\n                exporter = _flashbackExporter ??= new FlashbackExporter();\n            }");
+
+        return Task.CompletedTask;
+    }
+
     private static Task MainViewModelCapture_RoutesFlashbackMutationsThroughCoordinator()
     {
         var coordinatorType = RequireType("Sussudio.Services.Capture.CaptureSessionCoordinator");
