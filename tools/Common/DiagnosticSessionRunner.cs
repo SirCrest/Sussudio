@@ -2002,6 +2002,14 @@ public static class DiagnosticSessionRunner
                 lastConnectException = ex;
                 await Task.Delay(500, cancellationToken).ConfigureAwait(false);
             }
+            catch (AutomationPipeException ex) when (ex is not AutomationPipeConnectException)
+            {
+                return BuildLocalFailureResponse(command, ex.Message);
+            }
+            catch (JsonException ex)
+            {
+                return BuildLocalFailureResponse(command, ex.Message);
+            }
         }
 
         if (lastConnectException is not null)

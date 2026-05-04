@@ -606,6 +606,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var runFlashbackRecordingSettingsDeferred = scenario == \"flashback-recording-settings-deferred\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRecordingExportRejected = scenario == \"flashback-recording-export-rejected\";");
         AssertContains(diagnosticSessionText, "var runFlashbackExportRejected = scenario == \"flashback-export-rejected\";");
+        AssertContains(diagnosticSessionText, "catch (AutomationPipeException ex) when (ex is not AutomationPipeConnectException)");
+        AssertContains(diagnosticSessionText, "return BuildLocalFailureResponse(command, ex.Message);");
+        AssertContains(diagnosticSessionText, "catch (JsonException ex)");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackPendingCommandsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxPendingCommandsObserved");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxCommandQueueLatencyMsObserved");
