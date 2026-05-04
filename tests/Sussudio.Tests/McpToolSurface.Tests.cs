@@ -111,6 +111,61 @@ static partial class Program
         }
     }
 
+    private static async Task McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport()
+    {
+        var assemblyPath = Path.Combine("tools", "McpServer", "bin", "Debug", "net8.0", "McpServer.dll");
+        LoadToolAssemblyIsolated(assemblyPath);
+
+        using var process = StartMcpServerProcess(assemblyPath);
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await process.StandardError.ReadToEndAsync().ConfigureAwait(false);
+            }
+            catch
+            {
+            }
+        });
+
+        try
+        {
+            await WriteJsonRpcLineAsync(
+                    process,
+                    """
+                    {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"Sussudio.Tests","version":"1.0"}}}
+                    """,
+                    cts.Token)
+                .ConfigureAwait(false);
+            await ReadJsonRpcResponseAsync(process, 1, cts.Token).ConfigureAwait(false);
+
+            await WriteJsonRpcLineAsync(
+                    process,
+                    """
+                    {"jsonrpc":"2.0","method":"notifications/initialized","params":{}}
+                    """,
+                    cts.Token)
+                .ConfigureAwait(false);
+            await WriteJsonRpcLineAsync(
+                    process,
+                    """
+                    {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_app_state","arguments":{}}}
+                    """,
+                    cts.Token)
+                .ConfigureAwait(false);
+
+            using var response = await ReadJsonRpcResponseAsync(process, 2, cts.Token).ConfigureAwait(false);
+            var content = response.RootElement.GetProperty("result").GetProperty("content");
+            var text = content[0].GetProperty("text").GetString() ?? string.Empty;
+            AssertContains(text, "Sussudio is not running or not responding.");
+        }
+        finally
+        {
+            await StopMcpServerProcessAsync(process).ConfigureAwait(false);
+        }
+    }
+
     private static async Task McpRecordingTools_RouteRecordingToggle()
     {
         var pipeName = NewMcpToolPipeName("recording");

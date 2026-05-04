@@ -41,6 +41,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private int _startupCacheSessionCount;
     private int _startupCacheDeletedSessionCount;
     private volatile bool _disposed;
+    private bool _preserveSessionForRecovery;
     private int _evictionPauseCount;
     private TimeSpan _recordingStartPts;
     private TimeSpan _recordingEndPts;
@@ -149,6 +150,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             {
                 return;
             }
+
+            _preserveSessionForRecovery = true;
 
             try
             {
@@ -433,6 +436,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             Interlocked.Exchange(ref _startupCacheFreedBytes, cacheCleanup.FreedBytes);
             _previousActiveSegmentBytes = 0;
             Interlocked.Exchange(ref _evictionPauseCount, 0);
+            _preserveSessionForRecovery = false;
             _sessionId = sessionId;
             _sessionDirectory = sessionDirectory;
 
@@ -1404,6 +1408,12 @@ internal sealed class FlashbackBufferManager : IDisposable
                 return;
             }
 
+            if (IsSessionPreservedForRecoveryUnsafe())
+            {
+                Logger.Log($"FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved dir='{_sessionDirectory}'");
+                return;
+            }
+
             PurgeAllSegmentsCore(); // return value unused here; FLASHBACK_BUFFER_PURGE log covers it
         }
     }
@@ -1521,6 +1531,29 @@ internal sealed class FlashbackBufferManager : IDisposable
         return value >= long.MaxValue ? long.MaxValue : (long)value;
     }
 
+    private bool IsSessionPreservedForRecoveryUnsafe()
+    {
+        if (_preserveSessionForRecovery)
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(_sessionDirectory))
+        {
+            return false;
+        }
+
+        try
+        {
+            return File.Exists(Path.Combine(_sessionDirectory, RecoveryPreserveMarkerFileName));
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_RECOVERY_PRESERVE_MARKER_CHECK_WARN dir='{_sessionDirectory}' type={ex.GetType().Name} msg={ex.Message}");
+            return true;
+        }
+    }
+
     public void Dispose()
     {
         lock (_indexLock)
@@ -1531,6 +1564,13 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
 
             Logger.Log($"FLASHBACK_BUFFER_DISPOSE file={_activeSegmentPath != null} segments={_completedSegments.Count}");
+
+            if (IsSessionPreservedForRecoveryUnsafe())
+            {
+                _disposed = true;
+                Logger.Log($"FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY dir='{_sessionDirectory}' segments={_completedSegments.Count} active_file={_activeSegmentPath != null}");
+                return;
+            }
 
             // Purge segment files before marking disposed so PurgeAllSegmentsCore can
             // run fully. This ensures the session directory is empty before the

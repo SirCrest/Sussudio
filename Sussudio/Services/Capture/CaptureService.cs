@@ -1896,6 +1896,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             _flashbackPlaybackController = playbackController;
             _flashbackBackendSettings = CloneCaptureSettings(settings);
+            _preserveFlashbackSegmentsAfterFailedRecordingFinalize = false;
             ClearLastFlashbackFailure();
 
             Logger.Log($"FLASHBACK_PREVIEW_INIT_OK session='{bufferManager.SessionId}' controller_initialized={playbackController.IsInitialized}");

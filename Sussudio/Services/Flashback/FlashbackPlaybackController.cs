@@ -768,6 +768,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         var isScrubbing = false;
         var fileOpen = false;
         var frozenValidStart = TimeSpan.Zero; // captured when leaving Live, used for position mapping
+        TimeSpan? pendingExactResumeTarget = null;
 
         // Set 1ms timer resolution for accurate Thread.Sleep pacing.
         // Without this, Sleep(8) at 120fps sleeps ~15ms (default granularity) → half-speed.
@@ -857,6 +858,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         case CommandKind.Stop:
                             isPlaying = false;
                             isScrubbing = false;
+                            pendingExactResumeTarget = null;
                             CleanupDecoder(ref decoder, ref fileOpen);
                             Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
                             Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
@@ -891,11 +893,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         SafePauseRendering("seek");
 
                         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
+                        var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);
                         decoder ??= CreateDecoder();
-                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
+                        EnsureFileOpen(decoder, ref fileOpen, seekResumeTarget);
                         cts.Token.ThrowIfCancellationRequested();
                         if (!IsDecoderFileReady(decoder, fileOpen))
                         {
+                            pendingExactResumeTarget = null;
                             SetNoFileFailure(CommandKind.Seek, cmd.Position);
                             Logger.Log("FLASHBACK_PLAYBACK_SEEK_NO_FILE - restoring live");
                             ReleasePlaybackFrameForLive("seek_no_file");
@@ -910,19 +914,22 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             isPlaying = false;
                             isScrubbing = false;
+                            pendingExactResumeTarget = null;
                             RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "seek_display_failed");
                             break;
                         }
                         isPlaying = _wasPlayingBeforeScrub;
                         if (isPlaying)
                         {
+                            pendingExactResumeTarget = null;
                             ResetPlaybackMetrics();
                             pacingStopwatch.Restart();
-                            var coalescedSeekTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
+                            var coalescedSeekTarget = seekResumeTarget;
                             decoder.AudioChunkCallback = null;
                             if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, "seek_resume", cts.Token))
                             {
                                 isPlaying = false;
+                                pendingExactResumeTarget = null;
                                 RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "seek_resume_failed");
                                 break;
                             }
@@ -936,11 +943,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             SafeFlushPlayback("seek_resume");
                             SafeResumeRendering("seek_resume");
                         }
+                        else
+                        {
+                            pendingExactResumeTarget = seekResumeTarget;
+                        }
                         SetState(isPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused);
                         Logger.Log($"FLASHBACK_PLAYBACK_SEEK pos_ms={(long)PlaybackPosition.TotalMilliseconds} resumePlay={isPlaying}");
                         break;
 
                     case CommandKind.BeginScrub:
+                        pendingExactResumeTarget = null;
                         // Only capture the resume-state on first entry into Scrubbing.
                         // A second BeginScrub arriving while we're already scrubbing
                         // (UI re-press race, MCP automation racing pointer-pressed)
@@ -973,6 +985,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_SCRUB_NO_FILE — restoring live");
                             isScrubbing = false;
+                            pendingExactResumeTarget = null;
                             SetNoFileFailure(CommandKind.BeginScrub, cmd.Position);
                             ReleasePlaybackFrameForLive("scrub_no_file");
                             RestoreLiveAudio();
@@ -984,11 +997,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.BeginScrub, cts.Token))
                         {
                             isScrubbing = false;
+                            pendingExactResumeTarget = null;
                             RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "begin_scrub_display_failed");
                         }
                         break;
 
                     case CommandKind.UpdateScrub:
+                        pendingExactResumeTarget = null;
                         cmd = ResolveScrubUpdateCommandPosition(cmd);
                         if (!isScrubbing) break;
                         // Drain stale UpdateScrub commands only. Leave control commands queued
@@ -1013,6 +1028,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         {
                             SetNoFileFailure(CommandKind.UpdateScrub, cmd.Position);
                             isScrubbing = false;
+                            pendingExactResumeTarget = null;
                             ReleasePlaybackFrameForLive("scrub_update_no_file");
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("scrub_update_no_file");
@@ -1024,6 +1040,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         if (!SeekAndDisplayKeyframe(decoder, ref fileOpen, cmd.Position, frozenValidStart, CommandKind.UpdateScrub, cts.Token))
                         {
                             isScrubbing = false;
+                            pendingExactResumeTarget = null;
                             RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "scrub_update_display_failed");
                         }
                         break;
@@ -1034,8 +1051,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         PlaybackPosition = endScrubPosition;
                         isScrubbing = false;
                         isPlaying = _wasPlayingBeforeScrub;
+                        var endScrubTarget = SaturatingAdd(endScrubPosition, frozenValidStart);
                         if (isPlaying)
                         {
+                            pendingExactResumeTarget = null;
                             ResetPlaybackMetrics();
                             pacingStopwatch.Restart();
 
@@ -1043,13 +1062,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             // SeekTo forward-decodes from keyframe to target, which advances
                             // BOTH the video and audio codecs to the same PTS. Without this,
                             // the audio codec is stuck at the keyframe (~1s behind video).
-                            var endScrubTarget = SaturatingAdd(endScrubPosition, frozenValidStart);
                             if (decoder is { IsOpen: true })
                             {
                                 decoder.AudioChunkCallback = null; // null during forward-decode
                                 if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, "end_scrub", cts.Token))
                                 {
                                     isPlaying = false;
+                                    pendingExactResumeTarget = null;
                                     RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "end_scrub_seek_failed");
                                     break;
                                 }
@@ -1066,6 +1085,10 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             }
                             SafeFlushPlayback("end_scrub_resume");
                             SafeResumeRendering("end_scrub_resume");
+                        }
+                        else
+                        {
+                            pendingExactResumeTarget = endScrubTarget;
                         }
                         SetState(isPlaying ? FlashbackPlaybackState.Playing : FlashbackPlaybackState.Paused);
                         var endScrubBufDur = _bufferManager.BufferedDuration;
@@ -1086,12 +1109,14 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             frozenValidStart = _bufferManager.ValidStartPts;
                         decoder ??= CreateDecoder();
                         var prevFile = _currentOpenFilePath;
-                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(PlaybackPosition, frozenValidStart));
+                        var pendingPlayTarget = pendingExactResumeTarget ?? SaturatingAdd(PlaybackPosition, frozenValidStart);
+                        EnsureFileOpen(decoder, ref fileOpen, pendingPlayTarget);
                         if (!IsDecoderFileReady(decoder, fileOpen))
                         {
                             Logger.Log("FLASHBACK_PLAYBACK_PLAY_NO_FILE — restoring live");
                             SetNoFileFailure(CommandKind.Play, PlaybackPosition);
                             isPlaying = false;
+                            pendingExactResumeTarget = null;
                             ReleasePlaybackFrameForLive("play_no_file");
                             RestoreLiveAudio();
                             SafeResumePreviewSubmission("play_no_file");
@@ -1099,8 +1124,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             SetState(FlashbackPlaybackState.Live);
                             break;
                         }
-                        var seekTarget = SaturatingAdd(PlaybackPosition, frozenValidStart);
-                        if (State == FlashbackPlaybackState.Paused && IsSamePlaybackPath(prevFile, _currentOpenFilePath))
+                        var requireExactResumeSeek = pendingExactResumeTarget.HasValue;
+                        var seekTarget = pendingPlayTarget;
+                        if (State == FlashbackPlaybackState.Paused &&
+                            IsSamePlaybackPath(prevFile, _currentOpenFilePath) &&
+                            !requireExactResumeSeek)
                         {
                             // Resume from Paused — decoder is already positioned at the
                             // correct frame (set by Pause or scrub). Skip the expensive
@@ -1116,18 +1144,25 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             // the audio codec is clean and the next audio packet in the file
                             // is at the video target position. No suppression needed.
                             decoder.AudioChunkCallback = null;
+                            if (requireExactResumeSeek)
+                            {
+                                Logger.Log($"FLASHBACK_PLAYBACK_RESUME_EXACT_SEEK target_ms={(long)seekTarget.TotalMilliseconds} display_pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
+                            }
                             if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, "play", cts.Token))
                             {
                                 isPlaying = false;
+                                pendingExactResumeTarget = null;
                                 RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, "play_seek_failed");
                                 break;
                             }
                             if (TrySnapLiveForSoftwarePlaybackBudget(decoder, ref fileOpen, "play"))
                             {
                                 isPlaying = false;
+                                pendingExactResumeTarget = null;
                                 break;
                             }
                         }
+                        pendingExactResumeTarget = null;
                         frameDuration = ResolveFrameDuration(decoder);
                         RestoreAudioCallback(decoder, seekTarget.Ticks);
                         SafeFlushPlayback("play");
@@ -1159,6 +1194,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             frozenValidStart = _bufferManager.ValidStartPts;
                             var pausePos = _bufferManager.BufferedDuration;
                             PlaybackPosition = pausePos;
+                            pendingExactResumeTarget = null;
 
                             SetState(FlashbackPlaybackState.Paused);
                             Logger.Log($"FLASHBACK_PLAYBACK_PAUSE_FROM_LIVE pos_ms={(long)pausePos.TotalMilliseconds} frozen_preview=true");
@@ -1168,6 +1204,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                     case CommandKind.GoLive:
                         isPlaying = false;
                         isScrubbing = false;
+                        pendingExactResumeTarget = null;
                         CleanupDecoder(ref decoder, ref fileOpen);
                         Interlocked.Exchange(ref _lastAudioPtsTicks, 0);
                         Interlocked.Exchange(ref _lastVideoPtsTicks, 0);
@@ -1179,6 +1216,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         return;
 
                     case CommandKind.Nudge:
+                        pendingExactResumeTarget = null;
                         var nudgedPos = SaturatingAdd(PlaybackPosition, cmd.Delta);
                         nudgedPos = ClampPosition(nudgedPos, frozenValidStart);
                         decoder ??= CreateDecoder();
@@ -3285,6 +3323,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
     {
         var phase = "receive";
         var max = phaseTimings.ReceiveMs;
+        if (phaseTimings.FeedMs > max) { phase = "feed"; max = phaseTimings.FeedMs; }
         if (phaseTimings.ReadMs > max) { phase = "read"; max = phaseTimings.ReadMs; }
         if (phaseTimings.SendMs > max) { phase = "send"; max = phaseTimings.SendMs; }
         if (phaseTimings.AudioMs > max) { phase = "audio"; max = phaseTimings.AudioMs; }

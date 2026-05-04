@@ -375,6 +375,9 @@ static partial class Program
                 "Flashback buffer manager cleans stale session directories",
                 FlashbackBufferManager_CleansStaleSessionDirectories),
             await RunCheckAsync(
+                "Flashback buffer manager preserves marked recovery sessions",
+                FlashbackBufferManager_PreservesMarkedRecoverySessions),
+            await RunCheckAsync(
                 "Project file preserves main's English-only publish locale policy",
                 ProjectFile_PreservesEnglishOnlyPublishLocalePolicy),
             await RunCheckAsync(
@@ -446,6 +449,9 @@ static partial class Program
             await RunCheckAsync(
                 "MCP host tool schema uses PipeClient as a service",
                 McpHostToolSchema_UsesPipeClientAsService),
+            await RunCheckAsync(
+                "MCP host tool invocation returns pipe failures",
+                McpHostToolInvocation_ReturnsPipeFailureInsteadOfClosingTransport),
             await RunCheckAsync(
                 "MCP capture settings tool routes provided settings",
                 McpCaptureSettingsTools_RouteProvidedSettings),
@@ -3360,6 +3366,47 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(source, "FLASHBACK_PURGE_SKIP reason=disposed");
         AssertContains(source, "FLASHBACK_BUFFER_PURGE_SKIP reason=disposed");
+
+        try { Directory.Delete(tempDir, recursive: true); } catch { }
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_PreservesMarkedRecoverySessions()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_recovery_preserve_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        var completedPath = Path.Combine(tempDir, "segment-0.ts");
+        var activePath = (string)GetPrivateField(manager, "_activeSegmentPath")!;
+        File.WriteAllText(completedPath, "segment");
+        File.WriteAllText(activePath, "active");
+        AddCompletedSegment(manager, completedPath, TimeSpan.Zero, TimeSpan.FromSeconds(1), 7);
+
+        var markPreserved = manager.GetType().GetMethod("MarkSessionPreservedForRecovery")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.MarkSessionPreservedForRecovery not found.");
+        var purgeAll = manager.GetType().GetMethod("PurgeAllSegments")
+            ?? throw new InvalidOperationException("FlashbackBufferManager.PurgeAllSegments not found.");
+
+        markPreserved.Invoke(manager, null);
+        purgeAll.Invoke(manager, null);
+
+        AssertEqual(true, File.Exists(completedPath), "Recovery-preserved completed segment survives explicit purge");
+        AssertEqual(true, File.Exists(activePath), "Recovery-preserved active segment survives explicit purge");
+
+        ((IDisposable)manager).Dispose();
+
+        AssertEqual(true, Directory.Exists(tempDir), "Recovery-preserved session directory survives dispose");
+        AssertEqual(true, File.Exists(Path.Combine(tempDir, ".flashback-recovery-preserve")), "Recovery marker survives dispose");
+        AssertEqual(true, File.Exists(completedPath), "Recovery-preserved completed segment survives dispose");
+        AssertEqual(true, File.Exists(activePath), "Recovery-preserved active segment survives dispose");
+
+        var source = ReadRepoFile("Sussudio/Services/Flashback/FlashbackBufferManager.cs")
+            .Replace("\r\n", "\n");
+        AssertContains(source, "private bool _preserveSessionForRecovery;");
+        AssertContains(source, "private bool IsSessionPreservedForRecoveryUnsafe()");
+        AssertContains(source, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
+        AssertContains(source, "FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY");
 
         try { Directory.Delete(tempDir, recursive: true); } catch { }
         return Task.CompletedTask;

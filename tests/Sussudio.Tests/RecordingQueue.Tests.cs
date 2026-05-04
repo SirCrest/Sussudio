@@ -193,6 +193,10 @@ static partial class Program
         AssertDoesNotContain(flashbackBufferDispose, "PurgeAllSegments()");
         AssertContains(flashbackBufferSource, "RecoveryPreserveMarkerFileName");
         AssertContains(flashbackBufferSource, "MarkSessionPreservedForRecovery");
+        AssertContains(flashbackBufferSource, "private bool _preserveSessionForRecovery;");
+        AssertContains(flashbackBufferSource, "private bool IsSessionPreservedForRecoveryUnsafe()");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_PURGE_SKIP reason=recovery_preserved");
+        AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_DISPOSE_PRESERVE_RECOVERY");
         AssertContains(flashbackBufferSource, "FLASHBACK_STALE_SESSION_PRESERVE_SKIP");
         AssertContains(flashbackBufferSource, "File.Exists(Path.Combine(fullPath, RecoveryPreserveMarkerFileName))");
         var flashbackVideoEnqueue = ExtractSourceBlock(
@@ -244,6 +248,7 @@ static partial class Program
         AssertContains(captureServiceSource, "PreserveFlashbackRecoverySegments");
         AssertContains(captureServiceSource, "MarkSessionPreservedForRecovery");
         AssertContains(captureServiceSource, "FLASHBACK_RECOVERY_PRESERVE");
+        AssertContains(captureServiceSource, "_preserveFlashbackSegmentsAfterFailedRecordingFinalize = false;");
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_PURGE_WARN");
         AssertContains(captureServiceSource, "flashbackSink.FrameEncoded -= OnFlashbackFrameEncoded;");
         AssertContains(captureServiceSource, "FLASHBACK_PREVIEW_ROLLBACK_PLAYBACK_WARN");

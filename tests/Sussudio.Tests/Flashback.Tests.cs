@@ -1594,9 +1594,11 @@ static partial class Program
             .Replace("\r\n", "\n");
         // All three scrub-related command paths must clamp via the eviction-aware
         // overload so a long-held scrub doesn't resolve to evicted file PTS.
-        const string clampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
+        const string seekClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, seekResumeTarget);";
+        const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
 
-        AssertEqual(3, sourceText.Split(clampBeforeOpen, StringSplitOptions.None).Length - 1, "Seek, BeginScrub, and UpdateScrub clamp before file lookup with frozen reference");
+        AssertContains(sourceText, seekClampBeforeOpen);
+        AssertEqual(2, sourceText.Split(scrubClampBeforeOpen, StringSplitOptions.None).Length - 1, "BeginScrub and UpdateScrub clamp before file lookup with frozen reference");
 
         return Task.CompletedTask;
     }
@@ -1690,7 +1692,7 @@ static partial class Program
             .Replace("\r\n", "\n");
 
         AssertContains(sourceText, "if (Volatile.Read(ref _playbackThreadStarted) != 0 && thread is { IsAlive: true })\n            {\n                SendCommand(new PlaybackCommand { Kind = CommandKind.Stop });\n            }");
-        AssertContains(sourceText, "case CommandKind.Stop:\n                            isPlaying = false;\n                            isScrubbing = false;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
+        AssertContains(sourceText, "case CommandKind.Stop:\n                            isPlaying = false;\n                            isScrubbing = false;\n                            pendingExactResumeTarget = null;\n                            CleanupDecoder(ref decoder, ref fileOpen);");
         AssertContains(sourceText, "Interlocked.Exchange(ref _suppressAudioUntilPtsTicks, 0);\n                            RestoreLiveAudio();\n                            SafeResumePreviewSubmission(\"thread_stop\");\n                            SetState(FlashbackPlaybackState.Live);");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive) return true;\n        if (!EnsurePlaybackThread(CommandKind.GoLive)) return false;\n        return SendCommand(new PlaybackCommand { Kind = CommandKind.GoLive });");
         AssertContains(sourceText, "private bool EnsurePlaybackThread(CommandKind commandKind)");
@@ -2160,7 +2162,7 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PATH_COMPARE_WARN");
         AssertContains(sourceText, "&& IsSamePlaybackPath(path, _bufferManager.ActiveFilePath)");
         AssertContains(sourceText, "if (fileOpen && decoder.IsOpen && IsSamePlaybackPath(filePath, _currentOpenFilePath))\n            return;");
-        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Paused && IsSamePlaybackPath(prevFile, _currentOpenFilePath))");
+        AssertContains(sourceText, "if (State == FlashbackPlaybackState.Paused &&\n                            IsSamePlaybackPath(prevFile, _currentOpenFilePath) &&\n                            !requireExactResumeSeek)");
         AssertContains(sourceText, "fileOpen = false;\n            _currentOpenFilePath = null;\n            return false;");
         AssertContains(sourceText, "private bool TrySeekWithActiveFmp4Reopen(");
         AssertContains(sourceText, "if (decoder.SeekTo(seekTarget, cancellationToken))\n        {\n            return true;\n        }");
@@ -2211,6 +2213,13 @@ static partial class Program
         AssertContains(sourceText, "RestoreLiveAfterSeekDisplayFailure(decoder, ref fileOpen, \"scrub_update_display_failed\");");
         AssertContains(sourceText, "private void SetSeekDisplayFailure(CommandKind kind, string detail, TimeSpan position)");
         AssertContains(sourceText, "SetLastCommandFailure($\"seek_display_failed:{kind}:{detail}{FormatCommandDetail(position: position)}\");");
+        AssertContains(sourceText, "TimeSpan? pendingExactResumeTarget = null;");
+        AssertContains(sourceText, "var seekResumeTarget = SaturatingAdd(cmd.Position, frozenValidStart);");
+        AssertContains(sourceText, "var coalescedSeekTarget = seekResumeTarget;");
+        AssertContains(sourceText, "pendingExactResumeTarget = seekResumeTarget;");
+        AssertContains(sourceText, "var pendingPlayTarget = pendingExactResumeTarget ?? SaturatingAdd(PlaybackPosition, frozenValidStart);");
+        AssertContains(sourceText, "var requireExactResumeSeek = pendingExactResumeTarget.HasValue;");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_RESUME_EXACT_SEEK");
         AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, coalescedSeekTarget, \"seek_resume\", cts.Token))");
         AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, endScrubTarget, \"end_scrub\", cts.Token))");
         AssertContains(sourceText, "if (!TrySeekWithActiveFmp4Reopen(decoder, ref fileOpen, seekTarget, \"play\", cts.Token))");
@@ -2714,6 +2723,7 @@ static partial class Program
         AssertContains(resetMetricsBlock, "Array.Clear(_playbackDecodeDurationsMs);");
         AssertContains(resetMetricsBlock, "_playbackDecodeDurationHead = 0;");
         AssertContains(resetMetricsBlock, "_playbackDecodeDurationCount = 0;");
+        AssertContains(sourceText, "if (phaseTimings.FeedMs > max) { phase = \"feed\"; max = phaseTimings.FeedMs; }");
 
         return Task.CompletedTask;
     }
