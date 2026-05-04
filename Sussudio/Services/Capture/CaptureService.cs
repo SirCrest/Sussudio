@@ -1421,12 +1421,17 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
     internal void SetPreviewFrameSink(IPreviewFrameSink? sink)
     {
+        var controller = _flashbackPlaybackController;
+        if (sink == null && controller is { IsDisposed: false, IsInitialized: true })
+        {
+            controller.PrepareForPreviewDetach();
+        }
+
         _previewFrameSink = sink;
         _unifiedVideoCapture?.SetPreviewSink(sink);
         TryApplySharedPreviewDevice(_unifiedVideoCapture, sink);
 
         // Late-initialize playback controller if it was created before the renderer
-        var controller = _flashbackPlaybackController;
         if (controller is { IsDisposed: false, IsInitialized: false } && sink != null && _unifiedVideoCapture != null)
         {
             controller.Initialize(sink, _unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);

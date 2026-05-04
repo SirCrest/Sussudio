@@ -220,6 +220,8 @@ static partial class Program
         AssertContains(captureServiceSource, "libAvSink.OnEncodingFailed = OnRecordingBackendFatalError");
         AssertContains(captureServiceSource, "flashbackSink.SetFatalErrorCallback(OnFlashbackBackendFatalError)");
         AssertContains(captureServiceSource, "newSink.SetFatalErrorCallback(OnFlashbackBackendFatalError)");
+        AssertContains(captureServiceSource, "if (sink == null && controller is { IsDisposed: false, IsInitialized: true })\n        {\n            controller.PrepareForPreviewDetach();\n        }");
+        AssertOccursBefore(captureServiceSource, "controller.PrepareForPreviewDetach();", "_unifiedVideoCapture?.SetPreviewSink(sink);");
         AssertContains(captureServiceSource, "controller.UpdatePreviewComponents(sink, _unifiedVideoCapture);");
         AssertContains(captureServiceSource, "FLASHBACK_PLAYBACK_LATE_INIT via SetPreviewFrameSink");
         AssertContains(captureServiceSource, "private void OnFlashbackBackendFatalError");

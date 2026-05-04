@@ -322,6 +322,22 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
+    public void PrepareForPreviewDetach()
+    {
+        if (_disposedFlag != 0)
+        {
+            Logger.Log("FLASHBACK_PLAYBACK_PREVIEW_DETACH_SKIP reason=disposed");
+            return;
+        }
+
+        Logger.Log($"FLASHBACK_PLAYBACK_PREVIEW_DETACH state={_state} thread_alive={PlaybackThreadAlive}");
+        StopPlaybackThread();
+        ReleasePlaybackFrameForLive("preview_detach");
+        RestoreLiveAudio();
+        SafeResumePreviewSubmission("preview_detach");
+        SetState(FlashbackPlaybackState.Live);
+    }
+
     // --- State transitions (called from UI thread) ---
 
     public bool BeginScrub(TimeSpan position)

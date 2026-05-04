@@ -2082,6 +2082,9 @@ static partial class Program
         AssertContains(sourceText, "public void UpdatePreviewComponents(IPreviewFrameSink? previewSink, ILiveVideoSource? videoCapture)");
         AssertContains(sourceText, "_initialized = previewSink != null && videoCapture != null;");
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_UPDATE sink={previewSink != null} capture={videoCapture != null}");
+        AssertContains(sourceText, "public void PrepareForPreviewDetach()");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_PREVIEW_DETACH state={_state} thread_alive={PlaybackThreadAlive}");
+        AssertContains(sourceText, "StopPlaybackThread();\n        ReleasePlaybackFrameForLive(\"preview_detach\");\n        RestoreLiveAudio();\n        SafeResumePreviewSubmission(\"preview_detach\");\n        SetState(FlashbackPlaybackState.Live);");
         AssertContains(sourceText, "var previewSink = Volatile.Read(ref _previewSink);");
         AssertContains(sourceText, "SetLastSubmitFailure($\"{operation}:missing_preview_sink\");");
         AssertContains(sourceText, "ReleaseHeldFrameBestEffort(frame, $\"{operation}_missing_preview_sink\");");
