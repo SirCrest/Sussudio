@@ -232,11 +232,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private Thread? _playbackThread;
     private int _playbackThreadStarted;
     private CancellationTokenSource? _playCts;
-    private Channel<PlaybackCommand> _commandChannel = CreateCommandChannel();
+    private Channel<PlaybackCommand> _commandChannel;
 
     public FlashbackPlaybackController(FlashbackBufferManager bufferManager)
     {
         _bufferManager = bufferManager ?? throw new ArgumentNullException(nameof(bufferManager));
+        _commandChannel = CreateCommandChannel();
     }
 
     // --- Public properties ---
@@ -653,7 +654,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
         };
 
         var pending = Interlocked.Increment(ref _pendingCommands);
-        if (!_commandChannel.Writer.TryWrite(queuedCommand))
+        var droppedOldest = false;
+        var droppedCommand = default(PlaybackCommand);
+        if (!_commandChannel.Writer.TryWrite(queuedCommand) &&
+            (!IsCommandChannelOpenForDropRetry() ||
+             !TryDropOldestQueuedCommandForNewCommand(out droppedCommand) ||
+             !(droppedOldest = _commandChannel.Writer.TryWrite(queuedCommand))))
         {
             DecrementPendingCommands();
             Interlocked.Increment(ref _commandsDropped);
@@ -661,6 +667,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
             SetLastCommandFailure($"write_failed:{command.Kind}{detail}");
             Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP kind={command.Kind}{detail}");
             return false;
+        }
+
+        if (droppedOldest)
+        {
+            TrackDroppedQueuedCommand(droppedCommand, queuedCommand.Kind);
         }
 
         Interlocked.Increment(ref _commandsEnqueued);
@@ -1418,6 +1429,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
         while (commandChannel.Reader.TryRead(out var command))
         {
             DecrementPendingCommands();
+            ClearQueuedCommandSlotForDroppedCommand(command);
             if (command.Kind != CommandKind.Stop)
             {
                 abandoned++;
@@ -1517,6 +1529,61 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _queuedSeekSlot = null;
             _queuedScrubUpdateSlot = null;
         }
+    }
+
+    private void ClearQueuedCommandSlotForDroppedCommand(PlaybackCommand command)
+    {
+        lock (_seekSlotSync)
+        {
+            if (command.SeekSlot != null && ReferenceEquals(_queuedSeekSlot, command.SeekSlot))
+            {
+                _queuedSeekSlot = null;
+            }
+
+            if (command.ScrubUpdateSlot != null && ReferenceEquals(_queuedScrubUpdateSlot, command.ScrubUpdateSlot))
+            {
+                _queuedScrubUpdateSlot = null;
+            }
+        }
+    }
+
+    private bool IsCommandChannelOpenForDropRetry()
+    {
+        try
+        {
+            var canWrite = _commandChannel.Writer.WaitToWriteAsync();
+            return !canWrite.IsCompletedSuccessfully || canWrite.Result;
+        }
+        catch (Exception ex) when (ex is ChannelClosedException or InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    private bool TryDropOldestQueuedCommandForNewCommand(out PlaybackCommand droppedCommand)
+    {
+        if (!_commandChannel.Reader.TryRead(out droppedCommand))
+        {
+            return false;
+        }
+
+        DecrementPendingCommands();
+        return true;
+    }
+
+    private void TrackDroppedQueuedCommand(PlaybackCommand droppedCommand, CommandKind newCommandKind)
+    {
+        ClearQueuedCommandSlotForDroppedCommand(droppedCommand);
+
+        if (droppedCommand.Kind == CommandKind.Stop)
+        {
+            Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP_OLD kind=Stop new_kind={newCommandKind} reason=channel_full");
+            return;
+        }
+
+        Interlocked.Increment(ref _commandsDropped);
+        var detail = FormatCommandDetail(droppedCommand);
+        Logger.Log($"FLASHBACK_PLAYBACK_CMD_DROP_OLD kind={droppedCommand.Kind}{detail} new_kind={newCommandKind} reason=channel_full");
     }
 
     // --- Decode helpers ---
@@ -3570,11 +3637,11 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
-    private static Channel<PlaybackCommand> CreateCommandChannel()
+    private Channel<PlaybackCommand> CreateCommandChannel()
         => Channel.CreateBounded<PlaybackCommand>(
             new BoundedChannelOptions(CommandQueueCapacity)
             {
-                SingleReader = true,
+                SingleReader = false,
                 SingleWriter = false,
                 FullMode = BoundedChannelFullMode.Wait
             });

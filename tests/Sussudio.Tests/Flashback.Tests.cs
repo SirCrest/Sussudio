@@ -1781,8 +1781,12 @@ static partial class Program
             .Replace("\r\n", "\n");
         AssertContains(
             sourceText,
-            "var pending = Interlocked.Increment(ref _pendingCommands);\n        if (!_commandChannel.Writer.TryWrite(queuedCommand))\n        {\n            DecrementPendingCommands();");
+            "var pending = Interlocked.Increment(ref _pendingCommands);\n        var droppedOldest = false;\n        var droppedCommand = default(PlaybackCommand);\n        if (!_commandChannel.Writer.TryWrite(queuedCommand) &&\n            (!IsCommandChannelOpenForDropRetry() ||\n             !TryDropOldestQueuedCommandForNewCommand(out droppedCommand) ||\n             !(droppedOldest = _commandChannel.Writer.TryWrite(queuedCommand))))\n        {\n            DecrementPendingCommands();");
+        AssertContains(sourceText, "if (droppedOldest)\n        {\n            TrackDroppedQueuedCommand(droppedCommand, queuedCommand.Kind);\n        }");
         AssertContains(sourceText, "UpdateMaxPendingCommands(pending);");
+        AssertContains(sourceText, "private bool IsCommandChannelOpenForDropRetry()");
+        AssertContains(sourceText, "private bool TryDropOldestQueuedCommandForNewCommand(out PlaybackCommand droppedCommand)");
+        AssertContains(sourceText, "private void TrackDroppedQueuedCommand(PlaybackCommand droppedCommand, CommandKind newCommandKind)");
 
         return Task.CompletedTask;
     }
@@ -2012,12 +2016,18 @@ static partial class Program
         AssertContains(sourceText, "FLASHBACK_PLAYBACK_AUDIO_UPDATE_SKIP reason=disposed");
         AssertContains(sourceText, "private const int CommandQueueCapacity = 256;");
         AssertContains(sourceText, "public int CommandQueueCapacityCommands => CommandQueueCapacity;");
-        AssertContains(sourceText, "private Channel<PlaybackCommand> _commandChannel = CreateCommandChannel();");
+        AssertContains(sourceText, "private Channel<PlaybackCommand> _commandChannel;");
         AssertContains(sourceText, "_commandChannel = CreateCommandChannel();");
-        AssertContains(sourceText, "private static Channel<PlaybackCommand> CreateCommandChannel()");
+        AssertContains(sourceText, "_commandChannel = CreateCommandChannel();");
+        AssertContains(sourceText, "private Channel<PlaybackCommand> CreateCommandChannel()");
         AssertContains(sourceText, "Channel.CreateBounded<PlaybackCommand>");
         AssertContains(sourceText, "new BoundedChannelOptions(CommandQueueCapacity)");
         AssertContains(sourceText, "FullMode = BoundedChannelFullMode.Wait");
+        AssertContains(sourceText, "private bool IsCommandChannelOpenForDropRetry()");
+        AssertContains(sourceText, "private bool TryDropOldestQueuedCommandForNewCommand(out PlaybackCommand droppedCommand)");
+        AssertContains(sourceText, "private void TrackDroppedQueuedCommand(PlaybackCommand droppedCommand, CommandKind newCommandKind)");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_CMD_DROP_OLD kind={droppedCommand.Kind}{detail} new_kind={newCommandKind} reason=channel_full");
+        AssertContains(sourceText, "private void ClearQueuedCommandSlotForDroppedCommand(PlaybackCommand command)");
         AssertDoesNotContain(sourceText, "Channel.CreateUnbounded<PlaybackCommand>");
         AssertContains(sourceText, "catch (Exception ex)\n        {\n            Logger.Log($\"FLASHBACK_PLAYBACK_THREAD_START_FAIL type={ex.GetType().Name} msg='{ex.Message}'\");");
         AssertContains(sourceText, "DisposePlaybackCtsBestEffort(_playCts, \"thread_start_fail\");");
@@ -2106,6 +2116,96 @@ static partial class Program
         AssertContains(sourceText, "Interlocked.Increment(ref _commandsEnqueued);\n        UpdateMaxPendingCommands(pending);\n        MarkCommandQueued(command.Kind);\n        return true;");
 
         return Task.CompletedTask;
+    }
+
+    private static Task FlashbackPlaybackController_CommandQueue_AcceptsNewestControlWhenFull()
+    {
+        var controllerType = RequireType("Sussudio.Services.Flashback.FlashbackPlaybackController");
+        var bufferManagerType = RequireType("Sussudio.Services.Flashback.FlashbackBufferManager");
+        var commandType = controllerType.GetNestedType("PlaybackCommand", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("PlaybackCommand not found.");
+        var commandKindType = controllerType.GetNestedType("CommandKind", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("CommandKind not found.");
+        var sendCommand = controllerType.GetMethod("SendCommand", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("SendCommand not found.");
+        var commandChannelField = controllerType.GetField("_commandChannel", BindingFlags.Instance | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("_commandChannel not found.");
+        var queueCapacityProperty = controllerType.GetProperty("CommandQueueCapacityCommands", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("CommandQueueCapacityCommands not found.");
+        var commandsDroppedProperty = controllerType.GetProperty("CommandsDropped", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("CommandsDropped not found.");
+        var pendingCommandsProperty = controllerType.GetProperty("PendingCommands", BindingFlags.Instance | BindingFlags.Public)
+            ?? throw new InvalidOperationException("PendingCommands not found.");
+
+        var bufferManager = Activator.CreateInstance(
+                bufferManagerType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                args: new object?[] { null },
+                culture: null)
+            ?? throw new InvalidOperationException("FlashbackBufferManager construction failed.");
+        using var disposableBuffer = bufferManager as IDisposable;
+        var controller = Activator.CreateInstance(
+                controllerType,
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
+                binder: null,
+                args: new[] { bufferManager },
+                culture: null)
+            ?? throw new InvalidOperationException("FlashbackPlaybackController construction failed.");
+        using var disposableController = controller as IDisposable;
+
+        var playKind = Enum.Parse(commandKindType, "Play");
+        var goLiveKind = Enum.Parse(commandKindType, "GoLive");
+        var capacity = (int)queueCapacityProperty.GetValue(controller)!;
+
+        for (var i = 0; i < capacity; i++)
+        {
+            var playCommand = Activator.CreateInstance(commandType)
+                ?? throw new InvalidOperationException("PlaybackCommand play construction failed.");
+            SetPropertyOrBackingField(playCommand, "Kind", playKind);
+            AssertEqual(true, (bool)sendCommand.Invoke(controller, new[] { playCommand })!, $"Play command {i} enqueues");
+        }
+
+        AssertEqual(capacity, (int)pendingCommandsProperty.GetValue(controller)!, "Queue starts full");
+
+        var goLiveCommand = Activator.CreateInstance(commandType)
+            ?? throw new InvalidOperationException("PlaybackCommand GoLive construction failed.");
+        SetPropertyOrBackingField(goLiveCommand, "Kind", goLiveKind);
+        AssertEqual(true, (bool)sendCommand.Invoke(controller, new[] { goLiveCommand })!, "Newest GoLive command is accepted when queue is full");
+        AssertEqual(capacity, (int)pendingCommandsProperty.GetValue(controller)!, "Drop-oldest accounting keeps pending bounded at capacity");
+
+        var channel = commandChannelField.GetValue(controller)
+            ?? throw new InvalidOperationException("Command channel missing.");
+        var sawGoLive = false;
+        while (TryReadQueuedPlaybackCommand(channel, commandType, out var command) && command != null)
+        {
+            if (GetPropertyValue(command, "Kind")?.ToString() == "GoLive")
+            {
+                sawGoLive = true;
+            }
+        }
+
+        AssertEqual(true, sawGoLive, "Full command queue preserves the newest GoLive command");
+        AssertEqual(true, (long)commandsDroppedProperty.GetValue(controller)! > 0, "Dropped-command diagnostics record the evicted older command");
+
+        return Task.CompletedTask;
+
+        static bool TryReadQueuedPlaybackCommand(object channel, Type commandType, out object? command)
+        {
+            var reader = channel.GetType().GetProperty("Reader")?.GetValue(channel)
+                ?? throw new InvalidOperationException("Command channel reader missing.");
+            var tryRead = reader.GetType().GetMethod(
+                    "TryRead",
+                    BindingFlags.Instance | BindingFlags.Public,
+                    binder: null,
+                    types: new[] { commandType.MakeByRefType() },
+                    modifiers: null)
+                ?? throw new InvalidOperationException("Command channel TryRead not found.");
+            object?[] args = { null };
+            var result = (bool)tryRead.Invoke(reader, args)!;
+            command = args[0];
+            return result;
+        }
     }
 
     private static Task FlashbackEncoderSink_DisposeResetsGpuQueueDepth()

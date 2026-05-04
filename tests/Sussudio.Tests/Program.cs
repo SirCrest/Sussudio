@@ -901,6 +901,9 @@ static partial class Program
                 "Flashback playback worker exit rearms future commands",
                 FlashbackPlaybackController_PlaybackThreadExit_RearmsWorkerStart),
             await RunCheckAsync(
+                "Flashback playback command queue accepts newest control when full",
+                FlashbackPlaybackController_CommandQueue_AcceptsNewestControlWhenFull),
+            await RunCheckAsync(
                 "Flashback encoder resolves fractional frame rates",
                 FlashbackEncoderSink_ResolveFrameRateParts_ParsesFractionalRates),
             await RunCheckAsync(
