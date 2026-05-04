@@ -474,6 +474,12 @@ static partial class Program
                 "MCP diagnostic session tool records snapshot artifacts",
                 McpDiagnosticSessionTool_RecordsSnapshotArtifacts),
             await RunCheckAsync(
+                "Diagnostic session runner writes terminal artifacts on final snapshot failure",
+                DiagnosticSessionRunner_FinalSnapshotFailureWritesTerminalArtifacts),
+            await RunCheckAsync(
+                "Diagnostic session runner fails unknown initial snapshot without mutating state",
+                DiagnosticSessionRunner_UnknownInitialSnapshotFailsWithoutMutatingState),
+            await RunCheckAsync(
                 "MCP performance timeline exposes D3D P99 stage timing",
                 McpPerformanceTimelineTool_ExposesD3DP99StageTiming),
             await RunCheckAsync(

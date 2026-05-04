@@ -22,11 +22,18 @@ public sealed class DiagnosticSessionResult
 {
     public string SessionId { get; init; } = string.Empty;
     public string Scenario { get; init; } = "observe";
-    public bool Success { get; init; }
+    public bool Success { get; set; }
+    public DateTimeOffset StartedUtc { get; init; }
+    public DateTimeOffset CompletedUtc { get; set; }
+    public string TerminalState { get; set; } = "unknown";
+    public string LastStage { get; set; } = string.Empty;
+    public string? UnhandledException { get; set; }
+    public int RunnerProcessId { get; init; }
     public int DurationSeconds { get; init; }
     public int SampleIntervalMs { get; init; }
     public int SampleCount { get; init; }
     public string OutputDirectory { get; init; } = string.Empty;
+    public string LivePath { get; init; } = string.Empty;
     public string SummaryPath { get; init; } = string.Empty;
     public string SamplesPath { get; init; } = string.Empty;
     public string FrameLedgerPath { get; init; } = string.Empty;
@@ -189,8 +196,8 @@ public sealed class DiagnosticSessionResult
     public bool? RecordingVerificationSucceeded { get; init; }
     public string? RecordingVerificationMessage { get; init; }
     public PresentMonProbeResult? PresentMon { get; init; }
-    public string[] Actions { get; init; } = Array.Empty<string>();
-    public string[] Warnings { get; init; } = Array.Empty<string>();
+    public string[] Actions { get; set; } = Array.Empty<string>();
+    public string[] Warnings { get; set; } = Array.Empty<string>();
 }
 
 public sealed class DiagnosticSessionSample
@@ -243,6 +250,13 @@ public static class DiagnosticSessionRunner
             ? Path.Combine(Environment.CurrentDirectory, "temp", "diagnostic-sessions", sessionId)
             : Path.GetFullPath(options.OutputDirectory);
         Directory.CreateDirectory(outputDirectory);
+        var livePath = Path.Combine(outputDirectory, "session-live.json");
+        var startedUtc = DateTimeOffset.UtcNow;
+        var runnerProcessId = Environment.ProcessId;
+        var lastStage = "initializing";
+        var lastSamplingLiveStateUtc = DateTimeOffset.MinValue;
+        Exception? terminalException = null;
+        string? terminalExceptionStage = null;
 
         var actions = new List<string>();
         var warnings = new List<string>();
@@ -275,12 +289,36 @@ public static class DiagnosticSessionRunner
         var runFlashbackRecordingExportRejected = scenario == "flashback-recording-export-rejected";
         var runFlashbackExportRejected = scenario == "flashback-export-rejected";
         FlashbackRecordingSettingsDeferredPresetState flashbackRecordingSettingsDeferredPresetState = default;
-        using var commandSendGate = new SemaphoreSlim(1, 1);
+        var commandSendGate = new SemaphoreSlim(1, 1);
+        using var scenarioCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        var scenarioCancellationToken = scenarioCts.Token;
+        Task<PresentMonProbeResult>? presentMonTask = null;
+        Task? flashbackStressTask = null;
+        Task? flashbackLifecycleTask = null;
+        Task? flashbackScrubStressTask = null;
+        Task? flashbackRestartCycleTask = null;
+        Task? flashbackEncoderCycleTask = null;
+        Task? flashbackExportPlaybackTask = null;
+        Task? flashbackSegmentPlaybackTask = null;
+        Task? flashbackRangeExportTask = null;
+        Task? flashbackExportConcurrentTask = null;
+        Task? flashbackDisableDuringExportTask = null;
+        Task? flashbackRotatedExportTask = null;
+        Task? flashbackPreviewCycleTask = null;
+        Task? flashbackRecordingPreviewCycleTask = null;
+        Task<FlashbackRecordingSettingsDeferredPresetState>? flashbackRecordingSettingsDeferredTask = null;
 
         async Task<JsonElement> SendRawWithConnectRetryAsync(
             string command,
             Dictionary<string, object?>? payload,
             int? responseTimeoutMs)
+            => await SendRawWithConnectRetryWithTokenAsync(command, payload, responseTimeoutMs, scenarioCancellationToken).ConfigureAwait(false);
+
+        async Task<JsonElement> SendRawWithConnectRetryWithTokenAsync(
+            string command,
+            Dictionary<string, object?>? payload,
+            int? responseTimeoutMs,
+            CancellationToken commandCancellationToken)
         {
             var response = await SendCommandWithConnectRetryAsync(
                     sendCommandAsync,
@@ -288,18 +326,45 @@ public static class DiagnosticSessionRunner
                     payload,
                     responseTimeoutMs,
                     TimeSpan.FromSeconds(30),
-                    cancellationToken)
+                    commandCancellationToken)
                 .ConfigureAwait(false);
             return response ?? BuildLocalFailureResponse(command, "no response after connect retry");
         }
 
-        var initialResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
-        var initialSnapshot = TryGetSnapshot(initialResponse, out var initial)
-            ? initial
-            : default;
+        await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
+        JsonElement initialSnapshot = CreateEmptyJsonObject();
+        var initialSnapshotKnown = false;
+        try
+        {
+            SetStage("initial-snapshot");
+            var initialResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            if (TryGetSnapshot(initialResponse, out var initial))
+            {
+                initialSnapshot = initial;
+                initialSnapshotKnown = true;
+            }
+            else
+            {
+                commandFailureCount++;
+                warnings.Add("initial-snapshot: baseline snapshot unavailable; state-mutating scenarios will be skipped");
+            }
+        }
+        catch (Exception ex)
+        {
+            RecordTerminalException(ex, "initial-snapshot");
+            await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
+        }
 
         try
         {
+            SetStage("scenario-setup");
+            if (!initialSnapshotKnown && scenario != "observe")
+            {
+                commandFailureCount++;
+                warnings.Add($"initial-snapshot: skipped state-mutating scenario '{scenario}' because the initial app state is unknown");
+            }
+            else
+            {
             if (ScenarioNeedsFlashback(scenario) && !GetBool(initialSnapshot, "FlashbackActive"))
             {
                 await SendAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
@@ -327,7 +392,7 @@ public static class DiagnosticSessionRunner
                 if ((runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected) &&
                     !await WaitForFlashbackStressBufferReadyAsync(
                         (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        cancellationToken).ConfigureAwait(false))
+                        scenarioCancellationToken).ConfigureAwait(false))
                 {
                     warnings.Add("flashback recording: Flashback buffer did not become recording-ready within 30s");
                 }
@@ -338,7 +403,6 @@ public static class DiagnosticSessionRunner
                 await TryWaitAsync("RecordingFileGrowing", 20_000).ConfigureAwait(false);
             }
 
-            Task<PresentMonProbeResult>? presentMonTask = null;
             if (options.IncludePresentMon)
             {
                 var correlationSnapshotResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
@@ -358,7 +422,6 @@ public static class DiagnosticSessionRunner
                 actions.Add("presentmon capture started");
             }
 
-            Task? flashbackStressTask = null;
             if (runFlashbackStress)
             {
                 flashbackStressTask = RunFlashbackStressAsync(
@@ -366,21 +429,17 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback stress started");
             }
 
-            Task? flashbackLifecycleTask = null;
-            Task? flashbackScrubStressTask = null;
-            Task? flashbackRestartCycleTask = null;
-            Task? flashbackExportPlaybackTask = null;
             if (runFlashbackScrubStress)
             {
                 flashbackScrubStressTask = RunFlashbackScrubStressAsync(
                     actions,
                     warnings,
                     SendRawWithConnectRetryAsync,
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback scrub stress started");
             }
 
@@ -391,11 +450,10 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback restart cycle started");
             }
 
-            Task? flashbackEncoderCycleTask = null;
             if (runFlashbackEncoderCycle)
             {
                 flashbackEncoderCycleTask = RunFlashbackEncoderCycleAsync(
@@ -403,7 +461,7 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback encoder cycle started");
             }
 
@@ -414,22 +472,20 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback export playback started");
             }
 
-            Task? flashbackSegmentPlaybackTask = null;
             if (runFlashbackSegmentPlayback)
             {
                 flashbackSegmentPlaybackTask = RunFlashbackSegmentPlaybackAsync(
                     actions,
                     warnings,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback segment playback started");
             }
 
-            Task? flashbackRangeExportTask = null;
             if (runFlashbackRangeExport)
             {
                 flashbackRangeExportTask = RunFlashbackRangeExportAsync(
@@ -437,7 +493,7 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback range export started");
             }
 
@@ -447,11 +503,10 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback lifecycle started");
             }
 
-            Task? flashbackExportConcurrentTask = null;
             if (runFlashbackExportConcurrent)
             {
                 flashbackExportConcurrentTask = RunFlashbackExportConcurrentAsync(
@@ -459,15 +514,10 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     SendRawWithConnectRetryAsync,
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback concurrent export started");
             }
 
-            Task? flashbackDisableDuringExportTask = null;
-            Task? flashbackRotatedExportTask = null;
-            Task? flashbackPreviewCycleTask = null;
-            Task? flashbackRecordingPreviewCycleTask = null;
-            Task<FlashbackRecordingSettingsDeferredPresetState>? flashbackRecordingSettingsDeferredTask = null;
             if (runFlashbackDisableDuringExport)
             {
                 flashbackDisableDuringExportTask = RunFlashbackDisableDuringExportAsync(
@@ -475,7 +525,7 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     SendRawWithConnectRetryAsync,
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback disable during export started");
             }
 
@@ -486,7 +536,7 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback rotated export started");
             }
 
@@ -497,7 +547,7 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback preview cycle started");
             }
 
@@ -507,7 +557,7 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback recording preview cycle started");
             }
 
@@ -517,7 +567,7 @@ public static class DiagnosticSessionRunner
                     actions,
                     warnings,
                     (command, payload, timeoutMs, allowFailure) => SendAsync(command, payload, timeoutMs, allowFailure),
-                    cancellationToken);
+                    scenarioCancellationToken);
                 actions.Add("flashback recording settings deferred started");
             }
 
@@ -525,7 +575,7 @@ public static class DiagnosticSessionRunner
             {
                 if (!await WaitForFlashbackStressBufferReadyAsync(
                         (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                        cancellationToken).ConfigureAwait(false))
+                        scenarioCancellationToken).ConfigureAwait(false))
                 {
                     warnings.Add("flashback playback: Flashback buffer did not become playback-ready within 30s");
                 }
@@ -543,7 +593,7 @@ public static class DiagnosticSessionRunner
                             (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
                             "Playing",
                             TimeSpan.FromSeconds(5),
-                            cancellationToken)
+                            scenarioCancellationToken)
                         .ConfigureAwait(false);
                     if (playingSnapshot is null)
                     {
@@ -556,12 +606,15 @@ public static class DiagnosticSessionRunner
                 }
             }
 
+            SetStage("sampling");
+            await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
             await SampleLoopAsync(
                     durationSeconds,
                     sampleIntervalMs,
                     samples,
                     (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken)
+                    scenarioCancellationToken,
+                    WriteSamplingLiveStateBestEffortAsync)
                 .ConfigureAwait(false);
 
             if (flashbackStressTask is not null)
@@ -664,6 +717,14 @@ public static class DiagnosticSessionRunner
                     warnings.Add($"PresentMon failed: {presentMon.Message}");
                 }
             }
+            }
+        }
+        catch (Exception ex)
+        {
+            RecordTerminalException(ex, lastStage);
+            scenarioCts.Cancel();
+            await ObserveBackgroundTasksAfterFaultAsync().ConfigureAwait(false);
+            await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -671,100 +732,190 @@ public static class DiagnosticSessionRunner
             {
                 if (startedRecording)
                 {
-                    var stopResponse = await SendAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, null).ConfigureAwait(false);
-                    actions.Add("recording stopped");
-                    if (AutomationSnapshotFormatter.IsSuccess(stopResponse))
+                    try
                     {
-                        await TryWaitAsync("RecordingStopped", 30_000).ConfigureAwait(false);
+                        SetStage("cleanup-stop-recording");
+                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(45));
+                        var stopResponse = await SendWithTokenAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, 45_000, false, cleanupCts.Token).ConfigureAwait(false);
+                        actions.Add("recording stopped");
+                        if (AutomationSnapshotFormatter.IsSuccess(stopResponse))
+                        {
+                            await TryWaitWithTokenAsync("RecordingStopped", 30_000, cleanupCts.Token).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        RecordTerminalException(ex, "cleanup-stop-recording");
                     }
                 }
 
                 if (startedFlashbackPlayback)
                 {
-                    await SendAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, null).ConfigureAwait(false);
-                    actions.Add("flashback playback returned live");
+                    try
+                    {
+                        SetStage("cleanup-go-live");
+                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
+                        await SendWithTokenAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "go-live" }, 15_000, false, cleanupCts.Token).ConfigureAwait(false);
+                        actions.Add("flashback playback returned live");
+                    }
+                    catch (Exception ex)
+                    {
+                        RecordTerminalException(ex, "cleanup-go-live");
+                    }
                 }
 
                 if (startedPreview && !GetBool(initialSnapshot, "IsPreviewing"))
                 {
-                    await SendAsync("SetPreviewEnabled", new Dictionary<string, object?> { ["enabled"] = false }, null).ConfigureAwait(false);
-                    actions.Add("preview stopped");
+                    try
+                    {
+                        SetStage("cleanup-stop-preview");
+                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
+                        await SendWithTokenAsync("SetPreviewEnabled", new Dictionary<string, object?> { ["enabled"] = false }, 15_000, false, cleanupCts.Token).ConfigureAwait(false);
+                        actions.Add("preview stopped");
+                    }
+                    catch (Exception ex)
+                    {
+                        RecordTerminalException(ex, "cleanup-stop-preview");
+                    }
                 }
 
                 if (enabledFlashback && !GetBool(initialSnapshot, "FlashbackActive"))
                 {
-                    await SendAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = false }, null).ConfigureAwait(false);
-                    actions.Add("flashback restored off");
+                    try
+                    {
+                        SetStage("cleanup-restore-flashback-off");
+                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
+                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = false }, 15_000, false, cleanupCts.Token).ConfigureAwait(false);
+                        actions.Add("flashback restored off");
+                    }
+                    catch (Exception ex)
+                    {
+                        RecordTerminalException(ex, "cleanup-restore-flashback-off");
+                    }
                 }
 
                 if (disabledFlashback && GetBool(initialSnapshot, "FlashbackActive"))
                 {
-                    await SendAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, null).ConfigureAwait(false);
-                    actions.Add("flashback restored on");
+                    try
+                    {
+                        SetStage("cleanup-restore-flashback-on");
+                        using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(15));
+                        await SendWithTokenAsync("SetFlashbackEnabled", new Dictionary<string, object?> { ["enabled"] = true }, 15_000, false, cleanupCts.Token).ConfigureAwait(false);
+                        actions.Add("flashback restored on");
+                    }
+                    catch (Exception ex)
+                    {
+                        RecordTerminalException(ex, "cleanup-restore-flashback-on");
+                    }
                 }
             }
+
+            await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
         }
 
         if (runFlashbackRecordingSettingsDeferred)
         {
-            await VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(
-                    actions,
-                    warnings,
-                    flashbackRecordingSettingsDeferredPresetState,
-                    (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
-                    cancellationToken)
-                .ConfigureAwait(false);
+            try
+            {
+                SetStage("settings-deferred-restore");
+                await VerifyAndRestoreFlashbackRecordingSettingsAfterStopAsync(
+                        actions,
+                        warnings,
+                        flashbackRecordingSettingsDeferredPresetState,
+                        (command, payload, timeoutMs) => SendAsync(command, payload, timeoutMs),
+                        cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                RecordTerminalException(ex, "settings-deferred-restore");
+            }
         }
 
         if (options.VerifyRecording || startedRecording)
         {
-            var verificationCommand = "VerifyLastRecording";
-            Dictionary<string, object?>? verificationPayload = null;
-            if (!startedRecording &&
-                TryGetFlashbackExportVerificationPath(scenario, outputDirectory, out var exportVerificationPath))
+            try
             {
-                verificationCommand = "VerifyFile";
-                verificationPayload = new Dictionary<string, object?>
+                SetStage("recording-verification");
+                var verificationCommand = "VerifyLastRecording";
+                Dictionary<string, object?>? verificationPayload = null;
+                if (!startedRecording &&
+                    TryGetFlashbackExportVerificationPath(scenario, outputDirectory, out var exportVerificationPath))
                 {
-                    ["filePath"] = exportVerificationPath,
-                    ["strict"] = true,
-                    ["verificationProfile"] = "flashback-export"
-                };
-            }
+                    verificationCommand = "VerifyFile";
+                    verificationPayload = new Dictionary<string, object?>
+                    {
+                        ["filePath"] = exportVerificationPath,
+                        ["strict"] = true,
+                        ["verificationProfile"] = "flashback-export"
+                    };
+                }
 
-            var verificationResponse = await SendAsync(verificationCommand, verificationPayload, 60_000).ConfigureAwait(false);
-            if (TryGetVerification(verificationResponse, out var verificationElement))
-            {
-                verification = verificationElement.Clone();
+                var verificationResponse = await SendAsync(verificationCommand, verificationPayload, 60_000).ConfigureAwait(false);
+                if (TryGetVerification(verificationResponse, out var verificationElement))
+                {
+                    verification = verificationElement.Clone();
+                }
+                else
+                {
+                    warnings.Add(AutomationSnapshotFormatter.Get(verificationResponse, "Message", "Verification did not return data."));
+                }
             }
-            else
+            catch (Exception ex)
             {
-                warnings.Add(AutomationSnapshotFormatter.Get(verificationResponse, "Message", "Verification did not return data."));
+                RecordTerminalException(ex, "recording-verification");
             }
         }
 
         if (runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected)
         {
-            ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings);
+            try
+            {
+                SetStage("recording-validation");
+                ValidateFlashbackRecordingSession(initialSnapshot, samples, warnings);
+            }
+            catch (Exception ex)
+            {
+                RecordTerminalException(ex, "recording-validation");
+            }
         }
 
-        var timelineResponse = await SendAsync(
-                "GetPerformanceTimeline",
-                new Dictionary<string, object?> { ["maxEntries"] = 240 },
-                null)
-            .ConfigureAwait(false);
-        if (timelineResponse.TryGetProperty("Data", out var timelineData))
+        try
         {
-            timeline = timelineData.Clone();
+            SetStage("timeline");
+            var timelineResponse = await SendAsync(
+                    "GetPerformanceTimeline",
+                    new Dictionary<string, object?> { ["maxEntries"] = 240 },
+                    null)
+                .ConfigureAwait(false);
+            if (timelineResponse.TryGetProperty("Data", out var timelineData))
+            {
+                timeline = timelineData.Clone();
+            }
+        }
+        catch (Exception ex)
+        {
+            RecordTerminalException(ex, "timeline");
         }
 
         var lastSnapshot = samples.Count > 0
             ? samples[^1].Snapshot
             : initialSnapshot;
-        var finalSnapshotResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
-        var healthSnapshot = TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot)
-            ? finalSnapshot
-            : lastSnapshot;
+        var healthSnapshot = lastSnapshot;
+        try
+        {
+            SetStage("final-snapshot");
+            var finalSnapshotResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
+            healthSnapshot = TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot)
+                ? finalSnapshot
+                : lastSnapshot;
+        }
+        catch (Exception ex)
+        {
+            RecordTerminalException(ex, "final-snapshot");
+        }
+
+        SetStage("result-analysis");
         var healthStatus = GetString(healthSnapshot, "DiagnosticHealthStatus") ?? "Unknown";
         var likelyStage = GetString(healthSnapshot, "DiagnosticLikelyStage") ?? "diagnostic_unavailable";
         var summary = GetString(healthSnapshot, "DiagnosticSummary") ?? string.Empty;
@@ -880,25 +1031,36 @@ public static class DiagnosticSessionRunner
         var timelinePath = Path.Combine(outputDirectory, "timeline.json");
         var summaryPath = Path.Combine(outputDirectory, "summary.json");
 
-        await WriteJsonAsync(samplesPath, samples, cancellationToken).ConfigureAwait(false);
-        await WriteJsonAsync(frameLedgerPath, BuildFrameLedgerTrace(sessionId, samples), cancellationToken).ConfigureAwait(false);
-        await WriteJsonAsync(timelinePath, timeline, cancellationToken).ConfigureAwait(false);
+        await WriteArtifactBestEffortAsync("write-samples", samplesPath, samples).ConfigureAwait(false);
+        await WriteArtifactBestEffortAsync("write-frame-ledger", frameLedgerPath, BuildFrameLedgerTrace(sessionId, samples)).ConfigureAwait(false);
+        await WriteArtifactBestEffortAsync("write-timeline", timelinePath, timeline).ConfigureAwait(false);
 
         var verificationSucceeded = verification.HasValue
             ? GetBool(verification.Value, "Succeeded")
             : (bool?)null;
+        var completedUtc = DateTimeOffset.UtcNow;
+        var terminalState = GetTerminalState();
+        SetStage("summary");
         var result = new DiagnosticSessionResult
         {
             SessionId = sessionId,
             Scenario = scenario,
             Success = commandFailureCount == 0 &&
+                      terminalException is null &&
                       (presentMon is null || presentMon.Success) &&
                       (!verificationSucceeded.HasValue || verificationSucceeded.Value) &&
                       (!(runFlashbackPlayback || runFlashbackStress || runFlashbackScrubStress || runFlashbackRestartCycle || runFlashbackEncoderCycle || runFlashbackExportPlayback || runFlashbackSegmentPlayback || runFlashbackRangeExport || runFlashbackLifecycle || runFlashbackExportConcurrent || runFlashbackDisableDuringExport || runFlashbackRotatedExport || runFlashbackPreviewCycle || runFlashbackRecording || runFlashbackRecordingPreviewCycle || runFlashbackRecordingSettingsDeferred || runFlashbackRecordingExportRejected || runFlashbackExportRejected) || warnings.Count == 0),
+            StartedUtc = startedUtc,
+            CompletedUtc = completedUtc,
+            TerminalState = terminalState,
+            LastStage = GetResultLastStage(),
+            UnhandledException = terminalException is null ? null : FormatTerminalException(terminalException),
+            RunnerProcessId = runnerProcessId,
             DurationSeconds = durationSeconds,
             SampleIntervalMs = sampleIntervalMs,
             SampleCount = samples.Count,
             OutputDirectory = outputDirectory,
+            LivePath = livePath,
             SummaryPath = summaryPath,
             SamplesPath = samplesPath,
             FrameLedgerPath = frameLedgerPath,
@@ -1067,19 +1229,257 @@ public static class DiagnosticSessionRunner
             Warnings = warnings.ToArray()
         };
 
-        await WriteJsonAsync(summaryPath, result, cancellationToken).ConfigureAwait(false);
+        var summaryWritten = false;
+        try
+        {
+            await WriteJsonAsync(summaryPath, result, CancellationToken.None).ConfigureAwait(false);
+            summaryWritten = true;
+        }
+        catch (Exception ex)
+        {
+            RecordTerminalException(ex, "summary-write");
+            completedUtc = DateTimeOffset.UtcNow;
+            terminalState = GetTerminalState();
+            result.Success = false;
+            result.CompletedUtc = completedUtc;
+            result.TerminalState = terminalState;
+            result.LastStage = GetResultLastStage();
+            result.UnhandledException = terminalException is null ? null : FormatTerminalException(terminalException);
+            result.Warnings = warnings.ToArray();
+        }
+
+        if (summaryWritten)
+        {
+            SetStage("summary-written");
+        }
+
+        await WriteLiveStateBestEffortAsync(completedUtc, GetTerminalState()).ConfigureAwait(false);
         return result;
+
+        void SetStage(string stage)
+        {
+            lastStage = stage;
+        }
+
+        void RecordTerminalException(Exception ex, string stage)
+        {
+            SetStage(stage);
+            if (terminalException is null)
+            {
+                terminalException = ex;
+                terminalExceptionStage = stage;
+            }
+
+            warnings.Add($"{stage}: {FormatTerminalException(ex)}");
+        }
+
+        static string FormatTerminalException(Exception ex)
+        {
+            return string.IsNullOrWhiteSpace(ex.Message)
+                ? ex.GetType().Name
+                : $"{ex.GetType().Name}: {ex.Message}";
+        }
+
+        string GetTerminalState()
+        {
+            if (terminalException is OperationCanceledException || cancellationToken.IsCancellationRequested)
+            {
+                return "canceled";
+            }
+
+            return terminalException is null ? "completed" : "failed";
+        }
+
+        string GetResultLastStage()
+            => terminalExceptionStage ?? lastStage;
+
+        async Task WriteArtifactBestEffortAsync<T>(string stage, string path, T value)
+        {
+            try
+            {
+                SetStage(stage);
+                await WriteJsonAsync(path, value, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                RecordTerminalException(ex, stage);
+            }
+        }
+
+        async Task WriteLiveStateBestEffortAsync(DateTimeOffset? completedUtcOverride = null, string? terminalStateOverride = null)
+        {
+            try
+            {
+                await WriteJsonAsync(
+                        livePath,
+                        new
+                        {
+                            SessionId = sessionId,
+                            Scenario = scenario,
+                            StartedUtc = startedUtc,
+                            UpdatedUtc = DateTimeOffset.UtcNow,
+                            CompletedUtc = completedUtcOverride,
+                            TerminalState = terminalStateOverride ?? (terminalException is null ? "running" : GetTerminalState()),
+                            LastStage = terminalStateOverride is null ? lastStage : GetResultLastStage(),
+                            RunnerProcessId = runnerProcessId,
+                            OutputDirectory = outputDirectory,
+                            SummaryPath = Path.Combine(outputDirectory, "summary.json"),
+                            SampleCount = samples.Count,
+                            CommandFailureCount = commandFailureCount,
+                            UnhandledException = terminalException is null ? null : FormatTerminalException(terminalException)
+                        },
+                        CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
+            catch
+            {
+                // The live-state file is diagnostic breadcrumbs only.
+            }
+        }
+
+        async Task WriteSamplingLiveStateBestEffortAsync()
+        {
+            var now = DateTimeOffset.UtcNow;
+            if (now - lastSamplingLiveStateUtc < TimeSpan.FromSeconds(5))
+            {
+                return;
+            }
+
+            lastSamplingLiveStateUtc = now;
+            await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
+        }
+
+        async Task ObserveBackgroundTasksAfterFaultAsync()
+        {
+            SetStage("background-task-drain");
+            await ObserveTaskAfterFaultAsync(flashbackStressTask, "flashback-stress-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackLifecycleTask, "flashback-lifecycle-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackScrubStressTask, "flashback-scrub-stress-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackRestartCycleTask, "flashback-restart-cycle-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackEncoderCycleTask, "flashback-encoder-cycle-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackExportPlaybackTask, "flashback-export-playback-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackSegmentPlaybackTask, "flashback-segment-playback-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackRangeExportTask, "flashback-range-export-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackExportConcurrentTask, "flashback-export-concurrent-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackDisableDuringExportTask, "flashback-disable-during-export-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackRotatedExportTask, "flashback-rotated-export-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackPreviewCycleTask, "flashback-preview-cycle-task").ConfigureAwait(false);
+            await ObserveTaskAfterFaultAsync(flashbackRecordingPreviewCycleTask, "flashback-recording-preview-cycle-task").ConfigureAwait(false);
+            await ObservePresentMonTaskAfterFaultAsync().ConfigureAwait(false);
+            await ObserveRecordingSettingsDeferredTaskAfterFaultAsync().ConfigureAwait(false);
+            await WriteLiveStateBestEffortAsync().ConfigureAwait(false);
+        }
+
+        async Task ObserveTaskAfterFaultAsync(Task? task, string stage)
+        {
+            if (task is null || task.IsCompletedSuccessfully)
+            {
+                return;
+            }
+
+            try
+            {
+                var completedTask = task.IsCompleted
+                    ? task
+                    : await Task.WhenAny(task, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
+                if (!ReferenceEquals(completedTask, task))
+                {
+                    warnings.Add($"{stage}: task still running after diagnostic interruption");
+                    return;
+                }
+
+                await task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                RecordTerminalException(ex, stage);
+            }
+        }
+
+        async Task ObservePresentMonTaskAfterFaultAsync()
+        {
+            if (presentMonTask is null || presentMonTask.IsCompletedSuccessfully)
+            {
+                if (presentMonTask is { IsCompletedSuccessfully: true } && presentMon is null)
+                {
+                    presentMon = await presentMonTask.ConfigureAwait(false);
+                }
+
+                return;
+            }
+
+            try
+            {
+                var completedTask = presentMonTask.IsCompleted
+                    ? presentMonTask
+                    : await Task.WhenAny(presentMonTask, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
+                if (!ReferenceEquals(completedTask, presentMonTask))
+                {
+                    warnings.Add("presentmon-task: task still running after diagnostic interruption");
+                    return;
+                }
+
+                presentMon = await presentMonTask.ConfigureAwait(false);
+                if (!presentMon.Success)
+                {
+                    warnings.Add($"PresentMon failed: {presentMon.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                RecordTerminalException(ex, "presentmon-task");
+            }
+        }
+
+        async Task ObserveRecordingSettingsDeferredTaskAfterFaultAsync()
+        {
+            if (flashbackRecordingSettingsDeferredTask is null || flashbackRecordingSettingsDeferredTask.IsCompletedSuccessfully)
+            {
+                if (flashbackRecordingSettingsDeferredTask is { IsCompletedSuccessfully: true })
+                {
+                    flashbackRecordingSettingsDeferredPresetState = await flashbackRecordingSettingsDeferredTask.ConfigureAwait(false);
+                }
+
+                return;
+            }
+
+            try
+            {
+                var completedTask = flashbackRecordingSettingsDeferredTask.IsCompleted
+                    ? flashbackRecordingSettingsDeferredTask
+                    : await Task.WhenAny(flashbackRecordingSettingsDeferredTask, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
+                if (!ReferenceEquals(completedTask, flashbackRecordingSettingsDeferredTask))
+                {
+                    warnings.Add("flashback-recording-settings-deferred-task: task still running after diagnostic interruption");
+                    return;
+                }
+
+                flashbackRecordingSettingsDeferredPresetState = await flashbackRecordingSettingsDeferredTask.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                RecordTerminalException(ex, "flashback-recording-settings-deferred-task");
+            }
+        }
 
         async Task<JsonElement> SendAsync(
             string command,
             Dictionary<string, object?>? payload,
             int? responseTimeoutMs,
             bool allowFailure = false)
+            => await SendWithTokenAsync(command, payload, responseTimeoutMs, allowFailure, scenarioCancellationToken).ConfigureAwait(false);
+
+        async Task<JsonElement> SendWithTokenAsync(
+            string command,
+            Dictionary<string, object?>? payload,
+            int? responseTimeoutMs,
+            bool allowFailure,
+            CancellationToken commandCancellationToken)
         {
-            await commandSendGate.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await commandSendGate.WaitAsync(commandCancellationToken).ConfigureAwait(false);
             try
             {
-                var response = await SendRawWithConnectRetryAsync(command, payload, responseTimeoutMs).ConfigureAwait(false);
+                var response = await SendRawWithConnectRetryWithTokenAsync(command, payload, responseTimeoutMs, commandCancellationToken).ConfigureAwait(false);
                 if (!AutomationSnapshotFormatter.IsSuccess(response) && !allowFailure)
                 {
                     commandFailureCount++;
@@ -1095,8 +1495,11 @@ public static class DiagnosticSessionRunner
         }
 
         async Task TryWaitAsync(string condition, int timeoutMs)
+            => await TryWaitWithTokenAsync(condition, timeoutMs, scenarioCancellationToken).ConfigureAwait(false);
+
+        async Task TryWaitWithTokenAsync(string condition, int timeoutMs, CancellationToken waitCancellationToken)
         {
-            var response = await SendAsync(
+            var response = await SendWithTokenAsync(
                     "WaitForCondition",
                     new Dictionary<string, object?>
                     {
@@ -1104,13 +1507,18 @@ public static class DiagnosticSessionRunner
                         ["timeoutMs"] = timeoutMs,
                         ["pollMs"] = 250
                     },
-                    timeoutMs + 2_000)
+                    timeoutMs + 2_000,
+                    false,
+                    waitCancellationToken)
                 .ConfigureAwait(false);
             if (!AutomationSnapshotFormatter.IsSuccess(response))
             {
                 warnings.Add($"wait {condition}: {AutomationSnapshotFormatter.Get(response, "Message", "not met")}");
             }
         }
+
+        static CancellationTokenSource CreateCleanupCts(TimeSpan timeout)
+            => new(timeout);
     }
 
     public static string Format(DiagnosticSessionResult result)
@@ -1118,6 +1526,12 @@ public static class DiagnosticSessionRunner
         var builder = new StringBuilder();
         builder.AppendLine($"== Diagnostic Session: {(result.Success ? "PASS" : "FAIL")} ==");
         builder.AppendLine($"Scenario: {result.Scenario} | Duration: {result.DurationSeconds}s | Samples: {result.SampleCount} @ {result.SampleIntervalMs}ms");
+        builder.AppendLine($"Terminal: {result.TerminalState} | LastStage: {result.LastStage} | RunnerPid: {result.RunnerProcessId}");
+        if (!string.IsNullOrWhiteSpace(result.UnhandledException))
+        {
+            builder.AppendLine($"Terminal Exception: {result.UnhandledException}");
+        }
+
         builder.AppendLine($"Health: {result.HealthStatus} | Stage: {result.LikelyStage}");
         if (!string.IsNullOrWhiteSpace(result.Summary))
         {
@@ -1308,6 +1722,7 @@ public static class DiagnosticSessionRunner
             $"cpuPercentMaxObserved={result.ProcessCpuMaxPercentObserved:0.##}");
 
         builder.AppendLine($"Artifacts: {result.OutputDirectory}");
+        builder.AppendLine($"  Live: {result.LivePath}");
         builder.AppendLine($"  Summary: {result.SummaryPath}");
         builder.AppendLine($"  Samples: {result.SamplesPath}");
         builder.AppendLine($"  Frame Ledger: {result.FrameLedgerPath}");
@@ -1995,7 +2410,10 @@ public static class DiagnosticSessionRunner
             cancellationToken.ThrowIfCancellationRequested();
             try
             {
-                return (await sendCommandAsync(command, payload, responseTimeoutMs).ConfigureAwait(false)).Clone();
+                return (await sendCommandAsync(command, payload, responseTimeoutMs)
+                        .WaitAsync(cancellationToken)
+                        .ConfigureAwait(false))
+                    .Clone();
             }
             catch (AutomationPipeConnectException ex)
             {
@@ -2018,6 +2436,12 @@ public static class DiagnosticSessionRunner
         }
 
         return BuildLocalFailureResponse(command, "command was not attempted before retry timeout elapsed");
+    }
+
+    private static JsonElement CreateEmptyJsonObject()
+    {
+        using var document = JsonDocument.Parse("{}");
+        return document.RootElement.Clone();
     }
 
     private static JsonElement BuildLocalFailureResponse(string command, string message)
@@ -4548,7 +4972,8 @@ public static class DiagnosticSessionRunner
         int sampleIntervalMs,
         List<DiagnosticSessionSample> samples,
         Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommandAsync,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        Func<Task>? sampleCheckpointAsync = null)
     {
         var started = Stopwatch.GetTimestamp();
         var duration = TimeSpan.FromSeconds(durationSeconds);
@@ -4564,6 +4989,10 @@ public static class DiagnosticSessionRunner
                     TimestampUtc = DateTimeOffset.UtcNow,
                     Snapshot = snapshot.Clone()
                 });
+                if (sampleCheckpointAsync is not null)
+                {
+                    await sampleCheckpointAsync().ConfigureAwait(false);
+                }
             }
 
             var elapsed = Stopwatch.GetElapsedTime(started);

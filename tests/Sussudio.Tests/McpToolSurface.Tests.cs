@@ -675,11 +675,24 @@ static partial class Program
             AssertContains(result, "Frame Ledger:");
 
             var summaryPath = Path.Combine(outputDirectory, "summary.json");
+            var livePath = Path.Combine(outputDirectory, "session-live.json");
             var samplesPath = Path.Combine(outputDirectory, "samples.json");
             var frameLedgerPath = Path.Combine(outputDirectory, "frame-ledger.json");
             AssertEqual(true, File.Exists(summaryPath), "diagnostic session summary artifact");
+            AssertEqual(true, File.Exists(livePath), "diagnostic session live artifact");
             AssertEqual(true, File.Exists(samplesPath), "diagnostic session samples artifact");
             AssertEqual(true, File.Exists(frameLedgerPath), "diagnostic session frame ledger artifact");
+            AssertContains(result, $"Live: {livePath}");
+
+            using var summaryDocument = JsonDocument.Parse(File.ReadAllText(summaryPath));
+            AssertEqual("completed", summaryDocument.RootElement.GetProperty("TerminalState").GetString(), "diagnostic session terminal state");
+            AssertEqual("summary", summaryDocument.RootElement.GetProperty("LastStage").GetString(), "diagnostic session last stage");
+            AssertEqual(true, summaryDocument.RootElement.GetProperty("RunnerProcessId").GetInt32() > 0, "diagnostic session runner pid");
+            AssertEqual(livePath, summaryDocument.RootElement.GetProperty("LivePath").GetString(), "diagnostic session live path");
+
+            using var liveDocument = JsonDocument.Parse(File.ReadAllText(livePath));
+            AssertEqual("completed", liveDocument.RootElement.GetProperty("TerminalState").GetString(), "diagnostic live terminal state");
+            AssertEqual("summary-written", liveDocument.RootElement.GetProperty("LastStage").GetString(), "diagnostic live last stage");
 
             using var frameLedgerDocument = JsonDocument.Parse(File.ReadAllText(frameLedgerPath));
             AssertEqual(1, frameLedgerDocument.RootElement.GetProperty("EventCount").GetInt32(), "diagnostic session frame ledger event count");
@@ -690,6 +703,213 @@ static partial class Program
             {
                 Directory.Delete(outputDirectory, recursive: true);
             }
+        }
+    }
+
+    private static async Task DiagnosticSessionRunner_FinalSnapshotFailureWritesTerminalArtifacts()
+    {
+        var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"diagnostic-session-failure-test-{Guid.NewGuid():N}");
+        var getSnapshotCount = 0;
+
+        try
+        {
+            var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+            var optionsType = assembly.GetType("Sussudio.Tools.DiagnosticSessionOptions")
+                ?? throw new InvalidOperationException("DiagnosticSessionOptions type was not found.");
+            var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
+            var options = Activator.CreateInstance(optionsType)
+                ?? throw new InvalidOperationException("DiagnosticSessionOptions instance could not be created.");
+            optionsType.GetProperty("Scenario")!.SetValue(options, "observe");
+            optionsType.GetProperty("DurationSeconds")!.SetValue(options, 0);
+            optionsType.GetProperty("SampleIntervalMs")!.SetValue(options, 100);
+            optionsType.GetProperty("OutputDirectory")!.SetValue(options, outputDirectory);
+
+            Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommand = (command, _, _) =>
+            {
+                if (command == "GetSnapshot")
+                {
+                    getSnapshotCount++;
+                    if (getSnapshotCount == 3)
+                    {
+                        throw new InvalidOperationException("simulated final snapshot failure");
+                    }
+
+                    return Task.FromResult(ParseDiagnosticSessionJson("""
+                        {
+                          "Success": true,
+                          "Snapshot": {
+                            "IsPreviewing": false,
+                            "IsRecording": false,
+                            "FlashbackActive": false,
+                            "DiagnosticHealthStatus": "Healthy",
+                            "DiagnosticLikelyStage": "none",
+                            "DiagnosticSummary": "No degraded frame lane detected.",
+                            "DiagnosticEvidence": "All monitored frame lanes are within current thresholds.",
+                            "FrameLedgerRecentEvents": []
+                          }
+                        }
+                        """));
+                }
+
+                if (command == "GetPerformanceTimeline")
+                {
+                    return Task.FromResult(ParseDiagnosticSessionJson("""
+                        {
+                          "Success": true,
+                          "Data": []
+                        }
+                        """));
+                }
+
+                return Task.FromResult(ParseDiagnosticSessionJson("""
+                    {
+                      "Success": true,
+                      "Message": "ok"
+                    }
+                    """));
+            };
+
+            var runAsync = runnerType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .FirstOrDefault(method => method.Name == "RunAsync" && method.GetParameters().Length == 3)
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync overload was not found.");
+            var task = runAsync.Invoke(null, new object?[] { options, sendCommand, CancellationToken.None }) as Task
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync did not return a Task.");
+            await task.ConfigureAwait(false);
+            var result = task.GetType().GetProperty("Result")!.GetValue(task)
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync returned null.");
+
+            AssertEqual(false, GetBoolProperty(result, "Success"), "diagnostic failure result success");
+            AssertEqual("failed", GetPropertyValue(result, "TerminalState") as string, "diagnostic failure terminal state");
+            AssertEqual("final-snapshot", GetPropertyValue(result, "LastStage") as string, "diagnostic failure last stage");
+            AssertContains(GetPropertyValue(result, "UnhandledException") as string ?? string.Empty, "InvalidOperationException");
+
+            var summaryPath = Path.Combine(outputDirectory, "summary.json");
+            var livePath = Path.Combine(outputDirectory, "session-live.json");
+            AssertEqual(true, File.Exists(summaryPath), "diagnostic failure summary artifact");
+            AssertEqual(true, File.Exists(livePath), "diagnostic failure live artifact");
+
+            using var summaryDocument = JsonDocument.Parse(File.ReadAllText(summaryPath));
+            AssertEqual(false, summaryDocument.RootElement.GetProperty("Success").GetBoolean(), "diagnostic failure summary success");
+            AssertEqual("failed", summaryDocument.RootElement.GetProperty("TerminalState").GetString(), "diagnostic failure summary terminal state");
+            AssertEqual("final-snapshot", summaryDocument.RootElement.GetProperty("LastStage").GetString(), "diagnostic failure summary last stage");
+            AssertJsonArrayContains(summaryDocument.RootElement.GetProperty("Warnings"), "final-snapshot");
+
+            using var liveDocument = JsonDocument.Parse(File.ReadAllText(livePath));
+            AssertEqual("failed", liveDocument.RootElement.GetProperty("TerminalState").GetString(), "diagnostic failure live terminal state");
+            AssertEqual("final-snapshot", liveDocument.RootElement.GetProperty("LastStage").GetString(), "diagnostic failure live last stage");
+        }
+        finally
+        {
+            if (Directory.Exists(outputDirectory))
+            {
+                Directory.Delete(outputDirectory, recursive: true);
+            }
+        }
+
+        static JsonElement ParseDiagnosticSessionJson(string json)
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.Clone();
+        }
+
+        static void AssertJsonArrayContains(JsonElement array, string token)
+        {
+            AssertEqual(JsonValueKind.Array, array.ValueKind, "diagnostic warning array kind");
+            foreach (var item in array.EnumerateArray())
+            {
+                if ((item.GetString() ?? string.Empty).Contains(token, StringComparison.Ordinal))
+                {
+                    return;
+                }
+            }
+
+            throw new InvalidOperationException($"Assertion failed: expected warning array to contain '{token}'.");
+        }
+    }
+
+    private static async Task DiagnosticSessionRunner_UnknownInitialSnapshotFailsWithoutMutatingState()
+    {
+        var outputDirectory = Path.Combine(GetRepoRoot(), "temp", $"diagnostic-session-unknown-initial-test-{Guid.NewGuid():N}");
+        var commands = new List<string>();
+
+        try
+        {
+            var assembly = LoadToolAssembly(Path.Combine("tools", "ssctl", "bin", "Debug", "net8.0", "ssctl.dll"));
+            var optionsType = assembly.GetType("Sussudio.Tools.DiagnosticSessionOptions")
+                ?? throw new InvalidOperationException("DiagnosticSessionOptions type was not found.");
+            var runnerType = assembly.GetType("Sussudio.Tools.DiagnosticSessionRunner")
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner type was not found.");
+            var options = Activator.CreateInstance(optionsType)
+                ?? throw new InvalidOperationException("DiagnosticSessionOptions instance could not be created.");
+            optionsType.GetProperty("Scenario")!.SetValue(options, "preview-only");
+            optionsType.GetProperty("DurationSeconds")!.SetValue(options, 0);
+            optionsType.GetProperty("SampleIntervalMs")!.SetValue(options, 100);
+            optionsType.GetProperty("OutputDirectory")!.SetValue(options, outputDirectory);
+
+            Func<string, Dictionary<string, object?>?, int?, Task<JsonElement>> sendCommand = (command, _, _) =>
+            {
+                commands.Add(command);
+                if (command is "SetPreviewEnabled" or "SetRecordingEnabled" or "SetFlashbackEnabled")
+                {
+                    throw new InvalidOperationException($"Unexpected state mutation command: {command}");
+                }
+
+                return Task.FromResult(ParseDiagnosticSessionJson(command == "GetPerformanceTimeline"
+                    ? """
+                      {
+                        "Success": true,
+                        "Data": []
+                      }
+                      """
+                    : """
+                      {
+                        "Success": true,
+                        "Message": "ok"
+                      }
+                      """));
+            };
+
+            var runAsync = runnerType.GetMethods(BindingFlags.Public | BindingFlags.Static)
+                .FirstOrDefault(method => method.Name == "RunAsync" && method.GetParameters().Length == 3)
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync overload was not found.");
+            var task = runAsync.Invoke(null, new object?[] { options, sendCommand, CancellationToken.None }) as Task
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync did not return a Task.");
+            await task.ConfigureAwait(false);
+            var result = task.GetType().GetProperty("Result")!.GetValue(task)
+                ?? throw new InvalidOperationException("DiagnosticSessionRunner.RunAsync returned null.");
+
+            AssertEqual(false, GetBoolProperty(result, "Success"), "diagnostic unknown initial result success");
+            using var summaryDocument = JsonDocument.Parse(File.ReadAllText(Path.Combine(outputDirectory, "summary.json")));
+            AssertJsonArrayContains(summaryDocument.RootElement.GetProperty("Warnings"), "skipped state-mutating scenario");
+            AssertEqual(false, commands.Contains("SetPreviewEnabled"), "diagnostic unknown initial did not start preview");
+        }
+        finally
+        {
+            if (Directory.Exists(outputDirectory))
+            {
+                Directory.Delete(outputDirectory, recursive: true);
+            }
+        }
+
+        static JsonElement ParseDiagnosticSessionJson(string json)
+        {
+            using var document = JsonDocument.Parse(json);
+            return document.RootElement.Clone();
+        }
+
+        static void AssertJsonArrayContains(JsonElement array, string token)
+        {
+            AssertEqual(JsonValueKind.Array, array.ValueKind, "diagnostic warning array kind");
+            foreach (var item in array.EnumerateArray())
+            {
+                if ((item.GetString() ?? string.Empty).Contains(token, StringComparison.Ordinal))
+                {
+                    return;
+                }
+            }
+
+            throw new InvalidOperationException($"Assertion failed: expected warning array to contain '{token}'.");
         }
     }
 
