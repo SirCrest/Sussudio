@@ -225,19 +225,26 @@ internal sealed class FlashbackBufferManager : IDisposable
                 }
             }
 
+            var activeSegmentBytes = _activeSegmentPath != null
+                ? Math.Max(0, _totalDiskBytes - _completedSegmentBytes)
+                : 0;
+
             // Also delete the active segment file (it has stale data)
             if (_activeSegmentPath != null)
             {
-                var activeSegmentBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);
                 if (TryDeleteFile(_activeSegmentPath))
                 {
                     freedBytes = AddNonNegativeSaturated(freedBytes, activeSegmentBytes);
+                    _activeSegmentPath = null; // Force new path generation on next GetFilePath()
+                    _previousActiveSegmentBytes = 0;
                 }
-                _activeSegmentPath = null; // Force new path generation on next GetFilePath()
-                _previousActiveSegmentBytes = 0;
+                else
+                {
+                    Logger.Log($"FLASHBACK_PURGE_ACTIVE_RETAINED path='{Path.GetFileName(_activeSegmentPath)}'");
+                }
             }
 
-            if (_completedSegments.Count == 0)
+            if (_completedSegments.Count == 0 && _activeSegmentPath == null)
             {
                 // Full purge succeeded — reset all counters
                 _completedSegmentBytes = 0;
@@ -251,7 +258,8 @@ internal sealed class FlashbackBufferManager : IDisposable
             {
                 // Partial purge — adjust byte counters for what we freed
                 _completedSegmentBytes = GetCompletedSegmentBytesSaturated();
-                _totalDiskBytes = SubtractNonNegative(_totalDiskBytes, freedBytes);
+                var retainedActiveBytes = _activeSegmentPath != null ? activeSegmentBytes : 0;
+                _totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, retainedActiveBytes);
                 Logger.Log($"FLASHBACK_PURGE_PARTIAL freed={freedBytes} remaining_segments={_completedSegments.Count}");
             }
         }
@@ -1438,16 +1446,14 @@ internal sealed class FlashbackBufferManager : IDisposable
         long freedBytes = 0;
 
         // Delete completed segments
-        foreach (var seg in _completedSegments)
+        for (int i = _completedSegments.Count - 1; i >= 0; i--)
         {
-            if (TryDeleteFile(seg.Path))
+            if (TryDeleteFile(_completedSegments[i].Path))
             {
-                freedBytes = AddNonNegativeSaturated(freedBytes, seg.SizeBytes);
+                freedBytes = AddNonNegativeSaturated(freedBytes, _completedSegments[i].SizeBytes);
+                _completedSegments.RemoveAt(i);
             }
         }
-        _completedSegments.Clear();
-        _completedSegmentBytes = 0;
-        _completedSegmentSequence = 0;
 
         // Delete active segment
         if (_activeSegmentPath != null)
@@ -1455,14 +1461,31 @@ internal sealed class FlashbackBufferManager : IDisposable
             if (TryDeleteFile(_activeSegmentPath))
             {
                 freedBytes = AddNonNegativeSaturated(freedBytes, activeBytes);
+                _activeSegmentPath = null;
+                _previousActiveSegmentBytes = 0;
             }
-            _activeSegmentPath = null;
+            else
+            {
+                Logger.Log($"FLASHBACK_BUFFER_PURGE_ACTIVE_RETAINED path='{Path.GetFileName(_activeSegmentPath)}'");
+            }
         }
-        Interlocked.Exchange(ref _latestPtsTicks, 0);
-        Interlocked.Exchange(ref _validStartPtsTicks, 0);
-        _totalDiskBytes = 0;
-        _totalBytesWritten = 0;
-        _previousActiveSegmentBytes = 0;
+
+        _completedSegmentBytes = GetCompletedSegmentBytesSaturated();
+        if (_completedSegments.Count == 0 && _activeSegmentPath == null)
+        {
+            _completedSegmentSequence = 0;
+            Interlocked.Exchange(ref _latestPtsTicks, 0);
+            Interlocked.Exchange(ref _validStartPtsTicks, 0);
+            _totalDiskBytes = 0;
+            _totalBytesWritten = 0;
+            _previousActiveSegmentBytes = 0;
+        }
+        else
+        {
+            var retainedActiveBytes = _activeSegmentPath != null ? activeBytes : 0;
+            _totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, retainedActiveBytes);
+        }
+
         // Clear under _indexLock so this is serialized with PauseEviction/ResumeEviction.
         _evictionPauseCount = 0;
         Logger.Log($"FLASHBACK_BUFFER_PURGE segments={segmentCount} freed_bytes={freedBytes}");

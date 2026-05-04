@@ -754,8 +754,8 @@ static partial class Program
                 "FlashbackBufferManager abandons startup-generated segment paths",
                 FlashbackBufferManager_AbandonsStartupGeneratedSegmentPath),
             await RunCheckAsync(
-                "FlashbackBufferManager purge forgets active segment path",
-                FlashbackBufferManager_PurgeCompletedSegments_ForgetsActivePath),
+                "FlashbackBufferManager purges retain locked active segment path",
+                FlashbackBufferManager_PurgesRetainLockedActivePath),
             await RunCheckAsync(
                 "FlashbackBufferManager partial purge accounts for deleted active segment",
                 FlashbackBufferManager_PurgeCompletedSegments_AccountsForActiveBytesOnPartialPurge),
@@ -3210,7 +3210,7 @@ static partial class Program
         AssertContains(source, "_totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, accountedActiveSegmentBytes);");
         AssertContains(source, "_completedSegmentBytes = GetCompletedSegmentBytesSaturated();");
         AssertContains(source, "private long GetCompletedSegmentBytesSaturated()");
-        AssertContains(source, "_totalDiskBytes = SubtractNonNegative(_totalDiskBytes, freedBytes);");
+        AssertContains(source, "_totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, retainedActiveBytes);");
         AssertContains(source, "freedBytes = AddNonNegativeSaturated(freedBytes, _completedSegments[i].SizeBytes);");
         AssertContains(source, "FLASHBACK_BUFFER_DELETE_WARN path='{filePath}' type={ex.GetType().Name} msg='{ex.Message}'");
 
@@ -3956,19 +3956,63 @@ static partial class Program
         return Task.CompletedTask;
     }
 
-    private static Task FlashbackBufferManager_PurgeCompletedSegments_ForgetsActivePath()
+    private static Task FlashbackBufferManager_PurgesRetainLockedActivePath()
     {
-        var source = File.ReadAllText(Path.Combine(Directory.GetCurrentDirectory(), "Sussudio", "Services", "Flashback", "FlashbackBufferManager.cs"))
-            .Replace("\r\n", "\n");
-        var purgeBlock = ExtractTextBetween(
-            source,
-            "public void PurgeCompletedSegments()",
-            "    public long MaxDiskBytes");
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_locked_active_purge_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+        string? activePath = null;
 
-        AssertContains(
-            purgeBlock,
-            "if (_activeSegmentPath != null)\n            {\n                var activeSegmentBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);\n                if (TryDeleteFile(_activeSegmentPath))\n                {\n                    freedBytes = AddNonNegativeSaturated(freedBytes, activeSegmentBytes);\n                }\n                _activeSegmentPath = null; // Force new path generation on next GetFilePath()\n                _previousActiveSegmentBytes = 0;\n            }");
-        AssertDoesNotContain(purgeBlock, "if (_activeSegmentPath != null && TryDeleteFile(_activeSegmentPath))");
+        try
+        {
+            activePath = (string)GetPrivateField(manager, "_activeSegmentPath")!;
+            File.WriteAllBytes(activePath, new byte[50]);
+            File.SetAttributes(activePath, File.GetAttributes(activePath) | FileAttributes.ReadOnly);
+
+            var updateDiskBytes = manager.GetType().GetMethod("UpdateDiskBytes")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.UpdateDiskBytes not found.");
+            var purgeCompleted = manager.GetType().GetMethod("PurgeCompletedSegments")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.PurgeCompletedSegments not found.");
+            var purgeAll = manager.GetType().GetMethod("PurgeAllSegments")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.PurgeAllSegments not found.");
+
+            updateDiskBytes.Invoke(manager, new object[] { 50L });
+            AssertEqual(50L, GetLongProperty(manager, "TotalDiskBytes"), "Setup tracks active bytes");
+            AssertEqual(50L, GetLongProperty(manager, "TotalBytesWritten"), "Setup tracks active bytes written");
+
+            purgeCompleted.Invoke(manager, null);
+
+            AssertEqual(true, File.Exists(activePath), "Read-only active file remains on disk");
+            AssertEqual(activePath, (string)GetPrivateField(manager, "_activeSegmentPath")!, "Read-only active path remains tracked");
+            AssertEqual(activePath, GetStringProperty(manager, "ActiveFilePath"), "ActiveFilePath still reports read-only active segment");
+            AssertEqual(1, GetIntProperty(manager, "SegmentCount"), "Segment count still includes read-only active segment");
+            AssertEqual(50L, GetLongProperty(manager, "TotalDiskBytes"), "Read-only active bytes remain in disk accounting");
+            AssertEqual(50L, (long)GetPrivateField(manager, "_previousActiveSegmentBytes")!, "Read-only active byte baseline is preserved");
+
+            updateDiskBytes.Invoke(manager, new object[] { 50L });
+            AssertEqual(50L, GetLongProperty(manager, "TotalBytesWritten"), "Same active bytes are not double-counted after failed purge");
+
+            purgeAll.Invoke(manager, null);
+            AssertEqual(true, File.Exists(activePath), "Read-only active file remains after full purge attempt");
+            AssertEqual(activePath, (string)GetPrivateField(manager, "_activeSegmentPath")!, "Full purge keeps read-only active path tracked");
+            AssertEqual(1, GetIntProperty(manager, "SegmentCount"), "Full purge segment count still includes read-only active segment");
+            AssertEqual(50L, GetLongProperty(manager, "TotalDiskBytes"), "Full purge keeps read-only active bytes in disk accounting");
+            AssertEqual(50L, (long)GetPrivateField(manager, "_previousActiveSegmentBytes")!, "Full purge keeps read-only active byte baseline");
+        }
+        finally
+        {
+            if (!string.IsNullOrWhiteSpace(activePath) && File.Exists(activePath))
+            {
+                try { File.SetAttributes(activePath, FileAttributes.Normal); } catch { }
+            }
+
+            if (manager is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
 
         return Task.CompletedTask;
     }
@@ -4008,8 +4052,9 @@ static partial class Program
                 source,
                 "private (int Segments, long FreedBytes) PurgeAllSegmentsCore()",
                 "    private static long AddNonNegativeSaturated");
-            AssertOccursBefore(purgeCoreBlock, "var activeBytes = _activeSegmentPath != null", "_completedSegmentBytes = 0;");
             AssertOccursBefore(purgeCoreBlock, "var activeBytes = _activeSegmentPath != null", "if (_activeSegmentPath != null)");
+            AssertContains(purgeCoreBlock, "_completedSegmentBytes = GetCompletedSegmentBytesSaturated();");
+            AssertContains(purgeCoreBlock, "var retainedActiveBytes = _activeSegmentPath != null ? activeBytes : 0;");
         }
         finally
         {
