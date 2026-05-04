@@ -676,6 +676,9 @@ static partial class Program
                 "FlashbackBufferManager segment rotation keeps total bytes written monotonic",
                 FlashbackBufferManager_SegmentRotationKeepsTotalBytesWrittenMonotonic),
             await RunCheckAsync(
+                "FlashbackBufferManager same-path completion extends latest segment",
+                FlashbackBufferManager_SamePathCompletionExtendsLatestSegment),
+            await RunCheckAsync(
                 "FlashbackBufferManager ignores updates after dispose",
                 FlashbackBufferManager_IgnoresUpdatesAfterDispose),
             await RunCheckAsync(
@@ -2976,7 +2979,12 @@ static partial class Program
         AssertContains(source, "if (endPts <= startPts)\n        {\n            Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=invalid_range path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds}\");\n            return;\n        }");
         AssertContains(source, "if (!IsPathInSessionDirectory(path))\n            {\n                Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=outside_session path='{Path.GetFileName(path)}'\");\n                return;\n            }");
         AssertContains(source, "if (!File.Exists(path))\n            {\n                Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=missing_file path='{Path.GetFileName(path)}'\");\n                return;\n            }");
-        AssertContains(source, "if (_completedSegments.Any(seg => IsSameSegmentPath(seg.Path, path)))\n            {\n                Logger.Log($\"FLASHBACK_BUFFER_SEGMENT_SKIP reason=duplicate_path path='{Path.GetFileName(path)}'\");\n                return;\n            }");
+        AssertContains(source, "var existingIndex = _completedSegments.FindIndex(seg => IsSameSegmentPath(seg.Path, path));");
+        AssertContains(source, "if (existingIndex >= 0)\n            {\n                if (!TryExtendCompletedSegment(existingIndex, path, startPts, endPts, safeSizeBytes, pathIsActiveSegment))");
+        AssertContains(source, "private bool TryExtendCompletedSegment(");
+        AssertContains(source, "if (!pathIsActiveSegment && !existing.AllowSamePathExtension)");
+        AssertContains(source, "AllowSamePathExtension = pathIsActiveSegment");
+        AssertContains(source, "FLASHBACK_BUFFER_SEGMENT_EXTEND");
         AssertContains(source, "if (_completedSegments.Count > 0 && startPts < _completedSegments[^1].EndPts)");
         AssertContains(source, "FLASHBACK_BUFFER_SEGMENT_SKIP reason=non_monotonic");
         AssertContains(source, "private bool IsPathInSessionDirectory(string path)");
@@ -2984,8 +2992,9 @@ static partial class Program
         AssertContains(source, "var safeSizeBytes = Math.Max(0, sizeBytes);");
         AssertContains(source, "private int _completedSegmentSequence;");
         AssertContains(source, "var sequenceNumber = _completedSegmentSequence++;");
-        AssertContains(source, "_completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes));");
+        AssertContains(source, "_completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes)\n            {\n                AllowSamePathExtension = pathIsActiveSegment\n            });");
         AssertContains(source, "_completedSegmentBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeSizeBytes);");
+        AssertContains(source, "_previousActiveSegmentBytes = pathIsActiveSegment ? safeSizeBytes : 0;");
         AssertContains(source, "_completedSegmentSequence = 0;");
 
         var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
@@ -3029,6 +3038,17 @@ static partial class Program
 
             AssertEqual(1, (int)GetPrivateField(manager, "_completedSegmentSequence")!, "Duplicate segment path should not allocate sequence");
             AssertEqual(1000L, GetLongProperty(manager, "TotalBytesWritten"), "Duplicate segment path should not update bytes");
+
+            onSegmentCompleted.Invoke(manager, new object[]
+            {
+                Path.Combine(tempDir, ".", "segment-0.ts"),
+                TimeSpan.FromSeconds(5),
+                TimeSpan.FromSeconds(8),
+                1500L
+            });
+
+            AssertEqual(1, (int)GetPrivateField(manager, "_completedSegmentSequence")!, "Non-active duplicate segment growth should not allocate sequence");
+            AssertEqual(1000L, GetLongProperty(manager, "TotalBytesWritten"), "Non-active duplicate segment growth should not update bytes");
 
             onSegmentCompleted.Invoke(manager, new object[]
             {
@@ -3127,7 +3147,9 @@ static partial class Program
         AssertContains(source, "EndPtsMs = (long)activeEndPts.TotalMilliseconds,");
         AssertContains(source, "SizeBytes = activeSizeBytes,");
         AssertContains(source, "var safeActiveSegmentBytes = Math.Max(0, activeSegmentBytes);");
-        AssertContains(source, "_totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeActiveSegmentBytes);");
+        AssertContains(source, "var accountedActiveSegmentBytes = safeActiveSegmentBytes;");
+        AssertContains(source, "accountedActiveSegmentBytes = SubtractNonNegative(safeActiveSegmentBytes, _completedSegments[^1].SizeBytes);");
+        AssertContains(source, "_totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, accountedActiveSegmentBytes);");
         AssertContains(source, "_completedSegmentBytes = GetCompletedSegmentBytesSaturated();");
         AssertContains(source, "private long GetCompletedSegmentBytesSaturated()");
         AssertContains(source, "_totalDiskBytes = SubtractNonNegative(_totalDiskBytes, freedBytes);");
@@ -3185,6 +3207,76 @@ static partial class Program
 
         updateDiskBytes.Invoke(manager, new object[] { 100L });
         AssertEqual(1300L, GetLongProperty(manager, "TotalBytesWritten"), "First bytes from next segment counted after rotation");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task FlashbackBufferManager_SamePathCompletionExtendsLatestSegment()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fbtest_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var manager = CreateInitializedBufferManager(tempDir);
+
+        try
+        {
+            var onSegmentCompleted = manager.GetType().GetMethod("OnSegmentCompleted")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.OnSegmentCompleted not found.");
+            var updateDiskBytes = manager.GetType().GetMethod("UpdateDiskBytes")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.UpdateDiskBytes not found.");
+            var getValidSegmentPaths = manager.GetType().GetMethod("GetValidSegmentPaths")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.GetValidSegmentPaths not found.");
+            var getSegmentInfoList = manager.GetType().GetMethod("GetSegmentInfoList")
+                ?? throw new InvalidOperationException("FlashbackBufferManager.GetSegmentInfoList not found.");
+
+            var activePath = (string)GetPrivateField(manager, "_activeSegmentPath")!;
+            File.WriteAllBytes(activePath, new byte[] { 0x47 });
+
+            updateDiskBytes.Invoke(manager, new object[] { 1000L });
+            onSegmentCompleted.Invoke(manager, new object[]
+            {
+                activePath,
+                TimeSpan.Zero,
+                TimeSpan.FromSeconds(10),
+                1000L
+            });
+            AssertEqual(1000L, GetLongProperty(manager, "TotalDiskBytes"), "Initial same-path completion tracks one physical active file");
+            AssertEqual(1000L, GetLongProperty(manager, "TotalBytesWritten"), "Initial same-path completion does not double count active bytes");
+
+            updateDiskBytes.Invoke(manager, new object[] { 1500L });
+            AssertEqual(1500L, GetLongProperty(manager, "TotalDiskBytes"), "Same active file growth is counted as a delta after completion");
+            AssertEqual(1500L, GetLongProperty(manager, "TotalBytesWritten"), "Same active file growth advances monotonic bytes by delta");
+
+            onSegmentCompleted.Invoke(manager, new object[]
+            {
+                Path.Combine(tempDir, ".", Path.GetFileName(activePath)),
+                TimeSpan.FromSeconds(10),
+                TimeSpan.FromSeconds(20),
+                2000L
+            });
+
+            var paths = ((IEnumerable<string>)getValidSegmentPaths.Invoke(manager, new object[]
+            {
+                TimeSpan.FromSeconds(15),
+                TimeSpan.FromSeconds(19)
+            })!).ToArray();
+            AssertEqual(1, paths.Length, "Extended same-path segment remains exportable for tail range");
+            AssertEqual(activePath, paths[0], "Extended same-path segment export path");
+            AssertEqual(1, (int)GetPrivateField(manager, "_completedSegmentSequence")!, "Same-path extension keeps original segment sequence");
+            AssertEqual(2000L, GetLongProperty(manager, "TotalDiskBytes"), "Extended same-path completion updates completed disk bytes");
+            AssertEqual(2000L, GetLongProperty(manager, "TotalBytesWritten"), "Extended same-path completion advances monotonic bytes by growth delta");
+
+            var infos = ((System.Collections.IEnumerable)getSegmentInfoList.Invoke(manager, Array.Empty<object>())!)
+                .Cast<object>()
+                .ToArray();
+            var completedInfo = infos.First(info => GetPropertyValue(info, "IsActive") is false);
+            AssertEqual(0L, (long)GetPropertyValue(completedInfo, "StartPtsMs")!, "Extended segment keeps original start");
+            AssertEqual(20_000L, (long)GetPropertyValue(completedInfo, "EndPtsMs")!, "Extended segment updates end");
+            AssertEqual(2000L, (long)GetPropertyValue(completedInfo, "SizeBytes")!, "Extended segment updates size");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
 
         return Task.CompletedTask;
     }

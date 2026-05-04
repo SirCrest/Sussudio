@@ -50,7 +50,10 @@ internal sealed class FlashbackBufferManager : IDisposable
     private long _completedSegmentBytes; // running total — avoids iterating the list
     private long _previousActiveSegmentBytes; // for monotonic written counter
 
-    private record CompletedSegment(string Path, int SequenceNumber, TimeSpan StartPts, TimeSpan EndPts, long SizeBytes);
+    private record CompletedSegment(string Path, int SequenceNumber, TimeSpan StartPts, TimeSpan EndPts, long SizeBytes)
+    {
+        public bool AllowSamePathExtension { get; init; }
+    }
     private record StartupCacheCandidate(string Path, DateTime LastActivityUtc, long SizeBytes);
     private record StartupCacheCleanupResult(
         long BudgetBytes,
@@ -980,9 +983,15 @@ internal sealed class FlashbackBufferManager : IDisposable
                 return;
             }
 
-            if (_completedSegments.Any(seg => IsSameSegmentPath(seg.Path, path)))
+            var pathIsActiveSegment = IsSameSegmentPath(_activeSegmentPath, path);
+            var existingIndex = _completedSegments.FindIndex(seg => IsSameSegmentPath(seg.Path, path));
+            if (existingIndex >= 0)
             {
-                Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=duplicate_path path='{Path.GetFileName(path)}'");
+                if (!TryExtendCompletedSegment(existingIndex, path, startPts, endPts, safeSizeBytes, pathIsActiveSegment))
+                {
+                    Logger.Log($"FLASHBACK_BUFFER_SEGMENT_SKIP reason=duplicate_path path='{Path.GetFileName(path)}'");
+                }
+
                 return;
             }
 
@@ -1000,11 +1009,13 @@ internal sealed class FlashbackBufferManager : IDisposable
                 Interlocked.Add(ref _totalBytesWritten, safeSizeBytes - _previousActiveSegmentBytes);
             }
 
-            _previousActiveSegmentBytes = 0;
-
             var sequenceNumber = _completedSegmentSequence++;
-            _completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes));
+            _completedSegments.Add(new CompletedSegment(path, sequenceNumber, startPts, endPts, safeSizeBytes)
+            {
+                AllowSamePathExtension = pathIsActiveSegment
+            });
             _completedSegmentBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeSizeBytes);
+            _previousActiveSegmentBytes = pathIsActiveSegment ? safeSizeBytes : 0;
             Logger.Log($"FLASHBACK_BUFFER_SEGMENT_COMPLETE seq={sequenceNumber} path='{Path.GetFileName(path)}' start_ms={(long)startPts.TotalMilliseconds} end_ms={(long)endPts.TotalMilliseconds} size_bytes={safeSizeBytes}");
 
             if (!(Volatile.Read(ref _evictionPauseCount) > 0))
@@ -1012,6 +1023,64 @@ internal sealed class FlashbackBufferManager : IDisposable
                 EvictOldestSegments();
             }
         }
+    }
+
+    private bool TryExtendCompletedSegment(
+        int existingIndex,
+        string path,
+        TimeSpan startPts,
+        TimeSpan endPts,
+        long sizeBytes,
+        bool pathIsActiveSegment)
+    {
+        if (existingIndex != _completedSegments.Count - 1)
+        {
+            return false;
+        }
+
+        var existing = _completedSegments[existingIndex];
+        var extendedStartPts = startPts < existing.StartPts ? startPts : existing.StartPts;
+        var extendedEndPts = endPts > existing.EndPts ? endPts : existing.EndPts;
+        var extendedSizeBytes = Math.Max(existing.SizeBytes, sizeBytes);
+        if (extendedStartPts == existing.StartPts &&
+            extendedEndPts == existing.EndPts &&
+            extendedSizeBytes == existing.SizeBytes)
+        {
+            return false;
+        }
+
+        if (!pathIsActiveSegment && !existing.AllowSamePathExtension)
+        {
+            return false;
+        }
+
+        if (extendedSizeBytes >= _previousActiveSegmentBytes)
+        {
+            Interlocked.Add(ref _totalBytesWritten, extendedSizeBytes - _previousActiveSegmentBytes);
+        }
+
+        var sizeDeltaBytes = SubtractNonNegative(extendedSizeBytes, existing.SizeBytes);
+        _completedSegments[existingIndex] = existing with
+        {
+            StartPts = extendedStartPts,
+            EndPts = extendedEndPts,
+            SizeBytes = extendedSizeBytes,
+            AllowSamePathExtension = pathIsActiveSegment
+        };
+        _completedSegmentBytes = AddNonNegativeSaturated(_completedSegmentBytes, sizeDeltaBytes);
+        _previousActiveSegmentBytes = pathIsActiveSegment ? extendedSizeBytes : 0;
+        _totalDiskBytes = Math.Max(_totalDiskBytes, _completedSegmentBytes);
+        Logger.Log(
+            $"FLASHBACK_BUFFER_SEGMENT_EXTEND seq={existing.SequenceNumber} path='{Path.GetFileName(path)}' " +
+            $"start_ms={(long)extendedStartPts.TotalMilliseconds} end_ms={(long)extendedEndPts.TotalMilliseconds} " +
+            $"size_bytes={extendedSizeBytes} size_delta_bytes={sizeDeltaBytes}");
+
+        if (!(Volatile.Read(ref _evictionPauseCount) > 0))
+        {
+            EvictOldestSegments();
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -1283,6 +1352,14 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
 
             var safeActiveSegmentBytes = Math.Max(0, activeSegmentBytes);
+            var accountedActiveSegmentBytes = safeActiveSegmentBytes;
+            if (_activeSegmentPath != null &&
+                _completedSegments.Count > 0 &&
+                IsSameSegmentPath(_completedSegments[^1].Path, _activeSegmentPath))
+            {
+                accountedActiveSegmentBytes = SubtractNonNegative(safeActiveSegmentBytes, _completedSegments[^1].SizeBytes);
+            }
+
             // Track monotonic bytes written: when active segment grows, add the delta.
             // On rotation activeSegmentBytes resets to 0 — the completed segment's bytes
             // were already added to _completedSegmentBytes via CompleteSegment, so we just
@@ -1291,7 +1368,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 Interlocked.Add(ref _totalBytesWritten, safeActiveSegmentBytes - _previousActiveSegmentBytes);
             _previousActiveSegmentBytes = safeActiveSegmentBytes;
 
-            _totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, safeActiveSegmentBytes);
+            _totalDiskBytes = AddNonNegativeSaturated(_completedSegmentBytes, accountedActiveSegmentBytes);
 
             if (!(Volatile.Read(ref _evictionPauseCount) > 0) && _totalDiskBytes > _options.MaxDiskBytes)
             {
