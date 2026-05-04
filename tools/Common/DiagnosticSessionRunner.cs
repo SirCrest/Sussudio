@@ -761,10 +761,14 @@ public static class DiagnosticSessionRunner
         var lastSnapshot = samples.Count > 0
             ? samples[^1].Snapshot
             : initialSnapshot;
-        var healthStatus = GetString(lastSnapshot, "DiagnosticHealthStatus") ?? "Unknown";
-        var likelyStage = GetString(lastSnapshot, "DiagnosticLikelyStage") ?? "diagnostic_unavailable";
-        var summary = GetString(lastSnapshot, "DiagnosticSummary") ?? string.Empty;
-        var evidence = GetString(lastSnapshot, "DiagnosticEvidence") ?? string.Empty;
+        var finalSnapshotResponse = await SendAsync("GetSnapshot", null, null).ConfigureAwait(false);
+        var healthSnapshot = TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot)
+            ? finalSnapshot
+            : lastSnapshot;
+        var healthStatus = GetString(healthSnapshot, "DiagnosticHealthStatus") ?? "Unknown";
+        var likelyStage = GetString(healthSnapshot, "DiagnosticLikelyStage") ?? "diagnostic_unavailable";
+        var summary = GetString(healthSnapshot, "DiagnosticSummary") ?? string.Empty;
+        var evidence = GetString(healthSnapshot, "DiagnosticEvidence") ?? string.Empty;
         var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(initialSnapshot, samples, lastSnapshot);
         var playbackEndSnapshot = playbackSessionMetrics.EndSnapshot;
         var playbackPendingAtEnd = playbackSessionMetrics.Observed

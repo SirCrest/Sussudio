@@ -812,6 +812,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackExportMaxOutputBytesObserved");
         AssertContains(diagnosticSessionText, "FlashbackExportMaxThroughputBytesPerSecObserved");
         AssertContains(diagnosticSessionText, "BuildFlashbackExportSessionMetrics(initialSnapshot, samples, lastSnapshot)");
+        AssertContains(diagnosticSessionText, "var healthSnapshot = TryGetSnapshot(finalSnapshotResponse, out var finalSnapshot)");
         AssertContains(diagnosticSessionText, "exportId > baselineExportId");
         AssertContains(diagnosticSessionText, "baselineExportActive && exportId == baselineExportId");
         AssertContains(diagnosticSessionText, "lastExportId == exportId");

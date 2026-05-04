@@ -572,7 +572,7 @@ static partial class Program
         {
             var requests = await CapturePipeRequestsAsync(
                     pipeName,
-                    expectedCount: 3,
+                    expectedCount: 4,
                     async () =>
                     {
                         result = await InvokeMcpToolStringAsync(
@@ -639,7 +639,7 @@ static partial class Program
                                }
                              }
                              """,
-                        _ => """
+                        2 => """
                              {
                                "Success": true,
                                "Data": [
@@ -649,6 +649,18 @@ static partial class Program
                                  }
                                ]
                              }
+                             """,
+                        _ => """
+                             {
+                               "Success": true,
+                               "Snapshot": {
+                                 "DiagnosticHealthStatus": "Healthy",
+                                 "DiagnosticLikelyStage": "none",
+                                 "DiagnosticSummary": "No degraded frame lane detected.",
+                                 "DiagnosticEvidence": "All monitored frame lanes are within current thresholds.",
+                                 "FrameLedgerRecentEvents": []
+                               }
+                             }
                              """
                     })
                 .ConfigureAwait(false);
@@ -656,6 +668,7 @@ static partial class Program
             AssertCommandRequest(requests[0], "GetSnapshot");
             AssertCommandRequest(requests[1], "GetSnapshot");
             AssertCommandRequest(requests[2], "GetPerformanceTimeline", ("maxEntries", 240));
+            AssertCommandRequest(requests[3], "GetSnapshot");
             AssertContains(result, "== Diagnostic Session: PASS ==");
             AssertContains(result, "Health: Healthy | Stage: none");
             AssertContains(result, "Preview D3D Perf: onePercentLowFpsEnd=0 onePercentLowFpsMin=0 missedRefreshDelta=3 statsFailureDelta=1 maxRecentSlowFrames=1 latestSlowReason=present_interval overBudgetMs=1.5 presentIntervalMs=9.8 totalFrameCpuMs=4.2 presentCallMs=0.7 pending=1");
