@@ -101,6 +101,13 @@ internal sealed partial class D3D11PreviewRenderer
 
                 try
                 {
+                    if (frame.SubmissionGeneration != Interlocked.Read(ref _submissionGeneration))
+                    {
+                        var reason = Volatile.Read(ref _submissionGenerationDropReason);
+                        TrackFrameDropped(frame, string.IsNullOrWhiteSpace(reason) ? "stale-generation" : $"{reason}:stale");
+                        continue;
+                    }
+
                     WaitForFrameLatencySignal();
                     var framesRenderedBefore = Interlocked.Read(ref _framesRendered);
                     RenderFrame(frame);

@@ -20,7 +20,7 @@ using Vortice.Mathematics;
 
 namespace Sussudio.Services.Preview;
 
-internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreviewDisplayClock, IDisposable
+internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreviewFrameQueueControl, IPreviewDisplayClock, IDisposable
 {
     private const int FrameCaptureTimeoutMs = 5000;
     private const string RendererModeNone = "None";
@@ -260,6 +260,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
         public long SourceSequenceNumber { get; }
         public long PreviewPresentId { get; }
         public long SchedulerSubmitTick { get; }
+        public long SubmissionGeneration { get; set; }
 
         public void Dispose()
         {
@@ -487,7 +488,9 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
     private long _lastDroppedSourceSequenceNumber = -1;
     private long _lastDroppedQpc;
     private long _lastDroppedUtcUnixMs;
+    private long _submissionGeneration;
     private string _lastDropReason = string.Empty;
+    private string _submissionGenerationDropReason = "transition";
 
     private TaskCompletionSource<PreviewFrameCaptureResult>? _frameCaptureRequest;
     private int _frameCaptureEncodeInProgress;
@@ -1215,6 +1218,7 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
                 return;
             }
 
+            frame.SubmissionGeneration = Interlocked.Read(ref _submissionGeneration);
             var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);
             _pendingFrames.Enqueue(frame);
             TrackFrameSubmitted(frame);
@@ -1281,6 +1285,38 @@ internal sealed partial class D3D11PreviewRenderer : IPreviewFrameSink, IPreview
 
         frame = null!;
         return false;
+    }
+
+    public int DropPendingFrames(string reason)
+    {
+        var normalizedReason = string.IsNullOrWhiteSpace(reason)
+            ? "explicit-drain"
+            : reason.Trim();
+        var dropped = 0;
+        Volatile.Write(ref _submissionGenerationDropReason, normalizedReason);
+        Interlocked.Increment(ref _submissionGeneration);
+        lock (_lifecycleLock)
+        {
+            while (TryDequeuePendingFrame(out var stale))
+            {
+                TrackFrameDropped(stale, normalizedReason);
+                stale.Dispose();
+                dropped++;
+            }
+        }
+
+        if (dropped > 0)
+        {
+            Logger.Log($"D3D11_PREVIEW_PENDING_DRAIN reason={normalizedReason} dropped={dropped}");
+            if (_pendingFrames.IsEmpty &&
+                Volatile.Read(ref _compositionTransformDirty) == 0 &&
+                Volatile.Read(ref _sharedDeviceResetPending) == 0)
+            {
+                ResetFrameReady("pending_drain");
+            }
+        }
+
+        return dropped;
     }
 
     private void DecrementPendingFrameCount()

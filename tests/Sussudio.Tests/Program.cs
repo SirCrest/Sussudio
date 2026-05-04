@@ -438,6 +438,9 @@ static partial class Program
                 "D3D preview diagnostics expose swap-chain and render timing contract",
                 D3D11PreviewRenderer_DiagnosticsContract_ExposesSwapChainAndRenderTiming),
             await RunCheckAsync(
+                "D3D preview transition drain drops pending frames",
+                D3D11PreviewRenderer_DropPendingFrames_DrainsQueueAndMarksGeneration),
+            await RunCheckAsync(
                 "D3D preview frame capture cancellation clears pending request",
                 D3D11PreviewRenderer_FrameCaptureCancellationClearsPendingRequest),
             await RunCheckAsync(

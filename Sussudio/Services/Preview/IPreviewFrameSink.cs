@@ -14,6 +14,11 @@ internal interface IPreviewDisplayClock
     bool TryGetDisplayClock(out PreviewDisplayClockSnapshot snapshot);
 }
 
+internal interface IPreviewFrameQueueControl
+{
+    int DropPendingFrames(string reason);
+}
+
 internal interface IPreviewFrameSink
 {
     /// <summary>

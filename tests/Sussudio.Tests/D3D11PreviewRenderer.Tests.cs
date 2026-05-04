@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -155,6 +156,7 @@ static partial class Program
         var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
         var source = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.cs");
         var renderSource = ReadRepoFile("Sussudio/Services/Preview/D3D11PreviewRenderer.Rendering.cs");
+        var captureSource = ReadRepoFile("Sussudio/Services/Capture/UnifiedVideoCapture.cs");
         AssertContains(source, "SUSSUDIO_PREVIEW_RENDER_MMCSS_TASK\") ?? \"Playback\"");
         AssertContains(source, "SUSSUDIO_PREVIEW_DXGI_FRAME_STATS_SAMPLE_INTERVAL");
         AssertContains(source, "private long _dxgiFrameStatisticsFrameCounter;");
@@ -170,6 +172,10 @@ static partial class Program
         AssertContains(source, "frameStatisticsLastSampleFrameCounter == frameStatisticsFrameCounter");
         AssertContains(source, "private int _pendingFrameCount;");
         AssertContains(source, "public int PendingFrameCount => Math.Max(0, Volatile.Read(ref _pendingFrameCount));");
+        AssertContains(source, "IPreviewFrameQueueControl");
+        AssertContains(source, "public int DropPendingFrames(string reason)");
+        AssertContains(source, "Interlocked.Increment(ref _submissionGeneration);");
+        AssertContains(source, "frame.SubmissionGeneration = Interlocked.Read(ref _submissionGeneration);");
         AssertContains(source, "var pendingFrameCount = Interlocked.Increment(ref _pendingFrameCount);\n            _pendingFrames.Enqueue(frame);");
         AssertContains(source, "private void SignalFrameReady(string operation)");
         AssertContains(source, "private void ResetFrameReady(string operation)");
@@ -188,8 +194,13 @@ static partial class Program
         AssertDoesNotContain(source, "TrackFrameDropped(oldest, \"renderer-backlog\");\n                    oldest.Dispose();\n                    Interlocked.Increment(ref _framesDropped);");
         AssertDoesNotContain(renderSource, "_pendingFrames.TryDequeue");
         AssertContains(renderSource, "var framesRenderedBefore = Interlocked.Read(ref _framesRendered);");
+        AssertContains(renderSource, "frame.SubmissionGeneration != Interlocked.Read(ref _submissionGeneration)");
         AssertContains(renderSource, "if (Interlocked.Read(ref _framesRendered) == framesRenderedBefore)\n                    {\n                        TrackFrameDropped(frame, \"render-skipped\");\n                    }");
+        AssertContains(captureSource, "DropPendingPreviewFrames(\"live-preview-suppressed\")");
+        AssertContains(captureSource, "DropPendingPreviewFrames(\"live-preview-resumed\")");
+        AssertContains(captureSource, "queueControl.DropPendingFrames(reason)");
         AssertNotNull(rendererType.GetProperty("SwapChainAddress", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.SwapChainAddress");
+        AssertNotNull(rendererType.GetMethod("DropPendingFrames", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.DropPendingFrames");
         AssertNotNull(rendererType.GetMethod("GetRenderCpuTimingMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetRenderCpuTimingMetrics");
         AssertNotNull(rendererType.GetMethod("GetPipelineLatencyMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetPipelineLatencyMetrics");
         AssertNotNull(rendererType.GetMethod("GetFrameOwnershipMetrics", BindingFlags.Public | BindingFlags.Instance), "D3D11PreviewRenderer.GetFrameOwnershipMetrics");
@@ -511,6 +522,112 @@ static partial class Program
         }
 
         return Task.CompletedTask;
+    }
+
+    private static Task D3D11PreviewRenderer_DropPendingFrames_DrainsQueueAndMarksGeneration()
+    {
+        var rendererType = RequireType("Sussudio.Services.Preview.D3D11PreviewRenderer");
+        var pendingFrameType = rendererType.GetNestedType("PendingFrame", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("PendingFrame nested type not found.");
+        var queueType = typeof(System.Collections.Concurrent.ConcurrentQueue<>).MakeGenericType(pendingFrameType);
+        var renderer = System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(rendererType);
+        SetPrivateField(renderer, "_lifecycleLock", new object());
+        SetPrivateField(renderer, "_pendingFrames", Activator.CreateInstance(queueType));
+        SetPrivateField(renderer, "_frameReadyEvent", new System.Threading.ManualResetEventSlim(false));
+        SetPrivateField(renderer, "_renderThread", System.Threading.Thread.CurrentThread);
+        SetPrivateField(renderer, "_maxPendingFrames", 4);
+
+        InvokeNonPublicInstanceMethod(
+            renderer,
+            "EnqueuePendingFrame",
+            new[] { CreateRawPendingD3DFrame(pendingFrameType, 101L, 1001L) });
+        InvokeNonPublicInstanceMethod(
+            renderer,
+            "EnqueuePendingFrame",
+            new[] { CreateRawPendingD3DFrame(pendingFrameType, 102L, 1002L) });
+
+        AssertEqual(2, Convert.ToInt32(GetPropertyValue(renderer, "PendingFrameCount")), "pending frame count before drain");
+        AssertEqual(2L, Convert.ToInt64(GetPropertyValue(renderer, "FramesSubmitted")), "frames submitted before drain");
+        AssertEqual(0L, Convert.ToInt64(GetPropertyValue(renderer, "FramesDropped")), "frames dropped before drain");
+
+        var dropMethod = rendererType.GetMethod("DropPendingFrames", BindingFlags.Public | BindingFlags.Instance)
+            ?? throw new InvalidOperationException("DropPendingFrames method not found.");
+        var dropped = Convert.ToInt32(dropMethod.Invoke(renderer, new object[] { "flashback-go-live" }));
+
+        AssertEqual(2, dropped, "pending frames drained");
+        AssertEqual(0, Convert.ToInt32(GetPropertyValue(renderer, "PendingFrameCount")), "pending frame count after drain");
+        AssertEqual(2L, Convert.ToInt64(GetPropertyValue(renderer, "FramesDropped")), "frames dropped after drain");
+        AssertEqual(1L, GetLongPrivateField(renderer, "_submissionGeneration"), "submission generation after drain");
+        AssertEqual("flashback-go-live", GetStringPrivateField(renderer, "_submissionGenerationDropReason"), "submission generation reason");
+
+        var ownership = rendererType.GetMethod("GetFrameOwnershipMetrics", BindingFlags.Public | BindingFlags.Instance)!
+            .Invoke(renderer, Array.Empty<object>())
+            ?? throw new InvalidOperationException("GetFrameOwnershipMetrics returned null.");
+        AssertEqual("flashback-go-live", GetPropertyValue(ownership, "LastDropReason") as string, "last D3D drop reason");
+        AssertEqual(1002L, Convert.ToInt64(GetPropertyValue(ownership, "LastDroppedPreviewPresentId")), "last dropped preview present id");
+        AssertEqual(102L, Convert.ToInt64(GetPropertyValue(ownership, "LastDroppedSourceSequenceNumber")), "last dropped source sequence");
+
+        var staleFrame = CreateRawPendingD3DFrame(pendingFrameType, 103L, 1003L);
+        pendingFrameType.GetProperty("SubmissionGeneration", BindingFlags.Public | BindingFlags.Instance)!
+            .SetValue(staleFrame, 0L);
+        var staleGeneration = Convert.ToInt64(pendingFrameType.GetProperty("SubmissionGeneration")!.GetValue(staleFrame));
+        AssertEqual(true, staleGeneration != GetLongPrivateField(renderer, "_submissionGeneration"), "stale frame generation is rejected by render loop contract");
+        ((IDisposable)staleFrame).Dispose();
+
+        return Task.CompletedTask;
+
+        static object CreateRawPendingD3DFrame(Type pendingFrameType, long sourceSequenceNumber, long previewPresentId)
+        {
+            var constructor = pendingFrameType.GetConstructors(BindingFlags.Public | BindingFlags.Instance)
+                .Single(ctor => ctor.GetParameters().Any(parameter => parameter.Name == "rawData"));
+            var args = constructor.GetParameters()
+                .Select(parameter =>
+                {
+                    if (string.Equals(parameter.Name, "rawData", StringComparison.Ordinal))
+                    {
+                        return null;
+                    }
+
+                    if (string.Equals(parameter.Name, "rawDataLength", StringComparison.Ordinal))
+                    {
+                        return 0;
+                    }
+
+                    if (string.Equals(parameter.Name, "width", StringComparison.Ordinal) ||
+                        string.Equals(parameter.Name, "height", StringComparison.Ordinal))
+                    {
+                        return 16;
+                    }
+
+                    if (string.Equals(parameter.Name, "isHdr", StringComparison.Ordinal))
+                    {
+                        return false;
+                    }
+
+                    if (string.Equals(parameter.Name, "arrivalTick", StringComparison.Ordinal) ||
+                        string.Equals(parameter.Name, "schedulerSubmitTick", StringComparison.Ordinal))
+                    {
+                        return Stopwatch.GetTimestamp();
+                    }
+
+                    if (string.Equals(parameter.Name, "sourceSequenceNumber", StringComparison.Ordinal))
+                    {
+                        return sourceSequenceNumber;
+                    }
+
+                    if (string.Equals(parameter.Name, "previewPresentId", StringComparison.Ordinal))
+                    {
+                        return previewPresentId;
+                    }
+
+                    return parameter.ParameterType.IsValueType
+                        ? Activator.CreateInstance(parameter.ParameterType)
+                        : null;
+                })
+                .ToArray();
+            return constructor.Invoke(args)
+                   ?? throw new InvalidOperationException("PendingFrame constructor returned null.");
+        }
     }
 
     private static Task D3D11PreviewRenderer_FrameCaptureCancellationClearsPendingRequest()
