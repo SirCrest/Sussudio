@@ -519,6 +519,12 @@ static partial class Program
                 "MCP performance timeline renders flashback command counters",
                 McpPerformanceTimelineTool_RendersFlashbackCommandCounters),
             await RunCheckAsync(
+                "MCP frame pacing verdict flags half-rate preview and playback",
+                McpFramePacingVerdictTool_FlagsHalfRatePreviewAndPlayback),
+            await RunCheckAsync(
+                "MCP frame pacing verdict flags insufficient sample duration",
+                McpFramePacingVerdictTool_FlagsInsufficientSampleDuration),
+            await RunCheckAsync(
                 "MCP wait tool routes condition waits",
                 McpWaitTools_RouteConditionWaits),
             await RunCheckAsync(

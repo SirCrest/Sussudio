@@ -994,12 +994,20 @@ public sealed class PerformanceTimelineEntry
     public double CaptureCadenceP99Ms { get; init; }
     public double CaptureCadenceMaxMs { get; init; }
     public double CaptureCadenceOnePercentLowFps { get; init; }
+    public double CaptureCadenceFivePercentLowFps { get; init; }
     public double PreviewCadenceAverageMs { get; init; }
     public double PreviewCadenceP95Ms { get; init; }
     public double PreviewCadenceP99Ms { get; init; }
     public double PreviewCadenceMaxMs { get; init; }
     public double PreviewCadenceOnePercentLowFps { get; init; }
+    public double PreviewCadenceFivePercentLowFps { get; init; }
     public double PreviewCadenceSlowFramePercent { get; init; }
+    public double VisualCadenceChangeObservedFps { get; init; }
+    public double VisualCadenceRepeatFramePercent { get; init; }
+    public string VisualCadenceMotionConfidence { get; init; } = string.Empty;
+    public double MjpegPacketHashInputObservedFps { get; init; }
+    public double MjpegPacketHashUniqueObservedFps { get; init; }
+    public double MjpegPacketHashDuplicateFramePercent { get; init; }
     public bool MjpegPreviewJitterEnabled { get; init; }
     public int MjpegPreviewJitterTargetDepth { get; init; }
     public int MjpegPreviewJitterMaxDepth { get; init; }
@@ -1041,6 +1049,7 @@ public sealed class PerformanceTimelineEntry
     public double FlashbackPlaybackP99FrameMs { get; init; }
     public double FlashbackPlaybackMaxFrameMs { get; init; }
     public double FlashbackPlaybackOnePercentLowFps { get; init; }
+    public double FlashbackPlaybackFivePercentLowFps { get; init; }
     public double FlashbackPlaybackSlowFramePercent { get; init; }
     public double FlashbackPlaybackDecodeP99Ms { get; init; }
     public double FlashbackPlaybackDecodeMaxMs { get; init; }

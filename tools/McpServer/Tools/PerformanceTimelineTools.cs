@@ -50,12 +50,20 @@ public static class PerformanceTimelineTools
                 CaptureP99Ms = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceP99Ms"),
                 CaptureMaxMs = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceMaxMs"),
                 CaptureOnePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceOnePercentLowFps"),
+                CaptureFivePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "CaptureCadenceFivePercentLowFps"),
                 PreviewAvgMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceAverageMs"),
                 PreviewP95Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceP95Ms"),
                 PreviewP99Ms = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceP99Ms"),
                 PreviewMaxMs = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceMaxMs"),
                 PreviewOnePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceOnePercentLowFps"),
+                PreviewFivePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceFivePercentLowFps"),
                 PreviewSlowPct = AutomationSnapshotFormatter.GetDouble(item, "PreviewCadenceSlowFramePercent"),
+                VisualCadenceChangeObservedFps = AutomationSnapshotFormatter.GetDouble(item, "VisualCadenceChangeObservedFps"),
+                VisualCadenceRepeatFramePercent = AutomationSnapshotFormatter.GetDouble(item, "VisualCadenceRepeatFramePercent"),
+                VisualCadenceMotionConfidence = AutomationSnapshotFormatter.Get(item, "VisualCadenceMotionConfidence"),
+                MjpegPacketHashInputObservedFps = AutomationSnapshotFormatter.GetDouble(item, "MjpegPacketHashInputObservedFps"),
+                MjpegPacketHashUniqueObservedFps = AutomationSnapshotFormatter.GetDouble(item, "MjpegPacketHashUniqueObservedFps"),
+                MjpegPacketHashDuplicateFramePercent = AutomationSnapshotFormatter.GetDouble(item, "MjpegPacketHashDuplicateFramePercent"),
                 MjpegPreviewJitterEnabled = AutomationSnapshotFormatter.GetBool(item, "MjpegPreviewJitterEnabled"),
                 MjpegPreviewJitterTargetDepth = AutomationSnapshotFormatter.GetInt(item, "MjpegPreviewJitterTargetDepth"),
                 MjpegPreviewJitterMaxDepth = AutomationSnapshotFormatter.GetInt(item, "MjpegPreviewJitterMaxDepth"),
@@ -96,6 +104,7 @@ public static class PerformanceTimelineTools
                 FlashbackPlaybackP99FrameMs = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackP99FrameMs"),
                 FlashbackPlaybackMaxFrameMs = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackMaxFrameMs"),
                 FlashbackPlaybackOnePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackOnePercentLowFps"),
+                FlashbackPlaybackFivePercentLowFps = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackFivePercentLowFps"),
                 FlashbackPlaybackSlowFramePercent = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackSlowFramePercent"),
                 FlashbackPlaybackDecodeP99Ms = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackDecodeP99Ms"),
                 FlashbackPlaybackDecodeMaxMs = AutomationSnapshotFormatter.GetDouble(item, "FlashbackPlaybackDecodeMaxMs"),
@@ -252,8 +261,11 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Preview P95:    {first.PreviewP95Ms:F1}ms -> {last.PreviewP95Ms:F1}ms (delta: {last.PreviewP95Ms - first.PreviewP95Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview P99:    {first.PreviewP99Ms:F1}ms -> {last.PreviewP99Ms:F1}ms (delta: {last.PreviewP99Ms - first.PreviewP99Ms:+0.0;-0.0;0.0}ms)");
             builder.AppendLine($"Preview Max:    {first.PreviewMaxMs:F1}ms -> {last.PreviewMaxMs:F1}ms (delta: {last.PreviewMaxMs - first.PreviewMaxMs:+0.0;-0.0;0.0}ms)");
+            builder.AppendLine($"Preview 5% Low: {first.PreviewFivePercentLowFps:F1}fps -> {last.PreviewFivePercentLowFps:F1}fps");
             builder.AppendLine($"Preview 1% Low: {first.PreviewOnePercentLowFps:F1}fps -> {last.PreviewOnePercentLowFps:F1}fps");
             builder.AppendLine($"Preview Slow%:  {first.PreviewSlowPct:F1}% -> {last.PreviewSlowPct:F1}% (delta: {last.PreviewSlowPct - first.PreviewSlowPct:+0.0;-0.0;0.0}%)");
+            builder.AppendLine($"Visual Cadence: changes {first.VisualCadenceChangeObservedFps:F1}fps -> {last.VisualCadenceChangeObservedFps:F1}fps, repeat {first.VisualCadenceRepeatFramePercent:F1}% -> {last.VisualCadenceRepeatFramePercent:F1}%, confidence={FormatOptional(last.VisualCadenceMotionConfidence)}");
+            builder.AppendLine($"MJPEG Fingerprint: input {first.MjpegPacketHashInputObservedFps:F1}fps -> {last.MjpegPacketHashInputObservedFps:F1}fps, unique {first.MjpegPacketHashUniqueObservedFps:F1}fps -> {last.MjpegPacketHashUniqueObservedFps:F1}fps, dup {first.MjpegPacketHashDuplicateFramePercent:F1}% -> {last.MjpegPacketHashDuplicateFramePercent:F1}%");
             builder.AppendLine($"Jitter Depth:   {FormatJitterDepthCell(first)} -> {FormatJitterDepthCell(last)} enabled={last.MjpegPreviewJitterEnabled}");
             builder.AppendLine($"Jitter Latency: P95 {first.MjpegPreviewJitterLatencyP95Ms:F1}ms -> {last.MjpegPreviewJitterLatencyP95Ms:F1}ms, max latest={last.MjpegPreviewJitterLatencyMaxMs:F1}ms");
             builder.AppendLine($"Jitter Drops:   total {first.MjpegPreviewJitterTotalDropped} -> {last.MjpegPreviewJitterTotalDropped}, cleared {first.MjpegPreviewJitterClearedDropCount} -> {last.MjpegPreviewJitterClearedDropCount}, deadline {first.MjpegPreviewJitterDeadlineDropCount} -> {last.MjpegPreviewJitterDeadlineDropCount}, underflows {first.MjpegPreviewJitterUnderflowCount} -> {last.MjpegPreviewJitterUnderflowCount}, resumeReprimes {first.MjpegPreviewJitterResumeReprimeCount} -> {last.MjpegPreviewJitterResumeReprimeCount}, lastReason={FormatOptional(last.MjpegPreviewJitterLastDropReason)}");
@@ -273,7 +285,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"D3D Stat Fails: {first.PreviewD3DRecentFailures} -> {last.PreviewD3DRecentFailures} (latest-window delta: {last.PreviewD3DRecentFailures - first.PreviewD3DRecentFailures:+0;-0;0})");
             builder.AppendLine($"D3D Last Drop:  {FormatOptional(last.PreviewD3DLastDropReason)}");
             builder.AppendLine($"Flashback State:{FormatOptional(first.FlashbackPlaybackState)} -> {FormatOptional(last.FlashbackPlaybackState)}");
-            builder.AppendLine($"Flashback target:{first.FlashbackPlaybackTargetFps:F1}fps -> {last.FlashbackPlaybackTargetFps:F1}fps observed:{first.FlashbackPlaybackObservedFps:F1}fps -> {last.FlashbackPlaybackObservedFps:F1}fps 1%Low:{first.FlashbackPlaybackOnePercentLowFps:F1}fps -> {last.FlashbackPlaybackOnePercentLowFps:F1}fps");
+            builder.AppendLine($"Flashback target:{first.FlashbackPlaybackTargetFps:F1}fps -> {last.FlashbackPlaybackTargetFps:F1}fps observed:{first.FlashbackPlaybackObservedFps:F1}fps -> {last.FlashbackPlaybackObservedFps:F1}fps 5%Low:{first.FlashbackPlaybackFivePercentLowFps:F1}fps -> {last.FlashbackPlaybackFivePercentLowFps:F1}fps 1%Low:{first.FlashbackPlaybackOnePercentLowFps:F1}fps -> {last.FlashbackPlaybackOnePercentLowFps:F1}fps");
             builder.AppendLine($"Flashback P99:  {first.FlashbackPlaybackP99FrameMs:F1}ms -> {last.FlashbackPlaybackP99FrameMs:F1}ms (max latest={last.FlashbackPlaybackMaxFrameMs:F1}ms)");
             builder.AppendLine($"Flashback Decode:{first.FlashbackPlaybackDecodeP99Ms:F1}ms -> {last.FlashbackPlaybackDecodeP99Ms:F1}ms (max latest={last.FlashbackPlaybackDecodeMaxMs:F1}ms phase={FormatOptional(last.FlashbackPlaybackMaxDecodePhase)} receive={last.FlashbackPlaybackMaxDecodeReceiveMs:F1}ms feed={last.FlashbackPlaybackMaxDecodeFeedMs:F1}ms read={last.FlashbackPlaybackMaxDecodeReadMs:F1}ms send={last.FlashbackPlaybackMaxDecodeSendMs:F1}ms audio={last.FlashbackPlaybackMaxDecodeAudioMs:F1}ms convert={last.FlashbackPlaybackMaxDecodeConvertMs:F1}ms)");
             builder.AppendLine($"Flashback AudioMaster: unavailable={first.FlashbackPlaybackAudioMasterUnavailableFallbacks}->{last.FlashbackPlaybackAudioMasterUnavailableFallbacks} stale={first.FlashbackPlaybackAudioMasterStaleFallbacks}->{last.FlashbackPlaybackAudioMasterStaleFallbacks} driftOutlier={first.FlashbackPlaybackAudioMasterDriftOutlierFallbacks}->{last.FlashbackPlaybackAudioMasterDriftOutlierFallbacks} last={FormatOptional(last.FlashbackPlaybackAudioMasterLastFallbackReason)} age={last.FlashbackPlaybackAudioMasterLastFallbackClockAgeMs:F1}ms");
@@ -291,6 +303,7 @@ public static class PerformanceTimelineTools
             builder.AppendLine($"Export Range:    in={last.FlashbackExportInPointMs}ms out={FormatExportOutPoint(last.FlashbackExportOutPointMs)}");
             builder.AppendLine($"Export Output:   {FormatBytes(first.FlashbackExportOutputBytes)} -> {FormatBytes(last.FlashbackExportOutputBytes)} throughput={FormatBytesPerSecond(last.FlashbackExportThroughputBytesPerSec)} elapsed={last.FlashbackExportElapsedMs}ms lastProgressAge={last.FlashbackExportLastProgressAgeMs}ms");
             builder.AppendLine($"Capture Rate:   {first.CaptureFps:F1}fps -> {last.CaptureFps:F1}fps (derived avg)");
+            builder.AppendLine($"Capture 5% Low: {first.CaptureFivePercentLowFps:F1}fps -> {last.CaptureFivePercentLowFps:F1}fps");
             builder.AppendLine($"Capture 1% Low: {first.CaptureOnePercentLowFps:F1}fps -> {last.CaptureOnePercentLowFps:F1}fps");
             builder.AppendLine($"Preview Rate:   {first.PreviewFps:F1}fps -> {last.PreviewFps:F1}fps (derived avg)");
             builder.AppendLine($"Video Drops:    {first.VidDrops} -> {last.VidDrops} (delta: {last.VidDrops - first.VidDrops:+0;-0;0})");
@@ -457,7 +470,9 @@ public static class PerformanceTimelineTools
             $"clearedDropsDelta={NonNegativeDelta(last.MjpegPreviewJitterClearedDropCount, first.MjpegPreviewJitterClearedDropCount)} " +
             $"deadlineDropsDelta={NonNegativeDelta(last.MjpegPreviewJitterDeadlineDropCount, first.MjpegPreviewJitterDeadlineDropCount)} " +
             $"underflowsDelta={NonNegativeDelta(last.MjpegPreviewJitterUnderflowCount, first.MjpegPreviewJitterUnderflowCount)} " +
-            $"resumeReprimesDelta={NonNegativeDelta(last.MjpegPreviewJitterResumeReprimeCount, first.MjpegPreviewJitterResumeReprimeCount)}");
+            $"resumeReprimesDelta={NonNegativeDelta(last.MjpegPreviewJitterResumeReprimeCount, first.MjpegPreviewJitterResumeReprimeCount)} " +
+            $"visualChangeLatest={last.VisualCadenceChangeObservedFps:0.##}fps " +
+            $"mjpegUniqueLatest={last.MjpegPacketHashUniqueObservedFps:0.##}fps");
 
         builder.AppendLine(
             "Flashback Pressure: " +
@@ -551,12 +566,20 @@ public static class PerformanceTimelineTools
         public double CaptureP99Ms { get; init; }
         public double CaptureMaxMs { get; init; }
         public double CaptureOnePercentLowFps { get; init; }
+        public double CaptureFivePercentLowFps { get; init; }
         public double PreviewAvgMs { get; init; }
         public double PreviewP95Ms { get; init; }
         public double PreviewP99Ms { get; init; }
         public double PreviewMaxMs { get; init; }
         public double PreviewOnePercentLowFps { get; init; }
+        public double PreviewFivePercentLowFps { get; init; }
         public double PreviewSlowPct { get; init; }
+        public double VisualCadenceChangeObservedFps { get; init; }
+        public double VisualCadenceRepeatFramePercent { get; init; }
+        public string VisualCadenceMotionConfidence { get; init; } = string.Empty;
+        public double MjpegPacketHashInputObservedFps { get; init; }
+        public double MjpegPacketHashUniqueObservedFps { get; init; }
+        public double MjpegPacketHashDuplicateFramePercent { get; init; }
         public bool MjpegPreviewJitterEnabled { get; init; }
         public int MjpegPreviewJitterTargetDepth { get; init; }
         public int MjpegPreviewJitterMaxDepth { get; init; }
@@ -597,6 +620,7 @@ public static class PerformanceTimelineTools
         public double FlashbackPlaybackP99FrameMs { get; init; }
         public double FlashbackPlaybackMaxFrameMs { get; init; }
         public double FlashbackPlaybackOnePercentLowFps { get; init; }
+        public double FlashbackPlaybackFivePercentLowFps { get; init; }
         public double FlashbackPlaybackSlowFramePercent { get; init; }
         public double FlashbackPlaybackDecodeP99Ms { get; init; }
         public double FlashbackPlaybackDecodeMaxMs { get; init; }
