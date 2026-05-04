@@ -515,16 +515,22 @@ static partial class Program
         AssertContains(captureServiceText, "exportId = BeginFlashbackExportDiagnostics(inPoint, outPoint, outputPath);");
         AssertContains(captureServiceText, "var forceRotateResult = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);");
         AssertContains(captureServiceText, "segmentPaths = forceRotateResult.SegmentPaths;");
-        AssertContains(captureServiceText, "forceRotateFailed = forceRotateResult.Status == FlashbackForceRotateStatus.Failed;");
+        AssertContains(captureServiceText, "if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)");
         AssertContains(captureServiceText, "if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)");
+        var forceRotateFailedBlock = ExtractTextBetween(
+            captureServiceText,
+            "if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)",
+            "if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)");
+        AssertContains(forceRotateFailedBlock, "Flashback export failed: live-edge segment rotation failed.");
+        AssertContains(forceRotateFailedBlock, "preserved_segments={preservedArtifacts.Count}");
+        AssertContains(forceRotateFailedBlock, "return result;");
         var forceRotateFallbackBlock = ExtractTextBetween(
             captureServiceText,
             "if (segmentPaths.Count == 0)",
             "// Fallback: single-file export if no segments available");
-        AssertContains(forceRotateFallbackBlock, "var fallbackReason = forceRotateFailed ? \"force_rotate_failed\" : \"force_rotate_timeout\";");
-        AssertContains(forceRotateFallbackBlock, "if (forceRotateFailed)\n                        {\n                            result = FinalizeResult.Failure(\n                                outputPath,\n                                \"Flashback export failed: live-edge segment rotation failed.\");");
-        AssertContains(forceRotateFallbackBlock, "FLASHBACK_EXPORT_FORCE_ROTATE_FAILED");
-        AssertOccursBefore(forceRotateFallbackBlock, "if (forceRotateFailed)", "segmentPaths = null;");
+        AssertContains(forceRotateFallbackBlock, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
+        AssertDoesNotContain(forceRotateFallbackBlock, "force_rotate_failed");
+        AssertDoesNotContain(forceRotateFallbackBlock, "Flashback export failed: live-edge segment rotation failed.");
         AssertContains(captureServiceText, "evictionPaused = true;");
         AssertContains(captureServiceText, "if (exportId != 0)");
         AssertContains(captureServiceText, "if (evictionPaused)");
@@ -1015,7 +1021,10 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForFlashbackPlaybackStateAsync(");
         AssertContains(diagnosticSessionText, "actions.Add(\n            \"flashback segment playback observed \"");
         AssertDoesNotContain(diagnosticSessionText, "flashback segment playback: excessive late frames");
-        AssertContains(diagnosticSessionText, "var diagnosticHealthObservation = BuildWorstDiagnosticHealthObservation(samples, healthSnapshot);");
+        AssertContains(diagnosticSessionText, "var diagnosticHealthObservation = BuildSessionDiagnosticHealthObservation(");
+        AssertContains(diagnosticSessionText, "FlashbackDiagnosticWarmupFraction");
+        AssertContains(diagnosticSessionText, "FlashbackDiagnosticMaxWarmupMs");
+        AssertContains(diagnosticSessionText, "private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservationAfterOffset(");
         AssertContains(diagnosticSessionText, "diagnosticHealthSucceeded &&");
         AssertContains(diagnosticSessionText, "(!isFlashbackScenario || warnings.Count == 0)");
         AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-playback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-encoder-cycle\" or \"flashback-export-playback\" or \"flashback-segment-playback\" or \"flashback-range-export\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-rotated-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-settings-deferred\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");

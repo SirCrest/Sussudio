@@ -739,13 +739,28 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             FinalizeResult result;
             IReadOnlyList<string>? segmentPaths = null;
             string? tsPath = null;
-            var forceRotateFailed = false;
 
             if (flashbackSink != null)
             {
                 var forceRotateResult = flashbackSink.ForceRotateForExport(inPoint, outPoint, ct);
                 segmentPaths = forceRotateResult.SegmentPaths;
-                forceRotateFailed = forceRotateResult.Status == FlashbackForceRotateStatus.Failed;
+                if (forceRotateResult.Status == FlashbackForceRotateStatus.Failed)
+                {
+                    var preservedArtifacts = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
+                    result = FinalizeResult.Failure(
+                        outputPath,
+                        "Flashback export failed: live-edge segment rotation failed.",
+                        preservedArtifacts);
+                    RecordLastFlashbackExportResult(exportId, result);
+                    CompleteFlashbackExportDiagnostics(exportId, result);
+                    Logger.Log(
+                        "FLASHBACK_EXPORT_FORCE_ROTATE_FAILED " +
+                        $"preserved_segments={preservedArtifacts.Count} " +
+                        $"in_ms={(long)inPoint.TotalMilliseconds} " +
+                        $"out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)}");
+                    return result;
+                }
+
                 if (forceRotateResult.Status == FlashbackForceRotateStatus.CommittedPending)
                 {
                     var preservedArtifacts = bufferManager.GetValidSegmentPaths(inPoint, outPoint);
@@ -794,25 +809,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                     segmentPaths = bufferManager?.GetValidSegmentPaths(inPoint, outPoint);
                     if (segmentPaths is { Count: > 0 })
                     {
-                        var fallbackReason = forceRotateFailed ? "force_rotate_failed" : "force_rotate_timeout";
-                        Logger.Log($"FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason={fallbackReason} segments={segmentPaths.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)outPoint.TotalMilliseconds}");
+                        Logger.Log($"FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout segments={segmentPaths.Count} in_ms={(long)inPoint.TotalMilliseconds} out_ms={(long)outPoint.TotalMilliseconds}");
                     }
                     else
                     {
-                        if (forceRotateFailed)
-                        {
-                            result = FinalizeResult.Failure(
-                                outputPath,
-                                "Flashback export failed: live-edge segment rotation failed.");
-                            RecordLastFlashbackExportResult(exportId, result);
-                            CompleteFlashbackExportDiagnostics(exportId, result);
-                            Logger.Log(
-                                "FLASHBACK_EXPORT_FORCE_ROTATE_FAILED " +
-                                $"in_ms={(long)inPoint.TotalMilliseconds} " +
-                                $"out_ms={(long)(outPoint == TimeSpan.MaxValue ? -1 : outPoint.TotalMilliseconds)}");
-                            return result;
-                        }
-
                         segmentPaths = null;
                     }
                 }

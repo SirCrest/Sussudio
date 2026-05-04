@@ -221,6 +221,8 @@ public static class DiagnosticSessionRunner
     private const double FlashbackStressPlaybackWarmSeconds = 10.0;
     private const long FlashbackStressAudioUnavailableFallbackAllowance = 2;
     private const int FlashbackScrubStressMaxPlaybackPendingCommands = 20;
+    private const double FlashbackDiagnosticWarmupFraction = 0.20;
+    private const long FlashbackDiagnosticMaxWarmupMs = 10_000;
 
     private readonly record struct FlashbackSegmentProbe(
         int SequenceNumber,
@@ -1040,7 +1042,10 @@ public static class DiagnosticSessionRunner
                 warnings);
         }
 
-        var diagnosticHealthObservation = BuildWorstDiagnosticHealthObservation(samples, healthSnapshot);
+        var diagnosticHealthObservation = BuildSessionDiagnosticHealthObservation(
+            samples,
+            healthSnapshot,
+            isFlashbackScenario);
         var diagnosticHealthSucceeded = !IsFailingDiagnosticHealthSeverity(diagnosticHealthObservation.Severity);
         if (!diagnosticHealthSucceeded)
         {
@@ -5061,6 +5066,31 @@ public static class DiagnosticSessionRunner
         return string.IsNullOrWhiteSpace(value) ? "none" : value;
     }
 
+    private static DiagnosticHealthObservation BuildSessionDiagnosticHealthObservation(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement finalSnapshot,
+        bool isFlashbackScenario)
+    {
+        var worst = BuildWorstDiagnosticHealthObservation(samples, finalSnapshot);
+        if (!isFlashbackScenario ||
+            worst.Severity >= 3 ||
+            samples.Count == 0)
+        {
+            return worst;
+        }
+
+        var finalOffsetMs = samples[^1].OffsetMs;
+        if (finalOffsetMs <= 0)
+        {
+            return worst;
+        }
+
+        var warmupMs = Math.Min(
+            FlashbackDiagnosticMaxWarmupMs,
+            Math.Max(0, (long)Math.Ceiling(finalOffsetMs * FlashbackDiagnosticWarmupFraction)));
+        return BuildWorstDiagnosticHealthObservationAfterOffset(samples, finalSnapshot, warmupMs);
+    }
+
     private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservation(
         IReadOnlyList<DiagnosticSessionSample> samples,
         JsonElement finalSnapshot)
@@ -5070,6 +5100,32 @@ public static class DiagnosticSessionRunner
             samples.Count > 0 ? samples[^1].OffsetMs : 0);
         foreach (var sample in samples)
         {
+            var observation = BuildDiagnosticHealthObservation(sample.Snapshot, sample.OffsetMs);
+            if (observation.Severity > worst.Severity ||
+                (observation.Severity == worst.Severity && observation.OffsetMs > worst.OffsetMs))
+            {
+                worst = observation;
+            }
+        }
+
+        return worst;
+    }
+
+    private static DiagnosticHealthObservation BuildWorstDiagnosticHealthObservationAfterOffset(
+        IReadOnlyList<DiagnosticSessionSample> samples,
+        JsonElement finalSnapshot,
+        long minimumOffsetMs)
+    {
+        var worst = BuildDiagnosticHealthObservation(
+            finalSnapshot,
+            samples.Count > 0 ? samples[^1].OffsetMs : 0);
+        foreach (var sample in samples)
+        {
+            if (sample.OffsetMs < minimumOffsetMs)
+            {
+                continue;
+            }
+
             var observation = BuildDiagnosticHealthObservation(sample.Snapshot, sample.OffsetMs);
             if (observation.Severity > worst.Severity ||
                 (observation.Severity == worst.Severity && observation.OffsetMs > worst.OffsetMs))

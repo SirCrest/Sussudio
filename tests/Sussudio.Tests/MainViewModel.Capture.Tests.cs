@@ -610,6 +610,16 @@ static partial class Program
         AssertContains(captureServiceText, "private static bool UseTransportStreamFlashbackCodec(");
         AssertContains(captureServiceText, "settings.Format == RecordingFormat.Av1Mp4");
         AssertContains(captureServiceText, "private static string? ResolveFlashbackExportVerificationFormat(");
+        AssertContains(captureServiceText, "forceRotateResult.Status == FlashbackForceRotateStatus.Failed");
+        AssertContains(captureServiceText, "Flashback export failed: live-edge segment rotation failed.");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_FORCE_ROTATE_FAILED");
+        AssertContains(captureServiceText, "FLASHBACK_EXPORT_FORCE_ROTATE_FALLBACK reason=force_rotate_timeout");
+        AssertDoesNotContain(
+            ExtractTextBetween(
+                captureServiceText,
+                "if (segmentPaths.Count == 0)",
+                "// Fallback: single-file export if no segments available"),
+            "force_rotate_failed");
         AssertContains(captureServiceText, "? RecordingFormat.HevcMp4.ToString()");
         AssertContains(createFlashbackSessionContext, "var flashbackNvencPreset = unifiedVideoCapture.IsSoftwareMjpegPipelineActive && frameRate >= 100");
         AssertContains(createFlashbackSessionContext, "? \"Fast\"");
