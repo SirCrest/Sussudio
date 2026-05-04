@@ -1111,6 +1111,9 @@ static partial class Program
                 "Flashback exporter invalid temp output preserves existing exports",
                 FlashbackExporter_InvalidTempOutputDoesNotReplaceExistingExport),
             await RunCheckAsync(
+                "Flashback exporter deletes invalid moved final outputs",
+                FlashbackExporter_FinalValidationFailureDeletesMovedOutput),
+            await RunCheckAsync(
                 "Flashback exporter rejects blocked temp output paths before native export",
                 FlashbackExporter_RejectsBlockedTempOutputPathBeforeNativeExport),
 

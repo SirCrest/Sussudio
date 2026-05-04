@@ -20,6 +20,8 @@ namespace Sussudio.Services.Flashback;
 /// </summary>
 internal sealed unsafe class FlashbackExporter : IDisposable
 {
+    private delegate bool CompletedOutputValidator(string outputPath, out long outputBytes, out string failureMessage);
+
     private const int MaxSupportedInputStreams = 64;
     private const int ProgressHeartbeatIntervalMs = 1_000;
     private const int ExportLockWaitTimeoutSeconds = 30;
@@ -1738,8 +1740,21 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         string outputPath,
         out long outputBytes,
         out string failureMessage)
+        => TryFinalizeTempOutputFileCore(
+            tmpPath,
+            outputPath,
+            out outputBytes,
+            out failureMessage,
+            TryValidateCompletedOutputFile);
+
+    private static bool TryFinalizeTempOutputFileCore(
+        string tmpPath,
+        string outputPath,
+        out long outputBytes,
+        out string failureMessage,
+        CompletedOutputValidator validateOutput)
     {
-        if (!TryValidateCompletedOutputFile(tmpPath, out outputBytes, out _))
+        if (!validateOutput(tmpPath, out outputBytes, out _))
         {
             failureMessage = outputBytes == 0
                 ? $"Flashback export failed: temporary output file is empty before replacing '{outputPath}'."
@@ -1750,13 +1765,32 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         AtomicMoveTempFile(tmpPath, outputPath);
 
-        if (!TryValidateCompletedOutputFile(outputPath, out outputBytes, out failureMessage))
+        if (!validateOutput(outputPath, out outputBytes, out failureMessage))
         {
             Logger.Log($"FLASHBACK_EXPORT_FINAL_OUTPUT_VALIDATE_WARN path='{outputPath}' reason='{failureMessage}'");
+            DeleteInvalidFinalOutputIfPresent(outputPath, failureMessage);
             return false;
         }
 
         return true;
+    }
+
+    private static void DeleteInvalidFinalOutputIfPresent(string outputPath, string reason)
+    {
+        try
+        {
+            if (!File.Exists(outputPath))
+            {
+                return;
+            }
+
+            File.Delete(outputPath);
+            Logger.Log($"FLASHBACK_EXPORT_FINAL_OUTPUT_DELETE_INVALID path='{outputPath}' reason='{reason}'");
+        }
+        catch (Exception ex)
+        {
+            Logger.Log($"FLASHBACK_EXPORT_FINAL_OUTPUT_DELETE_INVALID_WARN path='{outputPath}' type={ex.GetType().Name} msg='{ex.Message}'");
+        }
     }
 
     private bool TryWaitForExportLock(string outputPath, CancellationToken ct, out FinalizeResult cancellationResult)

@@ -1519,6 +1519,59 @@ static partial class Program
         return Task.CompletedTask;
     }
 
+    private static Task FlashbackExporter_FinalValidationFailureDeletesMovedOutput()
+    {
+        var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
+        var finalizeCore = exporterType.GetMethod("TryFinalizeTempOutputFileCore", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("TryFinalizeTempOutputFileCore not found.");
+        var validatorType = exporterType.GetNestedType("CompletedOutputValidator", BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("CompletedOutputValidator not found.");
+        var validatorMethod = typeof(Program).GetMethod(
+            nameof(ValidateFinalOutputFailureAfterMove),
+            BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ValidateFinalOutputFailureAfterMove not found.");
+        var validator = Delegate.CreateDelegate(validatorType, validatorMethod);
+
+        var tempDir = Path.Combine(Path.GetTempPath(), $"fb_export_final_validate_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var outputPath = Path.Combine(tempDir, "final.mp4");
+            var tmpPath = outputPath + ".tmp";
+            File.WriteAllBytes(tmpPath, new byte[] { 0x66, 0x69, 0x6e, 0x61, 0x6c });
+
+            var args = new object?[] { tmpPath, outputPath, 0L, string.Empty, validator };
+            var finalized = (bool)(finalizeCore.Invoke(null, args)
+                ?? throw new InvalidOperationException("TryFinalizeTempOutputFileCore returned null."));
+
+            AssertEqual(false, finalized, "Final validation failure is rejected");
+            AssertContains((string)args[3]!, "forced final validation failure");
+            AssertEqual(false, File.Exists(tmpPath), "Temporary output was moved before final validation");
+            AssertEqual(false, File.Exists(outputPath), "Invalid moved final output is deleted");
+        }
+        finally
+        {
+            try { Directory.Delete(tempDir, recursive: true); } catch { }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private static bool ValidateFinalOutputFailureAfterMove(string outputPath, out long outputBytes, out string failureMessage)
+    {
+        if (outputPath.EndsWith(".tmp", StringComparison.OrdinalIgnoreCase))
+        {
+            outputBytes = new FileInfo(outputPath).Length;
+            failureMessage = string.Empty;
+            return outputBytes > 0;
+        }
+
+        outputBytes = -1;
+        failureMessage = $"forced final validation failure for '{outputPath}'";
+        return false;
+    }
+
     private static Task FlashbackExporter_RejectsBlockedTempOutputPathBeforeNativeExport()
     {
         var exporterType = RequireType("Sussudio.Services.Flashback.FlashbackExporter");
