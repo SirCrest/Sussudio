@@ -1792,6 +1792,8 @@ static partial class Program
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodeSendMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodeSendMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodeAudioMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodeAudioMs");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodeConvertMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodeConvertMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodeUtcUnixMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodeUtcUnixMs");
+        AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackMaxDecodePositionMs"), "AutomationSnapshot.FlashbackPlaybackMaxDecodePositionMs");
         AssertNotNull(snapshotType.GetProperty("CaptureCadenceP99IntervalMs"), "AutomationSnapshot.CaptureCadenceP99IntervalMs");
         AssertNotNull(snapshotType.GetProperty("CaptureCadenceOnePercentLowFps"), "AutomationSnapshot.CaptureCadenceOnePercentLowFps");
         AssertNotNull(snapshotType.GetProperty("FlashbackPlaybackCommandsEnqueued"), "AutomationSnapshot.FlashbackPlaybackCommandsEnqueued");

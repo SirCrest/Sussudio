@@ -137,6 +137,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     private double _playbackMaxDecodeAudioMs;
     private double _playbackMaxDecodeConvertMs;
     private string _playbackMaxDecodePhase = string.Empty;
+    private long _playbackMaxDecodeUtcUnixMs;
+    private long _playbackMaxDecodePositionMs;
     private long _commandsEnqueued;
     private long _commandsProcessed;
     private long _commandsDropped;
@@ -2766,6 +2768,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
     public double PlaybackMaxDecodeSendMs => _playbackMaxDecodeSendMs;
     public double PlaybackMaxDecodeAudioMs => _playbackMaxDecodeAudioMs;
     public double PlaybackMaxDecodeConvertMs => _playbackMaxDecodeConvertMs;
+    public long PlaybackMaxDecodeUtcUnixMs => Interlocked.Read(ref _playbackMaxDecodeUtcUnixMs);
+    public long PlaybackMaxDecodePositionMs => Interlocked.Read(ref _playbackMaxDecodePositionMs);
     public long CommandsEnqueued => Interlocked.Read(ref _commandsEnqueued);
     public long CommandsProcessed => Interlocked.Read(ref _commandsProcessed);
     public long CommandsDropped => Interlocked.Read(ref _commandsDropped);
@@ -3079,6 +3083,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 _playbackMaxDecodeSendMs = phaseTimings.SendMs;
                 _playbackMaxDecodeAudioMs = phaseTimings.AudioMs;
                 _playbackMaxDecodeConvertMs = phaseTimings.ConvertMs;
+                Interlocked.Exchange(ref _playbackMaxDecodeUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                Interlocked.Exchange(ref _playbackMaxDecodePositionMs, (long)Math.Max(0, PlaybackPosition.TotalMilliseconds));
                 Volatile.Write(ref _playbackMaxDecodePhase, ResolveDominantDecodePhase(phaseTimings));
             }
 
@@ -3190,6 +3196,8 @@ internal sealed class FlashbackPlaybackController : IDisposable
             _playbackMaxDecodeSendMs = 0;
             _playbackMaxDecodeAudioMs = 0;
             _playbackMaxDecodeConvertMs = 0;
+            Interlocked.Exchange(ref _playbackMaxDecodeUtcUnixMs, 0);
+            Interlocked.Exchange(ref _playbackMaxDecodePositionMs, 0);
             Volatile.Write(ref _playbackMaxDecodePhase, string.Empty);
         }
     }

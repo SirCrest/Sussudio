@@ -1492,6 +1492,8 @@ public partial class CaptureService
             FlashbackPlaybackMaxDecodeSendMs = fbPlayback?.PlaybackMaxDecodeSendMs ?? 0,
             FlashbackPlaybackMaxDecodeAudioMs = fbPlayback?.PlaybackMaxDecodeAudioMs ?? 0,
             FlashbackPlaybackMaxDecodeConvertMs = fbPlayback?.PlaybackMaxDecodeConvertMs ?? 0,
+            FlashbackPlaybackMaxDecodeUtcUnixMs = fbPlayback?.PlaybackMaxDecodeUtcUnixMs ?? 0,
+            FlashbackPlaybackMaxDecodePositionMs = fbPlayback?.PlaybackMaxDecodePositionMs ?? 0,
             FlashbackAvDriftMs = fbPlayback?.AvDriftMs ?? 0,
             FlashbackPlaybackThreadAlive = fbPlayback?.PlaybackThreadAlive ?? false,
             FlashbackPlaybackCommandsEnqueued = fbPlayback?.CommandsEnqueued ?? 0,

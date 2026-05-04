@@ -276,6 +276,8 @@ static partial class Program
                 new("FlashbackPlaybackMaxDecodeSendMs", typeof(double)),
                 new("FlashbackPlaybackMaxDecodeAudioMs", typeof(double)),
                 new("FlashbackPlaybackMaxDecodeConvertMs", typeof(double)),
+                new("FlashbackPlaybackMaxDecodeUtcUnixMs", typeof(long)),
+                new("FlashbackPlaybackMaxDecodePositionMs", typeof(long)),
                 new("FlashbackAvDriftMs", typeof(double)),
                 new("FlashbackPlaybackThreadAlive", typeof(bool)),
                 new("FlashbackPlaybackCommandsEnqueued", typeof(long)),
@@ -400,6 +402,8 @@ static partial class Program
         SetPropertyOrBackingField(health, "FlashbackPlaybackMaxDecodeSendMs", 3.5d);
         SetPropertyOrBackingField(health, "FlashbackPlaybackMaxDecodeAudioMs", 3.25d);
         SetPropertyOrBackingField(health, "FlashbackPlaybackMaxDecodeConvertMs", 0.25d);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackMaxDecodeUtcUnixMs", 123456789L);
+        SetPropertyOrBackingField(health, "FlashbackPlaybackMaxDecodePositionMs", 2345L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackCommandsEnqueued", 9L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackScrubUpdatesCoalesced", 7L);
         SetPropertyOrBackingField(health, "FlashbackPlaybackCommandQueueCapacity", 256);
@@ -465,6 +469,8 @@ static partial class Program
         AssertEqual(3.5d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeSendMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeSendMs round-trip");
         AssertEqual(3.25d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeAudioMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeAudioMs round-trip");
         AssertEqual(0.25d, GetDoubleProperty(health, "FlashbackPlaybackMaxDecodeConvertMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeConvertMs round-trip");
+        AssertEqual(123456789L, GetLongProperty(health, "FlashbackPlaybackMaxDecodeUtcUnixMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodeUtcUnixMs round-trip");
+        AssertEqual(2345L, GetLongProperty(health, "FlashbackPlaybackMaxDecodePositionMs"), "CaptureHealthSnapshot.FlashbackPlaybackMaxDecodePositionMs round-trip");
         AssertEqual(9L, GetLongProperty(health, "FlashbackPlaybackCommandsEnqueued"), "CaptureHealthSnapshot.FlashbackPlaybackCommandsEnqueued round-trip");
         AssertEqual(7L, GetLongProperty(health, "FlashbackPlaybackScrubUpdatesCoalesced"), "CaptureHealthSnapshot.FlashbackPlaybackScrubUpdatesCoalesced round-trip");
         AssertEqual(256, GetIntProperty(health, "FlashbackPlaybackCommandQueueCapacity"), "CaptureHealthSnapshot.FlashbackPlaybackCommandQueueCapacity round-trip");

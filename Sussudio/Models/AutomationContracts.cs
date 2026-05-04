@@ -910,6 +910,8 @@ public sealed class AutomationSnapshot
     public double FlashbackPlaybackMaxDecodeSendMs { get; init; }
     public double FlashbackPlaybackMaxDecodeAudioMs { get; init; }
     public double FlashbackPlaybackMaxDecodeConvertMs { get; init; }
+    public long FlashbackPlaybackMaxDecodeUtcUnixMs { get; init; }
+    public long FlashbackPlaybackMaxDecodePositionMs { get; init; }
     public double FlashbackAvDriftMs { get; init; }
     public bool FlashbackPlaybackThreadAlive { get; init; }
     public long FlashbackPlaybackCommandsEnqueued { get; init; }
@@ -1030,6 +1032,8 @@ public sealed class PerformanceTimelineEntry
     public double FlashbackPlaybackMaxDecodeSendMs { get; init; }
     public double FlashbackPlaybackMaxDecodeAudioMs { get; init; }
     public double FlashbackPlaybackMaxDecodeConvertMs { get; init; }
+    public long FlashbackPlaybackMaxDecodeUtcUnixMs { get; init; }
+    public long FlashbackPlaybackMaxDecodePositionMs { get; init; }
     public int FlashbackPlaybackPendingCommands { get; init; }
     public int FlashbackPlaybackMaxPendingCommands { get; init; }
     public long FlashbackPlaybackMaxCommandQueueLatencyMs { get; init; }

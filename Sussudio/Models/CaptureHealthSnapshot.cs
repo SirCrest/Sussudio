@@ -80,6 +80,8 @@ public sealed class CaptureHealthSnapshot : CaptureDiagnosticsSnapshot
     public double FlashbackPlaybackMaxDecodeSendMs { get; init; }
     public double FlashbackPlaybackMaxDecodeAudioMs { get; init; }
     public double FlashbackPlaybackMaxDecodeConvertMs { get; init; }
+    public long FlashbackPlaybackMaxDecodeUtcUnixMs { get; init; }
+    public long FlashbackPlaybackMaxDecodePositionMs { get; init; }
     public double FlashbackAvDriftMs { get; init; }
     public bool FlashbackPlaybackThreadAlive { get; init; }
     public long FlashbackPlaybackCommandsEnqueued { get; init; }
