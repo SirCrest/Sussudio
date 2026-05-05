@@ -685,6 +685,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var runFlashbackDisableDuringExport = scenario == \"flashback-disable-during-export\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRotatedExport = scenario == \"flashback-rotated-export\";");
         AssertContains(diagnosticSessionText, "var runFlashbackPreviewCycle = scenario == \"flashback-preview-cycle\";");
+        AssertContains(diagnosticSessionText, "var runFlashbackPlaybackPreviewCycle = scenario == \"flashback-playback-preview-cycle\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRecording = scenario == \"flashback-recording\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRecordingPreviewCycle = scenario == \"flashback-recording-preview-cycle\";");
         AssertContains(diagnosticSessionText, "var runFlashbackRecordingSettingsDeferred = scenario == \"flashback-recording-settings-deferred\";");
@@ -1028,6 +1029,11 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-preview-off-export.mp4\"");
         AssertContains(diagnosticSessionText, "flashback preview cycle export verified");
+        AssertContains(diagnosticSessionText, "private static async Task RunFlashbackPlaybackPreviewCycleAsync(");
+        AssertContains(diagnosticSessionText, "\"flashback-playback-preview-cycle.mp4\"");
+        AssertContains(diagnosticSessionText, "flashback playback preview cycle preview stopped during playback");
+        AssertContains(diagnosticSessionText, "flashback playback preview cycle: playback did not return live after preview stop");
+        AssertContains(diagnosticSessionText, "flashback playback preview cycle export verified");
         AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForPreviewActiveAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
@@ -1092,7 +1098,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback preview: D3D frame stats failures increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback preview: present/display pressure \"");
         AssertContains(diagnosticSessionText, "var toleratesPreviewCycleSchedulerSettling =");
-        AssertContains(diagnosticSessionText, "runFlashbackPreviewCycle || runFlashbackRecordingPreviewCycle");
+        AssertContains(diagnosticSessionText, "runFlashbackPreviewCycle || runFlashbackPlaybackPreviewCycle || runFlashbackRecordingPreviewCycle");
         AssertContains(diagnosticSessionText, "var toleratesSparsePreviewSchedulerDeadlineDrops =");
         AssertContains(diagnosticSessionText, "IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(diagnosticSessionText, "private static bool IsSparsePreviewSchedulerDeadlineDropRun(");
@@ -1142,7 +1148,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var flashbackWarningsSucceeded = !isFlashbackScenario ||");
         AssertContains(diagnosticSessionText, "IsToleratedFlashbackScenarioWarning(");
         AssertContains(diagnosticSessionText, "flashbackWarningsSucceeded,");
-        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-playback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-encoder-cycle\" or \"flashback-export-playback\" or \"flashback-segment-playback\" or \"flashback-range-export\" or \"flashback-range-export-audio-switch\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-rotated-export\" or \"flashback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-settings-deferred\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
+        AssertContains(diagnosticSessionText, "\"observe\" or \"preview-only\" or \"recording-only\" or \"flashback\" or \"flashback-playback\" or \"flashback-stress\" or \"flashback-scrub-stress\" or \"flashback-restart-cycle\" or \"flashback-encoder-cycle\" or \"flashback-export-playback\" or \"flashback-segment-playback\" or \"flashback-range-export\" or \"flashback-range-export-audio-switch\" or \"flashback-lifecycle\" or \"flashback-export-concurrent\" or \"flashback-disable-during-export\" or \"flashback-rotated-export\" or \"flashback-preview-cycle\" or \"flashback-playback-preview-cycle\" or \"flashback-recording\" or \"flashback-recording-preview-cycle\" or \"flashback-recording-settings-deferred\" or \"flashback-recording-export-rejected\" or \"flashback-export-rejected\" or \"combined\"");
 
         var ssctlProgramText = ReadRepoFile("tools/ssctl/Program.cs")
             .Replace("\r\n", "\n");
@@ -1177,6 +1183,9 @@ static partial class Program
         AssertContains(ssctlProgramText, "flashback-preview-cycle");
         AssertContains(ssctlCommandHandlersText, "flashback-preview-cycle");
         AssertContains(mcpDiagnosticSessionText, "flashback-preview-cycle");
+        AssertContains(ssctlProgramText, "flashback-playback-preview-cycle");
+        AssertContains(ssctlCommandHandlersText, "flashback-playback-preview-cycle");
+        AssertContains(mcpDiagnosticSessionText, "flashback-playback-preview-cycle");
         AssertContains(ssctlProgramText, "flashback-recording-preview-cycle");
         AssertContains(ssctlCommandHandlersText, "flashback-recording-preview-cycle");
         AssertContains(mcpDiagnosticSessionText, "flashback-recording-preview-cycle");
