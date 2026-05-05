@@ -608,8 +608,11 @@ static partial class Program
             "public Task CycleFlashbackEncoderSettingsAsync",
             "public void SetPreviewVolume");
         AssertContains(encoderSettingsChange, "var cycleFailed = false;");
+        AssertContains(encoderSettingsChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
         AssertContains(encoderSettingsChange, "cycleFailed = true;");
         AssertContains(encoderSettingsChange, "if (!cycleFailed)");
+        AssertContains(encoderSettingsChange, "_currentSettings = previousSettings;");
+        AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK");
         AssertContains(encoderSettingsChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
         AssertContains(encoderSettingsChange, "FLASHBACK_ENCODER_SETTINGS_CHANGE_CYCLE_CANCELLED");
         AssertContains(
@@ -621,8 +624,11 @@ static partial class Program
             "public Task UpdateRecordingFormatAsync",
             "/// <summary>\n    /// Cycles the flashback encoder");
         AssertContains(formatChange, "var cycleFailed = false;");
+        AssertContains(formatChange, "var previousSettings = CloneCaptureSettings(_currentSettings);");
         AssertContains(formatChange, "cycleFailed = true;");
         AssertContains(formatChange, "if (!cycleFailed)");
+        AssertContains(formatChange, "_currentSettings = previousSettings;");
+        AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_ROLLBACK");
         AssertContains(formatChange, "catch (OperationCanceledException ex) when (transitionToken.IsCancellationRequested)");
         AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_CANCELLED");
         AssertContains(formatChange, "FLASHBACK_FORMAT_CHANGE_CYCLE_FAIL format={format} type={ex.GetType().Name} error='{ex.Message}'");

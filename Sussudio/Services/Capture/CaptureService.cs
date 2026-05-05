@@ -377,6 +377,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (_currentSettings == null || format == _currentSettings.Format)
                 return;
 
+            var previousSettings = CloneCaptureSettings(_currentSettings);
             if (_isRecording)
             {
                 Logger.Log($"FLASHBACK_FORMAT_CHANGE_BLOCKED reason=recording_active format={format}");
@@ -411,6 +412,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 Logger.Log($"FLASHBACK_FORMAT_CHANGE_OK format={format}");
             }
+            else
+            {
+                _currentSettings = previousSettings;
+                Logger.Log($"FLASHBACK_FORMAT_CHANGE_ROLLBACK format={format} restored={_currentSettings.Format}");
+            }
         }, cancellationToken);
 
     /// <summary>
@@ -428,6 +434,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         {
             if (_currentSettings == null) return;
 
+            var previousSettings = CloneCaptureSettings(_currentSettings);
             var changed = false;
             if (quality.HasValue && quality.Value != _currentSettings.Quality)
             {
@@ -478,6 +485,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             if (!cycleFailed)
             {
                 Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_OK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset} cycled={cycledBuffer}");
+            }
+            else
+            {
+                _currentSettings = previousSettings;
+                Logger.Log($"FLASHBACK_ENCODER_SETTINGS_CHANGE_ROLLBACK quality={_currentSettings.Quality} bitrate={_currentSettings.CustomBitrateMbps} preset={_currentSettings.NvencPreset}");
             }
         }, cancellationToken);
 
