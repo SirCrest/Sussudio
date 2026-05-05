@@ -32,6 +32,7 @@ internal sealed class FlashbackBufferManager : IDisposable
     private string? _sessionDirectory;
     private string? _segmentExtension;
     private string? _activeSegmentPath;
+    private long _activeSegmentStartPtsTicks = -1;
     private long _latestPtsTicks;
     private long _validStartPtsTicks;
     private long _totalDiskBytes;
@@ -209,6 +210,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
 
             _activeSegmentPath = null;
+            Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
             _previousActiveSegmentBytes = 0;
         }
     }
@@ -248,6 +250,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 {
                     freedBytes = AddNonNegativeSaturated(freedBytes, activeSegmentBytes);
                     _activeSegmentPath = null; // Force new path generation on next GetFilePath()
+                    Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
                     _previousActiveSegmentBytes = 0;
                 }
                 else
@@ -265,6 +268,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 _totalDiskBytes = 0;
                 _totalBytesWritten = 0;
                 _previousActiveSegmentBytes = 0;
+                Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
             }
             else
             {
@@ -441,6 +445,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 CalculateStartupTempCacheBudgetBytes(_options.MaxDiskBytes));
 
             _activeSegmentPath = null;
+            Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
             _completedSegments.Clear();
             _completedSegmentBytes = 0;
             _completedSegmentSequence = 0;
@@ -457,6 +462,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             _recordingStartPts = TimeSpan.Zero;
             _recordingEndPts = TimeSpan.Zero;
             _previousActiveSegmentBytes = 0;
+            Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
             Interlocked.Exchange(ref _evictionPauseCount, 0);
             _preserveSessionForRecovery = false;
             _sessionId = sessionId;
@@ -509,7 +515,32 @@ internal sealed class FlashbackBufferManager : IDisposable
             var path = Path.Combine(_sessionDirectory, $"fb_{_sessionId}_{_nextSegmentIndex:D4}{ext}");
             _nextSegmentIndex++;
             _activeSegmentPath = path;
+            Interlocked.Exchange(ref _activeSegmentStartPtsTicks, GetDefaultActiveSegmentStartPts().Ticks);
             return path;
+        }
+    }
+
+    public void MarkActiveSegmentStart(string path, TimeSpan startPts)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        lock (_indexLock)
+        {
+            if (_disposed ||
+                _activeSegmentPath == null ||
+                !IsSameSegmentPath(_activeSegmentPath, path))
+            {
+                return;
+            }
+
+            var safeStartPts = startPts < TimeSpan.Zero ? TimeSpan.Zero : startPts;
+            Interlocked.Exchange(ref _activeSegmentStartPtsTicks, safeStartPts.Ticks);
+            Logger.Log(
+                $"FLASHBACK_BUFFER_ACTIVE_SEGMENT_START path='{Path.GetFileName(path)}' " +
+                $"start_ms={(long)safeStartPts.TotalMilliseconds}");
         }
     }
 
@@ -530,6 +561,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             if (IsSameSegmentPath(_activeSegmentPath, generatedPath))
             {
                 _activeSegmentPath = restoreActivePath;
+                Interlocked.Exchange(ref _activeSegmentStartPtsTicks, restoreActivePath == null ? -1 : GetDefaultActiveSegmentStartPts().Ticks);
                 if (_nextSegmentIndex > 0)
                 {
                     _nextSegmentIndex--;
@@ -1236,9 +1268,7 @@ internal sealed class FlashbackBufferManager : IDisposable
                 _activeSegmentPath != null &&
                 File.Exists(_activeSegmentPath))
             {
-                return _completedSegments.Count > 0
-                    ? _completedSegments[^1].EndPts
-                    : _recordingStartPts;
+                return GetActiveSegmentStartPts();
             }
 
             return null;
@@ -1270,6 +1300,19 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
+    private TimeSpan GetActiveSegmentStartPts()
+    {
+        var activeStartTicks = Interlocked.Read(ref _activeSegmentStartPtsTicks);
+        return activeStartTicks >= 0
+            ? TimeSpan.FromTicks(activeStartTicks)
+            : GetDefaultActiveSegmentStartPts();
+    }
+
+    private TimeSpan GetDefaultActiveSegmentStartPts()
+        => _completedSegments.Count > 0
+            ? _completedSegments[^1].EndPts
+            : _recordingStartPts;
+
     public IReadOnlyList<FlashbackSegmentInfo> GetSegmentInfoList()
     {
         lock (_indexLock)
@@ -1294,9 +1337,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             }
             if (_activeSegmentPath != null && File.Exists(_activeSegmentPath))
             {
-                var activeStartPts = _completedSegments.Count > 0
-                    ? _completedSegments[^1].EndPts
-                    : _recordingStartPts;
+                var activeStartPts = GetActiveSegmentStartPts();
                 var activeEndPts = TimeSpan.FromTicks(Math.Max(activeStartPts.Ticks, Interlocked.Read(ref _latestPtsTicks)));
                 var activeSizeBytes = Math.Max(0, _totalDiskBytes - _completedSegmentBytes);
                 result.Add(new FlashbackSegmentInfo
@@ -1476,6 +1517,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             {
                 freedBytes = AddNonNegativeSaturated(freedBytes, activeBytes);
                 _activeSegmentPath = null;
+                Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
                 _previousActiveSegmentBytes = 0;
             }
             else
@@ -1493,6 +1535,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             _totalDiskBytes = 0;
             _totalBytesWritten = 0;
             _previousActiveSegmentBytes = 0;
+            Interlocked.Exchange(ref _activeSegmentStartPtsTicks, -1);
         }
         else
         {

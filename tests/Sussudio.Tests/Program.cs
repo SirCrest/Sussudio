@@ -3006,6 +3006,7 @@ static partial class Program
         SetPrivateField(manager, "_sessionId", "test-session");
         SetPrivateField(manager, "_sessionDirectory", tempDir);
         SetPrivateField(manager, "_activeSegmentPath", Path.Combine(tempDir, "fb_test_0003.ts"));
+        SetPrivateField(manager, "_activeSegmentStartPtsTicks", -1L);
         SetPrivateField(manager, "_nextSegmentIndex", 4);
 
         // Initialize the completed segments list via reflection
@@ -3656,6 +3657,11 @@ static partial class Program
         var existingStart = (TimeSpan?)method.Invoke(manager, new object[] { existingCompleted });
         AssertEqual(TimeSpan.FromSeconds(5), existingStart!.Value, "Existing completed segment should expose start PTS");
 
+        manager.GetType().GetMethod("MarkActiveSegmentStart")!
+            .Invoke(manager, new object[] { active, TimeSpan.FromSeconds(12) });
+        var activeStart = (TimeSpan?)method.Invoke(manager, new object[] { active });
+        AssertEqual(TimeSpan.FromSeconds(12), activeStart!.Value, "Active segment should expose marked encoder start PTS");
+
         File.Delete(active);
         var missingActiveStart = (TimeSpan?)method.Invoke(manager, new object[] { active });
         AssertEqual(null, missingActiveStart, "Missing active segment should not expose start PTS");
@@ -3761,6 +3767,15 @@ static partial class Program
         var infos = ((System.Collections.IEnumerable)result).Cast<object>().ToArray();
         var activeInfo = infos.Single(info => GetBoolProperty(info, "IsActive"));
         AssertEqual(3, GetIntProperty(activeInfo, "SequenceNumber"), "Active segment sequence should match current generated segment index");
+        AssertEqual(10_000L, GetLongProperty(activeInfo, "StartPtsMs"), "Unmarked active segment start should fall back to completed end");
+
+        manager.GetType().GetMethod("MarkActiveSegmentStart")!
+            .Invoke(manager, new object[] { active, TimeSpan.FromSeconds(12) });
+        var markedResult = method.Invoke(manager, null)!;
+        var markedActiveInfo = ((System.Collections.IEnumerable)markedResult)
+            .Cast<object>()
+            .Single(info => GetBoolProperty(info, "IsActive"));
+        AssertEqual(12_000L, GetLongProperty(markedActiveInfo, "StartPtsMs"), "Marked active segment start should follow encoder PTS");
 
         File.Delete(active);
         var withoutActive = method.Invoke(manager, null)!;

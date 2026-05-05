@@ -3810,6 +3810,12 @@ public static class DiagnosticSessionRunner
                 $"absoluteBoundaryMs={completedSegment.EndPtsMs} validStartMs={target.ValidStartPtsMs}");
         }
 
+        var targetFps = GetDouble(playbackSnapshot.Value, "DetectedSourceFrameRate");
+        if (targetFps <= 0)
+        {
+            targetFps = GetDouble(playbackSnapshot.Value, "SelectedFrameRate");
+        }
+
         if (frameCount <= 0)
         {
             warnings.Add(
@@ -3821,6 +3827,12 @@ public static class DiagnosticSessionRunner
             warnings.Add(
                 "flashback segment playback: playback FPS did not warm after enough frames " +
                 $"frames={frameCount} observedFps={observedFps:0.##}");
+        }
+        else if (targetFps >= 100 && frameCount >= 180 && observedFps < targetFps * 0.85)
+        {
+            warnings.Add(
+                "flashback segment playback: playback FPS below source-rate target after warm sample " +
+                $"frames={frameCount} observedFps={observedFps:0.##} targetFps={targetFps:0.##}");
         }
 
         if (commandHealth.NonCoalescedDropped > 0 || commandHealth.Skipped > 0 || commandHealth.SubmitFailures > 0 || pending > 0)
@@ -3871,8 +3883,8 @@ public static class DiagnosticSessionRunner
                 var frameCount = GetNullableLong(snapshot, "FlashbackPlaybackFrameCount") ?? 0;
                 var pending = GetInt(snapshot, "FlashbackPlaybackPendingCommands");
                 var state = GetString(snapshot, "FlashbackPlaybackState") ?? "Unknown";
-                if (positionMs >= boundaryMs + 250 &&
-                    frameCount > 0 &&
+                if (positionMs >= boundaryMs + 1_500 &&
+                    frameCount >= 180 &&
                     pending == 0 &&
                     string.Equals(state, "Playing", StringComparison.OrdinalIgnoreCase))
                 {

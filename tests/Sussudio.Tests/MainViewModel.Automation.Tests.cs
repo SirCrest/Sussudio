@@ -984,6 +984,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "const int requiredHeadroomMs = 8_000;");
         AssertContains(diagnosticSessionText, "flashback segment playback live headroom established");
         AssertContains(diagnosticSessionText, "flashback segment playback started near boundary");
+        AssertContains(diagnosticSessionText, "frameCount >= 180");
+        AssertContains(diagnosticSessionText, "playback FPS below source-rate target after warm sample");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRangeExportAsync(");
         AssertContains(diagnosticSessionText, "\"flashback-range-export.mp4\"");
         AssertContains(diagnosticSessionText, "\"flashback-range-export-audio-switch.mp4\"");

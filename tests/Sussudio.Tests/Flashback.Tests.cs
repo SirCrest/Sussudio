@@ -3384,6 +3384,11 @@ static partial class Program
         AssertContains(sourceText, "CommitAudioMasterFallback(");
         AssertContains(sourceText, "if (Math.Abs(diffMs) > MaxAudioMasterCorrectionMs)\n            {\n                // WASAPI render PTS can lag decoded video by the endpoint buffer/device");
         AssertContains(sourceText, "WallClockPace(pacingStopwatch, frameDuration);\n                return;");
+        AssertContains(sourceText, "SafeResumeRendering(\"seek_resume\");\n                            pacingStopwatch.Restart();");
+        AssertContains(sourceText, "SafeResumeRendering(\"end_scrub_resume\");\n                            pacingStopwatch.Restart();");
+        AssertContains(sourceText, "SafeResumeRendering(\"play\");\n                        pacingStopwatch.Restart();");
+        AssertContains(sourceText, "private void ResetPlaybackPtsCadenceBaseline()");
+        AssertContains(sourceText, "ResetPlaybackPtsCadenceBaseline();\n                    pacingStopwatch.Restart();\n                    return true;");
         AssertContains(sourceText, "if (string.IsNullOrEmpty(_pendingAudioMasterFallbackReason))");
         AssertContains(sourceText, "_pendingAudioMasterFallbackReason = reason;");
         AssertContains(sourceText, "CommitAudioMasterFallback(");

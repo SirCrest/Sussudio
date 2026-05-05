@@ -207,6 +207,9 @@ static partial class Program
         AssertContains(flashbackBufferSource, "QueueDeleteFileForEviction(oldest.Path, oldest.SizeBytes, \"disk_budget\")");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_SEGMENT_EVICT_QUEUED");
         AssertContains(flashbackBufferSource, "FLASHBACK_BUFFER_SEGMENT_EVICT_DELETED");
+        AssertContains(flashbackBufferSource, "public void MarkActiveSegmentStart(string path, TimeSpan startPts)");
+        AssertContains(flashbackSource, "_bufferManager.MarkActiveSegmentStart(tsPath, _segmentStartPts);");
+        AssertContains(flashbackSource, "_bufferManager.MarkActiveSegmentStart(newPath, _segmentStartPts);");
         var flashbackVideoEnqueue = ExtractSourceBlock(
             flashbackSource,
             "private VideoEnqueueResult TryEnqueueVideoPacket",

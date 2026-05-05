@@ -389,6 +389,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
             _ptsBaseOffset = TimeSpan.Zero;
             _segmentStartPts = ptsBaseOffset;
             _segmentDuration = _bufferManager.Options.SegmentDuration;
+            _bufferManager.MarkActiveSegmentStart(tsPath, _segmentStartPts);
 
             if (ptsBaseOffset > TimeSpan.Zero)
             {
@@ -1728,6 +1729,7 @@ internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncod
 
             _segmentStartPts = currentPts;
             _tsFilePath = newPath;
+            _bufferManager.MarkActiveSegmentStart(newPath, _segmentStartPts);
             Interlocked.Exchange(ref _segmentStartBytes, _encoder.TotalBytesWritten);
 
             _bufferManager.OnSegmentCompleted(completedPath!, completedStartPts, currentPts, segmentBytes);

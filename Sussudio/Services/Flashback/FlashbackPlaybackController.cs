@@ -1074,6 +1074,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             RestoreAudioCallback(decoder, coalescedSeekTarget.Ticks);
                             SafeFlushPlayback("seek_resume");
                             SafeResumeRendering("seek_resume");
+                            pacingStopwatch.Restart();
                         }
                         else
                         {
@@ -1231,6 +1232,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             }
                             SafeFlushPlayback("end_scrub_resume");
                             SafeResumeRendering("end_scrub_resume");
+                            pacingStopwatch.Restart();
                         }
                         else
                         {
@@ -1317,6 +1319,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         RestoreAudioCallback(decoder, seekTarget.Ticks);
                         SafeFlushPlayback("play");
                         SafeResumeRendering("play");
+                        pacingStopwatch.Restart();
 
                         SetState(FlashbackPlaybackState.Playing);
                         Logger.Log($"FLASHBACK_PLAYBACK_PLAY pos_ms={(long)PlaybackPosition.TotalMilliseconds}");
@@ -2021,6 +2024,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
             {
                 Interlocked.Increment(ref _playbackSegmentSwitches);
                 Interlocked.Exchange(ref _lastSegmentSwitchUtcUnixMs, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds());
+                ResetPlaybackPtsCadenceBaseline();
                 return true;
             }
 
@@ -2722,6 +2726,7 @@ internal sealed class FlashbackPlaybackController : IDisposable
                         return false;
                     }
                     RestoreAudioCallback(decoder, audioGate);
+                    ResetPlaybackPtsCadenceBaseline();
                     pacingStopwatch.Restart();
                     return true;
                 }
@@ -3246,6 +3251,9 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
         RecordPlaybackPtsCadenceMismatch(deltaMs, expectedMs, toleranceMs, pts);
     }
+
+    private void ResetPlaybackPtsCadenceBaseline()
+        => Interlocked.Exchange(ref _lastPlaybackCadencePtsTicks, 0);
 
     private void RecordPlaybackPtsCadenceMismatch(double deltaMs, double expectedMs, double toleranceMs, TimeSpan pts)
     {
