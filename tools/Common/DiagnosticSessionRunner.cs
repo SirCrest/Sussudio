@@ -72,6 +72,9 @@ public sealed class DiagnosticSessionResult
     public double FlashbackPlaybackMaxFrameMsAtEnd { get; init; }
     public double FlashbackPlaybackOnePercentLowFpsAtEnd { get; init; }
     public double FlashbackPlaybackMinOnePercentLowFpsObserved { get; init; }
+    public bool FlashbackPlaybackOnePercentLowSampleWindowObserved { get; init; }
+    public long FlashbackPlaybackOnePercentLowMinimumFrames { get; init; }
+    public long FlashbackPlaybackMaxSessionFrameCountObserved { get; init; }
     public long FlashbackPlaybackMinOnePercentLowOffsetMs { get; init; }
     public long FlashbackPlaybackMinOnePercentLowFrameCount { get; init; }
     public double FlashbackPlaybackMinOnePercentLowP99FrameMs { get; init; }
@@ -1188,9 +1191,18 @@ public static class DiagnosticSessionRunner
                 videoIngestErrorsDelta,
                 durationSeconds,
                 IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate")));
+        var toleratesFlashbackForceRotateDrainWarning =
+            runFlashbackExportPlayback ||
+            runFlashbackRangeExport ||
+            runFlashbackRangeExportAudioSwitch ||
+            runFlashbackExportConcurrent ||
+            runFlashbackDisableDuringExport ||
+            runFlashbackRotatedExport;
         var diagnosticHealthTolerated =
             (toleratesSourceSignalHealthWarning &&
              IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)) ||
+            (toleratesFlashbackForceRotateDrainWarning &&
+             IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)) ||
             sparseSourceCaptureCadenceWarning ||
             (isFlashbackScenario &&
               IsPreviewCycleScenario(runFlashbackPreviewCycle, runFlashbackPlaybackPreviewCycle, runFlashbackRecordingPreviewCycle) &&
@@ -1225,6 +1237,8 @@ public static class DiagnosticSessionRunner
         {
             var toleratedReason = IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)
                 ? "preview scheduler transition warning tolerated for preview-cycle scenario"
+                : IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)
+                    ? "flashback force-rotate drain warning tolerated for export scenario"
                 : "source-signal warning tolerated for export reliability scenario";
             warnings.Add(
                 $"diagnostic health {toleratedReason}: " +
@@ -1238,6 +1252,7 @@ public static class DiagnosticSessionRunner
                                          warnings.All(warning => IsToleratedFlashbackScenarioWarning(
                                              warning,
                                              toleratesSourceSignalHealthWarning,
+                                             toleratesFlashbackForceRotateDrainWarning,
                                               runFlashbackPreviewCycle || runFlashbackPlaybackPreviewCycle || runFlashbackRecordingPreviewCycle));
 
         var processCpuMaxPercentObserved = samples
@@ -1320,6 +1335,9 @@ public static class DiagnosticSessionRunner
             FlashbackPlaybackMaxFrameMsAtEnd = playbackMaxFrameMsAtEnd,
             FlashbackPlaybackOnePercentLowFpsAtEnd = playbackOnePercentLowFpsAtEnd,
             FlashbackPlaybackMinOnePercentLowFpsObserved = playbackSessionMetrics.MinOnePercentLowFpsObserved,
+            FlashbackPlaybackOnePercentLowSampleWindowObserved = playbackSessionMetrics.OnePercentLowSampleWindowObserved,
+            FlashbackPlaybackOnePercentLowMinimumFrames = playbackSessionMetrics.MinimumOnePercentLowFrameCount,
+            FlashbackPlaybackMaxSessionFrameCountObserved = playbackSessionMetrics.MaxSessionFrameCountObserved,
             FlashbackPlaybackMinOnePercentLowOffsetMs = playbackSessionMetrics.MinOnePercentLowOffsetMs,
             FlashbackPlaybackMinOnePercentLowFrameCount = playbackSessionMetrics.MinOnePercentLowFrameCount,
             FlashbackPlaybackMinOnePercentLowP99FrameMs = playbackSessionMetrics.MinOnePercentLowP99FrameMs,
@@ -1826,6 +1844,9 @@ public static class DiagnosticSessionRunner
             $"maxFrameMsEnd={result.FlashbackPlaybackMaxFrameMsAtEnd:0.##} " +
             $"onePercentLowFpsEnd={result.FlashbackPlaybackOnePercentLowFpsAtEnd:0.##} " +
             $"onePercentLowFpsMin={result.FlashbackPlaybackMinOnePercentLowFpsObserved:0.##} " +
+            $"onePercentLowWindow={result.FlashbackPlaybackOnePercentLowSampleWindowObserved} " +
+            $"onePercentLowMinRequiredFrames={result.FlashbackPlaybackOnePercentLowMinimumFrames} " +
+            $"onePercentLowMaxSessionFrames={result.FlashbackPlaybackMaxSessionFrameCountObserved} " +
             $"onePercentLowMinOffsetMs={result.FlashbackPlaybackMinOnePercentLowOffsetMs} " +
             $"onePercentLowMinFrames={result.FlashbackPlaybackMinOnePercentLowFrameCount} " +
             $"onePercentLowMinP99FrameMs={result.FlashbackPlaybackMinOnePercentLowP99FrameMs:0.##} " +
@@ -5206,6 +5227,10 @@ public static class DiagnosticSessionRunner
         var minimumPlaybackFramesForLowPercentile = Math.Max(
             240,
             targetFps > 0 ? (long)Math.Ceiling(targetFps * 10.0) : 240);
+        metrics.MinimumOnePercentLowFrameCount = Math.Max(
+            metrics.MinimumOnePercentLowFrameCount,
+            minimumPlaybackFramesForLowPercentile);
+        metrics.MaxSessionFrameCountObserved = Math.Max(metrics.MaxSessionFrameCountObserved, sessionFrameCount);
         var commandsEnqueued = GetNullableLong(snapshot, "FlashbackPlaybackCommandsEnqueued") ?? 0;
         var commandsProcessed = GetNullableLong(snapshot, "FlashbackPlaybackCommandsProcessed") ?? 0;
         var relevantToSession =
@@ -5242,6 +5267,7 @@ public static class DiagnosticSessionRunner
         var onePercentLow = GetDouble(snapshot, "FlashbackPlaybackOnePercentLowFps");
         if (onePercentLow > 0 && sessionFrameCount >= minimumPlaybackFramesForLowPercentile)
         {
+            metrics.OnePercentLowSampleWindowObserved = true;
             if (onePercentLow < metrics.MinOnePercentLowFpsObserved)
             {
                 metrics.MinOnePercentLowFpsObserved = onePercentLow;
@@ -5309,6 +5335,9 @@ public static class DiagnosticSessionRunner
         public string MaxCommandQueueLatencyCommandObserved { get; set; } = string.Empty;
         public double MinObservedFpsObserved { get; set; } = double.PositiveInfinity;
         public double MinOnePercentLowFpsObserved { get; set; } = double.PositiveInfinity;
+        public bool OnePercentLowSampleWindowObserved { get; set; }
+        public long MinimumOnePercentLowFrameCount { get; set; }
+        public long MaxSessionFrameCountObserved { get; set; }
         public long MinOnePercentLowOffsetMs { get; set; }
         public long MinOnePercentLowFrameCount { get; set; }
         public double MinOnePercentLowP99FrameMs { get; set; }
@@ -5805,6 +5834,11 @@ public static class DiagnosticSessionRunner
         => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
            string.Equals(observation.LikelyStage, "preview_scheduler", StringComparison.OrdinalIgnoreCase);
 
+    private static bool IsFlashbackForceRotateDrainDiagnosticHealthObservation(DiagnosticHealthObservation observation)
+        => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
+           string.Equals(observation.LikelyStage, "flashback_recording", StringComparison.OrdinalIgnoreCase) &&
+           observation.Evidence.Contains("lastReject=force_rotate_draining", StringComparison.OrdinalIgnoreCase);
+
     private static bool IsPreviewCycleScenario(
         bool runFlashbackPreviewCycle,
         bool runFlashbackPlaybackPreviewCycle,
@@ -5857,11 +5891,20 @@ public static class DiagnosticSessionRunner
     private static bool IsToleratedFlashbackScenarioWarning(
         string warning,
         bool toleratesSourceSignalHealthWarning,
+        bool toleratesFlashbackForceRotateDrainWarning,
         bool toleratesPreviewCycleSchedulerWarning)
     {
         if (toleratesSourceSignalHealthWarning &&
             warning.StartsWith(
                 "diagnostic health source-signal warning tolerated for export reliability scenario:",
+                StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        if (toleratesFlashbackForceRotateDrainWarning &&
+            warning.StartsWith(
+                "diagnostic health flashback force-rotate drain warning tolerated for export scenario:",
                 StringComparison.Ordinal))
         {
             return true;

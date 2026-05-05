@@ -737,6 +737,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "FlashbackPlaybackP99FrameMsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackOnePercentLowFpsAtEnd");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMinOnePercentLowFpsObserved");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackOnePercentLowSampleWindowObserved");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackOnePercentLowMinimumFrames");
+        AssertContains(diagnosticSessionText, "FlashbackPlaybackMaxSessionFrameCountObserved");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMinOnePercentLowOffsetMs");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMinOnePercentLowFrameCount");
         AssertContains(diagnosticSessionText, "FlashbackPlaybackMinOnePercentLowDecodeP99Ms");
@@ -802,8 +805,13 @@ static partial class Program
         AssertContains(diagnosticSessionText, "metrics.EndSessionFrameCount = sessionFrameCount;");
         AssertContains(diagnosticSessionText, "targetFps > 0 ? (long)Math.Ceiling(targetFps * 10.0) : 240");
         AssertContains(diagnosticSessionText, "onePercentLow > 0 && sessionFrameCount >= minimumPlaybackFramesForLowPercentile");
+        AssertContains(diagnosticSessionText, "metrics.OnePercentLowSampleWindowObserved = true;");
+        AssertContains(diagnosticSessionText, "metrics.MaxSessionFrameCountObserved = Math.Max(metrics.MaxSessionFrameCountObserved, sessionFrameCount);");
         AssertContains(diagnosticSessionText, "fpsMin={result.FlashbackPlaybackMinObservedFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "onePercentLowFpsMin={result.FlashbackPlaybackMinOnePercentLowFpsObserved:0.##}");
+        AssertContains(diagnosticSessionText, "onePercentLowWindow={result.FlashbackPlaybackOnePercentLowSampleWindowObserved}");
+        AssertContains(diagnosticSessionText, "onePercentLowMinRequiredFrames={result.FlashbackPlaybackOnePercentLowMinimumFrames}");
+        AssertContains(diagnosticSessionText, "onePercentLowMaxSessionFrames={result.FlashbackPlaybackMaxSessionFrameCountObserved}");
         AssertContains(diagnosticSessionText, "onePercentLowMinOffsetMs={result.FlashbackPlaybackMinOnePercentLowOffsetMs}");
         AssertContains(diagnosticSessionText, "onePercentLowMinDecodeP99Ms={result.FlashbackPlaybackMinOnePercentLowDecodeP99Ms:0.##}");
         AssertContains(diagnosticSessionText, "onePercentLowMinAudioFallbacks={result.FlashbackPlaybackMinOnePercentLowAudioMasterFallbacks}");
@@ -1133,6 +1141,11 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var sparseSourceCaptureCadenceWarning =");
         AssertContains(diagnosticSessionText, "IsSparseSourceCaptureCadenceWarningRun(");
         AssertContains(diagnosticSessionText, "private static bool IsSparseSourceCaptureCadenceWarningRun(");
+        AssertContains(diagnosticSessionText, "var toleratesFlashbackForceRotateDrainWarning =");
+        AssertContains(diagnosticSessionText, "IsFlashbackForceRotateDrainDiagnosticHealthObservation(diagnosticHealthObservation)");
+        AssertContains(diagnosticSessionText, "flashback force-rotate drain warning tolerated for export scenario");
+        AssertContains(diagnosticSessionText, "private static bool IsFlashbackForceRotateDrainDiagnosticHealthObservation(");
+        AssertContains(diagnosticSessionText, "lastReject=force_rotate_draining");
         AssertContains(diagnosticSessionText, "sourceReaderFramesDroppedDelta > 0");
         AssertContains(diagnosticSessionText, "videoIngestErrorsDelta > 0");
         AssertContains(diagnosticSessionText, "var allowedSparseEvents = Math.Max(1, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 180.0));");
