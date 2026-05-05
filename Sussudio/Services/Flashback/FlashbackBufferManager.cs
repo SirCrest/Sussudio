@@ -25,7 +25,6 @@ internal sealed class FlashbackBufferManager : IDisposable
     private const int MaxStaleRootSegmentFileScansPerInit = 512;
     private const int MaxStaleRootSegmentFilesPerInit = 128;
     private const string RecoveryPreserveMarkerFileName = ".flashback-recovery-preserve";
-    private static readonly SemaphoreSlim AsyncSegmentDeleteGate = new(1, 1);
     private readonly object _indexLock = new();
     private readonly FlashbackBufferOptions _options;
     private string? _sessionId;
@@ -1700,7 +1699,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             var oldest = _completedSegments[0];
             if (oldest.EndPts <= validStart)
             {
-                if (QueueDeleteFileForEviction(oldest.Path, oldest.SizeBytes, "valid_window"))
+                if (DeleteFileForEviction(oldest.Path, oldest.SizeBytes, "valid_window"))
                 {
                     evictedBytes = AddNonNegativeSaturated(evictedBytes, oldest.SizeBytes);
                     _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
@@ -1722,7 +1721,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         while (_completedSegments.Count > 0 && _completedSegmentBytes > _options.MaxDiskBytes)
         {
             var oldest = _completedSegments[0];
-            if (QueueDeleteFileForEviction(oldest.Path, oldest.SizeBytes, "disk_budget"))
+            if (DeleteFileForEviction(oldest.Path, oldest.SizeBytes, "disk_budget"))
             {
                 evictedBytes = AddNonNegativeSaturated(evictedBytes, oldest.SizeBytes);
                 _completedSegmentBytes = SubtractNonNegative(_completedSegmentBytes, oldest.SizeBytes);
@@ -1742,7 +1741,7 @@ internal sealed class FlashbackBufferManager : IDisposable
         }
     }
 
-    private bool QueueDeleteFileForEviction(string filePath, long sizeBytes, string reason)
+    private bool DeleteFileForEviction(string filePath, long sizeBytes, string reason)
     {
         if (string.IsNullOrWhiteSpace(_sessionDirectory))
         {
@@ -1769,29 +1768,15 @@ internal sealed class FlashbackBufferManager : IDisposable
             return false;
         }
 
-        _ = System.Threading.Tasks.Task.Run(async () =>
-        {
-            await AsyncSegmentDeleteGate.WaitAsync().ConfigureAwait(false);
-            try
-            {
-                DeleteEvictedFile(fullPath, sessionRoot, sizeBytes, reason);
-            }
-            finally
-            {
-                AsyncSegmentDeleteGate.Release();
-            }
-        });
-
-        Logger.Log($"FLASHBACK_BUFFER_SEGMENT_EVICT_QUEUED reason={reason} path='{Path.GetFileName(filePath)}' size_bytes={Math.Max(0, sizeBytes)}");
-        return true;
+        return DeleteEvictedFile(fullPath, sessionRoot, sizeBytes, reason);
     }
 
-    private static void DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason)
+    private static bool DeleteEvictedFile(string fullPath, string sessionRoot, long sizeBytes, string reason)
     {
         if (!IsPathUnderDirectory(fullPath, sessionRoot))
         {
-            Logger.Log($"FLASHBACK_BUFFER_EVICT_DELETE_SKIP reason=outside_session_async path='{fullPath}'");
-            return;
+            Logger.Log($"FLASHBACK_BUFFER_EVICT_DELETE_SKIP reason=outside_session path='{fullPath}'");
+            return false;
         }
 
         var started = System.Diagnostics.Stopwatch.GetTimestamp();
@@ -1802,6 +1787,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             Logger.Log(
                 $"FLASHBACK_BUFFER_SEGMENT_EVICT_DELETED reason={reason} " +
                 $"path='{Path.GetFileName(fullPath)}' size_bytes={Math.Max(0, sizeBytes)} elapsed_ms={elapsedMs:0.###}");
+            return true;
         }
         catch (Exception ex)
         {
@@ -1809,6 +1795,7 @@ internal sealed class FlashbackBufferManager : IDisposable
             Logger.Log(
                 $"FLASHBACK_BUFFER_EVICT_DELETE_WARN reason={reason} path='{fullPath}' " +
                 $"type={ex.GetType().Name} msg='{ex.Message}' elapsed_ms={elapsedMs:0.###}");
+            return false;
         }
     }
 
