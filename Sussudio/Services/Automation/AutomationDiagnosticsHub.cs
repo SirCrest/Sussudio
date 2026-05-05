@@ -2935,7 +2935,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             "submit-failed",
             StringComparison.OrdinalIgnoreCase);
         if (previewSubmitFailed ||
-            recentPreviewDeadlineDrops > 0 ||
+            (recentPreviewDeadlineDrops > 0 && !visualCadenceHealthy) ||
             recentPreviewUnderflows > 3)
         {
             return new DiagnosticEvaluation(

@@ -470,7 +470,7 @@ static partial class Program
         AssertContains(diagnosticsText, "visualChanges={snapshot.VisualCadenceChangeObservedFps:0.##}fps");
         AssertContains(diagnosticsText, "var previewSubmitFailed = string.Equals(");
         AssertContains(diagnosticsText, "health.MjpegPreviewJitterLastDropReason,\n            \"submit-failed\"");
-        AssertContains(diagnosticsText, "if (previewSubmitFailed ||\n            recentPreviewDeadlineDrops > 0 ||\n            recentPreviewUnderflows > 3)");
+        AssertContains(diagnosticsText, "if (previewSubmitFailed ||\n            (recentPreviewDeadlineDrops > 0 && !visualCadenceHealthy) ||\n            recentPreviewUnderflows > 3)");
         AssertContains(diagnosticsText, "\"Preview scheduler failed to submit frames.\"");
         AssertContains(diagnosticsText, "var presentCadenceOverBudget =\n            previewRuntime.DisplayCadenceExpectedIntervalMs > 0 &&\n            previewRuntime.DisplayCadenceP95IntervalMs > previewRuntime.DisplayCadenceExpectedIntervalMs * 1.5;");
         AssertContains(diagnosticsText, "var previewSlowFrameDetail = FormatPreviewSlowFrameAlertDetail(snapshot);");
