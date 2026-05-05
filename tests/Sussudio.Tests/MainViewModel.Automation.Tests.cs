@@ -488,6 +488,10 @@ static partial class Program
         AssertContains(diagnosticsText, "repeatFramePercent <= 1.0");
         AssertContains(diagnosticsText, "longestRepeatRun <= 1");
         AssertContains(diagnosticsText, "\"Present/display 1% low is below target.\"");
+        AssertContains(diagnosticsText, "private MjpegRecentCounters UpdateMjpegRecentCounters(");
+        AssertContains(diagnosticsText, "var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);");
+        AssertContains(diagnosticsText, "recentDropped={recentMjpeg.TotalDropped} recentFailures={recentMjpeg.Failures}");
+        AssertContains(diagnosticsText, "recentMjpeg.TotalDropped > 0");
         AssertContains(diagnosticsText, "if (recentRendererSubmitted >= DiagnosticThresholds.RendererDropWarningMinSamples &&\n            recentRendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent)");
         AssertDoesNotContain(diagnosticsText, "rendererDropPercent > DiagnosticThresholds.RendererDropWarningPercent) ||\n            previewRuntime.DisplayCadenceSlowFramePercent > 1.0");
 
@@ -549,6 +553,11 @@ static partial class Program
         AssertContains(forceRotateFallbackBlock, "RecordFlashbackExportForceRotateFallback(exportId, segmentPaths.Count, inPoint, outPoint);");
         AssertDoesNotContain(forceRotateFallbackBlock, "force_rotate_failed");
         AssertDoesNotContain(forceRotateFallbackBlock, "Flashback export failed: live-edge segment rotation failed.");
+        AssertContains(captureServiceText, "private sealed class FlashbackRecordingBoundarySnapshot");
+        AssertContains(captureServiceText, "CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);");
+        AssertOccursBefore(captureServiceText, "CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);", "var exportResult = await ExportFlashbackCoreAsync(");
+        AssertContains(captureServiceText, "counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline");
+        AssertContains(captureServiceText, "audioCounters: recordingBoundary.AudioCounters ?? GetRecordingAudioCountersSinceBaseline");
         AssertContains(captureServiceText, "evictionPaused = true;");
         AssertContains(captureServiceText, "if (exportId != 0)");
         AssertContains(captureServiceText, "if (evictionPaused)");
@@ -687,6 +696,9 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;");
         AssertContains(diagnosticSessionText, "if (startedRecording && (shouldStopRecordingForVerification || !options.LeaveRunning))");
         AssertContains(diagnosticSessionText, "recording stopped for verification");
+        AssertContains(diagnosticSessionText, "var stoppedRecordingForVerification = false;");
+        AssertContains(diagnosticSessionText, "stoppedRecordingForVerification = shouldStopRecordingForVerification &&");
+        AssertContains(diagnosticSessionText, "var diagnosticHealthSnapshot = stoppedRecordingForVerification");
         AssertContains(diagnosticSessionText, ".WaitAsync(cancellationToken)");
         AssertContains(diagnosticSessionText, "scenarioCts.Cancel();");
         AssertContains(diagnosticSessionText, "WriteSamplingLiveStateBestEffortAsync");
@@ -1061,9 +1073,13 @@ static partial class Program
         AssertContains(diagnosticSessionText, "\"flashback preview: scheduler underflows increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback preview: D3D frame stats failures increased delta=");
         AssertContains(diagnosticSessionText, "\"flashback preview: present/display pressure \"");
+        AssertContains(diagnosticSessionText, "var toleratesPreviewCycleSchedulerSettling =");
+        AssertContains(diagnosticSessionText, "runFlashbackPreviewCycle || runFlashbackRecordingPreviewCycle");
+        AssertContains(diagnosticSessionText, "bool tolerateDeadlineDropsWithHealthyVisualCadence");
+        AssertContains(diagnosticSessionText, "deadlineDropsDelta > 0 && !tolerateDeadlineDropsWithHealthyVisualCadence");
         AssertContains(diagnosticSessionText, "var onePercentLowFloor = targetFps * 0.80;");
         AssertContains(diagnosticSessionText, "var visualCadenceHealthy =");
-        AssertContains(diagnosticSessionText, "visualCadenceMetrics.MinChangeFpsObserved >= targetFps * 0.98");
+        AssertContains(diagnosticSessionText, "IsVisualCadenceSessionHealthy(visualCadenceMetrics, targetFps)");
         AssertContains(diagnosticSessionText, "if ((onePercentLowMiss && !visualCadenceHealthy) || presentP99Miss || totalP99Miss)");
         AssertContains(diagnosticSessionText, "visualChangeFpsMin={visualCadenceMetrics.MinChangeFpsObserved:0.##}");
         AssertContains(diagnosticSessionText, "var presentP99BudgetMs = targetFrameMs * 1.25;");
@@ -1090,6 +1106,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "runFlashbackRangeExportAudioSwitch");
         AssertContains(diagnosticSessionText, "IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)");
         AssertContains(diagnosticSessionText, "diagnostic health source-signal warning tolerated for export reliability scenario");
+        AssertContains(diagnosticSessionText, "IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)");
+        AssertContains(diagnosticSessionText, "diagnostic health preview scheduler transition warning tolerated for preview-cycle scenario");
         AssertContains(diagnosticSessionText, "var flashbackWarningsSucceeded = !isFlashbackScenario ||");
         AssertContains(diagnosticSessionText, "IsToleratedFlashbackScenarioWarning(");
         AssertContains(diagnosticSessionText, "flashbackWarningsSucceeded,");

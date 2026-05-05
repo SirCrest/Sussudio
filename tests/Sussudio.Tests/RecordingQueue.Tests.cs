@@ -340,7 +340,7 @@ static partial class Program
         AssertOccursBefore(
             stopRecordingBackend,
             "if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))",
-            "var flashbackVideoCapture = _unifiedVideoCapture;");
+            "_lastRecordingIntegrity = BuildRecordingIntegritySummary(");
         AssertOccursBefore(
             stopRecordingBackend,
             "fbResult = FinalizeResult.Failure(fbOutputPath, \"Flashback recording finalize cancelled.\");",

@@ -44,6 +44,11 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private long _lastD3DFrameStatsMissedRefreshes;
     private long _lastD3DFrameStatsFailures;
     private long _lastD3DFrameStatsEvalTick;
+    private long _lastMjpegTotalDropped;
+    private long _lastMjpegDecodeFailures;
+    private long _lastMjpegEmitFailures;
+    private long _lastMjpegCompressedDropsQueueFull;
+    private long _lastMjpegEvalTick;
     private long _lastFlashbackDroppedFrames;
     private long _lastFlashbackVideoEncoderDroppedFrames;
     private long _lastFlashbackVideoSequenceGaps;
@@ -520,6 +525,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             captureCadenceDropPercent: health.CaptureCadenceEstimatedDropPercent,
             lastVerification: lastVerification);
         var (recentPreviewUnderflows, recentPreviewDeadlineDrops) = UpdatePreviewJitterRecentCounters(health, nowTick);
+        var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);
         var recentRenderer = UpdateD3DRendererRecentCounters(previewRuntime, nowTick);
         var (recentD3DMissedRefreshes, recentD3DStatsFailures) = UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick);
         var diagnostic = BuildDiagnosticEvaluation(
@@ -529,6 +535,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             viewModelSnapshot.IsPreviewing,
             viewModelSnapshot.IsRecording,
             performance,
+            recentMjpeg,
             recentPreviewUnderflows,
             recentPreviewDeadlineDrops,
             recentRenderer,
@@ -1616,6 +1623,32 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             Math.Max(0, deadlineDrops - previousDeadlineDrops));
     }
 
+    private MjpegRecentCounters UpdateMjpegRecentCounters(
+        CaptureHealthSnapshot health,
+        long nowTick)
+    {
+        var totalDropped = Math.Max(0, health.MjpegTotalDropped);
+        var decodeFailures = Math.Max(0, health.MjpegDecodeFailures);
+        var emitFailures = Math.Max(0, health.MjpegEmitFailures);
+        var compressedQueueDrops = Math.Max(0, health.MjpegCompressedDropsQueueFull);
+        var previousTick = Interlocked.Exchange(ref _lastMjpegEvalTick, nowTick);
+        var previousTotalDropped = Interlocked.Exchange(ref _lastMjpegTotalDropped, totalDropped);
+        var previousDecodeFailures = Interlocked.Exchange(ref _lastMjpegDecodeFailures, decodeFailures);
+        var previousEmitFailures = Interlocked.Exchange(ref _lastMjpegEmitFailures, emitFailures);
+        var previousCompressedQueueDrops = Interlocked.Exchange(ref _lastMjpegCompressedDropsQueueFull, compressedQueueDrops);
+
+        if (previousTick == 0 || nowTick < previousTick)
+        {
+            return MjpegRecentCounters.Empty;
+        }
+
+        return new MjpegRecentCounters(
+            Math.Max(0, totalDropped - previousTotalDropped),
+            Math.Max(0, decodeFailures - previousDecodeFailures),
+            Math.Max(0, emitFailures - previousEmitFailures),
+            Math.Max(0, compressedQueueDrops - previousCompressedQueueDrops));
+    }
+
     private D3DRendererRecentCounters UpdateD3DRendererRecentCounters(
         PreviewRuntimeSnapshot previewRuntime,
         long nowTick)
@@ -2335,6 +2368,17 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         public static D3DRendererRecentCounters Empty { get; } = new(0, 0, 0);
     }
 
+    private readonly record struct MjpegRecentCounters(
+        long TotalDropped,
+        long DecodeFailures,
+        long EmitFailures,
+        long CompressedQueueDrops)
+    {
+        public static MjpegRecentCounters Empty { get; } = new(0, 0, 0, 0);
+
+        public long Failures => DecodeFailures + EmitFailures + CompressedQueueDrops;
+    }
+
     private static DiagnosticEvaluation BuildDiagnosticEvaluation(
         CaptureHealthSnapshot health,
         CaptureRuntimeSnapshot captureRuntime,
@@ -2342,6 +2386,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         bool isPreviewing,
         bool isRecording,
         PerformanceEvaluation performance,
+        MjpegRecentCounters recentMjpeg,
         long recentPreviewUnderflows,
         long recentPreviewDeadlineDrops,
         D3DRendererRecentCounters recentRenderer,
@@ -2354,7 +2399,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var sourceLane =
             $"source target={sourceTarget} avg={health.CaptureCadenceAverageIntervalMs:0.##}ms p95={health.CaptureCadenceP95IntervalMs:0.##}ms p99={health.CaptureCadenceP99IntervalMs:0.##}ms max={health.CaptureCadenceMaxIntervalMs:0.##}ms rate={health.CaptureCadenceObservedFps:0.##}/{health.ExpectedFrameRate:0.##}fps 1pctLow={health.CaptureCadenceOnePercentLowFps:0.##}fps gaps={health.CaptureCadenceSevereGapCount} drops={health.CaptureCadenceEstimatedDroppedFrames} ({health.CaptureCadenceEstimatedDropPercent:0.###}%)";
         var decodeLane =
-            $"decode p95={health.MjpegDecodeP95Ms:0.##}ms callbackP95={health.MjpegCallbackP95Ms:0.##}ms dropped={health.MjpegTotalDropped} failures={health.MjpegDecodeFailures + health.MjpegEmitFailures}";
+            $"decode p95={health.MjpegDecodeP95Ms:0.##}ms callbackP95={health.MjpegCallbackP95Ms:0.##}ms dropped={health.MjpegTotalDropped} failures={health.MjpegDecodeFailures + health.MjpegEmitFailures} recentDropped={recentMjpeg.TotalDropped} recentFailures={recentMjpeg.Failures}";
         var previewLastDropReason = string.IsNullOrWhiteSpace(health.MjpegPreviewJitterLastDropReason)
             ? "none"
             : health.MjpegPreviewJitterLastDropReason;
@@ -2817,10 +2862,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 audioLane);
         }
 
-        if (health.MjpegDecodeFailures > 0 ||
-            health.MjpegEmitFailures > 0 ||
-            health.MjpegCompressedDropsQueueFull > 0 ||
-            health.MjpegTotalDropped > 0)
+        if (recentMjpeg.DecodeFailures > 0 ||
+            recentMjpeg.EmitFailures > 0 ||
+            recentMjpeg.CompressedQueueDrops > 0 ||
+            recentMjpeg.TotalDropped > 0)
         {
             return new DiagnosticEvaluation(
                 "Warning",

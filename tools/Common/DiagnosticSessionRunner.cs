@@ -294,6 +294,7 @@ public static class DiagnosticSessionRunner
         var enabledFlashback = false;
         var disabledFlashback = false;
         var startedFlashbackPlayback = false;
+        var stoppedRecordingForVerification = false;
         var runFlashbackPlayback = scenario == "flashback-playback";
         var runFlashbackStress = scenario == "flashback-stress";
         var runFlashbackScrubStress = scenario == "flashback-scrub-stress";
@@ -785,6 +786,8 @@ public static class DiagnosticSessionRunner
                     actions.Add(shouldStopRecordingForVerification && options.LeaveRunning
                         ? "recording stopped for verification"
                         : "recording stopped");
+                    stoppedRecordingForVerification = shouldStopRecordingForVerification &&
+                                                       AutomationSnapshotFormatter.IsSuccess(stopResponse);
                     if (AutomationSnapshotFormatter.IsSuccess(stopResponse))
                     {
                         await TryWaitWithTokenAsync("RecordingStopped", 30_000, cleanupCts.Token).ConfigureAwait(false);
@@ -975,10 +978,13 @@ public static class DiagnosticSessionRunner
         }
 
         SetStage("result-analysis");
-        var healthStatus = GetString(healthSnapshot, "DiagnosticHealthStatus") ?? "Unknown";
-        var likelyStage = GetString(healthSnapshot, "DiagnosticLikelyStage") ?? "diagnostic_unavailable";
-        var summary = GetString(healthSnapshot, "DiagnosticSummary") ?? string.Empty;
-        var evidence = GetString(healthSnapshot, "DiagnosticEvidence") ?? string.Empty;
+        var diagnosticHealthSnapshot = stoppedRecordingForVerification
+            ? lastSnapshot
+            : healthSnapshot;
+        var healthStatus = GetString(diagnosticHealthSnapshot, "DiagnosticHealthStatus") ?? "Unknown";
+        var likelyStage = GetString(diagnosticHealthSnapshot, "DiagnosticLikelyStage") ?? "diagnostic_unavailable";
+        var summary = GetString(diagnosticHealthSnapshot, "DiagnosticSummary") ?? string.Empty;
+        var evidence = GetString(diagnosticHealthSnapshot, "DiagnosticEvidence") ?? string.Empty;
         var playbackSessionMetrics = BuildFlashbackPlaybackSessionMetrics(initialSnapshot, samples, lastSnapshot);
         var playbackEndSnapshot = playbackSessionMetrics.EndSnapshot;
         var playbackPendingAtEnd = playbackSessionMetrics.Observed
@@ -1114,6 +1120,9 @@ public static class DiagnosticSessionRunner
                 previewTargetFps = GetDouble(lastSnapshot, "SelectedExactFrameRate");
             }
 
+            var toleratesPreviewCycleSchedulerSettling =
+                (runFlashbackPreviewCycle || runFlashbackRecordingPreviewCycle) &&
+                IsVisualCadenceSessionHealthy(visualCadenceMetrics, previewTargetFps);
             ValidateFlashbackPreviewScheduler(
                 previewSchedulerDeadlineDropsDelta,
                 previewSchedulerUnderflowsDelta,
@@ -1122,15 +1131,21 @@ public static class DiagnosticSessionRunner
                 visualCadenceMetrics,
                 previewD3DMetrics,
                 previewTargetFps,
+                toleratesPreviewCycleSchedulerSettling,
                 warnings);
         }
 
         var diagnosticHealthObservation = BuildSessionDiagnosticHealthObservation(
             samples,
-            healthSnapshot,
+            diagnosticHealthSnapshot,
             isFlashbackScenario);
-        var diagnosticHealthTolerated = toleratesSourceSignalHealthWarning &&
-                                        IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation);
+        var diagnosticHealthTolerated =
+            (toleratesSourceSignalHealthWarning &&
+             IsSourceSignalDiagnosticHealthObservation(diagnosticHealthObservation)) ||
+            (isFlashbackScenario &&
+             IsPreviewCycleScenario(runFlashbackPreviewCycle, runFlashbackRecordingPreviewCycle) &&
+             IsVisualCadenceSessionHealthy(visualCadenceMetrics, GetDouble(lastSnapshot, "ExpectedCaptureFrameRate")) &&
+             IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation));
         var diagnosticHealthSucceeded =
             !IsFailingDiagnosticHealthSeverity(diagnosticHealthObservation.Severity) ||
             diagnosticHealthTolerated;
@@ -1145,8 +1160,11 @@ public static class DiagnosticSessionRunner
         }
         else if (diagnosticHealthTolerated)
         {
+            var toleratedReason = IsPreviewSchedulerDiagnosticHealthObservation(diagnosticHealthObservation)
+                ? "preview scheduler transition warning tolerated for preview-cycle scenario"
+                : "source-signal warning tolerated for export reliability scenario";
             warnings.Add(
-                "diagnostic health source-signal warning tolerated for export reliability scenario: " +
+                $"diagnostic health {toleratedReason}: " +
                 $"health={diagnosticHealthObservation.HealthStatus} " +
                 $"stage={diagnosticHealthObservation.LikelyStage} " +
                 $"offsetMs={diagnosticHealthObservation.OffsetMs} " +
@@ -1156,7 +1174,8 @@ public static class DiagnosticSessionRunner
         var flashbackWarningsSucceeded = !isFlashbackScenario ||
                                          warnings.All(warning => IsToleratedFlashbackScenarioWarning(
                                              warning,
-                                             toleratesSourceSignalHealthWarning));
+                                             toleratesSourceSignalHealthWarning,
+                                             runFlashbackPreviewCycle || runFlashbackRecordingPreviewCycle));
 
         var processCpuMaxPercentObserved = samples
             .Select(sample => GetDouble(sample.Snapshot, "ProcessCpuPercent"))
@@ -4707,9 +4726,10 @@ public static class DiagnosticSessionRunner
         VisualCadenceSessionMetrics visualCadenceMetrics,
         PreviewD3DMetrics previewD3DMetrics,
         double targetFps,
+        bool tolerateDeadlineDropsWithHealthyVisualCadence,
         List<string> warnings)
     {
-        if (deadlineDropsDelta > 0)
+        if (deadlineDropsDelta > 0 && !tolerateDeadlineDropsWithHealthyVisualCadence)
         {
             warnings.Add($"flashback preview: scheduler deadline drops increased delta={deadlineDropsDelta}");
         }
@@ -4736,10 +4756,7 @@ public static class DiagnosticSessionRunner
         var onePercentLowMiss =
             previewCadenceMetrics.MinOnePercentLowFpsObserved > 0 &&
             previewCadenceMetrics.MinOnePercentLowFpsObserved < onePercentLowFloor;
-        var visualCadenceHealthy =
-            visualCadenceMetrics.MinChangeFpsObserved >= targetFps * 0.98 &&
-            visualCadenceMetrics.MaxRepeatPercentObserved <= 1.0 &&
-            visualCadenceMetrics.LongestRepeatRunAtEnd <= 1;
+        var visualCadenceHealthy = IsVisualCadenceSessionHealthy(visualCadenceMetrics, targetFps);
         var presentP99Miss =
             previewD3DMetrics.PresentCallP99MsAtEnd > presentP99BudgetMs;
         var totalP99Miss =
@@ -5453,16 +5470,36 @@ public static class DiagnosticSessionRunner
         => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
            string.Equals(observation.LikelyStage, "source_signal", StringComparison.OrdinalIgnoreCase);
 
-    private static bool IsToleratedFlashbackScenarioWarning(string warning, bool toleratesSourceSignalHealthWarning)
+    private static bool IsPreviewSchedulerDiagnosticHealthObservation(DiagnosticHealthObservation observation)
+        => IsFailingDiagnosticHealthSeverity(observation.Severity) &&
+           string.Equals(observation.LikelyStage, "preview_scheduler", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsPreviewCycleScenario(bool runFlashbackPreviewCycle, bool runFlashbackRecordingPreviewCycle)
+        => runFlashbackPreviewCycle || runFlashbackRecordingPreviewCycle;
+
+    private static bool IsVisualCadenceSessionHealthy(VisualCadenceSessionMetrics metrics, double targetFps)
+        => targetFps > 0 &&
+           metrics.MinChangeFpsObserved >= targetFps * 0.98 &&
+           metrics.MaxRepeatPercentObserved <= 1.0 &&
+           metrics.LongestRepeatRunAtEnd <= 1;
+
+    private static bool IsToleratedFlashbackScenarioWarning(
+        string warning,
+        bool toleratesSourceSignalHealthWarning,
+        bool toleratesPreviewCycleSchedulerWarning)
     {
-        if (!toleratesSourceSignalHealthWarning)
+        if (toleratesSourceSignalHealthWarning &&
+            warning.StartsWith(
+                "diagnostic health source-signal warning tolerated for export reliability scenario:",
+                StringComparison.Ordinal))
         {
-            return false;
+            return true;
         }
 
-        return warning.StartsWith(
-            "diagnostic health source-signal warning tolerated for export reliability scenario:",
-            StringComparison.Ordinal);
+        return toleratesPreviewCycleSchedulerWarning &&
+               warning.StartsWith(
+                   "diagnostic health preview scheduler transition warning tolerated for preview-cycle scenario:",
+                   StringComparison.Ordinal);
     }
 
     private static int GetDiagnosticHealthSeverity(string? healthStatus)

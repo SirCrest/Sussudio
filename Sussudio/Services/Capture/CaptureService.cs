@@ -2504,6 +2504,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
     private async Task<FinalizeResult> FinalizeFlashbackRecordingAsync(
         FlashbackEncoderSink flashbackSink,
         RecordingContext? recordingContext,
+        FlashbackRecordingBoundarySnapshot recordingBoundary,
         CancellationToken cancellationToken)
     {
         var outputPath = recordingContext?.FinalOutputPath ?? string.Empty;
@@ -2525,6 +2526,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             outerPauseApplied = bufferManager != null;
 
             var endResult = await flashbackSink.EndRecordingAsync(cancellationToken).ConfigureAwait(false);
+            CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);
             if (!endResult.Succeeded)
                 return endResult;
 
@@ -2557,6 +2559,46 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 ResumeFlashbackEvictionBestEffort(bufferManager, "flashback_recording_finalize");
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
         }
+    }
+
+    private sealed class FlashbackRecordingBoundarySnapshot
+    {
+        public bool Captured { get; set; }
+        public long RecordingFramesDelivered { get; set; }
+        public long RecordingFramesEnqueued { get; set; }
+        public RecordingIntegrityCounterSnapshot? Counters { get; set; }
+        public RecordingAudioIntegrityCounterSnapshot? AudioCounters { get; set; }
+    }
+
+    private void CaptureFlashbackRecordingBoundarySnapshot(
+        FlashbackEncoderSink flashbackSink,
+        FlashbackRecordingBoundarySnapshot recordingBoundary)
+    {
+        if (recordingBoundary.Captured)
+        {
+            return;
+        }
+
+        var flashbackVideoCapture = _unifiedVideoCapture;
+        if (flashbackVideoCapture != null)
+        {
+            flashbackVideoCapture.EndFlashbackRecordingAccounting();
+            _lastMfSourceReaderFramesDelivered = flashbackVideoCapture.VideoFramesArrived;
+            _lastMfSourceReaderFramesDropped = flashbackVideoCapture.VideoFramesDropped;
+            _lastMfSourceReaderNegotiatedFormat = flashbackVideoCapture.NegotiatedFormat;
+            recordingBoundary.RecordingFramesDelivered = flashbackVideoCapture.RecordingFramesDelivered;
+            recordingBoundary.RecordingFramesEnqueued = flashbackVideoCapture.VideoFramesWrittenToSink;
+            Logger.Log(
+                "VIDEO_DIAG flashback_recording_pipeline " +
+                $"source_frames_during_recording={recordingBoundary.RecordingFramesDelivered} " +
+                $"frames_accepted_by_flashback={recordingBoundary.RecordingFramesEnqueued} " +
+                $"pipeline_drops={recordingBoundary.RecordingFramesDelivered - recordingBoundary.RecordingFramesEnqueued}");
+        }
+
+        recordingBoundary.Counters = CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, flashbackVideoCapture);
+        recordingBoundary.AudioCounters = GetRecordingAudioCountersSinceBaseline(
+            CaptureRecordingAudioCounters(_wasapiAudioCapture, flashbackSink, _activeRecordingSettings));
+        recordingBoundary.Captured = true;
     }
 
     private static FinalizeResult PreserveFlashbackEndArtifactsOnFailure(
@@ -4542,6 +4584,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             var flashbackSink = _flashbackSink!;
             var fbRecordingContext = _recordingContext;
             var fbOutputPath = fbRecordingContext?.FinalOutputPath ?? (_lastOutputPath ?? string.Empty);
+            var recordingBoundary = new FlashbackRecordingBoundarySnapshot();
 
             Volatile.Write(ref _flashbackRecordingFinalizeInProgress, 1);
             _recordingSink = null;
@@ -4553,7 +4596,12 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             {
                 try
                 {
-                    fbResult = await FinalizeFlashbackRecordingAsync(flashbackSink, fbRecordingContext, cancellationToken).ConfigureAwait(false);
+                    fbResult = await FinalizeFlashbackRecordingAsync(
+                            flashbackSink,
+                            fbRecordingContext,
+                            recordingBoundary,
+                            cancellationToken)
+                        .ConfigureAwait(false);
                 }
                 finally
                 {
@@ -4571,27 +4619,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 fbResult = FinalizeResult.Failure(fbOutputPath, $"Flashback recording finalize failed: {ex.Message}");
             }
 
+            CaptureFlashbackRecordingBoundarySnapshot(flashbackSink, recordingBoundary);
+
             if (cancellationToken.IsCancellationRequested && IsFlashbackFinalizeCancellationResult(fbResult))
             {
                 flashbackCancellationException ??= new OperationCanceledException(cancellationToken);
-            }
-
-            var flashbackVideoCapture = _unifiedVideoCapture;
-            var recordingFramesDelivered = 0L;
-            var recordingFramesEnqueued = 0L;
-            if (flashbackVideoCapture != null)
-            {
-                flashbackVideoCapture.EndFlashbackRecordingAccounting();
-                _lastMfSourceReaderFramesDelivered = flashbackVideoCapture.VideoFramesArrived;
-                _lastMfSourceReaderFramesDropped = flashbackVideoCapture.VideoFramesDropped;
-                _lastMfSourceReaderNegotiatedFormat = flashbackVideoCapture.NegotiatedFormat;
-                recordingFramesDelivered = flashbackVideoCapture.RecordingFramesDelivered;
-                recordingFramesEnqueued = flashbackVideoCapture.VideoFramesWrittenToSink;
-                Logger.Log(
-                    "VIDEO_DIAG flashback_recording_pipeline " +
-                    $"source_frames_during_recording={recordingFramesDelivered} " +
-                    $"frames_accepted_by_flashback={recordingFramesEnqueued} " +
-                    $"pipeline_drops={recordingFramesDelivered - recordingFramesEnqueued}");
             }
 
             _lastRecordingIntegrity = BuildRecordingIntegritySummary(
@@ -4600,10 +4632,10 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 finalizeSucceeded: fbResult.Succeeded,
                 finalizeStatus: fbResult.StatusMessage,
                 completedUtc: DateTimeOffset.UtcNow,
-                sourceFrames: recordingFramesDelivered,
-                acceptedFrames: recordingFramesEnqueued,
-                counters: CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, flashbackVideoCapture),
-                audioCounters: GetRecordingAudioCountersSinceBaseline(
+                sourceFrames: recordingBoundary.RecordingFramesDelivered,
+                acceptedFrames: recordingBoundary.RecordingFramesEnqueued,
+                counters: recordingBoundary.Counters ?? CaptureFlashbackRecordingIntegrityCountersSinceBaseline(flashbackSink, _unifiedVideoCapture),
+                audioCounters: recordingBoundary.AudioCounters ?? GetRecordingAudioCountersSinceBaseline(
                     CaptureRecordingAudioCounters(_wasapiAudioCapture, flashbackSink, _activeRecordingSettings)));
             _recordingIntegrityCounterBaseline = null;
             _recordingIntegrityAudioBaseline = null;
