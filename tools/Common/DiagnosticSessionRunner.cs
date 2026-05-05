@@ -781,8 +781,9 @@ public static class DiagnosticSessionRunner
                 try
                 {
                     SetStage("cleanup-stop-recording");
-                    using var cleanupCts = CreateCleanupCts(TimeSpan.FromSeconds(45));
-                    var stopResponse = await SendWithTokenAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, 45_000, false, cleanupCts.Token).ConfigureAwait(false);
+                    const int recordingCleanupTimeoutMs = 180_000;
+                    using var cleanupCts = CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs));
+                    var stopResponse = await SendWithTokenAsync("SetRecordingEnabled", new Dictionary<string, object?> { ["enabled"] = false }, recordingCleanupTimeoutMs, false, cleanupCts.Token).ConfigureAwait(false);
                     actions.Add(shouldStopRecordingForVerification && options.LeaveRunning
                         ? "recording stopped for verification"
                         : "recording stopped");
@@ -790,7 +791,7 @@ public static class DiagnosticSessionRunner
                                                        AutomationSnapshotFormatter.IsSuccess(stopResponse);
                     if (AutomationSnapshotFormatter.IsSuccess(stopResponse))
                     {
-                        await TryWaitWithTokenAsync("RecordingStopped", 30_000, cleanupCts.Token).ConfigureAwait(false);
+                        await TryWaitWithTokenAsync("RecordingStopped", recordingCleanupTimeoutMs, cleanupCts.Token).ConfigureAwait(false);
                     }
                 }
                 catch (Exception ex)

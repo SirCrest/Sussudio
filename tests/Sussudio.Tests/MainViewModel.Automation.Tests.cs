@@ -691,8 +691,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "var livePath = Path.Combine(outputDirectory, \"session-live.json\");");
         AssertContains(diagnosticSessionText, "var initialSnapshotKnown = false;");
         AssertContains(diagnosticSessionText, "skipped state-mutating scenario");
-        AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromSeconds(45))");
-        AssertContains(diagnosticSessionText, "SetRecordingEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, 45_000");
+        AssertContains(diagnosticSessionText, "CreateCleanupCts(TimeSpan.FromMilliseconds(recordingCleanupTimeoutMs))");
+        AssertContains(diagnosticSessionText, "SetRecordingEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, recordingCleanupTimeoutMs");
         AssertContains(diagnosticSessionText, "var shouldStopRecordingForVerification = startedRecording && options.VerifyRecording;");
         AssertContains(diagnosticSessionText, "if (startedRecording && (shouldStopRecordingForVerification || !options.LeaveRunning))");
         AssertContains(diagnosticSessionText, "recording stopped for verification");
@@ -1017,6 +1017,8 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForPreviewActiveAsync(");
         AssertContains(diagnosticSessionText, "private static async Task RunFlashbackRecordingPreviewCycleAsync(");
         AssertContains(diagnosticSessionText, "flashback recording preview cycle preview stopped");
+        AssertContains(diagnosticSessionText, "const int recordingCleanupTimeoutMs = 180_000;");
+        AssertContains(diagnosticSessionText, "SetRecordingEnabled\", new Dictionary<string, object?> { [\"enabled\"] = false }, recordingCleanupTimeoutMs");
         AssertContains(diagnosticSessionText, "private static async Task<JsonElement?> WaitForFlashbackRecordingReadyAsync(");
         AssertContains(diagnosticSessionText, "private static async Task<FlashbackRecordingSettingsDeferredPresetState> RunFlashbackRecordingSettingsDeferredAsync(");
         AssertContains(diagnosticSessionText, "flashback recording settings deferred post-stop buffer verified");
