@@ -681,10 +681,11 @@ static partial class Program
         AssertContains(cycleBuffer, "ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);");
         AssertContains(cycleBuffer, "var preservedInPoint = !effectivePurgeSegments ? oldPlaybackController?.InPoint : null;");
         AssertContains(cycleBuffer, "var preservedOutPoint = !effectivePurgeSegments ? oldPlaybackController?.OutPoint : null;");
+        AssertContains(cycleBuffer, "var preservedInPointFilePts = !effectivePurgeSegments ? oldPlaybackController?.InPointFilePts : null;");
+        AssertContains(cycleBuffer, "var preservedOutPointFilePts = !effectivePurgeSegments ? oldPlaybackController?.OutPointFilePts : null;");
         AssertDoesNotContain(cycleBuffer, "var preservedInPoint = oldPlaybackController?.InPoint;");
         AssertDoesNotContain(cycleBuffer, "var preservedOutPoint = oldPlaybackController?.OutPoint;");
-        AssertContains(cycleBuffer, "playbackController.InPoint = preservedInPoint;");
-        AssertContains(cycleBuffer, "playbackController.OutPoint = preservedOutPoint;");
+        AssertContains(cycleBuffer, "playbackController.RestoreInOutPoints(\n                preservedInPoint,\n                preservedOutPoint,\n                preservedInPointFilePts,\n                preservedOutPointFilePts);");
         var ensureFlashbackPreviewBackend = ExtractTextBetween(
             captureServiceText,
             "private async Task EnsureFlashbackPreviewBackendAsync",

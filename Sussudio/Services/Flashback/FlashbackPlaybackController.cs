@@ -269,6 +269,26 @@ internal sealed class FlashbackPlaybackController : IDisposable
         }
     }
 
+    public void RestoreInOutPoints(
+        TimeSpan? inPoint,
+        TimeSpan? outPoint,
+        TimeSpan? inPointFilePts,
+        TimeSpan? outPointFilePts)
+    {
+        InPoint = inPoint;
+        OutPoint = outPoint;
+
+        if (inPoint.HasValue && inPointFilePts.HasValue && inPointFilePts.Value >= TimeSpan.Zero)
+        {
+            Interlocked.Exchange(ref _inPointFilePtsTicks, inPointFilePts.Value.Ticks);
+        }
+
+        if (outPoint.HasValue && outPointFilePts.HasValue && outPointFilePts.Value >= TimeSpan.Zero)
+        {
+            Interlocked.Exchange(ref _outPointFilePtsTicks, outPointFilePts.Value.Ticks);
+        }
+    }
+
     // --- Playback thread ---
     private const int CommandQueueCapacity = 256;
     private const double FallbackPlaybackFrameRate = 60.0;

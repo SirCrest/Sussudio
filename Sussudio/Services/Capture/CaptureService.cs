@@ -2384,6 +2384,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         _flashbackPlaybackController = null;
         var preservedInPoint = !effectivePurgeSegments ? oldPlaybackController?.InPoint : null;
         var preservedOutPoint = !effectivePurgeSegments ? oldPlaybackController?.OutPoint : null;
+        var preservedInPointFilePts = !effectivePurgeSegments ? oldPlaybackController?.InPointFilePts : null;
+        var preservedOutPointFilePts = !effectivePurgeSegments ? oldPlaybackController?.OutPointFilePts : null;
         if (oldPlaybackController != null)
         {
             try
@@ -2514,8 +2516,11 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
             var playbackController = new FlashbackPlaybackController(bufferManager);
             playbackController.GpuDecodeEnabled = _currentSettings.FlashbackGpuDecode;
-            playbackController.InPoint = preservedInPoint;
-            playbackController.OutPoint = preservedOutPoint;
+            playbackController.RestoreInOutPoints(
+                preservedInPoint,
+                preservedOutPoint,
+                preservedInPointFilePts,
+                preservedOutPointFilePts);
             if (_previewFrameSink != null)
             {
                 playbackController.Initialize(_previewFrameSink, unifiedVideoCapture, _wasapiAudioPlayback, _wasapiAudioCapture);
