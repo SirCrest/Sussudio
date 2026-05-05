@@ -406,6 +406,9 @@ static partial class Program
         AssertContains(diagnosticsText, "var flashbackRecordingDegraded =");
         AssertContains(diagnosticsText, "health.FlashbackVideoEncoderDroppedFrames > 0");
         AssertContains(diagnosticsText, "health.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs");
+        AssertContains(diagnosticsText, "var flashbackBackendSettingsUnexpectedlyStale =");
+        AssertContains(diagnosticsText, "health.FlashbackBackendSettingsStale &&\n            !isRecording");
+        AssertContains(diagnosticsText, "\"Flashback backend settings differ from requested settings.\"");
         AssertContains(diagnosticsText, "health.FlashbackVideoQueueDepth,\n                 health.FlashbackVideoQueueCapacity,\n                 health.FlashbackVideoQueueOldestFrameAgeMs");
         AssertContains(diagnosticsText, "forceRotate={health.FlashbackForceRotateActive}");
         AssertContains(diagnosticsText, "queueRejects={health.FlashbackVideoQueueRejectedFrames}");

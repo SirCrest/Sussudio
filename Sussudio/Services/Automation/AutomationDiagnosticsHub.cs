@@ -2539,6 +2539,10 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
              IsFlashbackAudioQueueBackedUp(
                  health.FlashbackAudioQueueDepth,
                  health.FlashbackAudioQueueCapacity));
+        var flashbackBackendSettingsUnexpectedlyStale =
+            health.FlashbackActive &&
+            health.FlashbackBackendSettingsStale &&
+            !isRecording;
         var flashbackExportRotationGap =
             flashbackForceRotateRejectWithoutDamage &&
             (health.FlashbackExportActive ||
@@ -2587,6 +2591,22 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                 "Warning",
                 "flashback_export",
                 "Flashback export rotation skipped live-edge frames.",
+                flashbackRecordingLane,
+                sourceLane,
+                decodeLane,
+                previewLane,
+                renderLane,
+                presentLane,
+                recordingLane,
+                audioLane);
+        }
+
+        if (flashbackBackendSettingsUnexpectedlyStale)
+        {
+            return new DiagnosticEvaluation(
+                "Warning",
+                "flashback_recording",
+                "Flashback backend settings differ from requested settings.",
                 flashbackRecordingLane,
                 sourceLane,
                 decodeLane,
