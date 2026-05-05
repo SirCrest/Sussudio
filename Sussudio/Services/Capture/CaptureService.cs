@@ -523,6 +523,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         FlashbackExporter? flashbackExporter;
         var sessionLockHeld = false;
         var backendLeaseHeld = false;
+        var exportOperationLockHeld = false;
         try
         {
             await _sessionTransitionLock.WaitAsync(ct).ConfigureAwait(false);
@@ -541,16 +542,21 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             flashbackExporter = bufferManager != null
                 ? _flashbackExporter ??= new FlashbackExporter()
                 : _flashbackExporter;
+
+            await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);
+            exportOperationLockHeld = true;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
+            ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);
             return FailFlashbackExport(outputPath, "Flashback export cancelled.");
         }
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_EXPORT_SNAPSHOT_FAIL op=range type={ex.GetType().Name} msg='{ex.Message}'");
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
+            ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);
             throw;
         }
         finally
@@ -571,6 +577,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 snapshotSink: flashbackSink,
                 snapshotBufferManager: bufferManager,
                 snapshotExporter: flashbackExporter,
+                exportOperationLockAlreadyHeld: true,
                 resolveRangeAfterEvictionPaused: manager =>
                 {
                     var validStart = manager.ValidStartPts;
@@ -608,6 +615,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         FlashbackExporter? flashbackExporter;
         var sessionLockHeld = false;
         var backendLeaseHeld = false;
+        var exportOperationLockHeld = false;
         try
         {
             await _sessionTransitionLock.WaitAsync(ct).ConfigureAwait(false);
@@ -626,16 +634,21 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             flashbackExporter = bufferManager != null
                 ? _flashbackExporter ??= new FlashbackExporter()
                 : _flashbackExporter;
+
+            await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);
+            exportOperationLockHeld = true;
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
+            ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);
             return FailFlashbackExport(outputPath, "Flashback export cancelled.");
         }
         catch (Exception ex)
         {
             Logger.Log($"FLASHBACK_EXPORT_SNAPSHOT_FAIL op=last_n type={ex.GetType().Name} msg='{ex.Message}'");
             ReleaseFlashbackBackendLeaseIfHeld(ref backendLeaseHeld);
+            ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);
             throw;
         }
         finally
@@ -656,6 +669,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 snapshotSink: flashbackSink,
                 snapshotBufferManager: bufferManager,
                 snapshotExporter: flashbackExporter,
+                exportOperationLockAlreadyHeld: true,
                 resolveRangeAfterEvictionPaused: manager =>
                 {
                     var bufferedDuration = manager.BufferedDuration;
@@ -680,6 +694,17 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         ReleaseSemaphoreBestEffort(_flashbackBackendLeaseLock, "flashback_backend_lease");
     }
 
+    private void ReleaseFlashbackExportOperationLockIfHeld(ref bool exportOperationLockHeld)
+    {
+        if (!exportOperationLockHeld)
+        {
+            return;
+        }
+
+        exportOperationLockHeld = false;
+        ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, "flashback_export_operation");
+    }
+
     private FinalizeResult FailFlashbackExport(
         string outputPath,
         string statusMessage,
@@ -702,6 +727,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         FlashbackBufferManager? snapshotBufferManager = null,
         FlashbackExporter? snapshotExporter = null,
         bool requireCompleteLiveEdge = false,
+        bool exportOperationLockAlreadyHeld = false,
         Func<FlashbackBufferManager, (bool Succeeded, TimeSpan InPoint, TimeSpan OutPoint, string? FailureMessage)>? resolveRangeAfterEvictionPaused = null)
     {
         var flashbackSink = snapshotSink ?? _flashbackSink;
@@ -709,17 +735,20 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
 
         var exportId = 0L;
         var evictionPaused = false;
-        var exportOperationLockHeld = false;
+        var exportOperationLockHeld = exportOperationLockAlreadyHeld;
         try
         {
-            try
+            if (!exportOperationLockAlreadyHeld)
             {
-                await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);
-                exportOperationLockHeld = true;
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                return FailFlashbackExport(outputPath, "Flashback export cancelled.", inPoint, outPoint);
+                try
+                {
+                    await _flashbackExportOperationLock.WaitAsync(ct).ConfigureAwait(false);
+                    exportOperationLockHeld = true;
+                }
+                catch (OperationCanceledException) when (ct.IsCancellationRequested)
+                {
+                    return FailFlashbackExport(outputPath, "Flashback export cancelled.", inPoint, outPoint);
+                }
             }
 
             if (bufferManager == null)
@@ -909,7 +938,7 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
             }
             if (exportOperationLockHeld)
             {
-                ReleaseSemaphoreBestEffort(_flashbackExportOperationLock, "flashback_export_operation");
+                ReleaseFlashbackExportOperationLockIfHeld(ref exportOperationLockHeld);
             }
         }
     }

@@ -2530,6 +2530,13 @@ internal sealed class FlashbackPlaybackController : IDisposable
                 while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
+                    if (commandChannel.Reader.TryPeek(out _))
+                    {
+                        ReleaseHeldFrameBestEffort(videoFrame, "av_sync_skip_command_pending");
+                        Logger.Log($"FLASHBACK_PLAYBACK_FRAME_SKIP_COMMAND_PENDING count={skipped} drift_ms={driftMs:F1}");
+                        return true;
+                    }
+
                     // Release the frame without displaying it
                     ReleaseHeldFrameBestEffort(videoFrame, "av_sync_skip");
                     RecordPlaybackDroppedFrame("av_sync_skip");

@@ -2132,6 +2132,8 @@ static partial class Program
         AssertContains(sourceText, "TryDecodeNextVideoFrameWithMetrics(decoder, out var nudgeFrame, cts.Token)");
         AssertContains(sourceText, "CancellationToken cancellationToken)\n    {\n        try\n        {\n            cancellationToken.ThrowIfCancellationRequested();");
         AssertContains(sourceText, "while (skipped < MaxSkipFrames && driftMs < -FrameSkipThresholdMs)\n                {\n                    cancellationToken.ThrowIfCancellationRequested();");
+        AssertContains(sourceText, "if (commandChannel.Reader.TryPeek(out _))\n                    {\n                        ReleaseHeldFrameBestEffort(videoFrame, \"av_sync_skip_command_pending\");");
+        AssertContains(sourceText, "FLASHBACK_PLAYBACK_FRAME_SKIP_COMMAND_PENDING count={skipped}");
         AssertContains(sourceText, "const double FrameSkipThresholdMs = 500.0;");
         // Frame-skip catch-up loop must re-sync the audio clock each iteration so a
         // long catch-up burst does not extrapolate from a stale wall-time anchor.
