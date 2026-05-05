@@ -634,7 +634,6 @@ static partial class Program
         AssertContains(sourceText, "catch (ObjectDisposedException)\n        {\n            cancellationResult = CreateDisposedExportResult(outputPath);\n            return false;\n        }");
         AssertContains(sourceText, "linkedCts = CreateExportCancellationSource(ct);");
         AssertContains(sourceText, "var segmentSnapshot = SnapshotSegments(segments);");
-        AssertContains(sourceText, "return ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token);");
         AssertContains(sourceText, "private static IReadOnlyList<FlashbackExportSegment> SnapshotSegments(IReadOnlyList<FlashbackExportSegment>? segments)");
         AssertContains(sourceText, "snapshot[i] = segment == null\n                ? new FlashbackExportSegment { Path = string.Empty }\n                : segment with { };");
         AssertContains(sourceText, "CancellationTokenSource.CreateLinkedTokenSource(ct, disposeCts.Token)");
@@ -642,10 +641,18 @@ static partial class Program
         AssertContains(sourceText, "private static FinalizeResult CreateDisposedExportResult(string outputPath)");
         AssertContains(sourceText, "const string message = \"Flashback exporter is disposed.\";");
         AssertContains(sourceText, "private const int ExportLockWaitTimeoutSeconds = 30;");
+        AssertContains(sourceText, "private const int ExportWriterThrottlePacketInterval = 1;");
+        AssertContains(sourceText, "private const int ExportWriterThrottleSleepMs = 2;");
         AssertContains(sourceText, "_exportLock.Wait(TimeSpan.FromSeconds(ExportLockWaitTimeoutSeconds), ct)");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT");
-        AssertContains(sourceText, "finally\n            {\n                DisposeLinkedCtsBestEffort(linkedCts, \"single_export\");\n            }\n        });");
-        AssertContains(sourceText, "finally\n            {\n                DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\");\n            }\n        });");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\"));");
+        AssertContains(sourceText, "thread.Priority = ThreadPriority.BelowNormal;");
+        AssertContains(sourceText, "thread.Priority = previousPriority;");
+        AssertContains(sourceText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertContains(sourceText, "Thread.Sleep(ExportWriterThrottleSleepMs);");
+        AssertContains(sourceText, "ThrottleExportWriterIfNeeded(totalPackets);");
+        AssertContains(sourceText, "ThrottleExportWriterIfNeeded(written);");
         AssertContains(sourceText, "private static void DisposeLinkedCtsBestEffort(CancellationTokenSource? cts, string operation)");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LINKED_CTS_DISPOSE_WARN");
         AssertContains(sourceText, "ReleaseExportLockBestEffort(\"single_export\");");

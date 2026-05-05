@@ -25,6 +25,8 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     private const int MaxSupportedInputStreams = 64;
     private const int ProgressHeartbeatIntervalMs = 1_000;
     private const int ExportLockWaitTimeoutSeconds = 30;
+    private const int ExportWriterThrottlePacketInterval = 1;
+    private const int ExportWriterThrottleSleepMs = 2;
     private static readonly TimeSpan OrphanTempFileMinimumAge = TimeSpan.FromMinutes(15);
 
     private readonly SemaphoreSlim _exportLock = new(1, 1);
@@ -105,14 +107,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         return Task.Run(() =>
         {
-            try
-            {
-                return ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token);
-            }
-            finally
-            {
-                DisposeLinkedCtsBestEffort(linkedCts, "single_export");
-            }
+            return RunWithBackgroundPriority(
+                () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token),
+                () => DisposeLinkedCtsBestEffort(linkedCts, "single_export"));
         });
     }
 
@@ -142,15 +139,34 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         return Task.Run(() =>
         {
+            return RunWithBackgroundPriority(
+                () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token),
+                () => DisposeLinkedCtsBestEffort(linkedCts, "segment_export"));
+        });
+    }
+
+    private static FinalizeResult RunWithBackgroundPriority(Func<FinalizeResult> exportWork, Action cleanup)
+    {
+        var thread = Thread.CurrentThread;
+        var previousPriority = thread.Priority;
+        try
+        {
+            thread.Priority = ThreadPriority.BelowNormal;
+            return exportWork();
+        }
+        finally
+        {
             try
             {
-                return ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token);
+                thread.Priority = previousPriority;
             }
-            finally
+            catch
             {
-                DisposeLinkedCtsBestEffort(linkedCts, "segment_export");
+                // Best effort: thread-pool priority restore should not mask export cleanup.
             }
-        });
+
+            cleanup();
+        }
     }
 
     private static IReadOnlyList<FlashbackExportSegment> SnapshotSegments(IReadOnlyList<FlashbackExportSegment>? segments)
@@ -463,6 +479,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                         ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), "av_interleaved_write_frame");
                         packetCounts[streamIndex]++;
                         totalPackets++;
+                        ThrottleExportWriterIfNeeded(totalPackets);
                     }
                     finally
                     {
@@ -980,6 +997,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                                 buffPkt->stream_index = oi;
                                 ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, buffPkt), "av_interleaved_write_frame");
                                 written++;
+                                ThrottleExportWriterIfNeeded(written);
                                 ffmpeg.av_packet_free(&buffPkt);
                                 segBufferedPackets[bi] = IntPtr.Zero;
                             }
@@ -1152,6 +1170,7 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                             packet->stream_index = mappedIndex;
                             ThrowIfError(ffmpeg.av_interleaved_write_frame(_activeOutputContext, packet), "av_interleaved_write_frame");
                             totalPackets++;
+                            ThrottleExportWriterIfNeeded(totalPackets);
                         }
                         finally
                         {
@@ -1912,6 +1931,14 @@ internal sealed unsafe class FlashbackExporter : IDisposable
 
         lastHeartbeatTick = now;
         return true;
+    }
+
+    private static void ThrottleExportWriterIfNeeded(long packetsWritten)
+    {
+        if (packetsWritten > 0 && packetsWritten % ExportWriterThrottlePacketInterval == 0)
+        {
+            Thread.Sleep(ExportWriterThrottleSleepMs);
+        }
     }
 
     private static long GetFileLengthBestEffort(string path)
