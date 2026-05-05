@@ -504,6 +504,9 @@ static partial class Program
                 "Diagnostic session runner writes terminal artifacts on final snapshot failure",
                 DiagnosticSessionRunner_FinalSnapshotFailureWritesTerminalArtifacts),
             await RunCheckAsync(
+                "Diagnostic session runner verifies flashback export during playback",
+                DiagnosticSessionRunner_VerifiesFlashbackExportPlaybackCommandFlow),
+            await RunCheckAsync(
                 "Diagnostic session runner ignores transient flashback warmup warnings",
                 DiagnosticSessionRunner_IgnoresTransientFlashbackWarmupWarnings),
             await RunCheckAsync(
