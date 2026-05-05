@@ -921,6 +921,8 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
                 InPoint = inPoint,
                 OutPoint = outPoint,
                 OutputPath = outputPath,
+                FastStart = false,
+                AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(flashbackSink),
             };
             result = await exporter.ExportAsync(request, diagnosticProgress, ct).ConfigureAwait(false);
             if (forceRotateFallbackUsed && result.Succeeded)
@@ -1011,6 +1013,79 @@ public partial class CaptureService : IDisposable, IAsyncDisposable
         }
 
         return segments;
+    }
+
+    private static Func<int>? CreateFlashbackExportThrottleDelayProvider(FlashbackEncoderSink? flashbackSink)
+    {
+        if (flashbackSink == null)
+        {
+            return null;
+        }
+
+        var lastLoggedTick = 0L;
+        return () =>
+        {
+            var capacity = flashbackSink.VideoQueueCapacityFrames;
+            if (capacity <= 0)
+            {
+                return 0;
+            }
+
+            var depth = flashbackSink.VideoQueueCount;
+            var queueRatio = Math.Clamp(depth / (double)capacity, 0.0, 1.0);
+            var oldestFrameAgeMs = flashbackSink.VideoQueueOldestFrameAgeMs;
+            var delayMs = ResolveFlashbackExportThrottleDelayMs(
+                queueRatio,
+                oldestFrameAgeMs,
+                IsHighResolutionFlashbackExport(flashbackSink));
+            if (delayMs <= 0)
+            {
+                return 0;
+            }
+
+            var now = Environment.TickCount64;
+            if (now - lastLoggedTick >= 1_000)
+            {
+                lastLoggedTick = now;
+                Logger.Log(
+                    "FLASHBACK_EXPORT_LIVE_THROTTLE " +
+                    $"delay_ms={delayMs} queue={depth}/{capacity} " +
+                    $"queue_ratio={queueRatio:0.00} oldest_ms={oldestFrameAgeMs}");
+            }
+
+            return delayMs;
+        };
+    }
+
+    private static bool IsHighResolutionFlashbackExport(FlashbackEncoderSink flashbackSink)
+        => flashbackSink.EncoderWidth >= 3840 || flashbackSink.EncoderHeight >= 2160;
+
+    private static int ResolveFlashbackExportThrottleDelayMs(
+        double queueRatio,
+        long oldestFrameAgeMs,
+        bool liveHighResolution = false)
+    {
+        if (queueRatio >= 0.85 || oldestFrameAgeMs >= 90)
+        {
+            return 25;
+        }
+
+        if (queueRatio >= 0.70 || oldestFrameAgeMs >= 50)
+        {
+            return 20;
+        }
+
+        if (liveHighResolution)
+        {
+            return 25;
+        }
+
+        if (queueRatio >= 0.50 || oldestFrameAgeMs >= 30)
+        {
+            return 16;
+        }
+
+        return 0;
     }
 
     private static string? TryGetFullPath(string? path)

@@ -934,6 +934,9 @@ static partial class Program
                 "Flashback encoder bounds high-resolution CPU queue capacity",
                 FlashbackEncoderSink_HighResolutionCpuQueueCapacityIsBounded),
             await RunCheckAsync(
+                "Flashback export throttle responds to live queue pressure",
+                CaptureService_FlashbackExportThrottleRespondsToLiveQueuePressure),
+            await RunCheckAsync(
                 "Flashback encoder force-rotate drain rejects video enqueues",
                 FlashbackEncoderSink_ForceRotateDrainingRejectsVideoAndGpuEnqueues),
             await RunCheckAsync(

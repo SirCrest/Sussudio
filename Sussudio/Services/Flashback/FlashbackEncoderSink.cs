@@ -18,7 +18,7 @@ namespace Sussudio.Services.Flashback;
 internal sealed class FlashbackEncoderSink : IRecordingSink, IRawVideoFrameEncoder, IRawVideoFrameTryEncoder, IRawVideoFrameLeaseEncoder, IRawVideoFrameLeaseTryEncoder, IGpuVideoFrameEncoder, IGpuVideoFrameTryEncoder
 {
     private const int DefaultVideoQueueCapacity = 180;
-    private const int HighResolutionCpuVideoQueueCapacity = 64;
+    private const int HighResolutionCpuVideoQueueCapacity = 128;
     private const int AudioQueueCapacity = 1800;
     private const int GpuQueueCapacity = 8;
     private const int VideoDrainBatchLimit = 24;

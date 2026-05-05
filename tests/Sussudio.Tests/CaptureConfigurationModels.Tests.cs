@@ -338,7 +338,8 @@ static partial class Program
                 RequiredConfigProperty("InPoint", typeof(TimeSpan), ConfigSetterExpectation.InitOnly),
                 RequiredConfigProperty("OutPoint", typeof(TimeSpan), ConfigSetterExpectation.InitOnly),
                 RequiredConfigString("OutputPath", ConfigSetterExpectation.InitOnly),
-                ConfigProperty("FastStart", typeof(bool), ConfigSetterExpectation.InitOnly)
+                ConfigProperty("FastStart", typeof(bool), ConfigSetterExpectation.InitOnly),
+                ConfigProperty("AdaptiveThrottleDelayMsProvider", typeof(Func<int>), ConfigSetterExpectation.InitOnly, Nullability: ConfigNullability.Nullable)
             });
 
         var bufferOptions = CreateConfigInstance(bufferOptionsType);
@@ -401,6 +402,7 @@ static partial class Program
         AssertEqual("single.ts", GetStringProperty(exportRequest, "InputTsPath"), "FlashbackExportRequest.InputTsPath");
         AssertEqual(TimeSpan.FromSeconds(12), (TimeSpan)GetPropertyValue(exportRequest, "OutPoint")!, "FlashbackExportRequest.OutPoint");
         AssertEqual(false, GetBoolProperty(exportRequest, "FastStart"), "FlashbackExportRequest.FastStart round-trip");
+        AssertEqual(null, GetPropertyValue(exportRequest, "AdaptiveThrottleDelayMsProvider"), "FlashbackExportRequest.AdaptiveThrottleDelayMsProvider default");
 
         return Task.CompletedTask;
     }

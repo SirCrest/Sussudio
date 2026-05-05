@@ -132,4 +132,10 @@ internal sealed record FlashbackExportRequest
     public required TimeSpan OutPoint { get; init; }
     public required string OutputPath { get; init; }
     public bool FastStart { get; init; } = true;
+
+    /// <summary>
+    /// Optional live-recorder pressure signal. Returns the number of milliseconds
+    /// the exporter should sleep before continuing packet copy.
+    /// </summary>
+    public Func<int>? AdaptiveThrottleDelayMsProvider { get; init; }
 }

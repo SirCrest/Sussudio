@@ -28,11 +28,17 @@ internal sealed unsafe class FlashbackExporter : IDisposable
     private const int ExportWriterYieldPacketInterval = 256;
     private const int ExportWriterThrottlePacketInterval = 4096;
     private const int ExportWriterThrottleSleepMs = 1;
+    private const int ExportWriterAdaptiveThrottlePacketInterval = 4;
+    private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;
     private static readonly TimeSpan OrphanTempFileMinimumAge = TimeSpan.FromMinutes(15);
+    [ThreadStatic]
+    private static Func<int>? s_adaptiveThrottleDelayMsProvider;
 
     private readonly SemaphoreSlim _exportLock = new(1, 1);
     private readonly object _lifetimeSync = new();
+    private readonly object _adaptiveThrottleSync = new();
     private CancellationTokenSource? _disposeCts = new();
+    private Func<int>? _nextAdaptiveThrottleDelayMsProvider;
     private AVFormatContext* _activeInputContext;
     private AVFormatContext* _activeOutputContext;
     private string? _activeTempPath;
@@ -65,10 +71,15 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         }
 
         if (request.Segments is { Count: > 0 })
+        {
+            SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
             return ExportSegmentsAsync(request.Segments, request.InPoint, request.OutPoint,
                 request.OutputPath, request.FastStart, progress, ct);
+        }
 
         if (request.SegmentPaths is { Count: > 0 })
+        {
+            SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
             return ExportSegmentsAsync(
                 request.SegmentPaths.Select(path => new FlashbackExportSegment { Path = path }).ToArray(),
                 request.InPoint,
@@ -77,7 +88,9 @@ internal sealed unsafe class FlashbackExporter : IDisposable
                 request.FastStart,
                 progress,
                 ct);
+        }
 
+        SetNextAdaptiveThrottleDelayProvider(request.AdaptiveThrottleDelayMsProvider);
         return ExportSingleAsync(request.InputTsPath!, request.InPoint, request.OutPoint,
             request.OutputPath, request.FastStart, progress, ct);
     }
@@ -106,10 +119,13 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return Task.FromResult(CreateDisposedExportResult(outputPath));
         }
 
+        var adaptiveThrottleDelayMsProvider = ConsumeNextAdaptiveThrottleDelayProvider();
         return Task.Run(() =>
         {
             return RunWithBackgroundPriority(
-                () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token),
+                () => RunWithAdaptiveThrottle(
+                    adaptiveThrottleDelayMsProvider,
+                    () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),
                 () => DisposeLinkedCtsBestEffort(linkedCts, "single_export"));
         });
     }
@@ -138,12 +154,49 @@ internal sealed unsafe class FlashbackExporter : IDisposable
             return Task.FromResult(CreateDisposedExportResult(outputPath));
         }
 
+        var adaptiveThrottleDelayMsProvider = ConsumeNextAdaptiveThrottleDelayProvider();
         return Task.Run(() =>
         {
             return RunWithBackgroundPriority(
-                () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token),
+                () => RunWithAdaptiveThrottle(
+                    adaptiveThrottleDelayMsProvider,
+                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),
                 () => DisposeLinkedCtsBestEffort(linkedCts, "segment_export"));
         });
+    }
+
+    private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)
+    {
+        lock (_adaptiveThrottleSync)
+        {
+            _nextAdaptiveThrottleDelayMsProvider = adaptiveThrottleDelayMsProvider;
+        }
+    }
+
+    private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()
+    {
+        lock (_adaptiveThrottleSync)
+        {
+            var provider = _nextAdaptiveThrottleDelayMsProvider;
+            _nextAdaptiveThrottleDelayMsProvider = null;
+            return provider;
+        }
+    }
+
+    private static FinalizeResult RunWithAdaptiveThrottle(
+        Func<int>? adaptiveThrottleDelayMsProvider,
+        Func<FinalizeResult> exportWork)
+    {
+        var previousProvider = s_adaptiveThrottleDelayMsProvider;
+        try
+        {
+            s_adaptiveThrottleDelayMsProvider = adaptiveThrottleDelayMsProvider;
+            return exportWork();
+        }
+        finally
+        {
+            s_adaptiveThrottleDelayMsProvider = previousProvider;
+        }
     }
 
     private static FinalizeResult RunWithBackgroundPriority(Func<FinalizeResult> exportWork, Action cleanup)
@@ -1939,6 +1992,21 @@ internal sealed unsafe class FlashbackExporter : IDisposable
         if (packetsWritten <= 0)
         {
             return;
+        }
+
+        var adaptiveThrottleDelayMsProvider = s_adaptiveThrottleDelayMsProvider;
+        if (adaptiveThrottleDelayMsProvider != null &&
+            packetsWritten % ExportWriterAdaptiveThrottlePacketInterval == 0)
+        {
+            var adaptiveDelayMs = Math.Clamp(
+                adaptiveThrottleDelayMsProvider(),
+                0,
+                ExportWriterMaxAdaptiveThrottleSleepMs);
+            if (adaptiveDelayMs > 0)
+            {
+                Thread.Sleep(adaptiveDelayMs);
+                return;
+            }
         }
 
         if (packetsWritten % ExportWriterThrottlePacketInterval == 0)

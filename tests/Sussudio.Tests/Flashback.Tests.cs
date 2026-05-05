@@ -183,9 +183,33 @@ static partial class Program
         SetPropertyBackingField(normalContext, "Width", 1920);
         SetPropertyBackingField(normalContext, "Height", 1080);
 
-        AssertEqual(64, (int)resolve.Invoke(null, new[] { fourKContext, false })!, "4K CPU Flashback queue capacity");
+        AssertEqual(128, (int)resolve.Invoke(null, new[] { fourKContext, false })!, "4K CPU Flashback queue capacity");
         AssertEqual(180, (int)resolve.Invoke(null, new[] { fourKContext, true })!, "4K GPU Flashback queue capacity");
         AssertEqual(180, (int)resolve.Invoke(null, new[] { normalContext, false })!, "1080p CPU Flashback queue capacity");
+
+        return Task.CompletedTask;
+    }
+
+    private static Task CaptureService_FlashbackExportThrottleRespondsToLiveQueuePressure()
+    {
+        var serviceType = RequireType("Sussudio.Services.Capture.CaptureService");
+        var resolve = serviceType.GetMethod("ResolveFlashbackExportThrottleDelayMs", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("ResolveFlashbackExportThrottleDelayMs not found.");
+        var sourceText = ReadRepoFile("Sussudio/Services/Capture/CaptureService.cs")
+            .Replace("\r\n", "\n");
+
+        AssertEqual(0, (int)resolve.Invoke(null, new object[] { 0.49, 29L, false })!, "Flashback export throttle idle");
+        AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.49, 0L, true })!, "Flashback export throttle high-resolution live baseline");
+        AssertEqual(16, (int)resolve.Invoke(null, new object[] { 0.50, 0L, false })!, "Flashback export throttle queue half full");
+        AssertEqual(16, (int)resolve.Invoke(null, new object[] { 0.0, 30L, false })!, "Flashback export throttle oldest frame mild pressure");
+        AssertEqual(20, (int)resolve.Invoke(null, new object[] { 0.70, 0L, false })!, "Flashback export throttle medium queue pressure");
+        AssertEqual(20, (int)resolve.Invoke(null, new object[] { 0.0, 50L, false })!, "Flashback export throttle medium frame age");
+        AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.85, 0L, false })!, "Flashback export throttle severe queue pressure");
+        AssertEqual(25, (int)resolve.Invoke(null, new object[] { 0.0, 90L, false })!, "Flashback export throttle severe frame age");
+        AssertContains(sourceText, "IsHighResolutionFlashbackExport(flashbackSink)");
+        AssertContains(sourceText, "FastStart = false");
+        AssertContains(sourceText, "AdaptiveThrottleDelayMsProvider = CreateFlashbackExportThrottleDelayProvider(flashbackSink)");
+        AssertContains(sourceText, "FLASHBACK_EXPORT_LIVE_THROTTLE");
 
         return Task.CompletedTask;
     }
@@ -644,13 +668,23 @@ static partial class Program
         AssertContains(sourceText, "private const int ExportWriterYieldPacketInterval = 256;");
         AssertContains(sourceText, "private const int ExportWriterThrottlePacketInterval = 4096;");
         AssertContains(sourceText, "private const int ExportWriterThrottleSleepMs = 1;");
+        AssertContains(sourceText, "private const int ExportWriterAdaptiveThrottlePacketInterval = 4;");
+        AssertContains(sourceText, "private const int ExportWriterMaxAdaptiveThrottleSleepMs = 25;");
         AssertContains(sourceText, "_exportLock.Wait(TimeSpan.FromSeconds(ExportLockWaitTimeoutSeconds), ct)");
         AssertContains(sourceText, "FLASHBACK_EXPORT_LOCK_WAIT_TIMEOUT");
-        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
-        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\"));");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportCore(inputTsPath, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"single_export\"));");
+        AssertContains(sourceText, "return RunWithBackgroundPriority(\n                () => RunWithAdaptiveThrottle(\n                    adaptiveThrottleDelayMsProvider,\n                    () => ExportSegmentsCore(segmentSnapshot, inPoint, outPoint, outputPath, fastStart, progress, linkedCts.Token)),\n                () => DisposeLinkedCtsBestEffort(linkedCts, \"segment_export\"));");
         AssertContains(sourceText, "thread.Priority = ThreadPriority.BelowNormal;");
         AssertContains(sourceText, "thread.Priority = previousPriority;");
+        AssertContains(sourceText, "Func<int>? adaptiveThrottleDelayMsProvider");
+        AssertContains(sourceText, "private readonly object _adaptiveThrottleSync = new();");
+        AssertContains(sourceText, "private void SetNextAdaptiveThrottleDelayProvider(Func<int>? adaptiveThrottleDelayMsProvider)");
+        AssertContains(sourceText, "private Func<int>? ConsumeNextAdaptiveThrottleDelayProvider()");
+        AssertContains(sourceText, "[ThreadStatic]\n    private static Func<int>? s_adaptiveThrottleDelayMsProvider;");
+        AssertContains(sourceText, "private static FinalizeResult RunWithAdaptiveThrottle(");
         AssertContains(sourceText, "private static void ThrottleExportWriterIfNeeded(long packetsWritten)");
+        AssertContains(sourceText, "packetsWritten % ExportWriterAdaptiveThrottlePacketInterval == 0");
+        AssertContains(sourceText, "ExportWriterMaxAdaptiveThrottleSleepMs");
         AssertContains(sourceText, "Thread.Sleep(ExportWriterThrottleSleepMs);");
         AssertContains(sourceText, "Thread.Yield();");
         AssertContains(sourceText, "ThrottleExportWriterIfNeeded(totalPackets);");
