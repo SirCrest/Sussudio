@@ -1916,7 +1916,13 @@ static partial class Program
         const string scrubClampBeforeOpen = "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));";
 
         AssertContains(sourceText, seekClampBeforeOpen);
-        AssertEqual(2, sourceText.Split(scrubClampBeforeOpen, StringSplitOptions.None).Length - 1, "BeginScrub and UpdateScrub clamp before file lookup with frozen reference");
+        AssertEqual(1, sourceText.Split(scrubClampBeforeOpen, StringSplitOptions.None).Length - 1, "BeginScrub clamps before file lookup with frozen reference");
+        var updateScrubBlock = ExtractTextBetween(
+            sourceText,
+            "case CommandKind.UpdateScrub:",
+            "                    case CommandKind.EndScrub:");
+        AssertContains(updateScrubBlock, "cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };\n                        if (ShouldYieldScrubUpdateToQueuedControl(commandChannel))");
+        AssertContains(updateScrubBlock, "decoder ??= CreateDecoder();\n                        EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));");
 
         return Task.CompletedTask;
     }
@@ -2903,9 +2909,14 @@ static partial class Program
         AssertContains(updateScrubBlock, "TrackCommandDequeued(newer);");
         AssertContains(updateScrubBlock, "newer = ResolveScrubUpdateCommandPosition(newer);");
         AssertContains(updateScrubBlock, "cmd = newer;");
+        AssertContains(updateScrubBlock, "if (ShouldYieldScrubUpdateToQueuedControl(commandChannel))");
+        AssertContains(updateScrubBlock, "PlaybackPosition = cmd.Position;");
+        AssertContains(updateScrubBlock, "MarkCommandNoOp(CommandKind.UpdateScrub, \"superseded_by_control\", cmd.Position);");
         AssertContains(updateScrubBlock, "FLASHBACK_PLAYBACK_SCRUB_UPDATE_NO_FILE");
         AssertContains(updateScrubBlock, "SafeResumePreviewSubmission(\"scrub_update_no_file\")");
         AssertContains(updateScrubBlock, "SetState(FlashbackPlaybackState.Live)");
+        AssertContains(sourceText, "private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)");
+        AssertContains(sourceText, "return next.Kind is CommandKind.EndScrub or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;");
         AssertContains(drainAbandonedCommands, "ClearQueuedCommandSlotsBarrier();");
         AssertContains(sourceText, "if (State == FlashbackPlaybackState.Live && !PlaybackThreadAlive)\n        {\n            MarkCommandNoOp(CommandKind.EndScrub, \"live_thread_not_running\", position);\n            return false;\n        }");
         var endScrubBlock = ExtractTextBetween(

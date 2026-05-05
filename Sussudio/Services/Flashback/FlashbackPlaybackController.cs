@@ -1149,6 +1149,12 @@ internal sealed class FlashbackPlaybackController : IDisposable
                             cmd = newer;
                         }
                         cmd = cmd with { Position = ClampPosition(cmd.Position, frozenValidStart) };
+                        if (ShouldYieldScrubUpdateToQueuedControl(commandChannel))
+                        {
+                            PlaybackPosition = cmd.Position;
+                            MarkCommandNoOp(CommandKind.UpdateScrub, "superseded_by_control", cmd.Position);
+                            break;
+                        }
                         decoder ??= CreateDecoder();
                         EnsureFileOpen(decoder, ref fileOpen, SaturatingAdd(cmd.Position, frozenValidStart));
                         cts.Token.ThrowIfCancellationRequested();
@@ -1663,6 +1669,16 @@ internal sealed class FlashbackPlaybackController : IDisposable
 
             return resolved;
         }
+    }
+
+    private static bool ShouldYieldScrubUpdateToQueuedControl(Channel<PlaybackCommand> commandChannel)
+    {
+        if (!commandChannel.Reader.TryPeek(out var next))
+        {
+            return false;
+        }
+
+        return next.Kind is CommandKind.EndScrub or CommandKind.Play or CommandKind.GoLive or CommandKind.Stop;
     }
 
     private void ClearQueuedSeekSlotUnsafe(SeekIntentSlot slot)
