@@ -300,6 +300,7 @@ static partial class Program
         AssertContains(diagnosticsText, "private const double CaptureOnePercentLowWarningRatio = 0.98;");
         AssertContains(diagnosticsText, "private const double PreviewOnePercentLowWarningRatio = 0.98;");
         AssertContains(diagnosticsText, "private const double FlashbackPlaybackOnePercentLowWarningRatio = 0.98;");
+        AssertContains(diagnosticsText, "private const int FlashbackPlaybackOnePercentLowMinimumFrames = 1200;");
         AssertContains(diagnosticsText, "private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;");
         AssertContains(diagnosticsText, "private const long FlashbackRecordingBackpressureWarningMs = 100;");
         AssertContains(diagnosticsText, "private const double FlashbackRecordingQueueDepthWarningRatio = 0.75;");
@@ -318,7 +319,9 @@ static partial class Program
         AssertContains(diagnosticsText, "Interlocked.Exchange(ref _lastFlashbackVideoSequenceGaps, sequenceGaps)");
         AssertContains(diagnosticsText, "Interlocked.Exchange(ref _lastFlashbackGpuFramesDropped, gpuFramesDropped)");
         AssertContains(diagnosticsText, "Interlocked.Exchange(ref _lastFlashbackVideoBackpressureEvents, backpressureEvents)");
-        AssertContains(diagnosticsText, "var flashbackRecordingRecent = UpdateFlashbackRecordingRecentCounters(snapshot, Stopwatch.GetTimestamp());");
+        AssertContains(diagnosticsText, "var recentFlashbackRecording = UpdateFlashbackRecordingRecentCounters(health, nowTick);");
+        AssertContains(diagnosticsText, "UpdateAlerts(snapshot, recentFlashbackRecording);");
+        AssertContains(diagnosticsText, "private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)");
         AssertContains(diagnosticsText, "var flashbackRecordingQueueBacklog =");
         AssertContains(diagnosticsText, "var flashbackAudioQueueBacklog =");
         AssertContains(diagnosticsText, "IsFlashbackRecordingQueueBackedUp(");
@@ -380,6 +383,8 @@ static partial class Program
         AssertContains(diagnosticsText, "private static bool IsFlashbackForceRotateRejectReason(string? reason)");
         AssertContains(diagnosticsText, "string.Equals(reason, \"force_rotate_queue_guard\"");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackOnePercentLowFps");
+        AssertContains(diagnosticsText, "frameCount >= FlashbackPlaybackOnePercentLowMinimumFrames");
+        AssertContains(diagnosticsText, "cadenceSampleCount >= FlashbackPlaybackOnePercentLowMinimumFrames");
         AssertContains(diagnosticsText, "snapshot.FlashbackPlaybackAudioMasterFallbacks >= snapshot.FlashbackPlaybackFrameCount * FlashbackPlaybackAudioMasterFallbackWarningRatio");
         AssertContains(diagnosticsText, "snapshot.WasapiPlaybackQueueDepth >= FlashbackPlaybackAudioQueueBacklogWarningDepth");
         AssertContains(diagnosticsText, "Flashback playback is using wall-clock pacing instead of audio-master pacing");
@@ -404,8 +409,9 @@ static partial class Program
         AssertContains(diagnosticsText, "string.Equals(captureRuntime.RecordingIntegrityStatus, \"Incomplete\", StringComparison.OrdinalIgnoreCase)");
         AssertContains(diagnosticsText, "(recordingIntegrityIncomplete && !isRecording)");
         AssertContains(diagnosticsText, "var flashbackRecordingDegraded =");
-        AssertContains(diagnosticsText, "health.FlashbackVideoEncoderDroppedFrames > 0");
-        AssertContains(diagnosticsText, "health.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs");
+        AssertContains(diagnosticsText, "recentFlashbackRecording.EncoderDroppedFrames > 0");
+        AssertContains(diagnosticsText, "recentFlashbackRecording.BackpressureEvents > 0");
+        AssertContains(diagnosticsText, "health.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs");
         AssertContains(diagnosticsText, "var flashbackBackendSettingsUnexpectedlyStale =");
         AssertContains(diagnosticsText, "health.FlashbackBackendSettingsStale &&\n            !isRecording");
         AssertContains(diagnosticsText, "\"Flashback backend settings differ from requested settings.\"");
@@ -443,7 +449,7 @@ static partial class Program
         AssertContains(diagnosticsText, "health.FlashbackPlaybackSubmitFailures > 0");
         AssertContains(diagnosticsText, "\"flashback_export\"");
         AssertContains(diagnosticsText, "var flashbackForceRotateRejectWithoutDamage =");
-        AssertContains(diagnosticsText, "!flashbackForceRotateRejectWithoutDamage &&\n              health.FlashbackVideoSequenceGaps > 0");
+        AssertContains(diagnosticsText, "!flashbackForceRotateRejectWithoutDamage &&\n              recentFlashbackRecording.SequenceGaps > 0");
         AssertContains(diagnosticsText, "health.FlashbackExportActive ||\n             health.FlashbackForceRotateActive ||\n             health.FlashbackForceRotateRequested ||\n             health.FlashbackForceRotateDraining");
         AssertContains(diagnosticsText, "UpdatePreviewJitterRecentCounters(health, nowTick)");
         AssertContains(diagnosticsText, "UpdateD3DRendererRecentCounters(previewRuntime, nowTick)");
@@ -1114,6 +1120,7 @@ static partial class Program
         AssertContains(diagnosticSessionText, "private static bool IsSparsePreviewSchedulerDeadlineDropRun(");
         AssertContains(diagnosticSessionText, "var allowedDrops = Math.Max(2, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 10.0));");
         AssertContains(diagnosticSessionText, "var toleratesSparseScrubSchedulerTransitions =");
+        AssertContains(diagnosticSessionText, "(runFlashbackScrubStress || runFlashbackSegmentPlayback) &&");
         AssertContains(diagnosticSessionText, "IsSparsePreviewSchedulerStressRun(");
         AssertContains(diagnosticSessionText, "private static bool IsSparsePreviewSchedulerStressRun(");
         AssertContains(diagnosticSessionText, "var allowedDeadlineDrops = Math.Max(6, (long)Math.Ceiling(Math.Max(1, durationSeconds) / 45.0));");

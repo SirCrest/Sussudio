@@ -1167,7 +1167,7 @@ public static class DiagnosticSessionRunner
                     durationSeconds,
                     visualCadenceHealthy);
             var toleratesSparseScrubSchedulerTransitions =
-                runFlashbackScrubStress &&
+                (runFlashbackScrubStress || runFlashbackSegmentPlayback) &&
                 IsSparsePreviewSchedulerStressRun(
                     previewSchedulerDeadlineDropsDelta,
                     previewSchedulerUnderflowsDelta,

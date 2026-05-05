@@ -83,6 +83,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     private const double PreviewOnePercentLowWarningRatio = 0.98;
     private const double FlashbackPlaybackOnePercentLowWarningRatio = 0.98;
     private const int FlashbackPlaybackMinFramesForPerfAlert = 60;
+    private const int FlashbackPlaybackOnePercentLowMinimumFrames = 1200;
     private const double FlashbackPlaybackAudioMasterFallbackWarningRatio = 0.50;
     private const int FlashbackPlaybackAudioQueueBacklogWarningDepth = 24;
     private const long FlashbackTempDriveLowFreeBytes = 5L * 1024L * 1024L * 1024L;
@@ -528,6 +529,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         var recentMjpeg = UpdateMjpegRecentCounters(health, nowTick);
         var recentRenderer = UpdateD3DRendererRecentCounters(previewRuntime, nowTick);
         var (recentD3DMissedRefreshes, recentD3DStatsFailures) = UpdateD3DFrameStatsRecentCounters(previewRuntime, nowTick);
+        var recentFlashbackRecording = UpdateFlashbackRecordingRecentCounters(health, nowTick);
         var diagnostic = BuildDiagnosticEvaluation(
             health,
             captureRuntime,
@@ -540,7 +542,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             recentPreviewDeadlineDrops,
             recentRenderer,
             recentD3DMissedRefreshes,
-            recentD3DStatsFailures);
+            recentD3DStatsFailures,
+            recentFlashbackRecording);
         var hdrTruthVerdict = BuildHdrTruthVerdict(captureRuntime, viewModelSnapshot.IsHdrEnabled, lastVerification);
         var previewHdrInputDetected =
             IsHdrSubtype(captureRuntime.NegotiatedPixelFormat) ||
@@ -1390,7 +1393,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
                                !string.IsNullOrWhiteSpace(snapshot.LastOutputPath) &&
                                verificationIdle;
 
-        UpdateAlerts(snapshot);
+        UpdateAlerts(snapshot, recentFlashbackRecording);
 
         lock (_stateLock)
         {
@@ -1695,7 +1698,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
     }
 
     private FlashbackRecordingRecentCounters UpdateFlashbackRecordingRecentCounters(
-        AutomationSnapshot snapshot,
+        CaptureHealthSnapshot snapshot,
         long nowTick)
     {
         var droppedFrames = snapshot.FlashbackActive ? Math.Max(0, snapshot.FlashbackDroppedFrames) : 0;
@@ -1749,10 +1752,9 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         return Math.Clamp(cpuDeltaMs * 100.0 / cpuCapacityMs, 0.0, 100.0);
     }
 
-    private void UpdateAlerts(AutomationSnapshot snapshot)
+    private void UpdateAlerts(AutomationSnapshot snapshot, FlashbackRecordingRecentCounters flashbackRecordingRecent)
     {
         var nowUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        var flashbackRecordingRecent = UpdateFlashbackRecordingRecentCounters(snapshot, Stopwatch.GetTimestamp());
         var flashbackRecordingRecentBackpressure =
             flashbackRecordingRecent.BackpressureEvents > 0 &&
             snapshot.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs;
@@ -2261,8 +2263,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         =>
             string.Equals(state, "Playing", StringComparison.OrdinalIgnoreCase) &&
             targetFrameRate > 0 &&
-            frameCount >= FlashbackPlaybackMinFramesForPerfAlert &&
-            cadenceSampleCount >= FlashbackPlaybackMinFramesForPerfAlert &&
+            frameCount >= FlashbackPlaybackOnePercentLowMinimumFrames &&
+            cadenceSampleCount >= FlashbackPlaybackOnePercentLowMinimumFrames &&
             onePercentLowFps > 0 &&
             onePercentLowFps < targetFrameRate * FlashbackPlaybackOnePercentLowWarningRatio;
 
@@ -2405,7 +2407,8 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
         long recentPreviewDeadlineDrops,
         D3DRendererRecentCounters recentRenderer,
         long recentD3DMissedRefreshes,
-        long recentD3DStatsFailures)
+        long recentD3DStatsFailures,
+        FlashbackRecordingRecentCounters recentFlashbackRecording)
     {
         var sourceTarget = health.ExpectedFrameRate > 0
             ? $"{1000.0 / health.ExpectedFrameRate:0.##}ms"
@@ -2457,7 +2460,7 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             $"backendStale={health.FlashbackBackendSettingsStale} staleReason={health.FlashbackBackendSettingsStaleReason} activeFormat={health.FlashbackBackendActiveFormat} requestedFormat={health.FlashbackBackendRequestedFormat} activePreset={health.FlashbackBackendActivePreset} requestedPreset={health.FlashbackBackendRequestedPreset} " +
             $"gpuOverloads={health.FlashbackGpuFramesDropped} forceRotate={health.FlashbackForceRotateActive} requested={health.FlashbackForceRotateRequested} draining={health.FlashbackForceRotateDraining} queue={health.FlashbackVideoQueueDepth}/{health.FlashbackVideoQueueCapacity} maxQueue={health.FlashbackVideoQueueMaxDepth} " +
             $"audioQueue={health.FlashbackAudioQueueDepth}/{health.FlashbackAudioQueueCapacity} " +
-            $"queueAgeMs={health.FlashbackVideoQueueOldestFrameAgeMs} backpressure={health.FlashbackVideoBackpressureWaitMs}ms/{health.FlashbackVideoBackpressureEvents} maxBackpressure={health.FlashbackVideoBackpressureMaxWaitMs}ms " +
+            $"queueAgeMs={health.FlashbackVideoQueueOldestFrameAgeMs} backpressure={health.FlashbackVideoBackpressureWaitMs}ms/{health.FlashbackVideoBackpressureEvents} lastBackpressure={health.FlashbackVideoBackpressureLastWaitMs}ms maxBackpressure={health.FlashbackVideoBackpressureMaxWaitMs}ms " +
             $"fatalCleanup={health.FatalCleanupInProgress} flashbackCleanup={health.FlashbackCleanupInProgress}";
         var exportFailureKind = string.IsNullOrWhiteSpace(health.FlashbackExportFailureKind)
             ? "None"
@@ -2532,20 +2535,23 @@ public sealed class AutomationDiagnosticsHub : IAutomationDiagnosticsHub
             health.FlashbackDroppedFrames <= 0 &&
             health.FlashbackVideoEncoderDroppedFrames <= 0 &&
             health.FlashbackGpuFramesDropped <= 0 &&
-            health.FlashbackVideoBackpressureMaxWaitMs < FlashbackRecordingBackpressureWarningMs &&
+            recentFlashbackRecording.BackpressureEvents <= 0 &&
             !IsFlashbackRecordingQueueBackedUp(
                 health.FlashbackVideoQueueDepth,
                 health.FlashbackVideoQueueCapacity,
                 health.FlashbackVideoQueueOldestFrameAgeMs) &&
             IsFlashbackForceRotateRejectReason(health.FlashbackVideoQueueLastRejectReason);
+        var flashbackRecordingRecentBackpressure =
+            recentFlashbackRecording.BackpressureEvents > 0 &&
+            health.FlashbackVideoBackpressureLastWaitMs >= FlashbackRecordingBackpressureWarningMs;
         var flashbackRecordingDegraded =
             health.FlashbackActive &&
-            (health.FlashbackDroppedFrames > 0 ||
-             health.FlashbackVideoEncoderDroppedFrames > 0 ||
+            (recentFlashbackRecording.DroppedFrames > 0 ||
+             recentFlashbackRecording.EncoderDroppedFrames > 0 ||
              (!flashbackForceRotateRejectWithoutDamage &&
-              health.FlashbackVideoSequenceGaps > 0) ||
-             health.FlashbackGpuFramesDropped > 0 ||
-             health.FlashbackVideoBackpressureMaxWaitMs >= FlashbackRecordingBackpressureWarningMs ||
+              recentFlashbackRecording.SequenceGaps > 0) ||
+             recentFlashbackRecording.GpuFramesDropped > 0 ||
+             flashbackRecordingRecentBackpressure ||
              IsFlashbackRecordingQueueBackedUp(
                  health.FlashbackVideoQueueDepth,
                  health.FlashbackVideoQueueCapacity,
