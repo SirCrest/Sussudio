@@ -4377,7 +4377,11 @@ public static class DiagnosticSessionRunner
         int outPointMs = 5_000,
         bool switchAudioDuringExport = false)
     {
-        var requiredBufferedDurationMs = Math.Max(8_000, outPointMs + 2_000);
+        const int liveEdgeSafetyMarginMs = 5_000;
+        const int leftEdgeSafetyMarginMs = 10_000;
+        var requiredBufferedDurationMs = Math.Max(
+            20_000,
+            outPointMs + liveEdgeSafetyMarginMs + leftEdgeSafetyMarginMs);
         var requiredEncodedFrames = Math.Max(240, (long)Math.Ceiling(requiredBufferedDurationMs / 1000.0 * 60.0));
         if (!await WaitForFlashbackStressBufferReadyAsync(
                 sendCommandAsync,
@@ -4394,6 +4398,17 @@ public static class DiagnosticSessionRunner
 
         var baselineSnapshotResponse = await sendCommandAsync("GetSnapshot", null, null).ConfigureAwait(false);
         TryGetSnapshot(baselineSnapshotResponse, out var baselineSnapshot);
+        var bufferedDurationMs = GetNullableLong(baselineSnapshot, "FlashbackBufferedDurationMs") ?? 0;
+        var rangeEndMs = (int)Math.Clamp(bufferedDurationMs - liveEdgeSafetyMarginMs, 0, int.MaxValue);
+        var rangeStartMs = Math.Max(0, rangeEndMs - outPointMs);
+        if (rangeStartMs < leftEdgeSafetyMarginMs)
+        {
+            warnings.Add(
+                $"{scenarioLabel}: insufficient near-live range headroom " +
+                $"bufferedMs={bufferedDurationMs} startMs={rangeStartMs} endMs={rangeEndMs} " +
+                $"requiredStartMs>={leftEdgeSafetyMarginMs}");
+            return;
+        }
 
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "clear-in-out-points" }, null)
             .ConfigureAwait(false);
@@ -4401,31 +4416,31 @@ public static class DiagnosticSessionRunner
             .ConfigureAwait(false);
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = 0 },
+                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = rangeStartMs },
                 null)
             .ConfigureAwait(false);
-        if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, 0, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
+        if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, rangeStartMs, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
         {
             warnings.Add($"{scenarioLabel}: playback did not reach in-point seek before marking range");
         }
 
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "set-in-point" }, null)
             .ConfigureAwait(false);
-        actions.Add($"{scenarioLabel} in point set");
+        actions.Add($"{scenarioLabel} in point set positionMs={rangeStartMs}");
 
         await sendCommandAsync(
                 "FlashbackAction",
-                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = outPointMs },
+                new Dictionary<string, object?> { ["action"] = "seek", ["positionMs"] = rangeEndMs },
                 null)
             .ConfigureAwait(false);
-        if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, outPointMs, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
+        if (!await WaitForFlashbackPlaybackPositionAsync(sendCommandAsync, rangeEndMs, TimeSpan.FromSeconds(5), cancellationToken).ConfigureAwait(false))
         {
             warnings.Add($"{scenarioLabel}: playback did not reach out-point seek before marking range");
         }
 
         await sendCommandAsync("FlashbackAction", new Dictionary<string, object?> { ["action"] = "set-out-point" }, null)
             .ConfigureAwait(false);
-        actions.Add($"{scenarioLabel} out point set");
+        actions.Add($"{scenarioLabel} out point set positionMs={rangeEndMs}");
 
         var exportPath = Path.Combine(outputDirectory, exportFileName);
         var exportTask = sendCommandAsync(
